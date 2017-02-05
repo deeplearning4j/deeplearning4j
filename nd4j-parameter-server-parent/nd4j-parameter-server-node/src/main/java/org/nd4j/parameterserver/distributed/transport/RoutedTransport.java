@@ -7,6 +7,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,7 +53,8 @@ public class RoutedTransport extends BaseTransport {
         this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
         this.messages = new LinkedBlockingQueue<>();
-
+        //shutdown hook
+        super.init(voidConfiguration,clipboard,role,localIp,localPort,shardIndex);
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
         context = new Aeron.Context()
@@ -63,6 +65,8 @@ public class RoutedTransport extends BaseTransport {
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
+
+
 
         if (router == null)
             router = new InterleavedRouter();
@@ -78,18 +82,27 @@ public class RoutedTransport extends BaseTransport {
         }
         unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
         subscriptionForClients = aeron.addSubscription(unicastChannelUri, voidConfiguration.getStreamId());
+        //clean shut down
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            CloseHelper.quietClose(aeron);
+            CloseHelper.quietClose(driver);
+            CloseHelper.quietClose(context);
+            CloseHelper.quietClose(subscriptionForClients);
+        }));
+
 
         messageHandlerForClients = new FragmentAssembler(
                 (buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header)
         );
 
         /*
-            Now, regardless of curent role, we set up publication channel to each shard
+            Now, regardless of current role,
+             we set up publication channel to each shard
          */
         String shardChannelUri = null;
         String remoteIp = null;
         int remotePort = 0;
-        for (String ip: voidConfiguration.getShardAddresses()){
+        for (String ip: voidConfiguration.getShardAddresses()) {
             if (ip.contains(":")) {
                 shardChannelUri = "aeron:udp?endpoint=" + ip;
                 String[] split = ip.split(":");
@@ -133,22 +146,25 @@ public class RoutedTransport extends BaseTransport {
                         Next step is connections setup for backup nodes.
                         TODO: to be implemented
                      */
-                    addClient(ip, port);
-                }
-                break;
+                addClient(ip, port);
+            }
+            break;
             case CLIENT: {
                     /*
                         For Clients on unicast transport, we either set up connection to single Shard, or to multiple shards
                         But since this code is shared - we don't do anything here
                      */
-                }
-                break;
+            }
+            break;
             default:
                 throw new ND4JIllegalStateException("Unknown NodeRole being passed: " + nodeRole);
         }
 
         router.init(voidConfiguration, this);
         this.originatorId = StringUtils.getLongHash(this.getIp() + ":" + this.getPort());
+
+
+
     }
 
     /**
@@ -197,27 +213,27 @@ public class RoutedTransport extends BaseTransport {
 
                 switch (res) {
                     case NOT_CONNECTED: {
-                            if (!rc.getActivated().get()) {
-                                retr++;
+                        if (!rc.getActivated().get()) {
+                            retr++;
 
-                                if (retr > 20)
-                                    throw new ND4JIllegalStateException("Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+                            if (retr > 20)
+                                throw new ND4JIllegalStateException("Can't connect to Shard: [" + rc.getPublication().channel() + "]");
 
-                                try {
-                                    Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                                } catch (Exception e) {}
-                            } else {
-                                throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
-                            }
-                        }
-                        break;
-                    case ADMIN_ACTION:
-                    case BACKPRESSURE: {
                             try {
                                 Thread.sleep(voidConfiguration.getRetransmitTimeout());
                             } catch (Exception e) {}
+                        } else {
+                            throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
                         }
-                        break;
+                    }
+                    break;
+                    case ADMIN_ACTION:
+                    case BACKPRESSURE: {
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) {}
+                    }
+                    break;
                     case MESSAGE_SENT:
                         delivered = true;
                         rc.getActivated().set(true);
@@ -265,19 +281,19 @@ public class RoutedTransport extends BaseTransport {
             switch (result) {
                 case ADMIN_ACTION:
                 case BACKPRESSURE: {
-                        try {
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (Exception e) { }
-                    }
-                    break;
+                    try {
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (Exception e) { }
+                }
+                break;
                 case NOT_CONNECTED: {
                     // client dead? sleep and forget
                     // TODO: we might want to delay this message & move it to separate queue?
-                        try {
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (Exception e) { }
-                    }
-                    // do not break here, we can't do too much here, if client is dead
+                    try {
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (Exception e) { }
+                }
+                // do not break here, we can't do too much here, if client is dead
                 case MESSAGE_SENT:
                     delivered = true;
                     break;
@@ -350,11 +366,11 @@ public class RoutedTransport extends BaseTransport {
                 case BACKPRESSURE:
                 case ADMIN_ACTION: {
                     // we just sleep, and retransmit again later
-                        try {
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (Exception e) { }
-                    }
-                    break;
+                    try {
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (Exception e) { }
+                }
+                break;
                 case NOT_CONNECTED:
                     /*
                         two possible cases here:
@@ -457,9 +473,9 @@ public class RoutedTransport extends BaseTransport {
         // send introductory message
 //        if (nodeRole == NodeRole.CLIENT) {
 //            shards.parallelStream().forEach((rc) -> {
-                IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
-                irm.setTargetId((short) -1);
-                sendCoordinationCommand(irm);
+        IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
+        irm.setTargetId((short) -1);
+        sendCoordinationCommand(irm);
 //            });
 //        }
     }

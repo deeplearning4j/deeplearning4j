@@ -5,6 +5,7 @@ import io.aeron.FragmentAssembler;
 import io.aeron.driver.MediaDriver;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.CloseHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -36,6 +37,9 @@ public class MulticastTransport extends BaseTransport {
         if (voidConfiguration.getMulticastNetwork() == null || voidConfiguration.getMulticastNetwork().isEmpty())
             throw new ND4JIllegalStateException("For MulticastTransport you should provide IP from multicast network available/allowed in your environment, i.e.: 224.0.1.1");
 
+        //shutdown hook
+        super.init(voidConfiguration,clipboard,role,localIp,localPort,shardIndex);
+
         this.voidConfiguration = voidConfiguration;
         this.nodeRole = role;
         this.clipboard = clipboard;
@@ -47,6 +51,8 @@ public class MulticastTransport extends BaseTransport {
         context.aeronDirectoryName(driver.aeronDirectoryName());
 
         aeron = Aeron.connect(context);
+
+
 
         this.shardIndex = shardIndex;
 
@@ -95,6 +101,9 @@ public class MulticastTransport extends BaseTransport {
                 messageHandlerForClients = new FragmentAssembler(
                         ((buffer, offset, length, header) -> internalMessageHandler(buffer, offset, length, header))
                 );
+
+
+
                 break;
             case CLIENT:
                 ip = localIp;
@@ -136,6 +145,9 @@ public class MulticastTransport extends BaseTransport {
                 log.warn("Unknown role passed: {}", nodeRole);
                 throw new RuntimeException();
         }
+
+
+
 
         // if that's local spark run - we don't need this
         if (voidConfiguration.getNumberOfShards() == 1 && nodeRole == NodeRole.SHARD)

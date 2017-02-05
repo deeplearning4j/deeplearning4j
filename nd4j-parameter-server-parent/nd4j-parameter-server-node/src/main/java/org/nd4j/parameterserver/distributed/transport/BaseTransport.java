@@ -92,7 +92,7 @@ public abstract class BaseTransport implements Transport {
         long currentTime = System.currentTimeMillis();
 
         MeaningfulMessage msg;
-        while ((msg = completed.get((Long) taskId)) == null) {
+        while ((msg = completed.get(taskId)) == null) {
             try {
                 //Thread.sleep(voidConfiguration.getResponseTimeframe());
                 feedbackIdler.idle();
@@ -227,7 +227,7 @@ public abstract class BaseTransport implements Transport {
 
         messages.add(message);
 
-    //    log.info("internalMessageHandler message request incoming: {}", message.getClass().getSimpleName());
+        //    log.info("internalMessageHandler message request incoming: {}", message.getClass().getSimpleName());
     }
 
     /**
@@ -243,7 +243,7 @@ public abstract class BaseTransport implements Transport {
          *  All of them should implement MeaningfulMessage interface
          */
         // TODO: to be implemented
-      //  log.info("clientMessageHandler message request incoming");
+        //  log.info("clientMessageHandler message request incoming");
 
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
@@ -269,6 +269,21 @@ public abstract class BaseTransport implements Transport {
     }
 
     /**
+     * This method does initialization of Transport instance
+     *
+     * @param voidConfiguration
+     * @param clipboard
+     * @param role
+     * @param localIp
+     * @param localPort
+     * @param shardIndex
+     */
+    @Override
+    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort, short shardIndex) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownSilent()));
+    }
+
+    /**
      * This method starts transport mechanisms.
      *
      * PLEASE NOTE: init() method should be called prior to launch() call
@@ -280,79 +295,79 @@ public abstract class BaseTransport implements Transport {
         switch (threading) {
             case SINGLE_THREAD: {
 
-                    log.warn("SINGLE_THREAD model is used, performance will be significantly reduced");
+                log.warn("SINGLE_THREAD model is used, performance will be significantly reduced");
 
-                    // single thread for all queues. shouldn't be used in real world
+                // single thread for all queues. shouldn't be used in real world
+                threadA = new Thread(() -> {
+                    while (runner.get()) {
+                        if (subscriptionForShards != null)
+                            subscriptionForShards.poll(messageHandlerForShards, 512);
+
+                        idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
+                    }
+                });
+
+                threadA.start();
+            }
+            break;
+            case DEDICATED_THREADS: {
+                // we start separate thread for each handler
+
+                /**
+                 * We definitely might use less conditional code here, BUT i'll keep it as is,
+                 * only because we want code to be obvious for people
+                 */
+                final AtomicBoolean localRunner = new AtomicBoolean(false);
+                if (nodeRole == NodeRole.NONE) {
+                    throw new ND4JIllegalStateException("No role is set for current node!");
+                } else if (nodeRole == NodeRole.SHARD || nodeRole == NodeRole.BACKUP || nodeRole == NodeRole.MASTER) {
+                    // // Shard or Backup uses two subscriptions
+
+                    // setting up thread for shard->client communication listener
+                    if (messageHandlerForShards != null)
+                        threadB = new Thread(() -> {
+                            while (runner.get())
+                                idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
+
+                        });
+
+                    // setting up thread for inter-shard communication listener
                     threadA = new Thread(() -> {
-                        while (runner.get()) {
-                            if (subscriptionForShards != null)
-                                subscriptionForShards.poll(messageHandlerForShards, 512);
-
+                        localRunner.set(true);
+                        while (runner.get())
                             idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
-                        }
                     });
 
-                    threadA.start();
-                }
-                break;
-            case DEDICATED_THREADS: {
-                    // we start separate thread for each handler
-
-                    /**
-                    * We definitely might use less conditional code here, BUT i'll keep it as is,
-                    * only because we want code to be obvious for people
-                    */
-                    final AtomicBoolean localRunner = new AtomicBoolean(false);
-                    if (nodeRole == NodeRole.NONE) {
-                        throw new ND4JIllegalStateException("No role is set for current node!");
-                    } else if (nodeRole == NodeRole.SHARD || nodeRole == NodeRole.BACKUP || nodeRole == NodeRole.MASTER) {
-                        // // Shard or Backup uses two subscriptions
-
-                        // setting up thread for shard->client communication listener
-                        if (messageHandlerForShards != null)
-                            threadB = new Thread(() -> {
-                                while (runner.get())
-                                    idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
-
-                            });
-
-                        // setting up thread for inter-shard communication listener
-                        threadA = new Thread(() -> {
-                            localRunner.set(true);
-                            while (runner.get())
-                                idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
-                        });
-
-                        if (threadB != null) {
-                            threadB.setDaemon(true);
-                            threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
-                            threadB.start();
-                        }
-                    } else {
-                        // setting up thread for shard->client communication listener
-                        threadA = new Thread(() -> {
-                            localRunner.set(true);
-                            while (runner.get())
-                                idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
-                        });
+                    if (threadB != null) {
+                        threadB.setDaemon(true);
+                        threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
+                        threadB.start();
                     }
-
-                    // all roles have threadA anyway
-                    threadA.setDaemon(true);
-                    threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
-                    threadA.start();
-
-                    while (!localRunner.get())
-                        try {
-                            Thread.sleep(50);
-                        } catch (Exception e) { }
+                } else {
+                    // setting up thread for shard->client communication listener
+                    threadA = new Thread(() -> {
+                        localRunner.set(true);
+                        while (runner.get())
+                            idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
+                    });
                 }
-                break;
+
+                // all roles have threadA anyway
+                threadA.setDaemon(true);
+                threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
+                threadA.start();
+
+                while (!localRunner.get())
+                    try {
+                        Thread.sleep(50);
+                    } catch (Exception e) { }
+            }
+            break;
             case SAME_THREAD: {
-                    // no additional threads at all, we do poll within takeMessage loop
-                    log.warn("SAME_THREAD model is used, performance will be dramatically reduced");
-                }
-                break;
+                // no additional threads at all, we do poll within takeMessage loop
+                log.warn("SAME_THREAD model is used, performance will be dramatically reduced");
+            }
+            break;
             default:
                 throw new IllegalStateException("Unknown thread model: ["+ threading.toString()+"]");
         }
@@ -361,14 +376,13 @@ public abstract class BaseTransport implements Transport {
 
     protected void shutdownSilent() {
         log.info("Shutting down Aeron infrastructure...");
-        publicationForClients.close();
-        publicationForShards.close();
-        subscriptionForShards.close();
-        subscriptionForClients.close();
-
-        aeron.close();
-        context.close();
-        driver.close();
+        CloseHelper.quietClose(publicationForClients);
+        CloseHelper.quietClose(publicationForShards);
+        CloseHelper.quietClose(subscriptionForShards);
+        CloseHelper.quietClose(subscriptionForClients);
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(context);
+        CloseHelper.quietClose(driver);
     }
 
     /**
