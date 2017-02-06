@@ -14,6 +14,7 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected int minWordFrequency;
     @Getter protected VocabCache<VocabWord> vocabCache;
     protected LabelsSource labelsSource;
-    protected List<String> stopWords = new ArrayList<>();
+    protected Collection<String> stopWords = new ArrayList<>();
     @Getter protected transient InvertedIndex<VocabWord> index;
 
     protected LabelsSource getLabelsSource() {
@@ -46,7 +47,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(iterator, minWordFrequency)
-                .setTargetVocabCache(vocabCache)
+                .setTargetVocabCache(vocabCache).setStopWords(stopWords)
                 .build();
 
         constructor.buildJointVocabulary(false, true);
