@@ -4,15 +4,13 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.util.*;
 
 
@@ -266,23 +264,10 @@ public class MLNTransferLearning {
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer();
-
             layerImpl.setWeightInit(scheme);
-            String layerConfJson = layerConf.toJson();
-            NeuralNetConfiguration newLayerConf = layerConf.clone();
-            //FIXME: This is a hack via json to change nOut, Could expose nIn and nOut via setters instead?
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                JsonNode root = mapper.readTree(layerConfJson);
-                JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
-                ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nout", nOut);
-                newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
-                editedConfs.set(layerNum, newLayerConf);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            int numParams = layerImpl.initializer().numParams(newLayerConf);
+            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.overrideNOut(nOut, true);
+            int numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
             editedParams.set(layerNum,someLayer.params());
@@ -291,21 +276,9 @@ public class MLNTransferLearning {
                 layerConf = editedConfs.get(layerNum+1);
                 layerImpl = layerConf.getLayer();
                 layerImpl.setWeightInit(schemeNext);
-                layerConfJson = layerConf.toJson();
-                newLayerConf = layerConf.clone();
-                //FIXME: This is a hack via json to change nIn, Could expose nIn and nOut via setters instead?
-                mapper = new ObjectMapper();
-                try {
-                    JsonNode root = mapper.readTree(layerConfJson);
-                    JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
-                    ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nin", nOut);
-                    newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
-                    editedConfs.set(layerNum+1, newLayerConf);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                numParams = layerImpl.initializer().numParams(newLayerConf);
+                layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.overrideNIn(nOut,true);
+                numParams = layerImpl.initializer().numParams(layerConf);
                 params = Nd4j.create(1, numParams);
                 someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
                 editedParams.set(layerNum+1,someLayer.params());

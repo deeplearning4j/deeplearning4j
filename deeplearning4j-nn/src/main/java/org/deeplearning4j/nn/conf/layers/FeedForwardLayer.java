@@ -118,6 +118,20 @@ public abstract class FeedForwardLayer extends Layer {
         }
     }
 
+    public void overrideNIn(int nIn, boolean override) {
+        if (!override) {
+            throw new IllegalArgumentException("nIn without an input type requires an explicit manual override. Users are discouraged from using this method as it is only meant only for use in the transfer learning API");
+        }
+        this.nIn = nIn;
+    }
+
+    public void overrideNOut(int nOut, boolean override) {
+        if (!override) {
+            throw new IllegalArgumentException("nOut without an input type requires an explicit manual override. Users are discouraged from using this method as it is only meant only for use in the transfer learning API");
+        }
+        this.nOut = nOut;
+    }
+
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
         protected int nIn = 0;
         protected int nOut = 0;
