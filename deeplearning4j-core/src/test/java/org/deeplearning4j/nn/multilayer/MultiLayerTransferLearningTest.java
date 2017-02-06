@@ -69,7 +69,8 @@ public class MultiLayerTransferLearningTest {
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(confToChange,expectedModel.params());
         MultiLayerNetwork modelNow = new MLNTransferLearning
-                                            .Builder(modelToFineTune)
+                                            //.Builder(modelToFineTune)
+                                            (modelToFineTune)
                                             .fineTuneConfiguration(
                                                     new NeuralNetConfiguration.Builder()
                                                         .seed(rng)
@@ -93,10 +94,10 @@ public class MultiLayerTransferLearningTest {
         NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY);
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
+                        .nIn(4).nOut(5)
                         .build())
                 .layer(1, new DenseLayer.Builder()
-                        .nIn(3).nOut(2)
+                        .nIn(5).nOut(2)
                         .build())
                 .layer(2, new DenseLayer.Builder()
                         .nIn(2).nOut(3)
@@ -106,7 +107,11 @@ public class MultiLayerTransferLearningTest {
                         .nIn(3).nOut(3)
                         .build()).build());
         modelToFineTune.init();
-        MultiLayerNetwork modelNow = new MLNTransferLearning.Builder(modelToFineTune).fineTuneConfiguration(overallConf).noutReplace(3, 2, WeightInit.XAVIER).build();
+        MultiLayerNetwork modelNow = new MLNTransferLearning(modelToFineTune)
+                                        .fineTuneConfiguration(overallConf)
+                                        .nOutReplace(3, 2, WeightInit.XAVIER, WeightInit.XAVIER)
+                                        .nOutReplace(0, 3, WeightInit.XAVIER, WeightInit.XAVIER)
+                                        .build();
 
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()

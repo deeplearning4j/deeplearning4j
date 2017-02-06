@@ -51,7 +51,7 @@ public class FrozenLayerTest {
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2,randomData.getFeatures(),false).get(2);
 
-        MultiLayerNetwork modelNow = new MLNTransferLearning.Builder(modelToFineTune)
+        MultiLayerNetwork modelNow = new MLNTransferLearning(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
                 .setFeatureExtractor(1).build();
 
