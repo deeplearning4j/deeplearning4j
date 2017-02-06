@@ -201,39 +201,41 @@ public class TestReduce {
     public void testCustomReductions(){
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(1), new Text("zero")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2), new Text("one")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(3), new Text("two")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(4), new Text("three")));
+        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(1), new Text("zero"), new DoubleWritable(0)));
+        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2), new Text("one"), new DoubleWritable(1)));
+        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(3), new Text("two"), new DoubleWritable(2)));
+        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(4), new Text("three"), new DoubleWritable(3)));
 
-        List<Writable> expected = Arrays.asList((Writable)new Text("someKey"), new LongWritable(10), new Text("one"));
+        List<Writable> expected = Arrays.asList((Writable)new Text("someKey"), new LongWritable(10), new Text("one"), new DoubleWritable(1));
 
 
         Schema schema = new Schema.Builder()
                 .addColumnString("key")
                 .addColumnInteger("intCol")
                 .addColumnString("textCol")
+                .addColumnString("doubleCol")
                 .build();
 
         Reducer reducer = new Reducer.Builder(ReduceOp.Sum)
                 .keyColumns("key")
                 .customReduction("textCol",new CustomReduceTakeSecond())
+                .customReduction("doubleCol",new CustomReduceTakeSecond())
                 .build();
 
         reducer.setInputSchema(schema);
 
         List<Writable> out = reducer.reduce(inputs);
 
-        assertEquals(3,out.size());
+        assertEquals(4,out.size());
         assertEquals(expected, out);
 
         //Check schema:
-        String[] expNames = new String[]{"key", "sum(intCol)", "myCustomReduce(textCol)"};
-        ColumnType[] expTypes = new ColumnType[]{ColumnType.String, ColumnType.Long, ColumnType.String};
+        String[] expNames = new String[]{"key", "sum(intCol)", "myCustomReduce(textCol)", "myCustomReduce(doubleCol)"};
+        ColumnType[] expTypes = new ColumnType[]{ColumnType.String, ColumnType.Long, ColumnType.String, ColumnType.String};
         Schema outSchema = reducer.transform(schema);
 
-        assertEquals(3, outSchema.numColumns());
-        for( int i=0; i<3; i++ ){
+        assertEquals(4, outSchema.numColumns());
+        for( int i=0; i<4; i++ ){
             assertEquals(expNames[i], outSchema.getName(i));
             assertEquals(expTypes[i], outSchema.getType(i));
         }

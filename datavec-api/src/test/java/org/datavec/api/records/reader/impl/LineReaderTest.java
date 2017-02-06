@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -122,9 +123,9 @@ public class LineReaderTest {
             out2.add(r.getRecord());
             out3.add(r);
             meta.add(r.getMetaData());
-            int fileIdx = count / 3 + 1;
-            String uri = r.getMetaData().getURI().toString();
-            assertTrue(uri.endsWith("tmp" + fileIdx + ".txt"));
+            int fileIdx = count / 3;
+            URI uri = r.getMetaData().getURI();
+            assertEquals(uri, split.locations()[fileIdx]);
             count++;
         }
 
