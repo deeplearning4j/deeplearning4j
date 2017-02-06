@@ -150,7 +150,7 @@ public class MLNTransferLearning {
     /**
      * Add layers to the net
      * Required if layers are popped. Can be called multiple times and layers will be added in the order with which they were called.
-     * At the very last an outputLayer must be added (output layer should be added last - as per the note on order)
+     * At the very least an outputLayer must be added (output layer should be added last - as per the note on order)
      * Learning configs like updaters, learning rate etc specified per layer, here will be honored
      *
      * @param layer layer conf to add
@@ -166,10 +166,29 @@ public class MLNTransferLearning {
         NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
         Layer layerImpl = layerConf.getLayer();
         int numParams = layerImpl.initializer().numParams(layerConf);
-        INDArray params = Nd4j.create(1, numParams);
-        org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
-        appendConfs.add(someLayer.conf());
-        appendParams.add(someLayer.params());
+        INDArray params;
+        if (numParams > 0) {
+            params = Nd4j.create(1, numParams);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            appendParams.add(someLayer.params());
+            appendConfs.add(someLayer.conf());
+        }
+        else {
+            appendConfs.add(layerConf);
+
+        }
+        return this;
+    }
+
+    /**
+     * Specify the preprocessor for the added layers
+     * for cases where they cannot be inferred automatically.
+     * @param index of the layer
+     * @param processor to be used on the data
+     * @return
+     */
+    public MLNTransferLearning setInputPreProcessor(Integer layer, InputPreProcessor processor) {
+        inputPreProcessors.put(layer,processor);
         return this;
     }
 
@@ -223,6 +242,10 @@ public class MLNTransferLearning {
         //finally pop layers specified
         int i = 0;
         while (i < popN) {
+            Integer layerNum = origModel.getnLayers() - i;
+            if (inputPreProcessors.containsKey(layerNum)) {
+                inputPreProcessors.remove(layerNum);
+            }
             editedConfs.remove(editedConfs.size() - 1);
             editedParams.remove(editedParams.size() - 1);
             i++;
