@@ -10,6 +10,7 @@ import org.apache.commons.codec.binary.Base64;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -55,7 +56,7 @@ public class VectorsConfiguration implements Serializable {
     private String UNK = "UNK";
     private String STOP = "STOP";
 
-    private List<String> stopList = new ArrayList<>();
+    private Collection<String> stopList = new ArrayList<>();
 
     // overall model info
     private int vocabSize;
