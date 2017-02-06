@@ -31,7 +31,7 @@ public class MLNTransferLearning {
     private MultiLayerNetwork editedModel;
     private NeuralNetConfiguration.Builder globalConfig;
     private int frozenTill = -1;
-    private int popFrom = 0;
+    private int popN = 0;
     private boolean prepDone = false;
     private List<Integer> editedLayers = new ArrayList<>();
     private Map<Integer, Triple<Integer, WeightInit, WeightInit>> editedLayersMap = new HashMap<>();
@@ -128,7 +128,7 @@ public class MLNTransferLearning {
      * @return
      */
     public MLNTransferLearning popOutputLayer() {
-        popFrom = origConf.getConfs().size() - 1; //index of the very last layer
+        popN = 1;
         return this;
     }
 
@@ -139,8 +139,8 @@ public class MLNTransferLearning {
      * @return
      */
     public MLNTransferLearning popFromOutput(int layerNum) {
-        if (popFrom == 0) {
-            popFrom = origConf.getConfs().size() - layerNum;
+        if (popN == 0) {
+            popN = layerNum;
         } else {
             throw new IllegalArgumentException("Pop from can only be called once");
         }
@@ -222,7 +222,7 @@ public class MLNTransferLearning {
 
         //finally pop layers specified
         int i = 0;
-        while (i < popFrom) {
+        while (i < popN) {
             editedConfs.remove(editedConfs.size() - 1);
             editedParams.remove(editedParams.size() - 1);
             i++;

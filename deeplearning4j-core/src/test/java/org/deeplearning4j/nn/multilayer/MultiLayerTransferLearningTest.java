@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -97,7 +98,7 @@ public class MultiLayerTransferLearningTest {
                         .nIn(4).nOut(5)
                         .build())
                 .layer(1, new DenseLayer.Builder()
-                        .nIn(5).nOut(2)
+                        .nIn(3).nOut(2)
                         .build())
                 .layer(2, new DenseLayer.Builder()
                         .nIn(2).nOut(3)
@@ -126,6 +127,66 @@ public class MultiLayerTransferLearningTest {
                 .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX)
                         .nIn(3).nOut(2)
+                        .build()).build());
+
+        modelExpectedArch.init();
+
+        //modelNow should have the same architecture as modelExpectedArch
+        assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer(0).params().shape(), modelNow.getLayer(0).params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer(1).params().shape(), modelNow.getLayer(1).params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer(2).params().shape(), modelNow.getLayer(2).params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer(3).params().shape(), modelNow.getLayer(3).params().shape());
+
+        modelNow.setParams(modelExpectedArch.params());
+        //fit should give the same results
+        modelExpectedArch.fit(randomData);
+        modelNow.fit(randomData);
+        assertTrue(modelExpectedArch.params().equals(modelNow.params()));
+    }
+
+
+    @Test
+    public void testPopandAdd() {
+        DataSet randomData = new DataSet(Nd4j.rand(10,4),Nd4j.rand(10,3));
+
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY);
+        MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(5)
+                        .build())
+                .layer(1, new DenseLayer.Builder()
+                        .nIn(5).nOut(2)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nIn(2).nOut(3)
+                        .build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(3)
+                        .build()).build());
+        modelToFineTune.init();
+        MultiLayerNetwork modelNow = new MLNTransferLearning(modelToFineTune)
+                .fineTuneConfiguration(overallConf)
+                .nOutReplace(0, 7, WeightInit.XAVIER, WeightInit.XAVIER)
+                .nOutReplace(2, 5, WeightInit.XAVIER)
+                .popOutputLayer()
+                .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build())
+                .build();
+
+        MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(7)
+                        .build())
+                .layer(1, new DenseLayer.Builder()
+                        .nIn(7).nOut(2)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nIn(2).nOut(5)
+                        .build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(5).nOut(3)
                         .build()).build());
 
         modelExpectedArch.init();
