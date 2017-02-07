@@ -19,16 +19,12 @@
 package org.deeplearning4j.spark.impl.common.score;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
-import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -44,7 +40,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseVaeScoreWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, K, Double> {
+public abstract class BaseVaeScoreWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
 
     protected final Broadcast<INDArray> params;
     protected final Broadcast<String> jsonConfig;

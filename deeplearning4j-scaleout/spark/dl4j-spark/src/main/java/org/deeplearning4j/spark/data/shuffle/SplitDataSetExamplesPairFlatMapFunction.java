@@ -1,8 +1,8 @@
 package org.deeplearning4j.spark.data.shuffle;
 
 import org.apache.spark.api.java.JavaRDD;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
-import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.dataset.DataSet;
 import scala.Tuple2;
 
@@ -33,7 +33,7 @@ public class SplitDataSetExamplesPairFlatMapFunction extends BasePairFlatMapFunc
  *
  * @author Alex Black
  */
-class SplitDataSetExamplesPairFlatMapFunctionAdapter implements PairFlatMapFunctionAdapter<DataSet, Integer, DataSet> {
+class SplitDataSetExamplesPairFlatMapFunctionAdapter implements FlatMapFunctionAdapter<DataSet, Tuple2<Integer, DataSet>> {
 
     private transient Random r;
     private int maxKeyIndex;
