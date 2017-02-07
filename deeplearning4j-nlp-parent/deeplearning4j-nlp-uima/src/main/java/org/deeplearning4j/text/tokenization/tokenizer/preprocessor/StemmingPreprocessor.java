@@ -11,7 +11,7 @@ import org.tartarus.snowball.ext.PorterStemmer;
  */
 public class StemmingPreprocessor extends CommonPreprocessor {
     @Override
-    public synchronized String preProcess(String token) {
+    public String preProcess(String token) {
         String prep = super.preProcess(token);
         PorterStemmer stemmer = new PorterStemmer();
         stemmer.setCurrent(prep);
