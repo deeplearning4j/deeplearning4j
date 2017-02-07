@@ -365,7 +365,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected boolean preciseWeightInit = false;
 
-        protected List<String> stopWords = new ArrayList<>();
+        protected Collection<String> stopWords = new ArrayList<>();
 
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
@@ -979,9 +979,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final int limitLower;
         private AtomicBoolean isRunning = new AtomicBoolean(true);
         private AtomicLong nextRandom;
-        private List<String> stopList;
+        private Collection<String> stopList;
 
-        public AsyncSequencer(SequenceIterator<T> iterator, @NonNull List<String> stopList) {
+        public AsyncSequencer(SequenceIterator<T> iterator, @NonNull Collection<String> stopList) {
             this.iterator = iterator;
 //            this.linesCounter = linesCounter;
             this.setName("AsyncSequencer thread");
