@@ -257,7 +257,7 @@ public class MathUtils  {
     public static double idf(double totalDocs,double numTimesWordAppearedInADocument) {
         //return totalDocs > 0 ? Math.log10(totalDocs/numTimesWordAppearedInADocument) : 0;
         if (totalDocs == 0) return 0;
-        double idf = Math.log10(totalDocs / numTimesWordAppearedInADocument);
+        double idf = Math.log(totalDocs / numTimesWordAppearedInADocument);
         return idf;
     }
 
