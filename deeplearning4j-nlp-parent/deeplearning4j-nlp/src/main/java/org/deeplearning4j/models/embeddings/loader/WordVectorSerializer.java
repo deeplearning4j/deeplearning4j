@@ -2311,7 +2311,7 @@ public class WordVectorSerializer {
         InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>();
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
-        INDArray syn0;
+        INDArray syn0 = null;
         VectorsConfiguration configuration = new VectorsConfiguration();
 
         if (!file.exists() || !file.isFile())
@@ -2353,22 +2353,45 @@ public class WordVectorSerializer {
                     configuration = VectorsConfiguration.fromJson(builder.toString().trim());
                 }
 
+                ZipEntry ve = zipFile.getEntry("frequencies.txt");
+                if (ve != null) {
+                    stream = zipFile.getInputStream(ve);
+                    AtomicInteger cnt  = new AtomicInteger(0);
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            String[] split = line.split(" ");
+                            VocabWord word = new VocabWord(Double.valueOf(split[1]), decodeB64(split[0]));
+                            word.setIndex(cnt.getAndIncrement());
+                            word.incrementSequencesCount(Long.valueOf(split[2]));
+
+                            vocabCache.addToken(word);
+                            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                        }
+                    }
+                } else throw new IllegalStateException("File with frequencies isn't available");
+
                 // basically read up everything, call vstacl and then return model
-                List<INDArray> arrays = new ArrayList<>();
                 try(Reader reader = new CSVReader(tmpFileSyn0)) {
+                    AtomicInteger cnt = new AtomicInteger(0);
                     while (reader.hasNext()) {
                         Pair<VocabWord, float[]> pair = reader.next();
                         VocabWord word = pair.getFirst();
-                        arrays.add(Nd4j.create(pair.getSecond()));
+                        INDArray vector = Nd4j.create(pair.getSecond());
 
-                        vocabCache.addToken(word);
-                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                        if (syn0 == null)
+                            syn0 = Nd4j.create(vocabCache.numWords(), vector.length());
+
+                        syn0.getRow(cnt.getAndIncrement()).assign(vector);
+
+                        //vocabCache.addToken(word);
+                        //vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
 
-                syn0 = Nd4j.vstack(arrays);
+
 
                 lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
                         .cache(vocabCache)
