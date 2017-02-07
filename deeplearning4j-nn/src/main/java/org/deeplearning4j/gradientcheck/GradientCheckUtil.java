@@ -277,11 +277,26 @@ public class GradientCheckUtil {
 
         int nParams = originalParams.length();
 
+        Map<String,INDArray> paramTable = graph.paramTable();
+        List<String> paramNames = new ArrayList<>(paramTable.keySet());
+        int[] paramEnds = new int[paramNames.size()];
+        paramEnds[0] = paramTable.get(paramNames.get(0)).length();
+        for( int i=1; i<paramEnds.length; i++ ){
+            paramEnds[i] = paramEnds[i-1] + paramTable.get(paramNames.get(i)).length();
+        }
+
+        int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
         MultiDataSet mds = new MultiDataSet(inputs, labels);
         INDArray params = graph.params();     //Assumption here: params is a view that we can modify in-place
         for(int i = 0; i < nParams; i++) {
+            //Get param name
+            if(i >= paramEnds[currParamNameIdx]){
+                currParamNameIdx++;
+            }
+            String paramName = paramNames.get(currParamNameIdx);
+
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
 
@@ -312,11 +327,11 @@ public class GradientCheckUtil {
             if(relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if(absError < minAbsoluteError){
-                    log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                             + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
                 } else {
                     if (print)
-                        log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                                 + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                     if (exitOnFirstError)
                         return false;
@@ -324,7 +339,7 @@ public class GradientCheckUtil {
                 }
             }
             else if(print) {
-                log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                         + ", relError= " + relError );
             }
         }
