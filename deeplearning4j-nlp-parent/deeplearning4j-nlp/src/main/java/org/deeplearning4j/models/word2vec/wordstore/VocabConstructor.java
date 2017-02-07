@@ -539,12 +539,12 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (!targetVocab.containsWord(token)) {
                     T element = document.getElementByLabel(token);
                     element.setElementFrequency(1);
+                    element.setSequencesCount(1);
                     targetVocab.addToken(element);
 //                    elementsCounter.incrementAndGet();
                     loopCounter.incrementAndGet();
 
                     // if there's no such element in tempHolder, it's safe to set seqCount to 1
-                    element.setSequencesCount(1);
                     seqMap.put(token, new AtomicLong(0));
                 } else {
                     targetVocab.incrementWordCount(token);
