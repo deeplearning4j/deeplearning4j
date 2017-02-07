@@ -19,10 +19,10 @@
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
-import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -54,7 +54,7 @@ public class FeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionAdapte
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-class FeedForwardWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, K, INDArray> {
+class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, INDArray>> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 

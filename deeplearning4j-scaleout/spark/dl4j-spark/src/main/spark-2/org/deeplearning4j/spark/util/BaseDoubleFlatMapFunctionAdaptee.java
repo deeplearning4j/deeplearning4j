@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.util;
 
 import org.apache.spark.api.java.function.DoubleFlatMapFunction;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 
 import java.util.Iterator;
 
@@ -12,9 +13,9 @@ import java.util.Iterator;
  */
 public class BaseDoubleFlatMapFunctionAdaptee<T> implements DoubleFlatMapFunction<T> {
 
-    protected final DoubleFlatMapFunctionAdapter<T> adapter;
+    protected final FlatMapFunctionAdapter<T, Double> adapter;
 
-    public BaseDoubleFlatMapFunctionAdaptee(DoubleFlatMapFunctionAdapter<T> adapter) {
+    public BaseDoubleFlatMapFunctionAdaptee(FlatMapFunctionAdapter<T, Double> adapter) {
         this.adapter = adapter;
     }
 

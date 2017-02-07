@@ -19,10 +19,10 @@
 package org.deeplearning4j.spark.impl.graph.scoring;
 
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.util.BaseDoubleFlatMapFunctionAdaptee;
-import org.deeplearning4j.spark.util.DoubleFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -58,7 +58,7 @@ public class ScoreExamplesFunction extends BaseDoubleFlatMapFunctionAdaptee<Iter
  * @author Alex Black
  * @see ScoreExamplesWithKeyFunction
  */
-class ScoreExamplesFunctionAdapter implements DoubleFlatMapFunctionAdapter<Iterator<MultiDataSet>> {
+class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, Double> {
     protected static final Logger log = LoggerFactory.getLogger(ScoreExamplesFunction.class);
 
     private final Broadcast<INDArray> params;

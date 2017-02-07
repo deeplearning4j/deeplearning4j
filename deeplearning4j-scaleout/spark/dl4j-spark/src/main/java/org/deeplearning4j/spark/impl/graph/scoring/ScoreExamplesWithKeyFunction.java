@@ -19,10 +19,10 @@
 package org.deeplearning4j.spark.impl.graph.scoring;
 
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
-import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -62,7 +62,7 @@ public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdap
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @see ScoreExamplesFunction
  */
-class ScoreExamplesWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K,MultiDataSet>>,K,Double> {
+class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K,MultiDataSet>>, Tuple2<K, Double>> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
