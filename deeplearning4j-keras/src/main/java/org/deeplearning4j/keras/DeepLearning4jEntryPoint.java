@@ -118,6 +118,8 @@ public class DeepLearning4jEntryPoint {
                 log.info("Fitting epoch: " + i);
 
                 model.fit(trainIterator);
+                double score = model.score();
+                log.info("Score is "+score);
 
                 if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);
@@ -268,6 +270,8 @@ public class DeepLearning4jEntryPoint {
                 log.info("Fitting epoch: " + i);
 
                 model.fit(trainIterator);
+                double score = model.score();
+                log.info("Score is "+score);
 
                 if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);

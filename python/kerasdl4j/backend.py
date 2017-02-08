@@ -8,6 +8,16 @@ from keras import backend as K
 from os import path, mkdir
 from py4j.java_gateway import JavaGateway
 
+# cache objects for hijack
+batch_file_template = "batch_{id}.h5"
+hijack_cache = {}
+gateway = JavaGateway()
+
+
+
+########
+# installs the DL4J backend via hijack
+########
 
 def install_dl4j_backend(model):
     """
@@ -57,9 +67,8 @@ def install_dl4j_backend(model):
     else:
         raise ValueError('DL4J Keras only works with Sequential and Functional models')
 
-batch_file_template = "batch_{id}.h5"
-hijack_cache = {}
-gateway = JavaGateway()
+    print("Deeplearning4j backend installed to model instance")
+    print("Please check main stdout for DL4J operation output")
 
 
 def generate_tmp_path():
@@ -143,6 +152,7 @@ def check_dl4j_model(
         modelType = None
 
         if self.__class__.__name__ == 'Sequential':
+            print("New Sequential instance detected, backing with DL4J MultiLayerNetwork...")
             modelType = gateway.jvm.org.deeplearning4j.keras.model.KerasModelType.SEQUENTIAL
             params_builder = gateway.jvm.org.deeplearning4j.keras.api.KerasModelRef.builder()
             params_builder.type(modelType)
@@ -152,6 +162,7 @@ def check_dl4j_model(
             self._dl4j_type = modelType
 
         elif self.__class__.__name__ == 'Model':
+            print("New Model instance detected, backing with DL4J ComputationGraph...")
             modelType = gateway.jvm.org.deeplearning4j.keras.model.KerasModelType.FUNCTIONAL
             params_builder = gateway.jvm.org.deeplearning4j.keras.api.KerasModelRef.builder()
             params_builder.type(modelType)
@@ -214,6 +225,8 @@ def _sequential_fit(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
+    print("Performing fit() operation...")
+
     training_x = None
     training_y = None
     validation_x = None
@@ -247,8 +260,6 @@ def _sequential_fit(
         training_x = dump_ndarray(batch_size, x)
         training_y = dump_ndarray(batch_size, y)
 
-    # gateway = JavaGateway()
-
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.FitParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
     params_builder.nbEpoch(nb_epoch)
@@ -260,6 +271,8 @@ def _sequential_fit(
     params_builder.dimOrdering(K.image_dim_ordering())
     params_builder.doValidation(do_validation)
     gateway.sequentialFit(params_builder.build())
+
+    print("fit() operation complete")
 
 
 def _sequential_evaluate(
@@ -275,10 +288,10 @@ def _sequential_evaluate(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
+    print("Performing evaluate() operation...")
+
     features_directory = dump_ndarray(batch_size, x)
     labels_directory = dump_ndarray(batch_size, y)
-
-    # gateway = JavaGateway()
 
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.EvaluateParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
@@ -286,6 +299,8 @@ def _sequential_evaluate(
     params_builder.labelsDirectory(labels_directory)
     params_builder.batchSize(batch_size)
     gateway.sequentialEvaluate(params_builder.build())
+
+    print("evaluate() operation complete")
 
 
 def _sequential_predict(
@@ -299,16 +314,17 @@ def _sequential_predict(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
-    features_directory = dump_ndarray(batch_size, x)
+    print("Performing predict() operation...")
 
-    # gateway = JavaGateway()
+    features_directory = dump_ndarray(batch_size, x)
 
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.PredictParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
     params_builder.batchSize(batch_size)
     gateway.sequentialPredict(params_builder.build())
-    # TODO
+
+    print("predict() operation complete")
 
 
 def _sequential_predict_on_batch(
@@ -319,15 +335,16 @@ def _sequential_predict_on_batch(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
-    features_directory = dump_ndarray(len(x), x)
+    print("Performing predict_on_batch() operation...")
 
-    # gateway = JavaGateway()
+    features_directory = dump_ndarray(len(x), x)
 
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.PredictOnBatchParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
     gateway.sequentialPredictOnBatch(params_builder.build())
-    # TODO
+
+    print("predict_on_batch() operation complete")
 
 
 
@@ -377,6 +394,8 @@ def _functional_fit(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
+    print("Performing fit() operation...")
+
     training_x = None
     training_y = None
     validation_x = None
@@ -410,9 +429,6 @@ def _functional_fit(
         training_x = dump_ndarray(batch_size, x)
         training_y = dump_ndarray(batch_size, y)
 
-
-    # gateway = JavaGateway()
-
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.FitParams.builder()
     params_builder.functionalModel(self._dl4j_model)
     params_builder.nbEpoch(nb_epoch)
@@ -424,6 +440,8 @@ def _functional_fit(
     params_builder.dimOrdering(K.image_dim_ordering())
     params_builder.doValidation(do_validation)
     gateway.functionalFit(params_builder.build())
+
+    print("fit() operation complete")
 
 
 def _functional_evaluate(
@@ -438,9 +456,19 @@ def _functional_evaluate(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
+    print("Performing evaluate() operation...")
+
     features_directory = dump_ndarray(batch_size, x)
     labels_directory = dump_ndarray(batch_size, y)
-    # TODO
+
+    params_builder = gateway.jvm.org.deeplearning4j.keras.api.EvaluateParams.builder()
+    params_builder.functionalModel(self._dl4j_model)
+    params_builder.featuresDirectory(features_directory)
+    params_builder.labelsDirectory(labels_directory)
+    params_builder.batchSize(batch_size)
+    gateway.functionalEvaluate(params_builder.build())
+
+    print("evaluate() operation complete")
 
 
 def _functional_predict(
@@ -454,16 +482,17 @@ def _functional_predict(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
-    features_directory = dump_ndarray(batch_size, x)
+    print("Performing predict() operation...")
 
-    # gateway = JavaGateway()
+    features_directory = dump_ndarray(batch_size, x)
 
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.PredictParams.builder()
     params_builder.functionalModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
     params_builder.batchSize(batch_size)
     gateway.functionalPredict(params_builder.build())
-    # TODO
+
+    print("predict() operation complete")
 
 
 def _functional_predict_on_batch(
@@ -474,6 +503,8 @@ def _functional_predict_on_batch(
     """
     check_dl4j_model(self) # enforces dl4j model for model.fn()
 
+    print("Performing predict_on_batch() operation...")
+
     features_directory = dump_ndarray(len(x), x)
 
     # gateway = JavaGateway()
@@ -482,7 +513,8 @@ def _functional_predict_on_batch(
     params_builder.functionalModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
     gateway.functionalPredictOnBatch(params_builder.build())
-    # TODO
+
+    print("predict_on_batch() operation complete")
 
 
 
@@ -502,10 +534,13 @@ def _save_model(
     """
 
     if useLegacySave:
+        print("Saving model using legacy methods...")
         self._old_save(filepath,overwrite)
 
     else:
         check_dl4j_model(self) # enforces dl4j model for model.fn()
+
+        print("Performing save() operation...")
 
         if model.__class__.__name__ == 'Sequential':
             params_builder = gateway.jvm.org.deeplearning4j.keras.api.SaveParams.builder()
@@ -523,3 +558,5 @@ def _save_model(
 
         else:
             raise ValueError('DL4J Keras only works with Sequential and Functional models')
+
+    print("save() operation complete")

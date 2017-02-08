@@ -22,6 +22,6 @@ public class Server {
 
         GatewayServer gatewayServer = new GatewayServer(new DeepLearning4jEntryPoint());
         gatewayServer.start();
-        log.info("DeepLearning4j Gateway server running");
+        log.info("\n\nDeepLearning4j Gateway server running\n\n");
     }
 }
