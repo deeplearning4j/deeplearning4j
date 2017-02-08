@@ -321,4 +321,16 @@
 "title": "神经网络与回归",
 "description": "总体而言，神经网络的用途包括无监督学习、分类和回归。具体来说，这些用途分别指将未标记的数据聚类、判定数据的类别以及在有监督定型后对连续值进行预测。",
 "tags": ["回归", "regression", "神经网络", "示例", "教程"]
+},
+{
+"url": "https://deeplearning4j.org/cn/features",
+"title": "功能",
+"description": "以下是Deeplearning4j功能的不完全列表。我们会不断添加新推出的网络类型和工具。",
+"tags": ["spark", "hadoop", "yarn", "keras", "scala", "java", "概述", "简介", "功能"]
+},
+{
+"url": "httpshttps://deeplearning4j.org/cn/compgraph",
+"title": "用计算图构建复杂的网络架构",
+"description": "本页主要介绍如何用DL4J的计算图（Computation Graph）功能来构建更加复杂的网络。",
+"tags": ["计算图", "computation graph", "preprocessor", "示例", "RecordReaderMultiDataSetIterato"]
 }]
