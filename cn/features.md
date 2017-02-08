@@ -1,103 +1,104 @@
 ---
-title: Deeplearning4j's Features
+title: Deeplearning4j的功能
 layout: cn-default
 ---
 
-# Features
+# 功能
 
-Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it as new nets and tools are added. 
+以下是Deeplearning4j功能的不完全列表。我们会不断添加新推出的网络类型和工具。 
 
-### Integrations
+### 集成
 
 * Spark
 * Hadoop/YARN
-* Model Import from Keras
+* 导入Keras模型
 
-### APIs
+### API
 
 * Scala
 * Java 
 
 
-### Libraries
+### 库
 
-* [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
-* [libND4J: Native CPU/GPU operations for ND4J](https://github.com/deeplearning4j/libnd4j)
-* [DataVec: Data preperation for DL4J](https://github.com/deeplearning4j/DataVec)
-* [DeepLEarning4J:](https://github.com/deeplearning4j/deeplearning4j)
+* [ND4J：面向JVM的N维数组](http://nd4j.org)
+* [libND4J：ND4J的原生CPU/GPU操作](https://github.com/deeplearning4j/libnd4j)
+* [DataVec：DL4J的数据准备](https://github.com/deeplearning4j/DataVec)
+* [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
-### Nets
+### 网络类型
 
-* [Restricted Boltzmann machines](./restrictedboltzmannmachine.html)
-* [Convolutional nets](./convolutionalnets.html)
-* [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
-* [Recurrent nets: Long Short-Term Memory (LSTM)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java) (including bi-directional LSTMs)
-* [Deep-belief networks](./deepbeliefnetwork.html)
-* [Denoising and Stacked Denoising autoencoders](./denoisingautoencoder.html)
-* [Deep autoencoders](./deepautoencoder.html)
+* [受限玻尔兹曼机](./restrictedboltzmannmachine.html)
+* [卷积网络](./convolutionalnets.html)
+* [递归自动编码器](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
+* [循环网络：长短期记忆（LSTM）](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java)（包括双向LSTM）
+* [深度置信网络](./deepbeliefnetwork.html)
+* [降噪及堆叠式降噪自动编码器](./denoisingautoencoder.html)
+* [深度自动编码器](./deepautoencoder.html)
 
-Since Deeplearning4j is a composable framework, users can arrange shallow nets to create various types of deeper nets. Combining convolutional nets with recurrent nets, for example, is how Google accurately generated captions from images in late 2014.
+Deeplearning4j是一个可组合的框架，用户可以将浅层网络自行组合成不同类型的深度网络。比如，2014年晚些时候，谷歌将卷积网络和循环网络结合，组成了能够准确生成图像描述的神经网络。
 
-### Tools
+### 工具
 
-DL4J contains the following built-in vectorization algorithms:
+DL4J包含下列内置向量化算法：
 
-* [DataVec: The Rosetta Stone of Vectorization](https://github.com/deeplearning4j/DataVec)
-* Moving-window for images
-* Moving-window for text 
-* Viterbi for sequential classification
+* [DataVec：数据向量化的“罗塞塔石碑”](https://github.com/deeplearning4j/DataVec)
+* 用于图像的移动窗口
+* 用于文本的移动窗口 
+* 用于序列分类的Viterbi算法
 * [Word2Vec](./word2vec.html)
-* [Bag-of-Words encoding for word count and TF-IDF](./bagofwords-tf-idf.html)
-* [Doc2Vec for Paragraph Vectors](https://deeplearning4j.org/doc2vec)
-* Constituency parsing
+* [词数统计和TF-IDF的词袋编码](./bagofwords-tf-idf.html)
+* [Doc2Vec与段向量](https://deeplearning4j.org/doc2vec)
+* 语法成分解析
 * [DeepWalk](http://arxiv.org/abs/1403.6652)
 
-DL4J supports the following type of optimization algorithms:
+DL4J支持下列优化算法：
 
-* Stochastic gradient descent
-* Stochastic gradient descent with line search
-* Conjugate gradient line search (c.f. [Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf))
+* 随机梯度下降
+* 带线搜索的随机梯度下降
+* 共轭梯度线搜索（参见[Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf)）
 * L-BFGS
 
-Each of these optimization algorithms may be paired with training features (known as 'updaters' in DL4J) such as:
+上述每种优化算法均可与下列定型功能（DL4J称之为“更新器”）搭配使用：
 
-* SGD (learning rate only)
-* Nesterovs momentum
+* SGD（仅与学习速率相关）
+* Nesterov动量
 * Adagrad
 * RMSProp
 * Adam
 * AdaDelta
 
-### Hyperparameters
+### 超参数
 
-* Dropout (random ommission of feature detectors to prevent overfitting)
-* Sparsity (force activations of sparse/rare inputs)
-* Adagrad (feature-specific learning-rate optimization)
-* L1 and L2 regularization (weight decay)
-* Weight transforms (useful for deep autoencoders)
-* Probability distribution manipulation for initial weight generation
-* Gradient normalization and clipping
+* 丢弃法（dropout，随机省略特征检测器来防止过拟合）
+* 稀疏性（sparsity，稀疏/罕见输入的强制激活）
+* Adagrad（针对具体特征的学习速率优化）
+* L1和L2正则化（权重衰减）
+* 权重变换（用于深度自动编码器）
+* 初始权重生成的概率分布操控
+* 梯度标准化与裁剪
 
-### Loss/objective functions
+### 损失/目标函数
 
-* Reconstruction entropy
-* Squared loss
-* Mean squared error
-* Multi-class cross entropy for classification
-* Negative log likelihood
-* RMSE_XENT
+* MSE：均方差：线性回归
+* EXPLL：指数型对数似然函数：泊松回归
+* XENT：叉熵二元分类
+* MCXENT：多类别叉熵
+* RMSE_XENT：RMSE叉熵
+* SQUARED_LOSS：平方损失
+* NEGATIVELOGLIKELIHOOD：负对数似然函数
 
-### Activation functions 
+### 激活函数 
 
-Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
+ND4J中定义的激活函数参见[此处](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
 
-* ReLU
-* Leaky ReLU
+* ReLU（修正线性激活函数）
+* 带泄露的ReLU
 * Tanh
 * Sigmoid
 * Hard Tanh
 * Softmax
-* Identity
-* [ELU](http://arxiv.org/abs/1511.07289): Exponential Linear Units
+* 恒等函数
+* [ELU](http://arxiv.org/abs/1511.07289)：指数型线性单元
 * Softsign
 * Softplus
