@@ -18,12 +18,7 @@ public class Server {
 
     public static void main(String[] args) {
 
-        try {
-            Nd4j.create(1); // ensures ND4J is on classpath
-        } catch (Throwable e) {
-            log.error("Failed to start DL4J gateway.", e);
-            System.exit(1);
-        }
+        Nd4j.create(1); // ensures ND4J is on classpath
 
         GatewayServer gatewayServer = new GatewayServer(new DeepLearning4jEntryPoint());
         gatewayServer.start();
