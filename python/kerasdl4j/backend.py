@@ -8,9 +8,9 @@ from keras import backend as K
 from os import path, mkdir
 from py4j.java_gateway import JavaGateway
 
-from models import *
-from functional import *
-from sequential import *
+from kerasdl4j.models import *
+from kerasdl4j.functional import *
+from kerasdl4j.sequential import *
 
 
 def install_dl4j_backend(model):

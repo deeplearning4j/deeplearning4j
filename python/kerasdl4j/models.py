@@ -8,7 +8,7 @@ from keras import backend as K
 from os import path, mkdir
 from py4j.java_gateway import JavaGateway
 
-from common import *
+from kerasdl4j.common import *
 
 ########
 # for any Model/Sequential instances
