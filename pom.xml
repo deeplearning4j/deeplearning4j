@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.deeplearning4j</groupId>
-  <artifactId>scalnet_2.10</artifactId>
+  <artifactId>scalnet_2.11</artifactId>
   <version>0.7.3-SNAPSHOT</version>
 
   <name>ScalNet</name>
@@ -51,8 +51,8 @@
     <scala211.version>2.11.8</scala211.version>
     <scala211.binary.version>2.11</scala211.binary.version>
 
-    <scala.binary.version>2.10</scala.binary.version>
-    <scala.version>2.10.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+    <scala.version>2.11.8</scala.version>
     <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
     <dl4j.version>0.7.3-SNAPSHOT</dl4j.version>
     <slf4j.version>1.7.21</slf4j.version>
