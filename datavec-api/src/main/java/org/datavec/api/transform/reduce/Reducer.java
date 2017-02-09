@@ -232,6 +232,7 @@ public class Reducer implements IReducer {
                 ColumnReduction reduction = customReductions.get(colName);
                 Writable reducedColumn = reduction.reduceColumn(tempColumnValues);
                 out.add(reducedColumn);
+                tempColumnValues.clear();
                 continue;
             }
 
