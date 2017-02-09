@@ -585,7 +585,7 @@ public class KerasLayer {
                 case INIT_ORTHOGONAL: // does not map to existing Dl4J initializer
                 case INIT_LECUN_UNIFORM: // does not map to existing Dl4J initializer
                 default:
-                    throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + init);
+                    throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer \"" + kerasInit + "\"");
             }
         }
         return init;
