@@ -8,6 +8,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -30,12 +31,14 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
     private final int batchesCount;
     private int currentIdx;
     private DataSetPreProcessor preProcessor;
+    private int numLabels;
 
 
     public HDF5MiniBatchDataSetIterator(String trainFeaturesDirectory) {
         this.trainFeaturesDirectory = new File(trainFeaturesDirectory);
         this.trainLabelsDirectory = null;
         this.batchesCount = this.trainFeaturesDirectory.list().length;
+        this.numLabels = -1;
     }
 
 
@@ -43,6 +46,12 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
         this.trainFeaturesDirectory = new File(trainFeaturesDirectory);
         this.trainLabelsDirectory = new File(trainLabelsDirectory);
         this.batchesCount = this.trainFeaturesDirectory.list().length;
+
+        // infer classes from labels
+        String batchFileName = fileNameForIdx(0);
+        INDArray labels = ndArrayHDF5Reader.readFromPath(
+            Paths.get(this.trainLabelsDirectory.getAbsolutePath(), batchFileName));
+        this.numLabels = labels.size(-1);
     }
 
     @Override
@@ -159,7 +168,20 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public List<String> getLabels() {
-        throw new UnsupportedOperationException();
+        if(numLabels > 0) {
+            // generated on-the-fly using known labels dimensions
+            List<String> ret = new LinkedList<>();
+
+            for(int i = 0; i < numLabels; i++) {
+                ret.add(Integer.toString(i));
+            }
+
+            return ret;
+
+        } else {
+            throw new IllegalStateException("Number of labels is unknown");
+        }
+
     }
 
     @Override
