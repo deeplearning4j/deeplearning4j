@@ -112,6 +112,7 @@ public class MnistFetcher {
 		} else {
 			throw new IOException("Could not download " + url.getPath() + "\n properly despite trying " + maxTries + " times, check your connection.");
 		}
+		if (!isCorrectFile) tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
 	}
 
 	private boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
