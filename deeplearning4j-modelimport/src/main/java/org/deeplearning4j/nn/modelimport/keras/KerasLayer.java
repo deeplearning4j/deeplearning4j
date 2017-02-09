@@ -134,6 +134,8 @@ public class KerasLayer {
     public static final String KERAS_LOSS_KLD = "kld";
     public static final String KERAS_LOSS_POISSON  = "poisson";
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
+    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
+    public static final String LAYER_FIELD_LAYER = "layer";
 
     /* Keras backends store convolutional inputs and weights
      * in tensors with different dimension orders.
@@ -180,6 +182,11 @@ public class KerasLayer {
     public static KerasLayer getKerasLayerFromConfig(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String layerClassName = getClassNameFromConfig(layerConfig);
+        if (layerClassName.equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED)) {
+            layerConfig = getTimeDistributedLayerConfig(layerConfig);
+            layerClassName = getClassNameFromConfig(layerConfig);
+        }
+
         KerasLayer layer = null;
         switch (layerClassName) {
             case LAYER_CLASS_NAME_ACTIVATION:
@@ -690,6 +697,31 @@ public class KerasLayer {
         if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
             throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
         return (String)layerConfig.get(LAYER_FIELD_CLASS_NAME);
+    }
+
+    /**
+     * Extract inner layer config from TimeDistributed configuration and merge
+     * it into the outer config.
+     *
+     * @param layerConfig       dictionary containing Keras TimeDistributed configuration
+     * @return
+     * @throws InvalidKerasConfigurationException
+     */
+    public static Map<String,Object> getTimeDistributedLayerConfig(Map<String,Object> layerConfig) throws InvalidKerasConfigurationException {
+        if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
+            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
+        if (!layerConfig.get(LAYER_FIELD_CLASS_NAME).equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED))
+            throw new InvalidKerasConfigurationException("Expected " + LAYER_CLASS_NAME_TIME_DISTRIBUTED + " layer, found " + (String)layerConfig.get(LAYER_FIELD_CLASS_NAME));
+        if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
+            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
+        Map<String,Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String,Object> innerLayer = (Map<String,Object>)outerConfig.get(LAYER_FIELD_LAYER);
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
+        layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
+        Map<String,Object> innerConfig = (Map<String,Object>)getInnerLayerConfigFromConfig(innerLayer);
+        outerConfig.putAll(innerConfig);
+        outerConfig.remove(LAYER_FIELD_LAYER);
+        return layerConfig;
     }
 
     /**
