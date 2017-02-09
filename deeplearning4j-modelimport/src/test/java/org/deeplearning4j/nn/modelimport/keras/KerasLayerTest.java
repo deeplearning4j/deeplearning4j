@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -33,7 +34,7 @@ public class KerasLayerTest {
     public static final double DROPOUT_DL4J = 1-DROPOUT_KERAS;
     public static final int[] KERNEL_SIZE = new int[]{1, 2};
     public static final int[] STRIDE = new int[]{3, 4};
-    public static final SubsamplingLayer.PoolingType POOLING_TYPE = SubsamplingLayer.PoolingType.MAX;
+    public static final PoolingType POOLING_TYPE = PoolingType.MAX;
     public static final double LSTM_FORGET_BIAS_DOUBLE = 1.0;
     public static final String LSTM_FORGET_BIAS_STR = "one";
     public static final boolean LSTM_UNROLL = true;
