@@ -53,6 +53,9 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
     public static final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
     public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
@@ -217,8 +220,12 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_FLATTEN:
                 layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
                 break;
+            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
+            case LAYER_CLASS_NAME_ZERO_PADDING_2D:
+            case LAYER_CLASS_NAME_ZERO_PADDING_3D:
+                throw new UnsupportedKerasConfigurationException("Zero padding layers currently not supported. Consider using \"border_mode='same'\" instead");
             default:
-                throw new InvalidKerasConfigurationException("Unsupported keras layer type " + layerClassName);
+                throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
         }
         return layer;
     }
