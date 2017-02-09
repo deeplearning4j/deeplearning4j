@@ -364,7 +364,7 @@ def _functional_compile(
     Configures the model for training.
     """
     # first call the old compile() method
-    self._old_compile(optimizer, loss, metrics, loss_weights, sample_weight_mode, kwargs)
+    self._old_compile(optimizer, loss, metrics, loss_weights, sample_weight_mode)
 
     # then convert to DL4J instance
     check_dl4j_model(self) # enforces dl4j model for model.fn()
