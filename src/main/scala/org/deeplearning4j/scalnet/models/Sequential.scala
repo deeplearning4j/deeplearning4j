@@ -65,8 +65,6 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     layer match {
       case l: Preprocessor =>
         preprocessors = preprocessors + (layers.length -> layer)
-      case _: Convolution =>
-        layers = layers :+ layer
       case _ =>
         layers = layers :+ layer
     }
