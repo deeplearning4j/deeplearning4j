@@ -409,13 +409,12 @@ public class TestUpdaters {
         uArr[0] = new LayerUpdater();
         uArr[1] = new LayerUpdater();
         uArr[2] = new LayerUpdater();
-        int updaterStateSize = uArr[2].stateSizeForLayer(net.getLayer(2));
-        INDArray updaterState = Nd4j.create(1, updaterStateSize);
+        INDArray updaterState = Nd4j.create(1,6*7 + 7, 'f');
         uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
 
         uArr[3] = new LayerUpdater();
-        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
-        updaterState = Nd4j.create(1, updaterStateSize);
+//        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
+        updaterState = Nd4j.create(1,7*8+8, 'f');
         uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
 
         int[] nIns = {4, 5, 6, 7};
@@ -427,7 +426,7 @@ public class TestUpdaters {
 
             for (int j = 0; j < net.getnLayers(); j++) {
                 //Generate test gradient:
-                INDArray wGrad = Nd4j.rand(1, nIns[j]*nOuts[j]);
+                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
                 INDArray bGrad = Nd4j.rand(1, nOuts[j]);
 
                 String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;

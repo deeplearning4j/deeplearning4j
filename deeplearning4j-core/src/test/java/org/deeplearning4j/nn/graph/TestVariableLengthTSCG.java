@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -139,9 +140,9 @@ public class TestVariableLengthTSCG {
                     .seed(12345)
                     .graphBuilder()
                     .addInputs("in")
-                    .addLayer("0", new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build(), "in")
-                    .addLayer("1", new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build(), "0")
-                    .addLayer("2", new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build(), "1")
+                    .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "in")
+                    .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "0")
+                    .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "1")
                     .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build(),"2")
                     .setOutputs("3")
                     .inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
