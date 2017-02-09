@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VocabConstructor<T extends SequenceElement> {
     private List<VocabSource<T>> sources = new ArrayList<>();
     private VocabCache<T> cache;
-    private List<String> stopWords;
+    private Collection<String> stopWords;
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
     private int limit;
@@ -373,7 +373,7 @@ public class VocabConstructor<T extends SequenceElement> {
     public static class Builder<T extends SequenceElement> {
         private List<VocabSource<T>> sources = new ArrayList<>();
         private VocabCache<T> cache;
-        private List<String> stopWords = new ArrayList<>();
+        private Collection<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
         private InvertedIndex<T> index;
@@ -449,7 +449,7 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 */
-        public Builder<T> setStopWords(@NonNull List<String> stopWords) {
+        public Builder<T> setStopWords(@NonNull Collection<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }

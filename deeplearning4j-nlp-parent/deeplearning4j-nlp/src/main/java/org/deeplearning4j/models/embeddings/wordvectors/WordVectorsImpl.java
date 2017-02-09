@@ -88,7 +88,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public final static String DEFAULT_UNK = "UNK";
     @Getter @Setter private String UNK = DEFAULT_UNK;
 
-    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+    @Getter protected Collection<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for
