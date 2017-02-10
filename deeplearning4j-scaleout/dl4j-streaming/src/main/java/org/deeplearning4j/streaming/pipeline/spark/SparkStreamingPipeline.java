@@ -71,6 +71,6 @@ public class SparkStreamingPipeline extends BaseKafkaPipeline<JavaDStream<DataSe
     @Override
     public void startStreamingConsumption(long timeout) {
         jssc.start();
-        StreamingContextUtils.awaitTermination(jssc, timeout);
+        awaitTermination(jssc, timeout);
     }
 }
