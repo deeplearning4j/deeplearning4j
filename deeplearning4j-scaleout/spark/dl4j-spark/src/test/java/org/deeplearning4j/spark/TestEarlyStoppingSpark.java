@@ -270,7 +270,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         @Override
         public void onCompletion(EarlyStoppingResult esResult) {
-            log.info("EorlyStopping: onCompletion called (result: {})",esResult);
+            log.info("EarlyStopping: onCompletion called (result: {})",esResult);
             onCompletionCallCount++;
         }
     }
