@@ -33,6 +33,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
@@ -118,7 +119,7 @@ public class NeuralNetConfigurationTest {
                 .weightInit(WeightInit.UNIFORM)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .build();
 
@@ -141,7 +142,7 @@ public class NeuralNetConfigurationTest {
                 .weightInit(WeightInit.UNIFORM)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .build();
         NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
@@ -245,7 +246,7 @@ public class NeuralNetConfigurationTest {
                 .weightInit(weightInit).dist(new NormalDistribution(1, 1))
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                 .build();
 

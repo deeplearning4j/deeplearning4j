@@ -667,6 +667,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * Typical values include:<br>
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         * @deprecated Use {@link #activation(Activation)} or
+         * {@link @activation(IActivation)}
          */
         @Deprecated
         public Builder activation(String activationFunction) {

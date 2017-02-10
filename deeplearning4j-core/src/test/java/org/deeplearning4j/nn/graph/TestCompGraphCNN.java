@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -172,7 +173,7 @@ public class TestCompGraphCNN {
                         .nIn(nChannels)
                         .nOut(2)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build(), "input")
                 .addLayer("pool1", new SubsamplingLayer.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
@@ -227,7 +228,7 @@ public class TestCompGraphCNN {
                         .nIn(nChannels)
                         .nOut(1) // check if it can take 1 nOut only
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build(), "input")
                 .addLayer("pool1", new SubsamplingLayer.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)

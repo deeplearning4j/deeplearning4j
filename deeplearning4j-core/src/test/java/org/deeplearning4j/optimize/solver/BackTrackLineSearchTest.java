@@ -16,6 +16,7 @@ import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -53,7 +54,7 @@ public class BackTrackLineSearchTest {
 
     @Test
     public void testSingleMinLineSearch() throws Exception {
-        OutputLayer layer = getIrisLogisticLayerConfig("softmax", 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1,nParams));
         layer.setInput(irisData.getFeatureMatrix());
@@ -70,7 +71,7 @@ public class BackTrackLineSearchTest {
     public void testSingleMaxLineSearch() throws Exception {
         double score1, score2;
 
-        OutputLayer layer = getIrisLogisticLayerConfig("softmax", 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1,nParams));
         layer.setInput(irisData.getFeatureMatrix());
@@ -89,7 +90,7 @@ public class BackTrackLineSearchTest {
     public void testMultMinLineSearch() throws Exception {
         double score1, score2;
 
-        OutputLayer layer = getIrisLogisticLayerConfig("softmax", 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1,nParams));
         layer.setInput(irisData.getFeatureMatrix());
@@ -117,7 +118,7 @@ public class BackTrackLineSearchTest {
         double score1, score2;
 
         irisData.normalizeZeroMeanZeroUnitVariance();
-        OutputLayer layer = getIrisLogisticLayerConfig("softmax", 100, LossFunctions.LossFunction.MCXENT);
+        OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1,nParams));
         layer.setInput(irisData.getFeatureMatrix());
@@ -139,7 +140,7 @@ public class BackTrackLineSearchTest {
         assertTrue("score1 = " + score1 + ", score2 = " + score2, score1 < score2);
     }
 
-    private static OutputLayer getIrisLogisticLayerConfig(String activationFunction, int maxIterations, LossFunctions.LossFunction lossFunction){
+    private static OutputLayer getIrisLogisticLayerConfig(Activation activationFunction, int maxIterations, LossFunctions.LossFunction lossFunction){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345L)
                 .iterations(1)
@@ -167,7 +168,7 @@ public class BackTrackLineSearchTest {
         DataSetIterator irisIter = new IrisDataSetIterator(1,1);
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 100, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, 100, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -183,7 +184,7 @@ public class BackTrackLineSearchTest {
 
         DataSet data = irisIter.next();
         data.normalizeZeroMeanZeroUnitVariance();
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("relu", 5, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 5, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -200,7 +201,7 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
         data.normalizeZeroMeanZeroUnitVariance();
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("relu", 5, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 5, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -217,7 +218,7 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("relu", 100, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 100, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -227,7 +228,7 @@ public class BackTrackLineSearchTest {
 
 
 
-    private static MultiLayerConfiguration getIrisMultiLayerConfig(String activationFunction, int iterations,  OptimizationAlgorithm optimizer) {
+    private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, int iterations,  OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(optimizer)
                 .iterations(iterations)
@@ -244,7 +245,7 @@ public class BackTrackLineSearchTest {
                         .nIn(100)
                         .nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build()).backprop(true)
                 .build();
 

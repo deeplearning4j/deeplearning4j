@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -208,7 +209,7 @@ public class SubsamplingLayerTest {
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .seed(123)
                 .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2})
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .build();
 
@@ -261,7 +262,7 @@ public class SubsamplingLayerTest {
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(kernelHeight, kernelWidth)
                         .stride(1,1)
                         .nOut(2)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder()
@@ -272,7 +273,7 @@ public class SubsamplingLayerTest {
                 .layer(2, new OutputLayer.Builder()
                         .nOut(classes)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
         new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);

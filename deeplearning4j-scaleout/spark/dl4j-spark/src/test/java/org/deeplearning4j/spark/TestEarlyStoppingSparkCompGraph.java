@@ -45,6 +45,7 @@ import org.deeplearning4j.spark.earlystopping.SparkLossCalculatorComputationGrap
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -123,7 +124,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation("identity").lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
+                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
                 .setOutputs("0")
                 .pretrain(false).backprop(true)
                 .build();

@@ -21,6 +21,7 @@ import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -55,8 +56,8 @@ public class TestPlayUI {
 //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
 //                .list()
-//                .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
-//                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
+//                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+//                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
 //                .pretrain(false).backprop(true).build();
 //
 //        MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -97,7 +98,7 @@ public class TestPlayUI {
                         .weightInit(WeightInit.XAVIER)
                         .pzxActivationFunction("identity")
                         .reconstructionDistribution(new GaussianReconstructionDistribution())
-                        .activation("leakyrelu")
+                        .activation(Activation.LEAKYRELU)
                         .updater(Updater.SGD)
                         .build())
                 .layer(1, new VariationalAutoencoder.Builder()
@@ -107,7 +108,7 @@ public class TestPlayUI {
                         .weightInit(WeightInit.XAVIER)
                         .pzxActivationFunction("identity")
                         .reconstructionDistribution(new GaussianReconstructionDistribution())
-                        .activation("leakyrelu")
+                        .activation(Activation.LEAKYRELU)
                         .updater(Updater.SGD)
                         .build())
                 .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
@@ -177,8 +178,8 @@ public class TestPlayUI {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                     .list()
-                    .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
-                    .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
+                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                    .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
                     .pretrain(false).backprop(true).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -209,8 +210,8 @@ public class TestPlayUI {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("L0", new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build(), "in")
-                .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build(), "L0")
+                .addLayer("L0", new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build(), "in")
+                .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build(), "L0")
                 .pretrain(false).backprop(true)
                 .setOutputs("L1")
                 .build();

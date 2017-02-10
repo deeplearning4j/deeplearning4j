@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -30,7 +31,7 @@ public class EmbeddingLayerTest {
     public void testEmbeddingLayerConfig() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new EmbeddingLayer.Builder().nIn(10).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build())
@@ -60,14 +61,14 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build())
@@ -109,18 +110,18 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4).activation("softmax").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4).activation("softmax").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .pretrain(false).backprop(true)
                 .build();
 
@@ -172,22 +173,22 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .list()
                 .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation("softsign").build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4).activation("softmax").build())
+                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4).activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation("softsign").build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4).activation("softmax").build())
+                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4).activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                 .pretrain(false).backprop(true)
@@ -260,9 +261,9 @@ public class EmbeddingLayerTest {
                     .learningRate(0.1)
                     .seed(12345)
                     .list()
-                    .layer(0, new EmbeddingLayer.Builder().activation("tanh").nIn(numInputClasses).nOut(5).build())
-                    .layer(1, new DenseLayer.Builder().activation("tanh").nIn(5).nOut(4).build())
-                    .layer(2, new GravesLSTM.Builder().activation("tanh").nIn(4).nOut(3).build())
+                    .layer(0, new EmbeddingLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5).build())
+                    .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
+                    .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                     .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build())
                     .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                     .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
@@ -277,9 +278,9 @@ public class EmbeddingLayerTest {
                     .learningRate(0.1)
                     .seed(12345)
                     .list()
-                    .layer(0, new DenseLayer.Builder().activation("tanh").nIn(numInputClasses).nOut(5).build())
-                    .layer(1, new DenseLayer.Builder().activation("tanh").nIn(5).nOut(4).build())
-                    .layer(2, new GravesLSTM.Builder().activation("tanh").nIn(4).nOut(3).build())
+                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5).build())
+                    .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
+                    .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                     .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3).nOut(4).build())
                     .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                     .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
