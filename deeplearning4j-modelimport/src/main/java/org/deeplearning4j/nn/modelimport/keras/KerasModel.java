@@ -590,7 +590,7 @@ public class KerasModel {
             layersFromModel = ((ComputationGraph)model).getLayers();
 
         /* Iterate over layers in model, setting weights when relevant. */
-        Set<String> layerNames = new HashSet<String>(this.layers.keySet());
+        Set<String> layerNames = new HashSet<>(this.layers.keySet());
         for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
             String layerName = layer.conf().getLayer().getLayerName();
             if (!this.layers.containsKey(layerName))

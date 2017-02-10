@@ -13,11 +13,8 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -33,13 +30,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VocabConstructor<T extends SequenceElement> {
     private List<VocabSource<T>> sources = new ArrayList<>();
     private VocabCache<T> cache;
-    private List<String> stopWords;
+    private Collection<String> stopWords;
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
     private int limit;
     private AtomicLong seqCount = new AtomicLong(0);
     private InvertedIndex<T> index;
     private boolean enableScavenger = false;
+    private T unk;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -171,7 +169,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
-        final AtomicLong elementsCounter = new AtomicLong(0);
         final AtomicLong loopCounter = new AtomicLong(0);
 
         AbstractCache<T> topHolder = new AbstractCache.Builder<T>()
@@ -179,6 +176,14 @@ public class VocabConstructor<T extends SequenceElement> {
                 .build();
 
         int cnt = 0;
+        int numProc = Runtime.getRuntime().availableProcessors();
+        int numThreads = Math.max(numProc / 2, 2);
+        ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedTransferQueue<Runnable>());
+        final AtomicLong execCounter = new AtomicLong(0);
+        final AtomicLong finCounter = new AtomicLong(0);
+
         for(VocabSource<T> source: sources) {
             SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
@@ -189,63 +194,36 @@ public class VocabConstructor<T extends SequenceElement> {
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
 
+
+
+            List<Long> timesHasNext = new ArrayList<>();
+            List<Long> timesNext = new ArrayList<>();
             int sequences = 0;
-            long counter = 0;
+            long time3 = 0;
             while (iterator.hasMoreSequences()) {
+//                long time1 = System.nanoTime();
                 Sequence<T> document = iterator.nextSequence();
+//                long time2 = System.nanoTime();
+
                 seqCount.incrementAndGet();
                 parsedCount.addAndGet(document.size());
-
                 tempHolder.incrementTotalDocCount();
+                execCounter.incrementAndGet();
+                VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
 
-                Map<String, AtomicLong> seqMap = new HashMap<>();
-              //  log.info("Sequence length: ["+ document.getElements().size()+"]");
+                executorService.submit(runnable);
 
-                if (fetchLabels) {
-                    T labelWord = document.getSequenceLabel();
-                    labelWord.setSpecial(true);
-                    labelWord.markAsLabel(true);
-                    labelWord.setElementFrequency(1);
+                // as we see in profiler, this lock isn't really happen too often
+                // we don't want too much left in tail
 
-                    tempHolder.addToken(labelWord);
+                while (execCounter.get() - finCounter.get() > numProc) {
+                    try {
+                        Thread.sleep(2);
+                    } catch (Exception e) { }
                 }
 
-                List<String> tokens = document.asLabels();
-                for (String token: tokens) {
-                    if (stopWords !=null && stopWords.contains(token)) continue;
-                    if (token == null || token.isEmpty()) continue;
 
-                    if (!tempHolder.containsWord(token)) {
-                        T element = document.getElementByLabel(token);
-                        element.setElementFrequency(1);
-                        tempHolder.addToken(element);
-                        elementsCounter.incrementAndGet();
-                        loopCounter.incrementAndGet();
-                        counter++;
 
-                        // if there's no such element in tempHolder, it's safe to set seqCount to 1
-                        element.setSequencesCount(1);
-                        seqMap.put(token, new AtomicLong(0));
-                    } else {
-                        counter++;
-                        tempHolder.incrementWordCount(token);
-
-                        // if element exists in tempHolder, we should update it seqCount, but only once per sequence
-                        if (!seqMap.containsKey(token)) {
-                            seqMap.put(token, new AtomicLong(1));
-                            T element = tempHolder.wordFor(token);
-                            element.incrementSequencesCount();
-                        }
-
-                        if (index != null) {
-                            if (document.getSequenceLabel() != null) {
-                                index.addWordsToDoc(index.numDocuments(), document.getElements(), document.getSequenceLabel());
-                            } else {
-                                index.addWordsToDoc(index.numDocuments(),document.getElements());
-                            }
-                        }
-                    }
-                }
 
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
@@ -255,30 +233,58 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seconds = (currentTime - lastTime) / (double) 1000;
 
+//                    Collections.sort(timesHasNext);
+//                    Collections.sort(timesNext);
+
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
+//                    log.info("Document time: {} us; hasNext time: {} us", timesNext.get(timesNext.size() / 2), timesHasNext.get(timesHasNext.size() / 2));
                     log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
                     lastSequences = currentSequences;
+
+//                    timesHasNext.clear();
+//                    timesNext.clear();
                 }
 
                 /**
                  * Firing scavenger loop
                  */
-                if (enableScavenger && loopCounter.get() >= 1000000) {
-                    log.debug("Starting scavenger...");
-                    filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 3));
+                if (enableScavenger && loopCounter.get() >= 2000000 && tempHolder.numWords() > 10000000) {
+                    log.info("Starting scavenger...");
+                    while (execCounter.get() != finCounter.get()) {
+                        try {
+                            Thread.sleep(2);
+                        } catch (Exception e) { }
+                    }
+
+                    filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 2));
                     loopCounter.set(0);
                 }
+
+//                timesNext.add((time2 - time1) / 1000L);
+//                timesHasNext.add((time1 - time3) / 1000L);
+
+//                time3 = System.nanoTime();
             }
+
+            // block untill all threads are finished
+            log.debug("Wating till all processes stop...");
+            while (execCounter.get() != finCounter.get()) {
+                try {
+                    Thread.sleep(2);
+                } catch (Exception e) { }
+            }
+
+
             // apply minWordFrequency set for this source
-            log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
+            log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + seqCount.get()+ "], counter: ["+parsedCount.get()+"]");
             if (source.getMinWordFrequency() > 0) {
                 filterVocab(tempHolder, source.getMinWordFrequency());
             }
 
-            log.debug("Vocab size after truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
+            log.debug("Vocab size after truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + seqCount.get()+ "], counter: ["+parsedCount.get()+"]");
             // at this moment we're ready to transfer
             topHolder.importVocabulary(tempHolder);
         }
@@ -289,7 +295,22 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
 
+        System.gc();
+        System.gc();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            //
+        }
+
         cache.importVocabulary(topHolder);
+
+        // adding UNK word
+        if (unk != null) {
+            log.info("Adding UNK element to vocab...");
+            unk.setSpecial(true);
+            cache.addToken(unk);
+        }
 
         if (resetCounters) {
             for (T element: cache.vocabWords()) {
@@ -317,6 +338,15 @@ public class VocabConstructor<T extends SequenceElement> {
             }
         }
 
+        executorService.shutdown();
+
+        System.gc();
+        System.gc();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            //
+        }
         long endSequences = seqCount.get();
         long endTime = System.currentTimeMillis();
         double seconds = (endTime - startTime) / (double) 1000;
@@ -329,7 +359,7 @@ public class VocabConstructor<T extends SequenceElement> {
         int numWords = cache.numWords();
         LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
         for (T element : cache.vocabWords()) {
-            if (element.getElementFrequency() == 1 && !element.isSpecial() && !element.isLabel())
+            if (element.getElementFrequency() < minWordFrequency && !element.isSpecial() && !element.isLabel())
                 labelsToRemove.add(element.getLabel());
         }
 
@@ -343,12 +373,13 @@ public class VocabConstructor<T extends SequenceElement> {
     public static class Builder<T extends SequenceElement> {
         private List<VocabSource<T>> sources = new ArrayList<>();
         private VocabCache<T> cache;
-        private List<String> stopWords = new ArrayList<>();
+        private Collection<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
         private InvertedIndex<T> index;
         private int limit;
         private boolean enableScavenger = false;
+        private T unk;
 
         public Builder() {
 
@@ -418,7 +449,7 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 */
-        public Builder<T> setStopWords(@NonNull List<String> stopWords) {
+        public Builder<T> setStopWords(@NonNull Collection<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }
@@ -444,6 +475,11 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 
+        public Builder<T> setUnk(T unk) {
+            this.unk = unk;
+            return this;
+        }
+
         public VocabConstructor<T> build() {
             VocabConstructor<T> constructor = new VocabConstructor<>();
             constructor.sources = this.sources;
@@ -454,6 +490,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.limit = this.limit;
             constructor.index = this.index;
             constructor.enableScavenger = this.enableScavenger;
+            constructor.unk = this.unk;
 
             return constructor;
         }
@@ -463,5 +500,73 @@ public class VocabConstructor<T extends SequenceElement> {
     private static class VocabSource<T extends SequenceElement> {
         @NonNull private SequenceIterator<T> iterator;
         @NonNull private int minWordFrequency;
+    }
+
+
+    protected class VocabRunnable implements Runnable {
+        private final AtomicLong finalCounter;
+        private final Sequence<T> document;
+        private final AbstractCache<T> targetVocab;
+        private final AtomicLong loopCounter;
+
+        public VocabRunnable(@NonNull AbstractCache<T> targetVocab, @NonNull Sequence<T> sequence, @NonNull AtomicLong finalCounter, @NonNull AtomicLong loopCounter) {
+            this.finalCounter = finalCounter;
+            this.document = sequence;
+            this.targetVocab = targetVocab;
+            this.loopCounter = loopCounter;
+        }
+
+        @Override
+        public void run() {
+
+            Map<String, AtomicLong> seqMap = new HashMap<>();
+            //  log.info("Sequence length: ["+ document.getElements().size()+"]");
+
+            if (fetchLabels) {
+                T labelWord = document.getSequenceLabel();
+                labelWord.setSpecial(true);
+                labelWord.markAsLabel(true);
+                labelWord.setElementFrequency(1);
+
+                targetVocab.addToken(labelWord);
+            }
+
+            List<String> tokens = document.asLabels();
+            for (String token: tokens) {
+                if (stopWords !=null && stopWords.contains(token)) continue;
+                if (token == null || token.isEmpty()) continue;
+
+                if (!targetVocab.containsWord(token)) {
+                    T element = document.getElementByLabel(token);
+                    element.setElementFrequency(1);
+                    targetVocab.addToken(element);
+//                    elementsCounter.incrementAndGet();
+                    loopCounter.incrementAndGet();
+
+                    // if there's no such element in tempHolder, it's safe to set seqCount to 1
+                    element.setSequencesCount(1);
+                    seqMap.put(token, new AtomicLong(0));
+                } else {
+                    targetVocab.incrementWordCount(token);
+
+                    // if element exists in tempHolder, we should update it seqCount, but only once per sequence
+                    if (!seqMap.containsKey(token)) {
+                        seqMap.put(token, new AtomicLong(1));
+                        T element = targetVocab.wordFor(token);
+                        element.incrementSequencesCount();
+                    }
+
+                    if (index != null) {
+                        if (document.getSequenceLabel() != null) {
+                            index.addWordsToDoc(index.numDocuments(), document.getElements(), document.getSequenceLabel());
+                        } else {
+                            index.addWordsToDoc(index.numDocuments(),document.getElements());
+                        }
+                    }
+                }
+            }
+
+            finalCounter.incrementAndGet();
+        }
     }
 }

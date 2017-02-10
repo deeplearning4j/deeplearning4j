@@ -2,10 +2,12 @@ package org.deeplearning4j.text.documentiterator;
 
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.parallelism.ConcurrentHashSet;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -19,6 +21,7 @@ public class LabelsSource implements Serializable {
     private boolean useFormatter = false;
     private List<String> labels;
     private long maxCount = 0;
+    private Set<String> uniq = new ConcurrentHashSet<String>();
 
     public LabelsSource() {
 
@@ -55,6 +58,7 @@ public class LabelsSource implements Serializable {
      */
     public LabelsSource(@NonNull List<String> labels) {
         this.labels = new ArrayList<>(labels);
+        uniq.addAll(labels);
     }
 
     /**
@@ -96,10 +100,13 @@ public class LabelsSource implements Serializable {
      *
      * @param label
      */
-    public synchronized void storeLabel(String label) {
+    public void storeLabel(String label) {
         if (labels == null) labels = new ArrayList<>();
 
-        if (!labels.contains(label)) labels.add(label);
+        if (!uniq.contains(label)) {
+            uniq.add(label);
+            labels.add(label);
+        }
     }
 
     /**

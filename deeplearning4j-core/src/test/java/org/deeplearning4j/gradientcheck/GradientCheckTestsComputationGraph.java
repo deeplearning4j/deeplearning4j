@@ -3,8 +3,10 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
@@ -16,6 +18,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -678,8 +681,139 @@ public class GradientCheckTestsComputationGraph {
         boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{pos, anc, neg}, new INDArray[]{labels});
 
-        String msg = "testBasicIrisWithMerging()";
+        String msg = "testBasicIrisTripletStackingL2Loss()";
         assertTrue(msg,gradOK);
+    }
+
+
+    @Test
+    public void testBasicCenterLoss(){
+        Nd4j.getRandom().setSeed(12345);
+        int numLabels = 2;
+
+        boolean[] trainFirst = new boolean[]{false, true};
+
+        for(boolean train : trainFirst ) {
+            for(double lambda : new double[]{0.0, 0.5, 2.0}) {
+
+                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 1))
+                        .updater(Updater.NONE).learningRate(1.0)
+                        .graphBuilder()
+                        .addInputs("input1")
+                        .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input1")
+                        .addLayer("cl", new CenterLossOutputLayer.Builder()
+                                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                                .nIn(5).nOut(numLabels).alpha(1.0).lambda(lambda).gradientCheck(true)
+                                .activation(Activation.SOFTMAX).build(), "l1")
+                        .setOutputs("cl")
+                        .pretrain(false).backprop(true)
+                        .build();
+
+                ComputationGraph graph = new ComputationGraph(conf);
+                graph.init();
+
+                INDArray example = Nd4j.rand(150, 4);
+
+                INDArray labels = Nd4j.zeros(150, numLabels);
+                Random r = new Random(12345);
+                for (int i = 0; i < 150; i++) {
+                    labels.putScalar(i, r.nextInt(numLabels), 1.0);
+                }
+
+                if (train) {
+                    for (int i = 0; i < 10; i++) {
+                        INDArray f = Nd4j.rand(10, 4);
+                        INDArray l = Nd4j.zeros(10, numLabels);
+                        for (int j = 0; j < 10; j++) {
+                            l.putScalar(j, r.nextInt(numLabels), 1.0);
+                        }
+                        graph.fit(new INDArray[]{f}, new INDArray[]{l});
+                    }
+                }
+
+                String msg = "testBasicCenterLoss() - lambda = " + lambda + ", trainFirst = " + train;
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < graph.getNumLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{example}, new INDArray[]{labels});
+
+            assertTrue(msg, gradOK);
+            }
+        }
+    }
+
+    @Test
+    public void testCnnPoolCenterLoss(){
+        Nd4j.getRandom().setSeed(12345);
+        int numLabels = 2;
+
+        boolean[] trainFirst = new boolean[]{false, true};
+
+        int inputH = 5;
+        int inputW = 4;
+        int inputDepth = 3;
+
+        for(boolean train : trainFirst ) {
+            for(double lambda : new double[]{0.0, 0.5, 2.0}) {
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(false)
+                        .updater(Updater.NONE)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                        .seed(12345L)
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
+                        .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
+                        .layer(2, new CenterLossOutputLayer.Builder()
+                                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                                .nOut(numLabels).alpha(1.0).lambda(lambda).gradientCheck(true)
+                                .activation(Activation.SOFTMAX).build())
+                        .pretrain(false).backprop(true)
+                        .setInputType(InputType.convolutional(inputH, inputW, inputDepth))
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                INDArray example = Nd4j.rand(new int[]{150, inputDepth, inputH, inputW});
+
+                INDArray labels = Nd4j.zeros(150, numLabels);
+                Random r = new Random(12345);
+                for (int i = 0; i < 150; i++) {
+                    labels.putScalar(i, r.nextInt(numLabels), 1.0);
+                }
+
+                if (train) {
+                    for (int i = 0; i < 10; i++) {
+                        INDArray f = Nd4j.rand(new int[]{10, inputDepth, inputH, inputW});
+                        INDArray l = Nd4j.zeros(10, numLabels);
+                        for (int j = 0; j < 10; j++) {
+                            l.putScalar(j, r.nextInt(numLabels), 1.0);
+                        }
+                        net.fit(f, l);
+                    }
+                }
+
+                String msg = "testBasicCenterLoss() - trainFirst = " + train;
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < net.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, example, labels);
+
+                assertTrue(msg, gradOK);
+            }
+        }
     }
 
     @Test

@@ -150,7 +150,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         protected int minWordFrequency;
         protected VocabCache<VocabWord> vocabCache;
         protected LabelsSource labelsSource = new LabelsSource();
-        protected List<String> stopWords = new ArrayList<>();
+        protected Collection<String> stopWords = new ArrayList<>();
 
         public Builder() {
         }
@@ -186,7 +186,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         }
 
         public Builder setStopWords(Collection<String> stopWords) {
-
+        	this.stopWords = stopWords;
             return this;
         }
 
@@ -203,6 +203,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
             }
 
             vectorizer.vocabCache = this.vocabCache;
+            vectorizer.stopWords = this.stopWords;
 
             return vectorizer;
         }

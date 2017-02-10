@@ -124,6 +124,12 @@
             <version>${commonslang.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.10</version>
+        </dependency>
+
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
             <groupId>org.nd4j</groupId>

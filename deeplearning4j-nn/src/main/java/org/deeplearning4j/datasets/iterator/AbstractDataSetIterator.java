@@ -168,10 +168,14 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
 
     protected void fillQueue() {
         if (queue.isEmpty()) {
-            INDArray labels = null;
-            INDArray features = null;
-            List<INDArray> cLabels = new ArrayList<>();
-            List<INDArray> cFeatures = new ArrayList<>();
+            List<INDArray> ndLabels = null;
+            List<INDArray> ndFeatures = null;
+            float[][] fLabels = null;
+            float[][] fFeatures = null;
+            double[][] dLabels = null;
+            double[][] dFeatures = null;
+
+            int sampleCount = 0;
 
             for (int cnt = 0; cnt < batchSize; cnt++) {
                 if (iterator.hasNext()) {
@@ -190,21 +194,45 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
                         }
 
                         if (pair.getFirst() instanceof INDArray) {
-                            cFeatures.add(((INDArray) pair.getFirst()));
-                            cLabels.add(((INDArray) pair.getSecond()));
+                            if (ndLabels == null) {
+                                ndLabels = new ArrayList<>();
+                                ndFeatures = new ArrayList<>();
+                            }
+                            ndFeatures.add(((INDArray) pair.getFirst()));
+                            ndLabels.add(((INDArray) pair.getSecond()));
                         } else if (pair.getFirst() instanceof float[]) {
-                            cFeatures.add(Nd4j.create((float[]) pair.getFirst()));
-                            cLabels.add(Nd4j.create((float[]) pair.getSecond()));
+                            if (fLabels == null) {
+                                fLabels = new float[batchSize][];
+                                fFeatures = new float[batchSize][];
+                            }
+                            fFeatures[sampleCount] = (float[]) pair.getFirst();
+                            fLabels[sampleCount] = (float[]) pair.getSecond();
                         } else if (pair.getFirst() instanceof double[]) {
-                            cFeatures.add(Nd4j.create((double[]) pair.getFirst()));
-                            cLabels.add(Nd4j.create((double[]) pair.getSecond()));
+                            if (dLabels == null) {
+                                dLabels = new double[batchSize][];
+                                dFeatures = new double[batchSize][];
+                            }
+                            dFeatures[sampleCount] = (double[]) pair.getFirst();
+                            dLabels[sampleCount] = (double[]) pair.getSecond();
                         }
+
+                        sampleCount += 1;
                 } else break;
             }
 
-            if (cFeatures.size() == batchSize) {
-                features = Nd4j.vstack(cFeatures);
-                labels = Nd4j.vstack(cLabels);
+            if (sampleCount == batchSize) {
+                INDArray labels = null;
+                INDArray features = null;
+                if (ndLabels != null) {
+                    labels = Nd4j.vstack(ndLabels);
+                    features = Nd4j.vstack(ndFeatures);
+                } else if (fLabels != null) {
+                    labels = Nd4j.create(fLabels);
+                    features = Nd4j.create(fFeatures);
+                } else if (dLabels != null) {
+                    labels = Nd4j.create(dLabels);
+                    features = Nd4j.create(dFeatures);
+                }
 
                 DataSet dataSet = new DataSet(features, labels);
                 try {
