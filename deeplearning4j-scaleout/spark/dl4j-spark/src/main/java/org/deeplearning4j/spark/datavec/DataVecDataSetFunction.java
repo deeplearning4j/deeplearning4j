@@ -110,7 +110,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
-            //ndarray writable is an insane slow down herecd
+            //ndarray writable is an insane slow down here
             if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
                 continue;
 

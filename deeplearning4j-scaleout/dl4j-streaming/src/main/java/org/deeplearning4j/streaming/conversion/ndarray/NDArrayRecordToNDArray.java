@@ -12,7 +12,7 @@ import java.util.Collection;
  * of type @link{NDArrayWritable}
  *
  * It extracts the underlying arrays and returns a
- * concatneated array.
+ * concatenated array.
  *
  * @author Adam Gibson
  */

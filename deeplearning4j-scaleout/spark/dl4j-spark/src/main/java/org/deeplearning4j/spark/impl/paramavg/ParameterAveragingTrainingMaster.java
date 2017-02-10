@@ -497,7 +497,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         int origNumPartitions = trainingData.partitions().size();
         if (origNumPartitions >= COALESCE_THRESHOLD * numWorkers) {
-            log.info("Coalesing streams from {} to {} partitions", origNumPartitions, numWorkers);
+            log.info("Coalescing streams from {} to {} partitions", origNumPartitions, numWorkers);
             trainingData = trainingData.coalesce(numWorkers);
         }
         if (storageLevelStreams != null) trainingData.persist(storageLevelStreams);
@@ -856,7 +856,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //Two possibilities here:
         // 1. We've seen this RDD before (i.e., multiple epochs training case)
         // 2. We have not seen this RDD before
-        //    (a) And we havent got any stored data -> simply export
+        //    (a) And we haven't got any stored data -> simply export
         //    (b) And we previously exported some data from a different RDD -> delete the last data
         int currentRDDUid = trainingData.id();       //Id is a "A unique ID for this RDD (within its SparkContext)."
 
@@ -887,7 +887,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         //Two possibilities here:
         // 1. We've seen this RDD before (i.e., multiple epochs training case)
         // 2. We have not seen this RDD before
-        //    (a) And we havent got any stored data -> simply export
+        //    (a) And we haven't got any stored data -> simply export
         //    (b) And we previously exported some data from a different RDD -> delete the last data
         int currentRDDUid = trainingData.id();       //Id is a "A unique ID for this RDD (within its SparkContext)."
 
@@ -1087,7 +1087,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          */
         public Builder averagingFrequency(int averagingFrequency) {
             if (averagingFrequency <= 0)
-                throw new IllegalArgumentException("Ivalid input: averaging frequency must be >= 1");
+                throw new IllegalArgumentException("Invalid input: averaging frequency must be >= 1");
             this.averagingFrequency = averagingFrequency;
             return this;
         }
