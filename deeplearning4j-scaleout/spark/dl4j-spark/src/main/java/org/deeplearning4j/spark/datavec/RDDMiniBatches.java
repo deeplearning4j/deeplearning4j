@@ -17,7 +17,8 @@
 package org.deeplearning4j.spark.datavec;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
@@ -43,11 +44,17 @@ public class RDDMiniBatches  implements Serializable {
         return toSplitJava.mapPartitions(new MiniBatchFunction(miniBatches));
     }
 
-
-    public static class MiniBatchFunction implements FlatMapFunction<Iterator<DataSet>, DataSet> {
-        private int batchSize = 10;
+    public static class MiniBatchFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, DataSet> {
 
         public MiniBatchFunction(int batchSize) {
+            super(new MiniBatchFunctionAdapter(batchSize));
+        }
+    }
+
+    static class MiniBatchFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, DataSet> {
+        private int batchSize = 10;
+
+        public MiniBatchFunctionAdapter(int batchSize) {
             this.batchSize = batchSize;
         }
 

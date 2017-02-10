@@ -18,8 +18,9 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -38,7 +39,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a MultiDataSet using a given ComputationGraph */
-public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Iterator<MultiDataSet>,Tuple2<Integer,Double>> {
+public class ScoreFlatMapFunctionCGMultiDataSet extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>,Tuple2<Integer,Double>> {
+
+    public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
+        super(new ScoreFlatMapFunctionCGMultiDataSetAdapter(json, params, minibatchSize));
+    }
+}
+
+/** Function used to score a MultiDataSet using a given ComputationGraph */
+class ScoreFlatMapFunctionCGMultiDataSetAdapter implements FlatMapFunctionAdapter<Iterator<MultiDataSet>,Tuple2<Integer,Double>> {
 
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGMultiDataSet.class);
     private String json;
@@ -46,7 +55,7 @@ public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Itera
     private int minibatchSize;
 
 
-    public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params, int minibatchSize){
+    public ScoreFlatMapFunctionCGMultiDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize){
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
