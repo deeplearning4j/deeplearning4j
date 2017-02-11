@@ -25,10 +25,6 @@
     <version>0.7.3_spark_1-SNAPSHOT</version>
     <artifactId>datavec-spark_2.11</artifactId>
 
-    <properties>
-        <spark.version>1.6.2</spark.version>
-        <spark.major.version>1</spark.major.version>
-    </properties>
 
     <build>
       <plugins>
