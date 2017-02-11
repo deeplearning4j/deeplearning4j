@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.dataset.DataSet;
@@ -173,7 +174,7 @@ public class TestEarlyStopping {
                 .updater(Updater.SGD).learningRate(5.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -299,11 +300,11 @@ public class TestEarlyStopping {
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("identity").weightInit(WeightInit.XAVIER)
+                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                         .nIn(20).nOut(1).build())
                 .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

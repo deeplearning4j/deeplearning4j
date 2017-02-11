@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -56,10 +57,10 @@ public class LRNGradientCheckTests {
                 .seed(12345L)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
                 .list()
-                .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2,2).stride(1,1).activation("tanh").build())
+                .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2,2).stride(1,1).activation(Activation.TANH).build())
                 .layer(1, new LocalResponseNormalization.Builder().build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nOut(nOut)
                         .build())
                 .setInputType(InputType.convolutional(hw,hw,depth))

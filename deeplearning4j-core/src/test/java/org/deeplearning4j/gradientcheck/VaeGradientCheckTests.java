@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -277,7 +278,7 @@ public class VaeGradientCheckTests {
                                 .decoderLayerSizes(6)
                                 .pzxActivationFunction("tanh")
                                 .reconstructionDistribution(reconstructionDistributions[i])
-                                .activation("tanh")
+                                .activation(Activation.TANH)
                                 .updater(Updater.SGD)
                                 .build())
                         .pretrain(true).backprop(false)
@@ -328,7 +329,7 @@ public class VaeGradientCheckTests {
                                 .pzxActivationFunction("tanh")
                                 .reconstructionDistribution(new GaussianReconstructionDistribution("tanh"))
                                 .numSamples(numSamples)
-                                .activation("tanh")
+                                .activation(Activation.TANH)
                                 .updater(Updater.SGD)
                                 .build())
                         .pretrain(true).backprop(false)

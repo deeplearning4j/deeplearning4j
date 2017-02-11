@@ -24,6 +24,7 @@ import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Cos;
@@ -124,13 +125,13 @@ public class TestOptimizers {
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
                         .updater(Updater.ADAGRAD)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
                         .nIn(3).nOut(3)
                         .weightInit(WeightInit.XAVIER)
                         .updater(Updater.ADAGRAD)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false)
                 .build();

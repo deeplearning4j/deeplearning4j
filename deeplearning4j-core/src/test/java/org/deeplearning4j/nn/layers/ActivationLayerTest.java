@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -31,7 +32,7 @@ public class ActivationLayerTest {
     @Test
     public void testInputTypes(){
         org.deeplearning4j.nn.conf.layers.ActivationLayer l =
-                new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("relu").build();
+                new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.RELU).build();
 
 
         InputType in1 = InputType.feedForward(20);
@@ -54,10 +55,10 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(28*28*1).nOut(10).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(0, new DenseLayer.Builder().nIn(28*28*1).nOut(10).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nIn(10).nOut(10).build())
                 .backprop(true).pretrain(false)
                 .build();
@@ -73,11 +74,11 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(28*28*1).nOut(10).activation("identity").weightInit(WeightInit.XAVIER).build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("relu").build())
+                .layer(0, new DenseLayer.Builder().nIn(28*28*1).nOut(10).activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.RELU).build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nIn(10).nOut(10).build())
                 .backprop(true).pretrain(false)
                 .build();
@@ -128,8 +129,8 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation("sigmoid").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(layerSize).nOut(nOut).build())
+                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation(Activation.SIGMOID).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
                 .backprop(true).pretrain(false)
                 .build();
 
@@ -145,9 +146,9 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation("identity").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("sigmoid").build())
-                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(layerSize).nOut(nOut).build())
+                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation(Activation.IDENTITY).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.SIGMOID).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
                 .backprop(true).pretrain(false)
                 .build();
 
@@ -186,10 +187,10 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation("relu").weightInit(WeightInit.XAVIER).build())
+                .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
                 .setInputType(InputType.convolutionalFlat(28,28,1))
@@ -206,11 +207,11 @@ public class ActivationLayerTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation("identity").weightInit(WeightInit.XAVIER).build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("relu").build())
+                .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.RELU).build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nOut(10).build())
                 .backprop(true).pretrain(false)
                 .setInputType(InputType.convolutionalFlat(28,28,1))
@@ -249,8 +250,8 @@ public class ActivationLayerTest {
 //                .iterations(1)
 //                .seed(123)
 //                .list()
-//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
-//                .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+//                .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation(Activation.TANH).build())
 //                .backprop(true).pretrain(false)
 //                .build();
 //
@@ -265,9 +266,9 @@ public class ActivationLayerTest {
 //                .iterations(1)
 //                .seed(123)
 //                .list()
-//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("identity").nIn(2).nOut(2).build())
-//                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("tanh").build())
-//                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.IDENTITY).nIn(2).nOut(2).build())
+//                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.TANH).build())
+//                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation(Activation.TANH).build())
 //                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 //                .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
 //                .backprop(true).pretrain(false)
@@ -307,8 +308,8 @@ public class ActivationLayerTest {
 //                .iterations(1)
 //                .seed(123)
 //                .list()
-//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
-//                .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+//                .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation(Activation.TANH).build())
 //                .backprop(true).pretrain(false)
 //                .build();
 //
@@ -323,9 +324,9 @@ public class ActivationLayerTest {
 //                .iterations(1)
 //                .seed(123)
 //                .list()
-//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("identity").nIn(2).nOut(2).build())
-//                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("tanh").build())
-//                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+//                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.IDENTITY).nIn(2).nOut(2).build())
+//                .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation(Activation.TANH).build())
+//                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation(Activation.TANH).build())
 //                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 //                .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
 //                .backprop(true).pretrain(false)
