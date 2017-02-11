@@ -130,54 +130,5 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>spark-default</id>
-            <activation>
-                <property>
-                    <name>!spark.major.version</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-streaming-kafka_2.11</artifactId>
-                    <version>${spark.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>spark-1</id>
-            <activation>
-                <property>
-                    <name>spark.major.version</name>
-                    <value>1</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-streaming-kafka_2.11</artifactId>
-                    <version>${spark.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>spark-2</id>
-            <activation>
-                <property>
-                    <name>spark.major.version</name>
-                    <value>2</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-streaming-kafka-0-8_2.11</artifactId>
-                    <version>${spark.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 
 </project>
