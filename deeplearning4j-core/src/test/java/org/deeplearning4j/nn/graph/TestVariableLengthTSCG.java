@@ -143,7 +143,7 @@ public class TestVariableLengthTSCG {
                     .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "in")
                     .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "0")
                     .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(), "1")
-(??)                    .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build(),"2")
+                    .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build(),"2")
                     .setOutputs("3")
                     .inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
                     .inputPreProcessor("2", new FeedForwardToRnnPreProcessor())
