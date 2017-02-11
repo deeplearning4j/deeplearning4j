@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
@@ -36,7 +37,7 @@ public class ModelSerializerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                 .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
@@ -66,7 +67,7 @@ public class ModelSerializerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                 .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())

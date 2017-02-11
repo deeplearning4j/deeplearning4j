@@ -18,6 +18,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -98,8 +99,8 @@ public class MultipleEpochsIteratorTest {
                 .weightInit(WeightInit.XAVIER)
                 .seed(12345L)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
+                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation(Activation.RELU).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
                 .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(20, 20, 1))
                 .build();

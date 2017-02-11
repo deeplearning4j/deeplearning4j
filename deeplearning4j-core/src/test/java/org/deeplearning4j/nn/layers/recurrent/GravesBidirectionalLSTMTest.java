@@ -18,6 +18,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -45,7 +46,7 @@ public class GravesBidirectionalLSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                         .nIn(nIn)
                         .nOut(nHiddenUnits)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .build();
 
@@ -93,7 +94,7 @@ public class GravesBidirectionalLSTMTest {
                         .nIn(nIn)
                         .nOut(lstmNHiddenUnits)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .build();
 
@@ -157,7 +158,7 @@ public class GravesBidirectionalLSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                         .nIn(nIn).nOut(layerSize)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .build();
 
@@ -224,7 +225,7 @@ public class GravesBidirectionalLSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                         .nIn(nIn).nOut(layerSize)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.1, 0.1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .build();
 
@@ -263,7 +264,7 @@ public class GravesBidirectionalLSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                         .nIn(nIn).nOut(layerSize)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.1, 0.1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .updater(Updater.NONE)
                         .build())
                 .build();
@@ -272,7 +273,7 @@ public class GravesBidirectionalLSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                         .nIn(nIn).nOut(layerSize)
                         .weightInit(WeightInit.ZERO)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .build();
 
@@ -457,19 +458,19 @@ public class GravesBidirectionalLSTMTest {
                 .seed(12345)
                 .list()
                 .pretrain(false)
-                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05, 0.05))
                         .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05, 0.05))
                         .build())
-                /*.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                /*.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
                         .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05,0.05))
                         .build())*/ //this converges
-                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).activation("tanh").build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).activation(Activation.TANH).build())
                 .backprop(true)
                 .build();
 
@@ -525,13 +526,13 @@ public class GravesBidirectionalLSTMTest {
                 .seed(12345)
                 .list()
                 .pretrain(false)
-                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05, 0.05))
                         .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation("tanh").nIn(2).nOut(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-0.05, 0.05))
                         .build())
-                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).activation("tanh").build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(2).activation(Activation.TANH).build())
                 .backprop(true)
                 .build();
 
@@ -556,9 +557,9 @@ public class GravesBidirectionalLSTMTest {
                     .list()
                     .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                             .gateActivationFunction(gateAfn)
-                            .activation("tanh").nIn(2).nOut(2).build())
+                            .activation(Activation.TANH).nIn(2).nOut(2).build())
                     .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                            .nIn(2).nOut(2).activation("tanh").build())
+                            .nIn(2).nOut(2).activation(Activation.TANH).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -77,6 +77,7 @@ public class ConvolutionLayerSetup {
      * For image data that has been flattened into a row vector per example (shape [minibatchSize,depth*height*width])
      * instead use {@code InputType.convolutionalFlat(height,width,depth)}.
      */
+    @Deprecated
     public ConvolutionLayerSetup(MultiLayerConfiguration.Builder builder,int height,int width,int channels) {
 
 //        builder.setInputType(InputType.convolutionalFlat(height, width, channels));

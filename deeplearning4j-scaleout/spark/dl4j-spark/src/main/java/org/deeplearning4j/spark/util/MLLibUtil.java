@@ -34,6 +34,8 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -223,12 +225,12 @@ public class MLLibUtil {
         }, (int) (mappedData.count() / batchSize));
 
 
-        JavaRDD<DataSet> data2 = aggregated.flatMap(new FlatMapFunction<Tuple2<Long, DataSet>, DataSet>() {
+        JavaRDD<DataSet> data2 = aggregated.flatMap(new BaseFlatMapFunctionAdaptee<Tuple2<Long,DataSet>, DataSet>(new FlatMapFunctionAdapter<Tuple2<Long, DataSet>, DataSet>() {
             @Override
             public Iterable<DataSet> call(Tuple2<Long, DataSet> longDataSetTuple2) throws Exception {
                 return longDataSetTuple2._2();
             }
-        });
+        }));
 
         return data2;
     }
@@ -365,7 +367,7 @@ public class MLLibUtil {
     }
 
     /**
-     * Convert an rdd of data set in to labeled point. 
+     * Convert an rdd of data set in to labeled point.
      * @param data the dataset to convert
      * @return an rdd of labeled point
      */

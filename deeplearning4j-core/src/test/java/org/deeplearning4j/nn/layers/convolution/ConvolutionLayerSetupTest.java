@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -70,7 +71,7 @@ public class ConvolutionLayerSetupTest {
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nOut(5).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(1, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
@@ -78,17 +79,17 @@ public class ConvolutionLayerSetupTest {
                 .layer(2, new ConvolutionLayer.Builder(3, 3)
                         .nOut(10).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(3, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .build())
-                .layer(4, new DenseLayer.Builder().nOut(100).activation("relu")
+                .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU)
                         .build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
 
@@ -201,7 +202,7 @@ public class ConvolutionLayerSetupTest {
                 .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2,2},new int[]{2,2}).build())
                 .layer(4,new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(500)
                         .build())
-                .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation("softmax")
+                .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
                         .nOut(10).build());
         return builder;
     }
@@ -237,12 +238,12 @@ public class ConvolutionLayerSetupTest {
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
 
@@ -269,13 +270,13 @@ public class ConvolutionLayerSetupTest {
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(5 * 5 * 1 * 6) //216
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns,nChannels))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(5, 5, 6))
@@ -319,13 +320,13 @@ public class ConvolutionLayerSetupTest {
                 .seed(123)
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(new int[]{1,1}, new int[]{1,1}).nIn(1).nOut(6).activation("identity").build())
+                .layer(0, new ConvolutionLayer.Builder(new int[]{1,1}, new int[]{1,1}).nIn(1).nOut(6).activation(Activation.IDENTITY).build())
                 .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation("relu").build())
-                .layer(3, new DenseLayer.Builder().nIn(28*28*6).nOut(10).activation("identity").build())
+                .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
+                .layer(3, new DenseLayer.Builder().nIn(28*28*6).nOut(10).activation(Activation.IDENTITY).build())
                 .layer(4, new BatchNormalization.Builder().nOut(10).build())
-                .layer(5, new ActivationLayer.Builder().activation("relu").build())
-                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(10).build())
+                .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(10).build())
                 .backprop(true).pretrain(false)
                 .cnnInputSize(28,28,1)
                 .build();

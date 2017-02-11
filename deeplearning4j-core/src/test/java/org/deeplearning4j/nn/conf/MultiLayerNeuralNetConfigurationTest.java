@@ -99,7 +99,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nOut(5).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(1, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
@@ -107,17 +107,17 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .layer(2, new ConvolutionLayer.Builder(3, 3)
                         .nOut(10).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(3, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .build())
-                .layer(4, new DenseLayer.Builder().nOut(100).activation("relu")
+                .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU)
                         .build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
 
