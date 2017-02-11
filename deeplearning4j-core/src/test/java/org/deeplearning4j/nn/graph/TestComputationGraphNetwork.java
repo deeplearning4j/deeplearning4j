@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -75,12 +76,12 @@ public class TestComputationGraphNetwork {
                 .addLayer("firstLayer",
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation("identity")
+                                .activation(Activation.IDENTITY)
                                 .nIn(nIn).nOut(nOut).build()
                         , "input")
                 .addLayer("outputLayer",
                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation("identity")
+                                .activation(Activation.IDENTITY)
                                 .nIn(nOut)
                                 .nOut(nOut).build()
                         , "firstLayer")
@@ -499,22 +500,22 @@ public class TestComputationGraphNetwork {
                 .addLayer("layer0", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build(), "in")
                 .addLayer("layer1", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build(), "in")
                 .addLayer("layer2", new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(3).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("tanh")
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build(),"layer1")
+                        .activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build(), "layer1")
                 .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3+3).nOut(3)
+                        .nIn(3 + 3).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                        .activation("softmax").build(), "layer0","layer2")
+                        .activation(Activation.SOFTMAX).build(), "layer0", "layer2")
                 .setOutputs("out")
                 .pretrain(true).backprop(false)
                 .build();
@@ -536,7 +537,7 @@ public class TestComputationGraphNetwork {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(),"in")
@@ -547,7 +548,7 @@ public class TestComputationGraphNetwork {
 
         ComputationGraphConfiguration confNoReg = new NeuralNetConfiguration.Builder()
                 .seed(12345)
-                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(), "in")
@@ -876,8 +877,8 @@ public class TestComputationGraphNetwork {
                 .seed(123)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build(), "in")
-                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(3).nOut(3).build(), "0")
+                .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "0")
                 .setOutputs("1")
                 .backprop(true).pretrain(false).build();
 

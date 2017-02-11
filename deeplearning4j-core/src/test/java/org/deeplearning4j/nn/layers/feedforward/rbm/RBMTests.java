@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -413,7 +414,7 @@ public class RBMTests {
                                 .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                                 .nOut(nOut2).build(),
                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation("relu")
+                                .activation(Activation.RELU)
                                 .nOut(nOut3).build()
                 )
                 .pretrain(pretrain)

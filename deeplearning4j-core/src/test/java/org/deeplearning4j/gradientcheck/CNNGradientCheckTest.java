@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -260,7 +261,7 @@ public class CNNGradientCheckTest {
                                     .padding(padding)
                                     .pnorm(pnorm)
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
-                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                     .nIn(3 * 3 * 3)
                                     .nOut(4)
                                     .build())
@@ -331,7 +332,7 @@ public class CNNGradientCheckTest {
                             .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(3).nOut(2)
                                     .build())   //Output: (3-2+0)/1+1 = 2
-                            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                     .nIn(2 * 2 * 2)
                                     .nOut(4)
                                     .build())
@@ -402,7 +403,7 @@ public class CNNGradientCheckTest {
                                         .stride(1, 1)
                                         .padding(0, 0)
                                         .build())   //(3-2+0)/1+1 = 2
-                                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                         .nIn(2 * 2 * 2)
                                         .nOut(nOut)
                                         .build())
@@ -460,7 +461,7 @@ public class CNNGradientCheckTest {
                                 .regularization(false)
                                 .learningRate(1.0)
                                 .updater(Updater.SGD)
-                                .activation("tanh")
+                                .activation(Activation.TANH)
                                 .convolutionMode(ConvolutionMode.Same)
                                 .list()
                                 .layer(0, new ConvolutionLayer.Builder()
@@ -482,7 +483,7 @@ public class CNNGradientCheckTest {
                                         .stride(1, 1)
                                         .padding(0, 0)
                                         .build())
-                                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                         .nOut(nOut)
                                         .build())
                                 .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
@@ -554,12 +555,12 @@ public class CNNGradientCheckTest {
                                     .regularization(false)
                                     .learningRate(1.0)
                                     .updater(Updater.SGD)
-                                    .activation("tanh")
+                                    .activation(Activation.TANH)
                                     .convolutionMode(ConvolutionMode.Same)
                                     .list()
                                     .layer(0, convFirst ? convLayer : poolLayer )
                                     .layer(1, convFirst ? poolLayer : convLayer )
-                                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                             .nOut(nOut)
                                             .build())
                                     .setInputType(InputType.convolutionalFlat(height, width, inputDepth))

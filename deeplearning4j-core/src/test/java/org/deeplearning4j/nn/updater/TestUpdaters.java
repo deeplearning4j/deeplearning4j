@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.*;
@@ -599,7 +600,7 @@ public class TestUpdaters {
                 .layer(
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation("identity").updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                                .activation(Activation.IDENTITY).updater(org.deeplearning4j.nn.conf.Updater.SGD)
                                 .nIn(nIn).nOut(nOut).build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);
