@@ -82,7 +82,8 @@ public class ModelGuesserTest {
 
     @Test
     public void testModelGuessConfig() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/keras/simple/cnn_tf_config.json");
+        ClassPathResource resource = new ClassPathResource("modelimport/keras/configs/cnn_tf_config.json",
+                ModelGuesserTest.class.getClassLoader());
         File f = getTempFile(resource);
         String configFilename = f.getAbsolutePath();
         Object conf = ModelGuesser.loadConfigGuess(configFilename);
