@@ -29,6 +29,7 @@ import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
