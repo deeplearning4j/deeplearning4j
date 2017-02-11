@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.util.UUID;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * Created by agibsonccc on 12/29/16.
@@ -25,14 +26,16 @@ public class ModelGuesserTest {
 
     @Test
     public void testModelGuess() throws Exception {
-        ClassPathResource sequenceResource = new ClassPathResource("keras/simple/lstm_tf_model.h5");
+        ClassPathResource sequenceResource = new ClassPathResource("/keras/simple/lstm_tf_model.h5");
+        assertTrue(sequenceResource.exists());
         File f = getTempFile(sequenceResource);
         Model guess1 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
-
-        ClassPathResource sequenceResource2 = new ClassPathResource("keras/simple/cnn_tf_model.h5");
+        assumeNotNull(guess1);
+        ClassPathResource sequenceResource2 = new ClassPathResource("/keras/simple/cnn_tf_model.h5");
+        assertTrue(sequenceResource2.exists());
         File f2 = getTempFile(sequenceResource);
         Model guess2 = ModelGuesser.loadModelGuess(f2.getAbsolutePath());
-
+        assumeNotNull(guess2);
 
 
 
@@ -46,7 +49,7 @@ public class ModelGuesserTest {
         Object conf = ModelGuesser.loadConfigGuess(configFilename);
         assertTrue(conf instanceof MultiLayerConfiguration);
 
-        ClassPathResource sequenceResource = new ClassPathResource("keras/simple/mlp_fapi_multiloss_config.json");
+        ClassPathResource sequenceResource = new ClassPathResource("/keras/simple/mlp_fapi_multiloss_config.json");
         File f2 = getTempFile(sequenceResource);
         Object sequenceConf = ModelGuesser.loadConfigGuess(f2.getAbsolutePath());
         assertTrue(sequenceConf instanceof ComputationGraphConfiguration);
