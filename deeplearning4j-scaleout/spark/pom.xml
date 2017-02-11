@@ -37,11 +37,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spark.major.version>1</spark.major.version>
-        <spark.version>1.6.2</spark.version>
-        <hadoop.version>2.2.0</hadoop.version>
-        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
-    </properties>
+       </properties>
 
 
     <build>
