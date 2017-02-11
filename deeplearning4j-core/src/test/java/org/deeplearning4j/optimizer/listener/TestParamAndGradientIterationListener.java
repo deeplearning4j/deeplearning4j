@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ParamAndGradientIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -29,7 +30,7 @@ public class TestParamAndGradientIterationListener {
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(20).build())
                 .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(30).nOut(3).build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(30).nOut(3).build())
                 .pretrain(false).backprop(true)
                 .build();
 

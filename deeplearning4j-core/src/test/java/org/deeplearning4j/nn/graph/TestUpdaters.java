@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.updater.LayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,15 +43,15 @@ public class TestUpdaters {
                 .graphBuilder()
                 .addInputs("input") // 40x40x1
                 .addLayer("l0_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{1, 1}, new int[]{1, 1})/*.nIn(1)*/.nOut(100).build(), "input") // out: 40x40x100
-                .addLayer("l1_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{2,2}, new int[]{1, 1}).build(), "l0_cnn") // 21x21x100
+                .addLayer("l1_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{2, 2}, new int[]{1, 1}).build(), "l0_cnn") // 21x21x100
                 .addLayer("l2_cnn", new ConvolutionLayer.Builder(new int[]{3, 3}, new int[]{2, 2}, new int[]{1, 1})/*.nIn(100)*/.nOut(200).build(), "l1_max") // 11x11x200
-                .addLayer("l3_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2,2}, new int[]{1, 1}).build(), "l2_cnn") // 6x6x200
+                .addLayer("l3_max", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2, 2}, new int[]{1, 1}).build(), "l2_cnn") // 6x6x200
                 .addLayer("l4_fc", new DenseLayer.Builder()/*.nIn(6*6*200)*/.nOut(1024).build(), "l3_max") // output: 1x1x1024
                 .addLayer("l5_out", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        /*.nIn(1024)*/.nOut(10).activation("softmax").build(), "l4_fc")
+                        /*.nIn(1024)*/.nOut(10).activation(Activation.SOFTMAX).build(), "l4_fc")
                 .setOutputs("l5_out")
                 .backprop(true).pretrain(false)
-                .setInputTypes(InputType.convolutional(40,40,1))
+                .setInputTypes(InputType.convolutional(40, 40, 1))
                 .build();
 
         //First: check that the nIns are set properly...

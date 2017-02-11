@@ -119,7 +119,7 @@ public class TestParallelEarlyStopping {
                 .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
