@@ -63,7 +63,7 @@ public class FlowIterationListenerTest {
                     .addLayer("embeddingFr", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation(Activation.IDENTITY).build(),"inFr")
                     .addVertex("embeddingFrSeq", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "embeddingFr")
                     .addLayer("decoder", new GravesLSTM.Builder().nIn(128 + 256).nOut(256).activation(Activation.SOFTSIGN).build(), "embeddingFrSeq", "duplicateTimeStep")
-                    .addLayer("output", new RnnOutputLayer.Builder().nIn(256).nOut(VOCAB_SIZE + 1).activation(Activation.SOFTMAX).build(), "decoder"")
+                    .addLayer("output", new RnnOutputLayer.Builder().nIn(256).nOut(VOCAB_SIZE + 1).activation(Activation.SOFTMAX).build(), "decoder")
                     .setOutputs("output")
                     .pretrain(false).backprop(true)
                     .build();
