@@ -32,6 +32,7 @@ public class KerasBatchNormalization extends KerasLayer {
     public static final String LAYER_FIELD_EPSILON = "epsilon";
 
     /* Keras layer parameter names. */
+    public static final int NUM_TRAINABLE_PARAMS = 4;
     public static final String PARAM_NAME_GAMMA = "gamma";
     public static final String PARAM_NAME_BETA = "beta";
     public static final String PARAM_NAME_RUNNING_MEAN = "running_mean";
@@ -98,12 +99,12 @@ public class KerasBatchNormalization extends KerasLayer {
     }
 
     /**
-     * Indicates that layer has trainable weights.
+     * Returns number of trainable parameters in layer.
      *
-     * @return  true
+     * @return          number of trainable parameters (4)
      */
     @Override
-    public boolean hasWeights() { return true; }
+    public int getNumParams() { return NUM_TRAINABLE_PARAMS; }
 
     /**
      * Set weights for layer.
