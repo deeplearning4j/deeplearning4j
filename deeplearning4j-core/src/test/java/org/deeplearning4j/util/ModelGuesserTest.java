@@ -82,13 +82,14 @@ public class ModelGuesserTest {
 
     @Test
     public void testModelGuessConfig() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/keras/simple/cnn_tf_config.json");
+        ClassPathResource resource = new ClassPathResource("modelimport/keras/configs/cnn_tf_config.json",
+                ModelGuesserTest.class.getClassLoader());
         File f = getTempFile(resource);
         String configFilename = f.getAbsolutePath();
         Object conf = ModelGuesser.loadConfigGuess(configFilename);
         assertTrue(conf instanceof MultiLayerConfiguration);
 
-        ClassPathResource sequenceResource = new ClassPathResource("/keras/simple/mlp_fapi_multiloss_config.json");
+        ClassPathResource sequenceResource = new ClassPathResource("keras/simple/mlp_fapi_multiloss_config.json");
         File f2 = getTempFile(sequenceResource);
         Object sequenceConf = ModelGuesser.loadConfigGuess(f2.getAbsolutePath());
         assertTrue(sequenceConf instanceof ComputationGraphConfiguration);
