@@ -51,6 +51,7 @@ public class Model {
      * @throws org.deeplearning4j.nn.api.Model
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
+    @Deprecated
     public static org.deeplearning4j.nn.api.Model importModelInputStream(InputStream modelHdf5Stream)
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);
@@ -68,6 +69,7 @@ public class Model {
      * @throws InvalidKerasConfigurationException
      * @deprecated Use {@link KerasModelImport#importKerasSequentialModelAndWeights} instead
      */
+    @Deprecated
     public static MultiLayerNetwork importSequentialModelInputStream(InputStream modelHdf5Stream)
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Stream, false);
@@ -84,6 +86,7 @@ public class Model {
      * @throws InvalidKerasConfigurationException
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
+    @Deprecated
     public static ComputationGraph importFunctionalApiModelInputStream(InputStream modelHdf5Stream)
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);

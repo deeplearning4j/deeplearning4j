@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -40,9 +41,9 @@ public class ComputationGraphConfigurationTest {
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
+                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").nIn(5).nOut(3).build(), "firstLayer")
+                        .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(), "firstLayer")
                 .setOutputs("outputLayer")
                 .pretrain(false).backprop(true)
                 .build();

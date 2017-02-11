@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
@@ -79,10 +80,10 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
                 .regularization(true)
                 .list()
-                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(784).nOut(1000).weightInit(WeightInit.XAVIER).activation("relu").build())
-                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(1000).nOut(500).weightInit(WeightInit.XAVIER).activation("relu").build())
-                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(500).nOut(250).weightInit(WeightInit.XAVIER).activation("relu").build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation("softmax")
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(784).nOut(1000).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(1000).nOut(500).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
+                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(500).nOut(250).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                         .nIn(250).nOut(10).build())
                         // Pretrain is unsupervised pretraining and finetuning on output layer
                         // Backward is full propagation on ALL layers.

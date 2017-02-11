@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -183,13 +184,13 @@ public class EvalTest {
                 .learningRate(1e-6)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(2)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(2).nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
 
                 .build();
@@ -622,7 +623,7 @@ public class EvalTest {
                 .updater(Updater.SGD).learningRate(0.1)
                 .list()
                 .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nIn(4).nOut(3).build())
                 .pretrain(false).backprop(true)
                 .build();

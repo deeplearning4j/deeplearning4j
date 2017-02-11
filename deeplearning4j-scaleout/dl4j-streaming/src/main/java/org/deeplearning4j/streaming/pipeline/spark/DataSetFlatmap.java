@@ -3,6 +3,8 @@ package org.deeplearning4j.streaming.pipeline.spark;
 import org.apache.commons.net.util.Base64;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.streaming.conversion.dataset.RecordToDataSet;
 import org.deeplearning4j.streaming.serde.RecordDeSerializer;
 import org.nd4j.linalg.dataset.DataSet;
@@ -15,11 +17,22 @@ import java.util.Collection;
  * Flat maps a binary dataset string in to a
  * dataset
  */
-public class DataSetFlatmap implements FlatMapFunction<Tuple2<String, String>, DataSet> {
+public class DataSetFlatmap extends BaseFlatMapFunctionAdaptee<Tuple2<String, String>, DataSet> {
+
+    public DataSetFlatmap(int numLabels, RecordToDataSet recordToDataSetFunction) {
+        super(new DataSetFlatmapAdapter(numLabels, recordToDataSetFunction));
+    }
+}
+
+/**
+ * Flat maps a binary dataset string in to a
+ * dataset
+ */
+class DataSetFlatmapAdapter implements FlatMapFunctionAdapter<Tuple2<String, String>, DataSet> {
     private int numLabels;
     private RecordToDataSet recordToDataSetFunction;
 
-    public DataSetFlatmap(int numLabels, RecordToDataSet recordToDataSetFunction) {
+    public DataSetFlatmapAdapter(int numLabels, RecordToDataSet recordToDataSetFunction) {
         this.numLabels = numLabels;
         this.recordToDataSetFunction = recordToDataSetFunction;
     }
