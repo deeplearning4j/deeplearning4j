@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.api.Model;
@@ -17,6 +18,7 @@ import java.util.UUID;
  * Guess a model from the given path
  * @author Adam Gibson
  */
+@Slf4j
 public class ModelGuesser {
 
 
@@ -35,18 +37,23 @@ public class ModelGuesser {
         try {
             return MultiLayerConfiguration.fromJson(input);
         }catch (Exception e) {
+            log.warn("Tried multi layer config from json",e);
             try {
                 return KerasModelImport.importKerasModelConfiguration(path);
             }catch(Exception e1) {
+                log.warn("Tried keras model config",e);
                 try {
                     return KerasModelImport.importKerasSequentialConfiguration(path);
                 }catch (Exception e2) {
+                    log.warn("Tried keras sequence config",e);
                     try {
                         return ComputationGraphConfiguration.fromJson(input);
                     }catch(Exception e3) {
+                        log.warn("Tried computation graph from json");
                         try {
                             return MultiLayerConfiguration.fromYaml(input);
                         }catch (Exception e4) {
+                            log.warn("Tried multi layer configuration from yaml");
                             try {
                                 return ComputationGraphConfiguration.fromYaml(input);
                             }catch(Exception e5) {
@@ -90,12 +97,15 @@ public class ModelGuesser {
         try {
             return ModelSerializer.restoreMultiLayerNetwork(new File(path),true);
         }catch (Exception e) {
+            log.warn("Tried multi layer network");
             try {
                 return ModelSerializer.restoreComputationGraph(new File(path),true);
             }catch(Exception e1) {
+                log.warn("Tried computation graph");
                 try {
                     return KerasModelImport.importKerasModelAndWeights(path);
                 }catch(Exception e2) {
+                    log.warn("Tried multi layer network keras");
                     try {
                         return KerasModelImport.importKerasSequentialModelAndWeights(path);
 

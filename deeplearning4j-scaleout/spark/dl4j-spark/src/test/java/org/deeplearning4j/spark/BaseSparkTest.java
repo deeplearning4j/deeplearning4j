@@ -28,6 +28,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.After;
 import org.junit.Before;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,8 +43,7 @@ import java.util.Random;
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest  implements Serializable
-{
+public abstract class BaseSparkTest  implements Serializable {
     protected transient JavaSparkContext sc;
     protected transient INDArray labels;
     protected transient INDArray input;
