@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 //import org.nd4j.jita.conf.Configuration;
 //import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 //import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -75,8 +76,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 .iterations(1)
                 .seed(seed)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build())
-                .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build())
+                .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build())
+                .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build())
                 .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build())
                 .setInputType(InputType.convolutional(10,10,3))
                 .pretrain(false).backprop(true)
@@ -114,8 +115,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 .seed(seed)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build(), "in")
-                .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation("tanh").build(), "0")
+                .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build(), "in")
+                .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build(), "0")
                 .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build(),"1")
                 .setOutputs("2")
                 .setInputTypes(InputType.convolutional(10,10,3))

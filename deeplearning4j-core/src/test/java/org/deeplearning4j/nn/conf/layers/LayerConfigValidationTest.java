@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -266,14 +267,14 @@ public class LayerConfigValidationTest {
                     .updater(Updater.RMSPROP)
                     .graphBuilder()
                     .addInputs("in")
-                    .addLayer("L" +1, new GravesLSTM.Builder().nIn(20)
+                    .addLayer("L" + 1, new GravesLSTM.Builder().nIn(20)
                             .updater(Updater.RMSPROP).nOut(10)
                             .weightInit(WeightInit.XAVIER).dropOut(0.4)
                             .l1(0.3)
-                            .activation("sigmoid").build(), "in")
+                            .activation(Activation.SIGMOID).build(), "in")
                     .addLayer("output", new RnnOutputLayer.Builder().nIn(20)
-                            .nOut(10).activation("softmax")
-                            .weightInit(WeightInit.VI).build(), "L"+1).setOutputs("output");
+                            .nOut(10).activation(Activation.SOFTMAX)
+                            .weightInit(WeightInit.VI).build(), "L" + 1).setOutputs("output");
             ComputationGraphConfiguration conf = gb.build();
             ComputationGraph cg = new ComputationGraph(conf);
             cg.init();

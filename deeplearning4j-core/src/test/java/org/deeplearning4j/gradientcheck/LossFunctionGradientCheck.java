@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -142,7 +143,7 @@ public class LossFunctionGradientCheck {
                         .regularization(false)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2))
                         .list()
-                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation("tanh").build())
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
                         .layer(1, new OutputLayer.Builder()
                                 .lossFunction(lossFunctions[i])
                                 .activation(outputActivationFn[i])
@@ -296,7 +297,7 @@ public class LossFunctionGradientCheck {
                         .regularization(false)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2))
                         .list()
-                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(nOut[i]).activation("tanh").build())
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(nOut[i]).activation(Activation.TANH).build())
                         .layer(1, new LossLayer.Builder()
                                 .lossFunction(lossFunctions[i])
                                 .activation(outputActivationFn[i])
@@ -481,7 +482,7 @@ public class LossFunctionGradientCheck {
                             .regularization(false)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-3, 3))
                             .list()
-                            .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation("tanh").build())
+                            .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
                             .layer(1, new OutputLayer.Builder()
                                     .lossFunction(lossFunctions[i])
                                     .activation(outputActivationFn[i])

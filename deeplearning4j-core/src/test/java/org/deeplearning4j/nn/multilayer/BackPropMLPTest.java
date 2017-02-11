@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -30,7 +31,7 @@ public class BackPropMLPTest {
     @Test
     public void testMLPTrivial(){
         //Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},Activation.SIGMOID));
         network.setListeners(new ScoreIterationListener(1));
         network.init();
 
@@ -43,7 +44,7 @@ public class BackPropMLPTest {
     @Test
     public void testMLP(){
         //Simple mini-batch test with multiple hidden layers
-        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,4,3},"sigmoid");
+        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,4,3},Activation.SIGMOID);
         System.out.println(conf);
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -57,7 +58,7 @@ public class BackPropMLPTest {
     @Test
     public void testMLP2(){
         //Simple mini-batch test with multiple hidden layers
-        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,15,3},"tanh");
+        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,15,3},Activation.TANH);
         System.out.println(conf);
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -77,7 +78,7 @@ public class BackPropMLPTest {
 
         DataSetIterator iris = new IrisDataSetIterator(1,10);
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},Activation.SIGMOID));
         network.init();
 
         Layer[] layers = network.getLayers();
@@ -171,7 +172,7 @@ public class BackPropMLPTest {
             float[] l2WeightsFloatAfter = asFloat(l2WeightsAfter);
             float l1BiasFloatAfter = l1BiasAfter.getFloat(0);
             float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
-            
+
             if( printCalculations) {
                 System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
                 System.out.println("Actual L1 weights = " + Arrays.toString(asFloat(l1WeightsAfter)));
@@ -197,14 +198,14 @@ public class BackPropMLPTest {
 
     @Test
     public void testMLPGradientCalculation() {
-        testIrisMiniBatchGradients(1,new int[]{1}, "sigmoid");
-        testIrisMiniBatchGradients(1, new int[]{5}, "sigmoid");
-        testIrisMiniBatchGradients(12,new int[]{15,25,10},"sigmoid");
-        testIrisMiniBatchGradients(50,new int[]{10,50,200,50,10},"tanh");
-        testIrisMiniBatchGradients(150,new int[]{30,50,20},"tanh");
+        testIrisMiniBatchGradients(1,new int[]{1}, Activation.SIGMOID);
+        testIrisMiniBatchGradients(1, new int[]{5}, Activation.SIGMOID);
+        testIrisMiniBatchGradients(12,new int[]{15,25,10},Activation.SIGMOID);
+        testIrisMiniBatchGradients(50,new int[]{10,50,200,50,10},Activation.TANH);
+        testIrisMiniBatchGradients(150,new int[]{30,50,20},Activation.TANH);
     }
 
-    private static void testIrisMiniBatchGradients(int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
+    private static void testIrisMiniBatchGradients(int miniBatchSize, int[] hiddenLayerSizes, Activation activationFunction) {
         int totalExamples = 10 * miniBatchSize;
         if( totalExamples > 150) {
             totalExamples = miniBatchSize * (150/miniBatchSize);
@@ -214,7 +215,7 @@ public class BackPropMLPTest {
         }
         DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,"sigmoid"));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,Activation.SIGMOID));
         network.init();
 
         Layer[] layers = network.getLayers();
@@ -295,7 +296,7 @@ public class BackPropMLPTest {
      * Learning Rate = 0.1
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
-    private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
+    private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, Activation activationFunction) {
         NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .iterations(1)
                 .learningRate(0.1).updater(Updater.SGD)
@@ -318,7 +319,7 @@ public class BackPropMLPTest {
                 .nIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]).nOut(3)
                 .weightInit(WeightInit.XAVIER)
                 .updater(Updater.SGD)
-                .activation(activationFunction.equals("identity") ? "identity" : "softmax")
+                .activation(activationFunction.equals(Activation.IDENTITY) ? Activation.IDENTITY : Activation.SOFTMAX)
                 .build());
         lb.pretrain(false).backprop(true);
 

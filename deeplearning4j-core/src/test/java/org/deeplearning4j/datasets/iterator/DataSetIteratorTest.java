@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -133,7 +134,7 @@ public class DataSetIteratorTest {
 						.nIn(numChannels)
 						.nOut(6)
 						.weightInit(WeightInit.XAVIER)
-						.activation("relu")
+						.activation(Activation.RELU)
 						.build())
 				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
 						.stride(1,1)
@@ -141,7 +142,7 @@ public class DataSetIteratorTest {
 				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
 						.nOut(outputNum)
 						.weightInit(WeightInit.XAVIER)
-						.activation("softmax")
+						.activation(Activation.SOFTMAX)
 						.build())
 				.setInputType(InputType.convolutionalFlat(numRows,numColumns,numChannels))
 				.backprop(true).pretrain(false);
@@ -206,14 +207,14 @@ public class DataSetIteratorTest {
 						.nIn(channels)
 						.nOut(6)
 						.weightInit(WeightInit.XAVIER)
-						.activation("relu")
+						.activation(Activation.RELU)
 						.build())
 				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
 						.build())
 				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
 						.nOut(outputNum)
 						.weightInit(WeightInit.XAVIER)
-						.activation("softmax")
+						.activation(Activation.SOFTMAX)
 						.build())
 				.backprop(true).pretrain(false)
 				.setInputType(InputType.convolutionalFlat(height,width,channels));
