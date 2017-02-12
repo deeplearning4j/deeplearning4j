@@ -59,6 +59,12 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
+    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
+    public static final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
+    public static final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
+    public static final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
+    public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
+    public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
 
     /* Keras layer configurations. */
     public static final String LAYER_FIELD_CONFIG = "config";
@@ -134,7 +140,6 @@ public class KerasLayer {
     public static final String KERAS_LOSS_KLD = "kld";
     public static final String KERAS_LOSS_POISSON  = "poisson";
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
-    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
     public static final String LAYER_FIELD_LAYER = "layer";
 
     /* Keras backends store convolutional inputs and weights
@@ -215,8 +220,17 @@ public class KerasLayer {
             /* TODO: Add support for 1D, 3D pooling layersOrdered? */
                 layer = new KerasPooling(layerConfig, enforceTrainingConfig);
                 break;
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
+                layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
+                break;
             case LAYER_CLASS_NAME_BATCHNORMALIZATION:
                 layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
+                break;
+            case LAYER_CLASS_NAME_EMBEDDING:
+                layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
                 break;
             case LAYER_CLASS_NAME_INPUT:
                 layer = new KerasInput(layerConfig, enforceTrainingConfig);
@@ -489,7 +503,13 @@ public class KerasLayer {
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
-        return null;
+        InputPreProcessor preprocessor = null;
+        if (this.layer != null) {
+            if (inputType.length > 1)
+                throw new InvalidKerasConfigurationException("Keras layer of type \"" + this.className + "\" accepts only one input");
+            preprocessor = this.layer.getPreProcessorForInputType(inputType[0]);
+        }
+        return preprocessor;
     }
 
     /**
@@ -669,21 +689,50 @@ public class KerasLayer {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    public static SubsamplingLayer.PoolingType mapPoolingType(String className)
+    public static PoolingType mapPoolingType(String className)
             throws UnsupportedKerasConfigurationException {
-        SubsamplingLayer.PoolingType poolingType;
+        PoolingType poolingType;
         switch (className) {
             case LAYER_CLASS_NAME_MAX_POOLING_2D:
-                poolingType = SubsamplingLayer.PoolingType.MAX;
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
+                poolingType = PoolingType.MAX;
                 break;
             case LAYER_CLASS_NAME_AVERAGE_POOLING_2D:
-                poolingType = SubsamplingLayer.PoolingType.AVG;
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
+                poolingType = PoolingType.AVG;
                 break;
             /* TODO: 1D (and 3D?) shaped pooling layers. */
             default:
                 throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
         }
         return poolingType;
+    }
+
+    /**
+     * Map Keras pooling layers to DL4J pooling dimensions.
+     *
+     * @param className
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public static int[] mapPoolingDimensions(String className)
+            throws UnsupportedKerasConfigurationException {
+        int[] dimensions;
+        switch (className) {
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
+                dimensions = new int[]{2};
+                break;
+            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
+            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
+                dimensions = new int[]{2, 3};
+                break;
+            default:
+                throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
+        }
+        return dimensions;
     }
 
     /**

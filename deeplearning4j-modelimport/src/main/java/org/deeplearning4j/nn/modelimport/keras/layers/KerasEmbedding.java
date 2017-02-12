@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
@@ -96,8 +97,11 @@ public class KerasEmbedding extends KerasLayer {
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Embedding layer accepts only one input (received " + inputType.length + ")");
+        /* Check whether layer requires a preprocessor for this InputType. */
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
+        if (preprocessor != null) {
+            return this.getEmbeddingLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
         return this.getEmbeddingLayer().getOutputType(-1, inputType[0]);
     }
 
