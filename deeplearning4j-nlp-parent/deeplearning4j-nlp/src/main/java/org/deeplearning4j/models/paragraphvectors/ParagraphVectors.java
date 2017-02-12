@@ -192,6 +192,8 @@ public class ParagraphVectors extends Word2Vec {
 
         initLearners();
 
+        log.info("Going for inference with: {}", sequenceLearningAlgorithm.getClass().getSimpleName());
+
         INDArray inf = learner.inferSequence(sequence, seed, learningRate, minLearningRate, iterations);
 
         return inf;
@@ -1280,8 +1282,6 @@ public class ParagraphVectors extends Word2Vec {
             if (documentAsWords.isEmpty())
                 throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
 
-            log.info("Going for inference with {}", documentAsWords.size());
-            System.out.println("check up");
 
             // inference will be single-threaded in java, and parallel in native
             INDArray result = inferVector(documentAsWords);
