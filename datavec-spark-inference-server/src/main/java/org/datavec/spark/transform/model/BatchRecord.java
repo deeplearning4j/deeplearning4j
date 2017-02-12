@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,5 +30,19 @@ public class BatchRecord implements Serializable {
         records.add(record);
     }
 
+
+    /**
+     * Return a batch record based on a dataset
+     * @param dataSet the dataset to get the batch record for
+     * @return the batch record
+     */
+    public static BatchRecord fromDataSet(DataSet dataSet) {
+        BatchRecord batchRecord = new BatchRecord();
+        for(int i = 0; i < dataSet.numExamples(); i++) {
+            batchRecord.add(CSVRecord.fromRow(dataSet.get(i)));
+        }
+
+        return batchRecord;
+    }
 
 }
