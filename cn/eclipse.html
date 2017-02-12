@@ -1,0 +1,51 @@
+---
+title: "如何用Eclipse设置DL4J项目"
+layout: cn-default
+---
+<p><h1>如何用Eclipse设置DL4J项目</h1></p>
+<p><em>原文：<a href="https://electronsfree.blogspot.my/2016/10/how-to-setup-dl4j-project-with-eclipse.html" target="_blank">How to setup a DL4J project with eclipse</a></em><a href="https://electronsfree.blogspot.my/2016/10/how-to-setup-dl4j-project-with-eclipse.html" target="_blank"></a></p><br>
+<p>本文是在Eclipse中设置一个Java项目的指南，写给不想同Maven扯上关系的Eclipse用户参考。我在这篇教程中使用的是Eclipse 4.3。最新的发行版本是Neon 4.6.1。本指南内容也适用于4.x及更新版本。</p>
+<p>在开始介绍具体步骤之前先提一句：不介意使用Maven的读者不妨参照快速入门指南来操作。以下是一些有用的链接
+</p>
+<ul><li><a href="http://www.eclipse.org/downloads/" target="_blank">http://www.eclipse.org/downloads/</a><br>
+  </li>
+  <li><a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" target="_blank">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a><br>
+    </li>
+  <li><a href="http://commons.apache.org/" target="_blank">http://commons.apache.org/</a><br>
+    </li>
+  <li><a href="https://github.com/deeplearning4j/deeplearning4j " target="_blank">https://github.com/deeplearning4j/deeplearning4j </a><br>
+    </li>
+  <li><a href="https://github.com/deeplearning4j/dl4j-examples " target="_blank">https://github.com/deeplearning4j/dl4j-examples </a></li>
+</ul><br>
+<p>系统要求：</p>
+<ul><li>JDK1.8</li>
+  <li>Eclipse 4.x</li>
+</ul>
+<br>
+<p><h2>安装Deep Learning 4 Java</h2></p>
+<p>首先要下载deeplearning4j及示例。如果您有Github账户，并且系统中已经安装了GIT，请按“已安装GIT”下的步骤操作</p><br>
+<p><h3>已安装GIT</h3></p>
+<ol>
+  <li> 启动GIT shell</li>
+  <li> 切换至您希望克隆DL4J的驱动器或文件夹    </li>
+  <li> 运行“git clone https://github.com/deeplearning4j/deeplearning4j deeplearning4j”，如果您想让文件名短一些，可以把最后一个参数替换掉。比如改为“git clone https://github.com/deeplearning4j/deeplearning4j DL4J”    </li>
+  <li> 运行“git clone https://github.com/deeplearning4j/dl4j-examples dl4j-examples”</li>
+</ol>
+<br>
+<p><h3>未安装GIT</h3></p>
+<ul class="step-text">
+	<li><p>打开浏览器</p></li>
+	<li><p>访问<a href="https://github.com/deeplearning4j/deeplearning4" target="_blank">https://github.com/deeplearning4j/deeplearning4</a></p></li>
+	<li><p>点击“clone or download”，选择“download zip”</p>
+	<img class="img-responsive center-block" src="../img/eclipse-dl4j-download.png" alt="deeplearning4j">
+	</li>
+	<li><p>访问<a href="https://github.com/deeplearning4j/dl4j-examples" target="_blank">https://github.com/deeplearning4j/dl4j-examples</a></p>
+	</li>
+	<li><p>点击“clone or download”，选择“download zip”</p>
+	<img class="img-responsive center-block" src="../img/eclipse-dl4j-example-download.png" alt="deeplearning4j">
+	</li>
+	<li><p>把这两个文件解压缩至任意文件夹。我用github的文件夹，把两个文件克隆到同一个文件夹下。结果应该如下图所示。</p>
+	<img class="img-responsive center-block" src="../img/eclipse-folder-layout.png" alt="deeplearning4j">
+	</li>
+	
+</ul>
