@@ -55,7 +55,7 @@ public class ParagraphVectors extends Word2Vec {
     protected boolean normalizedLabels = false;
 
     protected transient final Object inferenceLocker = new Object();
-    protected transient ExecutorService inferenceExecutor =  Executors.newFixedThreadPool(8);
+    protected transient final ExecutorService inferenceExecutor =  Executors.newFixedThreadPool(18);
     protected transient final AtomicLong countSubmitted = new AtomicLong(0);
     protected transient final AtomicLong countFinished = new AtomicLong(0);
 

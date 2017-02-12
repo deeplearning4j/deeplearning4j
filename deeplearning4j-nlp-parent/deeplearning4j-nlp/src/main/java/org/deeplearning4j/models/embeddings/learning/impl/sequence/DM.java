@@ -177,13 +177,15 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
+        finish();
+
         return ret;
     }
 
 
     @Override
     public void finish() {
-        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()){
+        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0){
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
