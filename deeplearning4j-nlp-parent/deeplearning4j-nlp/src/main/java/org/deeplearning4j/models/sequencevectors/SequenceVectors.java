@@ -150,7 +150,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
-    protected void initLearners() {
+    protected synchronized void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
             if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
