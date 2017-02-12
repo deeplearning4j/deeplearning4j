@@ -164,7 +164,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             return null;
 
 
-        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(), lookupTable.layerSize() + 1);
+        Random random = Nd4j.getRandom();
+        random.reSeed(configuration.getSeed() * sequence.hashCode());
         INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
 
         INDArray orig = ret.dup();
@@ -186,6 +187,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public void finish() {
         if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0){
+            log.info("Calling exec for {} aggregates...", cbow.getBatch().size());
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
