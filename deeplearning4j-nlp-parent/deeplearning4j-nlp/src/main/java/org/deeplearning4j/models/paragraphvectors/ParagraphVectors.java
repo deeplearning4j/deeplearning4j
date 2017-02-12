@@ -235,7 +235,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document
      * @return
      */
-    public Future<Pair<String, INDArray>> inferVectorBatched(LabelledDocument document){
+    public Future<Pair<String, INDArray>> inferVectorBatched(@NonNull LabelledDocument document){
 
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
@@ -246,6 +246,30 @@ public class ParagraphVectors extends Word2Vec {
 
         InferenceCallable callable = new InferenceCallable(vocab, tokenizerFactory, document);
         Future<Pair<String, INDArray>> future = inferenceExecutor.submit(callable);
+        countSubmitted.incrementAndGet();
+
+        return future;
+    }
+
+    /**
+     * This method implements batched inference, based on Java Future parallelism model.
+     *
+     * PLEASE NOTE: This method will return you Future&lt;INDArray&gt;, so tracking relation between document and INDArray will be your responsibility
+     *
+     * @param document
+     * @return
+     */
+    public Future<INDArray> inferVectorBatched(@NonNull String document){
+
+        // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
+        while (countSubmitted.get() - countFinished.get() > 1024) {
+            try {
+                Thread.sleep(50);
+            } catch (Exception e) { }
+        }
+
+        BlindInferenceCallable callable = new BlindInferenceCallable(vocab, tokenizerFactory, document);
+        Future<INDArray> future = inferenceExecutor.submit(callable);
         countSubmitted.incrementAndGet();
 
         return future;
@@ -1224,6 +1248,44 @@ public class ParagraphVectors extends Word2Vec {
             Pair<String, INDArray> result = null;
             synchronized (inferenceLocker) {
                 result = Pair.makePair(document.getId(), inferVector(documentAsWords));
+            }
+
+            countFinished.incrementAndGet();
+
+            return result;
+        }
+    }
+
+    public class BlindInferenceCallable implements Callable<INDArray> {
+        private final TokenizerFactory tokenizerFactory;
+        private final VocabCache<VocabWord> vocab;
+        private final String document;
+
+        public BlindInferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull String document) {
+            this.tokenizerFactory = tokenizerFactory;
+            this.vocab = vocabCache;
+            this.document = document;
+        }
+
+        @Override
+        public INDArray call() throws Exception {
+
+            // first part of this callable will be actually run in parallel
+            List<String> tokens = tokenizerFactory.create(document).getTokens();
+            List<VocabWord> documentAsWords = new ArrayList<>();
+            for (String token: tokens) {
+                if (vocab.containsWord(token)) {
+                    documentAsWords.add(vocab.wordFor(token));
+                }
+            }
+
+            if (documentAsWords.isEmpty())
+                throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
+
+            // inference will be single-threaded in java, and parallel in native
+            INDArray result = null;
+            synchronized (inferenceLocker) {
+                result = inferVector(documentAsWords);
             }
 
             countFinished.incrementAndGet();
