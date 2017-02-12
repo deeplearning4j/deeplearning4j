@@ -134,7 +134,6 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(), configuration.isTrainElementsVectors(), inferenceVector);
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()){
-            log.info("Calling exec for {} aggregates...", cbow.getBatch().size());
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
@@ -164,8 +163,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(sequence.isEmpty())
             return null;
 
-        Random random = Nd4j.getRandom();
-        random.reSeed(configuration.getSeed() * sequence.hashCode());
+        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(), lookupTable.layerSize() + 1);
         INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
 
         for (int iter = 0; iter < iterations; iter++) {
@@ -185,7 +183,6 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public void finish() {
         if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0){
-            log.info("Calling final exec for {} aggregates...", cbow.getBatch().size());
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
