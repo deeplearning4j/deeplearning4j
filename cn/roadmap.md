@@ -1,42 +1,42 @@
 ---
-title: Deeplearning4j Roadmap
+title: Deeplearning4j路线图
 layout: cn-default
 ---
 
-# Deeplearning4j Roadmap
+# Deeplearning4j路线图
 
-These priorities have been set by what the Skymind has seen demand for among clients and open-source community members. Contributors are welcome to add features whose priority they deem to be higher. 
+基于对客户和开源社区成员需求的认识，Skymind设定了下列开发重点。我们欢迎贡献者按自定的优先顺序添加功能。 
 
-High priority:
+优先级最高：
 
-* CUDA rewrite for ND4J (under way)
-* CPU optimizations (C++ backend)
-* Hyperparameter optimization (underway, basics done: [Arbiter](https://github.com/deeplearning4j/Arbiter))
-* Parameter server
-* Sparse support for ND4J
-* Performance tests for network training vs. other platforms (and where necessary: optimizations)
-* Performance tests for Spark vs. local (ditto)
-* Building examples at scale
+* 为ND4J重写CUDA（进行中）
+* CPU优化（C++后端）
+* 超参数优化（进行中，基础工作已完成：[Arbiter](https://github.com/deeplearning4j/Arbiter)）
+* 参数服务器
+* ND4J的稀疏支持
+* 网络定型表现测试：对比其他平台（必要之处进行优化）
+* Spark性能测试：对比本地（同上）
+* 大规模构建示例
 
-Medium priority:
+优先级中等：
 
-* OpenCL for ND4J
-* CTC RNN (for speech etc.)
+* ND4J的OpenCL
+* CTC循环神经网络（用于语音等）
 
-Nice to have:
+锦上添花：
 
-* Automatic differentiation
-* Proper complex number support for ND4J (+optimizations)
-* Reinforcement learning
-* Python support/interface
-* Support for ensembles
-* Variational autoencoders
-* Generative adversarial models
+* 自动微分
+* ND4J的复数支持（+优化）
+* 强化学习
+* Python支持/接口
+* 集成（ensemble）学习支持
+* 变分自动编码器
+* 生成式对抗模型
 
-Low priority:
+优先级较低：
 
-* Hessian free optimization
-* Other RNN types: multi-dimensional; attention models, Neural Turing Machine, etc.
-* 3D CNNs
+* 无Hessian矩阵（Hessian-free）优化算法
+* 其他类型的循环神经网络：多维度；注意力模型、神经图灵机等
+* 3D卷积神经网络
 
-This is a work in progress. Last updated Feb. 27 2016.
+本页内容将持续更新。上次更新日期为2016年2月27日。
