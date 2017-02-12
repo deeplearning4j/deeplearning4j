@@ -168,6 +168,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         random.reSeed(configuration.getSeed() * sequence.hashCode());
         INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
 
+        log.info("iterations: {}, seq size: {}", iterations, sequence.size());
+
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
