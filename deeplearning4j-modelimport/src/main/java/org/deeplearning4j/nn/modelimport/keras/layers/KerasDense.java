@@ -80,11 +80,8 @@ public class KerasDense extends KerasLayer {
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Dense layer accepts only one input (received " + inputType.length + ")");
-
         /* Check whether layer requires a preprocessor for this InputType. */
-        InputPreProcessor preprocessor = this.getDenseLayer().getPreProcessorForInputType(inputType[0]);
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         if (preprocessor != null) {
             return this.getDenseLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
         }
