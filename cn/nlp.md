@@ -1,37 +1,40 @@
 ---
-title: Deeplearning4j's NLP framework
+title: Deeplearning4j的自然语言处理功能
 layout: cn-default
 ---
 
-# Deeplearning4j's NLP framework
+# Deeplearning4j的自然语言处理功能
 
-Deeplearning4j's NLP relies on [ClearTK](https://cleartk.github.io/cleartk/), an open-source machine learning and natural language processing framework for the Apache [Unstructured Information Management Architecture](https://uima.apache.org/), or UIMA. UIMA enables us to perform language identification, language-specific segmentation, sentence boundary detection and entity detection (proper nouns: persons, corporations, places and things). 
+由于设计目的不同，Deeplearning4j在自然语言处理方面可能无法与斯坦福的CoreNLP或NLTK相提并论，但它也包含一些重要的文本处理工具，我们将在本页中加以介绍。
 
-### SentenceIterator
+Deeplearning4j的自然语言处理（NLP）功能依赖于[ClearTK](https://cleartk.github.io/cleartk/)——一个面向Apache[非结构化信息管理架构](https://uima.apache.org/)（UIMA）的机器学习与自然语言处理框架。UIMA能实现语言识别、特定语言的切分、语句边界检测和实体检测（检测专有名词：人名、企业名、地名和事物名）。 
 
-There are several steps involved in processing natural language. The first is to iterate over your corpus to create a list of documents, which can be as short as a tweet, or as long as a newspaper article. This is performed by a SentenceIterator, which will appear like this: 
+### 语句迭代器
+
+自然语言的处理包括几个步骤。首先要对语料库进行迭代，创建文档列表，而文档可以和微博一样短，也可以像报刊文章那么长。这一步由语句迭代器，即SentenceIterator来完成，代码如下： 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=33:41"></script>
 
-The SentenceIterator encapsulates a corpus or text, organizing it, say, as one Tweet per line. It is responsible for feeding text piece by piece into your natural language processor. The SentenceIterator is not analogous to a similarly named class, the DatasetIterator, which creates a dataset for training a neural net. Instead it creates a collection of strings by segmenting a corpus. 
+SentenceIterator封装一个语料库或一篇文本并对其进行整理，比如整理成每行一条微博的格式。它负责将文本一段一段地输入您的自然语言处理系统。虽然SentenceIterator的名称与DatasetIterator相似，但此二者不能加以类比。DatasetIterator用于创建神经网络的定型数据集，而SentenceIterator则通过切分语料库来创建一组字符串。 
 
-### Tokenizer
+### 分词器
 
-A Tokenizer further segments the text at the level of single words, also alternatively as n-grams. ClearTK contains the underlying tokenizers, such as parts of speech (PoS) and parse trees, which allow for both dependency and constituency parsing, like that employed by a recursive neural tensor network (RNTN). 
+分词器（Tokenizer）将文本进一步切分为单词，也可以切分为n-gram。ClearTK包括词性标注（PoS）和解析树（parse tree）等基础分词器，可以实现依赖解析和语法成分解析，与递归神经张量网络（RNTN）所使用的方法类似。 
 
-A Tokenizer is created and wrapped by a [TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java). The default tokens are words separated by spaces. The tokenization process also involves some machine learning to differentiate between ambibuous symbols like . which end sentences and also abbreviate words such as Mr. and vs.
+分词器由[TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java)创建和包装。默认的切分单位是以空格分隔的单词。分词过程也需要借助某些形式的机器学习来分辨具有多种意义的符号，比如“.”可能是句号，也有可能像在“Mr.”和“vs.”这样的词中那样表示缩写。
 
-Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode, and to render such text, say, as lowercase characters uniformly. 
+分词器和语句迭代器都需要和预处理器配合使用，以应对Unicode等较为杂乱的文本中出现的异常情况，将这类文本转换为统一的格式，比如全部转为小写字母。 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=43:57"></script>
 
 
-### Vocab
 
-Each document has to be tokenized to create a vocab, the set of words that matter for that document or corpus. Those words are stored in the vocab cache, which contains statistics about a subset of words counted in the document, the words that "matter". The line separating significant and insignifant words is mobile, but the basic idea of distinguishing between the two groups is that words occurring only once (or less than, say, five times) are hard to learn and their presence represents unhelpful noise.
+### 词汇表
 
-The vocab cache stores metadata for methods such as Word2vec and Bag of Words, which treat words in radically different ways. Word2vec creates representations of words, or neural word embeddings, in the form of vectors that are hundreds of coefficients long. Those coefficients help neural nets predict the likelihood of a word appearing in any given context; for example, after another word. Here's Word2vec, configured:
+每份文档都必须通过分词生成一个词汇表，其中包括该文档或语料库中比较重要的词。这些词是文档中所有被统计的词的一个子集。“重要的”词及其统计信息都存储在词汇表缓存中。重要和非重要的词之间并没有固定的界限，但区分这两类词的基本思路是：只出现一次（或者说出现少于五次）的词较难学习，可将其视为无益的噪声信号。
+
+词汇表缓存保存着Word2vec和词袋等方法所需的元数据，这两种方法对于词的处理方式截然不同。Word2vec生成词的向量表示，亦称为神经词向量。词向量可以长至包含几百个系数，而这些系数帮助神经网络预测一个词在任何特定语境中的出现概率，比如在另一个特定的词之后出现的概率。以下是配置好的Word2vec：
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=58:74"></script>
 
-Once you obtain word vectors, you can feed them into a deep net for classification, prediction, sentiment analysis and the like.
+获得词向量后，就可以将其输入一个深度神经网络来进行分类、预测、情感分析等操作了。
