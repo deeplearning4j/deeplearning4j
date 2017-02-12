@@ -23,7 +23,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>datavec-geo</artifactId>
+    <artifactId>datavec-geo_2.11</artifactId>
 
     <properties>
         <geoip2.version>2.8.0</geoip2.version>
@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_2.10</artifactId>
+            <artifactId>jackson-module-scala_2.11</artifactId>
             <version>${geoip2.jackson.version}</version>
         </dependency>
     </dependencies>
