@@ -1245,10 +1245,8 @@ public class ParagraphVectors extends Word2Vec {
                 throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
 
             // inference will be single-threaded in java, and parallel in native
-            Pair<String, INDArray> result = null;
-            synchronized (inferenceLocker) {
-                result = Pair.makePair(document.getId(), inferVector(documentAsWords));
-            }
+            Pair<String, INDArray> result = Pair.makePair(document.getId(), inferVector(documentAsWords));
+
 
             countFinished.incrementAndGet();
 
@@ -1283,10 +1281,7 @@ public class ParagraphVectors extends Word2Vec {
                 throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
 
             // inference will be single-threaded in java, and parallel in native
-            INDArray result = null;
-            synchronized (inferenceLocker) {
-                result = inferVector(documentAsWords);
-            }
+            INDArray result = inferVector(documentAsWords);
 
             countFinished.incrementAndGet();
 
