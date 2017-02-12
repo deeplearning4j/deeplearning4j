@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.lang3.RandomUtils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -1740,5 +1741,13 @@ public class ArrayUtil {
             result.put( entry.getKey(), entry.getValue() );
         }
         return result;
+    }
+
+
+    public static <T> T getRandomElement(List<T> list) {
+        if (list.size() < 1)
+            return null;
+
+        return list.get(RandomUtils.nextInt(0, list.size()));
     }
 }

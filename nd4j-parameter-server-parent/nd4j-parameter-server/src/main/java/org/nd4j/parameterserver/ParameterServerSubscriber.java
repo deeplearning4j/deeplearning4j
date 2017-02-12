@@ -86,7 +86,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
     @Parameter(names = {"-s", "--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
-    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "The shape of the ndarray", arity = 1)
+    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "Heartbeat interval in ms", arity = 1)
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;

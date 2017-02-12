@@ -665,11 +665,29 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testCreate() {
+        INDArray array0 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9});
+        INDArray array0_1 = array0.dup();
+        INDArray array0_2 = array0.dup();
+        INDArray array0_3 = array0.dup();
         INDArray array1 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new int[]{3, 3}, 'c');
+        INDArray array1_1 = array1.dup();
+        INDArray array1_2 = array1.dup();
+        INDArray array1_3 = array1.dup();
         INDArray array2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9,10,11,12, 13,14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29}, new int[]{3, 3, 3}, 'c');
+        INDArray array2_1 = array2.dup();
+        INDArray array2_2 = array2.dup();
+        INDArray array2_3 = array2.dup();
 
         assertEquals(2, array1.rank());
         assertEquals(3, array2.rank());
+
+        INDArray array2D = Nd4j.vstack(array0, array0_1, array0_2, array0_3);
+        INDArray array3D = Nd4j.vstack(array1, array1_1, array1_2, array1_3);
+        INDArray array4D = Nd4j.vstack(array2, array2_1, array2_2, array2_3);
+
+        log.info("Output Array2D rank: {}", array2D.rank());
+        log.info("Output Array3D rank: {}", array3D.rank());
+        log.info("Output Array4D rank: {}", array4D.rank());
     }
 
     @Test

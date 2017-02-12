@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
     private Map<ShapeDescriptor, DataBuffer> shapeCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
