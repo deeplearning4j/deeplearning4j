@@ -192,8 +192,6 @@ public class ParagraphVectors extends Word2Vec {
 
         initLearners();
 
-        log.info("Going for inference with: {}", sequenceLearningAlgorithm.getClass().getSimpleName());
-
         INDArray inf = learner.inferSequence(sequence, seed, learningRate, minLearningRate, iterations);
 
         return inf;
