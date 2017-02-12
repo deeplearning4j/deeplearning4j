@@ -333,4 +333,10 @@
 "title": "用计算图构建复杂的网络架构",
 "description": "本页主要介绍如何用DL4J的计算图（Computation Graph）功能来构建更加复杂的网络。",
 "tags": ["计算图", "computation graph", "preprocessor", "示例", "RecordReaderMultiDataSetIterato"]
+},
+{
+"url": "httpshttps://deeplearning4j.org/cn/eclipse",
+"title": "如何用Eclipse设置DL4J项目",
+"description": "本文是在Eclipse中设置一个Java项目的指南，写给不想同Maven扯上关系的Eclipse用户参考。",
+"tags": ["eclipse", "例子", "example", "示例", "maven", "neon"]
 }]
