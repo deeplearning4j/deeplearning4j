@@ -151,17 +151,23 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(@NonNull List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
 
         if (learner == null) {
             synchronized (this) {
-                if (learner == null) {
+                if (sequenceLearningAlgorithm == null) {
                     log.info("Creating new PV-DM learner...");
                     learner = new DM<VocabWord>();
                     learner.configure(vocab, lookupTable, configuration);
+                    sequenceLearningAlgorithm = learner;
                 }
             }
         }
+
+        learner = sequenceLearningAlgorithm;
+
+
 
         if (document.isEmpty())
             throw new ND4JIllegalStateException("Impossible to apply inference to empty list of words");
