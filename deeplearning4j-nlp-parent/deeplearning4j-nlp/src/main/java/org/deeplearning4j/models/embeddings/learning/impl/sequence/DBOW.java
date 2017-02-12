@@ -150,13 +150,14 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
+        finish();
 
         return ret;
     }
 
     @Override
     public void finish() {
-        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch().size() >= configuration.getBatchSize()){
+        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch().size() > 0){
             Nd4j.getExecutioner().exec(skipGram.getBatch());
             skipGram.getBatch().clear();
         }
