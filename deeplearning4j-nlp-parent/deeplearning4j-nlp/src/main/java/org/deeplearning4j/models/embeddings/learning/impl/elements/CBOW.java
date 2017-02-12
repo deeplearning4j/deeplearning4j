@@ -160,10 +160,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(), lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords, inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-        if (!isInference)
+        //if (!isInference)
             batches.get().add(cbow);
-        else
-            Nd4j.getExecutioner().exec(cbow);
+        //else
+        //    Nd4j.getExecutioner().exec(cbow);
 
     }
 
