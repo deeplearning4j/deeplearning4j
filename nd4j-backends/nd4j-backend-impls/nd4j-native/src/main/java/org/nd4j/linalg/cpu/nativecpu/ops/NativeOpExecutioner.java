@@ -1,7 +1,9 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
@@ -50,6 +52,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * Since for NativeOpExecutioner all executions are synchronous
      */
     private ThreadLocal<Map<Integer, Pointer>> batchPointers = new ThreadLocal<>();
+    private ThreadLocal<Map<Integer, AggregateMemoryBlock>> memoryBlocks = new ThreadLocal<>();
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
@@ -1080,21 +1083,29 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public void exec(Aggregate op) {
         // long st = profilingHookIn(op);
 
+        if (memoryBlocks.get() == null)
+            memoryBlocks.set(new HashMap<Integer, AggregateMemoryBlock>());
+
+        if (memoryBlocks.get().get(op.opNum()) == null)
+            memoryBlocks.get().put(op.opNum(), new AggregateMemoryBlock(op));
+
+        AggregateMemoryBlock block = memoryBlocks.get().get(op.opNum());
+
         int numArguments = op.getArguments().size();
         int numIndexArguments = op.getIndexingArguments().size();
         int numRealArguments = op.getRealArguments().size();
         int numShapes = op.getShapes().size();
         int numIntArrays = op.getIntArrayArguments().size();
 
-        PointerPointer arguments = new PointerPointer(numArguments);
+        PointerPointer arguments = block.getArgumentsPointer(); //new PointerPointer(numArguments);
         List<IntPointer> pointers = new ArrayList<>();
-        PointerPointer intArrays = new PointerPointer(numIntArrays);
+        PointerPointer intArrays = block.getArraysPointer(); //new PointerPointer(numIntArrays);
 
         for (int x = 0; x < numArguments; x++ ) {
             arguments.put(x, op.getArguments().get(x) == null ? null : op.getArguments().get(x).data().addressPointer());
         }
 
-        PointerPointer shapes = new PointerPointer(numShapes);
+        PointerPointer shapes = block.getShapesPointer(); //new PointerPointer(numShapes);
 
         for (int x = 0; x < numShapes; x++) {
             if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
@@ -1103,25 +1114,31 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
         }
 
-        int[] indexes = new int[numIndexArguments];
+        //int[] indexes = new int[numIndexArguments];
+        IntPointer pointer = block.getIndexingPointer();
         for (int x = 0; x < numIndexArguments; x++) {
-            indexes[x] = op.getIndexingArguments().get(x);
+            pointer.put(x, op.getIndexingArguments().get(x));
         }
 
-        IntPointer pointer = new IntPointer(indexes);
+        //IntPointer pointer = new IntPointer(indexes);
 
         double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
-            reals[x] = op.getRealArguments().get(x).doubleValue();
+            //reals[x] = op.getRealArguments().get(x).doubleValue();
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
+                ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
+            else
+                ((DoublePointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).doubleValue());
         }
 
         for (int x = 0; x < numIntArrays; x++) {
-            IntPointer intPtr = new IntPointer(op.getIntArrayArguments().get(x));
+            IntPointer intPtr = block.getIntArrays().get(x); //new IntPointer(op.getIntArrayArguments().get(x));
+            intPtr.put(op.getIntArrayArguments().get(x), 0, op.getIntArrayArguments().get(x).length);
             intArrays.put(x, intPtr);
             pointers.add(intPtr);
         }
 
-        INDArray realsBuffer = Nd4j.create(reals);
+        //INDArray realsBuffer = Nd4j.create(reals);
 
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
@@ -1134,7 +1151,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numIndexArguments,
                     intArrays,
                     numIntArrays,
-                    (FloatPointer) realsBuffer.data().addressPointer(),
+                    (FloatPointer) block.getRealArgumentsPointer(),
                     numRealArguments
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -1147,7 +1164,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numIndexArguments,
                     intArrays,
                     numIntArrays,
-                    (DoublePointer) realsBuffer.data().addressPointer(),
+                    (DoublePointer) block.getRealArgumentsPointer(),
                     numRealArguments
             );
         } else {
@@ -1272,5 +1289,61 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public TADManager getTADManager() {
         return tadManager;
+    }
+
+    /**
+     * This class holds memory chunks required for single specific Aggregate op.
+     * Can be used together with ThreadLocal variables
+     */
+    @Data
+    private static class AggregateMemoryBlock {
+        private List<IntPointer> intArrays = new ArrayList<>();
+        private IntPointer indexingPointer;
+        private Pointer realArgumentsPointer;
+        private PointerPointer shapesPointer;
+        private PointerPointer argumentsPointer;
+        private PointerPointer arraysPointer;
+
+        private final int opNum;
+
+        private AggregateMemoryBlock(@NonNull Aggregate op) {
+
+            opNum = op.opNum();
+
+            // creating IntArrays
+            for (int i = 0; i < op.maxIntArrays(); i++) {
+                intArrays.add(new IntPointer(op.maxIntArraySize()));
+            }
+
+            // allocating chunk for IndexingArguments
+            indexingPointer = new IntPointer(op.maxIndexArguments());
+
+            // allocating chunk for RealArguments
+            realArgumentsPointer = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(op.maxRealArguments()) : new FloatPointer(op.maxRealArguments());
+
+            // allocating chunk for shapesPointer
+            shapesPointer = new PointerPointer(op.maxShapes());
+
+            // allocating chunk for argumentsPointer
+            argumentsPointer = new PointerPointer(op.maxArguments());
+
+            // chunk for intArrays
+            arraysPointer = new PointerPointer(op.maxIntArrays());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            AggregateMemoryBlock that = (AggregateMemoryBlock) o;
+
+            return opNum == that.opNum;
+        }
+
+        @Override
+        public int hashCode() {
+            return opNum;
+        }
     }
 }
