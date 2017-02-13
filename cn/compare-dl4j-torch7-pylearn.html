@@ -1,27 +1,55 @@
 ---
-title: 深度学习框架比较：Deeplearning4j、Torch、Theano、Caffe和TensorFlow
+title: 深度学习框架比较：Deeplearning4j、Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK
 layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
-<p><h1>DL4J与Torch、Theano、Caffe、TensorFlow的比较</h1></p>
-<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和Spark集成，可使用任意数量的GPU或CPU运行，而且发生任何问题都可以<a href="http://www.skymind.io/contact?__hstc=3042607.a7ccacb889310ae8ee9e75399d132dd6.1464754825987.1481472359622.1481478033979.158&__hssc=3042607.7.1481478033979&__hsfp=4201184654" target="_blank">联系服务热线</a>。</p>
+<p><h1>DL4J与Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK的比较</h1></p>
+<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行对标，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
+</p>
 <br />
 <p><h2>目录</h2></p>
+<p><strong>Lua</strong>
 <ol>
+	<li><a href="#torch">Torch</a></li>
+</ol><br>
+<p><strong>Python 框架</strong>
+<ol>
+  <li><a href="#theano">Theano及其生态系统</a></li>
   <li><a href="#tensorflow">TensorFlow</a></li>
-  <li><a href="#theano">Theano、Pylearn2及其生态系统</a></li>
-  <li><a href="#torch">Torch</a></li>
-  <li><a href="#caffe">Caffe</a></li>
+  <li><a href="#caffe">Caffe</a></li>  
   <li><a href="#cntk">CNTK</a></li>
   <li><a href="#dsstne">DSSTNE</a></li>
+  <li><a href="#keras">Keras</a></li>
+  <li><a href="#paddle">Paddle</a></li>
+  <li><a href="#bigdl">BigDL</a></li>  
   <li><a href="#licensing">许可</a></li>
-  <li><a href="#speed">速度</a></li>
-  <li><a href="#java">DL4J：为什么用Java？</a></li>
-  <li><a href="#ecosystem">DL4J：生态系统</a></li>
-  <li><a href="#scala">DL4S：基于Scala语言的深度学习</a></li>
-  <li><a href="#ml">机器学习框架</a></li>
-  <li><a href="#tutorial">扩展阅读</a></li>
-</ol>
+</ol><br>
+<p><strong>JVM相关因素</strong>
+<ol>
+	<li><a href="#speed">速度</a></li>
+	<li><a href="#java">DL4J：为什么用JVM？</a></li>
+	<li><a href="#ecosystem">DL4J：生态系统</a></li>
+	<li><a href="#scala">DL4S：基于Scala语言的深度学习</a></li>
+  	<li><a href="#ml">机器学习框架</a></li>
+  	<li><a href="#tutorial">扩展阅读</a></li>
+</ol><br>
+
+<p><h2>Lua</h2></p>
+<p><h3><a name="torch">Torch</a></h3></p>
+<p><a href="http://torch.ch/" target="_blank"><strong>Torch</strong></a>是用Lua编写的带API的计算框架，支持机器学习算法。Facebook和Twitter等大型科技公司使用Torch的某些版本，由内部团队专门负责定制自己的深度学习平台。Lua是上世纪九十年代早期在巴西开发的多范例脚本语言。</p>
+<p>Torch7虽然功能强大，<a href="https://news.ycombinator.com/item?id=7929216" target="_blank">但其设计并不适合在两个群体中大范围普及</a>，即主要依赖Python的学术界，以及普遍使用Java的企业软件工程师。Deeplearning4j用Java编写，反映了我们对行业应用和使用便利的重视。我们认为可用性是阻碍深度学习实施工具广泛普及的限制因素。我们认为可扩展性应当通过Hadoop和Spark这样的开源分布式运行时系统来实现自动化。我们还认为，从确保工具正常运作和构建社区两方面来看，提供商业支持的开源框架是最恰当的解决方案。</p>
+<p>Facebook于2017年1月开放了Torch的Python API ― <a href="https://github.com/pytorch/pytorch">PyTorch</a>的源代码。PyTorch支持动态计算图，让您能处理长度可变的输入和输出，而这在RNN应用和其他一些情形中很有帮助。CMU的DyNet和PFN的Chainer框架也支持动态计算图。</p><br>
+
+<h4>利与弊:</h4></p>
+<span class="label label-success">+</span> 大量模块化组件，容易组合 <br />
+<span class="label label-success">+</span> 很容易编写自己的层类型并在GPU上运行 <br />
+<span class="label label-success">+</span> Lua. ;) （大多数学习库的代码是Lua，比较易读） <br />
+<span class="label label-success">+</span> 有很多已预定型的模型！ <br />
+<span class="label label-danger">-</span> Lua <br />
+<span class="label label-danger">-</span> 通常需要自己编写定型代码（即插即用相对较少） <br />
+<span class="label label-danger">-</span> 不适合循环神经网络 <br />
+<br />
+
 <br />
 
 <p><h2><a name="tensorflow">TensorFlow</a></h2></p>
@@ -64,19 +92,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-danger">弊</span> 对已预定型模型的支持不够完善 <br />
 <br />
 
-<p><h2><a name="torch">Torch</a></h2></p>
-<p><a href="http://torch.ch/" target="_blank"><strong>Torch</strong></a>是用Lua编写的计算框架，支持机器学习算法。谷歌DeepMind、Facebook等大型科技公司使用Torch的某些版本，由内部团队专门负责定制自己的深度学习平台。Lua是上世纪九十年代早期在巴西开发的多范例脚本语言。</p>
-<p>Torch7虽然功能强大，<a href="https://news.ycombinator.com/item?id=7929216" target="_blank">但其设计并不适合在两个群体中大范围普及</a>，即主要依赖Python的学术界，以及普遍使用Java的企业软件工程师。Deeplearning4j用Java编写，反映了我们对行业应用和使用便利的重视。我们认为可用性是阻碍深度学习实施工具广泛普及的限制因素。我们认为可扩展性应当通过Hadoop和Spark这样的开源分布式运行时系统来实现自动化。我们还认为，从确保工具正常运作和构建社区两方面来看，提供商业支持的开源框架是最恰当的解决方案。 </p>
-<br />
-<p><h3>利与弊:</h3></p>
-<span class="label label-success">利</span> 大量模块化组件，容易组合 <br />
-<span class="label label-success">利</span>  很容易编写自己的层类型并在GPU上运行 <br />
-<span class="label label-success">利</span> Lua. ;) （大多数学习库的代码是Lua，比较易读） <br />
-<span class="label label-success">利</span> 有很多已预定型的模型！ <br />
-<span class="label label-danger">弊</span> Lua <br />
-<span class="label label-danger">弊</span> 通常需要自己编写定型代码（即插即用相对较少） <br />
-<span class="label label-danger">弊</span> 不适合循环神经网络 <br />
-<br />
+
 
 <p><h2><a name="caffe">Caffe</a></h2></p>
 <p><a href="http://caffe.berkeleyvision.org/" target="_blank"><strong>Caffe</strong></a>是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（<a href="https://sites.google.com/site/steveyegge2/google-at-delphi" target="_blank">参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡</a>）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。</p>
