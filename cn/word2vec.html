@@ -105,7 +105,7 @@ building:architect::software:[programmer, SecurityCenter, WinPcap]
 <ul>
   <li><strong>SentenceIterator/DocumentIterator</strong>：用于数据集的迭代。SentenceIterator返回字符串，而DocumentIterator则处理输入流。尽可能使用SentenceIterator。</li>
   <li><strong>Tokenizer/TokenizerFactory</strong>：用于对文本进行分词。在NLP术语中，一个句子表示为一系列词例（token）。TokenizerFactory为一个&rdquo;句子&rdquo;创建一个分词器（tokenizer）实例。</li>
-  <li><strong>VocabCache</strong>：用于跟踪元数据，包括词数、文档中的出现次数、词例的集合（不是词汇，而是已经出现过的词例），词汇（<a href="bagofwords-tf-idf.html">词袋</a>以及词向量查找表中包含的特征）</li>
+  <li><strong>VocabCache</strong>：用于跟踪元数据，包括词频、含有某个词的文档的数量、词例的集合（不是词汇，而是已经出现过的词例），词汇（<a href="bagofwords-tf-idf.html">词袋</a>以及词向量查找表中包含的特征）</li>
   <li><strong>倒排索引</strong>：存储有关词的出现位置的元数据。可用于理解数据集。会自动创建以Lucene实现[1]的索引。</li>
 </ul>
 <p>Word2vec指一类彼此相关的算法，而以下是采用<a href="#skipgram">Skip-Gram</a>负样本采样模型的实现方法。</p><br>
