@@ -21,7 +21,7 @@ SentenceIterator封装一个语料库或一篇文本并对其进行整理，比�
 
 分词器（Tokenizer）将文本进一步切分为单词，也可以切分为n-gram。ClearTK包括词性标注（PoS）和解析树（parse tree）等基础分词器，可以实现依赖解析和语法成分解析，与递归神经张量网络（RNTN）所使用的方法类似。 
 
-分词器由[TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java)创建和包装。默认的切分单位是以空格分隔的单词。分词过程也需要借助某些形式的机器学习来分辨具有多种意义的符号，比如“.”可能是句号，也有可能像在“Mr.”和“vs.”这样的词中那样表示缩写。
+分词器由[TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java)创建和包装。默认的词例（token）切分单位是以空格分隔的单词。分词过程也需要借助某些形式的机器学习来分辨具有多种意义的符号，比如“.”可能是句号，也有可能像在“Mr.”和“vs.”这样的词中那样表示缩写。
 
 分词器和语句迭代器都需要和预处理器配合使用，以应对Unicode等较为杂乱的文本中出现的异常情况，将这类文本转换为统一的格式，比如全部转为小写字母。 
 
