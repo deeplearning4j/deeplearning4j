@@ -27,7 +27,6 @@
 
     <properties>
         <geoip2.version>2.8.0</geoip2.version>
-        <geoip2.jackson.version>2.8.2</geoip2.jackson.version>
     </properties>
 
     <dependencies>
@@ -40,11 +39,6 @@
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
             <version>${geoip2.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_2.10</artifactId>
-            <version>${geoip2.jackson.version}</version>
         </dependency>
     </dependencies>
 
