@@ -1,21 +1,21 @@
 ---
-title: Doc2Vec, or Paragraph Vectors, in Deeplearning4j
+title: Deeplearning4j中的Doc2Vec与段落向量
 layout: cn-default
 ---
 
-## Doc2Vec, or Paragraph Vectors, in Deeplearning4j
+## Deeplearning4j中的Doc2Vec与段落向量
 
-The main purpose of Doc2Vec is associating arbitrary documents with labels, so labels are required. Doc2vec is an extension of word2vec that learns to correlate labels and words, rather than words with other words. Deeplearning4j's implentation is intended to serve the Java, [Scala](./scala.html) and Clojure communities. 
+Doc2Vec的主要作用是在任意文档与标签之间建立联系，所以标签是必需的。Doc2Vec是Word2Vec的一项扩展，而Word2Vec的功能也是学习词与标签之间的关联，而非词与其他词之间的关联。Deeplearning4j中的Doc2Vec实现旨在服务Java、[Scala](./scala.html)和Clojure社区。 
 
-The first step is coming up with a vector that represents the "meaning" of a document, which can then be used as input to a supervised machine learning algorithm to associate documents with labels.
+我们首先要获得表示一份文档的“意义”的向量，然后再将这个向量输入有监督的机器学习算法，确定与文档有关的标签。
 
-In the ParagraphVectors builder pattern, the `labels()` method points to the labels to train on. In the example below, you can see labels related to sentiment analysis:
+在ParagraphVectors构建器模式中，`labels()`方法指明了定型中涉及到的标签。以下的示例中给出了与情感分析相关的标签：
 
 ``` java
     .labels(Arrays.asList("negative", "neutral","positive"))
 ```
 
-Here's a full working example of [classification with paragraph vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java):
+以下是一个[用段落向量进行分类](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)的完整实用示例：
 
 ``` java
     public void testDifferentLabels() throws Exception {
@@ -38,7 +38,7 @@ Here's a full working example of [classification with paragraph vectors](https:/
         assertNotEquals(vec.lookupTable().vector("UNK"),vec.lookupTable().vector("neutral"));}
 ```
 
-### Further Reading
+### 扩展阅读
 
-* [Distributed Representations of Sentences and Documents](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
-* [Word2vec: A Tutorial](./word2vec)
+* [语句与文档的分布式表示](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
+* [Word2vec教程](./word2vec)
