@@ -13,7 +13,11 @@ Contents
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
 * <a href="#regression">Multiple Linear Regression</a>
+* <a href="#updaters">Updaters</a>
+* <a href="#custom">Custom Layers, activation functions and loss functions</a>
 * <a href="#logistic">Logistic Regression & Classifiers</a>
+* <a href="#lossFunction">Loss Functions in DeepLearning4J</a>
+* <a href="#apllyingLossFunction">Applying Loss Functions in DeepLearning4J</a>
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
 * <a href="#enterprise">Enterprise-Scale Deep Learning</a>
 * <a href="#intro">Other Introductory Resources</a>
@@ -189,6 +193,57 @@ That is, given two variables, *Error* and *weight*, that are mediated by a third
 
 The essence of learning in deep learning is nothing more than that: adjusting a model's weights in response to the error it produces, until you can't reduce the error any more. 
 
+## <a name="updaters">Updaters</a>
+
+DL4J support the following Updaters
+
+* ADADELTA 
+* ADAGRAD 
+* ADAM 
+* NESTEROVS 
+* NONE 
+* RMSPROP 
+* SGD 
+* CONJUGATE GRADIENT 
+* HESSIAN FREE 
+* LBFGS 
+* LINE GRADIENT DESCENT
+
+The JavaDoc for updaters is part of the DeepLearning4J JavaDoc and is available [here.](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/Updater.html)
+
+
+## <a name="#activation">Activation Functions</a>
+
+The activation function determines what output a node will generate base upon its input. Sigmoid activation functions had been very populare, ReLU is currently very popular. In DeepLearnging4J the activation function is set at the layer level and applies to all neurons in that layer. 
+
+Supported Activation functions
+
+* CUBE 
+* ELU 
+* HARDSIGMOID 
+* HARDTANH 
+* IDENTITY 
+* LEAKYRELU 
+* RATIONALTANH 
+* RELU 
+* RRELU 
+* SIGMOID 
+* SOFTMAX 
+* SOFTPLUS 
+* SOFTSIGN 
+* TANH
+
+Configuring an activation function
+
+```
+layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
+```
+
+## <a name="custom">Custom layers, activation functions and loss functions</a>
+
+Deeplearning4j support custom Layers, activations and Loss Functions. 
+
+
 ## <a name="logistic">Logistic Regression</a>
 
 On a deep neural network of many layers, the final layer has a particular role. When dealing with labeled input, the output layer classifies each example, applying the most likely label. Each node on the output layer represents one label, and that node turns on or off according to the strength of the signal it receives from the previous layer's input and parameters. 
@@ -214,6 +269,32 @@ As the input *x* that triggers a label grows, the expression *e to the x* shrink
 Now imagine that, rather than having *x* as the exponent, you have the sum of the products of all the weights and their corresponding inputs -- the total signal passing through your net. That's what you're feeding into the logistic regression layer at the output layer of a neural network classifier.
 
 With this layer, we can set a decision threshold above which an example is labeled 1, and below which it is not. You can set different thresholds as you prefer -- a low threshold will increase the number of false positives, and a higher one will increase the number of false negatives -- depending on which side you would like to err. 
+
+
+## <a name="lossFunction">Loss Functions in DeepLearning4J</a>
+
+DeepLearning4J supports the following Loss Functions.
+
+* MSE: Mean Squared Error: Linear Regression
+* EXPLL: Exponential log likelihood: Poisson Regression
+* XENT: Cross Entropy: Binary Classification
+* MCXENT: Multiclass Cross Entropy
+* RMSE_XENT: RMSE Cross Entropy
+* SQUARED_LOSS: Squared Loss
+* NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
+
+## <a name="applyingLossFunction">Applying Loss Functions in DeepLearning4J</a>
+
+The Loss Function is applied when building your output Layer. 
+
+```
+layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+```
+
+The JavaDoc for the Loss Function is part of ND4J javadoc and is available [here.]
+(https://nd4j.org/doc/org/nd4j/linalg/api/ops/LossFunction.html)
+
+
 
 ## <a name="ai">Neural Networks & Artificial Intelligence</a>
 
