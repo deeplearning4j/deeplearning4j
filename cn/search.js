@@ -350,11 +350,11 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/nlp",
 "title": "Deeplearning4j的自然语言处理功能",
 "description": "由于设计目的不同，Deeplearning4j在自然语言处理方面可能无法与斯坦福的CoreNLP或NLTK相提并论，但它也包含一些重要的文本处理工具，我们将在本页中加以介绍。",
-"tags": ["nlp", "自然语言", "分词器", "tokenizer", "词汇表", "word2vec"d]
+"tags": ["nlp", "自然语言", "分词器", "tokenizer", "词汇表", "word2vec"]
 },
 {
 "url": "https://deeplearning4j.org/cn/doc2vec",
 "title": "Deeplearning4j中的Doc2Vec与段落向量",
 "description": "c2Vec的主要作用是在任意文档与标签之间建立联系，所以标签是必需的。Doc2Vec是Word2Vec的一项扩展，而Word2Vec的功能也是学习词与标签之间的关联，而非词与其他词之间的关联。Deeplearning4j中的Doc2Vec实现旨在服务Java、Scala和Clojure社区。",
 "tags": ["doc2vec", "word2vec", "label", "标签", "词汇表", "段落向量"]
-}]
+}];
