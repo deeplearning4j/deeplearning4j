@@ -276,6 +276,40 @@ public class ParagraphVectors extends Word2Vec {
     }
 
     /**
+     * This method does inference on a given List&lt;String&gt;
+     * @param documents
+     * @return INDArrays in the same order as input texts
+     */
+    public List<INDArray> inferVectorBatched(@NonNull List<String> documents) {
+        List<Future<INDArray>> futuresList = new ArrayList<>();
+        List<INDArray> results = new ArrayList<>();
+
+        final AtomicLong flag = new AtomicLong(0);
+
+        for (int i = 0; i < documents.size(); i++) {
+            BlindInferenceCallable callable = new BlindInferenceCallable(vocab, tokenizerFactory, documents.get(i), flag);
+
+            futuresList.add(inferenceExecutor.submit(callable));
+        }
+
+        for (int i = 0; i < documents.size(); i++) {
+            Future<INDArray> future = futuresList.get(i);
+            while (!future.isDone()) {
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {}
+            }
+            try {
+                results.add(future.get());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return results;
+    }
+
+    /**
      * This method predicts label of the document.
      * Computes a similarity wrt the mean of the
      * representation of words in the document
@@ -1222,11 +1256,17 @@ public class ParagraphVectors extends Word2Vec {
         private final TokenizerFactory tokenizerFactory;
         private final VocabCache<VocabWord> vocab;
         private final LabelledDocument document;
+        private AtomicLong flag;
 
         public InferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull LabelledDocument document) {
             this.tokenizerFactory = tokenizerFactory;
             this.vocab = vocabCache;
             this.document = document;
+        }
+
+        public InferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull LabelledDocument document, @NonNull AtomicLong flag) {
+            this(vocabCache, tokenizerFactory, document);
+            this.flag = flag;
         }
 
         @Override
@@ -1250,6 +1290,9 @@ public class ParagraphVectors extends Word2Vec {
 
             countFinished.incrementAndGet();
 
+            if (flag != null)
+                flag.incrementAndGet();
+
             return result;
         }
     }
@@ -1258,11 +1301,17 @@ public class ParagraphVectors extends Word2Vec {
         private final TokenizerFactory tokenizerFactory;
         private final VocabCache<VocabWord> vocab;
         private final String document;
+        private AtomicLong flag;
 
         public BlindInferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull String document) {
             this.tokenizerFactory = tokenizerFactory;
             this.vocab = vocabCache;
             this.document = document;
+        }
+
+        public BlindInferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull String document, @NonNull AtomicLong flag) {
+            this(vocabCache, tokenizerFactory, document);
+            this.flag = flag;
         }
 
         @Override
@@ -1285,6 +1334,9 @@ public class ParagraphVectors extends Word2Vec {
             INDArray result = inferVector(documentAsWords);
 
             countFinished.incrementAndGet();
+
+            if (flag != null)
+                flag.incrementAndGet();
 
             return result;
         }
