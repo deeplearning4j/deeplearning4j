@@ -9,7 +9,7 @@ layout: cn-default
 <p><h2>MapReduce</h2></p>
 <p>MapReduce（映射/归纳）是一种在多个处理器核上处理超大型数据集的技术。谷歌的Jeff Dean在一篇<a href="https://static.googleusercontent.com/media/research.google.com/en/us/archive/mapreduce-osdi04.pdf" target="_blank">2004年的研究论文</a>中首次介绍了这一方法，一年后，雅虎的Doug Cutting实现了一种相似的架构。Cutting的项目最终演变为<a href="https://hadoop.apache.org/" target="_blank">Apache Hadoop</a>。两个项目最初的设计目的都是对Web进行批量索引，后来又产生了许多其他的应用。</p>
 <p>MapReduce这个词指的是函数式编程衍生出的两种方法。<em>Map（映射）</em>操作指对一个值列表中的每项元素进行同样的运算，得到一个新的值列表。<em>Reduce（归纳）</em>操作指将一个列表中的值合并，减少值的个数。</p>
-<p>可以通过词汇表词数统计的例子来理解Map和Reduce的最简形式：<em>Map</em>将一个词汇表中的每一个词的每个实例变成值为1的键值对；<em>Reduce</em>则把与每个词相关联的1相加，得到词数。</p>
+<p>可以通过词汇表词频统计的例子来理解Map和Reduce的最简形式：<em>Map</em>将一个词汇表中的每一个词的每个实例变成值为1的键值对；<em>Reduce</em>则把与每个词相关联的1相加，得到词频。</p>
 <p>MapReduce实际运行时规模更大。<em>Map</em>可以分解非常大的任务，将数据分发给许多处理器核，在这些数据分片上运行相同的运算。<em>Reduce</em>将所有分散并转换后的分片合并成一个数据集，把所有结果汇集到一处，进行一项加法运算。Map是膨胀，而Reduce则是坍缩，就像一颗恒星先扩张成红巨星，再收缩成白矮星。</p>
 <br>
 <p><h2>迭代式MapReduce</h2></p>
