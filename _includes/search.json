@@ -329,14 +329,32 @@
 "tags": ["spark", "hadoop", "yarn", "keras", "scala", "java", "概述", "简介", "功能"]
 },
 {
-"url": "httpshttps://deeplearning4j.org/cn/compgraph",
+"url": "https://deeplearning4j.org/cn/compgraph",
 "title": "用计算图构建复杂的网络架构",
 "description": "本页主要介绍如何用DL4J的计算图（Computation Graph）功能来构建更加复杂的网络。",
 "tags": ["计算图", "computation graph", "preprocessor", "示例", "RecordReaderMultiDataSetIterato"]
 },
 {
-"url": "httpshttps://deeplearning4j.org/cn/eclipse",
+"url": "https://deeplearning4j.org/cn/eclipse",
 "title": "如何用Eclipse设置DL4J项目",
 "description": "本文是在Eclipse中设置一个Java项目的指南，写给不想同Maven扯上关系的Eclipse用户参考。",
 "tags": ["eclipse", "例子", "example", "示例", "maven", "neon"]
+},
+{
+"url": "https://deeplearning4j.org/cn/roadmap",
+"title": "Deeplearning4j路线图",
+"description": "基于对客户和开源社区成员需求的认识，Skymind设定了下列开发重点。我们欢迎贡献者按自定的优先顺序添加功能。",
+"tags": ["roadmap", "路线图", "未来发展", "将开发", " 发展方向", "方针"]
+},
+{
+"url": "https://deeplearning4j.org/cn/nlp",
+"title": "Deeplearning4j的自然语言处理功能",
+"description": "由于设计目的不同，Deeplearning4j在自然语言处理方面可能无法与斯坦福的CoreNLP或NLTK相提并论，但它也包含一些重要的文本处理工具，我们将在本页中加以介绍。",
+"tags": ["nlp", "自然语言", "分词器", "tokenizer", "词汇表", "word2vec"d]
+},
+{
+"url": "https://deeplearning4j.org/cn/doc2vec",
+"title": "Deeplearning4j中的Doc2Vec与段落向量",
+"description": "c2Vec的主要作用是在任意文档与标签之间建立联系，所以标签是必需的。Doc2Vec是Word2Vec的一项扩展，而Word2Vec的功能也是学习词与标签之间的关联，而非词与其他词之间的关联。Deeplearning4j中的Doc2Vec实现旨在服务Java、Scala和Clojure社区。",
+"tags": ["doc2vec", "word2vec", "label", "标签", "词汇表", "段落向量"]
 }]
