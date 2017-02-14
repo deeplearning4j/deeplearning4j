@@ -17,10 +17,10 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.integer;
 
-import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.distribution.DistributionUtils;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -38,7 +38,6 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties("index")
-@EqualsAndHashCode
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @JsonSerialize(using = IntegerDistributionSerializer.class)
@@ -111,4 +110,26 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
         }
     }
 
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof IntegerParameterSpace)) return false;
+        final IntegerParameterSpace other = (IntegerParameterSpace) o;
+        if (!other.canEqual((Object) this)) return false;
+        if (distribution == null ? other.distribution != null : !DistributionUtils.distributionEquals(distribution, other.distribution))
+            return false;
+        if (this.index != other.index) return false;
+        return true;
+    }
+
+    public int hashCode() {
+        final int PRIME = 59;
+        int result = 1;
+        result = result * PRIME + (distribution == null ? 43 : distribution.getClass().hashCode());
+        result = result * PRIME + this.index;
+        return result;
+    }
+
+    protected boolean canEqual(Object other) {
+        return other instanceof IntegerParameterSpace;
+    }
 }

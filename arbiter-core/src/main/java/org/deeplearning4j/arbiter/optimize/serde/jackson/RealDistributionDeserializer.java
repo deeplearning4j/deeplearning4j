@@ -1,9 +1,6 @@
 package org.deeplearning4j.arbiter.optimize.serde.jackson;
 
-import org.apache.commons.math3.distribution.LogNormalDistribution;
-import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.distribution.*;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -24,33 +21,33 @@ public class RealDistributionDeserializer extends JsonDeserializer<RealDistribut
 
         switch (simpleName){
             case "BetaDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new BetaDistribution(node.get("alpha").asDouble(), node.get("beta").asDouble());
             case "CauchyDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new CauchyDistribution(node.get("median").asDouble(), node.get("scale").asDouble());
             case "ChiSquaredDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new ChiSquaredDistribution(node.get("dof").asDouble());
             case "ExponentialDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new ExponentialDistribution(node.get("mean").asDouble());
             case "FDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new FDistribution(node.get("numeratorDof").asDouble(), node.get("denominatorDof").asDouble());
             case "GammaDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new GammaDistribution(node.get("shape").asDouble(), node.get("scale").asDouble());
             case "LevyDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new LevyDistribution(node.get("mu").asDouble(), node.get("c").asDouble());
             case "LogNormalDistribution":
                 return new LogNormalDistribution(node.get("scale").asDouble(), node.get("shape").asDouble());
             case "NormalDistribution":
                 return new NormalDistribution(node.get("mean").asDouble(), node.get("stdev").asDouble());
             case "ParetoDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new ParetoDistribution(node.get("scale").asDouble(), node.get("shape").asDouble());
             case "TDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new TDistribution(node.get("dof").asDouble());
             case "TriangularDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new TriangularDistribution(node.get("a").asDouble(), node.get("b").asDouble(), node.get("c").asDouble());
             case "UniformRealDistribution":
                 return new UniformRealDistribution(node.get("lower").asDouble(), node.get("upper").asDouble());
             case "WeibullDistribution":
-                throw new UnsupportedOperationException("Not yet implemented");
+                return new WeibullDistribution(node.get("alpha").asDouble(), node.get("beta").asDouble());
             default:
                 throw new RuntimeException("Unknown or not supported distribution: " + simpleName);
         }

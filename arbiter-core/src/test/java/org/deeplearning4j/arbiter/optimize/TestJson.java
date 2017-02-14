@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.optimize;
 
 import org.apache.commons.math3.distribution.LogNormalDistribution;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -54,6 +55,7 @@ public class TestJson {
         l.add(new FixedValue<>("string"));
         l.add(new ContinuousParameterSpace(-1,1));
         l.add(new ContinuousParameterSpace(new LogNormalDistribution(1,1)));
+        l.add(new ContinuousParameterSpace(new NormalDistribution(2,0.01)));
         l.add(new DiscreteParameterSpace<>(1,5,7));
         l.add(new DiscreteParameterSpace<>("first","second","third"));
         l.add(new IntegerParameterSpace(0,10));
@@ -73,7 +75,6 @@ public class TestJson {
 
     @Test
     public void testCandidateGeneratorJson() throws Exception {
-
         List<CandidateGenerator<?>> l = new ArrayList<>();
         l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.Sequential));
         l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.RandomOrder));
@@ -88,8 +89,6 @@ public class TestJson {
 
             assertEquals(cg, fromJson);
             assertEquals(cg, fromYaml);
-
         }
     }
-
 }

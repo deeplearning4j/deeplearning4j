@@ -14,8 +14,8 @@ import java.io.IOException;
 public class RealDistributionSerializer extends JsonSerializer<RealDistribution> {
 
     @Override
-    public void serialize(RealDistribution realDistribution, JsonGenerator j, SerializerProvider serializerProvider) throws IOException {
-        Class<?> c = realDistribution.getClass();
+    public void serialize(RealDistribution d, JsonGenerator j, SerializerProvider serializerProvider) throws IOException {
+        Class<?> c = d.getClass();
         String s = c.getSimpleName();
 
         j.writeStartObject();
@@ -23,43 +23,61 @@ public class RealDistributionSerializer extends JsonSerializer<RealDistribution>
 
 
         if(c == BetaDistribution.class){
-            BetaDistribution bd = (BetaDistribution)realDistribution;
+            BetaDistribution bd = (BetaDistribution)d;
             j.writeNumberField("alpha", bd.getAlpha());
             j.writeNumberField("beta", bd.getBeta());
         } else if( c == CauchyDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            CauchyDistribution cd = (CauchyDistribution)d;
+            j.writeNumberField("median", cd.getMedian());
+            j.writeNumberField("scale", cd.getScale());
         } else if( c == ChiSquaredDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            ChiSquaredDistribution cd = (ChiSquaredDistribution)d;
+            j.writeNumberField("dof", cd.getDegreesOfFreedom());
         } else if( c == ExponentialDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            ExponentialDistribution ed = (ExponentialDistribution)d;
+            j.writeNumberField("mean", ed.getMean());
         } else if( c == FDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            FDistribution fd = (FDistribution)d;
+            j.writeNumberField("numeratorDof", fd.getNumeratorDegreesOfFreedom());
+            j.writeNumberField("denominatorDof", fd.getDenominatorDegreesOfFreedom());
         } else if( c == GammaDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            GammaDistribution gd = (GammaDistribution)d;
+            j.writeNumberField("shape", gd.getShape());
+            j.writeNumberField("scale", gd.getScale());
         } else if( c == LevyDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            LevyDistribution ld = (LevyDistribution)d;
+            j.writeNumberField("mu", ld.getLocation());
+            j.writeNumberField("c", ld.getScale());
         } else if( c == LogNormalDistribution.class ){
-            LogNormalDistribution ln = (LogNormalDistribution)realDistribution;
+            LogNormalDistribution ln = (LogNormalDistribution)d;
             j.writeNumberField("scale",ln.getScale());
             j.writeNumberField("shape", ln.getShape());
         } else if( c == NormalDistribution.class ){
-            NormalDistribution nd = (NormalDistribution)realDistribution;
+            NormalDistribution nd = (NormalDistribution)d;
             j.writeNumberField("mean", nd.getMean());
             j.writeNumberField("stdev", nd.getStandardDeviation());
         } else if( c == ParetoDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            ParetoDistribution pd = (ParetoDistribution)d;
+            j.writeNumberField("scale", pd.getScale());
+            j.writeNumberField("shape", pd.getShape());
         } else if( c == TDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            TDistribution td = (TDistribution)d;
+            j.writeNumberField("dof", td.getDegreesOfFreedom());
         } else if( c == TriangularDistribution.class ){
-            throw new UnsupportedOperationException("Not yet implemented");
+            TriangularDistribution td = (TriangularDistribution)d;
+            j.writeNumberField("a", td.getSupportLowerBound());
+            j.writeNumberField("b", td.getMode());
+            j.writeNumberField("c", td.getSupportUpperBound());
         } else if( c == UniformRealDistribution.class ){
-            UniformRealDistribution u = (UniformRealDistribution)realDistribution;
+            UniformRealDistribution u = (UniformRealDistribution)d;
             j.writeNumberField("lower", u.getSupportLowerBound());
             j.writeNumberField("upper", u.getSupportUpperBound());
         } else if( c == WeibullDistribution.class ) {
-            throw new UnsupportedOperationException("Not yet implemented");
+            WeibullDistribution wb = (WeibullDistribution)d;
+            j.writeNumberField("alpha", wb.getShape());
+            j.writeNumberField("beta", wb.getScale());
         } else {
-            throw new UnsupportedOperationException("Unknown or not supported RealDistribution: " + realDistribution.getClass());
+            throw new UnsupportedOperationException("Unknown or not supported RealDistribution: " + d.getClass());
         }
 
         j.writeEndObject();
