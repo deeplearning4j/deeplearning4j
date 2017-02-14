@@ -20,8 +20,8 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -144,6 +144,10 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         this.cnnInputSize = builder.cnnInputSize;
 
         this.numEpochs = builder.numEpochs;
+    }
+
+    protected BaseNetworkSpace(){
+        //Default constructor for Jackson json/yaml serialization
     }
 
 

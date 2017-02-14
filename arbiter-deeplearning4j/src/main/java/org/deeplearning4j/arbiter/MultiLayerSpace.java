@@ -1,20 +1,21 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.misc.ObjectMapperProvider;
-import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +46,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         for (ParameterSpace ps : list) numParameters += ps.numParameters();
 
         //TODO inputs
+    }
+
+    private MultiLayerSpace(){
+        //Default constructor for Jackson json/yaml serialization
     }
 
     @Override
@@ -140,11 +145,11 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
 
 
-    @AllArgsConstructor
+    @AllArgsConstructor @NoArgsConstructor @Data    //No-arg for Jackson JSON serialization
     private static class LayerConf {
-        private final LayerSpace<?> layerSpace;
-        private final ParameterSpace<Integer> numLayers;
-        private final boolean duplicateConfig;
+        private LayerSpace<?> layerSpace;
+        private ParameterSpace<Integer> numLayers;
+        private boolean duplicateConfig;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
@@ -210,4 +215,19 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
     }
 
+    public static MultiLayerSpace fromJson(String json){
+        try {
+            return JsonMapper.getMapper().readValue(json, MultiLayerSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static MultiLayerSpace fromYaml(String yaml){
+        try {
+            return YamlMapper.getMapper().readValue(yaml, MultiLayerSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

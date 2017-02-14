@@ -17,6 +17,9 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
@@ -26,6 +29,8 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
  *
  * @author Alex Black
  */
+@Data
+@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
 
     private EmbeddingLayerSpace(Builder builder) {

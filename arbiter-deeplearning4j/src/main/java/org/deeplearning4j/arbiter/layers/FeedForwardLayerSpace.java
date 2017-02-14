@@ -17,12 +17,17 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 
 import java.util.List;
 
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends LayerSpace<L> {
 
     protected ParameterSpace<Integer> nIn;

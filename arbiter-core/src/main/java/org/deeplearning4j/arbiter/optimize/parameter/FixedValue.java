@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.parameter;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -36,6 +37,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
     private T value;
     private int index;
 
+    @JsonCreator
     public FixedValue(@JsonProperty("value") T value) {
         this.value = value;
     }

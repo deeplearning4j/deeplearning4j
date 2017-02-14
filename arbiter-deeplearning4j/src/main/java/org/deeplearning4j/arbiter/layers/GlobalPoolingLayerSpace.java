@@ -1,5 +1,8 @@
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
@@ -15,6 +18,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
+@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
 
     protected ParameterSpace<int[]> poolingDimensions;
@@ -22,7 +27,7 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
     protected ParameterSpace<PoolingType> poolingType;
     protected ParameterSpace<Integer> pNorm;
 
-    private final int numParameters;
+    private int numParameters;
 
     private GlobalPoolingLayerSpace(Builder builder){
         super(builder);

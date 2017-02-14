@@ -20,7 +20,7 @@ package org.deeplearning4j.arbiter.optimize.runner.listener.candidate;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.ClientProvider;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UICandidateStatusListenerImpl implements UICandidateStatusListener {
