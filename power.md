@@ -4,6 +4,8 @@ layout: default
 ---
 
 Deep Learning on Power 
+----------------------
+
 The [power architecture](https://en.wikipedia.org/wiki/POWER8) is a widely used hardware architecture
 shepherded by IBM. Suitable for high end servers, it is a great chip architecture
 for doing deep learning. With the recent addition of [nvlink](http://www.nvidia.com/object/nvlink.html)
