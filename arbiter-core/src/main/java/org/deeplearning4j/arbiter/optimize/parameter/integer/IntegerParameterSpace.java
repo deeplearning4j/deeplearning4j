@@ -21,8 +21,12 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionDeserializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +41,8 @@ import java.util.List;
 @EqualsAndHashCode
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
+    @JsonSerialize(using = IntegerDistributionSerializer.class)
+    @JsonDeserialize(using = IntegerDistributionDeserializer.class)
     private IntegerDistribution distribution;
     private int index = -1;
 
