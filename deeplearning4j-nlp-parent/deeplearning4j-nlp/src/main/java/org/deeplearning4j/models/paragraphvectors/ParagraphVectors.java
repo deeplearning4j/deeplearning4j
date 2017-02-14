@@ -63,9 +63,14 @@ public class ParagraphVectors extends Word2Vec {
 
     protected ParagraphVectors() {
         super();
-        inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2));
-        countSubmitted = new AtomicLong(0);
-        countFinished = new AtomicLong(0);
+    }
+
+    protected synchronized void initInference() {
+        if (countSubmitted == null || countFinished == null || inferenceExecutor == null) {
+            inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2));
+            countSubmitted = new AtomicLong(0);
+            countFinished = new AtomicLong(0);
+        }
     }
 
     /**
@@ -245,6 +250,8 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public Future<Pair<String, INDArray>> inferVectorBatched(@NonNull LabelledDocument document){
+        if (countSubmitted == null)
+            initInference();
 
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
@@ -269,6 +276,8 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public Future<INDArray> inferVectorBatched(@NonNull String document){
+        if (countSubmitted == null)
+            initInference();
 
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
@@ -290,6 +299,9 @@ public class ParagraphVectors extends Word2Vec {
      * @return INDArrays in the same order as input texts
      */
     public List<INDArray> inferVectorBatched(@NonNull List<String> documents) {
+        if (countSubmitted == null)
+            initInference();
+
         List<Future<INDArray>> futuresList = new ArrayList<>();
         List<INDArray> results = new ArrayList<>();
 
