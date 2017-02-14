@@ -1,22 +1,22 @@
 ---
-title: Textual analysis and deep learning
+title: 文本分析与深度学习
 layout: cn-default
 ---
 
-# Textual analysis and deep learning
+# 文本分析与深度学习
 
-While images are inherently ambiguous, words belong to a set of semi-structured data known as language, which contains information about itself. 
+从本质上看，图像是模糊的非结构化数据，而文字则属于一种半结构化的数据类型，即我们所知的语言。语言之中包含了有关其自身的信息。 
 
-One way to view language is as a form of data compression, in which knowledge of the world is consolidated into a symbolic set. Like a lossy file or a serialized dataset, words are a compact rendering of something larger. You could argue, therefore, that words are a more promising field for deep learning than images, because you can get to the essence of them. 
+我们可以将语言视为一种数据压缩的形式，关于整个世界的知识通过这种形式被压缩到一套符号体系中。就像有损文件或序列化数据集一样，文字是原本规模更庞大的信息的压缩形式。所以，您也可以认为深度学习在文字领域的潜力比图像领域更大，因为文字的实质是可认知的。 
 
-That said, textual analysis has presented many challenges for machine learning. Laborious, manual feature extraction is the main disadvantage of applying three-layer neural nets to textual analysis. In those cases, data scientists need to spend a great deal of time telling the algorithm what to pay attention to. 
+尽管如此，文本分析依然为机器学习带来了许多挑战。三层式神经网络应用于文本分析时的主要缺点是繁琐的手动特征提取。数据科学家需要花费大量时间来指明算法所应关注的特征。 
 
-A part-of-speech tag on a single word might be one feature they select, the fact that the word occurred might be another, and the number of times it appeared in a given text would be a third, each rule carefully and deliberately generated. That process leads to a high ratio of features per word, many of which can be redundant. 
+他们所选择的特征可能包括每个词的词性标签，还有可能包括词是否出现，以及词在某一段特定文本中的出现次数，每条规则都必须小心谨慎地制定。这样的流程也会导致每个词的特征数量过多，许多特征可能都是冗余的。 
 
-One of the chief advantages of deep learning is that feature creation is largely automated. To describe what it does exactly, we’ll first describe feature extraction in more depth.
+深度学习的主要优势之一在于特征创建基本是自动化的。为了说明它的具体功能，我们首先需要深入介绍一下特征提取。
 
-A text fed into a neural network passes through several stages of analysis. The first is sentence segementation, in which the software finds the sentence boundaries within the text. The second is [tokenization](./tokenization.html), in which the software finds individual words. In the third stage, parts-of-speech tags are attached to those words, and in the fourth, they are grouped according to their stems or concepts, in a process known as lemmatization. That is, words such as be, been and is will be grouped since they represent the same verb idea. 
+一段文本被输入神经网络后会经历多个阶段的分析。首先是语句切分，软件会找出文本中句子的边界。第二阶段是[分词](./tokenization.html)，软件会识别出具体的词语。在第三阶段，每个词被赋予词性标签；第四阶段则按词干或概念将词分组，这一过程称为词形还原（lemmatization）。例如，“be”、“been”、“is”这样的词会被归为同一组，因为它们表示同样的动词概念。 
 
-The neural net called [Word2vec](./word2vec.html) goes as far as lemmatization. Lemmas simply extend features based on stems, which is a process deep learning does in other ways automatically.
+名为[Word2vec](./word2vec.html)的神经网络可以完成到词形还原之前的所有步骤。词形还原就是根据词干来扩展特征，深度学习可以用其他方式自动完成这一过程。
 
-Before we turn to Word2vec, however, we'll cover a slightly simpler algorithm, [Bag of Words](./bagofwords-tf-idf.html).
+在讲解Word2vec之前，我们还要先介绍一种略简单一些的算法：[词袋法](./bagofwords-tf-idf.html)。
