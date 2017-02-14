@@ -518,17 +518,17 @@ public class VocabConstructor<T extends SequenceElement> {
 
         @Override
         public void run() {
-            try {
                 Map<String, AtomicLong> seqMap = new HashMap<>();
                 //  log.info("Sequence length: ["+ document.getElements().size()+"]");
 
-                if (fetchLabels) {
-                    T labelWord = document.getSequenceLabel();
-                    labelWord.setSpecial(true);
-                    labelWord.markAsLabel(true);
-                    labelWord.setElementFrequency(1);
+                if (fetchLabels && document.getSequenceLabels() != null) {
+                    for (T labelWord: document.getSequenceLabels()) {
+                        labelWord.setSpecial(true);
+                        labelWord.markAsLabel(true);
+                        labelWord.setElementFrequency(1);
 
-                    targetVocab.addToken(labelWord);
+                        targetVocab.addToken(labelWord);
+                    }
                 }
 
                 List<String> tokens = document.asLabels();
@@ -567,9 +567,6 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 finalCounter.incrementAndGet();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 }
