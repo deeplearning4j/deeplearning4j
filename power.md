@@ -19,7 +19,7 @@ We have similar instructions for running on [gpus](https://deeplearning4j.org/gp
 and [android](https://deeplearning4j.org/android)
 
 
-Running any of our [examples(https://github.com/deeplearning4j/dl4j-examples) should work out of the box.
+Running any of our [examples](https://github.com/deeplearning4j/dl4j-examples) should work out of the box.
 This is due to the fact nd4j-native-platform bundles all native dependencies (including power)
 For more information running our examples, please see our [quickstart](http://deeplearning4j.org/quickstart)
 If you have any problems with using dl4j on power, please come to our [gitter channel](https://gitter.im/deeplearning4j/deeplearning4j)
