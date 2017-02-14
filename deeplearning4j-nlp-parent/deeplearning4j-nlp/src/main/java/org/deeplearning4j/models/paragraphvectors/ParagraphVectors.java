@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class ParagraphVectors extends Word2Vec {
+    private static final long serialVersionUID = 78249242142L;
+
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
     protected INDArray labelsMatrix;
