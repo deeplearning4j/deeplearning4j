@@ -36,10 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -67,7 +64,15 @@ public class ParagraphVectors extends Word2Vec {
 
     protected synchronized void initInference() {
         if (countSubmitted == null || countFinished == null || inferenceExecutor == null) {
-            inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2));
+            inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2),
+                    new ThreadFactory() {
+                        public Thread newThread(Runnable r) {
+                            Thread t = Executors.defaultThreadFactory().newThread(r);
+                            t.setName("ParagraphVectors inference thread");
+                            t.setDaemon(true);
+                            return t;
+                        }
+                    });
             countSubmitted = new AtomicLong(0);
             countFinished = new AtomicLong(0);
         }
