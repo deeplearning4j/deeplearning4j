@@ -57,9 +57,16 @@ public class ParagraphVectors extends Word2Vec {
     protected boolean normalizedLabels = false;
 
     protected transient final Object inferenceLocker = new Object();
-    protected transient final ExecutorService inferenceExecutor =  Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2));
-    protected transient final AtomicLong countSubmitted = new AtomicLong(0);
-    protected transient final AtomicLong countFinished = new AtomicLong(0);
+    protected transient ExecutorService inferenceExecutor;
+    protected transient AtomicLong countSubmitted;
+    protected transient AtomicLong countFinished;
+
+    protected ParagraphVectors() {
+        super();
+        inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2));
+        countSubmitted = new AtomicLong(0);
+        countFinished = new AtomicLong(0);
+    }
 
     /**
      * This method takes raw text, applies tokenizer, and returns most probable label
