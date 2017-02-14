@@ -523,11 +523,13 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 if (fetchLabels && document.getSequenceLabels() != null) {
                     for (T labelWord: document.getSequenceLabels()) {
-                        labelWord.setSpecial(true);
-                        labelWord.markAsLabel(true);
-                        labelWord.setElementFrequency(1);
+                        if (targetVocab.hasToken(labelWord.getLabel())) {
+                            labelWord.setSpecial(true);
+                            labelWord.markAsLabel(true);
+                            labelWord.setElementFrequency(1);
 
-                        targetVocab.addToken(labelWord);
+                            targetVocab.addToken(labelWord);
+                        }
                     }
                 }
 
