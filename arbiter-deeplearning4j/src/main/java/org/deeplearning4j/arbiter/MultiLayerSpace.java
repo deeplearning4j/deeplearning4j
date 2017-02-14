@@ -4,12 +4,16 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.ui.misc.ObjectMapperProvider;
+import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,6 +137,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
         return sb.toString();
     }
+
+
 
     @AllArgsConstructor
     private static class LayerConf {
