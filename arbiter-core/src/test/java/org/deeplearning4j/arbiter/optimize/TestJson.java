@@ -2,12 +2,10 @@ package org.deeplearning4j.arbiter.optimize;
 
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
-import org.deeplearning4j.arbiter.optimize.distribution.DegenerateIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;

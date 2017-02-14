@@ -17,12 +17,16 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.continuous;
 
-import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.distribution.DistributionUtils;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionDeserializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,9 +38,11 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties("index")
-@EqualsAndHashCode
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
+    //Need to use custom serializers/deserializers for commons RealDistribution instances
+    @JsonSerialize(using = RealDistributionSerializer.class)
+    @JsonDeserialize(using = RealDistributionDeserializer.class)
     private RealDistribution distribution;
     private int index = -1;
 
@@ -100,5 +106,23 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
         } else {
             return "ContinuousParameterSpace(" + distribution + ")";
         }
+    }
+
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof ContinuousParameterSpace)) return false;
+        final ContinuousParameterSpace other = (ContinuousParameterSpace) o;
+        if (distribution == null ? other.distribution != null : !DistributionUtils.distributionsEqual(distribution, other.distribution))
+            return false;
+        if (this.index != other.index) return false;
+        return true;
+    }
+
+    public int hashCode() {
+        final int PRIME = 59;
+        int result = 1;
+        result = result * PRIME + (distribution == null ? 43 : distribution.getClass().hashCode());
+        result = result * PRIME + this.index;
+        return result;
     }
 }
