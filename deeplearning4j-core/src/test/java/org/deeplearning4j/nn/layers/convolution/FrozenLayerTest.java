@@ -14,7 +14,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by susaneraly on 2/5/17.
@@ -69,7 +69,7 @@ public class FrozenLayerTest {
             i++;
         }
 
-        assertTrue(Nd4j.hstack(modelToFineTune.getLayer(0).params(),modelToFineTune.getLayer(1).params(),notFrozen.params()).equals(modelNow.params()));
+        assertEquals(Nd4j.hstack(modelToFineTune.getLayer(0).params(),modelToFineTune.getLayer(1).params(),notFrozen.params()),modelNow.params());
 
     }
 }
