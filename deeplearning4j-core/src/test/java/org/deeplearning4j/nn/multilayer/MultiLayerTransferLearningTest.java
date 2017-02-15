@@ -172,7 +172,7 @@ public class MultiLayerTransferLearningTest {
                 .fineTuneConfiguration(overallConf)
                 .nOutReplace(0, 7, WeightInit.XAVIER, WeightInit.XAVIER)
                 .nOutReplace(2, 5, WeightInit.XAVIER)
-                .popOutputLayer()
+                .removeOutputLayer()
                 .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -353,7 +353,7 @@ public class MultiLayerTransferLearningTest {
                                 .weightInit(WeightInit.RELU)
                                 .iterations(1)
                                 .learningRate(0.4))
-                        .popFromOutput(5)
+                        .removeLayersFromOutput(5)
                         .addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                                 .kernelSize(3, 3)
                                 .stride(2, 2).build())

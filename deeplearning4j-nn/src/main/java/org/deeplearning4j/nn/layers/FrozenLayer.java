@@ -164,13 +164,13 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public Layer transpose() {
-        return insideLayer.transpose();
+        return new FrozenLayer(insideLayer.transpose());
     }
 
     @Override
     public Layer clone() {
         log.info("Frozen layers are cloned as their original versions.");
-        return insideLayer.clone();
+        return new FrozenLayer(insideLayer.clone());
     }
 
     @Override

@@ -24,7 +24,6 @@ import java.util.*;
  */
 public class MLNTransferLearning {
 
-    private INDArray origParams;
     private MultiLayerConfiguration origConf;
     private MultiLayerNetwork origModel;
 
@@ -33,7 +32,7 @@ public class MLNTransferLearning {
     private int frozenTill = -1;
     private int popN = 0;
     private boolean prepDone = false;
-    private List<Integer> editedLayers = new ArrayList<>();
+    private Set<Integer> editedLayers = new HashSet<>();
     private Map<Integer, Triple<Integer, WeightInit, WeightInit>> editedLayersMap = new HashMap<>();
     private List<INDArray> editedParams = new ArrayList<>();
     private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
@@ -52,7 +51,6 @@ public class MLNTransferLearning {
 
         this.origModel = origModel;
         this.origConf = origModel.getLayerWiseConfigurations();
-        this.origParams = origModel.params();
 
         this.inputPreProcessors = origConf.getInputPreProcessors();
         this.backpropType = origConf.getBackpropType();
@@ -122,12 +120,12 @@ public class MLNTransferLearning {
 
     /**
      * Helper method to remove the outputLayer of the net.
-     * Only one of the two - popOutputLayer() or popFromOutput(layerNum) - can be specified
+     * Only one of the two - removeOutputLayer() or removeLayersFromOutput(layerNum) - can be specified
      * When layers are popped at the very least an output layer should be added with .addLayer(...)
      *
      * @return
      */
-    public MLNTransferLearning popOutputLayer() {
+    public MLNTransferLearning removeOutputLayer() {
         popN = 1;
         return this;
     }
@@ -138,7 +136,7 @@ public class MLNTransferLearning {
      * @param layerNum number of layers to pop, 1 will pop output layer only and so on...
      * @return
      */
-    public MLNTransferLearning popFromOutput(int layerNum) {
+    public MLNTransferLearning removeLayersFromOutput(int layerNum) {
         if (popN == 0) {
             popN = layerNum;
         } else {
@@ -187,7 +185,7 @@ public class MLNTransferLearning {
      * @param processor to be used on the data
      * @return
      */
-    public MLNTransferLearning setInputPreProcessor(Integer layer, InputPreProcessor processor) {
+    public MLNTransferLearning setInputPreProcessor(int layer, InputPreProcessor processor) {
         inputPreProcessors.put(layer,processor);
         return this;
     }
