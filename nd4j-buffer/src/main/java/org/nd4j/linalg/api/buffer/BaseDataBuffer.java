@@ -798,7 +798,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public static short fromFloat( float v ) {
-        if(Float.isNaN(v)) throw new UnsupportedOperationException("NaN to half conversion not supported!");
+        if(Float.isNaN(v)) return (short) 0x7fff;
         if(v == Float.POSITIVE_INFINITY) return(short)0x7c00;
         if(v == Float.NEGATIVE_INFINITY) return(short)0xfc00;
         if(v == 0.0f) return(short)0x0000;
