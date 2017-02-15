@@ -85,10 +85,11 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
+        if (sequence.getSequenceLabel() == null)
+            return 0;
+
         List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
-
-        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if(seq.isEmpty() || labels.isEmpty())
             return 0;
