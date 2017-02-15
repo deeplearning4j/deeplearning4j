@@ -92,8 +92,9 @@ public interface INDArray extends Serializable  {
     boolean isWrapAround();
 
     /**
-     * The rank of the ndarray (the number of dimensions
-     * @return the rank for the ndarray
+     * Returns the rank of the ndarray (the number of dimensions).
+     * 
+     * @return the rank for the ndarray.
      */
     int rank();
 
@@ -235,17 +236,17 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * Cumulative sum along a dimension
+     * Returns the cumulative sum along a dimension. In-place method.
      *
-     * @param dimension the dimension to perform cumulative sum along
-     * @return the cumulative sum along the specified dimension
+     * @param dimension the dimension to perform cumulative sum along.
+     * @return this object.
      */
     INDArray cumsumi(int dimension);
 
     /**
-     * Cumulative sum along a dimension (in place)
+     * Returns the cumulative sum along a dimension.
      *
-     * @param dimension the dimension to perform cumulative sum along
+     * @param dimension the dimension to perform cumulative sum along.
      * @return the cumulative sum along the specified dimension
      */
     INDArray cumsum(int dimension);
@@ -349,22 +350,18 @@ public interface INDArray extends Serializable  {
     INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value);
 
     /**
-     * Returns an ndarray with 1 if the element is less than
-     * the given element 0 other wise
+     * Returns the binary ndarray for "Less" comparison.
      *
-     * @param other the number to compare
-     * @return a copied ndarray with the given
-     * binary conditions
+     * @param other the number to compare.
+     * @return the binary ndarray for "Less" comparison.
      */
     INDArray lt(Number other);
 
     /**
-     * In place less than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Less" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the number to compare.
+     * @return this object.
      */
     INDArray lti(Number other);
 
@@ -385,205 +382,184 @@ public interface INDArray extends Serializable  {
     INDArray putScalar(int[] indexes, int value);
 
     /**
-     * Returns an ndarray with 1 if the element is epsilon equals
+     * Returns the binary ndarray for "Epsilon equals" comparison.
      *
-     * @param other the number to compare
-     * @return a copied ndarray with the given
-     * binary conditions
+     * @param other the number to compare.
+     * @return the binary ndarray for "Epsilon equals" comparison.
      */
     INDArray eps(Number other);
 
 
     /**
-     * Returns an ndarray with 1 if the element is epsilon equals
+     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return a copied ndarray with the given
-     * binary conditions
+     * @param other the number to compare.
+     * @return this object.
      */
     INDArray epsi(Number other);
 
 
     /**
-     * Returns an ndarray with 1 if the element is less than
-     * the given element 0 other wise
+     * Returns the binary ndarray for "Equals" comparison.
      *
-     * @param other the number to compare
-     * @return a copied ndarray with the given
-     * binary conditions
+     * @param other the number to compare.
+     * @return the binary ndarray for "Equals" comparison.
      */
     INDArray eq(Number other);
 
     /**
-     * In place less than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Equals" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the number to compare.
+     * @return this object.
      */
     INDArray eqi(Number other);
 
     /**
-     * Greater than boolean (copying)(
+     * Returns the binary ndarray for "Greater" comparison.
      *
-     * @param other
-     * @return
+     * @param other the number to compare.
+     * @return the binary ndarray for "Greater" comparison.
      */
     INDArray gt(Number other);
 
    /**
-    * Greter or equals
+    * Returns binary ndarray for "Greter or equals" comparison.
     *
-    * @param other
-    * @return
+    * @param other the number to compare.
+    * @return binary ndarray for "Greter or equals" comparison.
     */
     INDArray gte(Number other);
 
    /**
-    * Less or equals
+    * Returns the binary ndarray for "Less or equals" comparison.
     *
-    * @param other
-    * @return
+    * @param other the number to compare.
+    * @return the binary ndarray for "Less or equals" comparison.
     */
     INDArray lte(Number other);
 
    /**
-    * Inplace greater or equals
+    * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
     *
-    * @param other
-    * @return
+    * @param other the number to compare.
+    * @return this object.
     */
     INDArray gtei(Number other);
 
    /**
-    * Inplace less or equals
+    * Returns the binary ndarray for "Less or equals" comparison. In-place method.
     *
-    * @param other
-    * @return
+    * @param other the number to compare.
+    * @return this object.
     */
     INDArray ltei(Number other);
 
     /**
-     * In place greater than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Greter" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the number to compare.
+     * @return this object.
      */
     INDArray gti(Number other);
 
     /**
-     * less than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Less" comparison.
      *
-     * @param other the number to compare
-     * @return the result ndarray
+     * @param other the ndarray to compare.
+     * @return the binary ndarray for "Less" comparison.
      */
 
     INDArray lt(INDArray other);
 
     /**
-     * In place less than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Less" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return this object.
      */
     INDArray lti(INDArray other);
 
 
     /**
-     * epsilon equals than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Epsilon equals" comparison.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return the binary ndarray for "Epsilon equals" comparison.
      */
     INDArray eps(INDArray other);
 
     /**
-     * In place epsilon equals than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return this object.
      */
     INDArray epsi(INDArray other);
 
     /**
-     * Not equal
-     * @param other
-     * @return
+     * Returns the binary ndarray for "Not equals" comparison.
+     * 
+     * @param other the number to compare.
+     * @return the binary ndarray for "Not equals" comparison.
      */
     INDArray neq(Number other);
 
     /**
-     * In place not equal
-     * @param other
-     * @return
+     * Returns the binary ndarray for "Not equals" comparison. In-place method.
+     * 
+     * @param other the number to compare.
+     * @return this object.
      */
     INDArray neqi(Number other);
 
     /**
-     *
-     * @param other
-     * @return
+     * Returns the binary ndarray for "Not equals" comparison.
+     * 
+     * @param other the ndarray to compare.
+     * @return the binary ndarray for "Not equals" comparison.
      */
     INDArray neq(INDArray other);
 
     /**
-     *
-     * @param other
-     * @return
+     * Returns the binary ndarray for "Not equals" comparison. In-place method.
+     * 
+     * @param other the ndarray to compare.
+     * @return this object.
      */
     INDArray neqi(INDArray other);
 
     /**
-     * equal than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Equals" comparison.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return the binary ndarray for "Equals" comparison.
      */
     INDArray eq(INDArray other);
 
     /**
-     * In place equal than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Equals" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return this object.
      */
     INDArray eqi(INDArray other);
 
     /**
-     * greater than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Greter" comparison.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return the binary ndarray for "Greter" comparison.
      */
     INDArray gt(INDArray other);
 
     /**
-     * In place greater than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
+     * Returns the binary ndarray for "Greter" comparison. In-place method.
      *
-     * @param other the number to compare
-     * @return
+     * @param other the ndarray to compare.
+     * @return this object.
      */
     INDArray gti(INDArray other);
-
 
     /**
      * Returns the ndarray negative (cloned)
@@ -1787,14 +1763,16 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * Return a copy of this ndarray
+     * Returns a copy of this ndarray
      *
      * @return a copy of this ndarray
      */
     INDArray dup();
 
-    /**Return a copy of this ndarray, where the returned ndarray has the specified order
-     * @param order Order of the NDArray. 'f' or 'c'
+    /**
+     * Returns a copy of this ndarray, where the returned ndarray has the specified order
+     * 
+     * @param order order of the NDArray. 'f' or 'c'
      * @return copy of ndarray with specified order
      */
     INDArray dup(char order);

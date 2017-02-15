@@ -17,7 +17,9 @@ import java.io.IOException;
 public class NDArraySerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-String toBase64 = Nd4jBase64.base64String(indArray);
+        String toBase64 = Nd4jBase64.base64String(indArray);
+        jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("array",toBase64);
+        jsonGenerator.writeEndObject();
     }
 }
