@@ -18,13 +18,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark_2.10</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.7.3_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>dl4j-spark_2.10</artifactId>
+    <artifactId>dl4j-spark_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark</name>
@@ -33,28 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <hadoop.version>1.0.4</hadoop.version>
-        <spark.version>1.6.2</spark.version>
     </properties>
-
-    <profiles>
-        <profile>
-            <id>cdh5</id>
-            <repositories>
-                <repository>
-                    <id>org.apache.hadoop</id>
-                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-                </repository>
-            </repositories>
-            <properties>
-                <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-                <spark.version>1.2.0-cdh5.3.0</spark.version>
-            </properties>
-        </profile>
-    </profiles>
-
-
-
 
     <pluginRepositories>
         <pluginRepository>
@@ -64,7 +42,6 @@
         </pluginRepository>
     </pluginRepositories>
 
-
     <dependencies>
 
         <!-- ND4J Shaded Jackson Dependency -->
@@ -72,37 +49,19 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_2.10</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
-            <version>${spark.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>${deeplearning4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.10</artifactId>
+            <artifactId>datavec-spark_2.11</artifactId>
             <version>${datavec.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui-components</artifactId>
-            <version>${project.version}</version>
+            <version>${deeplearning4j.version}</version>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -120,8 +79,8 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-play_2.10</artifactId>
-            <version>${project.version}</version>
+            <artifactId>deeplearning4j-play_2.11</artifactId>
+            <version>${deeplearning4j.version}</version>
             <scope>test</scope>
         </dependency>
 

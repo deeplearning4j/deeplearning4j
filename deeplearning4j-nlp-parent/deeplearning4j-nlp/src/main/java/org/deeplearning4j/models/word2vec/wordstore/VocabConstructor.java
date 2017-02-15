@@ -30,13 +30,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VocabConstructor<T extends SequenceElement> {
     private List<VocabSource<T>> sources = new ArrayList<>();
     private VocabCache<T> cache;
-    private List<String> stopWords;
+    private Collection<String> stopWords;
     private boolean useAdaGrad = false;
     private boolean fetchLabels = false;
     private int limit;
     private AtomicLong seqCount = new AtomicLong(0);
     private InvertedIndex<T> index;
     private boolean enableScavenger = false;
+    private T unk;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -304,6 +305,13 @@ public class VocabConstructor<T extends SequenceElement> {
 
         cache.importVocabulary(topHolder);
 
+        // adding UNK word
+        if (unk != null) {
+            log.info("Adding UNK element to vocab...");
+            unk.setSpecial(true);
+            cache.addToken(unk);
+        }
+
         if (resetCounters) {
             for (T element: cache.vocabWords()) {
                 element.setElementFrequency(0);
@@ -365,12 +373,13 @@ public class VocabConstructor<T extends SequenceElement> {
     public static class Builder<T extends SequenceElement> {
         private List<VocabSource<T>> sources = new ArrayList<>();
         private VocabCache<T> cache;
-        private List<String> stopWords = new ArrayList<>();
+        private Collection<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
         private InvertedIndex<T> index;
         private int limit;
         private boolean enableScavenger = false;
+        private T unk;
 
         public Builder() {
 
@@ -440,7 +449,7 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 */
-        public Builder<T> setStopWords(@NonNull List<String> stopWords) {
+        public Builder<T> setStopWords(@NonNull Collection<String> stopWords) {
             this.stopWords = stopWords;
             return this;
         }
@@ -466,6 +475,11 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 
+        public Builder<T> setUnk(T unk) {
+            this.unk = unk;
+            return this;
+        }
+
         public VocabConstructor<T> build() {
             VocabConstructor<T> constructor = new VocabConstructor<>();
             constructor.sources = this.sources;
@@ -476,6 +490,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.limit = this.limit;
             constructor.index = this.index;
             constructor.enableScavenger = this.enableScavenger;
+            constructor.unk = this.unk;
 
             return constructor;
         }

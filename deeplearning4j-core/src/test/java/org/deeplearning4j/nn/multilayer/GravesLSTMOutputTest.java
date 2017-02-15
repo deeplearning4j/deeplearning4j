@@ -17,6 +17,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -98,10 +99,10 @@ public class GravesLSTMOutputTest {
                 .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn).nOut(layerSize)
                         .updater(Updater.ADAGRAD)
-                        .activation("tanh").build())
+                        .activation(Activation.TANH).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .updater(Updater.ADAGRAD).nIn(layerSize).nOut(nIn)
-                        .activation("softmax").build())
+                        .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
                 .backprop(true)
                 .pretrain(false);

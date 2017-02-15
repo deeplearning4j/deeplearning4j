@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.*;
 import org.deeplearning4j.nn.api.Layer;
@@ -16,13 +17,13 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -288,7 +289,8 @@ public class ModelSerializer {
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "multiLayer");
         tmpFile.deleteOnExit();
-        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        //Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        copyFile(is, tmpFile, true);
         return restoreMultiLayerNetwork(tmpFile, loadUpdater);
     }
 
@@ -352,7 +354,8 @@ public class ModelSerializer {
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "compGraph");
         tmpFile.deleteOnExit();
-        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        //Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        copyFile(is, tmpFile, true);
         return restoreComputationGraph(tmpFile, loadUpdater);
     }
 
@@ -561,28 +564,15 @@ public class ModelSerializer {
      * @param normalizer
      */
     public static void addNormalizerToModel(File f, DataNormalization normalizer) {
-        try {
-            Map<String, String> env = new HashMap<>();
-            env.put("create", "true");
-            Path path = Paths.get(f.getAbsolutePath());
-            URI uri = URI.create("jar:" + path.toUri());
-
-            try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
-                Path nf = fs.getPath(NORMALIZER_BIN);
-
-                OutputStream stream = Files.newOutputStream(nf, StandardOpenOption.CREATE_NEW);
-                org.apache.commons.lang3.SerializationUtils.serialize(normalizer, stream);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } catch (Exception e) {
             File tempFile = null;
             ZipFile zipFile = null;
             ZipOutputStream writeFile = null;
             try {
                 // copy existing model to temporary file
                 tempFile = File.createTempFile("tempcopy", "temp");
-                Files.copy(f.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                tempFile.deleteOnExit();
+                //Files.copy(f.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                copyFile(f, tempFile, true);
 
                 zipFile = new ZipFile(tempFile);
 
@@ -633,7 +623,6 @@ public class ModelSerializer {
                     //
                 }
             }
-        }
     }
 
     /**
@@ -666,4 +655,39 @@ public class ModelSerializer {
         }
     }
 
+    /**
+     * This method is drop-in replacement to Files.copy method, added to address Android compatibility issues
+     *
+     * @param from
+     * @param to
+     */
+    public static void copyFile(File from, File to, boolean overwrite) throws IOException {
+        if (!from.exists())
+            throw new IOException("Source file ["+from.getAbsolutePath()+"] doesn't exist");
+
+        if (!from.isFile())
+            throw new IOException("Source file isn't a file");
+
+        try(FileInputStream fis = new FileInputStream(from)) {
+            copyFile(fis, to, overwrite);
+        }
+    }
+
+    public static void copyFile(InputStream is, File to, boolean overwrite) throws IOException {
+        if (!to.isFile())
+            throw new IOException("Target file isn't file");
+
+        if (!overwrite && to.exists() && to.length() > 0)
+            throw new IOException("File ["+ to.getAbsolutePath()+"] already exists");
+
+
+        try(FileOutputStream fos = new FileOutputStream(to); BufferedOutputStream bos = new BufferedOutputStream(fos); CloseShieldInputStream cis = new CloseShieldInputStream(is); BufferedInputStream bis = new BufferedInputStream(cis)) {
+            byte[] data = new byte[4096];
+            int read = 0;
+            while ((read = bis.read(data)) != -1) {
+                    if (read > 0)
+                        bos.write(data, 0, read);
+            }
+        }
+    }
 }

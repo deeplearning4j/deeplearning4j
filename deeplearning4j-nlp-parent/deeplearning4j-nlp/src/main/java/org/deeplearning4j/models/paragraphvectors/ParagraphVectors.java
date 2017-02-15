@@ -126,6 +126,9 @@ public class ParagraphVectors extends Word2Vec {
             }
         }
 
+        if (document.isEmpty())
+            throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
+
         return inferVector(document, learningRate, minLearningRate, iterations);
     }
 
@@ -136,7 +139,7 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(LabelledDocument document, double learningRate, double minLearningRate, int iterations) {
-        if (document.getReferencedContent() != null) {
+        if (document.getReferencedContent() != null && !document.getReferencedContent().isEmpty()) {
             return inferVector(document.getReferencedContent(), learningRate, minLearningRate, iterations);
         } else return inferVector(document.getContent(), learningRate, minLearningRate, iterations);
     }
@@ -147,23 +150,26 @@ public class ParagraphVectors extends Word2Vec {
      * @param document
      * @return
      */
-    public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+    public INDArray inferVector(@NonNull List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
 
         if (learner == null) {
-            log.info("Creating new PV-DM learner...");
-            learner = new DM<VocabWord>();
-            learner.configure(vocab, lookupTable, configuration);
+            synchronized (this) {
+                if (learner == null) {
+                    log.info("Creating new PV-DM learner...");
+                    learner = new DM<VocabWord>();
+                    learner.configure(vocab, lookupTable, configuration);
+                }
+            }
         }
+
+        if (document.isEmpty())
+            throw new ND4JIllegalStateException("Impossible to apply inference to empty list of words");
+
 
         Sequence<VocabWord> sequence = new Sequence<>();
         sequence.addElements(document);
         sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
-
-        /*
-        for (int i = 0; i < iterations; i++) {
-            sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
-        }*/
 
         initLearners();
 
@@ -198,7 +204,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document
      * @return
      */
-    public INDArray inferVector(List<VocabWord> document) {
+    public INDArray inferVector(@NonNull List<VocabWord> document) {
         return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
     }
 
@@ -321,7 +327,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param topN
      * @return
      */
-    public Collection<String> nearestLabels(String rawText, int topN) {
+    public Collection<String> nearestLabels(@NonNull String rawText, int topN) {
         List<String> tokens = tokenizerFactory.create(rawText).getTokens();
         List<VocabWord> document = new ArrayList<>();
         for (String token: tokens) {
@@ -329,6 +335,13 @@ public class ParagraphVectors extends Word2Vec {
                 document.add(vocab.wordFor(token));
             }
         }
+
+        // we're returning empty collection for empty document
+        if (document.isEmpty()) {
+            log.info("Document passed to nearestLabels() has no matches in model vocabulary");
+            return new ArrayList<>();
+        }
+
         return  nearestLabels(document, topN);
     }
 
@@ -339,8 +352,10 @@ public class ParagraphVectors extends Word2Vec {
      * @param topN
      * @return
      */
-    public Collection<String> nearestLabels(Collection<VocabWord> document, int topN) {
-        // TODO: to be implemented
+    public Collection<String> nearestLabels(@NonNull Collection<VocabWord> document, int topN) {
+        if (document.isEmpty())
+            throw new ND4JIllegalStateException("Impossible to get nearestLabels for empty list of words");
+
         INDArray vector = inferVector(new ArrayList<VocabWord>(document));
         return nearestLabels(vector, topN);
     }

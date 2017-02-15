@@ -28,6 +28,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.After;
 import org.junit.Before;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,8 +43,7 @@ import java.util.Random;
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest  implements Serializable
-{
+public abstract class BaseSparkTest  implements Serializable {
     protected transient JavaSparkContext sc;
     protected transient INDArray labels;
     protected transient INDArray input;
@@ -131,10 +131,10 @@ public abstract class BaseSparkTest  implements Serializable
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(nIn).nOut(3)
-                        .activation("tanh").build())
+                        .activation(Activation.TANH).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(nOut)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true)
                 .pretrain(false)

@@ -88,7 +88,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public final static String DEFAULT_UNK = "UNK";
     @Getter @Setter private String UNK = DEFAULT_UNK;
 
-    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+    @Getter protected Collection<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for
@@ -173,10 +173,10 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @return the ndarray for this word
      */
     public double[] getWordVector(String word) {
-        int i = vocab().indexOf(word);
-        if(i < 0)
+        INDArray r = getWordVectorMatrix(word);
+        if (r == null)
             return null;
-        return lookupTable.vector(word).dup().data().asDouble();
+        return r.dup().data().asDouble();
     }
 
     /**
@@ -185,11 +185,10 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @return the looked up matrix
      */
     public INDArray getWordVectorMatrixNormalized(String word) {
-        int i = vocab().indexOf(word);
-
-        if(i < 0)
+        INDArray r =  getWordVectorMatrix(word);
+        if (r == null)
             return null;
-        INDArray r =  lookupTable().vector(word);
+
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
 

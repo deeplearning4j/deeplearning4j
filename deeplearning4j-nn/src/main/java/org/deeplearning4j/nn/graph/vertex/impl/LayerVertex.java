@@ -148,6 +148,17 @@ public class LayerVertex extends BaseGraphVertex {
             return new Pair<>(null, currentMaskState);
         }
 
+        if(layerPreProcessor != null ){
+            Pair<INDArray,MaskState> pair = layerPreProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+            if(pair == null){
+                maskArrays[0] = null;
+                currentMaskState = null;
+            } else {
+                maskArrays[0] = pair.getFirst();
+                currentMaskState = pair.getSecond();
+            }
+        }
+
         return layer.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
     }
 

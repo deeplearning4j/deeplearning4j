@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
@@ -22,6 +23,7 @@ import java.util.Set;
 public class KerasDense extends KerasLayer {
 
     /* Keras layer parameter names. */
+    public static final int NUM_TRAINABLE_PARAMS = 2;
     public static final String KERAS_PARAM_NAME_W = "W";
     public static final String KERAS_PARAM_NAME_B = "b";
 
@@ -80,17 +82,23 @@ public class KerasDense extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException("Keras Dense layer accepts only one input (received " + inputType.length + ")");
+
+        /* Check whether layer requires a preprocessor for this InputType. */
+        InputPreProcessor preprocessor = this.getDenseLayer().getPreProcessorForInputType(inputType[0]);
+        if (preprocessor != null) {
+            return this.getDenseLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
         return this.getDenseLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
-     * Indicates that layer has trainable weights.
+     * Returns number of trainable parameters in layer.
      *
-     * @return  true
+     * @return          number of trainable parameters (2)
      */
     @Override
-    public boolean hasWeights() {
-        return true;
+    public int getNumParams() {
+        return NUM_TRAINABLE_PARAMS;
     }
 
     /**

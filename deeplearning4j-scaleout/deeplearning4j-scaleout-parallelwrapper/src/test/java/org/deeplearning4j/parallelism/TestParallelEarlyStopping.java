@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -119,7 +120,7 @@ public class TestParallelEarlyStopping {
                 .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

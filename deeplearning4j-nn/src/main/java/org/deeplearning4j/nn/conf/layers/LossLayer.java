@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -56,17 +57,17 @@ public class LossLayer extends FeedForwardLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder() {
-            this.activation("identity");
+            this.activation(Activation.IDENTITY);
         }
 
         public Builder(LossFunctions.LossFunction lossFunction) {
             lossFunction(lossFunction);
-            this.activation("identity");
+            this.activation(Activation.IDENTITY);
         }
 
         public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
-            this.activation("identity");
+            this.activation(Activation.IDENTITY);
         }
 
         @Override

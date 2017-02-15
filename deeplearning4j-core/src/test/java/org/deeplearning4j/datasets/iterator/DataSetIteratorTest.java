@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -41,40 +42,33 @@ import static org.junit.Assert.*;
 public class DataSetIteratorTest {
 	
 	@Test
-	public void testBatchSizeOfOne() throws Exception {
+	public void testBatchSizeOfOneIris() throws Exception {
 		//Test for (a) iterators returning correct number of examples, and
 		//(b) Labels are a proper one-hot vector (i.e., sum is 1.0)
 		
 		//Iris:
 		DataSetIterator iris = new IrisDataSetIterator(1, 5);
 		int irisC = 0;
-		while(iris.hasNext()){
+		while (iris.hasNext()) {
 			irisC++;
 			DataSet ds = iris.next();
-			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
+			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0) == 1.0);
 		}
 		assertEquals(5, irisC);
-		
-		
+	}
+
+	@Test
+	public void testBatchSizeOfOneMnist() throws Exception {
+
 		//MNIST:
 		DataSetIterator mnist = new MnistDataSetIterator(1, 5);
 		int mnistC = 0;
-		while(mnist.hasNext()){
+		while (mnist.hasNext()) {
 			mnistC++;
 			DataSet ds = mnist.next();
 			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
 		}
 		assertEquals(5, mnistC);
-		
-		//LFW:
-		DataSetIterator lfw = new LFWDataSetIterator(1, 5);
-		int lfwC = 0;
-		while(lfw.hasNext()){
-			lfwC++;
-			DataSet ds = lfw.next();
-			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
-		}
-		assertEquals(5, lfwC);
 	}
 
 	@Test
@@ -140,7 +134,7 @@ public class DataSetIteratorTest {
 						.nIn(numChannels)
 						.nOut(6)
 						.weightInit(WeightInit.XAVIER)
-						.activation("relu")
+						.activation(Activation.RELU)
 						.build())
 				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
 						.stride(1,1)
@@ -148,7 +142,7 @@ public class DataSetIteratorTest {
 				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
 						.nOut(outputNum)
 						.weightInit(WeightInit.XAVIER)
-						.activation("softmax")
+						.activation(Activation.SOFTMAX)
 						.build())
 				.setInputType(InputType.convolutionalFlat(numRows,numColumns,numChannels))
 				.backprop(true).pretrain(false);
@@ -213,14 +207,14 @@ public class DataSetIteratorTest {
 						.nIn(channels)
 						.nOut(6)
 						.weightInit(WeightInit.XAVIER)
-						.activation("relu")
+						.activation(Activation.RELU)
 						.build())
 				.layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
 						.build())
 				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
 						.nOut(outputNum)
 						.weightInit(WeightInit.XAVIER)
-						.activation("softmax")
+						.activation(Activation.SOFTMAX)
 						.build())
 				.backprop(true).pretrain(false)
 				.setInputType(InputType.convolutionalFlat(height,width,channels));

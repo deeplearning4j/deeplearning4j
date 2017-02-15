@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.deeplearning4j</groupId>
-    <artifactId>dl4j-streaming_2.10</artifactId>
+    <artifactId>dl4j-streaming_2.11</artifactId>
     <packaging>jar</packaging>
-    <version>0.7.3-SNAPSHOT</version>
+    <version>0.7.3_spark_1-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
@@ -17,6 +17,10 @@
 
     <properties>
         <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+        <spark.major.version>1</spark.major.version>
+        <spark.version>1.6.2</spark.version>
+        <hadoop.version>2.2.0</hadoop.version>
+        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
     </properties>
 
     <name>Dl4j Streaming</name>
@@ -27,7 +31,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-camel</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
@@ -37,12 +41,12 @@
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.10</artifactId>
+            <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-core_2.10</artifactId>
+                    <artifactId>spark-core_2.11</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -53,23 +57,18 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_2.10</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming-kafka_2.10</artifactId>
+            <artifactId>spark-streaming_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.10</artifactId>
+            <artifactId>datavec-spark_2.11</artifactId>
             <version>${datavec.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.10</artifactId>
+            <artifactId>kafka_2.11</artifactId>
             <version>${kafka.version}</version>
         </dependency>
 
@@ -107,6 +106,29 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- added source folder containing the code specific to the spark version -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.12</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>add-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/spark-${spark.major.version}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 
 </project>

@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -97,7 +99,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nOut(5).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(1, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
@@ -105,17 +107,17 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .layer(2, new ConvolutionLayer.Builder(3, 3)
                         .nOut(10).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(3, new SubsamplingLayer
                         .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .build())
-                .layer(4, new DenseLayer.Builder().nOut(100).activation("relu")
+                .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU)
                         .build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
 
@@ -124,6 +126,27 @@ public class MultiLayerNeuralNetConfigurationTest {
         String json = conf.toJson();
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf, conf2);
+    }
+
+    @Test
+    public void testGlobalPoolingJson(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(false)
+                .updater(Updater.NONE)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                .seed(12345L)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nOut(5).build())
+                .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(3).build())
+                .pretrain(false).backprop(true)
+                .setInputType(InputType.convolutional(32, 32, 1))
+                .build();
+
+        String str = conf.toJson();
+        MultiLayerConfiguration fromJson = conf.fromJson(str);
+
+        assertEquals(conf, fromJson);
     }
 
 

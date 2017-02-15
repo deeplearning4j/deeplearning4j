@@ -18,8 +18,9 @@
 
 package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -40,7 +41,21 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class IEvaluateFlatMapFunction<T extends IEvaluation> implements FlatMapFunction<Iterator<DataSet>, T> {
+public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T> {
+
+    public IEvaluateFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation) {
+        super(new IEvaluateFlatMapFunctionAdapter<>(json, params, evalBatchSize, evaluation));
+    }
+}
+
+/**
+ * Function to evaluate data (using an IEvaluation instance), in a distributed manner
+ * Flat map function used to batch examples for computational efficiency + reduce number of IEvaluation objects returned
+ * for network efficiency.
+ *
+ * @author Alex Black
+ */
+class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapFunctionAdapter<Iterator<DataSet>, T> {
 
     protected static Logger log = LoggerFactory.getLogger(IEvaluateFlatMapFunction.class);
 
@@ -56,7 +71,7 @@ public class IEvaluateFlatMapFunction<T extends IEvaluation> implements FlatMapF
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation){
+    public IEvaluateFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation){
         this.json = json;
         this.params = params;
         this.evalBatchSize = evalBatchSize;
