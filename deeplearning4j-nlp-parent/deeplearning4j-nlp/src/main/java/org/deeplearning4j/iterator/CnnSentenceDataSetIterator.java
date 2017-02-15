@@ -22,10 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A DataSetIterator that provides data for training a CNN sentence classification models (though can of course
@@ -41,6 +38,9 @@ import java.util.Map;
  *
  * Sentences and labels are provided by a {@link LabeledSentenceProvider} - different implementations of this provide different
  * ways of loading sentences/documents with labels - for example, from files, etc.
+ * <p>
+ * <b>Note</b>: With regard to labels to class index assignment, they are sorted alphabetically. To get the assigment/mapping,
+ * use {@link #getLabels()} or {@link #getLabelClassMap()}
  *
  * @author Alex Black
  */
@@ -81,7 +81,11 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         this.numClasses = this.sentenceProvider.numLabelClasses();
         this.labelClassMap = new HashMap<>();
         int count = 0;
-        for (String s : this.sentenceProvider.allLabels()) {
+        //First: sort the labels to ensure the same label assignment order (say train vs. test)
+        List<String> sortedLabels = new ArrayList<>(this.sentenceProvider.allLabels());
+        Collections.sort(sortedLabels);
+
+        for (String s : sortedLabels) {
             this.labelClassMap.put(s, count++);
         }
         if(unknownWordHandling == UnknownWordHandling.UseUnknownVector){
@@ -134,7 +138,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
 
     private INDArray getVector(String word){
         INDArray vector;
-        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL) {    //Yes, this *should* be using == for the sentinal String here
+        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL) {    //Yes, this *should* be using == for the sentinel String here
             vector = unknown;
         } else {
             if (useNormalizedWordVectors) {
@@ -163,6 +167,21 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             tokens.add(token);
         }
         return tokens;
+    }
+
+    public Map<String,Integer> getLabelClassMap(){
+        return new HashMap<>(labelClassMap);
+    }
+
+    @Override
+    public List<String> getLabels(){
+        //We don't want to just return the list from the LabelledSentenceProvider, as we sorted them earlier to do the
+        // String -> Integer mapping
+        String[] str = new String[labelClassMap.size()];
+        for(Map.Entry<String,Integer> e : labelClassMap.entrySet()){
+            str[e.getValue()] = e.getKey();
+        }
+        return Arrays.asList(str);
     }
 
     @Override
@@ -325,11 +344,6 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     @Override
     public DataSetPreProcessor getPreProcessor() {
         return dataSetPreProcessor;
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return sentenceProvider.allLabels();
     }
 
     @Override
