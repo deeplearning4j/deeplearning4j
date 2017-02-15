@@ -17,6 +17,12 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
+import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 /**
  * A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
  * This abstraction allows for different ways of generating the next configuration to test; for example,
@@ -25,6 +31,12 @@ package org.deeplearning4j.arbiter.optimize.api;
  * @param <C> Type of candidate to generate
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
+        @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
+})
 public interface CandidateGenerator<C> {
 
     /**

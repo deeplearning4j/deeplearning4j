@@ -17,7 +17,15 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericDeserializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericSerializer;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,11 +35,16 @@ import java.util.List;
  *
  * @param <T> Type of (fixed) value
  */
+@JsonIgnoreProperties("index")
+@EqualsAndHashCode
 public class FixedValue<T> implements ParameterSpace<T> {
-    private T value;
+    @JsonSerialize(using = GenericSerializer.class)
+    @JsonDeserialize(using = GenericDeserializer.class)
+    private Object value;
     private int index;
 
-    public FixedValue(T value) {
+    @JsonCreator
+    public FixedValue(@JsonProperty("value") T value) {
         this.value = value;
     }
 
@@ -42,7 +55,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public T getValue(double[] input) {
-        return value;
+        return (T)value;
     }
 
     @Override
@@ -63,7 +76,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
     @Override
     public void setIndices(int... indices) {
         if (indices != null && indices.length != 0)
-            throw new IllegalArgumentException("Invaild: FixedValue ParameterSpace "
-                    + "should not be given an index");
+            throw new IllegalArgumentException("Invalid call: FixedValue ParameterSpace "
+                    + "should not be given an index (0 params)");
     }
 }

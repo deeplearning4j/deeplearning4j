@@ -1,24 +1,27 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.misc.ObjectMapperProvider;
-import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
+@EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Deprecated
@@ -47,6 +50,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         //TODO inputs
     }
 
+    private MultiLayerSpace(){
+        //Default constructor for Jackson json/yaml serialization
+    }
+
     @Override
     public DL4JConfiguration getValue(double[] values) {
 
@@ -62,10 +69,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
                 }
             } else {
                 throw new UnsupportedOperationException("Not yet implemented");
-//                //Generate N indepedent configs
-//                for( int i=0; i<n; i++ ){
-//                    layers.add(c.layerSpace.randomLayer());
-//                }
             }
         }
 
@@ -77,6 +80,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         //TODO This won't work for all cases (at minimum: cast is an issue)
         int lastNOut = ((FeedForwardLayer) layers.get(0)).getNOut();
         for (int i = 1; i < layers.size(); i++) {
+            if(!(layers.get(i) instanceof FeedForwardLayer)) continue;
             FeedForwardLayer ffl = (FeedForwardLayer) layers.get(i);
             ffl.setNIn(lastNOut);
             lastNOut = ffl.getNOut();
@@ -141,13 +145,16 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         return sb.toString();
     }
 
+    public LayerSpace<?> getLayerSpace(int layerNumber){
+        return layerSpaces.get(layerNumber).getLayerSpace();
+    }
 
 
-    @AllArgsConstructor
+    @AllArgsConstructor @NoArgsConstructor @Data    //No-arg for Jackson JSON serialization
     private static class LayerConf {
-        private final LayerSpace<?> layerSpace;
-        private final ParameterSpace<Integer> numLayers;
-        private final boolean duplicateConfig;
+        private LayerSpace<?> layerSpace;
+        private ParameterSpace<Integer> numLayers;
+        private boolean duplicateConfig;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
@@ -213,4 +220,19 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
     }
 
+    public static MultiLayerSpace fromJson(String json){
+        try {
+            return JsonMapper.getMapper().readValue(json, MultiLayerSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static MultiLayerSpace fromYaml(String yaml){
+        try {
+            return YamlMapper.getMapper().readValue(yaml, MultiLayerSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

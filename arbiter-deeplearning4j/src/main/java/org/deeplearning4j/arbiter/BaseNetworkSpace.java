@@ -17,11 +17,12 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @param <T> Type of network (MultiLayerNetwork or ComputationGraph)
  * @author Alex Black
  */
+@EqualsAndHashCode
 public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;
@@ -91,6 +93,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     protected ParameterSpace<BackpropType> backpropType;
     protected ParameterSpace<Integer> tbpttFwdLength;
     protected ParameterSpace<Integer> tbpttBwdLength;
+    protected ParameterSpace<ConvolutionMode> convolutionMode;
 
     protected int numEpochs = 1;
 
@@ -132,6 +135,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.adamMeanDecay = builder.adamMeanDecay;
         this.adamVarDecay = builder.adamVarDecay;
+        this.convolutionMode = builder.convolutionMode;
 
 
         this.backprop = builder.backprop;
@@ -142,6 +146,10 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         this.cnnInputSize = builder.cnnInputSize;
 
         this.numEpochs = builder.numEpochs;
+    }
+
+    protected BaseNetworkSpace(){
+        //Default constructor for Jackson json/yaml serialization
     }
 
 
@@ -186,6 +194,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
             builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
         if (adamMeanDecay != null) builder.adamMeanDecay(adamMeanDecay.getValue(values));
         if (adamVarDecay != null) builder.adamVarDecay(adamVarDecay.getValue(values));
+        if (convolutionMode != null) builder.convolutionMode(convolutionMode.getValue(values));
 
         return builder;
     }
@@ -229,6 +238,8 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (adamMeanDecay != null) list.addAll(adamMeanDecay.collectLeaves());
         if (adamVarDecay != null) list.addAll(adamVarDecay.collectLeaves());
+        if (convolutionMode != null) list.add(convolutionMode);
+
         if (backprop != null) list.add(backprop);
         if (pretrain != null) list.add(pretrain);
         if (backpropType != null) list.add(backpropType);
@@ -296,6 +307,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
         if (adamMeanDecay != null) sb.append("adamMeanDecay: ").append(adamMeanDecay).append("\n");
         if (adamVarDecay != null) sb.append("adamVarDecay: ").append(adamVarDecay).append("\n");
+        if (convolutionMode != null) sb.append("convolutionMode: ").append(convolutionMode).append("\n");
 
         int i = 0;
         for (LayerConf conf : layerSpaces) {
@@ -364,6 +376,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         private ParameterSpace<BackpropType> backpropType;
         private ParameterSpace<Integer> tbpttFwdLength;
         private ParameterSpace<Integer> tbpttBwdLength;
+        private ParameterSpace<ConvolutionMode> convolutionMode;
 
         //Early stopping configuration / (fixed) number of epochs:
         private EarlyStoppingConfiguration earlyStoppingConfiguration;
@@ -705,6 +718,15 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
         public T tbpttBwdLength(ParameterSpace<Integer> tbpttBwdLength) {
             this.tbpttBwdLength = tbpttBwdLength;
+            return (T) this;
+        }
+
+        public T convolutionMode(ConvolutionMode convolutionMode){
+            return convolutionMode(new FixedValue<ConvolutionMode>(convolutionMode));
+        }
+
+        public T convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode){
+            this.convolutionMode = convolutionMode;
             return (T) this;
         }
 

@@ -16,12 +16,15 @@
 
 package org.deeplearning4j.arbiter.optimize.candidategenerator;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.random.RandomAdaptor;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,6 +45,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
+@EqualsAndHashCode(exclude = {"order","candidateCounter","rng"})
+@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng"})
 public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
 
     /**
@@ -54,8 +59,6 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
     public enum Mode {
         Sequential, RandomOrder
     }
-
-    ;
 
     private final int discretizationCount;
     private final Mode mode;
@@ -72,7 +75,9 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
      * @param mode                {@link GridSearchCandidateGenerator.Mode} specifies the order
      *                            in which candidates should be generated.
      */
-    public GridSearchCandidateGenerator(ParameterSpace<T> parameterSpace, int discretizationCount, Mode mode) {
+    public GridSearchCandidateGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,
+                                        @JsonProperty("discretizationCount") int discretizationCount,
+                                        @JsonProperty("mode") Mode mode) {
         super(parameterSpace);
         this.discretizationCount = discretizationCount;
         this.mode = mode;

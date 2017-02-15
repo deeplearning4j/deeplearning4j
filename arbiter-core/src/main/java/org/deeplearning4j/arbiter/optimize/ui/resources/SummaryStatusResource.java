@@ -17,18 +17,14 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.ui.api.Component;
-import org.nd4j.shade.jackson.core.JsonParseException;
-import org.nd4j.shade.jackson.databind.JsonMappingException;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 

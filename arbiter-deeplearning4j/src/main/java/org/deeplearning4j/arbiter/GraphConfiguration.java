@@ -19,14 +19,12 @@ package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.Serializable;
 

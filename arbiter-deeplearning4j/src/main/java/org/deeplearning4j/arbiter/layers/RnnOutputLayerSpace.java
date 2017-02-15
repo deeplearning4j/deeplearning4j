@@ -17,12 +17,19 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 
 /**
  * Layer hyperparametor configuration space for RnnOutputLayer
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
 
     private RnnOutputLayerSpace(Builder builder) {

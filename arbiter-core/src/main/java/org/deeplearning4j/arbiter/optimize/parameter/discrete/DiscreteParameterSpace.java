@@ -17,7 +17,10 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.discrete;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
@@ -27,11 +30,13 @@ import java.util.*;
  * @param <P> Parameter type
  * @author Alex Black
  */
+@JsonIgnoreProperties("index")
+@EqualsAndHashCode
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
     private List<P> values;
     private int index = -1;
 
-    public DiscreteParameterSpace(P... values) {
+    public DiscreteParameterSpace(@JsonProperty("values") P... values) {
         this.values = Arrays.asList(values);
     }
 
@@ -45,7 +50,9 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     @Override
     public P getValue(double[] input) {
-        if (index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        if (index == -1){
+            throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        }
         //Map a value in range [0,1] to one of the list of values
         //First value: [0,width], second: (width,2*width], third: (3*width,4*width] etc
         int size = values.size();
@@ -72,7 +79,9 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     @Override
     public void setIndices(int... indices) {
-        if (indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        if (indices == null || indices.length != 1){
+            throw new IllegalArgumentException("Invalid index");
+        }
         this.index = indices[0];
     }
 
