@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @param <T> Type of network (MultiLayerNetwork or ComputationGraph)
  * @author Alex Black
  */
+@EqualsAndHashCode
 public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;

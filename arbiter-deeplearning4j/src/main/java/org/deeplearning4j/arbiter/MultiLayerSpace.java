@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
+@EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Deprecated
@@ -143,6 +145,9 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         return sb.toString();
     }
 
+    public LayerSpace<?> getLayerSpace(int layerNumber){
+        return layerSpaces.get(layerNumber).getLayerSpace();
+    }
 
 
     @AllArgsConstructor @NoArgsConstructor @Data    //No-arg for Jackson JSON serialization

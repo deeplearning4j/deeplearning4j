@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -27,6 +28,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class BasePretrainNetworkLayerSpace<L extends BasePretrainNetwork> extends FeedForwardLayerSpace<L> {
 

@@ -19,9 +19,13 @@ package org.deeplearning4j.arbiter.optimize.parameter;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericDeserializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericSerializer;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +38,9 @@ import java.util.List;
 @JsonIgnoreProperties("index")
 @EqualsAndHashCode
 public class FixedValue<T> implements ParameterSpace<T> {
-    private T value;
+    @JsonSerialize(using = GenericSerializer.class)
+    @JsonDeserialize(using = GenericDeserializer.class)
+    private Object value;
     private int index;
 
     @JsonCreator
@@ -49,7 +55,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public T getValue(double[] input) {
-        return value;
+        return (T)value;
     }
 
     @Override
