@@ -24,6 +24,9 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -104,6 +107,33 @@ public class OptimizationConfiguration<T, M, D, A> {
 
         public OptimizationConfiguration<T, M, D, A> build() {
             return new OptimizationConfiguration<T, M, D, A>(this);
+        }
+    }
+
+
+    /**
+     * Return a json configuration of this optimization configuration
+     *
+     * @return
+     */
+    public String toJson() {
+        try {
+            return JsonMapper.getMapper().writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Return a yaml configuration of this optimization configuration
+     *
+     * @return
+     */
+    public String toYaml() {
+        try {
+            return YamlMapper.getMapper().writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

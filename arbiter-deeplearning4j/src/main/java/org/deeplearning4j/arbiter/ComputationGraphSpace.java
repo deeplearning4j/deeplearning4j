@@ -16,10 +16,11 @@
 
 package org.deeplearning4j.arbiter;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.*;
@@ -27,6 +28,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +39,9 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)    //For Jackson JSON ser/de
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
 
     private List<LayerConf> layerSpaces = new ArrayList<>();
@@ -141,18 +146,20 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
     @AllArgsConstructor
     @Data
+    @NoArgsConstructor  //For Jackson JSON
     private static class LayerConf {
-        private final LayerSpace<?> layerSpace;
-        private final String layerName;
-        private final String[] inputs;
+        private LayerSpace<?> layerSpace;
+        private String layerName;
+        private String[] inputs;
     }
 
     @AllArgsConstructor
     @Data
+    @NoArgsConstructor  //For Jackson JSON
     private static class VertexConf {
-        private final GraphVertex graphVertex;
-        private final String vertexName;
-        private final String[] inputs;
+        private GraphVertex graphVertex;
+        private String vertexName;
+        private String[] inputs;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
@@ -210,6 +217,19 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     }
 
 
+    public static ComputationGraphSpace fromJson(String json){
+        try {
+            return JsonMapper.getMapper().readValue(json, ComputationGraphSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-
+    public static ComputationGraphSpace fromYaml(String yaml){
+        try {
+            return YamlMapper.getMapper().readValue(yaml, ComputationGraphSpace.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
