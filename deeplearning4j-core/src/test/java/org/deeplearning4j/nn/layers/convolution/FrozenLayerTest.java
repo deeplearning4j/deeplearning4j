@@ -1,28 +1,26 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.multilayer.MLNTransferLearning;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertTrue;
 
 /**
  * Created by susaneraly on 2/5/17.
  */
+@Slf4j
 public class FrozenLayerTest {
-
-    private static final Logger log = LoggerFactory.getLogger(FrozenLayerTest.class);
 
     /*
         A model with a few frozen layers ==
@@ -51,9 +49,9 @@ public class FrozenLayerTest {
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2,randomData.getFeatures(),false).get(2);
 
-        MultiLayerNetwork modelNow = new MLNTransferLearning(modelToFineTune)
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
-                .setFeatureExtractor(1).build();
+                .setFeatureExtractor(1).buildMLN();
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()
