@@ -405,8 +405,8 @@ format.raw("""          <!-- End Content -->
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Jan 08 12:25:14 AEDT 2017
-                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  DATE: Thu Feb 16 17:33:42 AEDT 2017
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
                   HASH: f6899558de3ff2ca1c02dc5fccdb266b29b2a6dc
                   MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2718->1921|2731->1925|2782->1955|3346->2491|3360->2495|3415->2528|3565->2650|3579->2654|3631->2684|3786->2811|3800->2815|3853->2846|4031->2996|4045->3000|4101->3034|4326->3231|4340->3235|4395->3268
                   LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|83->59|83->59|83->59
