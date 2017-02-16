@@ -412,9 +412,29 @@ You can shut down your Word2vec application and try to delete them.
 
 *A:* If all of your sentences have been loaded as *one* sentence, Word2vec training could take a very long time. That's because Word2vec is a sentence-level algorithm, so sentence boundaries are very important, because co-occurrence statistics are gathered sentence by sentence. (For GloVe, sentence boundaries don't matter, because it's looking at corpus-wide co-occurrence. For many corpora, average sentence length is six words. That means that with a window size of 5 you have, say, 30 (random number here) rounds of skip-gram calculations. If you forget to specify your sentence boundaries, you may load a "sentence" that's 10,000 words long. In that case, Word2vec would attempt a full skip-gram cycle for the whole 10,000-word "sentence". In DL4J's implementation, a line is assumed to be a sentence. You need plug in your own SentenceIterator and Tokenizer. By asking you to specify how your sentences end, DL4J remains language-agnostic. UimaSentenceIterator is one way to do that. It uses OpenNLP for sentence boundary detection.
 
+
+*Q: Why is there such a difference in performance when feeding whole documents as one "sentence" vs splitting into Sentences?*
+
+*A:*If average sentence contains 6 words, and window size is 5, maximum theoretical number of 10 skipgram rounds will be achieved on 0 words. Sentence isn't long enough to have full window set with words. Rough maximum number of 5 sg rounds is available there for all words in such sentence.
+
+But if your "sentence" is 1000k words length, you'll have 10 skipgram rounds for every word in this sentence, excluding the first 5 and last five. So, you'll have to spend WAY more time building model + cooccurrence statistics will be shifted due to the absense of sentence boundaries.
+
+*Q: How does Word2Vec Use Memory?*
+
+*A:* The major memory consumer in w2v is weghts matrix. Math is simple there: NumberOfWords x NumberOfDimensions x 2 x DataType memory footprint.
+
+So, if you build w2v model for 100k words using floats, and 100 dimensions, your memory footprint will be 100k x 100 x 2 x 4 (float size) = 80MB RAM just for matri + some space for strings, variables, threads etc.
+
+If you load pre-built model, it uses roughly 2 times less RAM then during build time, so it's 40MB RAM.
+
+And the most popular model used so far is Google News model. There's 3M words, and vector size 300. That gives us 3.6GB only to load model. And you have to add 3M of strings, that do not have constant size in java. So, usually that's something around 4-6GB for loaded model depending on jvm version/supplier, gc state and phase of the moon.
+
+
 *Q: I did everything you said and the results still don't look right.*
 
 *A:* If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.
+
+
 
 ### <a name="use">Use Cases</a>
 
