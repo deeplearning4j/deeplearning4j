@@ -160,7 +160,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-//        private Convolution.Type convolutionType = Convolution.Type.VALID;
         private ConvolutionMode convolutionMode = null;
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
@@ -190,7 +189,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Deprecated
         public Builder convolutionType(Convolution.Type convolutionType) {
-//            this.convolutionType = convolutionType;
             return this;
         }
 

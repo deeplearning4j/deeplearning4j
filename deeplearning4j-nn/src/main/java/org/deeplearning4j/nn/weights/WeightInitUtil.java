@@ -68,10 +68,6 @@ public class WeightInitUtil {
             case DISTRIBUTION:
                 ret = dist.sample(shape);
                 break;
-            case NORMALIZED:
-                ret = Nd4j.rand(order, shape);
-                ret.subi(0.5).divi(shape[0]);
-                break;
             case RELU:
                 ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn));   //N(0, 2/nIn)
                 break;
@@ -79,7 +75,6 @@ public class WeightInitUtil {
                 double u = Math.sqrt(6.0/fanIn);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
                 break;
-            case SIZE:
             case SIGMOID_UNIFORM:
                 double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
@@ -91,7 +86,6 @@ public class WeightInitUtil {
             case XAVIER:
                 ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
-            case VI:
             case XAVIER_UNIFORM:
                 //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
                 //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
@@ -125,7 +119,6 @@ public class WeightInitUtil {
 
     /**
      * Reshape the parameters view, without modifying the paramsView array values.
-     * Same reshaping mechanism as {@link #initWeights(int[], WeightInit, Distribution, INDArray)}
      *
      * @param shape      Shape to reshape
      * @param paramsView Parameters array view
@@ -136,7 +129,6 @@ public class WeightInitUtil {
 
     /**
      * Reshape the parameters view, without modifying the paramsView array values.
-     * Same reshaping mechanism as {@link #initWeights(int[], WeightInit, Distribution, char, INDArray)}
      *
      * @param shape           Shape to reshape
      * @param paramsView      Parameters array view
