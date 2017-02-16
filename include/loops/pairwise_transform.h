@@ -49,7 +49,10 @@
         (46,simdOps::CompareAndReplace),\
         (56,simdOps::And),\
         (57,simdOps::Or),\
-        (58,simdOps::Xor)
+        (58,simdOps::Xor),\
+        (59,simdOps::Remainder),\
+        (60,simdOps::FMod)
+
 
 
 
