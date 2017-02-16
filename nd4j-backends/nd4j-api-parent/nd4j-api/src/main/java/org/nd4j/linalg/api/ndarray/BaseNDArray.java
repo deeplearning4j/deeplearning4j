@@ -38,10 +38,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -4838,6 +4835,83 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return baseNDArray;
     }
 
+
+    @Override
+    public INDArray remainder(INDArray denominator) {
+        return remainder(denominator, Nd4j.createUninitialized(this.shape()));
+    }
+
+    @Override
+    public INDArray remainder(INDArray denominator, INDArray result) {
+        RemainderOp op = new RemainderOp(this, denominator, result);
+        Nd4j.getExecutioner().exec(op);
+        return result;
+    }
+
+    @Override
+    public INDArray remainder(Number denominator) {
+        return remainder(denominator, Nd4j.createUninitialized(this.shape()));
+    }
+
+    @Override
+    public INDArray remainder(Number denominator, INDArray result) {
+        ScalarRemainder op = new ScalarRemainder(this, null, result, this.length(), denominator);
+        Nd4j.getExecutioner().exec(op);
+        return result;
+    }
+
+    @Override
+    public INDArray remainderi(INDArray denominator) {
+        RemainderOp op = new RemainderOp(this, denominator, this);
+        Nd4j.getExecutioner().exec(op);
+        return this;
+    }
+
+    @Override
+    public INDArray remainderi(Number denominator) {
+        ScalarRemainder op = new ScalarRemainder(this, null, this, this.length(), denominator);
+        Nd4j.getExecutioner().exec(op);
+        return this;
+    }
+
+    @Override
+    public INDArray fmod(INDArray denominator) {
+        return fmod(denominator, Nd4j.createUninitialized(this.shape()));
+    }
+
+    @Override
+    public INDArray fmod(INDArray denominator, INDArray result) {
+        FModOp op = new FModOp(this, denominator, result);
+        Nd4j.getExecutioner().exec(op);
+        return result;
+    }
+
+    @Override
+    public INDArray fmod(Number denominator) {
+        return fmod(denominator, Nd4j.createUninitialized(this.shape()));
+    }
+
+    @Override
+    public INDArray fmod(Number denominator, INDArray result) {
+        ScalarFMod op = new ScalarFMod(this, null, result, this.length(), denominator);
+        Nd4j.getExecutioner().exec(op);
+        return result;
+    }
+
+    @Override
+    public INDArray fmodi(INDArray denominator) {
+        FModOp op = new FModOp(this, denominator, this);
+        Nd4j.getExecutioner().exec(op);
+        return this;
+    }
+
+    @Override
+    public INDArray fmodi(Number denominator) {
+        ScalarFMod op = new ScalarFMod(this, null, this, this.length(), denominator);
+        Nd4j.getExecutioner().exec(op);
+        return this;
+    }
+
     @Override
     public Iterator<Object> iterator() {
         return new FirstAxisIterator(this);
@@ -4894,4 +4968,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         data = Nd4j.createBuffer(length,false);
         data().read(s);
     }
+
+
+
+
 }

@@ -3976,6 +3976,32 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(tadF, tadFi);
     }
 
+    @Test
+    public void testRemainder1() throws Exception {
+        INDArray x = Nd4j.create(10).assign(5.3);
+        INDArray y = Nd4j.create(10).assign(2.0);
+        INDArray exp = Nd4j.create(10).assign(-0.7);
+
+        INDArray result = x.remainder(2.0);
+        assertEquals(exp, result);
+
+        result = x.remainder(y);
+        assertEquals(exp, result);
+    }
+
+    @Test
+    public void testFMod1() throws Exception {
+        INDArray x = Nd4j.create(10).assign(5.3);
+        INDArray y = Nd4j.create(10).assign(2.0);
+        INDArray exp = Nd4j.create(10).assign(1.3);
+
+        INDArray result = x.fmod(2.0);
+        assertEquals(exp, result);
+
+        result = x.fmod(y);
+        assertEquals(exp, result);
+    }
+
     @Override
     public char ordering() {
         return 'c';

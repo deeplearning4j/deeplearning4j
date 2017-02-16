@@ -2304,4 +2304,29 @@ public interface INDArray extends Serializable  {
    boolean equalsWithEps(Object o, double eps);
 
    INDArray unsafeDuplication();
+
+
+    INDArray remainder(INDArray denominator);
+
+    INDArray remainder(INDArray denominator, INDArray result);
+
+    INDArray remainder(Number denominator);
+
+    INDArray remainder(Number denominator, INDArray result);
+
+    INDArray remainderi(INDArray denominator);
+
+    INDArray remainderi(Number denominator);
+
+    INDArray fmod(INDArray denominator);
+
+    INDArray fmod(INDArray denominator, INDArray result);
+
+    INDArray fmod(Number denominator);
+
+    public INDArray fmod(Number denominator, INDArray result);
+
+    INDArray fmodi(INDArray denominator);
+
+    INDArray fmodi(Number denominator);
 }
