@@ -246,6 +246,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 }
                 if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
                         "layer with index " + i + " is not defined)");
+
+                //Layer names: set to default, if not set
+                if( layerwise.get(i).getLayer().getLayerName() == null){
+                    layerwise.get(i).getLayer().setLayerName("layer" + i);
+                }
+
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
@@ -1082,7 +1088,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.pretrain = pretrain;
             String layerName;
             if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
-            else layerName = "Layer " + layer.getLayerName() ;
+            else layerName = layer.getLayerName() ;
             learningRateValidation(layerName);
 
             if(layer != null ) {
