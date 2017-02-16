@@ -274,7 +274,7 @@ public class LayerConfigValidationTest {
                             .activation(Activation.SIGMOID).build(), "in")
                     .addLayer("output", new RnnOutputLayer.Builder().nIn(20)
                             .nOut(10).activation(Activation.SOFTMAX)
-                            .weightInit(WeightInit.VI).build(), "L" + 1).setOutputs("output");
+                            .weightInit(WeightInit.RELU_UNIFORM).build(), "L" + 1).setOutputs("output");
             ComputationGraphConfiguration conf = gb.build();
             ComputationGraph cg = new ComputationGraph(conf);
             cg.init();
