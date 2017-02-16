@@ -74,6 +74,9 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_remainder(T num, T denom);
 
+        template<typename T>
+        math_def inline T nd4j_fmod(T num, T denom);
+
 		template<typename T>
         math_def inline T nd4j_sigmoid(T val) {
 			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T>(-val));
@@ -426,6 +429,22 @@ template<typename T>
         template<>
         math_def inline float16 nd4j_remainder<float16>(float16 num, float16 denom) {
             return (float16) remainderf((float) num, (float) denom);
+        }
+
+
+        template<>
+        math_def inline float nd4j_fmod<float>(float num, float denom) {
+            return fmodf(num, denom);
+        }
+
+        template<>
+        math_def inline double nd4j_fmod<double>(double num, double denom) {
+            return fmod(num, denom);
+        }
+
+        template<>
+        math_def inline float16 nd4j_fmod<float16>(float16 num, float16 denom) {
+            return (float16) fmodf((float) num, (float) denom);
         }
 
 

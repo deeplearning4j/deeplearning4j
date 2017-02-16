@@ -41,7 +41,8 @@
         (14,simdOps::Mod),\
         (15,simdOps::ReverseMod),\
         (16,simdOps::GreaterThanOrEqual),\
-        (59,simdOps::Remainder)
+        (59,simdOps::Remainder),\
+        (60,simdOps::FMod)
 
 namespace functions {
     namespace scalar {
