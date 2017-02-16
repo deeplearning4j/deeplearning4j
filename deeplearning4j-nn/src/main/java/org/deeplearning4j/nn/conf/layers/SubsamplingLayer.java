@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -227,6 +228,7 @@ public class SubsamplingLayer extends Layer {
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
             if(poolingType==org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SubsamplingLayer(this);
         }

@@ -9,10 +9,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -234,6 +236,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         @SuppressWarnings("unchecked")
         public ConvolutionLayer build() {
+            ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
+
             return new ConvolutionLayer(this);
         }
     }
