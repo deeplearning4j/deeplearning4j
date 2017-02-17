@@ -135,6 +135,35 @@ def dump_ndarray(batch_size, dataset):
     return hijack_cache[dataset_hash]
 
 
+def slice_X(X, start=None, stop=None):
+    """This takes an array-like, or a list of
+    array-likes, and outputs:
+        - X[start:stop] if X is an array-like
+        - [x[start:stop] for x in X] if X in a list
+    Can also work on list/array of indices: `slice_X(x, indices)`
+    # Arguments
+        start: can be an integer index (start index)
+            or a list/array of indices
+        stop: integer (stop index); should be None if
+            `start` was a list.
+    """
+    if isinstance(X, list):
+        if hasattr(start, '__len__'):
+            # hdf5 datasets only support list objects as indices
+            if hasattr(start, 'shape'):
+                start = start.tolist()
+            return [x[start] for x in X]
+        else:
+            return [x[start:stop] for x in X]
+    else:
+        if hasattr(start, '__len__'):
+            if hasattr(start, 'shape'):
+                start = start.tolist()
+            return X[start]
+        else:
+            return X[start:stop]
+
+
 def check_dl4j_model(
         self):
     """
