@@ -369,4 +369,10 @@ var PAGES = [{
 "title": "试驳有关DL4J与mxnet的一些论点",
 "description": "学界的应用推广仍比较缓慢，这并不令人感到惊讶。但是，Deeplearning4J的背后绝不仅仅只有Skymind及其小团队而已。",
 "tags": ["mxnet", "word2vec", "deeplearning4j", " 比较", "compare", "其他深度学习库", "模型"]
+},
+{
+"url": "https://deeplearning4j.org/cn/neuralnetworktable",
+"title": "如何选择神经网络",
+"description": "如何选择神经网络? 下表列出了各种不同的问题和每种问题最适用的神经网络。",
+"tags": ["table", "选择神经网络", "列表", "文本", "文档", "图像", "声音", "时间系列"]
 }];
