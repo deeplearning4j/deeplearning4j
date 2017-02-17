@@ -49,6 +49,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
+    private static final long serialVersionUID = 78249242142L;
+
     @Getter protected transient SequenceIterator<T> iterator;
 
     @Setter protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
@@ -150,7 +152,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
-    protected void initLearners() {
+    protected synchronized void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
             if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
