@@ -1245,7 +1245,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /**
      * Run SGD based on the given labels
      */
-    @Deprecated
     public void finetune() {
         if (!layerWiseConfigurations.isBackprop()) {
             log.warn("Warning: finetune is not applied.");
