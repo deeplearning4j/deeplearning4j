@@ -1,18 +1,18 @@
 ---
-title: Bag of Words - TF-IDF
+title: 词袋与TF-IDF 
 layout: cn-default
 ---
-<p><h1>Bag of Words & TF-IDF</h1></p>
-<p><a href="https://en.wikipedia.org/wiki/Bag-of-words_model">Bag of Words</a> (BoW) is an algorithm that counts how many times a word appears in a document. Those word counts allow us to compare documents and gauge their similarities for applications like search, document classification and topic modeling. BoW is a method for preparing text for input in a deep-learning net.</p>
-<p>BoW lists words with their word counts per document. In the table where the words and documents effectively become vectors are stored, each row is a word, each column is a document and each cell is a word count. Each of the documents in the corpus is represented by columns of equal length. Those are wordcount vectors, an output stripped of context.</p>
+<p><h1>词袋与TF-IDF </h1></p>
+<p><a href="https://en.wikipedia.org/wiki/Bag-of-words_model" target="_blank">词袋与TF-IDF </a> (Bag of Words，简称BoW) 是一种统计某个词在一份文档中出现次数的算法。统计所得的词频数据可以用于比较文档并测量其相似性，具体应用包括搜索、文档分类、主题建模等。词袋法是为深度学习网络准备文本输入的方法。 </p>
+<p>词袋法会列出每个词及其在每份文档中出现的次数。实质上已经向量化的词和文档被存储到表格中，表格的每一行对应一个词，每一列对应一份文档，而每个单元格则是一项词频数。语料库中的每份文档都以长度相等的列来表示。这也就是词频向量，一种脱离了上下文的输出。 </p>
 <img class="img-responsive center-block" src="../img/wordcount-table.png" alt="deeplearning4j">
-<p>Before they’re fed to the neural net, each vector of wordcounts is normalized such that all elements of the vector add up to one. Thus, the frequencies of each word is effectively converted to represent the probabilities of those words’ occurrence in the document. Probabilities that surpass certain levels will activate nodes in the net and influence the document’s classification.</p><br>
-<p><h2>Term Frequency-Inverse Document Frequency (TF-IDF)</h2></p>
-<p><a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">Term-frequency-inverse document frequency</a> (TF-IDF) is another way to judge the topic of an article by the words it contains. With TF-IDF, words are given weight – TF-IDF measures relevance, not frequency. That is, wordcounts are replaced with TF-IDF scores across the whole dataset.</p>
-<p>First, TF-IDF measures the number of times that words appear in a given document (that&rsquo;s term frequency). But because words such as &ldquo;and&rdquo; or &ldquo;the&rdquo; appear frequently in all documents, those are systematically discounted. That&rsquo;s the inverse-document frequency part. The more documents a word appears in, the less valuable that word is as a signal. That&rsquo;s intended to leave only the frequent AND distinctive words as markers. Each word&rsquo;s TF-IDF relevance is a normalized data format that also adds up to one.</p><br>
+<p>在输入神经网络之前，每个词频向量都需要进行标准化，确保向量的所有元素之和为1。如此就相当于将每个词的频率转换为该词在文档中出现的概率。超过一定水平的概率会激活网络中的节点，对文档的分类产生影响。 </p><br>
+<p><h2>词频－逆文档频率（TF-IDF）</h2></p>
+<p><a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf" target="_blank">词频－逆文档频率</a>（TF-IDF）是另一种根据文章中包含的词来判断文章主题的方法。TF-IDF为词赋予权重——TF-IDF测量的是相关性，而非频率。因此，在整个数据集中，词频都会被TF-IDF分值所取代。 </p>
+<p>首先，TF-IDF会测量某一特定文档中的词的出现次数（即词频，term frequency）。但是，由于“and”、“the”之类的词所有文档中都频繁出现，这些词的频率需要调整。这就是逆文档频率的部分。出现某一个词的文档数量越多，这个词作为信号的价值就越小。这样做的目的是仅留下独特的高频词用作标记。每个词的TF-IDF相关性是一种标准化的数据格式，总和也是1。 </p><br>
 <img class="img-responsive center-block" src="../img/tfidf.png" alt="deeplearning4j"><br>
-<p>Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them.</p>
-<p>Setting up a BoW looks something like this:</p>
+<p>随后，标记词会被当作特征输入神经网络，以确定包含这些词的文档的主题。</p>
+<p>词袋的配置方式如下： </p>
 <pre class="line-numbers"><code class="language-java">
 public class BagOfWordsVectorizer extends BaseTextVectorizer {
       public BagOfWordsVectorizer(){}
@@ -33,16 +33,16 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
               labels,index,batchSize,sample,stem,cleanup);
     }
 </code></pre>
-<p>While simple, TF-IDF is incredibly powerful, and contributes to such ubiquitous and useful tools as Google search.</p>
-<p>BoW is different from <a href="word2vec.html">Word2vec</a>, which we&rsquo;ll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word&rsquo;s context, the ngrams of which it is a part. BoW is good for classifying documents as a whole.</p>    
+<p>TF-IDF虽然原理简单，但功能极其强大，在谷歌搜索等无处不在的实用工具中都有所应用。 </p>
+<p>词袋法与我们接下来要介绍的 <a href="word2vec.html">Word2vec</a>有所不同。主要的区别是：Word2vec为每个词生成一个向量，而词袋法则为每个词生成一个数字（词频）。Word2vec很适合对文档进行深入分析，识别文档的内容和内容子集。它的向量表示每个词的上下文，亦即词所在的n-gram。词袋法适合对文档进行总体分类。 </p>    
 <br>
 <p><h2>Other Deeplearning4j Tutorials</h2></p>
 <ul>
   <li><a href="word2vec">Word2vec</a></li>
-  <li><a href="neuralnet-overview">Introduction to Neural Networks</a></li>
-  <li><a href="restrictedboltzmannmachine">Restricted Boltzmann Machines</a></li>
-  <li><a href="eigenvector">Eigenvectors, Covariance, PCA and Entropy</a></li>
-  <li><a href="lstm">LSTMs and Recurrent Networks</a></li>
-  <li><a href="linear-regression">Neural Networks and Regression</a></li>
-  <li><a href="convolutionalnets">Convolutional Networks for Images</a></li>
+  <li><a href="neuralnet-overview">[神经网络简介</a></li>
+  <li><a href="restrictedboltzmannmachine">受限玻尔兹曼机</a></li>
+  <li><a href="eigenvector">本征向量、协方差、PCA和熵</a></li>
+  <li><a href="lstm">[LSTM和循环网络</a></li>
+  <li><a href="linear-regression">神经网络与回归分析</a></li>
+  <li><a href="convolutionalnets">用于图像处理的卷积网络</a></li>
 </ul>
