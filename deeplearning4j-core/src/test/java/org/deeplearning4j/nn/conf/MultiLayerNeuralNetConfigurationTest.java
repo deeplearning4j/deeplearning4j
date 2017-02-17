@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
-import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -51,7 +51,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(0,new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
-                .inputPreProcessor(0, new ReshapePreProcessor())
+                .inputPreProcessor(0, new CnnToFeedForwardPreProcessor())
                 .build();
 
         String json = conf.toJson();
@@ -155,7 +155,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
-                .inputPreProcessor(0, new ReshapePreProcessor())
+                .inputPreProcessor(0, new CnnToFeedForwardPreProcessor())
                 .build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
@@ -188,7 +188,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .list()
                 .layer(0, new RBM.Builder().build())
                 .layer(1, new OutputLayer.Builder().build())
-                .inputPreProcessor(1, new ReshapePreProcessor(new int[] {1,2}, new int[] {3,4}))
+                .inputPreProcessor(1, new CnnToFeedForwardPreProcessor())
                 .build();
 
         MultiLayerConfiguration conf2 = conf.clone();

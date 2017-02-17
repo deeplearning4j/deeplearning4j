@@ -237,7 +237,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     /**
-     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}
+     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}.
+     * Pretraining each layer in a row on a single minibatch (as per this method) instead of N epochs per layer is not advisable.
      */
     @Deprecated
     public void pretrain(INDArray input) {
@@ -897,48 +898,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return f1Score(data.getFeatures(), data.getLabels());
     }
 
-
-    /**
-     * Unpacks a parameter matrix in to a
-     * transform of pairs(w,hbias)
-     * triples with layer wise
-     *
-     * @param param the param vector
-     * @return a segmented list of the param vector
-     * @deprecated use {@link #setParameters(INDArray)}
-     */
-    @Deprecated
-    public List<Pair<INDArray, INDArray>> unPack(INDArray param) {
-        //more sanity checks!
-        if (param.size(0) != 1)
-            param = param.reshape(1, param.length());
-        List<Pair<INDArray, INDArray>> ret = new ArrayList<>();
-        int curr = 0;
-        for (int i = 0; i < layers.length; i++) {
-            int layerLength = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length() + layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length();
-            INDArray subMatrix = param.get(NDArrayIndex.interval(curr, curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0, layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length()));
-
-            int beginHBias = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
-            int endHbias = subMatrix.length();
-            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias, endHbias));
-            int layerLengthSum = weightPortion.length() + hBiasPortion.length();
-            if (layerLengthSum != layerLength) {
-                if (hBiasPortion.length() != layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length())
-                    throw new IllegalStateException("Hidden bias on layer " + i + " was off");
-                if (weightPortion.length() != layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
-                    throw new IllegalStateException("Weight portion on layer " + i + " was off");
-
-            }
-
-            ret.add(new Pair<>(weightPortion.reshape(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).size(0), layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns()), hBiasPortion.reshape(layers[i].getParam(DefaultParamInitializer.BIAS_KEY).size(0), layers[i].getParam(DefaultParamInitializer.BIAS_KEY).columns())));
-            curr += layerLength;
-        }
-
-
-        return ret;
-    }
-
     @Override
     public void fit(DataSetIterator iterator) {
         DataSetIterator iter;
@@ -1285,7 +1244,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /**
      * Run SGD based on the given labels
-     *
      */
     @Deprecated
     public void finetune() {
