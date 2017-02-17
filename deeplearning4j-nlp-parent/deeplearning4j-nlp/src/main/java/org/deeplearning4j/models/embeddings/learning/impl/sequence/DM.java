@@ -85,10 +85,11 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
+        if (sequence.getSequenceLabel() == null)
+            return 0;
+
         List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
-
-        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if(seq.isEmpty() || labels.isEmpty())
             return 0;
@@ -163,11 +164,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(sequence.isEmpty())
             return null;
 
-
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(), lookupTable.layerSize() + 1);
         INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
-
-        INDArray orig = ret.dup();
 
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
@@ -177,13 +175,15 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
+        finish();
+
         return ret;
     }
 
 
     @Override
     public void finish() {
-        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()){
+        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0){
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
