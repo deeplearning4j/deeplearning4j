@@ -300,7 +300,7 @@ You'll want to save the model. The normal way to save models in Deeplearning4j i
 
 ``` java
         log.info("Save vectors....");
-        WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
+        WordVectorSerializer.writeWord2VecModel(vec, "pathToSaveModel.txt");
 ```
 
 This will save the vectors to a file called `pathToSaveModel.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
@@ -320,7 +320,7 @@ Any number of combinations is possible, but they will only return sensible resul
 You can reload the vectors into memory like this:
 
 ``` java
-        Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
+        Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("pathToSaveModel.txt");
 ```
 
 You can then use Word2vec as a lookup table:
