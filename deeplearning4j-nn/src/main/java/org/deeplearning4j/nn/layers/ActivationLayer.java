@@ -66,9 +66,6 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
-//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(input);
-//        INDArray delta = epsilon.muli(activationDerivative);
         INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst();  //TODO handle activation function params
 
         if(maskArray != null){
