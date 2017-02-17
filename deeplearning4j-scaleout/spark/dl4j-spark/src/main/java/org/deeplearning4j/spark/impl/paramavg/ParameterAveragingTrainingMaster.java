@@ -377,6 +377,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
+    /**
+     * @deprecated Due to poor performance
+     */
     @Override
     @Deprecated
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
