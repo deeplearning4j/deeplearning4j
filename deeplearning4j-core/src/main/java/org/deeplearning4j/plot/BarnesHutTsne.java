@@ -661,6 +661,8 @@ public class BarnesHutTsne implements Model {
 
     /**
      * Change the dimensions with
+     *
+     * @deprecated Use {@link #fit(INDArray)}
      */
     @Deprecated
     public void fit(INDArray data, int nDims) {

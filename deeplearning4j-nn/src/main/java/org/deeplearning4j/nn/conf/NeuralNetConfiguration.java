@@ -695,6 +695,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return activation(activation.getActivationFunction());
         }
 
+        /**
+         * @deprecated Use {@link #activation(IActivation)} with leaky relu, setting alpha value directly in constructor.
+         */
         @Deprecated
         public Builder leakyreluAlpha(double leakyreluAlpha) {
             this.leakyreluAlpha = leakyreluAlpha;
