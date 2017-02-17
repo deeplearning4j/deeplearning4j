@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Builder;
 import lombok.Getter;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -56,6 +57,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable> extends A
 
     @Data
     @AllArgsConstructor
+    @Builder
     @EqualsAndHashCode(callSuper = false)
     public static class AsyncNStepQLConfiguration implements AsyncConfiguration {
 

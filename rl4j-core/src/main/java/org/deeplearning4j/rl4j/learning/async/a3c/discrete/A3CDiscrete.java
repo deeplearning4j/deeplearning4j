@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Builder;
 import lombok.Getter;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -61,6 +62,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
 
     @Data
     @AllArgsConstructor
+    @Builder
     @EqualsAndHashCode(callSuper = false)
     public static class A3CConfiguration implements AsyncConfiguration {
 
