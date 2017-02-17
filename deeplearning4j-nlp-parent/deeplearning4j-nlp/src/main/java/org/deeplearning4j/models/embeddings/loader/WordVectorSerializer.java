@@ -24,6 +24,7 @@ import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.compression.impl.NoOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -2258,7 +2259,7 @@ public class WordVectorSerializer {
      * @param file
      * @return
      */
-    public static Word2Vec readWord2VecModel(File file) {
+    public static Word2Vec readWord2VecModel(@NonNull File file) {
         return readWord2VecModel(file, false);
     }
 
@@ -2306,12 +2307,16 @@ public class WordVectorSerializer {
      * @param extendedModel if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
      * @return
      */
-    public static Word2Vec readWord2VecModel(File file, boolean extendedModel) {
+    public static Word2Vec readWord2VecModel(@NonNull File file, boolean extendedModel) {
         InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>();
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
-        INDArray syn0;
+        INDArray syn0 = null;
         VectorsConfiguration configuration = new VectorsConfiguration();
+
+        if (!file.exists() || !file.isFile())
+            throw new ND4JIllegalStateException("File ["+ file.getAbsolutePath() + "] doesn't exist");
+
         // try to load zip format
         try {
             if (extendedModel) {
@@ -2348,22 +2353,45 @@ public class WordVectorSerializer {
                     configuration = VectorsConfiguration.fromJson(builder.toString().trim());
                 }
 
+                ZipEntry ve = zipFile.getEntry("frequencies.txt");
+                if (ve != null) {
+                    stream = zipFile.getInputStream(ve);
+                    AtomicInteger cnt  = new AtomicInteger(0);
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            String[] split = line.split(" ");
+                            VocabWord word = new VocabWord(Double.valueOf(split[1]), decodeB64(split[0]));
+                            word.setIndex(cnt.getAndIncrement());
+                            word.incrementSequencesCount(Long.valueOf(split[2]));
+
+                            vocabCache.addToken(word);
+                            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                        }
+                    }
+                } else throw new IllegalStateException("File with frequencies isn't available");
+
                 // basically read up everything, call vstacl and then return model
-                List<INDArray> arrays = new ArrayList<>();
                 try(Reader reader = new CSVReader(tmpFileSyn0)) {
+                    AtomicInteger cnt = new AtomicInteger(0);
                     while (reader.hasNext()) {
                         Pair<VocabWord, float[]> pair = reader.next();
                         VocabWord word = pair.getFirst();
-                        arrays.add(Nd4j.create(pair.getSecond()));
+                        INDArray vector = Nd4j.create(pair.getSecond());
 
-                        vocabCache.addToken(word);
-                        vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                        if (syn0 == null)
+                            syn0 = Nd4j.create(vocabCache.numWords(), vector.length());
+
+                        syn0.getRow(cnt.getAndIncrement()).assign(vector);
+
+                        //vocabCache.addToken(word);
+                        //vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
 
-                syn0 = Nd4j.vstack(arrays);
+
 
                 lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
                         .cache(vocabCache)
@@ -2382,6 +2410,7 @@ public class WordVectorSerializer {
                 }
             }
         } catch (Exception e) {
+
             // let's try to load this file as csv file
             try {
                 log.debug("Trying CSV model restoration...");

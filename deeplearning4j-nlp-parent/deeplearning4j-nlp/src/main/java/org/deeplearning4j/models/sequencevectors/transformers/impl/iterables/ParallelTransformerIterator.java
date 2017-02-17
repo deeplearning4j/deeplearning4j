@@ -138,16 +138,17 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     LabelledDocument document = stringsBuffer.take();
 
                     if (document == null || document.getContent() == null)
-                        break;
+                        continue;
 
                     processing.incrementAndGet();
 
                     Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
-                    for (String label: document.getLabels()) {
-                        if (label != null && !label.isEmpty())
-                            sequence.addSequenceLabel(new VocabWord(1.0, label));
-                    }
+                    if (document.getLabels() != null)
+                        for (String label: document.getLabels()) {
+                            if (label != null && !label.isEmpty())
+                                sequence.addSequenceLabel(new VocabWord(1.0, label));
+                        }
 
                     if (sequence != null)
                         sequencesBuffer.put(sequence);
