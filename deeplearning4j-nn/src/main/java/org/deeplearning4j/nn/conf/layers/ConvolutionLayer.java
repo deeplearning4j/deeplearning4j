@@ -125,7 +125,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l1;
             case ConvolutionParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -137,7 +137,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l2;
             case ConvolutionParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }

@@ -448,10 +448,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     	if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
         double l1Sum = 0.0;
         if(conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0){
-            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
         }
         if(conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0){
-            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
+            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
         }
         return l1Sum;
     }
