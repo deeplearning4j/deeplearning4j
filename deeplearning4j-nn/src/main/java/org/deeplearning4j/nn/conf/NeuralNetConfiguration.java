@@ -1051,6 +1051,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(useDropConnect && dropOut == 0.0) log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
             if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1())
                     && Double.isNaN(l2) && Double.isNaN(layer.getL2())
+                    && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
                     && (Double.isNaN(dropOut) || dropOut==0.0) && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
                 log.warn( "Layer \"" + layerName + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
@@ -1072,7 +1073,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                         ((!Double.isNaN(l1) && l1 > 0.0) ||
                                 (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
                                 (!Double.isNaN(l2) && l2 > 0.0) ||
-                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0))) {
+                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0) ||
+                                (!Double.isNaN(l1Bias) && l1Bias > 0.0) ||
+                                (!Double.isNaN(layer.getL1Bias()) && layer.getL1Bias() > 0.0) ||
+                                (!Double.isNaN(l2Bias) && l2Bias > 0.0) ||
+                                (!Double.isNaN(layer.getL2Bias()) && layer.getL2Bias() > 0.0))) {
                     log.warn("Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
                 }
 
