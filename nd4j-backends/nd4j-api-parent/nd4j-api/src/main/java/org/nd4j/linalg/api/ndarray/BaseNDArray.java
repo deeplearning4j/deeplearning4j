@@ -1324,13 +1324,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns an ndarray with 1 if the element is epsilon equals
      *
      * @param other the number to compare
-     * @return a copied ndarray with the given
+     * @return a ndarray with the given
      * binary conditions
      */
     @Override
     public INDArray epsi(Number other) {
         INDArray otherArr = Nd4j.valueArrayOf(shape(),other.doubleValue());
-        return eps(otherArr);
+        return epsi(otherArr);
     }
 
     /**
