@@ -355,6 +355,18 @@ var PAGES = [{
 {
 "url": "https://deeplearning4j.org/cn/doc2vec",
 "title": "Deeplearning4j中的Doc2Vec与段落向量",
-"description": "c2Vec的主要作用是在任意文档与标签之间建立联系，所以标签是必需的。Doc2Vec是Word2Vec的一项扩展，而Word2Vec的功能也是学习词与标签之间的关联，而非词与其他词之间的关联。Deeplearning4j中的Doc2Vec实现旨在服务Java、Scala和Clojure社区。",
+"description": "doc2Vec的主要作用是在任意文档与标签之间建立联系，所以标签是必需的。Doc2Vec是Word2Vec的一项扩展，而Word2Vec的功能也是学习词与标签之间的关联，而非词与其他词之间的关联。Deeplearning4j中的Doc2Vec实现旨在服务Java、Scala和Clojure社区。",
 "tags": ["doc2vec", "word2vec", "label", "标签", "词汇表", "段落向量"]
+},
+{
+"url": "https://deeplearning4j.org/cn/bagofwords-tf-idf",
+"title": "词袋与TF-IDF",
+"description": "词袋与TF-IDF是一种统计某个词在一份文档中出现次数的算法。统计所得的词频数据可以用于比较文档并测量其相似性，具体应用包括搜索、文档分类、主题建模等。词袋法是为深度学习网络准备文本输入的方法。",
+"tags": ["bag of word", "词袋", "tf-idf", "tfidf", "bow", "word2vec", "doc2vec", "词频", "逆文档频率", "term frequency"]
+},
+{
+"url": "https://deeplearning4j.org/cn/mxnet",
+"title": "试驳有关DL4J与mxnet的一些论点",
+"description": "学界的应用推广仍比较缓慢，这并不令人感到惊讶。但是，Deeplearning4J的背后绝不仅仅只有Skymind及其小团队而已。",
+"tags": ["mxnet", "word2vec", "deeplearning4j", " 比较", "compare", "其他深度学习库", "模型"]
 }];
