@@ -220,6 +220,36 @@ To begin training deep neural networks on distributed GPUs on Spark, you will ne
 Join us on gitter as well if you'd like to speak to any of us live:
 https://gitter.im/deeplearning4j/deeplearning4j
 
+## Notes
+
+### Warning!!! Spark on Ubuntu 16.04 bug may affect DL4J users
+
+When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
+
+Some workarounds are suggested. 
+
+### Option:1
+
+Add
+```
+[login]
+KillUserProcesses=no
+```
+to /etc/systemd/logind.conf, and reboot.
+
+### Option:2
+
+Copy the /bin/kill binary from Ubuntu 14.04 and use that one instead. 
+
+### Option:3
+
+Downgrade to Ubuntu 14.04 
+
+### Option:4
+
+run ```sudo loginctl enable-linger hadoop_user_name``` on cluster nodes
+
+
 
 ## References
 
