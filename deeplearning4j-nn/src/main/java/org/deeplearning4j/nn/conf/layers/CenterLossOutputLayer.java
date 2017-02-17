@@ -120,6 +120,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
             case CenterLossParamInitializer.WEIGHT_KEY:
                 return l1;
             case CenterLossParamInitializer.BIAS_KEY:
+                return l1Bias;
             case CenterLossParamInitializer.CENTER_KEY:
                 return 0.0;
             default:
@@ -133,6 +134,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
             case CenterLossParamInitializer.WEIGHT_KEY:
                 return l2;
             case CenterLossParamInitializer.BIAS_KEY:
+                return l2Bias;
             case CenterLossParamInitializer.CENTER_KEY:
                 return 0.0;
             default:

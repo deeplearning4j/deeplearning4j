@@ -145,8 +145,11 @@ public class CNNGradientCheckTest {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for( String afn : activFns ){
             for( boolean doLearningFirst : characteristic ){
@@ -160,6 +163,7 @@ public class CNNGradientCheckTest {
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                 .regularization(true)
                                 .l2(l2).l1(l1)
+                                .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
                                 .list()
