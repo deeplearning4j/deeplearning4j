@@ -122,11 +122,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public void setError(int errorNumber, INDArray error){
-        epsilon = error;
-    }
-
-    @Override
     public void setEpsilon(INDArray epsilon){
         this.epsilon = epsilon;
     }
@@ -156,16 +151,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
             }
         }
         return epsilon != null;
-    }
-
-    @Override
-    public INDArray[] getErrors(){
-        return new INDArray[]{epsilon};
-    }
-
-    @Override
-    public void setErrors(INDArray... errors){
-        this.epsilon = errors[0];
     }
 
     @Override
