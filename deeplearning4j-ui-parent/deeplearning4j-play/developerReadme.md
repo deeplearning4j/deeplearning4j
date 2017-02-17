@@ -22,6 +22,7 @@ Some key concepts:
     - Each module implements the UIModule interface, which defines a set of routes, and how to handle page requests
     - Custom modules are supported: this is not enabled by default. See PlayUIServer UI_CUSTOM_MODULE_PROPERTY for details.
 - Internationalization (i.e., multiple languages) is supported, but not using the standard Play mechanisms
+- The main class and entry point is PlayUIServer
 
 ## Building Templates
 
@@ -37,7 +38,9 @@ Adding a new (built-in) page to the UI can be done using the following approach:
     - Provide routes: these are the endpoints that the user will be able to query, and define what methods will be used
      to get the result to return for that page. See for example TrainModule for details
     - Each route needs to specify the method to call to get the result (must return a play.mvc.Result object) 
-    - Supplier: no args; Function: 1 arg; BiFunction and Function3: 2 and 3 args repectively
+    - Supplier: used to return results with no args; Function: 1 arg; BiFunction and Function3: 2 and 3 args respectively.
+      For function/bifunction etc, the arguments are specified with semicolons, like "/myRoute/:myArg"; the called
+      method should have an appropriate number of arguments to match this.
     - Optionally: add code to handle callbacks, storage events, stats storage. See the section below.
 - Add the module to the others, in the PlayUIServer. Should be 1 line: ```uiModules.add(new MyNewModule());```
 
@@ -56,11 +59,13 @@ training information - some of it may be static/stored, some of it may be stream
 When a user calls ```UIServer.getInstance().attach(StatsStorage)``` the provided StatsStorage instance will provide
 callbacks to the UI whenever something changes. For example, new information from a trained network is added to the
 StatsStorage from the StatsListener, the modules that are registered for callbacks (of that type) will be notified.
-The UI modules can then query the StatStorage instance (or not) to get the relevant information.
+The UI modules can then query the StatStorage instance (or not) to get the relevant information for displaying in the UI.
 
-Each UI module specifies the callbacks it wants to receive via Strings. Each String is a key that must match the
-TypeID of the data to listen for; consequently, there is a correspondence between the TypeID of the generating class
-(StatsListener, for example) and the TypeID that the UI module wants to receive.
+Each UI module specifies the callbacks it wants to receive via Strings (UIModule.getCallbackTypeIDs). Each String is a
+key that must match the TypeID of the data to listen for; consequently, there is a correspondence between the TypeID of
+the generating class (StatsListener, for example) and the TypeID that the UI module wants to receive. UI modules may
+specify zero or more callback type IDs. Any information that is not relevant to the UI module (i.e., doesn't match a
+specified TypeID for the module) won't be forwarded on to the UI module.
 
 
 ## Internationalization
@@ -78,3 +83,6 @@ The actual content for internationalization is present under the resources/dl4j_
 Conceptually, the files may be separated; in practice, the contents of all files (for the relevant language) are
 In practice, just add a snippet such as ```@i18n.getMessage("train.pagetitle")``` to the HTML template to get the
 appropriate entry for the current language. See the train module UI pages for more examples.
+
+Note also that it is necessary to provide an I18N instance to the templates. See the TrainModule routing section
+for an example on how to do this.
