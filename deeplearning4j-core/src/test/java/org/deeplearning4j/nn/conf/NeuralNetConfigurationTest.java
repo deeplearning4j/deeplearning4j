@@ -74,7 +74,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testJson() {
-        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.SIZE, true);
+        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
 
         assertFalse(conf.useRegularization);
         String json = conf.toJson();
@@ -86,7 +86,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testYaml() {
-        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.SIZE, true);
+        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
 
         assertFalse(conf.useRegularization);
         String json = conf.toYaml();
@@ -164,11 +164,11 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedSize() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.SIZE, true);
+        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.SIZE, true);
+        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
@@ -178,17 +178,17 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedNormalized() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.NORMALIZED, true);
+        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.NORMALIZED, true);
+        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
 
     @Test
-    public void testSetSeedUniform() {
+    public void testSetSeedXavier() {
         Nd4j.getRandom().setSeed(123);
 
         Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
@@ -196,20 +196,6 @@ public class NeuralNetConfigurationTest {
         Nd4j.getRandom().setSeed(123);
 
         Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-        INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
-        assertEquals(modelWeights, modelWeights2);
-    }
-
-    @Test
-    public void testSetSeedVI() {
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.VI, true);
-        INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.getRandom().setSeed(123);
-
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.VI, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);

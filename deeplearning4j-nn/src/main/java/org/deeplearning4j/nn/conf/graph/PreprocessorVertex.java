@@ -36,22 +36,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
-    private InputType outputType;
-
-    public PreprocessorVertex(InputPreProcessor preProcessor) {
-        this(preProcessor, null);
-    }
 
     /**
      * @param preProcessor The input preprocessor
-     * @param outputType Override for the type of output used in {@link #getOutputType(InputType...)}. This may be necessary
-     *                   for the automatic addition of other processors in the network, given a custom/non-standard InputPreProcessor
-     * @deprecated This constructor (and the "InputType override" functionality previously used is no longer necessary.
      */
-    @Deprecated
-    public PreprocessorVertex(InputPreProcessor preProcessor, InputType outputType) {
+    public PreprocessorVertex(InputPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-        this.outputType = outputType;
     }
 
     @Override
@@ -85,7 +75,6 @@ public class PreprocessorVertex extends GraphVertex {
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects "
                 + "exactly one input");
-        if (outputType != null) return outputType;   //Allows user to override for custom preprocessors
 
         return preProcessor.getOutputType(vertexInputs[0]);
     }

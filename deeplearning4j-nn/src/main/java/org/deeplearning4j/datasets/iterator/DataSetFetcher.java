@@ -25,11 +25,10 @@ import java.io.Serializable;
 /**
  * A low level interface for loading datasets in to memory.
  * 
- * This is used by an {@link DataSetIterator} to
- * 
- * handle the specifics of loading data in to memory.
+ * This is used by an DataSetIterator to handle the specifics of loading data in to memory.
  * @author Adam Gibson
  *
+ * @deprecated Retained for legacy purposes, will be removed in a future release
  */
 @Deprecated
 public interface DataSetFetcher extends Serializable {
