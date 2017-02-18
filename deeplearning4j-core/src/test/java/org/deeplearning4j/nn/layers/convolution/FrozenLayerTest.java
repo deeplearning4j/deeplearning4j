@@ -51,7 +51,7 @@ public class FrozenLayerTest {
 
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
-                .setFeatureExtractor(1).buildMLN();
+                .setFeatureExtractor(1).build();
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()
@@ -99,7 +99,7 @@ public class FrozenLayerTest {
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2,randomData.getFeatures(),false).get(2);
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
-                .setFeatureExtractor(1).buildMLN();
+                .setFeatureExtractor(1).build();
 
         MultiLayerNetwork clonedModel = modelNow.clone();
 

@@ -7,12 +7,14 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -90,4 +92,69 @@ public class TransferLearningCompGraphTest {
         assertTrue(modelNow.score() == expectedModel.score());
         assertEquals(modelNow.params(), expectedModel.params());
     }
+
+    @Test
+    public void testNoutChanges(){
+        DataSet randomData = new DataSet(Nd4j.rand(10,4),Nd4j.rand(10,2));
+
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY);
+        ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder()
+                .addInputs("layer0In")
+                .addLayer("layer0", new DenseLayer.Builder()
+                        .nIn(4).nOut(5)
+                        .build(),"layer0In")
+                .addLayer("layer1", new DenseLayer.Builder()
+                        .nIn(3).nOut(2)
+                        .build(),"layer0")
+                .addLayer("layer2", new DenseLayer.Builder()
+                        .nIn(2).nOut(3)
+                        .build(),"layer1")
+                .addLayer("layer3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(3)
+                        .build(),"layer2")
+                .setOutputs("layer3")
+                .build());
+        modelToFineTune.init();
+        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
+                .fineTuneConfiguration(overallConf)
+                .nOutReplace("layer3", 2, WeightInit.XAVIER, WeightInit.XAVIER)
+                .nOutReplace("layer0", 3, WeightInit.XAVIER, WeightInit.XAVIER)
+                .build();
+
+        ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder()
+                .addInputs("layer0In")
+                .addLayer("layer0", new DenseLayer.Builder()
+                        .nIn(4).nOut(3)
+                        .build(),"layer0In")
+                .addLayer("layer1", new DenseLayer.Builder()
+                        .nIn(3).nOut(2)
+                        .build(),"layer0")
+                .addLayer("layer2", new DenseLayer.Builder()
+                        .nIn(2).nOut(3)
+                        .build(),"layer1")
+                .addLayer("layer3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(2)
+                        .build(),"layer2")
+                .setOutputs("layer3")
+                .build());
+
+        modelExpectedArch.init();
+
+        //modelNow should have the same architecture as modelExpectedArch
+        assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer("layer0").params().shape(), modelNow.getLayer("layer0").params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer("layer1").params().shape(), modelNow.getLayer("layer1").params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer("layer2").params().shape(), modelNow.getLayer("layer2").params().shape());
+        assertArrayEquals(modelExpectedArch.getLayer("layer3").params().shape(), modelNow.getLayer("layer3").params().shape());
+
+        modelNow.setParams(modelExpectedArch.params());
+        //fit should give the same results
+        modelExpectedArch.fit(randomData);
+        modelNow.fit(randomData);
+        assertTrue(modelExpectedArch.score() == modelNow.score());
+        assertEquals(modelExpectedArch.params(), modelNow.params());
+    }
+
 }

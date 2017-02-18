@@ -74,7 +74,7 @@ public class TransferLearningMLNTest {
                                 .updater(Updater.RMSPROP)
                                 .learningRate(0.0001)
                                 .regularization(true))
-                .buildMLN();
+                .build();
 
         //Check json
         assertEquals(expectedConf.toJson(), modelNow.getLayerWiseConfigurations().toJson());
@@ -110,7 +110,7 @@ public class TransferLearningMLNTest {
                 .fineTuneConfiguration(overallConf)
                 .nOutReplace(3, 2, WeightInit.XAVIER, WeightInit.XAVIER)
                 .nOutReplace(0, 3, WeightInit.XAVIER, WeightInit.XAVIER)
-                .buildMLN();
+                .build();
 
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()
@@ -171,7 +171,7 @@ public class TransferLearningMLNTest {
                 .nOutReplace(2, 5, WeightInit.XAVIER)
                 .removeOutputLayer()
                 .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build())
-                .buildMLN();
+                .build();
 
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()
                 .layer(0, new DenseLayer.Builder()
@@ -393,7 +393,7 @@ public class TransferLearningMLNTest {
                                 .build())
                         .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
                         .setInputPreProcessor(4, new FeedForwardToRnnPreProcessor())
-                        .buildMLN();
+                        .build();
 
         //modelNow should have the same architecture as modelExpectedArch
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(), modelNow.getLayerWiseConfigurations().getConf(0).toJson());

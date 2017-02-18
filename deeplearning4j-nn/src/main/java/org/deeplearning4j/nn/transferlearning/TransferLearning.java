@@ -195,7 +195,7 @@ public class TransferLearning {
          *
          * @return
          */
-        public MultiLayerNetwork buildMLN() {
+        public MultiLayerNetwork build() {
 
             if (!prepDone) {
                 doPrep();
@@ -384,7 +384,7 @@ public class TransferLearning {
                 layerImplF.overrideNOut(nOut, true);
 
                 editedConfigBuilder.removeVertex(layerName,false);
-                LayerVertex lv = (LayerVertex) origGraph.getVertex(layerName);
+                LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
                 String [] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
                 editedConfigBuilder.addLayer(layerName,layerImpl,lv.getPreProcessor(),lvInputs);
                 editedVertices.add(layerName);
