@@ -1,53 +1,53 @@
 ---
-title: Sentence iterator
+title: 语句迭代器
 layout: cn-default
 ---
 
-# Sentence iterator
+# 语句迭代器
 
-A [sentence iterator](./doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is used in both [Word2vec](./word2vec.html) and [Bag of Words](./bagofwords-tf-idf.html).
+[Word2vec](./word2vec.html)和[词袋法](./bagofwords-tf-idf.html)都会用到一个[语句迭代器](./doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html)。
 
-It feeds bits of text into a neural network in the form of vectors, and also covers the concept of documents in text processing.
+它会将文本片段以向量的形式输入神经网络，同时也决定了文本处理中的文档概念。
 
-In natural-language processing, a document or sentence is typically used to encapsulate a context which an algorithm should learn.
+在自然语言处理中，通常用一份文档或一个句子来封装算法所应学习的一种上下文。
 
-A few examples include analyzing Tweets and full-blown news articles. The purpose of the [sentence iterator](./doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is to divide text into processable bits. Note the sentence iterator is input agnostic. So bits of text (a document) can come from a file system, the Twitter API or Hadoop.
+这方面的例子包括推特推文和整篇新闻报道的分析。[语句迭代器](./doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html)的作用是将文本划分为可以处理的片段。请注意，语句迭代器与输入的类型无关。所以文本（文档）片段可以来自一个文件系统、推特API或者Hadoop。
 
-Depending on how input is processed, the output of a sentence iterator will then be passed to a [tokenizer](./org/deeplearning4j/word2vec/tokenizer/Tokenizer.html) for the processing of individual tokens, which are usually words, but could also be ngrams, skipgrams or other units. The tokenizer is created on a per-sentence basis by a [tokenizer factory](./doc/org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html). The tokenizer factory is what is passed into a text-processing vectorizer. 
+语句迭代器的输出会传递给一个[分词器](./org/deeplearning4j/word2vec/tokenizer/Tokenizer.html)，由分词器来处理具体的词例（token）。词例通常是词语，但也有可能是n-gram、skipgram或其他单位，具体取决于输入的处理方式。分词器是由[分词器工厂](./doc/org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html)逐句创建的。分词器工厂的输出会传递给处理文本的向量生成器。 
 
-Some typical examples are below:
+以下是一些典型示例：
 
          SentenceIterator iter = new LineSentenceIterator(new File("your file"));
 
-This assumes that each line in a file is a sentence.
+上述代码假设文件中的每一行都是一个句子。
 
-You can also do list of strings as sentence as follows:
+也可以用以下方法来处理语句字符串列表。
 
 	     Collection<String> sentences = ...;
 	     SentenceIterator iter = new CollectionSentenceIterator(sentences);
 
-This will assume that each string is a sentence (document). Remember this could be a list of Tweets or articles -- both are applicable.
+上述代码假设每个字符串都是一个句子（文档）。记住，这可以是推文列表，也可以是新闻文章列表，两者都适用。
 
-You can iterate over files as follows:
+您可以用如下方式对文件进行迭代：
           
           SentenceIterator iter = new FileSentenceIterator(new File("your dir or file"));
 
-This will parse the files line by line and return individual sentences on each one.
+上述代码将逐行解析文件，返回每个文件中的各个句子。
 
-For anything complex, we recommend an actual machine-learning level pipeline, represented by the [UimaSentenceIterator](./doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html).
+对于任何复杂情况，我们建议使用机器学习级别的数据加工管道，比较常见的代表是[UimaSentenceIterator](./doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html)（UIMA语句迭代器）。
 
-The UimaSentenceIterator is capable of tokenization, part-of-speech tagging and lemmatization, among other things. The UimaSentenceIterator iterates over a set of files and can segment sentences. You can customize its behavior based on the AnalysisEngine passed into it.
+UimaSentenceIterator的功能包括分词、词性标注、词形还原等。UimaSentenceIterator对一组文件进行迭代，可以切分语句。您也可以根据为其输入数据的AnalysisEngine（分析引擎）来自定义UimaSentenceIterator的行为。
 
-The AnalysisEngine is the [UIMA](http://uima.apache.org/) concept of a text-processing pipeline. DeepLearning4j comes with standard analysis engines for all of these common tasks, allowing you to customize which text is being passed in and how you define sentences. The AnalysisEngines are thread-safe versions of the [opennlp](http://opennlp.apache.org/) pipelines. We also include [cleartk](http://cleartk.googlecode.com/)-based pipelines for handling common tasks.
+AnalysisEngine是[UIMA](http://uima.apache.org/)的文本处理数据加工管道概念。DeepLearning4j配有对应所有通用任务的标准分析引擎，您可以自行定义输入哪些文本以及如何界定句子。AnalysisEngines是[opennlp](http://opennlp.apache.org/)数据加工管道的线程安全版本。我们还提供基于[cleartk](http://cleartk.googlecode.com/)的数据加工管道，用以处理通用任务。
 
-For those using UIMA or curious about it, this employs the cleartk type system for tokens, sentences, and other annotations within the type system.
+UIMA用户或对其感兴趣的读者请注意，这一加工管道使用cleartk类型系统来处理词例、语句和类型系统内的其他注解。
 
-Here's how to create a UimaSentenceItrator.
+UimaSentenceItrator的创建方式如下：
 
             SentenceIterator iter = UimaSentenceIterator.create("path/to/your/text/documents");
 
-You can also instantiate directly:
+您也可以直接实例化：
 
 			SentenceIterator iter = new UimaSentenceIterator(path,AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription())));
 
-For those familiar with Uima, this uses Uimafit extensively to create analysis engines. You can also create custom sentence iterators by extending SentenceIterator.
+熟悉UIMA的用户请注意，上述方法会大量使用Uimafit来创建分析引擎。您也可以通过扩展SentenceIterator来创建自定义的语句迭代器。
