@@ -495,18 +495,22 @@ public class TransferLearning {
 
             int[] topologicalOrder = newGraph.topologicalSortOrder();
             org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = newGraph.getVertices();
+            if (!editedVertices.isEmpty()) {
+                //set params from orig graph as necessary to new graph
+                for (int i = 0; i < topologicalOrder.length; i++) {
 
-            //set params from orig graph as necessary to new graph
-            for (int i = 0; i < topologicalOrder.length; i++) {
+                    if (!vertices[topologicalOrder[i]].hasLayer()) continue;
 
-                if (!vertices[topologicalOrder[i]].hasLayer()) continue;
-
-                org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]].getLayer();
-                String layerName = vertices[topologicalOrder[i]].getVertexName();
-                int range = layer.numParams();
-                if (range <= 0) continue;    //some layers have no params
-                if (editedVertices.contains(layerName)) continue; //keep the changed params
-                layer.setParams(origGraph.getLayer(layerName).params().dup()); //copy over origGraph params
+                    org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]].getLayer();
+                    String layerName = vertices[topologicalOrder[i]].getVertexName();
+                    int range = layer.numParams();
+                    if (range <= 0) continue;    //some layers have no params
+                    if (editedVertices.contains(layerName)) continue; //keep the changed params
+                    layer.setParams(origGraph.getLayer(layerName).params().dup()); //copy over origGraph params
+                }
+            }
+            else {
+                newGraph.setParams(origGraph.params());
             }
 
             //freeze layers as necessary
@@ -520,6 +524,7 @@ public class TransferLearning {
                         break;
                     }
                 }
+                newGraph.initGradientsView();
             }
             return newGraph;
         }
