@@ -9,7 +9,7 @@ layout: cn-default
 
 以下是用DL4J工具进行分词的示例：
                  
-         //采用词形还原、词性标记、语句切分的分词
+         //采用词形还原、词性标注、语句切分的分词
          TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
          Tokenizer tokenizer = tokenizerFactory.tokenize("mystring");
 
