@@ -186,7 +186,6 @@ public class TransferLearningCompGraphTest {
                 .nOutReplace("layer2", 5, WeightInit.XAVIER)
                 .removeVertex("layer3")
                 .addLayer("layer3", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build(),"layer2")
-                .setOutputs("layer3")
                 .build();
 
         ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder()

@@ -589,13 +589,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder removeVertex(String vertexName, boolean removeConnections) {
             vertices.remove(vertexName);
-            if (networkOutputs.contains(vertexName)) {
-                networkOutputs.remove(vertexName);
-            }
             if (networkInputs.contains(vertexName)) {
                 throw new IllegalArgumentException("Cannot remove input vertices");
             }
             if (removeConnections) {
+                if (networkOutputs.contains(vertexName)) {
+                    networkOutputs.remove(vertexName);
+                }
                 for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
                     List inputs = entry.getValue();
                     if (inputs.contains(vertexName)) {

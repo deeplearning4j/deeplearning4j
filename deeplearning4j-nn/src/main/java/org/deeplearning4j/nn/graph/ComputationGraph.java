@@ -39,6 +39,7 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -46,8 +47,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -61,8 +62,6 @@ import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.dataset.api.DataSet;
-
 
 import java.io.Serializable;
 import java.util.*;
@@ -1259,6 +1258,13 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
         cg.listeners = this.listeners;
+        for (int i=0; i<topologicalOrder.length; i++) {
+            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+            String layerName = vertices[topologicalOrder[i]].getVertexName();
+            if (getLayer(layerName) instanceof FrozenLayer) {
+                cg.getVertex(layerName).setLayerAsFrozen();
+            }
+        }
         return cg;
     }
 
