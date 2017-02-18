@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.multilayer;
+package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -7,7 +7,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
-import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -15,9 +15,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by susaneraly on 2/15/17.
@@ -84,7 +82,7 @@ public class TransferLearningMLNTest {
         //Check params after fit
         modelNow.fit(randomData);
         expectedModel.fit(randomData);
-        assertTrue(modelNow.score == expectedModel.score);
+        assertTrue(modelNow.score() == expectedModel.score());
         assertEquals(modelNow.params(), expectedModel.params());
     }
 
@@ -142,7 +140,7 @@ public class TransferLearningMLNTest {
         //fit should give the same results
         modelExpectedArch.fit(randomData);
         modelNow.fit(randomData);
-        assertTrue(modelExpectedArch.score == modelNow.score);
+        assertTrue(modelExpectedArch.score() == modelNow.score());
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
@@ -203,7 +201,7 @@ public class TransferLearningMLNTest {
         //fit should give the same results
         modelExpectedArch.fit(randomData);
         modelNow.fit(randomData);
-        assertTrue(modelExpectedArch.score == modelNow.score);
+        assertTrue(modelExpectedArch.score() == modelNow.score());
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
