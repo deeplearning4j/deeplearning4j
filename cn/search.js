@@ -375,4 +375,22 @@ var PAGES = [{
 "title": "如何选择神经网络",
 "description": "如何选择神经网络? 下表列出了各种不同的问题和每种问题最适用的神经网络。",
 "tags": ["table", "选择神经网络", "列表", "文本", "文档", "图像", "声音", "时间系列"]
+},
+{
+"url": "https://deeplearning4j.org/cn/textanalysis",
+"title": "文本分析与深度学习",
+"description": "从本质上看，图像是模糊的非结构化数据，而文字则属于一种半结构化的数据类型，即我们所知的语言。语言之中包含了有关其自身的信息。",
+"tags": ["文本", "csv", "文字", "自然语言", "csv", "nlp", "词袋", "word2vec"]
+},
+{
+"url": "https://deeplearning4j.org/cn/sentenceiterator",
+"title": "语句迭代器",
+"description": "Word2vec和词袋法都会用到一个语句迭代器。它会将文本片段以向量的形式输入神经网络，同时也决定了文本处理中的文档概念。",
+"tags": ["文本", "word2vec", "词袋", "自然语言", "分词器", "词例"]
+},
+{
+"url": "https://deeplearning4j.org/cn/tokenization",
+"title": "分词",
+"description": "分词（tokenization）是将文本分解为单个词语的过程。词窗口也是由词例（token）组成的。",
+"tags": ["分词", "分词器", "token", "word2vec", "词语", "nlp", "自然语言", "词列", "token"]
 }];
