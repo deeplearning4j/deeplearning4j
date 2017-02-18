@@ -224,7 +224,13 @@ public class TransferLearning {
 
             //editParams gets original model params
             for (int i = 0; i < origModel.getnLayers(); i++) {
-                editedParams.add(origModel.getLayer(i).params().dup());
+                if (origModel.getLayer(i).numParams() > 0) {
+                    //dup only if params are there
+                    editedParams.add(origModel.getLayer(i).params().dup());
+                }
+                else {
+                    editedParams.add(origModel.getLayer(i).params());
+                }
             }
             //apply changes to nout/nin if any in sorted order and save to editedParams
             if (!editedLayers.isEmpty()) {
