@@ -388,6 +388,36 @@ public class TransferLearning {
                 String [] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
                 editedConfigBuilder.addLayer(layerName,layerImpl,lv.getPreProcessor(),lvInputs);
                 editedVertices.add(layerName);
+
+                //collect other vertices that have this vertex as inputs
+                List<String> fanoutVertices  = new ArrayList<>();
+                for (Map.Entry<String,List<String>> entry: origConfig.getVertexInputs().entrySet()) {
+                    String currentVertex = entry.getKey();
+                    if (!currentVertex.equals(layerName)) {
+                        if (entry.getValue().contains(layerName)) {
+                            fanoutVertices.add(currentVertex);
+                        }
+                    }
+                }
+
+                //change nIn of fanout
+                for (String fanoutVertexName: fanoutVertices) {
+                    if (!origGraph.getVertex(fanoutVertexName).hasLayer()) {
+                        throw new UnsupportedOperationException("Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertex followed by addVertex instead");
+                    }
+                    layerConf = origGraph.getLayer(fanoutVertexName).conf();
+                    layerImpl = layerConf.getLayer().clone();
+
+                    layerImpl.setWeightInit(scheme);
+                    layerImplF = (FeedForwardLayer) layerImpl;
+                    layerImplF.overrideNIn(nOut, true);
+
+                    editedConfigBuilder.removeVertex(fanoutVertexName,false);
+                    lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);
+                    lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
+                    editedConfigBuilder.addLayer(fanoutVertexName,layerImpl,lv.getPreProcessor(),lvInputs);
+                    editedVertices.add(fanoutVertexName);
+                }
             }
             else {
                 throw new IllegalArgumentException("noutReplace can only be applied to layer vertices. "+layerName+" is not a layer vertex");
