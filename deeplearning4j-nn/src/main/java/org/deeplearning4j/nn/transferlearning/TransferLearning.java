@@ -4,9 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -47,7 +50,7 @@ public class TransferLearning {
 
         public Builder(MultiLayerNetwork origModel) {
             this.origModel = origModel;
-            this.origConf = origModel.getLayerWiseConfigurations();
+            this.origConf = origModel.getLayerWiseConfigurations().clone();
 
             this.inputPreProcessors = origConf.getInputPreProcessors();
             this.backpropType = origConf.getBackpropType();
@@ -221,7 +224,7 @@ public class TransferLearning {
 
             //editParams gets original model params
             for (int i = 0; i < origModel.getnLayers(); i++) {
-                editedParams.add(origModel.getLayer(i).params());
+                editedParams.add(origModel.getLayer(i).params().dup());
             }
             //apply changes to nout/nin if any in sorted order and save to editedParams
             if (!editedLayers.isEmpty()) {
@@ -252,31 +255,10 @@ public class TransferLearning {
         private void fineTuneConfigurationBuild() {
 
             for (int i = 0; i < origConf.getConfs().size(); i++) {
-
                 NeuralNetConfiguration layerConf = origConf.getConf(i);
-                Layer layerConfImpl = layerConf.getLayer();
-
+                Layer layerConfImpl = layerConf.getLayer().clone();
                 //clear the learning related params for all layers in the origConf and set to defaults
-                layerConfImpl.setUpdater(null);
-                layerConfImpl.setMomentum(Double.NaN);
-                layerConfImpl.setWeightInit(null);
-                layerConfImpl.setBiasInit(Double.NaN);
-                layerConfImpl.setDist(null);
-                layerConfImpl.setLearningRate(Double.NaN);
-                layerConfImpl.setBiasLearningRate(Double.NaN);
-                layerConfImpl.setLearningRateSchedule(null);
-                layerConfImpl.setMomentumSchedule(null);
-                layerConfImpl.setL1(Double.NaN);
-                layerConfImpl.setL2(Double.NaN);
-                layerConfImpl.setDropOut(Double.NaN);
-                layerConfImpl.setRho(Double.NaN);
-                layerConfImpl.setEpsilon(Double.NaN);
-                layerConfImpl.setRmsDecay(Double.NaN);
-                layerConfImpl.setAdamMeanDecay(Double.NaN);
-                layerConfImpl.setAdamVarDecay(Double.NaN);
-                layerConfImpl.setGradientNormalization(GradientNormalization.None);
-                layerConfImpl.setGradientNormalizationThreshold(1.0);
-
+                layerConfImpl.setLearningToDefault();
                 editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
             }
         }
@@ -284,7 +266,7 @@ public class TransferLearning {
         private void nOutReplaceBuild(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
-            Layer layerImpl = layerConf.getLayer();
+            Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
             layerImpl.setWeightInit(scheme);
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
             layerImplF.overrideNOut(nOut, true);
@@ -295,7 +277,7 @@ public class TransferLearning {
 
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
-                layerImpl = layerConf.getLayer();
+                layerImpl = layerConf.getLayer(); //modify in place
                 layerImpl.setWeightInit(schemeNext);
                 layerImplF = (FeedForwardLayer) layerImpl;
                 layerImplF.overrideNIn(nOut, true);
@@ -328,5 +310,183 @@ public class TransferLearning {
                     .setInputType(this.inputType)
                     .confs(allConfs).build();
         }
+    }
+
+    public static class GraphBuilder {
+
+        private ComputationGraph origGraph;
+        private ComputationGraphConfiguration origConfig;
+
+        private NeuralNetConfiguration.Builder globalConfig;
+        private ComputationGraphConfiguration.GraphBuilder editedConfigBuilder;
+
+        private String frozenOutputAt;
+        private boolean hasFrozen = false;
+        private Set<String> editedVertices = new HashSet<>();
+
+        public GraphBuilder(ComputationGraph origGraph) {
+            this.origGraph = origGraph;
+            this.origConfig = origGraph.getConfiguration().clone();
+
+        }
+
+        public GraphBuilder setTbpttFwdLength(int l) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.setTbpttFwdLength(l);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder setTbpttBackLength(int l) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.setTbpttBackLength(l);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder setFeatureExtractor(String layerName) {
+            this.hasFrozen = true;
+            this.frozenOutputAt = layerName;
+            return this;
+        }
+
+        public GraphBuilder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
+            this.globalConfig = newDefaultConfBuilder;
+            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,globalConfig,true);
+            return this;
+        }
+
+        public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme) {
+            return nOutReplace(layerName, nOut, scheme, scheme);
+        }
+
+        public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext) {
+
+            if (origGraph.getVertex(layerName).hasLayer()) {
+
+                NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
+                Layer layerImpl = layerConf.getLayer().clone();
+
+                layerImpl.setWeightInit(scheme);
+                FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.overrideNOut(nOut, true);
+
+                editedConfigBuilder.removeVertex(layerName,false);
+                LayerVertex lv = (LayerVertex) origGraph.getVertex(layerName);
+                String [] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
+                editedConfigBuilder.addLayer(layerName,layerImpl,lv.getPreProcessor(),lvInputs);
+                editedVertices.add(layerName);
+            }
+            else {
+                throw new IllegalArgumentException("noutReplace can only be applied to layer vertices. "+layerName+" is not a layer vertex");
+            }
+            return this;
+        }
+
+        public GraphBuilder removeVertex(String outputName) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.removeVertex(outputName,false);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder removeVertexAndConnections(String vertexName) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.removeVertex(vertexName,true);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.addLayer(layerName, layer, null, layerInputs);
+                editedVertices.add(layerName);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
+                editedVertices.add(layerName);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.addVertex(vertexName,vertex,vertexInputs);
+                editedVertices.add(vertexName);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public GraphBuilder setOutputs(String... outputNames) {
+            if (editedConfigBuilder != null) {
+                editedConfigBuilder.setOutputs(outputNames);
+            }
+            else {
+                throw new IllegalArgumentException("Fine tune configuration must be set first");
+            }
+            return this;
+        }
+
+        public ComputationGraph build() {
+            ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
+            ComputationGraph newGraph = new ComputationGraph(newConfig);
+            newGraph.init();
+
+            int[] topologicalOrder = newGraph.topologicalSortOrder();
+            org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = newGraph.getVertices();
+
+            //set params from orig graph as necessary to new graph
+            for (int i = 0; i < topologicalOrder.length; i++) {
+
+                if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+                org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]].getLayer();
+                String layerName = vertices[topologicalOrder[i]].getVertexName();
+                int range = layer.numParams();
+                if (range <= 0) continue;    //some layers have no params
+                if (editedVertices.contains(layerName)) continue; //keep the changed params
+                layer.setParams(origGraph.getLayer(layerName).params().dup()); //copy over origGraph params
+            }
+
+            //freeze layers as necessary
+            if (hasFrozen) {
+                for (int i=0; i<topologicalOrder.length; i++) {
+                    if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+                    org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
+                    String layerName = vertices[topologicalOrder[i]].getVertexName();
+                    gv.setLayerAsFrozen();
+                    if (layerName.equals(frozenOutputAt)) {
+                        break;
+                    }
+                }
+            }
+            return newGraph;
+        }
+
     }
 }

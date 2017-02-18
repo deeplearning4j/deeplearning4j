@@ -17,29 +17,24 @@
  */
 package org.deeplearning4j.nn.conf;
 
-import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
-import org.nd4j.shade.jackson.databind.jsontype.NamedType;
 import lombok.*;
-import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.reflections.Reflections;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
@@ -430,6 +425,39 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.globalConfiguration = globalConfiguration;
         }
 
+        public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration, boolean overrideLearning) {
+
+            ComputationGraphConfiguration clonedConf = newConf.clone();
+
+            this.vertices = clonedConf.getVertices();
+            this.vertexInputs = clonedConf.getVertexInputs();
+
+            this.networkInputs = clonedConf.getNetworkInputs();
+            this.networkOutputs = clonedConf.getNetworkOutputs();
+
+            this.pretrain = clonedConf.isPretrain();
+            this.backprop = clonedConf.isBackprop();
+            this.backpropType = clonedConf.getBackpropType();
+            this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
+            this.tbpttBackLength = clonedConf.getTbpttBackLength();
+            this.globalConfiguration = globalConfiguration;
+
+            if (overrideLearning) {
+                for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+                    if (gv.getValue() instanceof LayerVertex) {
+                        LayerVertex lv = (LayerVertex) gv.getValue();
+                        Layer l = lv.getLayerConf().getLayer();
+                        l.setLearningToDefault();
+                        //same as addLayer to override what is in vertices, need not overwrite vertexInputs
+                        NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
+                        builder.layer(l);
+                        vertices.put(gv.getKey(), new LayerVertex(builder.build(),lv.getPreProcessor()));
+                        l.setLayerName(gv.getKey());
+                    }
+                }
+            }
+        }
+
         /**
          * @deprecated As of 0.6.0
          */
@@ -550,6 +578,28 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
             }
             layer.setLayerName(layerName);
+            return this;
+        }
+
+        /**
+         * Intended for use with the transfer learning API. Users discouraged from employing it directly.
+         * Removes the specified vertex from the vertices list and it's connections and associated preprocessor if so specified
+         * @param vertexName Name of the vertex to remove
+         * @param removeConnections If the vertex should also be removed from the list of inputs to other vertices. In other words - remove connections?
+         */
+        public GraphBuilder removeVertex(String vertexName, boolean removeConnections) {
+            vertices.remove(vertexName);
+            if (removeConnections) {
+                for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
+                    List inputs = entry.getValue();
+                    if (inputs.contains(vertexName)) {
+                        inputs.remove(vertexName);
+                    }
+                }
+                if(inputPreProcessors.containsKey(vertexName)) {
+                    inputPreProcessors.remove(vertexName);
+                }
+            }
             return this;
         }
 

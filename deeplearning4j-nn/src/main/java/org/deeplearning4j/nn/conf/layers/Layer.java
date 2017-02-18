@@ -119,6 +119,29 @@ public abstract class Layer implements Serializable, Cloneable {
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
 
+    public void setLearningToDefault() {
+        //clear the learning related params for all layers in the origConf and set to defaults
+        this.setUpdater(null);
+        this.setMomentum(Double.NaN);
+        this.setWeightInit(null);
+        this.setBiasInit(Double.NaN);
+        this.setDist(null);
+        this.setLearningRate(Double.NaN);
+        this.setBiasLearningRate(Double.NaN);
+        this.setLearningRateSchedule(null);
+        this.setMomentumSchedule(null);
+        this.setL1(Double.NaN);
+        this.setL2(Double.NaN);
+        this.setDropOut(Double.NaN);
+        this.setRho(Double.NaN);
+        this.setEpsilon(Double.NaN);
+        this.setRmsDecay(Double.NaN);
+        this.setAdamMeanDecay(Double.NaN);
+        this.setAdamVarDecay(Double.NaN);
+        this.setGradientNormalization(GradientNormalization.None);
+        this.setGradientNormalizationThreshold(1.0);
+    }
+
     @Override
     public Layer clone() {
         try {
