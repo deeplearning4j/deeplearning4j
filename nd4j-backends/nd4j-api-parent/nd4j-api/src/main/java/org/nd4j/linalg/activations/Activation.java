@@ -2,10 +2,9 @@ package org.nd4j.linalg.activations;
 
 import org.nd4j.linalg.activations.impl.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
+ * This enum is the factory for the activation function.
+ *
  * Created by susaneraly on 12/8/16.
  */
 public enum Activation {
@@ -24,18 +23,13 @@ public enum Activation {
     SOFTSIGN,
     TANH;
 
-    private static final Map<String,Activation> nameMap = initNameMap();
-
-    private static Map<String,Activation> initNameMap(){
-        Map<String,Activation> map = new HashMap<>();
-        for(Activation a : values()){
-            map.put(a.name().toLowerCase(), a);
-        }
-        return map;
-    }
-
+    /**
+     * Creates an instance of the activation function
+     *
+     * @return an instance of the activation function
+     */
     public IActivation getActivationFunction() {
-        switch(this) {
+        switch (this) {
             case CUBE:
                 return new ActivationCube();
             case ELU:
@@ -69,12 +63,14 @@ public enum Activation {
         }
     }
 
-    public static Activation fromString(String name){
-        Activation a = nameMap.get(name.toLowerCase());
-        if(a == null){
-            throw new RuntimeException("Unknown activation function: " + name);
-        }
-        return a;
+    /**
+     * Returns the activation function enum value
+     *
+     * @param name the case-insensitive name of the activation function
+     * @return the activation function enum value
+     */
+    public static Activation fromString(String name) {
+        return Activation.valueOf(name.toUpperCase());
     }
 
 }
