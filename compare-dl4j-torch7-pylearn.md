@@ -1,25 +1,37 @@
 ---
-title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow"
+title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow vs. MxNet vs. CNTK"
 layout: default
 ---
 
-# DL4J vs. Torch vs. Theano vs. Caffe vs. TensorFlow
+# Comparing Frameworks: Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
 
-Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and better than Tensorflow or Torch. 
+Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and better than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. 
 
 <p align="center">
 <a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
 
-Content
+### Content
+
+Lua
+
+* <a href="#torch">Torch</a>
+
+Python Frameworks
 
 * <a href="#theano">Theano & Ecosystem</a>
-* <a href="#torch">Torch</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
+* <a href="#keras">Keras</a>
+* <a href="#mxnet">Mxnet</a>
+* <a href="#paddle">Paddle</a>
+* <a href="#bigdl">BigDL</a>
 * <a href="#licensing">Licensing</a>
+
+JVM Considerations
+
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
 * <a href="#ecosystem">DL4J: Ecosystem</a>
@@ -27,9 +39,33 @@ Content
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
 
+## Lua
+
+### <a name="torch">Torch</a>
+
+[**Torch**](http://torch.ch/) is a computational framework with an API written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
+
+Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
+
+A Python API for Torch, known as [Pytorch](https://github.com/pytorch/pytorch), was open-sourced by Facebook in January 2017. PyTorch offers dynamic computation graphs, which let you process variable-length inputs and outputs, which is useful when working with RNNs, for example. Other frameworks that support dynamic computation graphs are CMU's DyNet and PFN's Chainer. 
+
+Pros and Cons:
+
+* (+) Lots of modular pieces that are easy to combine
+* (+) Easy to write your own layer types and run on GPU
+* (+) Lua. ;) (Most of the library code is in Lua, easy to read)
+* (+) Lots of pretrained models
+* (+) PyTorch
+* (-) Lua
+* (-) You usually write your own training code (Less plug and play)
+* (-) No commercial support
+* (-) Spotty documentation
+
+## Python Frameworks
+
 ### <a name="theano">Theano and Ecosystem</a>
 
-Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
+Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in [Python](http://darkf.github.io/posts/problems-i-have-with-python.html). Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
 
 Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
 
@@ -48,23 +84,6 @@ Pros and Cons
 * (-) Patchy support for pretrained models
 * (-) Buggy on AWS
 
-### <a name="torch">Torch</a>
-
-[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
-
-Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
-
-Pros and Cons:
-
-* (+) Lots of modular pieces that are easy to combine
-* (+) Easy to write your own layer types and run on GPU
-* (+) Lua. ;) (Most of the library code is in Lua, easy to read)
-* (+) Lots of pretrained models
-* (-) Lua
-* (-) You usually write your own training code (Less plug and play)
-* (-) Not good for recurrent neural networks
-* (-) No commercial support
-* (-) Spotty documentation
 
 ### <a name="tensorflow">TensorFlow</a>
 
@@ -74,7 +93,7 @@ Pros and Cons:
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
 * Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
-* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
+* Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = sigmoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 * Caveat: Not all operations in Tensorflow work as they do in Numpy. 
 
@@ -114,18 +133,37 @@ Pros and Cons:
 
 ### <a name="cntk">CNTK</a>
 
-[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. 
+[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. This license does not apply to the method by which CNTK makes distributed training easy -- one-bit SGD -- which is not licensed for commercial use. 
 
 ### <a name="dsstne">DSSTNE</a>
 
-Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, DSSTNE appears to be fast, although it has not attracted as large a community as the other libraries. 
+Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is one of the more recent of many open-source deep-learning libraries to be released, after Tensorflow and CNTK, and Amazon has since backed MxNet with AWS, so its future is not clear. Written largely in C++, DSSTNE appears to be fast, although it has not attracted as large a community as the other libraries. 
 
-* (+) Handles Sparse encoding!
+* (+) Handles Sparse encoding
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
+* (-) Amazon has chosen another framework for use on AWS.
+
+### <a name="keras">Keras</a>
+
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
+
+### <a name="mxnet">MxNet</a>
+
+[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Parts of Apple are also rumored to use it after the company's acquisition of Graphlab/Dato/Turi in 2016. A fast and flexible library, MxNet involves Pedro Domingos and a team of researchers at the University of Washington. A [comparison](https://deeplearning4j.org/mxnet) between MxNet and some aspects of Deeplearning4j can be found here. 
+
+### <a name="paddle">Paddle</a>
+
+[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework [created and supported by Baidu](http://www.infoworld.com/article/3114175/artificial-intelligence/baidu-open-sources-python-driven-machine-learning-framework.html). Its name stands for PArallel Distributed Deep LEarning. Paddle is the most recent major framework to be released, and like most others, it offers a Python API. 
+
+### <a name="bigdl">BigDL</a>
+
+[BigDL](https://github.com/intel-analytics/BigDL), a new deep learning framework with a focus on Apache Spark, only works on Intel chips. 
 
 ### <a name="licensing">Licensing</a>
 
 Licensing is another distinction among these open-source projects: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't typically address this issue. 
+
+## JVM Considerations
 
 ### <a name="speed">Speed</a>
 

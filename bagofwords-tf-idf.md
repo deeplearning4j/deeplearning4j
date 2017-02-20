@@ -47,7 +47,7 @@ Setting up a BoW looks something like this:
 
 While simple, TF-IDF is incredibly powerful, and contributes to such ubiquitous and useful tools as Google search. 
 
-Click here to see [other BoW-based text-vectorization methods](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/bagofwords/vectorizer/BagOfWordsVectorizer.java).
+
 
 BoW is different from [Word2vec](./word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
 

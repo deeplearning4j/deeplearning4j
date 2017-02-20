@@ -12,15 +12,12 @@ This is a multistep install. We highly recommend you join our [Gitter Live Chat]
 
 After following the steps in the [Quick Start Guide](http://deeplearning4j.org/quickstart), please read the following:
 
-1. Accelerating CPU Training: Installing Native BLAS Libraries
-    * <a href="#linux">Linux</a>
-    * <a href="#osx">OSX</a>
-    * <a href="#windows">Windows</a>
-2. [GitHub](http://nd4j.org/getstarted.html#github)
-3. <a href="#eclipse">Eclipse</a>
-4. <a href="#cli">Command-Line Interface</a>
-5. <a href="#trouble">Troubleshooting</a>
-6. <a href="#results">Reproducible Results</a>
+1. <a href="#walk">Detailed Walkthrough</a>
+2. <a href="#eclipse">DL4J Examples In Eclipse</a>
+3. <a href="#trouble">Troubleshooting</a>
+4. <a href="#results">Reproducible Results</a>
+5. <a href="#scala">Scala Version</a>
+6. <a href="native">CPU/GPU Optimizations</a>
 7. <a href="#next">Next Steps</a>
 
 
@@ -72,18 +69,21 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
       * Java version (7, 8) : type java -version in your terminal/CMD
       * Maven version : type mvn --version in your terminal/CMD
       * Stacktrace: Please past the error code on Gist and share the link with us: https://gist.github.com/
-* If you have installed DL4J before and now see the examples throwing errors, please update your libraries. With Maven, just update the versions in your POM.xml file to match the latest versions on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With source, you can run a `git clone` on [ND4J](http://nd4j.org/getstarted.html), Canova and DL4J and a `mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true` within all three directories, in that order.
+* If you have installed DL4J before and now see the examples throwing errors, please update your libraries. With Maven, just update the versions in your POM.xml file to match the latest versions on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With source, you can run a `git clone` on [ND4J](http://nd4j.org/getstarted.html), datavec and DL4J and a `mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true` within all three directories, in that order. 
+
+**note** When building or rebuilding from source please see [Building Locally](http://deeplearning4j.org/buildinglocally) for complete instructions. 
+
 * When you run an example, you may get a low [f1 score](./glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0. 
 * Deeplearning4j includes an **autocomplete function**. If you are unsure which commands are available, press any letter and a drop-down list like this will appear:
 ![Alt text](./img/dl4j_autocomplete.png)
 * Here's the **Javadoc** for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
 * As the code base grows, installing from source requires more memory. If you encounter a `Permgen error` during the DL4J build, you may need to add more **heap space**. To do that, you'll need to find and alter your hidden `.bash_profile` file, which adds environmental variables to bash. To see those variables, enter `env` in the command line. To add more heap space, enter this command in your console:
-      echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
+		echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
 * Older versions of Maven, such as 3.0.4, are likely to throw exceptions like a NoSuchMethodError. This can be fixed by upgrading to the latest version of Maven, which is currently 3.3.x. To check your Maven version, enter `mvn -v` in the command line.
 * After you install Maven, you may receive a message like this: `mvn is not recognised as an internal or external command, operable program or batch file.` That means you need Maven in your [PATH variable](https://www.java.com/en/download/help/path.xml), which you can change like any other environmental variable.  
 * If you see the error `Invalid JDK version in profile 'java8-and-higher': Unbounded range: [1.8, for project com.github.jai-imageio:jai-imageio-core com.github.jai-imageio:jai-imageio-core:jar:1.3.0`, you may have a Maven issue. Please update to version 3.3.x.
 * To compile some ND4J dependencies, you need to install some **dev tools** for C and C++. [Please see our ND4J guide](http://nd4j.org/getstarted.html#devtools).
-* The include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on **Windows**. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as standardio.h. More information is available [here](http://nd4j.org/getstarted.html#windows). 
+* The include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on **Windows**. One workaround is to take the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as standardio.h. More information is available [here](http://nd4j.org/getstarted.html#windows). 
 * Instructions on monitoring your GPUs are [here](http://nd4j.org/getstarted.html#gpu).
 * One major reason to use Java is its pre-baked diagnostics in the **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**. If you have Java installed, just enter `jvisualvm` in your command line and you'll get visuals on your CPU, Heap, PermGen, Classes and Threads. One useful view: Click on the `Sampler` tab on the upper right, and then select the CPU or Memory button for visuals. 
 ![Alt text](./img/jvisualvm.png)
@@ -93,16 +93,6 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 * There is a bug in fork-join in Java 7. Updating to Java 8 fixes it. If you get an OutofMemory error that looks like this, fork join is the problem: `java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
 .... `java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:536)`
 
-### <a name="results">Reproducible Results</a>
-
-Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight with this line:
-
-      Nd4j.getRandom().setSeed(123);
-      
-## Scala 
-
-Our  [Scala version](https://github.com/deeplearning4j/Scalnet) is here This is a port of keras to scala (a work in progress).
-      
 ### Managed Environments
 
 If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to take an additional step. After you've followed the local setup above, just run 
@@ -110,6 +100,19 @@ If you are working in a managed environment like Databricks, Domino or Sense.io,
 		mvn clean package
 
 in the command line from within the examples directory. Then you can upload the JAR file to the managed environment you've chosen.
+
+### <a name="results">Reproducible Results</a>
+
+Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight using the following method:
+
+	long seed = 6;
+      MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(seed)
+      
+### <a name='scala'>Scala</a> 
+
+Our  [Scala version](https://github.com/deeplearning4j/Scalnet) is here This is a port of keras to scala (a work in progress).
+      
 
 ## Advanced: Using the Command Line on AWS
 
@@ -128,6 +131,17 @@ That is, there are two wild cards that will change as we update and you go throu
     java -cp target/*.jar org.deeplearning4j.*
 
 To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
+
+###<a name="native">Native CPU and GPU Optimizations </a>
+
+To make best use of your hardware see this page for CPU optimizations.
+
+<a href="https://deeplearning4j.org/native">Native CPU Optimization for DeepLearning4J and ND4J</a>
+
+To make best use of your GPU's, see this page to configure our data processing Library ND4J for GPU's.
+
+<a href="http://nd4j.org/gpu_native_backends.html"> GPU Native Backends for ND4J</a>
+
 
 ### <a name="next">Next Steps: IRIS Example & Building NNs</a>
 

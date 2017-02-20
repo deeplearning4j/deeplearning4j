@@ -5,6 +5,8 @@ layout: default
 
 # Model saving
 
+## This page is out of date Please see [this page](http://deeplearning4j.org/modelpersistence)
+
 In DL4J, you can save models via the [Persistable](./doc/org/deeplearning4j/nn/Persistable.html) interface.
 
 Each network and dataset implement this interface for saving data. Which is useful, because when you're pretraining networks, you can resume where you left off in both your dataset and the pretraining.

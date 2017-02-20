@@ -23,7 +23,7 @@ Contents
 
 Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](./neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and [Scala](./scala.html), which works on Spark with GPUs. 
 
-Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#sequence">genes, code, [likes](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit#slide=id.g11a4ba0c5c_0_6), playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. 
+Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#sequence">genes, code, likes, playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. 
 
 Why? Because words are simply discrete states like the other data mentioned above, and we are simply looking for the transitional probabilities between those states: the likelihood that they will co-occur. So gene2vec, like2vec and follower2vec are all possible. With that in mind, the tutorial below will help you understand how to create neural embeddings for any group of discrete and co-occurring states. 
 
@@ -128,7 +128,7 @@ By building a sense of one word's proximity to other similar words, which do not
 
 Here are Deeplearning4j's natural-language processing components:
 
-* **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
+* **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. 
 * **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
 * **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both [bag of words](./bagofwords-tf-idf.html) as well as the word vector lookup table)
 * **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created. 
@@ -300,10 +300,10 @@ You'll want to save the model. The normal way to save models in Deeplearning4j i
 
 ``` java
         log.info("Save vectors....");
-        WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
+        WordVectorSerializer.writeWord2VecModel(vec, "pathToSaveModel.txt");
 ```
 
-This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
+This will save the vectors to a file called `pathToSaveModel.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
 
 To keep working with the vectors, simply call methods on `vec` like this:
 
@@ -320,16 +320,16 @@ Any number of combinations is possible, but they will only return sensible resul
 You can reload the vectors into memory like this:
 
 ``` java
-        Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
+        Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("pathToSaveModel.txt");
 ```
 
 You can then use Word2vec as a lookup table:
 
 ``` java
-        WeightLookupTable weightLookupTable = wordVectors.lookupTable();
+        WeightLookupTable weightLookupTable = word2Vec.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
-        INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
-        double[] wordVector = wordVectors.getWordVector("myword");
+        INDArray wordVectorMatrix = word2Vec.getWordVectorMatrix("myword");
+        double[] wordVector = word2Vec.getWordVector("myword");
 ```
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
@@ -342,7 +342,7 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
 
 ``` java
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+    Word2Vec vec = WordVectorSerializer.readWord2VecModel(gModel);
 ```
 
 Remember to add `import java.io.File;` to your imported packages.
@@ -412,9 +412,29 @@ You can shut down your Word2vec application and try to delete them.
 
 *A:* If all of your sentences have been loaded as *one* sentence, Word2vec training could take a very long time. That's because Word2vec is a sentence-level algorithm, so sentence boundaries are very important, because co-occurrence statistics are gathered sentence by sentence. (For GloVe, sentence boundaries don't matter, because it's looking at corpus-wide co-occurrence. For many corpora, average sentence length is six words. That means that with a window size of 5 you have, say, 30 (random number here) rounds of skip-gram calculations. If you forget to specify your sentence boundaries, you may load a "sentence" that's 10,000 words long. In that case, Word2vec would attempt a full skip-gram cycle for the whole 10,000-word "sentence". In DL4J's implementation, a line is assumed to be a sentence. You need plug in your own SentenceIterator and Tokenizer. By asking you to specify how your sentences end, DL4J remains language-agnostic. UimaSentenceIterator is one way to do that. It uses OpenNLP for sentence boundary detection.
 
+
+*Q: Why is there such a difference in performance when feeding whole documents as one "sentence" vs splitting into Sentences?*
+
+*A:*If average sentence contains 6 words, and window size is 5, maximum theoretical number of 10 skipgram rounds will be achieved on 0 words. Sentence isn't long enough to have full window set with words. Rough maximum number of 5 sg rounds is available there for all words in such sentence.
+
+But if your "sentence" is 1000k words length, you'll have 10 skipgram rounds for every word in this sentence, excluding the first 5 and last five. So, you'll have to spend WAY more time building model + cooccurrence statistics will be shifted due to the absense of sentence boundaries.
+
+*Q: How does Word2Vec Use Memory?*
+
+*A:* The major memory consumer in w2v is weghts matrix. Math is simple there: NumberOfWords x NumberOfDimensions x 2 x DataType memory footprint.
+
+So, if you build w2v model for 100k words using floats, and 100 dimensions, your memory footprint will be 100k x 100 x 2 x 4 (float size) = 80MB RAM just for matri + some space for strings, variables, threads etc.
+
+If you load pre-built model, it uses roughly 2 times less RAM then during build time, so it's 40MB RAM.
+
+And the most popular model used so far is Google News model. There's 3M words, and vector size 300. That gives us 3.6GB only to load model. And you have to add 3M of strings, that do not have constant size in java. So, usually that's something around 4-6GB for loaded model depending on jvm version/supplier, gc state and phase of the moon.
+
+
 *Q: I did everything you said and the results still don't look right.*
 
 *A:* If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.
+
+
 
 ### <a name="use">Use Cases</a>
 
@@ -460,8 +480,8 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 ### Doc2vec & Other NLP Resources
 
-* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
-* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
+* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 * [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./doc2vec.html)
 * [Thought Vectors, Natural Language Processing & the Future of AI](./thoughtvectors.html)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)

@@ -99,6 +99,21 @@ ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTran
 recordReader.initialize(trainData,transform);
 ~~~
 
+## JavaCV , OpenCV and ffmpeg Filters
+
+ffmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
+
+```
+<dependency> <groupId>org.bytedeco</groupId> <artifactId>javacv-platform</artifactId> <version>1.3</version> </dependency>
+```
+
+Documentation
+* [JavaCV](https://github.com/bytedeco/javacv)
+* [OpenCV](http://opencv.org/)
+* [ffmpeg](http://ffmpeg.org/)
+
+
+
 ## Handing off to fit
 dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
 
@@ -107,3 +122,22 @@ DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, 
 ~~~
 
 The DataSetIterator iterates through the input datasets via the recordReader, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with.
+
+## Scaling the DataSet
+The DataSet passed by the DataIterator will be one or more arrays of pixel values. For example if we had specified our RecordReader with height of 10, width of 10 and channels of 1 for greyscale
+
+~~~java
+        ImageRecordReader(height,width,channels)
+~~~
+
+Then the DataSet returned would be a 10 by 10 collection of values between 0 and 255. With 0 for a black pixel and 255 for a white pixel. A value of 100 would be grey. If the image was color, then there would be three channels. 
+
+It may be useful to scale the image pixel value on a range of 0 to 1, rather than 0 to 255. 
+
+This can be done with the following code. 
+
+~~~java
+        DataNormalization scaler = new ImagePreProcessingScaler(0,1);
+        scaler.fit(dataIter);
+        dataIter.setPreProcessor(scaler);
+~~~        

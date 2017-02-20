@@ -5,6 +5,10 @@ layout: default
 
 # Build Locally from Master
 
+**NOTE: MOST USERS SHOULD USE THE RELEASES ON MAVEN CENTRAL AS PER THE QUICK START GUIDE, AND NOT BUILD FROM SOURCE**
+
+*Unless you have a very good reason to build from source (such as developing new features - excluding custom layers, custom activation functions, custom loss functions, etc - all of which can be added without modifying DL4J directly) then you shouldn't build from source. Building from source can be quite complex, with no benefit in a lot of cases.*
+
 For those developers and engineers who prefer to use the most up-to-date version of Deeplearning4j or fork and build their own version, these instructions will walk you through building and installing Deeplearning4j. The preferred installation destination is to your machine's local maven repository. If you are not using the master branch, you can modify these steps as needed (i.e.: switching GIT branches and modifying the `build-dl4j-stack.sh` script).
 
 Building locally requires that you build the entire Deeplearning4j stack which includes:
@@ -158,8 +162,8 @@ sudo yum install atlas-devel
 Installing ATLAS on OS X is a somewhat complicated and lengthy process. However, the following commands will work on most machines:
 
 ```
-wget http://hivelocity.dl.sourceforge.net/project/math-atlas/Stable/3.10.1/atlas3.10.1.tar.bz2 (Download)
-tar jxf atlas3.10.1.tar.bz2
+wget --content-disposition https://sourceforge.net/projects/math-atlas/files/latest/download?source=files
+tar jxf atlas*.tar.bz2
 mkdir atlas (Creating a directory for ATLAS)
 mv ATLAS atlas/src-3.10.1
 cd atlas/src-3.10.1
@@ -243,19 +247,23 @@ copy mkl_rt.dll libblas3.dll
 
 ### Build Script
 
-A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
+You can use the [build-dl4j-stack.sh](https://github.com/deeplearning4j/deeplearning4j/blob/master/build-dl4j-stack.sh) script from the deeplearning4j repository to build the whole deeplearning4j stack from source: libndj4, ndj4, datavec, deeplearning4j. It clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
-Use the build script as follows for CPU architectures:
+OK, now read the following section carefully. 
+
+Use the build script below for CPU architectures:
 
 ```
 ./build-dl4j-stack.sh
 ```
 
-If you are using a GPU backend:
+If you are using a GPU backend, use this instead:
 
 ```
 ./build-dl4j-stack.sh -c cuda
 ```
+
+You can speed up your CUDA builds by using the `cc` flag as explained in the [libndj4 README](https://github.com/deeplearning4j/libnd4j).
 
 For Scala users, you can pass your binary version for Spark compatibility:
 
@@ -273,7 +281,7 @@ If you prefer, you can build each piece in the DL4J stack by hand. The procedure
 2. Build
 3. Install
 
-The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for.
+The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for. You need to follow these instructions in the order they're given. If you don't, you'll run into errors. The GPU-specific instructions below have been commented out, but should be substituted for the CPU-specific commands when building for a GPU backend. 
 
 ``` shell
 # removes any existing repositories to ensure a clean build
@@ -286,8 +294,9 @@ rm -rf deeplearning4j
 git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
 ./buildnativeoperations.sh
-# or when using GPU
-#./buildnativeoperations.sh -c cuda
+# and/or when using GPU
+# ./buildnativeoperations.sh -c cuda -cc INSERT_YOUR_DEVICE_ARCH_HERE 
+# i.e. if you have GTX 1070 device, use -cc 61
 export LIBND4J_HOME=`pwd`
 cd ..
 
@@ -295,17 +304,20 @@ cd ..
 git clone https://github.com/deeplearning4j/nd4j.git
 cd nd4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-cuda-7.5-platform,!:nd4j-tests'
+## More recent 0.6.1 version of the above command
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
+
 # or when using GPU
-#mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
+# mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
 
 # build and install datavec
-checkexit git clone https://github.com/deeplearning4j/datavec.git
+git clone https://github.com/deeplearning4j/datavec.git
 cd datavec
 if [ "$SCALAV" == "" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+  bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 else
-  checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
+  mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
 fi
 cd ..
 
@@ -314,10 +326,12 @@ git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
-#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+# ./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+## If you skipped CUDA you may need to add 
+## -pl '!:deeplearning4j-cuda-8.0' 
+## to the mvn clean install command to prevent the build from looking for cuda libs
 cd ..
 ```
-
 
 ## Using Local Dependencies
 

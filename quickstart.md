@@ -150,6 +150,7 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 2. Read the [introduction to deep neural networks](./neuralnet-overview) or [one of our detailed tutorials](./tutorials). 
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
+5. **Python folks**: If you plan to run benchmarks on Deeplearning4j comparing it to well-known Python framework [x], please read [these instructions](https://deeplearning4j.org/benchmark) on how to optimize heap space, garbage collection and ETL on the JVM. By following them, you will see at least a *10x speedup in training time*. 
 
 ### Additional links
 
@@ -166,3 +167,7 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 ```
 -Djava.library.path=""
 ```
+
+### Eclipse setup without Maven
+
+We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven here is a nice [blog post](http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html) to walk you through an Eclipse configuration.

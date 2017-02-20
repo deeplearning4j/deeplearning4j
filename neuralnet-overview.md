@@ -13,7 +13,11 @@ Contents
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
 * <a href="#forward">Example: Feedforward Networks & Backprop</a>
 * <a href="#regression">Multiple Linear Regression</a>
+* <a href="#updaters">Updaters</a>
+* <a href="#custom">Custom Layers, activation functions and loss functions</a>
 * <a href="#logistic">Logistic Regression & Classifiers</a>
+* <a href="#lossFunction">Loss Functions in DeepLearning4J</a>
+* <a href="#apllyingLossFunction">Applying Loss Functions in DeepLearning4J</a>
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
 * <a href="#enterprise">Enterprise-Scale Deep Learning</a>
 * <a href="#intro">Other Introductory Resources</a>
@@ -24,15 +28,17 @@ Neural networks are a set of algorithms, modeled loosely after the human brain, 
 
 Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help to group unlabeled data according to similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involving algorithms for [reinforcement learning](./reinforcementlearning.html), classification and [regression](./linear-regression.html).)
 
+
 <p align="center">
-<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
+
 
 What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What outcomes do I care about? Those outcomes are labels that could be applied to data: for example, `spam` or `not_spam` in an email filter, `good_guy` or `bad_guy` in fraud detection, `angry_customer` or `happy_customer` in customer relationship management. Then ask: Do I have the data to accompany those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) where spam has been labeled as spam, in order to teach an algorithm the correlation between labels and inputs? 
 
 ## <a name="concrete">A Few Concrete Examples</a>
 
-Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. Here are a few examples of what deep learning can do. 
+Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. In the process of learning, a neural network finds the right `f`, or the correct manner of transforming `x` into `y`, whether that be `f(x) = 3x + 12` or `f(x) = 9x - 0.1`. Here are a few examples of what deep learning can do. 
 
 ### Classification
 
@@ -51,7 +57,7 @@ Any labels that humans can generate, any outcomes you care about and which corre
 Clustering or grouping is the detection of similarities. Deep learning does not require labels to detect similarities. Learning without labels is called *unsupervised learning*. Unlabeled data is the majority of data in the world. One law of machine learning is: the more data an algorithm can train on, the more accurate it will be. Therefore, unsupervised learning has the potential to produce highly accurate models. 
 
 * Search: Comparing documents, images or sounds to surface similar items.
-* Anomaly detection: The flipside of detecting similarities is detectin anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
+* Anomaly detection: The flipside of detecting similarities is detecting anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
 
 ### Predictive Analytics
 
@@ -187,6 +193,57 @@ That is, given two variables, *Error* and *weight*, that are mediated by a third
 
 The essence of learning in deep learning is nothing more than that: adjusting a model's weights in response to the error it produces, until you can't reduce the error any more. 
 
+## <a name="updaters">Updaters</a>
+
+DL4J support the following Updaters
+
+* ADADELTA 
+* ADAGRAD 
+* ADAM 
+* NESTEROVS 
+* NONE 
+* RMSPROP 
+* SGD 
+* CONJUGATE GRADIENT 
+* HESSIAN FREE 
+* LBFGS 
+* LINE GRADIENT DESCENT
+
+The JavaDoc for updaters is part of the DeepLearning4J JavaDoc and is available [here.](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/Updater.html)
+
+
+## <a name="#activation">Activation Functions</a>
+
+The activation function determines what output a node will generate base upon its input. Sigmoid activation functions had been very populare, ReLU is currently very popular. In DeepLearnging4J the activation function is set at the layer level and applies to all neurons in that layer. 
+
+Supported Activation functions
+
+* CUBE 
+* ELU 
+* HARDSIGMOID 
+* HARDTANH 
+* IDENTITY 
+* LEAKYRELU 
+* RATIONALTANH 
+* RELU 
+* RRELU 
+* SIGMOID 
+* SOFTMAX 
+* SOFTPLUS 
+* SOFTSIGN 
+* TANH
+
+Configuring an activation function
+
+```
+layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
+```
+
+## <a name="custom">Custom layers, activation functions and loss functions</a>
+
+Deeplearning4j support custom Layers, activations and Loss Functions. 
+
+
 ## <a name="logistic">Logistic Regression</a>
 
 On a deep neural network of many layers, the final layer has a particular role. When dealing with labeled input, the output layer classifies each example, applying the most likely label. Each node on the output layer represents one label, and that node turns on or off according to the strength of the signal it receives from the previous layer's input and parameters. 
@@ -212,6 +269,32 @@ As the input *x* that triggers a label grows, the expression *e to the x* shrink
 Now imagine that, rather than having *x* as the exponent, you have the sum of the products of all the weights and their corresponding inputs -- the total signal passing through your net. That's what you're feeding into the logistic regression layer at the output layer of a neural network classifier.
 
 With this layer, we can set a decision threshold above which an example is labeled 1, and below which it is not. You can set different thresholds as you prefer -- a low threshold will increase the number of false positives, and a higher one will increase the number of false negatives -- depending on which side you would like to err. 
+
+
+## <a name="lossFunction">Loss Functions in DeepLearning4J</a>
+
+DeepLearning4J supports the following Loss Functions.
+
+* MSE: Mean Squared Error: Linear Regression
+* EXPLL: Exponential log likelihood: Poisson Regression
+* XENT: Cross Entropy: Binary Classification
+* MCXENT: Multiclass Cross Entropy
+* RMSE_XENT: RMSE Cross Entropy
+* SQUARED_LOSS: Squared Loss
+* NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
+
+## <a name="applyingLossFunction">Applying Loss Functions in DeepLearning4J</a>
+
+The Loss Function is applied when building your output Layer. 
+
+```
+layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+```
+
+The JavaDoc for the Loss Function is part of ND4J javadoc and is available [here.]
+(https://nd4j.org/doc/org/nd4j/linalg/api/ops/LossFunction.html)
+
+
 
 ## <a name="ai">Neural Networks & Artificial Intelligence</a>
 

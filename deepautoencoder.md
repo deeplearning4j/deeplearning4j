@@ -9,7 +9,7 @@ A deep autoencoder is composed of two, symmetrical [deep-belief networks](./deep
 
 The layers are [restricted Boltzmann machines](./restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. Here's a simplified schema of a deep autoencoder's structure, which we'll explain below.
 
-![Alt text](./img/deep_autoencoder.png) 
+![Alt text](./../img/deep_autoencoder.png) 
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
@@ -33,7 +33,8 @@ The layers will be 1000, 500, 250, 100 nodes wide, respectively, until the end, 
 
 Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the condensed vector, which becomes the input as it makes its way back.
 
-The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed; i.e. they are not initialized randomly.) 
+The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. 
+Layer weights are initialized randomly. 
 
 		784 (output) <---- 1000 <---- 500 <---- 250 <---- 30
 
@@ -77,7 +78,7 @@ A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwor
 
 The code would look something like this:
 
-final int numRows = 28;
+        final int numRows = 28;
         final int numColumns = 28;
         int seed = 123;
         int numSamples = MnistDataFetcher.NUM_EXAMPLES;
@@ -121,6 +122,6 @@ final int numRows = 28;
             DataSet next = iter.next();
             model.fit(new DataSet(next.getFeatureMatrix(),next.getFeatureMatrix()));
 
-To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief), which are at 0.4.x.
+To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 

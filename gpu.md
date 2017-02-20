@@ -16,7 +16,7 @@ In order to train a neural network on GPUs, you need to make a single change you
 
 Just change the last line above to this:
 
-        <nd4j.backend>nd4j-cuda-7.5-platform</<nd4j.backend>
+        <nd4j.backend>nd4j-cuda-8.0-platform</<nd4j.backend>
 
 ND4J is the numerical computing engine that powers Deeplearning4j. It has what we call "backends", or different types of hardware that it works on. In the [Deeplearning4j Gitter channel](https://gitter.im/deeplearning4j/deeplearning4j), you'll here people talk about backends, and they're just referring to the packages that point to one chip or another. The backends are where we've done the work of optimizing on the hardware.
 
@@ -58,7 +58,10 @@ If your app can afford using half-precision math (typically neural nets can affo
 
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
 
-Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type. 
+Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type.
+
+However you should be aware: HALF data type offers way smaller precision then FLOAT or DOUBLE, thus neural net tuning might become way harder.
+On top of that, at this moment we don't offer full LAPACK support for HALF data type.
 
 ## Larger Grids
 
@@ -85,6 +88,26 @@ Something like this might be used:
 This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individually cached memory chunk for both host and GPU memory might be up to 1GB in size. 
 
 Since the cache in Nd4j works has a «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
+
+## How it works after all?
+
+CUDA backend has few design differences if compared to native backend, caused by GPU vs x86 differences. 
+
+Here's highlights for approaches used:
+
+- CUDA backend heavily relies on various memory caches.
+    * Each memory chunk is allocated once, and after released from JVM context, we put it to the cache for further reuse.
+    * ShapeInfo & TAD cache are using GPU device constant memory for faster access from kernel context.
+- Kernels are "atomic": one Op = one pre-compiled kernel (in most of cases)  
+- CUDA backend handles parallelism configuration before actual kernel launch
+- In some cases, we're able to apply 2 operations in one Op call. This execution mode called mGRID, and benefits PairwiseTransform operations followed by other Ops.
+- Like nd4j-native backend, CUDA backend adopts two parallelism models:
+    * Element-level parallelism: all threads in grid are working with the same linear buffer.
+    * TAD-level parallelism: grid is split into blocks, each block of threads is working with one of TADs.
+- Device memory release process is handled with WeakReferences (followed by cache mechanics mentioned above)
+- Multi-GPU environments are handled via Thread <-> Device affinity management. One Java thread is attached to one GPU at any given moment.
+
+
 
 Further Reading
 

@@ -30,7 +30,7 @@ it.
 
 * Classification: This image represents a horse; this email looks like spam; this transaction is fraudulent
 * Clustering: These two sounds are similar. This document is probably what user X is looking for
-* Predictions: Given their web lob activity, Customer A looks like they are going to stop using your service
+* Predictions: Given their web log activity, Customer A looks like they are going to stop using your service
 
 Deep learning is best applied to unstructured data like images, video, sound or text. An image is just a blob of pixels, a message is 
 just a blob of text. This data is not organized in a typical, relational database by rows and columns. That makes it more difficult to 

@@ -23,11 +23,14 @@ To quote *Maven: The Complete Reference*:
 
 Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
 
-If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [in our Getting Started page](http://nd4j.org/getstarted.html#maven)). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
+If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [in our Getting Started page](https://deeplearning4j.org/quickstart)). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
 
 Alternatively, you can use Maven from your project's root directory in the command prompt to freshly install it:
 
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+		
+The above command instructs maven to clean any directories of compiled files before running install. This makes sure that the build is a clean build from scratch.
+
 
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 

@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j是什么？
-layout: zh-default
+layout: cn-default
 ---
 
 # Deeplearning4j是什么？

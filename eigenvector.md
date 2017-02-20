@@ -210,7 +210,7 @@ It so happens that explaining the shape of the data one principal component at a
 
 ## <a name="code">Just Give Me the Code</a>
 
-You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/eigen/Eigen.java) in [ND4J](http://nd4j.org), a numerical computing library for the JVM that handles n-dimensional arrays, broadly inspired by Numpy. ND4J has Java and [Scala](https://github.com/deeplearning4j/nd4s) APIs, runs on Hadoop and Spark, and is roughly [twice as fast as Numpy/Cython](http://nd4j.org/benchmarking) on very large matrix operations. 
+You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob/14410087388980c6c25111859a1272418e20ec54/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/eigen/Eigen.java) in [ND4J](http://nd4j.org), a numerical computing library for the JVM that handles n-dimensional arrays, broadly inspired by Numpy. ND4J has Java and [Scala](https://github.com/deeplearning4j/nd4s) APIs, runs on Hadoop and Spark, and is roughly [twice as fast as Numpy/Cython](http://nd4j.org/benchmarking) on very large matrix operations. 
 
 ## <a name="resources">Other Resources</a>
 

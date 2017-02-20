@@ -88,7 +88,10 @@ The process of transforming data in to a set of zeros and ones. An example would
 "A Boltzmann machine learns internal (not defined by the user) concepts that help to explain (that can generate) the observed data. These concepts are captured by random variables (called hidden units) that have a joint distribution (statistical dependencies) among themselves and with the data, and that allow the learner to capture highly non-linear and complex interactions between the parts (observed random variables) of any observed example (like the pixels in an image). You can also think of these higher-level factors or hidden units as another, more abstract, representation of the data. The Boltzmann machine is parametrized through simple two-way interactions between every pair of random variable involved (the observed ones as well as the hidden ones)." - [Yoshua Bengio](https://www.quora.com/What-is-an-intuitive-explanation-of-a-Boltzmann-machine)
 
 ### <a name="channel">Channel</a>
-Channel is a word used when speaking of convolutional networks. ConvNets treat color images as volumes; that is, an image has height, width and depth. The depth is the number of channels, which coincide with how you encode colors. RGB images have three channels, for red, green and blue respectively. 
+Channel is a word used when speaking of convolutional networks. ConvNets treat color images as volumes; that is, an image has height, width and depth. The depth is the number of channels, which coincide with how you encode colors. RGB images have three channels, for red, green and blue respectively.
+
+### <a name="class">Class</a>
+Used in classification a Class refers to a label applied to a group of records sharing similar characteristics. 
 
 ### <a name="confusionmatrix">Confusion Matrix</a>
 Also known as an error matrix or contingency table. Confusions matrices allow you to see if your algorithm is systematically confusing two labels, by contrasting your net's predictions against a benchmark.
@@ -226,7 +229,12 @@ The gradient is a derivative, which you will know from [differential calculus](h
         Since MLPs are, by construction, differentiable operators, they can be trained to minimise any differentiable objective function using gradient descent. The basic idea of gradient descent is to find the derivative of the objective function with respect to each of the network weights, then adjust the weights in the direction of the negative slope. -Graves
 
 ### <a name="clipping">Gradient Clipping</a>
-Gradient Clipping is one way to solve the problem of exploding gradients. Exploding gradients arise in deep networks when gradients associating weights and the net's error become too large. Exploding gradients are frequently encountered in RNNs dealing with long-term dependencies. One way to clip gradients is to normalize them when the L2 norm of a parameter vector surpasses a given threshhold. 
+Gradient Clipping is one way to solve the problem of exploding gradients. Exploding gradients arise in deep networks when gradients associating weights and the net's error become too large. Exploding gradients are frequently encountered in RNNs dealing with long-term dependencies. One way to clip gradients is to normalize them when the L2 norm of a parameter vector surpasses a given threshhold.
+
+### <a name="epoch">Epoch</a>
+An Epoch is a complete pass through all the training data. A neural network is trained until the error rate is acceptable, and this will often take multiple passes through the complete data set. 
+
+*note* An iteration is when parameters are updated and is typically less than a full pass. For example if BatchSize is 100 and data size is 1,000 an epoch will have 10 iterations. If trained for 30 epochs there will be 300 iterations. 
 
 ### <a name="graphicalmodels">Graphical Models</a>
 A directed graphical model is another name for a [Bayesian net](https://en.wikipedia.org/wiki/Bayesian_network), which represents the probabilistic relationships between the variables represented by its nodes.
@@ -263,6 +271,9 @@ ICML, or the International Conference for Machine Learning, is a well-known and 
 ### <a name="ILSVRC">ImageNet Large Scale Visual Recognition Challenge  (ILSVRC)</a>
 The ImageNet Large Scale Visual Recognition Challenge is the formal name for ImageNet, a yearly contest held to solicit and evalute the best techniques in image recognition. Deep convolutional architectures have driven error rates on the ImageNet competition from 30% to less than 5%, which means they now have human-level accuracy. 
 
+### <a name="iteration">Iteration</a>
+An iteration is an update of weights after analysing a batch of input records. See Epoch for clarification.   
+
 ### <a name="lenet">LeNet</a>
 Google's LeNet architecture is a deep convolutional network. It won ILSVRC in 2014, and introduced techniques for paring the size of a CNN, thus increasing computational efficiency. 
 
@@ -283,6 +294,11 @@ In neural networks, the model is the collection of weights and biases that trans
 
 ### <a name="mnist">MNIST</a>
 MNIST is the "hello world" of deep-learning datasets. Everyone uses MNIST to test their neural networks, just to see if the net actually works at all. MNIST contains 60,000 training examples and 10,000 test examples of the handwritten numerals 0-9. These images are 28x28 pixels, which means they require 784 nodes on the first input layer of a neural network. MNIST is [available for download here](http://yann.lecun.com/exdb/mnist/). Here is an example of [training a DBN on MNIST](http://deeplearning4j.org/deepbeliefnetwork.html) with Deeplearning4j. 
+
+### <a name="model score">Model Score</a>
+As your model trains the goal of training is to improve the "score" for the output or the overall error rate. The webui will present a graph of the score for each iteration. For text based console output of the score as the model trains you would use [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
+
+
 
 ### <a name="momentum">Nesterov's Momentum</a>
 Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. Momentum influences the gradient your model uses for the next step.
@@ -328,6 +344,11 @@ Also called a loss function or a cost function, an objective function defines wh
 
 ### <a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
+
+
+Below is an example of one-hot encoding for the phrase "The quick brown fox" 
+![One Hot Encoding for words](./img/onehot.svg)
+
 
 ### <a name="pooling">Pooling</a> 
 Pooling, max pooling and average pooling are terms that refer to downsampling or subsampling within a convolutional network. Downsampling is a way of reducing the amount of data flowing through the network, and therefore decreasing the computational cost of the network. Average pooling takes the average of several values. Max pooling takes the greatest of several values. Max pooling is currently the preferred type of downsampling layer in convolutional networks. 
@@ -377,6 +398,9 @@ RMSProp is an optimization algorithm like Adagrad. In contrast to Adagrad, it re
 * [Optimization Algorithms (Stanford)](https://cs231n.github.io/neural-networks-3/)
 * [An overview of gradient descent optimization algorithms](http://sebastianruder.com/optimizing-gradient-descent/)
 
+### <a name="score">Score</a>
+Measurement of the overall error rate of the model. The score of the model will be displayed graphically in the webui or it can be displayed the console by using [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html) 
+
 ### <a name="serialization">Serialization</a> 
 Serialization is how you translate data structures or object state into storable formats. Deeplearning4j's nets are serialized, which means they can operate on devices with limited memory.
 
@@ -418,6 +442,10 @@ The vanishing gradient problem is a challenge the confront backpropagation over 
 
 * [On the difficulty of training recurrent neural networks](http://www.jmlr.org/proceedings/papers/v28/pascanu13.pdf)
 
+### <a name="transfer">Transfer Learning</a>
+
+Transfer learning is when a system can recognize and apply knowledge and skills learned in previous domains or tasks to novel domains or tasks. That is, if a model is trained on image data to recognize one set of categories, transfer learning applies if that same model is capable, with minimal additional training, or recognizing a different set of categories. For example, trained on 1,000 celebrity faces, a transfer learning model can be taught to recognize members of your family by swapping in another output layer with the nodes "mom", "dad", "elder brother", "younger sister" and training that output layer on the new classifications. 
+
 ### <a name="vectors">Vector</a>
 
 [Word2vec](./word2vec.html) and other neural networks represent input as vectors.
@@ -446,4 +474,6 @@ Tomas Mikolov's neural networks, known as Word2vec, have become widely used beca
 
 ### <a name="xavier">Xavier Initialization</a>
 
-The Xavier initialization is based on the work of Xavier Glorot and Yoshua Bengio in their paper "[Understanding the difficulty of training deep feedforward neural networks](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf)." An explanation can be found [here](http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization). Weights should be initialized in a way that promotes "learning". The wrong weight initialization will make gradients too large or too small, and make it difficult to update the weights. Small weights lead to small activations, and large weights lead to large ones. Xavier weight initialization considers the distribution of output activations with regard to input activations. Its purpose is to maintain same distribution of activations, so they aren't too small (mean zero but with small variance) or too large (mean zero but with large variance). There are different ways to achieve this. For DL4J's 'xavier' weight initialization, weights are initialized using Gaussian/normal `N(0,1/(nOut+nIn))` distribution, where N(a,b) is a normal distribution with mean a, variance b. That is, weights are sampled from a distribution with a mean of 0 and a variance of `1/(nOut+nIn)`. `nOut` and `nIn` are the size of the current layer and previous layer, respectively. Caffe uses `1/nIn`. The original Glorot/Bengio paper uses `2/(nIn+nOut)`.
+The Xavier initialization is based on the work of Xavier Glorot and Yoshua Bengio in their paper "[Understanding the difficulty of training deep feedforward neural networks](http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf)." An explanation can be found [here](http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization). Weights should be initialized in a way that promotes "learning". The wrong weight initialization will make gradients too large or too small, and make it difficult to update the weights. Small weights lead to small activations, and large weights lead to large ones. Xavier weight initialization considers the distribution of output activations with regard to input activations. Its purpose is to maintain same distribution of activations, so they aren't too small (mean zero but with small variance) or too large (mean zero but with large variance). DL4J's implementation of Xavier weight initialization aligns with the Glorot Bengio paper, `Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)))`. Where `fanIn(k)` would be the number of units sending input to k, and  `fanOut(k)` would be the number of units recieving output from k.
+
+
