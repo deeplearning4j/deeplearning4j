@@ -7,7 +7,7 @@ layout: default
 
 Deeplearning4j has a [Python API](https://github.com/crockpotveggies/dl4j-examples/tree/keras-examples/dl4j-keras-examples) that employs Keras, and it also enables developers to import models from other frameworks via Keras; that is, teams working in Python can port their work to scale on the JVM without wasting efforts on rewrites. 
 
-** Video: Model Import from Keras
+## Video: Model Import from Keras
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
