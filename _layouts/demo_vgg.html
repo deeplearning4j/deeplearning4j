@@ -1,0 +1,34 @@
+{% include header.html %}
+
+<!-- Top Navigation -->
+<header class="site-header navbar-fullwidth navbar-transparent">
+  {% include navigation.html %}
+<!-- Banner -->
+<div class="banner banner-full-height overlay-black" style="background-image: url(assets/themes/thedocs/img/demo_vgg_hero.jpg);">
+  <div class="container text-center">
+    <h1>Image Classifier Demo</h1>
+    <h3>Classify an image with VGG-16 on Deeplearning4j</h3>
+    <a class="btn btn-white btn-xl btn-outline" href="quickstart" role="button"> <i class="fa fa-camera"></i> CHOOSE IMAGE </a>
+  </div>
+<!-- END Banner -->
+</header>
+<!-- END Top Navigation -->
+
+<main class="container">
+  <div class="row">
+
+    <!-- Sidebar -->
+    <aside class="col-md-3 col-sm-3 sidebar">
+      {% include sidebar.html %}
+    </aside>
+    <!-- END Sidebar -->
+
+    <!-- Main Content -->
+    <article class="col-md-9 col-sm-9 main-content" role="main">
+      {{ content }}
+    </article>
+    <!-- END Main Content -->
+  </div>
+</main>
+
+{% include footer.html %}
