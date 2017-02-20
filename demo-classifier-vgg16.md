@@ -1,3 +1,8 @@
+---
+title: Denoising Autoencoders
+layout: demo_vgg
+---
+
 ## VGG-16 in DeepLearning4J
 
 VGG-16 is a convolutional neural network that won the ImageNet Competition in 2015 in the localisation and classification categories. This Network was created by taking a pretrained network and the trained weights and importing it using DeepLearning4J's
