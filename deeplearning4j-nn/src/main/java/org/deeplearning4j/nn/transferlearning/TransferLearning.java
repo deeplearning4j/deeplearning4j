@@ -389,6 +389,7 @@ public class TransferLearning {
 
                 NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
                 Layer layerImpl = layerConf.getLayer().clone();
+                layerImpl.setLearningToDefault();
 
                 layerImpl.setWeightInit(scheme);
                 FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
