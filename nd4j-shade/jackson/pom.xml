@@ -75,6 +75,7 @@
                             <shadedPattern>org.nd4j.shade.jackson</shadedPattern>
                         </relocation>
                     </relocations>
+
                 </configuration>
             </plugin>
             <plugin>
