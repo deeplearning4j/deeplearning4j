@@ -9,7 +9,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +38,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         this.zeroGradient = new DefaultGradient(insideLayer.params());
         for(String paramType : insideLayer.paramTable().keySet()) {
             //save memory??
-            zeroGradient.setGradientFor(paramType, Nd4j.zeros(1,1));
+            zeroGradient.setGradientFor(paramType, null);
         }
     }
 

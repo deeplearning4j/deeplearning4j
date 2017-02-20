@@ -184,7 +184,7 @@ public class TransferLearningCompGraphTest {
                 .fineTuneConfiguration(overallConf)
                 .nOutReplace("layer0", 7, WeightInit.XAVIER, WeightInit.XAVIER)
                 .nOutReplace("layer2", 5, WeightInit.XAVIER)
-                .removeVertex("layer3")
+                .removeVertexKeepConnections("layer3")
                 .addLayer("layer3", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(3).activation(Activation.SOFTMAX).build(),"layer2")
                 .build();
 

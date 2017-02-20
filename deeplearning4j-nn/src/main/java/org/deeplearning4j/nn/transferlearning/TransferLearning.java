@@ -58,6 +58,18 @@ public class TransferLearning {
             this.tbpttBackLength = origConf.getTbpttBackLength();
         }
 
+        /**
+         * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
+         * Note that this will clear and override all other learning related settings in non frozen layers
+         *
+         * @param newDefaultConfBuilder
+         * @return
+         */
+        public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
+            this.globalConfig = newDefaultConfBuilder;
+            return this;
+        }
+
         public Builder setTbpttFwdLength(int l) {
             this.tbpttFwdLength = l;
             return this;
@@ -70,18 +82,6 @@ public class TransferLearning {
 
         public Builder setFeatureExtractor(int layerNum) {
             this.frozenTill = layerNum;
-            return this;
-        }
-
-        /**
-         * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
-         * Note that this will clear and override all other learning related settings in non frozen layers
-         *
-         * @param newDefaultConfBuilder
-         * @return
-         */
-        public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
             return this;
         }
 
@@ -296,7 +296,18 @@ public class TransferLearning {
         }
 
         private INDArray constructParams() {
-            INDArray keepView = Nd4j.hstack(editedParams);
+            //some params will be null for subsampling etc
+            INDArray keepView =null;
+            for (INDArray aParam: editedParams) {
+                if (aParam != null) {
+                    if (keepView == null) {
+                        keepView = aParam;
+                    }
+                    else {
+                        keepView = Nd4j.hstack(keepView,aParam);
+                    }
+                }
+            }
             if (!appendParams.isEmpty()) {
                 INDArray appendView = Nd4j.hstack(appendParams);
                 return Nd4j.hstack(keepView, appendView);
@@ -336,6 +347,12 @@ public class TransferLearning {
 
         }
 
+        public GraphBuilder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
+            this.globalConfig = newDefaultConfBuilder;
+            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,globalConfig,true);
+            return this;
+        }
+
         public GraphBuilder setTbpttFwdLength(int l) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.setTbpttFwdLength(l);
@@ -359,12 +376,6 @@ public class TransferLearning {
         public GraphBuilder setFeatureExtractor(String layerName) {
             this.hasFrozen = true;
             this.frozenOutputAt = layerName;
-            return this;
-        }
-
-        public GraphBuilder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
-            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,globalConfig,true);
             return this;
         }
 
@@ -403,7 +414,7 @@ public class TransferLearning {
                 //change nIn of fanout
                 for (String fanoutVertexName: fanoutVertices) {
                     if (!origGraph.getVertex(fanoutVertexName).hasLayer()) {
-                        throw new UnsupportedOperationException("Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertex followed by addVertex instead");
+                        throw new UnsupportedOperationException("Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertexKeepConnections followed by addVertex instead");
                     }
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
                     layerImpl = layerConf.getLayer().clone();
@@ -425,7 +436,7 @@ public class TransferLearning {
             return this;
         }
 
-        public GraphBuilder removeVertex(String outputName) {
+        public GraphBuilder removeVertexKeepConnections(String outputName) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.removeVertex(outputName,false);
             }
