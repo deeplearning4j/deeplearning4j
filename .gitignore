@@ -12,4 +12,5 @@ README.md~
 .classpath
 _site/
 .idea/
+.idea/workspace.xml
 *.iml
