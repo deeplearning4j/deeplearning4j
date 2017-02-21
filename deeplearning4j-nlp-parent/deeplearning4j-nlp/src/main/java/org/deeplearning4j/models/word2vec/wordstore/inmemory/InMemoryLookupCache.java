@@ -217,6 +217,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
         return ret;
     }
 
+    @Override
+    public VocabWord wordFor(long id) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param index
      * @param word
@@ -249,6 +254,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
 
             wordIndex.add(word, index);
 
+    }
+
+    @Override
+    public void addWordToIndex(int index, long elementId) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -327,6 +337,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>,Serializable {
     @Override
     public synchronized VocabWord tokenFor(String word) {
         return tokens.get(word);
+    }
+
+    @Override
+    public VocabWord tokenFor(long id) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
