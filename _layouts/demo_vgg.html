@@ -65,16 +65,17 @@
     // trigger the file upload on click
     var url = 'https://demo.skymind.io:8001/getPredictions';
     $('#fileupload').fileupload({
-        url: url,
-        dataType: 'multipart/form-data',
-        done: function (e, data) {
-            $('.demo-view').hide();
-            $('#demo-results').show();
-        },
-        progressall: function (e, data) {
-            $('.demo-view').hide();
-            $('#demo-loading').show();
-        }
+      url: url,
+      dataType: 'multipart/form-data',
+      done: function (e, data) {
+        console.log(data);
+        $('.demo-view').hide();
+        $('#demo-results').show();
+      },
+      progressall: function (e, data) {
+        $('.demo-view').hide();
+        $('#demo-loading').show();
+      }
     })
     .prop('disabled', !$.support.fileInput)
     .parent()

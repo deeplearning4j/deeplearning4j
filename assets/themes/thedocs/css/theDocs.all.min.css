@@ -18449,6 +18449,7 @@ and (orientation : landscape)
   top: 0;
   right: 0;
   margin: 0;
+  height: 100px;
   opacity: 0;
   -ms-filter: 'alpha(opacity=0)';
   font-size: 200px !important;
