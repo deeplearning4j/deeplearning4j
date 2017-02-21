@@ -78,7 +78,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
                 return l1;
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -94,7 +94,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
                 return l2;
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }

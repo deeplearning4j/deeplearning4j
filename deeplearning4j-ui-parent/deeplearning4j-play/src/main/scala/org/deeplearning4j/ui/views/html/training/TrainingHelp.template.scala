@@ -37,7 +37,7 @@ Seq[Any](format.raw/*1.40*/("""
         <link href="/assets/css/bootstrap-responsive.min.css" rel="stylesheet">
         <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
         <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
-        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&subset=latin,cyrillic-ext,latin-ext' rel='stylesheet' type='text/css'>
+        <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
         <link rel="shortcut icon" href="/assets/img/favicon.ico">
 
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
@@ -405,10 +405,10 @@ format.raw("""          <!-- End Content -->
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Jan 08 12:25:14 AEDT 2017
-                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: f6899558de3ff2ca1c02dc5fccdb266b29b2a6dc
-                  MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2718->1921|2731->1925|2782->1955|3346->2491|3360->2495|3415->2528|3565->2650|3579->2654|3631->2684|3786->2811|3800->2815|3853->2846|4031->2996|4045->3000|4101->3034|4326->3231|4340->3235|4395->3268
+                  DATE: Thu Feb 16 18:09:33 AEDT 2017
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  HASH: c0692c7227e770b9e979ec918819f4f72ff5ccac
+                  MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2594->1797|2607->1801|2658->1831|3222->2367|3236->2371|3291->2404|3441->2526|3455->2530|3507->2560|3662->2687|3676->2691|3729->2722|3907->2872|3921->2876|3977->2910|4202->3107|4216->3111|4271->3144
                   LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|83->59|83->59|83->59
                   -- GENERATED --
               */

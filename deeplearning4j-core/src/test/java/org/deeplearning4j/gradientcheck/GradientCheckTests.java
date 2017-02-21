@@ -14,6 +14,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -150,8 +152,11 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for (String afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
@@ -165,6 +170,7 @@ public class GradientCheckTests {
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .regularization(true)
                                 .l2(l2).l1(l1)
+                                .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
                                 .list()
@@ -358,8 +364,11 @@ public class GradientCheckTests {
         }
 
 
-        double[] l2vals = {0.0, 0.4, 0.0};
-        double[] l1vals = {0.0, 0.0, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for (String afn : activFns) {
             for (int i = 0; i < lossFunctions.length; i++) {
@@ -373,6 +382,8 @@ public class GradientCheckTests {
                             .regularization(l1 > 0.0 || l2 > 0.0).seed(12345L);
                     if (l1 > 0.0) conf.l1(l1);
                     if (l2 > 0.0) conf.l2(l2);
+                    if (biasL2[k] > 0) conf.l2Bias(biasL2[k]);
+                    if (biasL1[k] > 0) conf.l1Bias(biasL1[k]);
                     NeuralNetConfiguration.ListBuilder conf2 = conf.list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
@@ -457,10 +468,10 @@ public class GradientCheckTests {
 
     @Test
     public void testGradientGravesBidirectionalLSTMFull() {
-        String[] activFns = {"tanh", "softsign"};
+        Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN};
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
         int timeSeriesLength = 4;
         int nIn = 2;
@@ -487,14 +498,17 @@ public class GradientCheckTests {
         }
 
 
-        double[] l2vals = {0.0, 0.4, 0.0};
-        double[] l1vals = {0.0, 0.0, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (int i = 0; i < lossFunctions.length; i++) {
                 for (int k = 0; k < l2vals.length; k++) {
                     LossFunction lf = lossFunctions[i];
-                    String outputActivation = outputActivations[i];
+                    Activation outputActivation = outputActivations[i];
                     double l2 = l2vals[k];
                     double l1 = l1vals[k];
 
@@ -502,6 +516,8 @@ public class GradientCheckTests {
                             .regularization(l1 > 0.0 || l2 > 0.0);
                     if (l1 > 0.0) conf.l1(l1);
                     if (l2 > 0.0) conf.l2(l2);
+                    if (biasL2[k] > 0) conf.l2Bias(biasL2[k]);
+                    if (biasL1[k] > 0) conf.l1Bias(biasL1[k]);
 
                     MultiLayerConfiguration mlc = conf.seed(12345L)
                             .list()

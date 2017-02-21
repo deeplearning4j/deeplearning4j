@@ -61,7 +61,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
         @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
         @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling")
+        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
+        @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")
 })
 @Data
 @NoArgsConstructor
@@ -80,8 +81,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Map<Integer, Double> momentumSchedule;
     protected double l1;
     protected double l2;
-    protected double biasL1;
-    protected double biasL2;
+    protected double l1Bias;
+    protected double l2Bias;
     protected double dropOut;
     protected Updater updater;
     //adadelta - weight for how much to consider previous history
@@ -108,6 +109,8 @@ public abstract class Layer implements Serializable, Cloneable {
         this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
+        this.l1Bias = builder.l1Bias;
+        this.l2Bias = builder.l2Bias;
         this.dropOut = builder.dropOut;
         this.updater = builder.updater;
         this.rho = builder.rho;
@@ -253,6 +256,8 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Map<Integer, Double> momentumAfter = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
+        protected double l1Bias = Double.NaN;
+        protected double l2Bias = Double.NaN;
         protected double dropOut = Double.NaN;
         protected Updater updater = null;
         protected double rho = Double.NaN;
@@ -280,8 +285,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * Typical values include:<br>
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
-         * @deprecated Use {@link #activation(Activation)} or
-         * {@link @activation(IActivation)}
+         * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
          */
         @Deprecated
         public T activation(String activationFunction) {
@@ -346,7 +350,8 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * L1 regularization coefficient.
+         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
+         * coefficient for the bias.
          */
         public T l1(double l1) {
             this.l1 = l1;
@@ -354,13 +359,34 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * L2 regularization coefficient.
+         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
+         * coefficient for the bias.
          */
         public T l2(double l2) {
             this.l2 = l2;
             return (T) this;
         }
 
+        /**
+         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
+         */
+        public T l1Bias(double l1Bias){
+            this.l1Bias = l1Bias;
+            return (T) this;
+        }
+
+        /**
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         */
+        public T l2Bias(double l2Bias){
+            this.l2Bias = l2Bias;
+            return (T) this;
+        }
+
+        /**
+         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
+         * Note that 0.0 (the default) disables dropout.
+         */
         public T dropOut(double dropOut) {
             this.dropOut = dropOut;
             return (T) this;
