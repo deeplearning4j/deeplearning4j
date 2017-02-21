@@ -37,6 +37,7 @@ mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -
 source change-scala-versions.sh 2.11
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dscalastyle.skip
 
+source change-scala-versions.sh 2.11
 git commit -a -m "Update to version $RELEASE_VERSION"
 git tag -a -m "scalnet-$RELEASE_VERSION" "scalnet-$RELEASE_VERSION"
 
