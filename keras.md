@@ -24,3 +24,18 @@ Not every architecture supported by other deep learning frameworks is currently 
 Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
 
 For more information, please see this page on [model import](https://deeplearning4j.org/model-import-keras).
+
+## Running the DL4J-Keras Examples With Docker
+
+* Install [Docker Toolbox](https://www.docker.com/products/docker-toolbox)
+
+During the install process, you will be offered the choice between the Docker Quickstart Terminal and Kitematic. Choose Kitematic, which will have you sign up for Docker Hub. 
+
+* Git clone the dl4j-examples branch below with the following line:
+
+
+        git clone https://github.com/crockpotveggies/dl4j-examples --branch keras-examples --single-branch
+
+The main Kitematic dashboard will look like this. 
+
+*(WIP! Watch this space...)*
