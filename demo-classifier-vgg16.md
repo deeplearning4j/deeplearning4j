@@ -1,5 +1,5 @@
 ---
-title: Denoising Autoencoders
+title: Demo: VGG-16 Classifier
 layout: demo_vgg
 ---
 
