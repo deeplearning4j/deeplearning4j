@@ -477,7 +477,7 @@ public class TransferLearning {
             return nOutReplace(layerName, nOut, scheme, schemeNext, null, null);
         }
 
-        public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
+        private GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
 
             if (origGraph.getVertex(layerName).hasLayer()) {
 
