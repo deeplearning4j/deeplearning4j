@@ -74,7 +74,7 @@
     var $fu = $('#fileupload');
     $fu.fileupload({
       url: url,
-      dataType: 'multipart/form-data'
+      dataType: 'json'
     })
     .prop('disabled', !$.support.fileInput)
     .parent()
@@ -90,13 +90,13 @@
       console.log('Chunk uploaded');
     });
 
-    $fu.bind('fileuploadalways', function(e, data) {
-      console.log('Classification success', data);
+    $fu.bind('fileuploaddone', function(e, data) {
+      console.log('Classification success', data, e);
       $('.demo-view').hide();
       $('#demo-results').show();
     });
 
-    $fu.bind('fileuploadchunkfail', function() {
+    $fu.bind('fileuploadfail', function() {
       console.log('Classification error');
       $('.demo-view').hide();
       $('#demo-error').show();
