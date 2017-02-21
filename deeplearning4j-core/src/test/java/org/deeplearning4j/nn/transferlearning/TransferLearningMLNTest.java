@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.transferlearning;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -111,7 +112,7 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
                 .nOutReplace(3, 2, WeightInit.XAVIER, WeightInit.XAVIER)
-                .nOutReplace(0, 3, WeightInit.XAVIER, WeightInit.XAVIER)
+                .nOutReplace(0, 3, WeightInit.XAVIER, WeightInit.DISTRIBUTION, null, new NormalDistribution(1, 1e-1))
                 .build();
 
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()
@@ -130,6 +131,12 @@ public class TransferLearningMLNTest {
                         .build()).build());
 
         modelExpectedArch.init();
+
+        assertEquals(modelNow.getLayerWiseConfigurations().getConf(0).getLayer().getWeightInit(),WeightInit.XAVIER);
+        assertEquals(modelNow.getLayerWiseConfigurations().getConf(0).getLayer().getDist(),null);
+        assertEquals(modelNow.getLayerWiseConfigurations().getConf(1).getLayer().getWeightInit(),WeightInit.DISTRIBUTION);
+        assertEquals(modelNow.getLayerWiseConfigurations().getConf(1).getLayer().getDist(),new NormalDistribution(1, 1e-1));
+        assertEquals(modelNow.getLayerWiseConfigurations().getConf(3).getLayer().getWeightInit(),WeightInit.XAVIER);
 
         //modelNow should have the same architecture as modelExpectedArch
         assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());

@@ -1,9 +1,12 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -34,7 +37,7 @@ public class TransferLearning {
         private int popN = 0;
         private boolean prepDone = false;
         private Set<Integer> editedLayers = new HashSet<>();
-        private Map<Integer, Triple<Integer, WeightInit, WeightInit>> editedLayersMap = new HashMap<>();
+        private Map<Integer, Triple<Integer, Pair<WeightInit, Distribution>, Pair<WeightInit, Distribution>>> editedLayersMap = new HashMap<>();
         private List<INDArray> editedParams = new ArrayList<>();
         private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
@@ -96,7 +99,25 @@ public class TransferLearning {
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme) {
             editedLayers.add(layerNum);
-            editedLayersMap.put(layerNum, new ImmutableTriple<>(nOut, scheme, scheme));
+            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,null),new ImmutablePair<>(scheme,null));
+            editedLayersMap.put(layerNum,t);
+            return this;
+        }
+
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         *
+         * @param layerNum The index of the layer to change nOut of
+         * @param nOut     Value of nOut to change to
+         * @param scheme   Weight Init scheme to use for params
+         * @param dist     Distribution to use in conjunction with weight init
+         * @return
+         */
+        public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, Distribution dist) {
+            editedLayers.add(layerNum);
+            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,dist),new ImmutablePair<>(scheme,dist));
+            editedLayersMap.put(layerNum,t);
             return this;
         }
 
@@ -113,7 +134,28 @@ public class TransferLearning {
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
             editedLayers.add(layerNum);
-            editedLayersMap.put(layerNum, new ImmutableTriple<>(nOut, scheme, schemeNext));
+            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,null),new ImmutablePair<>(schemeNext,null));
+            editedLayersMap.put(layerNum,t);
+            return this;
+        }
+
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         *
+         * @param layerNum   The index of the layer to change nOut of
+         * @param nOut       Value of nOut to change to
+         * @param scheme     Weight Init scheme to use for params in the layerNum
+         * @param schemeNext Weight Init scheme to use for params in the layerNum+1
+         * @param dist       Distribution to use for params in layerNum in conjunction with weight init scheme
+         * @param distNext   Distribution to use for params in layerNum+1 in conjunction with weight init scheme
+         * @return
+         */
+        public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
+            editedLayers.add(layerNum);
+            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,dist),new ImmutablePair<>(schemeNext,distNext));
+            editedLayersMap.put(layerNum,t);
             return this;
         }
 
@@ -269,11 +311,12 @@ public class TransferLearning {
             }
         }
 
-        private void nOutReplaceBuild(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
+        private void nOutReplaceBuild(int layerNum, int nOut, Pair<WeightInit,Distribution> schemedist, Pair<WeightInit,Distribution> schemedistNext) {
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
-            layerImpl.setWeightInit(scheme);
+            layerImpl.setWeightInit(schemedist.getLeft());
+            layerImpl.setDist(schemedist.getRight());
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
             layerImplF.setNOut(nOut);
             int numParams = layerImpl.initializer().numParams(layerConf);
@@ -284,7 +327,8 @@ public class TransferLearning {
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
                 layerImpl = layerConf.getLayer(); //modify in place
-                layerImpl.setWeightInit(schemeNext);
+                layerImpl.setWeightInit(schemedistNext.getLeft());
+                layerImpl.setDist(schemedistNext.getRight());
                 layerImplF = (FeedForwardLayer) layerImpl;
                 layerImplF.setNIn(nOut);
                 numParams = layerImpl.initializer().numParams(layerConf);
@@ -383,10 +427,19 @@ public class TransferLearning {
         }
 
         public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme) {
-            return nOutReplace(layerName, nOut, scheme, scheme);
+            return nOutReplace(layerName, nOut, scheme, scheme, null, null);
         }
 
+        public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, Distribution dist) {
+            return nOutReplace(layerName, nOut, scheme, scheme, dist, dist);
+        }
+
+
         public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext) {
+            return nOutReplace(layerName, nOut, scheme, schemeNext, null, null);
+        }
+
+        public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
 
             if (origGraph.getVertex(layerName).hasLayer()) {
 
@@ -395,6 +448,7 @@ public class TransferLearning {
                 layerImpl.resetLayerDefaultConfig();
 
                 layerImpl.setWeightInit(scheme);
+                layerImpl.setDist(dist);
                 FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
                 layerImplF.setNOut(nOut);
 
@@ -423,7 +477,8 @@ public class TransferLearning {
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
                     layerImpl = layerConf.getLayer().clone();
 
-                    layerImpl.setWeightInit(scheme);
+                    layerImpl.setWeightInit(schemeNext);
+                    layerImpl.setDist(distNext);
                     layerImplF = (FeedForwardLayer) layerImpl;
                     layerImplF.setNIn(nOut);
 
