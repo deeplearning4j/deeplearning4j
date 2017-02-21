@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -120,9 +121,15 @@ public class TransferLearningCompGraphTest {
         modelToFineTune.init();
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
-                .nOutReplace("layer3", 2, WeightInit.XAVIER, WeightInit.XAVIER)
-                .nOutReplace("layer0", 3, WeightInit.XAVIER, WeightInit.XAVIER)
+                .nOutReplace("layer3", 2, WeightInit.XAVIER)
+                .nOutReplace("layer0", 3,  new NormalDistribution(1, 1e-1), WeightInit.XAVIER)
                 .build();
+
+        assertEquals(modelNow.getLayer("layer0").conf().getLayer().getWeightInit(),WeightInit.DISTRIBUTION);
+        assertEquals(modelNow.getLayer("layer0").conf().getLayer().getDist(),new NormalDistribution(1,1e-1));
+        assertEquals(modelNow.getLayer("layer1").conf().getLayer().getWeightInit(),WeightInit.XAVIER);
+        assertEquals(modelNow.getLayer("layer1").conf().getLayer().getDist(),null);
+        assertEquals(modelNow.getLayer("layer3").conf().getLayer().getWeightInit(),WeightInit.XAVIER);
 
         ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder()
                 .addInputs("layer0In")

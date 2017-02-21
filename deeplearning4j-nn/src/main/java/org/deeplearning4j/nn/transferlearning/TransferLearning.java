@@ -456,8 +456,20 @@ public class TransferLearning {
             return nOutReplace(layerName, nOut, scheme, scheme, null, null);
         }
 
+        public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist) {
+            return nOutReplace(layerName, nOut, WeightInit.DISTRIBUTION, WeightInit.DISTRIBUTION, dist, dist);
+        }
+
+        public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist, Distribution distNext) {
+            return nOutReplace(layerName, nOut, WeightInit.DISTRIBUTION, WeightInit.DISTRIBUTION, dist, distNext);
+        }
+
         public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, Distribution dist) {
-            return nOutReplace(layerName, nOut, scheme, scheme, dist, dist);
+            return nOutReplace(layerName, nOut, scheme, WeightInit.DISTRIBUTION, null, dist);
+        }
+
+        public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist, WeightInit scheme) {
+            return nOutReplace(layerName, nOut, WeightInit.DISTRIBUTION, scheme, dist, null);
         }
 
 
