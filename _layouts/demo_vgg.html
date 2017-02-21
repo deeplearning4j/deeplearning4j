@@ -96,7 +96,7 @@
       var results = data._response.result.data;
       console.log('Classification success', data);
 
-      for(i = 0; i < results.length; i++) {
+      for(var i = 0; i < results.length; i++) {
         $('#results-data').append('<span class="label label-default">'+results[i].label+' ('+Math.round(results[i].prediction*10)/10+'&)</span> &nbsp;');
       }
 
