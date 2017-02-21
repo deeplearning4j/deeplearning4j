@@ -98,7 +98,7 @@
       console.log('Classification success', data);
 
       for(var i = 0; i < predictions.length; i++) {
-        $('#results-data').append('<span class="label label-default">'+results[i].label+' '+Math.round(results[i].prediction*10)/10+'%</span> &nbsp;');
+        $('#results-data').append('<span class="label label-default">'+predictions[i].label+' '+Math.round(predictions[i].prediction*10)/10+'%</span> &nbsp;');
       }
 
       // show the results
