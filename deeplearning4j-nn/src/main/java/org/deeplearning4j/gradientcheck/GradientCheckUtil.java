@@ -92,7 +92,8 @@ public class GradientCheckUtil {
                 //Must have LR of 1.0
                 double lr = n.getLayer().getLearningRate();
                 if(lr != 1.0){
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer " + layerCount + "; got " + u + " with lr=" + lr);
+                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer " + layerCount
+                            + "; got " + u + " with lr=" + lr + " for layer \"" + n.getLayer().getLayerName() + "\"");
                 }
             } else if( u != org.deeplearning4j.nn.conf.Updater.NONE ){
                 throw new IllegalStateException("Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);

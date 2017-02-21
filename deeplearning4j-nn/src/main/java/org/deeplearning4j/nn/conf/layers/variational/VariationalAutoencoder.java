@@ -87,13 +87,13 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     @Override
     public double getL1ByParam(String paramName) {
-        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return 0.0;
+        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return l1Bias;
         return l1;
     }
 
     @Override
     public double getL2ByParam(String paramName) {
-        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return 0.0;
+        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return l2Bias;
         return l2;
     }
 
@@ -101,7 +101,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         private int[] encoderLayerSizes = new int[]{100};
         private int[] decoderLayerSizes = new int[]{100};
-        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
+        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution(Activation.TANH);
         private IActivation pzxActivationFn = new ActivationIdentity();
         private int numSamples = 1;
 
