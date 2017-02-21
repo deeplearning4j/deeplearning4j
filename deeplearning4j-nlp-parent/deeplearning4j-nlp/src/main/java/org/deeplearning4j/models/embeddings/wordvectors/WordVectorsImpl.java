@@ -46,6 +46,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
+    private static final long serialVersionUID = 78249242142L;
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;

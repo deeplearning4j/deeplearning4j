@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -35,6 +36,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
@@ -42,11 +45,38 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class ParagraphVectors extends Word2Vec {
+    private static final long serialVersionUID = 78249242142L;
+
     @Getter protected LabelsSource labelsSource;
     @Getter @Setter protected transient LabelAwareIterator labelAwareIterator;
     protected INDArray labelsMatrix;
     protected List<VocabWord> labelsList = new ArrayList<>();
     protected boolean normalizedLabels = false;
+
+    protected transient final Object inferenceLocker = new Object();
+    protected transient ExecutorService inferenceExecutor;
+    protected transient AtomicLong countSubmitted;
+    protected transient AtomicLong countFinished;
+
+    protected ParagraphVectors() {
+        super();
+    }
+
+    protected synchronized void initInference() {
+        if (countSubmitted == null || countFinished == null || inferenceExecutor == null) {
+            inferenceExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors() - 2, 2),
+                    new ThreadFactory() {
+                        public Thread newThread(Runnable r) {
+                            Thread t = Executors.defaultThreadFactory().newThread(r);
+                            t.setName("ParagraphVectors inference thread");
+                            t.setDaemon(true);
+                            return t;
+                        }
+                    });
+            countSubmitted = new AtomicLong(0);
+            countFinished = new AtomicLong(0);
+        }
+    }
 
     /**
      * This method takes raw text, applies tokenizer, and returns most probable label
@@ -151,17 +181,25 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(@NonNull List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
 
         if (learner == null) {
             synchronized (this) {
-                if (learner == null) {
+                if (sequenceLearningAlgorithm == null) {
                     log.info("Creating new PV-DM learner...");
                     learner = new DM<VocabWord>();
                     learner.configure(vocab, lookupTable, configuration);
+                    sequenceLearningAlgorithm = learner;
+                } else {
+                    learner = sequenceLearningAlgorithm;
                 }
             }
         }
+
+        learner = sequenceLearningAlgorithm;
+
+
 
         if (document.isEmpty())
             throw new ND4JIllegalStateException("Impossible to apply inference to empty list of words");
@@ -173,7 +211,7 @@ public class ParagraphVectors extends Word2Vec {
 
         initLearners();
 
-        INDArray inf = learner.inferSequence(sequence, 119, learningRate, minLearningRate, iterations);
+        INDArray inf = learner.inferSequence(sequence, seed, learningRate, minLearningRate, iterations);
 
         return inf;
     }
@@ -206,6 +244,95 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(@NonNull List<VocabWord> document) {
         return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs * this.numIterations);
+    }
+
+    /**
+     * This method implements batched inference, based on Java Future parallelism model.
+     *
+     * PLEASE NOTE: In order to use this method, LabelledDocument being passed in should have Id field defined.
+     *
+     * @param document
+     * @return
+     */
+    public Future<Pair<String, INDArray>> inferVectorBatched(@NonNull LabelledDocument document){
+        if (countSubmitted == null)
+            initInference();
+
+        // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
+        while (countSubmitted.get() - countFinished.get() > 1024) {
+            try {
+                Thread.sleep(50);
+            } catch (Exception e) { }
+        }
+
+        InferenceCallable callable = new InferenceCallable(vocab, tokenizerFactory, document);
+        Future<Pair<String, INDArray>> future = inferenceExecutor.submit(callable);
+        countSubmitted.incrementAndGet();
+
+        return future;
+    }
+
+    /**
+     * This method implements batched inference, based on Java Future parallelism model.
+     *
+     * PLEASE NOTE: This method will return you Future&lt;INDArray&gt;, so tracking relation between document and INDArray will be your responsibility
+     *
+     * @param document
+     * @return
+     */
+    public Future<INDArray> inferVectorBatched(@NonNull String document){
+        if (countSubmitted == null)
+            initInference();
+
+        // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
+        while (countSubmitted.get() - countFinished.get() > 1024) {
+            try {
+                Thread.sleep(50);
+            } catch (Exception e) { }
+        }
+
+        BlindInferenceCallable callable = new BlindInferenceCallable(vocab, tokenizerFactory, document);
+        Future<INDArray> future = inferenceExecutor.submit(callable);
+        countSubmitted.incrementAndGet();
+
+        return future;
+    }
+
+    /**
+     * This method does inference on a given List&lt;String&gt;
+     * @param documents
+     * @return INDArrays in the same order as input texts
+     */
+    public List<INDArray> inferVectorBatched(@NonNull List<String> documents) {
+        if (countSubmitted == null)
+            initInference();
+
+        List<Future<INDArray>> futuresList = new ArrayList<>();
+        List<INDArray> results = new ArrayList<>();
+
+        final AtomicLong flag = new AtomicLong(0);
+
+        for (int i = 0; i < documents.size(); i++) {
+            BlindInferenceCallable callable = new BlindInferenceCallable(vocab, tokenizerFactory, documents.get(i), flag);
+
+            futuresList.add(inferenceExecutor.submit(callable));
+        }
+
+        for (int i = 0; i < documents.size(); i++) {
+            Future<INDArray> future = futuresList.get(i);
+            while (!future.isDone()) {
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {}
+            }
+            try {
+                results.add(future.get());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return results;
     }
 
     /**
@@ -1147,6 +1274,97 @@ public class ParagraphVectors extends Word2Vec {
         public Builder seed(long randomSeed) {
             super.seed(randomSeed);
             return this;
+        }
+    }
+
+
+    public class InferenceCallable implements Callable<Pair<String, INDArray>> {
+        private final TokenizerFactory tokenizerFactory;
+        private final VocabCache<VocabWord> vocab;
+        private final LabelledDocument document;
+        private AtomicLong flag;
+
+        public InferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull LabelledDocument document) {
+            this.tokenizerFactory = tokenizerFactory;
+            this.vocab = vocabCache;
+            this.document = document;
+        }
+
+        public InferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull LabelledDocument document, @NonNull AtomicLong flag) {
+            this(vocabCache, tokenizerFactory, document);
+            this.flag = flag;
+        }
+
+        @Override
+        public Pair<String, INDArray> call() throws Exception {
+
+            // first part of this callable will be actually run in parallel
+            List<String> tokens = tokenizerFactory.create(document.getContent()).getTokens();
+            List<VocabWord> documentAsWords = new ArrayList<>();
+            for (String token: tokens) {
+                if (vocab.containsWord(token)) {
+                    documentAsWords.add(vocab.wordFor(token));
+                }
+            }
+
+            if (documentAsWords.isEmpty())
+                throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
+
+            // inference will be single-threaded in java, and parallel in native
+            Pair<String, INDArray> result = Pair.makePair(document.getId(), inferVector(documentAsWords));
+
+
+            countFinished.incrementAndGet();
+
+            if (flag != null)
+                flag.incrementAndGet();
+
+            return result;
+        }
+    }
+
+    public class BlindInferenceCallable implements Callable<INDArray> {
+        private final TokenizerFactory tokenizerFactory;
+        private final VocabCache<VocabWord> vocab;
+        private final String document;
+        private AtomicLong flag;
+
+        public BlindInferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull String document) {
+            this.tokenizerFactory = tokenizerFactory;
+            this.vocab = vocabCache;
+            this.document = document;
+        }
+
+        public BlindInferenceCallable(@NonNull VocabCache<VocabWord> vocabCache, @NonNull TokenizerFactory tokenizerFactory, @NonNull String document, @NonNull AtomicLong flag) {
+            this(vocabCache, tokenizerFactory, document);
+            this.flag = flag;
+        }
+
+        @Override
+        public INDArray call() throws Exception {
+
+            // first part of this callable will be actually run in parallel
+            List<String> tokens = tokenizerFactory.create(document).getTokens();
+            List<VocabWord> documentAsWords = new ArrayList<>();
+            for (String token: tokens) {
+                if (vocab.containsWord(token)) {
+                    documentAsWords.add(vocab.wordFor(token));
+                }
+            }
+
+            if (documentAsWords.isEmpty())
+                throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
+
+
+            // inference will be single-threaded in java, and parallel in native
+            INDArray result = inferVector(documentAsWords);
+
+            countFinished.incrementAndGet();
+
+            if (flag != null)
+                flag.incrementAndGet();
+
+            return result;
         }
     }
 }

@@ -8,10 +8,10 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.layers.convolution.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -145,8 +146,11 @@ public class CNNGradientCheckTest {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for( String afn : activFns ){
             for( boolean doLearningFirst : characteristic ){
@@ -160,6 +164,7 @@ public class CNNGradientCheckTest {
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                 .regularization(true)
                                 .l2(l2).l1(l1)
+                                .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
                                 .list()
@@ -583,6 +588,80 @@ public class CNNGradientCheckTest {
                             assertTrue(msg, gradOK);
                         }
                     }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testCnnZeroPaddingLayer() {
+        Nd4j.getRandom().setSeed(12345);
+        int nOut = 4;
+
+        int[] minibatchSizes = {1, 3};
+        int width = 6;
+        int height = 6;
+        int[] inputDepths = {1, 3};
+
+        int[] kernel = {2, 2};
+        int[] stride = {1, 1};
+        int[] padding = {0, 0};
+
+        int[][] zeroPadLayer = new int[][]{
+                {0,0,0,0},
+                {1,1,0,0},
+                {2,2,2,2}};
+
+        for (int inputDepth : inputDepths) {
+            for (int minibatchSize : minibatchSizes) {
+                INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
+                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                for (int i = 0; i < minibatchSize; i++) {
+                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
+                }
+                for(int[] zeroPad : zeroPadLayer ) {
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .regularization(false)
+                            .learningRate(1.0)
+                            .updater(Updater.SGD)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                            .list()
+                            .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .nIn(inputDepth).nOut(3)
+                                    .build())//output: (6-2+0)/1+1 = 5
+                            .layer(1, new ZeroPaddingLayer.Builder(zeroPad).build())
+                            .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .nIn(3).nOut(3)
+                                    .build())//output: (6-2+0)/1+1 = 5
+                            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
+                                    .nOut(4)
+                                    .build())
+                            .setInputType(InputType.convolutional(height, width, inputDepth))
+                            .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    //Check zero padding activation shape
+                    org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer zpl = (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer)net.getLayer(1);
+                    int[] expShape = new int[]{minibatchSize, inputDepth, height+zeroPad[0]+zeroPad[1], width+zeroPad[2]+zeroPad[3]};
+                    INDArray out = zpl.activate(input);
+                    assertArrayEquals(expShape, out.shape());
+
+                    String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = " + Arrays.toString(zeroPad);
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
                 }
             }
         }
