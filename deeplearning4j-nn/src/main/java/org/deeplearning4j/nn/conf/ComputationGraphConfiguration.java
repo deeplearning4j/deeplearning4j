@@ -447,7 +447,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     if (gv.getValue() instanceof LayerVertex) {
                         LayerVertex lv = (LayerVertex) gv.getValue();
                         Layer l = lv.getLayerConf().getLayer();
-                        l.setLearningToDefault();
+                        l.resetLayerDefaultConfig();
                         //same as addLayer to override what is in vertices, need not overwrite vertexInputs
                         NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
                         builder.layer(l);
@@ -583,9 +583,22 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         /**
          * Intended for use with the transfer learning API. Users discouraged from employing it directly.
-         * Removes the specified vertex from the vertices list and it's connections and associated preprocessor if so specified
+         * Removes the specified vertex from the vertices list, it's connections and associated preprocessor
+         * If the vertex removed is an output vertex it will also be removed from the list of outputs
          * @param vertexName Name of the vertex to remove
-         * @param removeConnections If the vertex should also be removed from the list of inputs to other vertices. In other words - remove connections?
+         */
+        public GraphBuilder removeVertex(String vertexName) {
+            removeVertex(vertexName,true);
+            return this;
+        }
+
+        /**
+         * Intended for use with the transfer learning API. Users discouraged from employing it directly.
+         * Removes the specified vertex from the vertices list,
+         * Removes it's connections (associated preprocessor and if an output also removes it from list of outputs) if "removeConnections" is specified as true
+         * Specifying as false can leave the graph in an invalid state with references to vertices that donot exist unless a new vertex is added back in with the same name
+         * @param removeConnections Specify true to remove connections
+         * @param vertexName Name of the vertex to remove
          */
         public GraphBuilder removeVertex(String vertexName, boolean removeConnections) {
             vertices.remove(vertexName);

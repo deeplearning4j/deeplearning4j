@@ -264,7 +264,7 @@ public class TransferLearning {
                 NeuralNetConfiguration layerConf = origConf.getConf(i);
                 Layer layerConfImpl = layerConf.getLayer().clone();
                 //clear the learning related params for all layers in the origConf and set to defaults
-                layerConfImpl.setLearningToDefault();
+                layerConfImpl.resetLayerDefaultConfig();
                 editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
             }
         }
@@ -275,7 +275,7 @@ public class TransferLearning {
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
             layerImpl.setWeightInit(scheme);
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
-            layerImplF.overrideNOut(nOut, true);
+            layerImplF.setNOut(nOut);
             int numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
@@ -286,11 +286,13 @@ public class TransferLearning {
                 layerImpl = layerConf.getLayer(); //modify in place
                 layerImpl.setWeightInit(schemeNext);
                 layerImplF = (FeedForwardLayer) layerImpl;
-                layerImplF.overrideNIn(nOut, true);
+                layerImplF.setNIn(nOut);
                 numParams = layerImpl.initializer().numParams(layerConf);
-                params = Nd4j.create(1, numParams);
-                someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
-                editedParams.set(layerNum + 1, someLayer.params());
+                if (numParams > 0) {
+                    params = Nd4j.create(1, numParams);
+                    someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                    editedParams.set(layerNum + 1, someLayer.params());
+                }
             }
 
         }
@@ -373,6 +375,7 @@ public class TransferLearning {
             return this;
         }
 
+        //FIXME: Make this more flexible to take a string.. that specifies unique path(s) from input(s) to vertex(vertices)
         public GraphBuilder setFeatureExtractor(String layerName) {
             this.hasFrozen = true;
             this.frozenOutputAt = layerName;
@@ -389,11 +392,11 @@ public class TransferLearning {
 
                 NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
                 Layer layerImpl = layerConf.getLayer().clone();
-                layerImpl.setLearningToDefault();
+                layerImpl.resetLayerDefaultConfig();
 
                 layerImpl.setWeightInit(scheme);
                 FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
-                layerImplF.overrideNOut(nOut, true);
+                layerImplF.setNOut(nOut);
 
                 editedConfigBuilder.removeVertex(layerName,false);
                 LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
@@ -422,7 +425,7 @@ public class TransferLearning {
 
                     layerImpl.setWeightInit(scheme);
                     layerImplF = (FeedForwardLayer) layerImpl;
-                    layerImplF.overrideNIn(nOut, true);
+                    layerImplF.setNIn(nOut);
 
                     editedConfigBuilder.removeVertex(fanoutVertexName,false);
                     lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);

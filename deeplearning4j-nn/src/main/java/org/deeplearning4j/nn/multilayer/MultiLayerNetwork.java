@@ -1125,6 +1125,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = layerFrom; j >= 0; j--) {
             currLayer = getLayer(j);
+            if (currLayer instanceof FrozenLayer) break;
             currPair = currLayer.backpropGradient(currPair.getSecond());
 
             LinkedList<Triple<String,INDArray,Character>> tempList = new LinkedList<>();

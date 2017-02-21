@@ -1182,7 +1182,8 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[topologicalOrder[i]];
 
             if (current.isInputVertex()) continue;   //No op
-            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer) continue;
+            //FIXME: make the frozen vertex feature extraction more flexible
+            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer) break;
 
             if (current.isOutputVertex()) {
                 //Two reasons for a vertex to be an output vertex:
