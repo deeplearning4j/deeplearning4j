@@ -34,7 +34,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface Layer extends Serializable,Cloneable,Model {
+public interface Layer extends Serializable, Cloneable, Model {
 
     enum Type {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,SUBSAMPLING,RECURSIVE,MULTILAYER,NORMALIZATION
@@ -80,7 +80,9 @@ public interface Layer extends Serializable,Cloneable,Model {
      *              This is on the user to initialize.
      * @return the gradient wrt the parameters
      * on the current layer
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
      */
+    @Deprecated
     Gradient error(INDArray input);
 
 
@@ -90,7 +92,9 @@ public interface Layer extends Serializable,Cloneable,Model {
      * based on the activation
      * @param input the input to take the derivative of
      * @return the derivative of the action
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
      */
+    @Deprecated
     INDArray derivativeActivation(INDArray input);
 
 
@@ -99,7 +103,9 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @param layerError the layer error
      * @param indArray
      * @return the gradient
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
      */
+    @Deprecated
     Gradient calcGradient(Gradient layerError, INDArray indArray);
 
 
@@ -117,7 +123,9 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Parameter averaging
      * @param layer the layer to merge
      * @param batchSize the batch size to merge on
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used. Merging (for parameter averaging) done via alternative means
      */
+    @Deprecated
     void merge(Layer layer, int batchSize);
 
 
@@ -125,7 +133,9 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Calculate the mean representation
      * for the activation for this layer
      * @return the activation mean for this layer
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
      */
+    @Deprecated
     INDArray activationMean();
 
     /**

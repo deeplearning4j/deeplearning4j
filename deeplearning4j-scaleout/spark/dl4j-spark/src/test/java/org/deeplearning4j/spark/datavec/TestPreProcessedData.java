@@ -21,6 +21,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.iterator.PortableDataStreamDataSetIterator;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -66,10 +67,10 @@ public class TestPreProcessedData extends BaseSparkTest {
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(4).nOut(3)
-                        .activation("tanh").build())
+                        .activation(Activation.TANH).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(3)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -118,9 +119,9 @@ public class TestPreProcessedData extends BaseSparkTest {
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(4).nOut(3).activation("tanh").build(), "in")
+                        .nIn(4).nOut(3).activation(Activation.TANH).build(), "in")
                 .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(3).activation("softmax").build(), "0")
+                        .nIn(3).nOut(3).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
                 .pretrain(false).backprop(true)
                 .build();
@@ -171,9 +172,9 @@ public class TestPreProcessedData extends BaseSparkTest {
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(4).nOut(3).activation("tanh").build(), "in")
+                        .nIn(4).nOut(3).activation(Activation.TANH).build(), "in")
                 .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(3).activation("softmax").build(), "0")
+                        .nIn(3).nOut(3).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
                 .pretrain(false).backprop(true)
                 .build();

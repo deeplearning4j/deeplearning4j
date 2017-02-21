@@ -49,6 +49,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
+    private static final long serialVersionUID = 78249242142L;
+
     @Getter protected transient SequenceIterator<T> iterator;
 
     @Setter protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
@@ -150,7 +152,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     }
 
 
-    protected void initLearners() {
+    protected synchronized void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
             if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
@@ -365,7 +367,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected boolean preciseWeightInit = false;
 
-        protected List<String> stopWords = new ArrayList<>();
+        protected Collection<String> stopWords = new ArrayList<>();
 
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
@@ -979,9 +981,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final int limitLower;
         private AtomicBoolean isRunning = new AtomicBoolean(true);
         private AtomicLong nextRandom;
-        private List<String> stopList;
+        private Collection<String> stopList;
 
-        public AsyncSequencer(SequenceIterator<T> iterator, @NonNull List<String> stopList) {
+        public AsyncSequencer(SequenceIterator<T> iterator, @NonNull Collection<String> stopList) {
             this.iterator = iterator;
 //            this.linesCounter = linesCounter;
             this.setName("AsyncSequencer thread");

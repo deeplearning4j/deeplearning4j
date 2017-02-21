@@ -18,6 +18,7 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -46,11 +47,11 @@ public class TestListeners extends BaseSparkTest {
                 .layer(0, new DenseLayer.Builder()
                         .nIn(4).nOut(100)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(100).nOut(3)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .pretrain(false).backprop(true)

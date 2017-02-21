@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -438,15 +439,15 @@ public class TestPreProcessors {
                         .padding(2, 2)
                         .stride(2, 2)
                         .weightInit(WeightInit.RELU)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().activation("relu")
+                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().activation(Activation.RELU)
                         .nOut(200).build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(200)
                         .nOut(5)
                         .weightInit(WeightInit.RELU)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .updater(Updater.SGD)
                         .build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))

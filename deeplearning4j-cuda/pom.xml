@@ -37,11 +37,6 @@
                 <artifactId>nd4j-api</artifactId>
                 <version>${nd4j.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-${cuda.version}</artifactId>
-                <version>${nd4j.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -49,6 +44,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>
@@ -78,32 +74,8 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
+            <artifactId>cuda-platform</artifactId>
             <version>${cuda.version}-${javacpp-presets.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
-            <classifier>macosx-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
-            <classifier>linux-ppc64le</classifier>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

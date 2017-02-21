@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -60,26 +61,26 @@ public class ConvolutionLayerTest {
                         .stride(4, 4)
                         .nOut(16)
                         .dropOut(0.5)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new ConvolutionLayer.Builder(4, 4) //32 filters kernel size 4 stride 2
                         .stride(2, 2)
                         .nOut(32)
                         .dropOut(0.5)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(2, new DenseLayer.Builder() //fully connected with 256 rectified units
                         .nOut(256)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .dropOut(0.5)
                         .build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
                         .nOut(10)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(true).pretrain(false);
@@ -110,7 +111,7 @@ public class ConvolutionLayerTest {
                 .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)
                         .stride(1,1)
                         .nOut(2)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder()
@@ -121,7 +122,7 @@ public class ConvolutionLayerTest {
                 .layer(2, new OutputLayer.Builder()
                         .nOut(classes)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
                 .backprop(true).pretrain(false);
@@ -157,13 +158,13 @@ public class ConvolutionLayerTest {
                 .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)       //(img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
                         .stride(1,1)
                         .nOut(2)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new OutputLayer.Builder()
                         .nOut(classes)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
                 .backprop(true).pretrain(false);
@@ -198,13 +199,13 @@ public class ConvolutionLayerTest {
                 .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)
                         .stride(1,0)
                         .nOut(2)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(1, new OutputLayer.Builder()
                         .nOut(classes)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .backprop(true).pretrain(false);
         new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);
@@ -294,7 +295,7 @@ public class ConvolutionLayerTest {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
                 .nIn(nIn)
                 .nOut(nOut)
-                .activation("sigmoid")
+                .activation(Activation.SIGMOID)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -689,12 +690,12 @@ public class ConvolutionLayerTest {
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .stride(1,1)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
+                        .activation(Activation.RELU)
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(backprop).pretrain(pretrain);

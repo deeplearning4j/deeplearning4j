@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -39,7 +40,7 @@ public class GravesLSTMTest {
 				.layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
 						.nIn(nIn)
 						.nOut(nHiddenUnits)
-						.activation("tanh")
+						.activation(Activation.TANH)
 						.build())
 				.build();
 
@@ -87,7 +88,7 @@ public class GravesLSTMTest {
 						.nIn(nIn)
 						.nOut(lstmNHiddenUnits)
 						.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-						.activation("tanh")
+						.activation(Activation.TANH)
 						.build())
 				.build();
 
@@ -140,7 +141,7 @@ public class GravesLSTMTest {
         .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
 				.nIn(nIn).nOut(layerSize)
 				.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-				.activation("tanh")
+				.activation(Activation.TANH)
 				.build())
 		.build();
 
@@ -185,8 +186,8 @@ public class GravesLSTMTest {
 				.learningRate(0.1)
 				.seed(12345)
 				.list()
-				.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
-				.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
+				.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+				.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation(Activation.TANH).build())
 				.build();
 
 		MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -242,9 +243,9 @@ public class GravesLSTMTest {
 					.list()
 					.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
 							.gateActivationFunction(gateAfn)
-							.activation("tanh").nIn(2).nOut(2).build())
+							.activation(Activation.TANH).nIn(2).nOut(2).build())
 					.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-							.nIn(2).nOut(2).activation("tanh").build())
+							.nIn(2).nOut(2).activation(Activation.TANH).build())
 					.build();
 
 			MultiLayerNetwork net = new MultiLayerNetwork(conf);

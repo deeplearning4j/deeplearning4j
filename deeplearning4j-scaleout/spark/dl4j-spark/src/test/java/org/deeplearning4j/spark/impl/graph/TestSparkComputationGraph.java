@@ -23,6 +23,7 @@ import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -101,10 +102,10 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                 .addInputs("in")
                 .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(nIn).nOut(3)
-                        .activation("tanh").build(), "in")
+                        .activation(Activation.TANH).build(), "in")
                 .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(nOut)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build(), "0")
                 .setOutputs("1")
                 .backprop(true)
@@ -188,10 +189,10 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                 .addInputs("in")
                 .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(4).nOut(4)
-                        .activation("tanh").build(), "in")
+                        .activation(Activation.TANH).build(), "in")
                 .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(4).nOut(3)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build(), "0")
                 .setOutputs("1")
                 .pretrain(false).backprop(true)

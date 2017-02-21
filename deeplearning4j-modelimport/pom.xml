@@ -75,36 +75,8 @@
 
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
+            <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>macosx-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>linux-ppc64le</classifier>
         </dependency>
 
         <dependency>
