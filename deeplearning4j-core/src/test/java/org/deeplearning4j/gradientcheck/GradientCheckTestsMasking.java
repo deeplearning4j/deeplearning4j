@@ -86,7 +86,7 @@ public class GradientCheckTestsMasking {
                     .list()
                     .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                    .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
+                    .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
                     .pretrain(false).backprop(true)
                     .build();

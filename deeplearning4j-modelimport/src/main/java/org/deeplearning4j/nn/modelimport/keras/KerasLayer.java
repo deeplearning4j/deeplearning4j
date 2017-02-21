@@ -53,6 +53,9 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
     public static final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
     public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    public static final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
@@ -131,6 +134,8 @@ public class KerasLayer {
     public static final String KERAS_LOSS_KLD = "kld";
     public static final String KERAS_LOSS_POISSON  = "poisson";
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
+    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
+    public static final String LAYER_FIELD_LAYER = "layer";
 
     /* Keras backends store convolutional inputs and weights
      * in tensors with different dimension orders.
@@ -177,6 +182,11 @@ public class KerasLayer {
     public static KerasLayer getKerasLayerFromConfig(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String layerClassName = getClassNameFromConfig(layerConfig);
+        if (layerClassName.equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED)) {
+            layerConfig = getTimeDistributedLayerConfig(layerConfig);
+            layerClassName = getClassNameFromConfig(layerConfig);
+        }
+
         KerasLayer layer = null;
         switch (layerClassName) {
             case LAYER_CLASS_NAME_ACTIVATION:
@@ -217,8 +227,12 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_FLATTEN:
                 layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
                 break;
+            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
+            case LAYER_CLASS_NAME_ZERO_PADDING_2D:
+            case LAYER_CLASS_NAME_ZERO_PADDING_3D:
+                throw new UnsupportedKerasConfigurationException("Zero padding layers currently not supported. Consider using \"border_mode='same'\" instead");
             default:
-                throw new InvalidKerasConfigurationException("Unsupported keras layer type " + layerClassName);
+                throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
         }
         return layer;
     }
@@ -361,11 +375,11 @@ public class KerasLayer {
     }
 
     /**
-     * Indicates whether layer has trainable weights.
+     * Returns number of trainable parameters in layer.
      *
-     * @return  boolean
+     * @return          number of trainable parameters
      */
-    public boolean hasWeights() { return false; }
+    public int getNumParams() { return 0; }
 
     /**
      * Indicates whether layer uses regularization.
@@ -392,7 +406,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     public void copyWeightsToLayer(org.deeplearning4j.nn.api.Layer layer) throws InvalidKerasConfigurationException {
-        if (this.hasWeights()) {
+        if (this.getNumParams() > 0) {
             String dl4jLayerName = layer.conf().getLayer().getLayerName();
             String kerasLayerName = this.getLayerName();
             String msg = "Error when attempting to copy weights from Keras layer " + kerasLayerName + " to DL4J layer " + dl4jLayerName;
@@ -585,7 +599,7 @@ public class KerasLayer {
                 case INIT_ORTHOGONAL: // does not map to existing Dl4J initializer
                 case INIT_LECUN_UNIFORM: // does not map to existing Dl4J initializer
                 default:
-                    throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + init);
+                    throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
         }
         return init;
@@ -683,6 +697,31 @@ public class KerasLayer {
         if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
             throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
         return (String)layerConfig.get(LAYER_FIELD_CLASS_NAME);
+    }
+
+    /**
+     * Extract inner layer config from TimeDistributed configuration and merge
+     * it into the outer config.
+     *
+     * @param layerConfig       dictionary containing Keras TimeDistributed configuration
+     * @return
+     * @throws InvalidKerasConfigurationException
+     */
+    public static Map<String,Object> getTimeDistributedLayerConfig(Map<String,Object> layerConfig) throws InvalidKerasConfigurationException {
+        if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
+            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
+        if (!layerConfig.get(LAYER_FIELD_CLASS_NAME).equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED))
+            throw new InvalidKerasConfigurationException("Expected " + LAYER_CLASS_NAME_TIME_DISTRIBUTED + " layer, found " + (String)layerConfig.get(LAYER_FIELD_CLASS_NAME));
+        if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
+            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
+        Map<String,Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String,Object> innerLayer = (Map<String,Object>)outerConfig.get(LAYER_FIELD_LAYER);
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
+        layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
+        Map<String,Object> innerConfig = (Map<String,Object>)getInnerLayerConfigFromConfig(innerLayer);
+        outerConfig.putAll(innerConfig);
+        outerConfig.remove(LAYER_FIELD_LAYER);
+        return layerConfig;
     }
 
     /**

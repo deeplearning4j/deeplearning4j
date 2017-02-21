@@ -14,8 +14,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.serde.jackson.VectorDeSerializer;
-import org.nd4j.serde.jackson.VectorSerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArrayDeSerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArraySerializer;
 
 import java.util.Arrays;
 
@@ -57,8 +57,8 @@ public class TestSerialization {
     public ObjectMapper getMapper() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule nd4j = new SimpleModule("nd4j");
-        nd4j.addDeserializer(INDArray.class, new VectorDeSerializer());
-        nd4j.addSerializer(INDArray.class, new VectorSerializer());
+        nd4j.addDeserializer(INDArray.class, new NDArrayDeSerializer());
+        nd4j.addSerializer(INDArray.class, new NDArraySerializer());
         mapper.registerModule(nd4j);
         return mapper;
     }

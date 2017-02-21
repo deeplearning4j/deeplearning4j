@@ -36,8 +36,6 @@ package org.deeplearning4j.nn.conf.layers.setup;
  * @deprecated Use {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration.Builder#setInputType(InputType)} to set nIns
  * and add preprocessors as required. This can be done using {@code builder.setInputType(InputType.convolutional(height, width, channels))}
  */
-
-
 @Deprecated
 public class ConvolutionLayerSetup {
 
@@ -77,6 +75,7 @@ public class ConvolutionLayerSetup {
      * For image data that has been flattened into a row vector per example (shape [minibatchSize,depth*height*width])
      * instead use {@code InputType.convolutionalFlat(height,width,depth)}.
      */
+    @Deprecated
     public ConvolutionLayerSetup(MultiLayerConfiguration.Builder builder,int height,int width,int channels) {
 
 //        builder.setInputType(InputType.convolutionalFlat(height, width, channels));

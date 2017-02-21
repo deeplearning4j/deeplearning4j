@@ -188,12 +188,12 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
+        if (!conf.isUseRegularization()) return 0.0;
 
         double l2Sum = 0.0;
-        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
-            if(l2 > 0) {
+            if (l2 > 0) {
                 double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
                 l2Sum += 0.5 * l2 * norm2 * norm2;
             }
@@ -204,12 +204,12 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0) return 0.0;
+        if (!conf.isUseRegularization()) return 0.0;
 
         double l1Sum = 0.0;
-        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
-            if(l1 > 0) {
+            if (l1 > 0) {
                 double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
                 l1Sum += l1 * norm1;
             }

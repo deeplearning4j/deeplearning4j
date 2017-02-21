@@ -8,6 +8,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.component.kafka.KafkaConstants;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.commons.net.util.Base64;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.streaming.routes.CamelKafkaRouteBuilder;
 import org.deeplearning4j.streaming.serde.RecordSerializer;
@@ -136,5 +137,17 @@ public abstract class BaseKafkaPipeline<E,RECORD_CONVERTER_FUNCTION> {
         return dataset;
     }
 
+    public static void awaitTermination(JavaStreamingContext jssc, long timeout) {
+        try {
+            if(timeout < 0)
+                jssc.awaitTermination();
+            else
+                jssc.awaitTerminationOrTimeout(timeout);
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 }

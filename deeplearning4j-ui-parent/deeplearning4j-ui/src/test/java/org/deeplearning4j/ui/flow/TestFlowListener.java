@@ -18,6 +18,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -50,7 +51,7 @@ public class TestFlowListener {
                         .nIn(nChannels)
                         .stride(1, 1)
                         .nOut(20)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
@@ -60,17 +61,17 @@ public class TestFlowListener {
                         //Note that nIn need not be specified in later layers
                         .stride(1, 1)
                         .nOut(50)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
                         .stride(2,2)
                         .build())
-                .layer(4, new DenseLayer.Builder().activation("relu")
+                .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
                         .nOut(500).build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
                 .backprop(true).pretrain(false).build();
@@ -112,7 +113,7 @@ public class TestFlowListener {
                         .nIn(nChannels)
                         .stride(1, 1)
                         .nOut(20)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build(), "in")
                 .addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
@@ -122,17 +123,17 @@ public class TestFlowListener {
                         //Note that nIn need not be specified in later layers
                         .stride(1, 1)
                         .nOut(50)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build(), "1")
                 .addLayer("3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
                         .stride(2,2)
                         .build(), "2")
-                .addLayer("4", new DenseLayer.Builder().activation("relu")
+                .addLayer("4", new DenseLayer.Builder().activation(Activation.RELU)
                         .nOut(500).build(), "3")
                 .addLayer("5", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build(), "4")
                 .setOutputs("5")
                 .setInputTypes(InputType.convolutionalFlat(28,28,1))

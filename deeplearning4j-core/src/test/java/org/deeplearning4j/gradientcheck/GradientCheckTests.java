@@ -13,6 +13,9 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -149,8 +152,11 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for (String afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
@@ -164,6 +170,7 @@ public class GradientCheckTests {
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .regularization(true)
                                 .l2(l2).l1(l1)
+                                .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
                                 .list()
@@ -241,13 +248,13 @@ public class GradientCheckTests {
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                         .updater(Updater.NONE)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
                         .nIn(3).nOut(3)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                         .updater(Updater.NONE)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -283,11 +290,11 @@ public class GradientCheckTests {
                 .regularization(false)
                 .seed(12345L)
                 .list()
-                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("sigmoid")
+                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).updater(Updater.NONE).build())
-                .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("sigmoid")
+                .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).updater(Updater.NONE).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
+                .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).updater(Updater.NONE).build())
                 .pretrain(false).backprop(true)
                 .build();
@@ -357,8 +364,11 @@ public class GradientCheckTests {
         }
 
 
-        double[] l2vals = {0.0, 0.4, 0.0};
-        double[] l1vals = {0.0, 0.0, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         for (String afn : activFns) {
             for (int i = 0; i < lossFunctions.length; i++) {
@@ -372,6 +382,8 @@ public class GradientCheckTests {
                             .regularization(l1 > 0.0 || l2 > 0.0).seed(12345L);
                     if (l1 > 0.0) conf.l1(l1);
                     if (l2 > 0.0) conf.l2(l2);
+                    if (biasL2[k] > 0) conf.l2Bias(biasL2[k]);
+                    if (biasL1[k] > 0) conf.l1Bias(biasL1[k]);
                     NeuralNetConfiguration.ListBuilder conf2 = conf.list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
@@ -439,7 +451,7 @@ public class GradientCheckTests {
                     .list()
                     .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                    .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
+                    .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
                     .pretrain(false).backprop(true)
                     .build();
@@ -456,10 +468,10 @@ public class GradientCheckTests {
 
     @Test
     public void testGradientGravesBidirectionalLSTMFull() {
-        String[] activFns = {"tanh", "softsign"};
+        Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN};
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
         int timeSeriesLength = 4;
         int nIn = 2;
@@ -486,14 +498,17 @@ public class GradientCheckTests {
         }
 
 
-        double[] l2vals = {0.0, 0.4, 0.0};
-        double[] l1vals = {0.0, 0.0, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (int i = 0; i < lossFunctions.length; i++) {
                 for (int k = 0; k < l2vals.length; k++) {
                     LossFunction lf = lossFunctions[i];
-                    String outputActivation = outputActivations[i];
+                    Activation outputActivation = outputActivations[i];
                     double l2 = l2vals[k];
                     double l1 = l1vals[k];
 
@@ -501,6 +516,8 @@ public class GradientCheckTests {
                             .regularization(l1 > 0.0 || l2 > 0.0);
                     if (l1 > 0.0) conf.l1(l1);
                     if (l2 > 0.0) conf.l2(l2);
+                    if (biasL2[k] > 0) conf.l2Bias(biasL2[k]);
+                    if (biasL1[k] > 0) conf.l1Bias(biasL1[k]);
 
                     MultiLayerConfiguration mlc = conf.seed(12345L)
                             .list()
@@ -572,7 +589,7 @@ public class GradientCheckTests {
                     .list()
                     .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                    .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
+                    .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
                     .pretrain(false).backprop(true)
                     .build();
@@ -620,7 +637,7 @@ public class GradientCheckTests {
                         .nIn(3)
                         .nOut(5)
                         .stride(1, 1)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())    //Out: (10-5)/1+1 = 6 -> 6x6x5
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2, 2)
@@ -629,18 +646,18 @@ public class GradientCheckTests {
                 .layer(2, new DenseLayer.Builder()
                         .nIn(5 * 5 * 5)
                         .nOut(4)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .layer(3, new GravesLSTM.Builder()
                         .nIn(4)
                         .nOut(3)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .build())
                 .layer(4, new RnnOutputLayer.Builder()
                         .lossFunction(LossFunction.MCXENT)
                         .nIn(3)
                         .nOut(nClasses)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutional(10,10,3))
                 .pretrain(false).backprop(true)

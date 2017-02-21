@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -65,8 +66,11 @@ public class VaeGradientCheckTests {
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
         String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
-        double[] l2vals = {0.0, 0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         int[][] encoderLayerSizes = new int[][]{{5}, {5, 6}};
         int[][] decoderLayerSizes = new int[][]{{6}, {7, 8}};
@@ -94,6 +98,7 @@ public class VaeGradientCheckTests {
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .regularization(true)
                                     .l2(l2).l1(l1)
+                                    .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                     .learningRate(1.0)
                                     .seed(12345L)
@@ -145,8 +150,11 @@ public class VaeGradientCheckTests {
         String[] pzxAfns = {"identity", "tanh", "identity", "tanh"};
         String[] pxzAfns = {"tanh", "identity", "tanh", "identity"};
 
-        double[] l2vals = {0.0, 0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
         int[][] encoderLayerSizes = new int[][]{{5}, {5, 6}};
         int[][] decoderLayerSizes = new int[][]{{6}, {7, 8}};
@@ -169,6 +177,7 @@ public class VaeGradientCheckTests {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .regularization(true)
                             .l2(l2).l1(l1)
+                            .l2Bias(biasL2[j]).l1Bias(biasL1[j])
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .learningRate(1.0)
                             .seed(12345L)
@@ -216,13 +225,13 @@ public class VaeGradientCheckTests {
         int inOutSize = 6;
 
         ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
-                new GaussianReconstructionDistribution("identity"),
-                new GaussianReconstructionDistribution("tanh"),
-                new BernoulliReconstructionDistribution("sigmoid"),
+                new GaussianReconstructionDistribution(Activation.IDENTITY),
+                new GaussianReconstructionDistribution(Activation.TANH),
+                new BernoulliReconstructionDistribution(Activation.SIGMOID),
                 new CompositeReconstructionDistribution.Builder()
-                        .addDistribution(2, new GaussianReconstructionDistribution("identity"))
+                        .addDistribution(2, new GaussianReconstructionDistribution(Activation.IDENTITY))
                         .addDistribution(2, new BernoulliReconstructionDistribution())
-                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build(),
+                        .addDistribution(2, new GaussianReconstructionDistribution(Activation.TANH)).build(),
                 new ExponentialReconstructionDistribution("identity"),
                 new ExponentialReconstructionDistribution("tanh"),
                 new LossFunctionWrapper(new ActivationTanH(),new LossMSE()),
@@ -275,9 +284,9 @@ public class VaeGradientCheckTests {
                                 .nIn(inOutSize).nOut(3)
                                 .encoderLayerSizes(5)
                                 .decoderLayerSizes(6)
-                                .pzxActivationFunction("tanh")
+                                .pzxActivationFunction(Activation.TANH)
                                 .reconstructionDistribution(reconstructionDistributions[i])
-                                .activation("tanh")
+                                .activation(Activation.TANH)
                                 .updater(Updater.SGD)
                                 .build())
                         .pretrain(true).backprop(false)
@@ -325,10 +334,10 @@ public class VaeGradientCheckTests {
                                 .nIn(4).nOut(3)
                                 .encoderLayerSizes(5, 6)
                                 .decoderLayerSizes(7, 8)
-                                .pzxActivationFunction("tanh")
-                                .reconstructionDistribution(new GaussianReconstructionDistribution("tanh"))
+                                .pzxActivationFunction(Activation.TANH)
+                                .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.TANH))
                                 .numSamples(numSamples)
-                                .activation("tanh")
+                                .activation(Activation.TANH)
                                 .updater(Updater.SGD)
                                 .build())
                         .pretrain(true).backprop(false)
