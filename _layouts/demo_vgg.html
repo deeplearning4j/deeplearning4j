@@ -84,23 +84,23 @@
       console.log('Classification start');
       $('.demo-view').hide();
       $('#demo-loading').show();
-    );
+    });
 
     $fu.bind('fileuploadprogressall', function() {
       console.log('Chunk uploaded');
-    );
+    });
 
     $fu.bind('fileuploaddone', function() {
       console.log('Classification success');
       $('.demo-view').hide();
       $('#demo-results').show();
-    );
+    });
 
     $fu.bind('fileuploadfail', function() {
       console.log('Classification error');
       $('.demo-view').hide();
       $('#demo-error').show();
-    );
+    });
 
 
   });
