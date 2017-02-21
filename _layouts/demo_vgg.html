@@ -35,7 +35,9 @@
   <!-- Results -->
   <div id="demo-results" class="container text-center demo-view" style="display: none;">
     <h3>VGG-16 found the following results:</h3>
-    <a class="btn btn-white btn-xl btn-outline" href="javascript:window.location.reload(true);" role="button"> <i class="fa fa-camera"></i> TRY AGAIN </a>
+    <p id="results-data"></p>
+    <a class="btn btn-white btn-xl btn-outline" href="javascript:;" role="button" id="demo-raw"> VIEW RESPONSE </a>
+    <a class="btn btn-white btn-xl btn-outline" href="javascript:window.location.reload(true);" role="button"> TRY AGAIN </a>
   </div>
 <!-- END Banner -->
 </header>
@@ -91,9 +93,20 @@
     });
 
     $fu.bind('fileuploaddone', function(e, data) {
-      console.log('Classification success', data, e);
+      var results = data._response.result.data;
+      console.log('Classification success', data);
+
+      for(i = 0; i < results.length; i++) {
+        $('#results-data').append('<span class="label label-default">'+results[i].label+' ('+Math.round(results[i].prediction*10)/10+'&)</span> &nbsp;');
+      }
+
+      // show the results
       $('.demo-view').hide();
       $('#demo-results').show();
+
+      $('#demo-raw').click(function() {
+        alert(results);
+      });
     });
 
     $fu.bind('fileuploadfail', function() {
@@ -101,7 +114,6 @@
       $('.demo-view').hide();
       $('#demo-error').show();
     });
-
 
   });
 </script>
