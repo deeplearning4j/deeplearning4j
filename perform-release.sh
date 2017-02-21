@@ -28,7 +28,7 @@ mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -
 source change-scala-versions.sh 2.11
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -Dmaven.test.skip -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
 
-source change-scala-versions.sh 2.10
+source change-scala-versions.sh 2.11
 git commit -a -m "Update to version $RELEASE_VERSION"
 git tag -a -m "arbiter-$RELEASE_VERSION" "arbiter-$RELEASE_VERSION"
 
