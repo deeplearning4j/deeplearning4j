@@ -174,7 +174,15 @@ public class LayerVertex extends BaseGraphVertex {
 
     @Override
     public boolean canDoBackward() {
-        if (!isOutputVertex()) return super.canDoBackward();
+        if (!isOutputVertex()) {
+            //inputs to frozen layer go unchecked, so could be null
+            if (getLayer() instanceof FrozenLayer) {
+                return true;
+            }
+            else {
+                return super.canDoBackward();
+            }
+        }
 
         for (INDArray input : inputs) {
             if (input == null) {

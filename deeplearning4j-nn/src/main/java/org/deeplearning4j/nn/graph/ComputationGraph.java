@@ -1182,6 +1182,7 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[topologicalOrder[i]];
 
             if (current.isInputVertex()) continue;   //No op
+            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer) continue;
 
             if (current.isOutputVertex()) {
                 //Two reasons for a vertex to be an output vertex:

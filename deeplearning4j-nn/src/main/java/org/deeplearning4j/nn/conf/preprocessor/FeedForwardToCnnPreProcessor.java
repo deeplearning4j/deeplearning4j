@@ -98,7 +98,6 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     @Override
     // return 4 dimensions
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        if (epsilons == null) return null;
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
