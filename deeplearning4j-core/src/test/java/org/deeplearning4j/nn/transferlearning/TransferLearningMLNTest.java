@@ -534,6 +534,60 @@ public class TransferLearningMLNTest {
 
         INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer(0).params(),notFrozen.params());
         assertEquals(expectedParams,modelNow.params());
+    }
 
+
+    @Test
+    public void testFineTuneOverride(){
+        //Check that fine-tune overrides are selective - i.e., if I only specify a new LR, only the LR should be modified
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(1e-4)
+                .updater(Updater.ADAM)
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.RELU)
+                .regularization(true).l1(0.1).l2(0.2)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(5).build())
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.HARDSIGMOID).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        MultiLayerNetwork net2 = new TransferLearning.Builder(net)
+                .fineTuneConfiguration(new NeuralNetConfiguration.Builder().learningRate(2e-2))
+                .build();
+
+
+        //Check original net isn't modified:
+        Layer l0 = net.getLayer(0).conf().getLayer();
+        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
+        assertEquals(1e-4, l0.getLearningRate(), 1e-8);
+        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(0.1, l0.getL1(), 1e-6);
+
+        Layer l1 = net.getLayer(1).conf().getLayer();
+        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
+        assertEquals(1e-4, l1.getLearningRate(), 1e-8);
+        assertEquals(WeightInit.RELU, l1.getWeightInit());
+        assertEquals(0.2, l1.getL2(), 1e-6);
+
+        //Check new net has only the appropriate things modified (i.e., LR)
+        l0 = net2.getLayer(0).conf().getLayer();
+//        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
+        assertEquals(2e-2, l0.getLearningRate(), 1e-8);
+//        assertEquals(WeightInit.RELU, l0.getWeightInit());
+//        assertEquals(0.1, l0.getL1(), 1e-6);
+
+        l1 = net2.getLayer(1).conf().getLayer();
+//        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
+        assertEquals(2e-2, l1.getLearningRate(), 1e-8);
+        assertEquals(WeightInit.RELU, l1.getWeightInit());
+        assertEquals(0.2, l1.getL2(), 1e-6);
     }
 }

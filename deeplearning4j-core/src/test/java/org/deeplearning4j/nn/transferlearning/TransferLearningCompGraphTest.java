@@ -92,7 +92,7 @@ public class TransferLearningCompGraphTest {
         //Check params after fit
         modelNow.fit(randomData);
         expectedModel.fit(randomData);
-        assertTrue(modelNow.score() == expectedModel.score());
+        assertEquals(modelNow.score(), expectedModel.score(), 1e-8);
         assertEquals(modelNow.params(), expectedModel.params());
     }
 
@@ -162,7 +162,7 @@ public class TransferLearningCompGraphTest {
         //fit should give the same results
         modelExpectedArch.fit(randomData);
         modelNow.fit(randomData);
-        assertTrue(modelExpectedArch.score() == modelNow.score());
+        assertEquals(modelExpectedArch.score(), modelNow.score(), 1e-8);
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
@@ -229,7 +229,7 @@ public class TransferLearningCompGraphTest {
         //fit should give the same results
         modelExpectedArch.fit(randomData);
         modelNow.fit(randomData);
-        assertTrue(modelExpectedArch.score() == modelNow.score());
+        assertEquals(modelExpectedArch.score(), modelNow.score(), 1e-8);
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 

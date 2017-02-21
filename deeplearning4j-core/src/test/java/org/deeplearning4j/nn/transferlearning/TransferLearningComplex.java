@@ -1,15 +1,19 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -18,6 +22,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -149,5 +154,64 @@ public class TransferLearningComplex {
         //Fails with small differences
         //assertEquals(modelToTune.getLayer("outRight").params(),rightGraph.getLayer("outRight").params());
         assertTrue(modelToTune.getLayer("outRight").params().equalsWithEps(rightGraph.getLayer("outRight").params(),0.00000001));
+    }
+
+
+    @Test
+    public void testMerge1(){
+        // in1 -> A -> B -> merge, in2 -> C -> merge -> D -> out
+        //Goal here: test a number of things...
+        // (a) Ensure that freezing C doesn't impact A and B
+        // (b) Test global override (should be selective)
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.ADAM)
+                .learningRate(1e-4)
+                .activation(Activation.LEAKYRELU)
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addLayer("A", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in1")
+                .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
+                .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
+                .addLayer("D", new DenseLayer.Builder().nIn(8+7).nOut(5).build(), "B", "C")
+                .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+
+        int[] topologicalOrder = graph.topologicalSortOrder();
+        org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = graph.getVertices();
+
+        for( int i=0; i<topologicalOrder.length; i++ ){
+            org.deeplearning4j.nn.graph.vertex.GraphVertex v = vertices[topologicalOrder[i]];
+            System.out.println(i + "\t" +  v.getVertexName());
+        }
+
+        ComputationGraph graph2 = new TransferLearning.GraphBuilder(graph)
+                .fineTuneConfiguration(new NeuralNetConfiguration.Builder()
+                        .learningRate(2e-2))
+                .setFeatureExtractor("C")
+                .build();
+
+        boolean cFound = false;
+        for(Layer l : graph2.getLayers()){
+            if ("C".equals(l.conf().getLayer().getLayerName())){
+                cFound = true;
+                assertTrue(l instanceof FrozenLayer);
+            } else {
+                assertFalse(l instanceof FrozenLayer);
+            }
+
+            //Also check config:
+            assertEquals(Updater.ADAM, l.conf().getLayer().getUpdater());
+            assertEquals(2e-2, l.conf().getLayer().getLearningRate(), 1e-5);
+            assertEquals(Activation.TANH.getActivationFunction(), l.conf().getLayer().getActivationFn());
+        }
+        assertTrue(cFound);
+
     }
 }
