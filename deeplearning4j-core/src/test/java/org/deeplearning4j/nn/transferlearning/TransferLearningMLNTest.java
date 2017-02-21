@@ -112,7 +112,7 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
                 .fineTuneConfiguration(overallConf)
                 .nOutReplace(3, 2, WeightInit.XAVIER, WeightInit.XAVIER)
-                .nOutReplace(0, 3, WeightInit.XAVIER, WeightInit.DISTRIBUTION, null, new NormalDistribution(1, 1e-1))
+                .nOutReplace(0, 3, WeightInit.XAVIER, new NormalDistribution(1, 1e-1))
                 .build();
 
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(overallConf.list()

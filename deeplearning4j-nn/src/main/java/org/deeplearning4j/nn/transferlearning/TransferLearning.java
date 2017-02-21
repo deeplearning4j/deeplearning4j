@@ -94,14 +94,11 @@ public class TransferLearning {
          *
          * @param layerNum The index of the layer to change nOut of
          * @param nOut     Value of nOut to change to
-         * @param scheme   Weight Init scheme to use for params
+         * @param scheme   Weight Init scheme to use for params in layernum and layernum+1
          * @return
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme) {
-            editedLayers.add(layerNum);
-            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,null),new ImmutablePair<>(scheme,null));
-            editedLayersMap.put(layerNum,t);
-            return this;
+            return nOutReplace(layerNum,nOut,scheme,scheme,null,null);
         }
 
         /**
@@ -110,15 +107,12 @@ public class TransferLearning {
          *
          * @param layerNum The index of the layer to change nOut of
          * @param nOut     Value of nOut to change to
-         * @param scheme   Weight Init scheme to use for params
-         * @param dist     Distribution to use in conjunction with weight init
+         * @param dist     Distribution to use in conjunction with weight init DISTRIBUTION for params in layernum and layernum+1
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          * @return
          */
-        public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, Distribution dist) {
-            editedLayers.add(layerNum);
-            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,dist),new ImmutablePair<>(scheme,dist));
-            editedLayersMap.put(layerNum,t);
-            return this;
+        public Builder nOutReplace(int layerNum, int nOut, Distribution dist) {
+            return nOutReplace(layerNum,nOut,WeightInit.DISTRIBUTION,WeightInit.DISTRIBUTION,dist,dist);
         }
 
         /**
@@ -133,10 +127,7 @@ public class TransferLearning {
          * @return
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
-            editedLayers.add(layerNum);
-            ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,null),new ImmutablePair<>(schemeNext,null));
-            editedLayersMap.put(layerNum,t);
-            return this;
+            return nOutReplace(layerNum,nOut,scheme,schemeNext,null,null);
         }
 
         /**
@@ -146,13 +137,48 @@ public class TransferLearning {
          *
          * @param layerNum   The index of the layer to change nOut of
          * @param nOut       Value of nOut to change to
-         * @param scheme     Weight Init scheme to use for params in the layerNum
-         * @param schemeNext Weight Init scheme to use for params in the layerNum+1
-         * @param dist       Distribution to use for params in layerNum in conjunction with weight init scheme
-         * @param distNext   Distribution to use for params in layerNum+1 in conjunction with weight init scheme
+         * @param dist       Distribution to use for params in the layerNum
+         * @param distNext   Distribution to use for parmas in layerNum+1
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          * @return
          */
-        public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
+        public Builder nOutReplace(int layerNum, int nOut, Distribution dist, Distribution distNext) {
+            return nOutReplace(layerNum,nOut,WeightInit.DISTRIBUTION,WeightInit.DISTRIBUTION,dist,distNext);
+        }
+
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         *
+         * @param layerNum   The index of the layer to change nOut of
+         * @param nOut       Value of nOut to change to
+         * @param scheme     Weight init scheme to use for params in layerNum
+         * @param distNext   Distribution to use for parmas in layerNum+1
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @return
+         */
+        public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, Distribution distNext) {
+            return nOutReplace(layerNum,nOut,scheme,WeightInit.DISTRIBUTION,null,distNext);
+        }
+
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         *
+         * @param layerNum   The index of the layer to change nOut of
+         * @param nOut       Value of nOut to change to
+         * @param dist       Distribution to use for parmas in layerNum
+         * @param schemeNext Weight init scheme to use for params in layerNum+1
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         * @return
+         */
+        public Builder nOutReplace(int layerNum, int nOut, Distribution dist, WeightInit schemeNext) {
+            return nOutReplace(layerNum,nOut,WeightInit.DISTRIBUTION,schemeNext,dist,null);
+        }
+
+        private Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
             editedLayers.add(layerNum);
             ImmutableTriple<Integer,Pair<WeightInit,Distribution>,Pair<WeightInit,Distribution>> t = new ImmutableTriple(nOut,new ImmutablePair<>(scheme,dist),new ImmutablePair<>(schemeNext,distNext));
             editedLayersMap.put(layerNum,t);
