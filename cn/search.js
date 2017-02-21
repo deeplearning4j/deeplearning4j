@@ -393,4 +393,10 @@ var PAGES = [{
 "title": "分词",
 "description": "分词（tokenization）是将文本分解为单个词语的过程。词窗口也是由词例（token）组成的。",
 "tags": ["分词", "分词器", "token", "word2vec", "词语", "nlp", "自然语言", "词列", "token"]
+},
+{
+"url": "https://deeplearning4j.org/cn/customizelossfunction",
+"title": "在DL4J中自定义损失函数",
+"description": "若要定制一项损失函数，可以自行定义一项生成一个gradient()的优化函数。",
+"tags": ["loss function", "损失函数", "gradient"]
 }];
