@@ -393,6 +393,14 @@ public class TransferLearning {
             List<NeuralNetConfiguration> allConfs = new ArrayList<>();
             allConfs.addAll(editedConfs);
             allConfs.addAll(appendConfs);
+
+            //Set default layer names, if not set - as per NeuralNetConfiguration.ListBuilder.build()
+            for( int i=0; i<allConfs.size(); i++ ) {
+                if (allConfs.get(i).getLayer().getLayerName() == null) {
+                    allConfs.get(i).getLayer().setLayerName("layer" + i);
+                }
+            }
+
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)

@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.layers.convolution;
+package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
