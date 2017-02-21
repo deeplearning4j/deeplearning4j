@@ -77,6 +77,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
   <li>谷歌开发了<strong>TensorFlow</strong>来取代Theano，这两个学习库其实很相似。有一些Theano的开发者在谷歌继续参与了<strong>TensorFlow</strong>的开发，其中包括后来加入了OpenAI 的 Ian Goodfellow。</li>
   <li>目前<strong>TensorFlow</strong>还不支持所谓的&ldquo;内联（inline）&rdquo;矩阵运算，必须要复制矩阵才能对其进行运算。复制非常大的矩阵会导致成本全面偏高。TF运行所需的时间是最新深度学习工具的四倍。谷歌表示正在解决这一问题。</li>
   <li>和大多数深度学习框架一样，TensorFlow是用一个Python API编写的，通过C/C++引擎加速。这种解决方案并不适合Java和Scala用户群。</li>
+	<li>TensorFlow运行<a href="https://arxiv.org/pdf/1608.07249v7.pdf" target="_blank">明显比其他框架慢</a>（例如：CNTK 和 MxNet）</li>
   <li>TensorFlow的用途不止于深度学习。TensorFlow其实还有支持强化学习和其他算法的工具。</li>
   <li>谷歌似乎已承认TensorFlow的目标包括招募人才，让其研究者的代码可以共享，推动软件工程师以标准化方式应用深度学习，同时为谷歌云端服务带来更多业务――TensorFlow正是为该服务而优化的。</li>
   <li>TensorFlow不提供商业支持，而谷歌也不太可能会从事支持开源企业软件的业务。谷歌的角色是为研究者提供一种新工具。</li>
