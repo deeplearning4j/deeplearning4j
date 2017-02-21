@@ -61,7 +61,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
         @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
         @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling")
+        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
+        @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")
 })
 @Data
 @NoArgsConstructor
