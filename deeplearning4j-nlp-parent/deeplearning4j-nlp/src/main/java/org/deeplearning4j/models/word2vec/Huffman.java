@@ -66,8 +66,8 @@ public class Huffman {
     public void build() {
         buildTrigger = true;
         long[] count = new long[words.size() * 2 + 1];
-        int[] binary = new int[words.size() * 2 + 1];
-        int[] code = new int[MAX_CODE_LENGTH];
+        byte[] binary = new byte[words.size() * 2 + 1];
+        byte[] code = new byte[MAX_CODE_LENGTH];
         int[] point = new int[MAX_CODE_LENGTH];
         int[] parentNode = new int[words.size() * 2 + 1];
         int a = 0;
@@ -140,7 +140,7 @@ public class Huffman {
             } while(b != words.size() * 2 - 2 && i < 39);
 
 
-            words.get(a).setCodeLength(i);
+            words.get(a).setCodeLength((short) i);
             words.get(a).getPoints().add(words.size() - 2);
 
             for (b = 0; b < i; b++) {
@@ -168,7 +168,12 @@ public class Huffman {
         if (!buildTrigger) build();
 
         for (int a = 0; a < words.size(); a++) {
-            cache.addWordToIndex(a, words.get(a).getLabel());
+            if (words.get(a).getLabel() != null) {
+                cache.addWordToIndex(a, words.get(a).getLabel());
+            } else {
+                cache.addWordToIndex(a, words.get(a).getStorageId());
+            }
+
             words.get(a).setIndex(a);
         }
     }

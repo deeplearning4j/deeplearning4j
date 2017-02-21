@@ -85,7 +85,7 @@ public class VocabularyHolder implements Serializable {
         logger.info("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
     }
 
-    public static HuffmanNode buildNode(List<Integer> codes, List<Integer> points, int codeLen, int index) {
+    public static HuffmanNode buildNode(List<Byte> codes, List<Integer> points, int codeLen, int index) {
         return new HuffmanNode(listToArray(codes), listToArray(points, MAX_CODE_LENGTH), index, (byte) codeLen);
     }
 
@@ -165,18 +165,18 @@ public class VocabularyHolder implements Serializable {
      * @param codeLen
      * @return
      */
-    public static List<Integer> arrayToList(byte[] array, int codeLen) {
-        List<Integer> result = new ArrayList<>();
+    public static List<Byte> arrayToList(byte[] array, int codeLen) {
+        List<Byte> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
-            result.add((int) array[x]);
+            result.add(array[x]);
         }
         return result;
     }
 
-    public static byte[] listToArray(List<Integer> code) {
+    public static byte[] listToArray(List<Byte> code) {
         byte[] array = new byte[MAX_CODE_LENGTH];
         for (int x = 0; x < code.size(); x++) {
-            array[x]  = code.get(x).byteValue();
+            array[x]  = code.get(x);
         }
         return array;
     }

@@ -1035,12 +1035,12 @@ public class WordVectorSerializer {
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
             VocabWord word = vocab.wordFor(decodeB64(split[0]));
-            List<Integer> codes = new ArrayList<>();
+            List<Byte> codes = new ArrayList<>();
             for (int i = 1; i < split.length; i++ ){
-                codes.add(Integer.parseInt(split[i]));
+                codes.add(Byte.parseByte(split[i]));
             }
             word.setCodes(codes);
-            word.setCodeLength(codes.size());
+            word.setCodeLength((short) codes.size());
         }
         reader.close();
 
@@ -1976,15 +1976,15 @@ public class WordVectorSerializer {
      * @param codeLen
      * @return
      */
-    private static List<Integer> arrayToList(byte[] array, int codeLen) {
-        List<Integer> result = new ArrayList<>();
+    private static List<Byte> arrayToList(byte[] array, int codeLen) {
+        List<Byte> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
-            result.add((int) array[x]);
+            result.add(array[x]);
         }
         return result;
     }
 
-    private static byte[] listToArray(List<Integer> code) {
+    private static byte[] listToArray(List<Byte> code) {
         byte[] array = new byte[40];
         for (int x = 0; x < code.size(); x++) {
             array[x]  = code.get(x).byteValue();
