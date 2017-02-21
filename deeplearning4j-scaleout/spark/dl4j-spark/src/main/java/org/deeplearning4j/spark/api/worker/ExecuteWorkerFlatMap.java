@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.api.worker;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
@@ -25,11 +26,24 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
+public class ExecuteWorkerFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, R> {
+
+    public ExecuteWorkerFlatMap(TrainingWorker<R> worker) {
+        super(new ExecuteWorkerFlatMapAdapter<R>(worker));
+    }
+}
+
+/**
+ * A FlatMapFunction for executing training on DataSets.
+ * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
+ *
+ * @author Alex Black
+ */
+class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<DataSet>, R> {
 
     private final TrainingWorker<R> worker;
 
-    public ExecuteWorkerFlatMap(TrainingWorker<R> worker){
+    public ExecuteWorkerFlatMapAdapter(TrainingWorker<R> worker){
         this.worker = worker;
     }
 

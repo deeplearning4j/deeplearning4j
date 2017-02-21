@@ -26,6 +26,7 @@ import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingTrainer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -102,7 +103,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .updater(Updater.SGD).learningRate(10.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("identity").lossFunction(LossFunctions.LossFunction.MSE).build())
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .pretrain(false).backprop(true)
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

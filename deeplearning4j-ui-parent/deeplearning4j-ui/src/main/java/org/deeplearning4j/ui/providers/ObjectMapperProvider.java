@@ -3,8 +3,9 @@ package org.deeplearning4j.ui.providers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.serde.jackson.VectorDeSerializer;
-import org.nd4j.serde.jackson.VectorSerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArrayDeSerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArraySerializer;
+
 
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
@@ -23,8 +24,8 @@ public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
     public static SimpleModule module() {
         SimpleModule module = new SimpleModule("nd4j");
-        module.addDeserializer(INDArray.class, new VectorDeSerializer());
-        module.addSerializer(INDArray.class, new VectorSerializer());
+        module.addDeserializer(INDArray.class, new NDArrayDeSerializer());
+        module.addSerializer(INDArray.class, new NDArraySerializer());
         return module;
     }
 }

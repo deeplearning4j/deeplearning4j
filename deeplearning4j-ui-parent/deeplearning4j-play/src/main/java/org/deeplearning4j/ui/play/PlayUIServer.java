@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Sets;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.berkeley.Pair;
@@ -48,6 +49,7 @@ import static play.mvc.Results.ok;
  * @author Alex Black
  */
 @Slf4j
+@Data
 public class PlayUIServer extends UIServer {
 
     /**
@@ -84,10 +86,30 @@ public class PlayUIServer extends UIServer {
     private boolean enableRemote;
 
 
-    private int port;
+    @Parameter(names={"--uiPort"}
+            , description = "Whether to enable remote or not", arity = 1)
+    private int port = DEFAULT_UI_PORT;
 
     public PlayUIServer() {
+        this(DEFAULT_UI_PORT);
+    }
 
+    public PlayUIServer(int port) {
+        this.port = port;
+    }
+
+
+    public  void runMain(String[] args) {
+        JCommander jcmdr = new JCommander(this);
+
+        try {
+            jcmdr.parse(args);
+        } catch(ParameterException e) {
+            //User provides invalid input -> print the usage info
+            jcmdr.usage();
+            try{ Thread.sleep(500); } catch(Exception e2){ }
+            System.exit(1);
+        }
         RoutingDsl routingDsl = new RoutingDsl();
 
         //Set up index page and assets routing
@@ -156,16 +178,6 @@ public class PlayUIServer extends UIServer {
         }
 
         String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
-        int port = DEFAULT_UI_PORT;
-        if(portProperty != null){
-            try{
-                port = Integer.parseInt(portProperty);
-            }
-            catch(NumberFormatException e) {
-                log.warn("Could not parse {} property: NumberFormatException for property value \"{}\". Defaulting to port {}. Set property to 0 for random port",
-                        UI_SERVER_PORT_PROPERTY, portProperty, port);
-            }
-        }
 
         Router router = routingDsl.build();
         server = Server.forRouter(router, Mode.DEV, port);
@@ -183,24 +195,8 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
-    }
-
-
-    public  void runMain(String[] args) {
-        JCommander jcmdr = new JCommander(this);
-
-        try {
-            jcmdr.parse(args);
-        } catch(ParameterException e) {
-            //User provides invalid input -> print the usage info
-            jcmdr.usage();
-            try{ Thread.sleep(500); } catch(Exception e2){ }
-            System.exit(1);
-        }
-
-        PlayUIServer server = new PlayUIServer();
         if(enableRemote)
-            server.enableRemoteListener();
+            enableRemoteListener();
     }
 
 
@@ -291,6 +287,8 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void enableRemoteListener() {
+        if(remoteReceiverModule == null)
+            remoteReceiverModule = new RemoteReceiverModule();
         if(remoteReceiverModule.isEnabled()) return;
         enableRemoteListener(new InMemoryStatsStorage(), true);
     }
@@ -299,7 +297,7 @@ public class PlayUIServer extends UIServer {
     public void enableRemoteListener(StatsStorageRouter statsStorage, boolean attach) {
         remoteReceiverModule.setEnabled(true);
         remoteReceiverModule.setStatsStorage(statsStorage);
-        if(attach && statsStorage instanceof StatsStorage){
+        if(attach && statsStorage instanceof StatsStorage) {
             attach((StatsStorage)statsStorage);
         }
     }
@@ -316,7 +314,8 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void stop() {
-        server.stop();
+        if(server != null)
+            server.stop();
     }
 
 
@@ -341,7 +340,7 @@ public class PlayUIServer extends UIServer {
                 events.add(sse);
                 eventQueue.drainTo(events); //Non-blocking
 
-                for(UIModule m : uiModules){
+                for(UIModule m : uiModules) {
 
                     List<String> callbackTypes = m.getCallbackTypeIDs();
                     List<StatsStorageEvent> out = new ArrayList<>();

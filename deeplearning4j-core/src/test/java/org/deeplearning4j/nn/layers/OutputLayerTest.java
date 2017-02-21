@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,7 +69,7 @@ public class OutputLayerTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
@@ -104,7 +105,7 @@ public class OutputLayerTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer
                         .Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(4).nOut(3)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .weightInit(WeightInit.XAVIER).build()).build();
 
 		int numParams = conf.getLayer().initializer().numParams(conf);
@@ -137,7 +138,7 @@ public class OutputLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .updater(Updater.ADAGRAD)
                         .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .activation("softmax").build())
+                        .activation(Activation.SOFTMAX).build())
                 .build();
 
 		int numParams = conf.getLayer().initializer().numParams(conf);
@@ -197,7 +198,7 @@ public class OutputLayerTest {
                         .nIn(6).nOut(2)
                         .weightInit(WeightInit.ZERO)
                         .updater(Updater.SGD)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .build())
                 .build();
@@ -223,7 +224,7 @@ public class OutputLayerTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
@@ -260,7 +261,7 @@ public class OutputLayerTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.ZERO)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
@@ -297,9 +298,9 @@ public class OutputLayerTest {
 	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-	        		.activation("tanh").updater(Updater.NONE).build())
+				.activation(Activation.TANH).updater(Updater.NONE).build())
 	        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
-	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+				.activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 	        		.updater(Updater.NONE).build())
 	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
@@ -327,9 +328,9 @@ public class OutputLayerTest {
 	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-	        		.activation("tanh").updater(Updater.NONE).build())
+				.activation(Activation.TANH).updater(Updater.NONE).build())
 	        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
-	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+				.activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 	        		.updater(Updater.NONE).build())
 	        .build();
@@ -389,9 +390,9 @@ public class OutputLayerTest {
     	        .list()
     	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-    	        		.activation("tanh").updater(Updater.NONE).build())
+				.activation(Activation.TANH).updater(Updater.NONE).build())
     	        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
-    	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+				.activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
     	        		.updater(Updater.NONE).build())
     	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
@@ -409,9 +410,9 @@ public class OutputLayerTest {
     	        .list()
     	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-    	        		.activation("tanh").updater(Updater.NONE).build())
+				.activation(Activation.TANH).updater(Updater.NONE).build())
     	        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
-    	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+				.activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
     	        		.updater(Updater.NONE).build())
     	        .pretrain(false).backprop(true)

@@ -22,6 +22,7 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -441,10 +442,10 @@ public class TestDecayPolicies {
                 .list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(4).nOut(3)
-                        .activation("sigmoid")
+                        .activation(Activation.SIGMOID)
                         .build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("tanh")
+                        .activation(Activation.TANH)
                         .nIn(3).nOut(3)
                         .build())
                 .pretrain(false).backprop(true)

@@ -346,10 +346,17 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public void addToken(T element) {
         if (!vocabulary.containsKey(element.getStorageId())) {
-            vocabulary.put(element.getStorageId(), element);
+            synchronized (this) {
+                if (!vocabulary.containsKey(element.getStorageId())) {
+                    vocabulary.put(element.getStorageId(), element);
 
-            if (element.getLabel() != null)
-                extendedVocabulary.put(element.getLabel(), element);
+                    if (element.getLabel() != null)
+                        extendedVocabulary.put(element.getLabel(), element);
+                } else {
+                    vocabulary.get(element.getStorageId()).incrementSequencesCount(element.getSequencesCount());
+                    vocabulary.get(element.getStorageId()).increaseElementFrequency((int) element.getElementFrequency());
+                }
+            }
         } else {
             vocabulary.get(element.getStorageId()).incrementSequencesCount(element.getSequencesCount());
             vocabulary.get(element.getStorageId()).increaseElementFrequency((int) element.getElementFrequency());

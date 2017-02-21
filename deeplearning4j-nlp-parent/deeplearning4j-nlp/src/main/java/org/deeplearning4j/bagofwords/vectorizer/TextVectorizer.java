@@ -27,6 +27,7 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * Vectorizes text
@@ -92,6 +93,13 @@ public interface TextVectorizer extends Vectorizer {
      * @return {@link INDArray}
      */
     INDArray transform(String text);
+
+    /**
+     * Transforms the matrix
+     * @param tokens
+     * @return
+     */
+    INDArray transform(List<String> tokens);
 
     /**
      * Returns the number of words encountered so far

@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.api.worker;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
@@ -18,12 +19,26 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
-    private final FlatMapFunction<Iterator<MultiDataSet>, R> workerFlatMap;
+public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
+
+    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker) {
+        super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker));
+    }
+}
+
+/**
+ * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
+ * that is specified as a String
+ * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
+ *
+ * @author Alex Black
+ */
+class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
+    private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
     private final int maxDataSetObjects;
 
-    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker){
-        this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMap<>(worker);
+    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker){
+        this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
         //Only pass on the required number, not all of them (to avoid async preloading data that won't be used)

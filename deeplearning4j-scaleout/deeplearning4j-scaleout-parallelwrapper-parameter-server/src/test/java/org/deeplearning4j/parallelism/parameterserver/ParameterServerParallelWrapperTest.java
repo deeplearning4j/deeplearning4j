@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -54,7 +55,7 @@ public class ParameterServerParallelWrapperTest {
                         .nIn(nChannels)
                         .stride(1, 1)
                         .nOut(20)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
@@ -64,17 +65,17 @@ public class ParameterServerParallelWrapperTest {
                         //Note that nIn needed be specified in later layers
                         .stride(1, 1)
                         .nOut(50)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
                         .stride(2,2)
                         .build())
-                .layer(4, new DenseLayer.Builder().activation("relu")
+                .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
                         .nOut(500).build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build()).setInputType(InputType.convolutionalFlat(28,28,1))
                 .backprop(true).pretrain(false);
 

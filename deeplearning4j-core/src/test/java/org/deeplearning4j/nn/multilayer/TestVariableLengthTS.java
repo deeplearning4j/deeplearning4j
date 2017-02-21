@@ -48,7 +48,7 @@ public class TestVariableLengthTS {
                     .learningRate(0.1)
                     .seed(12345)
                     .list()
-                    .layer(0, new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
+                    .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                     .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build())
                     .build();
 
@@ -136,9 +136,9 @@ public class TestVariableLengthTS {
                     .learningRate(0.1)
                     .seed(12345)
                     .list()
-                    .layer(0, new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(1, new DenseLayer.Builder().activation("tanh").nIn(2).nOut(2).build())
-                    .layer(2, new GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
+                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                    .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                    .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                     .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).build())
                     .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                     .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
@@ -274,7 +274,7 @@ public class TestVariableLengthTS {
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
+                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(5).nOut(nOut)
                                         .weightInit(WeightInit.ZERO).updater(Updater.NONE).build())
                                 .pretrain(false).backprop(true)
                                 .build();
@@ -333,7 +333,7 @@ public class TestVariableLengthTS {
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nIn(5).nOut(nOut)
+                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(5).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
                                 .pretrain(false).backprop(true)
                                 .build();
@@ -346,7 +346,7 @@ public class TestVariableLengthTS {
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(5).nOut(nOut)
+                                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(5).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
                                 .pretrain(false).backprop(true)
                                 .build();

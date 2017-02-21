@@ -45,7 +45,7 @@ public class TestMiscFunctions extends BaseSparkTest {
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation("softmax").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX).build())
                 .build();
 
 
@@ -96,7 +96,7 @@ public class TestMiscFunctions extends BaseSparkTest {
                 .addInputs("in1", "in2")
                 .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in1")
                 .addLayer("1", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in2")
-                .addLayer("2", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(6).nOut(3).activation("softmax").build(), "0", "1")
+                .addLayer("2", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(6).nOut(3).activation(Activation.SOFTMAX).build(), "0", "1")
                 .setOutputs("2")
                 .build();
 

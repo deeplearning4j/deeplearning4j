@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -48,7 +49,7 @@ public class TestSparkLayer extends BaseSparkTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax").build())
+                        .activation(Activation.SOFTMAX).build())
                 .build();
 
 

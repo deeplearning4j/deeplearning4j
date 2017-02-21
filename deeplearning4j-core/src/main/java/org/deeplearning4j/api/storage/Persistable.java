@@ -11,12 +11,28 @@ import java.nio.ByteBuffer;
  */
 public interface Persistable extends Serializable {
 
+    /**
+     * Get the session id
+     * @return
+     */
     String getSessionID();
 
+    /**
+     * Get the type id
+     * @return
+     */
     String getTypeID();
 
+    /**
+     * Get the worker id
+     * @return
+     */
     String getWorkerID();
 
+    /**
+     * Get when this was created.
+     * @return
+     */
     long getTimeStamp();
 
 
@@ -31,14 +47,37 @@ public interface Persistable extends Serializable {
 
     byte[] encode();
 
+    /**
+     * Encode this persistable in to a {@link ByteBuffer}
+     * @param buffer
+     */
     void encode(ByteBuffer buffer);
 
+    /**
+     * Encode this persistable in to an output stream
+     * @param outputStream
+     * @throws IOException
+     */
     void encode(OutputStream outputStream) throws IOException;
 
+    /**
+     * Decode the content of the given
+     * byte array in to this persistable
+     * @param decode
+     */
     void decode(byte[] decode);
 
+    /**
+     * Decode from the given {@link ByteBuffer}
+     * @param buffer
+     */
     void decode(ByteBuffer buffer);
 
+    /**
+     * Decode from the given input stream
+     * @param inputStream
+     * @throws IOException
+     */
     void decode(InputStream inputStream) throws IOException;
 
 }

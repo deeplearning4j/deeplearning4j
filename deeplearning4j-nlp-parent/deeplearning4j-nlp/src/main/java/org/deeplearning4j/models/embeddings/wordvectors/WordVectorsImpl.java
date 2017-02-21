@@ -46,6 +46,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
+    private static final long serialVersionUID = 78249242142L;
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
     @Getter protected int minWordFrequency = 5;
@@ -88,7 +89,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public final static String DEFAULT_UNK = "UNK";
     @Getter @Setter private String UNK = DEFAULT_UNK;
 
-    @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+    @Getter protected Collection<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for

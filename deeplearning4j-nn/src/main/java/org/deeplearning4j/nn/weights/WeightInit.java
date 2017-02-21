@@ -47,11 +47,5 @@ package org.deeplearning4j.nn.weights;
 public enum WeightInit {
     DISTRIBUTION, ZERO,
     SIGMOID_UNIFORM, UNIFORM,
-    XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM,
-    @Deprecated
-    VI,     //Use XAVIER_UNIFORM
-    @Deprecated
-    SIZE,   //Use SIGMOID_UNIFORM
-    @Deprecated
-    NORMALIZED
+    XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM
 }

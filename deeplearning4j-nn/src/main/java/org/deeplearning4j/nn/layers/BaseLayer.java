@@ -428,7 +428,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+    	if(!conf.isUseRegularization() ) return 0.0;
 
         //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
         double l2Sum = 0.0;
@@ -445,13 +445,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
+    	if(!conf.isUseRegularization() ) return 0.0;
         double l1Sum = 0.0;
         if(conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0){
-            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
         }
         if(conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0){
-            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
+            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
         }
         return l1Sum;
     }

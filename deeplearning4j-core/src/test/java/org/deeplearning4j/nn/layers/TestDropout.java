@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -111,8 +112,8 @@ public class TestDropout {
                 .learningRate(1e-9)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10,11))   //Weight init to cause sigmoid saturation
                 .list()
-                .layer(0, new DenseLayer.Builder().activation("sigmoid").nIn(nIn).nOut(layerSize).build())
-                .layer(1, new DenseLayer.Builder().activation("sigmoid").nIn(layerSize).nOut(layerSize).build())
+                .layer(0, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(layerSize).build())
+                .layer(1, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(layerSize).nOut(layerSize).build())
                 .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                         .nIn(layerSize).nOut(nOut).weightInit(WeightInit.XAVIER).build())
                 .backprop(true).pretrain(false)
