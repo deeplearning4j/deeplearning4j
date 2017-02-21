@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -9,8 +10,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
@@ -19,6 +18,7 @@ import java.util.Map;
  * @author susaneraly
  */
 
+@Slf4j
 public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     private LayerT insideLayer;
@@ -27,8 +27,6 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
-
-    protected static final Logger log = LoggerFactory.getLogger(FrozenLayer.class);
 
     public FrozenLayer(LayerT insideLayer) {
         if (insideLayer instanceof OutputLayer) {
@@ -99,55 +97,37 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return insideLayer.preOutput(x,TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(TrainingMode training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return insideLayer.activate(TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return insideLayer.activate(input,TrainingMode.TEST);
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return preOutput(x,TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(boolean training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return insideLayer.activate(false);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        if (!logTestMode) {
-            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
+        logTestMode(training);
         return insideLayer.activate(input,false);
     }
 
@@ -410,6 +390,28 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         return insideLayer.feedForwardMaskArray(maskArray,currentMaskState,minibatchSize);
+    }
+
+    public void logTestMode(boolean training) {
+        if (!training) return;
+        if (logTestMode) {
+            return;
+        }
+        else {
+            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
+    }
+
+    public void logTestMode(TrainingMode training) {
+        if (training.equals(TrainingMode.TEST)) return;
+        if (logTestMode) {
+            return;
+        }
+        else {
+            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
     }
 }
 
