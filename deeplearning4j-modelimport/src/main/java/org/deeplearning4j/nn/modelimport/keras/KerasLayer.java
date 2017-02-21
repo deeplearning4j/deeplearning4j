@@ -50,12 +50,14 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_DENSE = "Dense";
     public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense";
     public static final String LAYER_CLASS_NAME_LSTM = "LSTM";
+    public static final String LAYER_CLASS_NAME_CONVOLUTION_1D = "Convolution1D";
     public static final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
+    public static final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
     public static final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
+    public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
     public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
     public static final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     public static final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
-    public static final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
@@ -241,10 +243,13 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_FLATTEN:
                 layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
                 break;
-            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
             case LAYER_CLASS_NAME_ZERO_PADDING_2D:
-            case LAYER_CLASS_NAME_ZERO_PADDING_3D:
-                throw new UnsupportedKerasConfigurationException("Zero padding layers currently not supported. Consider using \"border_mode='same'\" instead");
+                layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
+                break;
+            case LAYER_CLASS_NAME_CONVOLUTION_1D:
+            case LAYER_CLASS_NAME_MAX_POOLING_1D:
+            case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
+            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
             default:
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
         }
@@ -1147,7 +1152,7 @@ public class KerasLayer {
      * @return
      * @throws InvalidKerasConfigurationException
      */
-    public int[] getPaddingFromConfig(Map<String,Object> layerConfig)
+    public int[] getPaddingFromBorderModeConfig(Map<String,Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] padding = null;
