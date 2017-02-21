@@ -138,7 +138,7 @@ To synthesize restricted Boltzmann machines in one diagram, here is a symmetrica
 
 ![Alt text](./img/sym_bipartite_graph_RBM.png)
 
-For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+For those interested in studying the structure of RBMs in greater depth, they are one type of undirectional graphical model, also called [markov random field](https://en.wikipedia.org/wiki/Markov_random_field).
 
 ### <a name="code">Code Sample: Initiating an RBM on Iris With DL4J</a>
 
