@@ -158,7 +158,7 @@ public class RBMIrisExample {
 
 <p><h2><a name="params">参数与变量k</a></h2></p>
 <p>变量k是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
-<p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。典型的值为1。</p>
+<p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。k的值通常为1。</p>
 <p>在上文的示例中，可以看到如何用更为通用的<code>MultiLayerConfiguration</code>来创建多个RBM层。每个点后面都是一项调节深度神经网络结构和性能产生的额外参数。大多数参数的定义都可在本网站内找到。</p>
 <p><strong>weightInit</strong>或<code>weightInitialization</code>表示用于放大或削弱进入每个节点的输入的系数的初始值。合理的初始权重可以节约大量定型时间，因为网络定型无非是通过调整系数来传输最佳的信号，进而让网络能进行准确的分类。</p>
 <p><strong>activationFunction</strong>指一组确定节点信号传输阈值的函数，高于阈值则让信号通过节点，反之则阻拦信号。如果节点让信号通过，则该节点被&ldquo;激活&rdquo;。</p>
