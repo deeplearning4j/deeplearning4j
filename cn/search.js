@@ -399,4 +399,10 @@ var PAGES = [{
 "title": "在DL4J中自定义损失函数",
 "description": "若要定制一项损失函数，可以自行定义一项生成一个gradient()的优化函数。",
 "tags": ["loss function", "损失函数", "gradient"]
+},
+{
+"url": "https://deeplearning4j.org/cn/deepbeliefnetwork",
+"title": "深度置信网络与MNIST数据集教程",
+"description": "深度置信网络（DBN）可以定义为一系列堆叠起来的受限玻尔兹曼机（RBM，介绍见此处），每个RBM层都与其前后的层进行通信。单个层中的节点之间不会横向通信。",
+"tags": ["mnist", "深度置信网络", "dbm", "rbm", "deepbelief", "超参数", "hyperparameter", "mnistDataSetIterator", "DataSetIterator "]
 }];
