@@ -5567,17 +5567,8 @@ public class Nd4j {
                 return;
             }
 
-            if (!System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
-                    && !System.getProperty("os.arch").toLowerCase().startsWith("arm")
-                    && !System.getProperty("sun.arch.data.model").equals("64")) {
-                System.out.println();
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println();
-                System.out.println("                 Unfortunately you can't use DL4j/ND4j on 32-bit x86 JVM");
-                System.out.println("                 Please, consider running this on 64-bit JVM instead");
-                System.out.println();
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println();
+            if (!isSupportedPlatform()) {
+                showAttractiveMessage(getMessageForUnsupportedPlatform());
                 return;
             }
 
@@ -5590,14 +5581,7 @@ public class Nd4j {
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
 
             if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
-                System.out.println();
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println();
-                System.out.println("                 Half-precision data type isn't support for nd4j-native");
-                System.out.println("                 Please, consider using FLOAT or DOUBLE data type instead");
-                System.out.println();
-                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println();
+                showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
             compressDebug =  Boolean.parseBoolean(props.getProperty(COMPRESSION_DEBUG, "false"));
@@ -5663,16 +5647,7 @@ public class Nd4j {
             if (fallback != null && !fallback.isEmpty()) {
                 if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
                     fallbackMode.set(true);
-
-                    System.out.println();
-                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    System.out.println();
-                    System.out.println("                 ND4J_FALLBACK environment variable is detected!");
-                    System.out.println("                 Performance will be slightly reduced");
-                    System.out.println();
-                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    System.out.println();
-
+                    showAttractiveMessage(getMessageForFallback());
                 } else fallbackMode.set(false);
             } else fallbackMode.set(false);
 
@@ -5681,6 +5656,48 @@ public class Nd4j {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private static boolean isSupportedPlatform() {
+        return (System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
+                || System.getProperty("os.arch").toLowerCase().startsWith("arm")
+                || System.getProperty("sun.arch.data.model").equals("64"));
+    }
+
+    private static void showAttractiveMessage(String... strings) {
+        System.out.println(attract(strings));
+    }
+
+    private static String attract(String... strings) {
+        String delimiter = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+        String shift = "                 ";
+        StringBuilder sb = new StringBuilder().append(delimiter).append("\n").append("\n");
+        for (String s : strings) {
+            sb.append(shift).append(s).append("\n");
+        }
+        sb.append("\n").append(delimiter).append("\n");
+        return sb.toString();
+    }
+
+    private static String[] getMessageForUnsupportedPlatform() {
+        return new String[]{
+            "Unfortunately you can't use DL4j/ND4j on 32-bit x86 JVM",
+            "Please, consider running this on 64-bit JVM instead"
+        };
+    }
+
+    private static String[] getMessageForFallback() {
+        return new String[]{
+            "ND4J_FALLBACK environment variable is detected!",
+            "Performance will be slightly reduced"
+        };
+    }
+
+    private String[] getMessageForNativeHalfPrecision() {
+        return new String[]{
+            "Half-precision data type isn't support for nd4j-native",
+            "Please, consider using FLOAT or DOUBLE data type instead"
+        };
     }
 
     /**
