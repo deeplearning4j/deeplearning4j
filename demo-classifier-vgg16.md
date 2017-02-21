@@ -1,5 +1,5 @@
 ---
-title: Demo: VGG-16 Classifier
+title: Demo - VGG-16 Classifier
 layout: demo_vgg
 ---
 
