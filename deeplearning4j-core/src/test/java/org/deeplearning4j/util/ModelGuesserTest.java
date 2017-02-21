@@ -89,7 +89,7 @@ public class ModelGuesserTest {
         Object conf = ModelGuesser.loadConfigGuess(configFilename);
         assertTrue(conf instanceof MultiLayerConfiguration);
 
-        ClassPathResource sequenceResource = new ClassPathResource("keras/simple/mlp_fapi_multiloss_config.json");
+        ClassPathResource sequenceResource = new ClassPathResource("/keras/simple/mlp_fapi_multiloss_config.json");
         File f2 = getTempFile(sequenceResource);
         Object sequenceConf = ModelGuesser.loadConfigGuess(f2.getAbsolutePath());
         assertTrue(sequenceConf instanceof ComputationGraphConfiguration);

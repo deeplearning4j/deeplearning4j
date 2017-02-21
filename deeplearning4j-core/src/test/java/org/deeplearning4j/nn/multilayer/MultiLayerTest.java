@@ -873,7 +873,7 @@ public class MultiLayerTest {
 
 
     @Test
-    public void testIterationCountAndPresistence() throws IOException {
+    public void testIterationCountAndPersistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -907,5 +907,102 @@ public class MultiLayerTest {
         ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(bais, true);
         assertEquals(7, net.getLayerWiseConfigurations().getIterationCount());
+    }
+
+
+    @Test
+    public void testBiasL1L2(){
+
+
+        Nd4j.getRandom().setSeed(123);
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .weightInit(WeightInit.XAVIER).activation(Activation.TANH)
+                .seed(123)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build())
+                .backprop(true).pretrain(false).build();
+
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .regularization(true)
+                .l1Bias(0.1)
+                .l2Bias(0.2)
+                .iterations(1)
+                .weightInit(WeightInit.XAVIER).activation(Activation.TANH)
+                .seed(123)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10).build())
+                .backprop(true).pretrain(false).build();
+
+        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+        net1.init();
+
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        assertEquals(0.1, net2.getLayer(0).conf().getLayer().getL1Bias(), 1e-6);
+        assertEquals(0.2, net2.getLayer(0).conf().getLayer().getL2Bias(), 1e-6);
+
+        INDArray features = Nd4j.rand(10,10);
+        INDArray labels = Nd4j.rand(10,10);
+
+        net2.setParams(net1.params().dup());
+
+        net1.setInput(features);
+        net1.setLabels(labels);
+        net2.setInput(features);
+        net2.setLabels(labels);
+
+        net1.computeGradientAndScore();
+        net2.computeGradientAndScore();
+
+        double l1 = net1.calcL1(true);
+        double l2 = net1.calcL2(true);
+        assertEquals(0.0, l1, 0.0);
+        assertEquals(0.0, l2, 0.0);
+
+        l1 = net2.calcL1(true);
+        l2 = net2.calcL2(true);
+        assertEquals(0.0, l1, 0.0);
+        assertEquals(0.0, l2, 0.0);
+
+
+        double s1 = net1.score();
+        double s2 = net2.score();
+        assertEquals(s1, s2, 1e-8);     //Biases initialized to 0 -> should initially have same score
+
+        for( int i=0; i<10; i++ ){
+            net1.fit(features, labels);
+        }
+
+        net2.setParams(net1.params().dup());
+        net1.computeGradientAndScore();
+        net2.computeGradientAndScore();
+
+        l1 = net1.calcL1(true);
+        l2 = net1.calcL2(true);
+        assertEquals(0.0, l1, 0.0);
+        assertEquals(0.0, l2, 0.0);
+
+        l1 = net2.calcL1(true);
+        l2 = net2.calcL2(true);
+        assertTrue(l1 > 0.0);
+        assertTrue(l2 > 0.0);
+
+        s1 = net1.score();
+        s2 = net2.score();
+
+        assertNotEquals(s1, s2, 1e-6);  //Scores should differ due to bias l1/l2
+
+        for( int i=0; i<2; i++ ){
+            assertEquals(0.0, net1.getLayer(i).calcL1(true), 0.0);
+            assertEquals(0.0, net1.getLayer(i).calcL2(true), 0.0);
+            assertTrue(net2.getLayer(i).calcL1(true) > 0.0);
+            assertTrue(net2.getLayer(i).calcL2(true) > 0.0);
+        }
     }
 }

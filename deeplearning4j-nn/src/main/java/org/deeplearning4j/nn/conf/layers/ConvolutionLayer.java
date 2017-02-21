@@ -9,10 +9,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -123,7 +125,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l1;
             case ConvolutionParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -135,7 +137,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l2;
             case ConvolutionParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -160,7 +162,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-//        private Convolution.Type convolutionType = Convolution.Type.VALID;
         private ConvolutionMode convolutionMode = null;
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
@@ -190,7 +191,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Deprecated
         public Builder convolutionType(Convolution.Type convolutionType) {
-//            this.convolutionType = convolutionType;
             return this;
         }
 
@@ -236,6 +236,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         @SuppressWarnings("unchecked")
         public ConvolutionLayer build() {
+            ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
+
             return new ConvolutionLayer(this);
         }
     }
