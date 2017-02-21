@@ -459,14 +459,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * @deprecated As of 0.6.0
-         */
-        @Deprecated
-        public GraphBuilder redistributeParams(boolean redistributeParams) {
-            return this;
-        }
-
-        /**
          * Specify the processors for a given layer
          * These are used at each layer for doing things like normalization and shaping of input.<br>
          * <b>Note</b>: preprocessors can also be defined using the {@link #addLayer(String, Layer, InputPreProcessor, String...)} method.

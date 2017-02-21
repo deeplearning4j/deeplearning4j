@@ -332,9 +332,14 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public void addToken(T element) {
         if (!vocabulary.containsKey(element.getLabel())) {
-            vocabulary.put(element.getLabel(), element);
-
-            // TODO: remove this stupid int limitation
+            synchronized (this) {
+                if (!vocabulary.containsKey(element.getLabel())) {
+                    vocabulary.put(element.getLabel(), element);
+                } else {
+                    vocabulary.get(element.getLabel()).incrementSequencesCount(element.getSequencesCount());
+                    vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());
+                }
+            }
         } else {
             vocabulary.get(element.getLabel()).incrementSequencesCount(element.getSequencesCount());
             vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());

@@ -255,7 +255,7 @@ public class TestGraphNodes {
         assertEquals(in2, out.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
         assertEquals(in3, out.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
 
-        unstack.setErrors(out);
+        unstack.setEpsilon(out);
         Pair<Gradient,INDArray[]> b = unstack.doBackward(false);
 
         assertEquals(in1, b.getSecond()[0]);
@@ -281,9 +281,9 @@ public class TestGraphNodes {
         assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()), out1);
         assertEquals(in.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()), out2);
 
-        unstack0.setErrors(out0);
-        unstack1.setErrors(out1);
-        unstack2.setErrors(out2);
+        unstack0.setEpsilon(out0);
+        unstack1.setEpsilon(out1);
+        unstack2.setEpsilon(out2);
         INDArray backward0 = unstack0.doBackward(false).getSecond()[0];
         INDArray backward1 = unstack1.doBackward(false).getSecond()[0];
         INDArray backward2 = unstack2.doBackward(false).getSecond()[0];
@@ -315,9 +315,9 @@ public class TestGraphNodes {
         assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out1);
         assertEquals(in.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out2);
 
-        unstack0.setErrors(out0);
-        unstack1.setErrors(out1);
-        unstack2.setErrors(out2);
+        unstack0.setEpsilon(out0);
+        unstack1.setEpsilon(out1);
+        unstack2.setEpsilon(out2);
         backward0 = unstack0.doBackward(false).getSecond()[0];
         backward1 = unstack1.doBackward(false).getSecond()[0];
         backward2 = unstack2.doBackward(false).getSecond()[0];
@@ -370,7 +370,7 @@ public class TestGraphNodes {
 
 
 
-        l2.setErrors(epsilon);
+        l2.setEpsilon(epsilon);
         Pair<Gradient,INDArray[]> p = l2.doBackward(false);
         assertEquals(dLda, p.getSecond()[0]);
         assertEquals(dLdb, p.getSecond()[1]);

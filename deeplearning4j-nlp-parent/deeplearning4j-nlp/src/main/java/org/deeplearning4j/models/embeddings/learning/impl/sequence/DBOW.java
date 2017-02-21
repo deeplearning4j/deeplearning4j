@@ -98,10 +98,12 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         //final T word = sequence.getElements().get(i);
         List<T> sentence = skipGram.applySubsampling(sequence,nextRandom).getElements();
 
+
+        if (sequence.getSequenceLabel() == null)
+            return;
+
         List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
-
-        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if(sentence.isEmpty() || labels.isEmpty())
             return;
@@ -150,13 +152,14 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
+        finish();
 
         return ret;
     }
 
     @Override
     public void finish() {
-        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch().size() >= configuration.getBatchSize()){
+        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch().size() > 0){
             Nd4j.getExecutioner().exec(skipGram.getBatch());
             skipGram.getBatch().clear();
         }

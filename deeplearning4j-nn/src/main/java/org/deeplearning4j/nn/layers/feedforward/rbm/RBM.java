@@ -96,6 +96,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * <p>
      * Other insights:
      * CD - k involves keeping the first k samples of a gibbs sampling of the model.
+     * @deprecated No longer used; use fit methods in MultiLayerNetwork
      */
     @Deprecated
     public void contrastiveDivergence() {
@@ -456,6 +457,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     }
 
 
+    /**
+     * @deprecated No longer used
+     */
     @Deprecated
     @Override
     public void iterate(INDArray input) {

@@ -15,6 +15,10 @@ import java.util.List;
 @Data
 @ToString(exclude="referencedContent")
 public class LabelledDocument {
+
+    // optional field
+    private String id;
+
     // initial text representation of current document
     private String content;
 
