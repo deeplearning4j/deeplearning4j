@@ -12,6 +12,13 @@
     <img src="/assets/themes/thedocs/img/loading.svg" alt="loading...">
   </div>
 
+  <!-- Error -->
+  <div id="demo-error" class="container text-center demo-view">
+    <h1>Image Classifier Demo</h1>
+    <h3>An error occurred.</h3>
+    <a class="btn btn-white btn-xl btn-outline" href="." role="button"> <i class="fa fa-refresh"></i> RETRY </a>
+  </div>
+
   <!-- Upload -->
   <div id="demo-upload" class="container text-center demo-view" style="display: none;">
     <h1>Image Classifier Demo</h1>
@@ -28,7 +35,7 @@
   <!-- Results -->
   <div id="demo-results" class="container text-center demo-view" style="display: none;">
     <h3>VGG-16 found the following results:</h3>
-    <a class="btn btn-white btn-xl btn-outline" href="quickstart" role="button"> <i class="fa fa-camera"></i> CHOOSE ANOTHER </a>
+    <a class="btn btn-white btn-xl btn-outline" href="." role="button"> <i class="fa fa-camera"></i> TRY AGAIN </a>
   </div>
 <!-- END Banner -->
 </header>
@@ -67,10 +74,22 @@
     $('#fileupload').fileupload({
       url: url,
       dataType: 'multipart/form-data',
-      done: function (e, data) {
-        console.log(data);
-        $('.demo-view').hide();
-        $('#demo-results').show();
+      add: function (e, data) {
+        var jqXHR = data.submit()
+            .success(function (result, textStatus, jqXHR) {
+              console.log('Classification success');
+              $('.demo-view').hide();
+              $('#demo-results').show();
+
+            })
+            .error(function (jqXHR, textStatus, errorThrown) {
+              console.log('Classification error');
+              $('.demo-view').hide();
+              $('#demo-error').show();
+            })
+            .complete(function (result, textStatus, jqXHR) {
+              console.log('Classification complete');
+            });
       },
       progressall: function (e, data) {
         $('.demo-view').hide();
