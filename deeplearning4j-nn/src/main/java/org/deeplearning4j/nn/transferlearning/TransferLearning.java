@@ -32,7 +32,9 @@ public class TransferLearning {
         private MultiLayerNetwork origModel;
 
         private MultiLayerNetwork editedModel;
+        @Deprecated
         private NeuralNetConfiguration.Builder globalConfig;
+        private FineTuneConfiguration finetuneConfiguration;
         private int frozenTill = -1;
         private int popN = 0;
         private boolean prepDone = false;
@@ -43,12 +45,19 @@ public class TransferLearning {
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
         private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
 
+        @Deprecated
         private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
+        @Deprecated
         private boolean pretrain = false;
+        @Deprecated
         private boolean backprop = true;
+        @Deprecated
         private BackpropType backpropType = BackpropType.Standard;
+        @Deprecated
         private int tbpttFwdLength = 20;
+        @Deprecated
         private int tbpttBackLength = 20;
+
         private InputType inputType;
 
         public Builder(MultiLayerNetwork origModel) {
@@ -61,6 +70,11 @@ public class TransferLearning {
             this.tbpttBackLength = origConf.getTbpttBackLength();
         }
 
+        public Builder fineTuneConfiguration(FineTuneConfiguration finetuneConfiguration){
+            this.finetuneConfiguration = finetuneConfiguration;
+            return this;
+        }
+
         /**
          * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
          * Note that this will clear and override all other learning related settings in non frozen layers
@@ -68,16 +82,19 @@ public class TransferLearning {
          * @param newDefaultConfBuilder
          * @return
          */
+        @Deprecated
         public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
             this.globalConfig = newDefaultConfBuilder;
             return this;
         }
 
+        @Deprecated
         public Builder setTbpttFwdLength(int l) {
             this.tbpttFwdLength = l;
             return this;
         }
 
+        @Deprecated
         public Builder setTbpttBackLength(int l) {
             this.tbpttBackLength = l;
             return this;
@@ -226,15 +243,21 @@ public class TransferLearning {
             if (!prepDone) {
                 doPrep();
             }
-            // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get the NeuralNetConfig
+//            // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get the NeuralNetConfig
+//            //instantiate dummy layer to get the params
+//            NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
+//            Layer layerImpl = layerConf.getLayer();
+
+            // Use the fineTune config to create the required NeuralNetConfiguration + Layer instances
             //instantiate dummy layer to get the params
-            NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
-            Layer layerImpl = layerConf.getLayer();
-            int numParams = layerImpl.initializer().numParams(layerConf);
+            NeuralNetConfiguration layerConf = finetuneConfiguration.toNeuralNetConfiguration();
+            layerConf.setLayer(layer);
+
+            int numParams = layer.initializer().numParams(layerConf);
             INDArray params;
             if (numParams > 0) {
                 params = Nd4j.create(1, numParams);
-                org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true);
                 appendParams.add(someLayer.params());
                 appendConfs.add(someLayer.conf());
             }
@@ -278,13 +301,15 @@ public class TransferLearning {
                 }
                 editedModel.setLayers(layers);
             }
+
+
             return editedModel;
         }
 
         private void doPrep() {
 
-            if (globalConfig == null) {
-                throw new IllegalArgumentException("FineTrain config must be set with .fineTuneConfiguration");
+            if (finetuneConfiguration == null) {
+                throw new IllegalArgumentException("FineTune config must be set with .fineTuneConfiguration");
             }
 
             //first set finetune configs on all layers in model
@@ -329,11 +354,17 @@ public class TransferLearning {
         private void fineTuneConfigurationBuild() {
 
             for (int i = 0; i < origConf.getConfs().size(); i++) {
+                /*
                 NeuralNetConfiguration layerConf = origConf.getConf(i);
                 Layer layerConfImpl = layerConf.getLayer().clone();
                 //clear the learning related params for all layers in the origConf and set to defaults
                 layerConfImpl.resetLayerDefaultConfig();
                 editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
+                */
+
+                NeuralNetConfiguration layerConf = origConf.getConf(i).clone();
+                finetuneConfiguration.applyToNeuralNetConfiguration(layerConf);
+                editedConfs.add(layerConf);
             }
         }
 
@@ -401,11 +432,16 @@ public class TransferLearning {
                 }
             }
 
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
-                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                    .tBPTTBackwardLength(tbpttBackLength)
+//            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
+//                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+//                    .tBPTTBackwardLength(tbpttBackLength)
+//                    .setInputType(this.inputType)
+//                    .confs(allConfs).build();
+            MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
                     .setInputType(this.inputType)
                     .confs(allConfs).build();
+            finetuneConfiguration.applyToMultiLayerConfiguration(conf);
+            return conf;
         }
     }
 
