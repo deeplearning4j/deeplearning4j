@@ -16,7 +16,7 @@
   <div id="demo-error" class="container text-center demo-view" style="display: none;">
     <h1>Image Classifier Demo</h1>
     <h3>An error occurred.</h3>
-    <a class="btn btn-white btn-xl btn-outline" href="." role="button"> <i class="fa fa-refresh"></i> RETRY </a>
+    <a class="btn btn-white btn-xl btn-outline" href="javascript:window.location.reload(true);" role="button"> <i class="fa fa-refresh"></i> RETRY </a>
   </div>
 
   <!-- Upload -->
@@ -35,7 +35,7 @@
   <!-- Results -->
   <div id="demo-results" class="container text-center demo-view" style="display: none;">
     <h3>VGG-16 found the following results:</h3>
-    <a class="btn btn-white btn-xl btn-outline" href="." role="button"> <i class="fa fa-camera"></i> TRY AGAIN </a>
+    <a class="btn btn-white btn-xl btn-outline" href="javascript:window.location.reload(true);" role="button"> <i class="fa fa-camera"></i> TRY AGAIN </a>
   </div>
 <!-- END Banner -->
 </header>
@@ -96,7 +96,7 @@
       $('#demo-results').show();
     });
 
-    $fu.bind('fileuploadfail', function() {
+    $fu.bind('fileuploadchunkfail', function() {
       console.log('Classification error');
       $('.demo-view').hide();
       $('#demo-error').show();
