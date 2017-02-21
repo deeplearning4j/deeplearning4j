@@ -1,12 +1,12 @@
 ---
-title: Customized Loss Functions
+title: 自定义损失函数
 layout: cn-default
 ---
 
-# Customized Loss Functions With DL4J
+# 在DL4J中自定义损失函数
 
-*This documentation page is a WIP.*
+*本页内容将继续更新。*
 
-To customize a loss function, define an optimization function that generates a `gradient()`.
+若要定制一项损失函数，可以自行定义一项生成一个`gradient()`的优化函数。
 
-The relevant code can be found [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/optimize/solver/TestOptimizers.java#L702). 
+相关代码见[此处](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/optimize/solver/TestOptimizers.java#L702)。 
