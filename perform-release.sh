@@ -27,7 +27,10 @@ mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -
 source change-scala-versions.sh 2.10
 source change-spark-versions.sh 1
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+
+source change-spark-versions.sh 1
 source change-scala-versions.sh 2.11
+source change-cuda-versions.sh 8.0
 git commit -a -m "Update to version $RELEASE_VERSION"
 git tag -a -m "datavec-$RELEASE_VERSION" "datavec-$RELEASE_VERSION"
 
