@@ -52,7 +52,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     /*
             Reserved for Joint/Distributed vocabs mechanics
     */
-    @Getter @Setter protected Long storageId;
+    @Setter protected Long storageId;
 
     /**
      * This method should return string representation of this SequenceElement, so it can be used for
@@ -330,6 +330,12 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return
      */
     public abstract String toJSON();
+
+    public Long getStorageId() {
+        if (storageId == null)
+            storageId = SequenceElement.getLongHash(this.getLabel());
+        return storageId;
+    }
 
     public static ObjectMapper mapper() {
         /*
