@@ -106,7 +106,6 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
         preloadedDataSet = load(iter.next());
         totalOutcomes = preloadedDataSet.getLabels().size(1);
         inputColumns = preloadedDataSet.getFeatureMatrix().size(1);
-        batch = preloadedDataSet.numExamples();
     }
 
 
