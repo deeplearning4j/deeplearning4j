@@ -674,24 +674,26 @@ public class TransferLearningMLNTest {
                 .fineTuneConfiguration(overallConf)
                 .setFeatureExtractor(1)
                 .removeLayersFromOutput(5)
-                .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20*10).nOut(300).build())
+                .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20).nOut(300).build())
                 .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(300).nOut(150).build())
                 .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(150).nOut(50).build())
                 .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
+                .setInputPreProcessor(2,new CnnToFeedForwardPreProcessor(12,12,20))
                 .build();
 
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(equivalentConf.list()
-                .layer(0, new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20*10)
+                .layer(0, new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20)
                         .nOut(300).build())
                 .layer(1, new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(150).build())
+                        .nIn(300).nOut(150).build())
                 .layer(2, new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(50).build())
+                        .nIn(150).nOut(50).build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(10)
+                        .nIn(50).nOut(10)
                         .activation(Activation.SOFTMAX)
                         .build())
+                .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(12, 12, 20))
                 .backprop(true).pretrain(false).build());
         notFrozen.init();
 
