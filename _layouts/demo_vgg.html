@@ -34,7 +34,7 @@
 
   <!-- Results -->
   <div id="demo-results" class="container text-center demo-view" style="display: none;">
-    <h3>VGG-16 found the following results:</h3>
+    <h3>On CPU, VGG-16 found in <span id="results-feedforward"></span>:</h3>
     <p id="results-data"></p>
     <a class="btn btn-white btn-xl btn-outline" href="javascript:;" role="button" id="demo-raw"> VIEW RESPONSE </a>
     <a class="btn btn-white btn-xl btn-outline" href="javascript:window.location.reload(true);" role="button"> TRY AGAIN </a>
@@ -100,6 +100,8 @@
       for(var i = 0; i < predictions.length; i++) {
         $('#results-data').append('<span class="label label-default">'+predictions[i].label+' '+Math.round(predictions[i].prediction*10)/10+'%</span> &nbsp;');
       }
+
+      $('#results-feedforward').text(results.performance.feedforward+"ms");
 
       // show the results
       $('.demo-view').hide();
