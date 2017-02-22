@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.graph;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -57,6 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Alex Black
  */
+@Slf4j
 public class SparkComputationGraph extends SparkListenable {
 
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
