@@ -48,6 +48,7 @@ public class GlobalPoolingLayer extends Layer {
         this.poolingDimensions = builder.poolingDimensions;
         this.collapseDimensions = builder.collapseDimensions;
         this.pnorm = builder.pnorm;
+        this.layerName = builder.layerName;
     }
 
 
