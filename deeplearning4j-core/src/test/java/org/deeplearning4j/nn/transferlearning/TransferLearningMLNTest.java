@@ -92,8 +92,8 @@ public class TransferLearningMLNTest {
         assertEquals(expectedModel.params(), modelNow.params());
 
         //Check json - will fail since momentum is set in the config but is unused in fit...
-//        MultiLayerConfiguration expectedConf = expectedModel.getLayerWiseConfigurations();
-//        assertEquals(expectedConf.toJson(), modelNow.getLayerWiseConfigurations().toJson());
+        MultiLayerConfiguration expectedConf = expectedModel.getLayerWiseConfigurations();
+        assertEquals(expectedConf.toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
         //Check params after fit
         modelNow.fit(randomData);
@@ -151,7 +151,7 @@ public class TransferLearningMLNTest {
         modelExpectedArch.init();
 
         //Will fail - expected because of dist and weight init changes
-        //assertEquals(modelNow.getLayerWiseConfigurations().toJson(),modelExpectedArch.getLayerWiseConfigurations().toJson());
+//        assertEquals(modelExpectedArch.getLayerWiseConfigurations().toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
         assertEquals(modelNow.getLayerWiseConfigurations().getConf(0).getLayer().getWeightInit(),WeightInit.XAVIER);
         assertEquals(modelNow.getLayerWiseConfigurations().getConf(0).getLayer().getDist(),null);
@@ -377,14 +377,6 @@ public class TransferLearningMLNTest {
 
         MultiLayerNetwork modelNow =
                 new TransferLearning.Builder(modelToTweak)
-//                        .fineTuneConfiguration(new NeuralNetConfiguration.Builder()
-//                                .seed(12345)
-//                                .regularization(true).l2(0.001) //l2 regularization on all layers
-//                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-//                                .updater(Updater.ADAGRAD)
-//                                .weightInit(WeightInit.RELU)
-//                                .iterations(1)
-//                                .learningRate(0.4))
                         .fineTuneConfiguration(new FineTuneConfiguration.Builder()
                                 .seed(12345)
                                 .regularization(true).l2(0.001) //l2 regularization on all layers

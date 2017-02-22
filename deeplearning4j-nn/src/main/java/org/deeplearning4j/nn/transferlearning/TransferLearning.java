@@ -498,6 +498,7 @@ public class TransferLearning {
         }
 
         private GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
+            initBuilderIfReq();
 
             if (origGraph.getVertex(layerName).hasLayer()) {
 
@@ -554,6 +555,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder removeVertexKeepConnections(String outputName) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.removeVertex(outputName,false);
             }
@@ -564,6 +567,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder removeVertexAndConnections(String vertexName) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.removeVertex(vertexName,true);
             }
@@ -574,6 +579,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addLayer(layerName, layer, null, layerInputs);
                 editedVertices.add(layerName);
@@ -585,6 +592,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
                 editedVertices.add(layerName);
@@ -596,6 +605,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addVertex(vertexName,vertex,vertexInputs);
                 editedVertices.add(vertexName);
@@ -616,12 +627,16 @@ public class TransferLearning {
             return this;
         }
 
-        public ComputationGraph build() {
+        private void initBuilderIfReq(){
             if(editedConfigBuilder == null){
                 //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
                 //So: create an empty finetune config, which won't override anything
                 fineTuneConfiguration(new FineTuneConfiguration.Builder().build());
             }
+        }
+
+        public ComputationGraph build() {
+            initBuilderIfReq();
 
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
 

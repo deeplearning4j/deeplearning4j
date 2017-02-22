@@ -109,7 +109,11 @@ public class FineTuneConfiguration {
     public void applyToNeuralNetConfiguration(NeuralNetConfiguration nnc){
 
         Layer l = nnc.getLayer();
+        Updater originalUpdater = null;
+        WeightInit origWeightInit = null;
         if(l != null) {
+            originalUpdater = l.getUpdater();
+            origWeightInit = l.getWeightInit();
             if (activationFn != null) l.setActivationFn(activationFn);
             if (weightInit != null) l.setWeightInit(weightInit);
             if (biasInit != null) l.setBiasInit(biasInit);
@@ -152,11 +156,44 @@ public class FineTuneConfiguration {
         if(lrPolicySteps != null) nnc.setLrPolicySteps(lrPolicySteps);
         if(lrPolicyPower != null) nnc.setLrPolicyPower(lrPolicyPower);
 
-        if(l instanceof ConvolutionLayer){
+        if(convolutionMode != null && l instanceof ConvolutionLayer){
             ((ConvolutionLayer)l).setConvolutionMode(convolutionMode);
         }
-        if(l instanceof SubsamplingLayer){
+        if(convolutionMode != null && l instanceof SubsamplingLayer){
             ((SubsamplingLayer)l).setConvolutionMode(convolutionMode);
+        }
+
+        //Check the updater config. If we change updaters, we want to remove the old config to avoid warnings
+        if(l != null && updater != null && originalUpdater != null && updater != originalUpdater){
+            switch (originalUpdater){
+                case ADAM:
+                    if(adamMeanDecay == null) l.setAdamMeanDecay(Double.NaN);
+                    if(adamVarDecay == null) l.setAdamVarDecay(Double.NaN);
+                    break;
+                case ADADELTA:
+                    if(rho == null) l.setRho(Double.NaN);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case NESTEROVS:
+                    if(momentum == null) l.setMomentum(Double.NaN);
+                    if(momentumSchedule == null) l.setMomentumSchedule(null);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case ADAGRAD:
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case RMSPROP:
+                    if(rmsDecay == null) l.setRmsDecay(Double.NaN);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+
+                //Other cases: no changes required
+            }
+        }
+
+        //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
+        if(l != null && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null && weightInit != WeightInit.DISTRIBUTION ){
+            l.setDist(null);
         }
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay

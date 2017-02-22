@@ -158,7 +158,7 @@ public class TransferLearningComplex {
 
 
     @Test
-    public void testMerge1(){
+    public void testMergeAndFreeze(){
         // in1 -> A -> B -> merge, in2 -> C -> merge -> D -> out
         //Goal here: test a number of things...
         // (a) Ensure that freezing C doesn't impact A and B. Only C should be frozen in this config

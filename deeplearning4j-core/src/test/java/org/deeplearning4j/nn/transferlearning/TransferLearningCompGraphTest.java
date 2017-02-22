@@ -284,8 +284,8 @@ public class TransferLearningCompGraphTest {
         INDArray asFrozenFeatures = modelToFineTune.feedForward(randomData.getFeatures(),false).get("layer1"); //10x20x12x12
 
         //this will override the learning configuration set in the model
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).build();
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(456).learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(456).learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).build();
 
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
                 .fineTuneConfiguration(fineTuneConfiguration)
@@ -342,6 +342,7 @@ public class TransferLearningCompGraphTest {
         modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
 
         assertEquals(modelExpectedArch.getConfiguration().toJson(), modelNow.getConfiguration().toJson());
+
         modelNow.setParams(modelExpectedArch.params());
         int i = 0;
         while (i<5) {
