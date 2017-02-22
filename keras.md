@@ -19,9 +19,9 @@ That's important chiefly because different frameworks solve different problems, 
 
 Deeplearning4j is also certified on Cloudera's CDH and Hortonworks's HDP distributions of the Hadoop ecosystem. For deep-learning practitioners seeking to take their neural-net models and put them to work in the the production stack of large organizations, model import from Keras to Deeplearning4j may help. 
 
-Not every architecture supported by other deep learning frameworks is currently supported, but we're working to expand the number of nets that can be imported from Keras to DL4J. 
+Not every architecture supported by Keras and other deep learning frameworks is supported yet, but we're working to expand the number of nets that can be imported from Keras to DL4J. 
 
-Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
+Python programmers interested in Scala, which offers a Python-like interface, may be interested in [ScalNet, Deeplearning4j's Scala API](https://github.com/deeplearning4j/scalnet). 
 
 For more information, please see this page on [model import](https://deeplearning4j.org/model-import-keras).
 
@@ -40,7 +40,7 @@ The main Kitematic dashboard will look like this.
 
 ![kitematic dashboard](./img/kitematic-dashboard.png)
 
-Click on "My Images" on the upper right. One of your images then should be keras-dl4j.
+Click on "My Images" on the upper right. One of your images then should be `keras-dl4j`.
 
 ![kitematic my images](./img/kitematic-my-images.png)
 
@@ -58,7 +58,7 @@ Once you paste your token in the field, you should see this.
 
 Click on "New" on the upper right and select Python 2 under notebooks, which will open up a new notebook in a new tab. 
 
-Click on the Reuters MLP example at the bottom of the file list. Copy the code and paste it into the new Python 2 notebook. In that notebook, on the toolbar, select the "Run Cell" button with the arrow pointing right.
+Click on the Reuters MLP example at the bottom of the file list. Copy the Keras code and paste it into the new Python 2 notebook. In that notebook, on the toolbar, select the "Run Cell" button with the arrow pointing right.
 
 ![python notebook](./img/python-notebook.png)
 
@@ -66,8 +66,11 @@ That's going to start printing out results and logs at the bottom of the noteboo
 
 ![python notebook results](./img/python-notebook-results.png)
 
+While the results may say "loading Theano", we are actually hijacking Keras methods to make them run on the JVM with Py4J. 
+
 You may run out of memory as the neural net trains locally. If that is the case, go to the menu bar of your laptop screen, click on the Docker whale icon, and select Preferences/Advanced. There, you can increase the amount of memory allocated to Docker. We suggest 8GB if you can spare them. 
 
 ![docker provisioning](./img/docker-provisioning.jpg)
 
 If you do adjust the amount of memory allocated to Docker, you will need to restart it by clicking on the button on the lower right.
+
