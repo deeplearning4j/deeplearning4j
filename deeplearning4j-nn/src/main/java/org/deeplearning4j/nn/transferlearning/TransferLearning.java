@@ -625,6 +625,12 @@ public class TransferLearning {
         }
 
         public ComputationGraph build() {
+            if(editedConfigBuilder == null){
+                //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
+                //So: create an empty finetune config, which won't override anything
+                fineTuneConfiguration(new FineTuneConfiguration.Builder().build());
+            }
+
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
 
 
