@@ -396,20 +396,22 @@ public class KerasModel {
                 inboundTypeList.add(this.outputTypes.get(layerName));
             InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
             inboundTypeList.toArray(inboundTypeArray);
-            InputPreProcessor preprocessor = layer.getInputPreprocessor(inputTypes);
+            InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
 
             if (layer.usesRegularization())
                 modelBuilder.setUseRegularization(true);
 
             if (layer.isLayer()) {
                 /* Add DL4J layer. */
-                preprocessors.put(layer.getLayerName(), preprocessor);
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
                 /* Add DL4J vertex. */
-                preprocessors.put(layer.getLayerName(), preprocessor);
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getVertex() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output vertex " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
