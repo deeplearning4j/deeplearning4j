@@ -1517,7 +1517,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, null, result, result.lengthLong(), n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -1534,7 +1534,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, result.lengthLong(), n));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -1552,7 +1552,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray muli(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.lengthLong(), n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -1571,7 +1571,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, result.lengthLong(), n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
 
@@ -1587,7 +1587,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray addi(Number n, INDArray result) {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.lengthLong(), n));
         return this;
     }
 
