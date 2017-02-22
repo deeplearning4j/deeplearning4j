@@ -37,11 +37,11 @@ public class DropOutInverted extends BaseRandomOp {
     }
 
     public DropOutInverted(@NonNull INDArray x, double p) {
-        this(x, x, p, x.length());
+        this(x, x, p, x.lengthLong());
     }
 
     public DropOutInverted(@NonNull INDArray x, @NonNull INDArray z, double p) {
-        this(x, z, p, x.length());
+        this(x, z, p, x.lengthLong());
     }
 
     public DropOutInverted(@NonNull INDArray x, @NonNull INDArray z, double p, long n) {

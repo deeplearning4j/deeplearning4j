@@ -22,7 +22,7 @@ public class BernoulliDistribution extends BaseRandomOp {
 
      */
     public BernoulliDistribution(@NonNull INDArray z, double prob) {
-        init(null, null, z, z.length());
+        init(null, null, z, z.lengthLong());
         this.prob = prob;
         this.extraArgs = new Object[]{this.prob};
     }

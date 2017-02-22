@@ -25,7 +25,7 @@ public class Linspace extends BaseRandomOp {
     public Linspace(@NonNull INDArray z, double from, double to) {
         this.from = from;
         this.to = to;
-        init(null, null, z, z.length());
+        init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
     }
 

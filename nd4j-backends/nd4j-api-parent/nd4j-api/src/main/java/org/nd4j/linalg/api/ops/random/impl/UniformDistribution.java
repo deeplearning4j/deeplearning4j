@@ -22,7 +22,7 @@ public class UniformDistribution extends BaseRandomOp {
      * @param to
      */
     public UniformDistribution(@NonNull INDArray z, double from, double to) {
-        init(null, null, z, z.length());
+        init(null, null, z, z.lengthLong());
         this.from = from;
         this.to = to;
         this.extraArgs = new Object[]{this.from, this.to};
