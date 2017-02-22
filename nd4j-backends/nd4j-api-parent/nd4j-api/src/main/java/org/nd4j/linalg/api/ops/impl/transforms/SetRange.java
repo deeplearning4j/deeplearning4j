@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,11 +35,10 @@ public class SetRange extends BaseTransformOp {
 
     private double min, max;
 
-    public SetRange() {
-    }
+    public SetRange() {}
 
     public SetRange(INDArray x) {
-        this(x,0,1);
+        this(x, 0, 1);
     }
 
     public SetRange(INDArray x, INDArray z, double min, double max) {
@@ -125,13 +124,14 @@ public class SetRange extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(op(origin.realComponent().doubleValue()), op(origin.imaginaryComponent().doubleValue()));
+        return Nd4j.createComplexNumber(op(origin.realComponent().doubleValue()),
+                        op(origin.imaginaryComponent().doubleValue()));
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{min, max};
+        this.extraArgs = new Object[] {min, max};
     }
 
     @Override
@@ -139,9 +139,11 @@ public class SetRange extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SetRange(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
+            return new SetRange(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
         else
-            return new SetRange(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
+            return new SetRange(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length(), min, max);
     }
 
     @Override
@@ -149,9 +151,11 @@ public class SetRange extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SetRange(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
+            return new SetRange(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
         else
-            return new SetRange(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), min, max);
+            return new SetRange(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length(), min, max);
 
     }
 }

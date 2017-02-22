@@ -9,8 +9,7 @@ import java.io.IOException;
  * Created by susaneraly on 6/18/16.
  */
 public class NdArrayJSONWriter {
-    private NdArrayJSONWriter() {
-    }
+    private NdArrayJSONWriter() {}
 
     /**
      *

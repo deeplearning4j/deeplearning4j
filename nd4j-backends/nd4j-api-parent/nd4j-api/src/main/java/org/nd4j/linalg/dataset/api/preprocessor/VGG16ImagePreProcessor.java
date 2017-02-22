@@ -20,7 +20,8 @@ import java.io.IOException;
 @Slf4j
 public class VGG16ImagePreProcessor implements DataNormalization {
 
-    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[] {123.68,116.779,103.939});
+    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[] {123.68, 116.779, 103.939});
+
     /**
      * Fit a dataset (only compute
      * based on the statistics from this dataset0
@@ -51,7 +52,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     }
 
     public void preProcess(INDArray features) {
-        Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(features.dup(),VGG_MEAN_OFFSET_BGR,features,1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(features.dup(), VGG_MEAN_OFFSET_BGR, features, 1));
     }
 
     /**
@@ -74,7 +75,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     }
 
     @Override
-    public void transformLabel(INDArray label){
+    public void transformLabel(INDArray label) {
         //No op
     }
 
@@ -90,7 +91,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
 
     @Override
     public void revertFeatures(INDArray features) {
-        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features.dup(),VGG_MEAN_OFFSET_BGR,features,1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features.dup(), VGG_MEAN_OFFSET_BGR, features, 1));
     }
 
     @Override
@@ -110,7 +111,7 @@ public class VGG16ImagePreProcessor implements DataNormalization {
 
     @Override
     public void fitLabel(boolean fitLabels) {
-        if(fitLabels){
+        if (fitLabels) {
             log.warn("Labels fitting not currently supported for ImagePreProcessingScaler. Labels will not be modified");
         }
     }

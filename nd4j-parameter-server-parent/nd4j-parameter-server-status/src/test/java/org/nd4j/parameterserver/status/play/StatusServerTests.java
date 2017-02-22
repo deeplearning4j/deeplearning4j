@@ -10,7 +10,7 @@ public class StatusServerTests {
 
     @Test
     public void runStatusServer() {
-        Server server = StatusServer.startServer(new InMemoryStatusStorage(),65236);
+        Server server = StatusServer.startServer(new InMemoryStatusStorage(), 65236);
         server.stop();
     }
 

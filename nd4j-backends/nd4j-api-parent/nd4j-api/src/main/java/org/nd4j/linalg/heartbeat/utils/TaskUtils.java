@@ -9,8 +9,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
  * @author raver119@gmail.com
  */
 public class TaskUtils {
-    private TaskUtils() {
-    }
+    private TaskUtils() {}
 
     public static Task buildTask(INDArray[] array, INDArray[] labels) {
         Task task = new Task();

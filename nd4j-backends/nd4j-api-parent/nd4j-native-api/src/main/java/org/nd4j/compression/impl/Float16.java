@@ -13,7 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author raver119@
  */
-public class Float16 extends AbstractCompressor  {
+public class Float16 extends AbstractCompressor {
 
     @Override
     public String getDescriptor() {
@@ -32,19 +32,22 @@ public class Float16 extends AbstractCompressor  {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.FLOAT16, buffer, getGlobalTypeEx());
+        DataBuffer result =
+                        Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.FLOAT16, buffer, getGlobalTypeEx());
 
         return result;
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer, DataBuffer.TypeEx.FLOAT16);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer,
+                        DataBuffer.TypeEx.FLOAT16);
         return result;
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
 
         BytePointer ptr = new BytePointer(length * 2);
         CompressionDescriptor descriptor = new CompressionDescriptor();

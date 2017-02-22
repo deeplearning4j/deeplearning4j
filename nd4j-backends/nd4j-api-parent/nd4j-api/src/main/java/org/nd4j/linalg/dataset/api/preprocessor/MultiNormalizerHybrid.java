@@ -30,10 +30,14 @@ import java.util.Map;
 public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDataNormalization, Serializable {
     private Map<Integer, NormalizerStats> inputStats;
     private Map<Integer, NormalizerStats> outputStats;
-    @Getter private NormalizerStrategy globalInputStrategy;
-    @Getter private NormalizerStrategy globalOutputStrategy;
-    @Getter private Map<Integer, NormalizerStrategy> perInputStrategies = new HashMap<>();
-    @Getter private Map<Integer, NormalizerStrategy> perOutputStrategies = new HashMap<>();
+    @Getter
+    private NormalizerStrategy globalInputStrategy;
+    @Getter
+    private NormalizerStrategy globalOutputStrategy;
+    @Getter
+    private Map<Integer, NormalizerStrategy> perInputStrategies = new HashMap<>();
+    @Getter
+    private Map<Integer, NormalizerStrategy> perOutputStrategies = new HashMap<>();
 
     /**
      * Apply standardization to all inputs, except the ones individually configured
@@ -246,7 +250,7 @@ public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDa
     }
 
     private void fitPartial(MultiDataSet dataSet, Map<Integer, NormalizerStats.Builder> inputStatsBuilders,
-                            Map<Integer, NormalizerStats.Builder> outputStatsBuilders) {
+                    Map<Integer, NormalizerStats.Builder> outputStatsBuilders) {
         ensureStatsBuilders(inputStatsBuilders, globalInputStrategy, perInputStrategies, dataSet.numFeatureArrays());
         ensureStatsBuilders(outputStatsBuilders, globalOutputStrategy, perOutputStrategies, dataSet.numLabelsArrays());
 
@@ -259,7 +263,7 @@ public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDa
     }
 
     private void ensureStatsBuilders(Map<Integer, NormalizerStats.Builder> builders, NormalizerStrategy globalStrategy,
-                                     Map<Integer, NormalizerStrategy> perArrayStrategies, int numArrays) {
+                    Map<Integer, NormalizerStrategy> perArrayStrategies, int numArrays) {
         if (builders.isEmpty()) {
             for (int i = 0; i < numArrays; i++) {
                 NormalizerStrategy strategy = getStrategy(globalStrategy, perArrayStrategies, i);
@@ -290,34 +294,20 @@ public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDa
 
     @Override
     public void preProcess(@NonNull MultiDataSet data) {
-        preProcess(
-            data.getFeatures(),
-            data.getFeaturesMaskArrays(),
-            globalInputStrategy,
-            perInputStrategies,
-            getInputStats()
-        );
-        preProcess(
-            data.getLabels(),
-            data.getLabelsMaskArrays(),
-            globalOutputStrategy,
-            perOutputStrategies,
-            getOutputStats()
-        );
+        preProcess(data.getFeatures(), data.getFeaturesMaskArrays(), globalInputStrategy, perInputStrategies,
+                        getInputStats());
+        preProcess(data.getLabels(), data.getLabelsMaskArrays(), globalOutputStrategy, perOutputStrategies,
+                        getOutputStats());
     }
 
     private void preProcess(INDArray[] arrays, INDArray[] masks, NormalizerStrategy globalStrategy,
-                            Map<Integer, NormalizerStrategy> perArrayStrategy, Map<Integer, NormalizerStats> stats) {
+                    Map<Integer, NormalizerStrategy> perArrayStrategy, Map<Integer, NormalizerStats> stats) {
 
         for (int i = 0; i < arrays.length; i++) {
             NormalizerStrategy strategy = getStrategy(globalStrategy, perArrayStrategy, i);
             if (strategy != null) {
                 //noinspection unchecked
-                strategy.preProcess(
-                    arrays[i],
-                    masks == null ? null : masks[i],
-                    stats.get(i)
-                );
+                strategy.preProcess(arrays[i], masks == null ? null : masks[i], stats.get(i));
             }
         }
     }
@@ -412,7 +402,7 @@ public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDa
     }
 
     private NormalizerStrategy getStrategy(NormalizerStrategy globalStrategy,
-                                           Map<Integer, NormalizerStrategy> perArrayStrategy, int index) {
+                    Map<Integer, NormalizerStrategy> perArrayStrategy, int index) {
         NormalizerStrategy strategy = globalStrategy;
         if (perArrayStrategy.containsKey(index)) {
             strategy = perArrayStrategy.get(index);

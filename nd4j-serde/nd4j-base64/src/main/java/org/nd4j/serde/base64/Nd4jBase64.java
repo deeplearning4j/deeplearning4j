@@ -13,8 +13,7 @@ import java.io.*;
  */
 public class Nd4jBase64 {
 
-    private Nd4jBase64() {
-    }
+    private Nd4jBase64() {}
 
     /**
      * Returns true if the base64
@@ -37,7 +36,7 @@ public class Nd4jBase64 {
     public static INDArray[] arraysFromBase64(String base64) throws IOException {
         String[] base64Arr = base64.split("\t");
         INDArray[] ret = new INDArray[base64Arr.length];
-        for(int i = 0; i < base64Arr.length; i++) {
+        for (int i = 0; i < base64Arr.length; i++) {
             byte[] decode = Base64.decodeBase64(base64Arr[i]);
             ByteArrayInputStream bis = new ByteArrayInputStream(decode);
             DataInputStream dis = new DataInputStream(bis);
@@ -57,10 +56,10 @@ public class Nd4jBase64 {
     public static String arraysToBase64(INDArray[] arrays) throws IOException {
         StringBuilder sb = new StringBuilder();
         //tab separate the outputs for de serialization
-        for(INDArray outputArr : arrays) {
+        for (INDArray outputArr : arrays) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
-            Nd4j.write(outputArr,dos);
+            Nd4j.write(outputArr, dos);
             String base64 = Base64.encodeBase64String(bos.toByteArray());
             sb.append(base64);
             sb.append("\t");
@@ -80,7 +79,7 @@ public class Nd4jBase64 {
     public static String base64String(INDArray arr) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(arr,dos);
+        Nd4j.write(arr, dos);
         String base64 = Base64.encodeBase64String(bos.toByteArray());
         return base64;
     }
@@ -93,7 +92,7 @@ public class Nd4jBase64 {
      * @throws IOException
      */
     public static INDArray fromBase64(String base64) throws IOException {
-        byte[] arr  = Base64.decodeBase64(base64);
+        byte[] arr = Base64.decodeBase64(base64);
         ByteArrayInputStream bis = new ByteArrayInputStream(arr);
         DataInputStream dis = new DataInputStream(bis);
         INDArray predict = Nd4j.read(dis);

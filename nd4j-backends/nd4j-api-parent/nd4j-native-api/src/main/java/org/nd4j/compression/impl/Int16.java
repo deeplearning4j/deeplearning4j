@@ -44,12 +44,14 @@ public class Int16 extends AbstractCompressor {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer, DataBuffer.TypeEx.INT16);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer,
+                        DataBuffer.TypeEx.INT16);
         return result;
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
 
         BytePointer ptr = new BytePointer(length * 2);
         CompressionDescriptor descriptor = new CompressionDescriptor();

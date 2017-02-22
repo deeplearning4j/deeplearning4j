@@ -11,6 +11,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  */
 public class DefaultRetransmissionHandler implements RetransmissionHandler {
     private VoidConfiguration configuration;
+
     @Override
     public void init(@NonNull VoidConfiguration configuration, Transport transport) {
         this.configuration = configuration;
@@ -19,8 +20,9 @@ public class DefaultRetransmissionHandler implements RetransmissionHandler {
     @Override
     public void onBackPressure() {
         try {
-             Thread.sleep(2000);
-        } catch (Exception e) { }
+            Thread.sleep(2000);
+        } catch (Exception e) {
+        }
     }
 
     @Override

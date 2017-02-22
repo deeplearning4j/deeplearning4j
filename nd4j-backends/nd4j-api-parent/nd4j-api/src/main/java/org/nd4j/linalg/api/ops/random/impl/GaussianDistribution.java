@@ -13,7 +13,7 @@ public class GaussianDistribution extends BaseRandomOp {
     private double mean;
     private double stddev;
 
-    public GaussianDistribution(){
+    public GaussianDistribution() {
         super();
     }
 
@@ -27,7 +27,7 @@ public class GaussianDistribution extends BaseRandomOp {
         init(z, z, z, z.lengthLong());
         this.mean = mean;
         this.stddev = stddev;
-        this.extraArgs = new Object[]{this.mean, this.stddev};
+        this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
 
@@ -41,7 +41,7 @@ public class GaussianDistribution extends BaseRandomOp {
         init(z, means, z, z.lengthLong());
         this.mean = 0.0;
         this.stddev = stddev;
-        this.extraArgs = new Object[]{this.mean, this.stddev};
+        this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
     /**

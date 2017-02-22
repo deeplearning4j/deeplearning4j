@@ -33,6 +33,7 @@ public class INDArrayIterator implements Iterator<Double> {
 
     @Override
     public Double next() {
-        return iterateOver.getDouble(iterateOver.ordering() == 'c' ? Shape.ind2subC(iterateOver,i++) : Shape.ind2sub(iterateOver,i++));
+        return iterateOver.getDouble(iterateOver.ordering() == 'c' ? Shape.ind2subC(iterateOver, i++)
+                        : Shape.ind2sub(iterateOver, i++));
     }
 }

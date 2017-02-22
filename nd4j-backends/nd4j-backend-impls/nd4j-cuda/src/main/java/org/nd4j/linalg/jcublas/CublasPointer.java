@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,7 +32,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  * @author bam4d
  *
  */
-public class CublasPointer  implements AutoCloseable {
+public class CublasPointer implements AutoCloseable {
 
     /**
      * The underlying cuda buffer that contains the host and device memory
@@ -40,7 +40,8 @@ public class CublasPointer  implements AutoCloseable {
     private JCudaBuffer buffer;
     private Pointer devicePointer;
     private Pointer hostPointer;
-    @Getter private boolean closed = false;
+    @Getter
+    private boolean closed = false;
     private INDArray arr;
     private CudaContext cudaContext;
     private boolean resultPointer = false;
@@ -52,7 +53,7 @@ public class CublasPointer  implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if( !isResultPointer()) {
+        if (!isResultPointer()) {
             destroy();
         }
     }
@@ -95,13 +96,13 @@ public class CublasPointer  implements AutoCloseable {
      * for a given JCudaBuffer
      * @param buffer
      */
-    public CublasPointer(JCudaBuffer buffer,CudaContext context) {
+    public CublasPointer(JCudaBuffer buffer, CudaContext context) {
         this.buffer = buffer;
-//        this.devicePointer = AtomicAllocator.getInstance().getPointer(new Pointer(buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer()), AllocationUtils.buildAllocationShape(buffer), true);
+        //        this.devicePointer = AtomicAllocator.getInstance().getPointer(new Pointer(buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer()), AllocationUtils.buildAllocationShape(buffer), true);
         this.cudaContext = context;
-/*
+        /*
         context.initOldStream();
-
+        
         DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
         hostPointer = info.getPointers().getHostPointer();
         ContextHolder.getInstance().getMemoryStrategy().setData(devicePointer,0,1,buffer.length(),info.getPointers().getHostPointer());
@@ -119,7 +120,7 @@ public class CublasPointer  implements AutoCloseable {
      * the host buffer offset and data length is taken care of automatically
      * @param array
      */
-    public CublasPointer(INDArray array,CudaContext context) {
+    public CublasPointer(INDArray array, CudaContext context) {
         //we have to reset the pointer to be zero offset due to the fact that
         //vector based striding won't work with an array that looks like this
 
@@ -132,9 +133,9 @@ public class CublasPointer  implements AutoCloseable {
                 array = Shape.toOffsetZero(array);
             }
         }
-
+        
         buffer = (JCudaBuffer) array.data();
-
+        
         //the name of this thread for knowing whether to copy data or not
         //String name = Thread.currentThread().getName();
         this.arr = array;
@@ -144,11 +145,11 @@ public class CublasPointer  implements AutoCloseable {
             if(this.arr.elementWiseStride() < 0)
                 throw new IllegalStateException("Unable to iterate over buffer");
         }
-*/
+        */
         //int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
         ////int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
-      //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
+        //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
 
         /*
                 buffer.getPointer(
@@ -171,14 +172,14 @@ public class CublasPointer  implements AutoCloseable {
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
         /*
-
+        
         //Data is already copied into CUDA buffer during allocation at getPointer
-
+        
         if(!buffer.copied(name)) {
             ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
             //mark the buffer copied
             buffer.setCopied(name);
-
+        
         }*/
 
         /*
@@ -217,13 +218,13 @@ public class CublasPointer  implements AutoCloseable {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("NativePointer: ["+devicePointer.address()+"]");
+        sb.append("NativePointer: [" + devicePointer.address() + "]");
         return sb.toString();
     }
 
 
-    public static void free(CublasPointer...pointers) {
-        for(CublasPointer pointer : pointers) {
+    public static void free(CublasPointer... pointers) {
+        for (CublasPointer pointer : pointers) {
             try {
                 pointer.close();
             } catch (Exception e) {

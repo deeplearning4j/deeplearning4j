@@ -10,6 +10,6 @@ public interface AssignValue {
      * @param index the index
      * @param value the value
      */
-    void assign(int[] arr,int index,int value);
+    void assign(int[] arr, int index, int value);
 
 }

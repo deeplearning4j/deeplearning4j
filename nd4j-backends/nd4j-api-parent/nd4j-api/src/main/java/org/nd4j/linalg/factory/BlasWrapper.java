@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,11 +34,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**
- * This class provides a cleaner direct interface to the BLAS routines by
- * extracting the parameters of the matrices from the matrices itself.
+ * This class provides a cleaner direct interface to the BLAS routines by extracting the parameters of the matrices from
+ * the matrices itself.
  * <p/>
- * For example, you can just pass the vector and do not have to pass the length,
- * corresponding DoubleBuffer, offset and step size explicitly.
+ * For example, you can just pass the vector and do not have to pass the length, corresponding DoubleBuffer, offset and
+ * step size explicitly.
  * <p/>
  * Currently, all the general matrix routines are implemented.
  */
@@ -58,12 +58,14 @@ public interface BlasWrapper {
      * @return
      */
     Level1 level1();
+
     /**
      * Return the level 2 functions
      * for this blas impl
      * @return
      */
     Level2 level2();
+
     /**
      * Return the level 3 functions
      * for this blas impl
@@ -86,6 +88,7 @@ public interface BlasWrapper {
      */
     @Deprecated
     INDArray scal(float alpha, INDArray x);
+
     @Deprecated
     IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x);
 
@@ -174,41 +177,40 @@ public interface BlasWrapper {
      * BLAS Level 2
      */
 
-    INDArray gemv(Number alpha, INDArray a,
-                  INDArray x, double beta, INDArray y);
+    INDArray gemv(Number alpha, INDArray a, INDArray x, double beta, INDArray y);
 
     @Deprecated
-    INDArray gemv(double alpha, INDArray a,
-                  INDArray x, double beta, INDArray y);
+    INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y);
 
     /**
      * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
      * multiplication)
      */
     @Deprecated
-    INDArray gemv(float alpha, INDArray a,
-                  INDArray x, float beta, INDArray y);
-    INDArray ger(Number alpha, INDArray x,
-                 INDArray y, INDArray a);
+    INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y);
+
+    INDArray ger(Number alpha, INDArray x, INDArray y, INDArray a);
 
     @Deprecated
-    INDArray ger(double alpha, INDArray x,
-                 INDArray y, INDArray a);
+    INDArray ger(double alpha, INDArray x, INDArray y, INDArray a);
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    INDArray ger(float alpha, INDArray x,
-                 INDArray y, INDArray a);
-    @Deprecated
-    IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a,
-                         IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
+    INDArray ger(float alpha, INDArray x, INDArray y, INDArray a);
 
     @Deprecated
-    IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y);
+    IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta,
+                    IComplexNDArray y);
 
     @Deprecated
-    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
+    IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta,
+                    IComplexNDArray y);
+
+    @Deprecated
+    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta,
+                    IComplexNDArray y);
+
     @Deprecated
     IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
 
@@ -216,45 +218,40 @@ public interface BlasWrapper {
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x,
-                         IComplexNDArray y, IComplexNDArray a);
+    IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
     @Deprecated
-    IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x,
-                         IComplexNDArray y, IComplexNDArray a);
+    IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
 
     /**
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
     @Deprecated
-    IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x,
-                         IComplexNDArray y, IComplexNDArray a);
+    IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
+
     @Deprecated
-    IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x,
-                         IComplexNDArray y, IComplexNDArray a);
+    IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
 
     /**
      * ************************************************************************
      * BLAS Level 3
      */
     @Deprecated
-    INDArray gemm(double alpha, INDArray a,
-                  INDArray b, double beta, INDArray c);
+    INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c);
 
     /**
      * Compute c <- a*b + beta * c (general matrix matrix
      * multiplication)
      */
     @Deprecated
-    INDArray gemm(float alpha, INDArray a,
-                  INDArray b, float beta, INDArray c);
+    INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c);
 
     @Deprecated
-    IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
-                         IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
+    IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta,
+                    IComplexNDArray c);
 
 
     /**
@@ -262,50 +259,43 @@ public interface BlasWrapper {
      * LAPACK
      */
 
-    INDArray gesv(INDArray a, int[] ipiv,
-                  INDArray b);
+    INDArray gesv(INDArray a, int[] ipiv, INDArray b);
 
-     //STOP
+    //STOP
 
     void checkInfo(String name, int info);
     //START
 
-    INDArray sysv(char uplo, INDArray a, int[] ipiv,
-                  INDArray b);
+    INDArray sysv(char uplo, INDArray a, int[] ipiv, INDArray b);
 
 
 
     int syev(char jobz, char uplo, INDArray a, INDArray w);
 
-    int syevx(char jobz, char range, char uplo, INDArray a,
-              double vl, double vu, int il, int iu, double abstol,
-              INDArray w, INDArray z);
+    int syevx(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol,
+                    INDArray w, INDArray z);
 
-    int syevx(char jobz, char range, char uplo, INDArray a,
-              float vl, float vu, int il, int iu, float abstol,
-              INDArray w, INDArray z);
+    int syevx(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol,
+                    INDArray w, INDArray z);
 
-    int syevd(char jobz, char uplo, INDArray A,
-              INDArray w);
+    int syevd(char jobz, char uplo, INDArray A, INDArray w);
 
     @Deprecated
-    int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz);
+    int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol,
+                    INDArray w, INDArray z, int[] isuppz);
 
     @Deprecated
-    int syevr(char jobz, char range, char uplo, INDArray a,
-              float vl, float vu, int il, int iu, float abstol,
-              INDArray w, INDArray z, int[] isuppz);
+    int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol,
+                    INDArray w, INDArray z, int[] isuppz);
 
 
-    int syevr(char jobz, char range, char uplo, INDArray a,
-              float vl, float vu, int il, int iu, Number abstol,
-              INDArray w, INDArray z, int[] isuppz);
+    int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, Number abstol,
+                    INDArray w, INDArray z, int[] isuppz);
 
 
     void posv(char uplo, INDArray A, INDArray B);
 
-    int geev(char jobvl, char jobvr, INDArray A,
-             INDArray WR, INDArray WI, INDArray VL, INDArray VR);
+    int geev(char jobvl, char jobvr, INDArray A, INDArray WR, INDArray WI, INDArray VL, INDArray VR);
 
     int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W);
 

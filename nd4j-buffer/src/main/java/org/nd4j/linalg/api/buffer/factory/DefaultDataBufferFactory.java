@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -45,13 +45,13 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer.AllocationMode allocationMode() {
-        if(allocationMode == null) {
+        if (allocationMode == null) {
             String otherAlloc = System.getProperty("alloc");
-            if(otherAlloc.equals("heap"))
+            if (otherAlloc.equals("heap"))
                 setAllocationMode(DataBuffer.AllocationMode.HEAP);
-            else if(otherAlloc.equals("direct"))
+            else if (otherAlloc.equals("direct"))
                 setAllocationMode(DataBuffer.AllocationMode.DIRECT);
-            else if(otherAlloc.equals("javacpp"))
+            else if (otherAlloc.equals("javacpp"))
                 setAllocationMode(DataBuffer.AllocationMode.JAVACPP);
         }
         return allocationMode;
@@ -59,163 +59,161 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
-        if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
-            return new DoubleBuffer(underlyingBuffer,length,offset);
-        }
-        else if(underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
-            return new FloatBuffer(underlyingBuffer,length,offset);
+        if (underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+            return new DoubleBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+            return new FloatBuffer(underlyingBuffer, length, offset);
 
-        }
-        else if(underlyingBuffer.dataType() == DataBuffer.Type.INT) {
-            return new IntBuffer(underlyingBuffer,length,offset);
+        } else if (underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+            return new IntBuffer(underlyingBuffer, length, offset);
         }
         return null;
     }
 
     @Override
     public DataBuffer createInt(int offset, ByteBuffer buffer, int length) {
-        return new IntBuffer(buffer,length,offset);
+        return new IntBuffer(buffer, length, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, ByteBuffer buffer, int length) {
-        return new FloatBuffer(buffer,length,offset);
+        return new FloatBuffer(buffer, length, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, ByteBuffer buffer, int length) {
-        return new DoubleBuffer(buffer,length,offset);
+        return new DoubleBuffer(buffer, length, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, int length) {
-        return new DoubleBuffer(length,8,offset);
+        return new DoubleBuffer(length, 8, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, int length) {
-        return new FloatBuffer(length,4,offset);
+        return new FloatBuffer(length, 4, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, int length) {
-        return new IntBuffer(length,4,offset);
+        return new IntBuffer(length, 4, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, int[] data) {
-        return createDouble(offset,data,true);
+        return createDouble(offset, data, true);
     }
 
     @Override
     public DataBuffer createFloat(int offset, int[] data) {
-        FloatBuffer ret = new FloatBuffer(ArrayUtil.toFloats(data),true,offset);
+        FloatBuffer ret = new FloatBuffer(ArrayUtil.toFloats(data), true, offset);
         return ret;
     }
 
     @Override
     public DataBuffer createInt(int offset, int[] data) {
-        return new IntBuffer(data,true,offset);
+        return new IntBuffer(data, true, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, double[] data) {
-        return new DoubleBuffer(data,true,offset);
+        return new DoubleBuffer(data, true, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, byte[] data, int length) {
-        return createDouble(offset,ArrayUtil.toDoubleArray(data),true);
+        return createDouble(offset, ArrayUtil.toDoubleArray(data), true);
     }
 
     @Override
     public DataBuffer createFloat(int offset, byte[] data, int length) {
-        return createFloat(offset,ArrayUtil.toFloatArray(data),true);
+        return createFloat(offset, ArrayUtil.toFloatArray(data), true);
     }
 
     @Override
     public DataBuffer createFloat(int offset, double[] data) {
-        return new FloatBuffer(ArrayUtil.toFloats(data),true,offset);
+        return new FloatBuffer(ArrayUtil.toFloats(data), true, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, double[] data) {
-        return new IntBuffer(ArrayUtil.toInts(data),true,offset);
+        return new IntBuffer(ArrayUtil.toInts(data), true, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, float[] data) {
-        return new DoubleBuffer(ArrayUtil.toDoubles(data),true,offset);
+        return new DoubleBuffer(ArrayUtil.toDoubles(data), true, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, float[] data) {
-        return new FloatBuffer(data,true,offset);
+        return new FloatBuffer(data, true, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, float[] data) {
-        return new IntBuffer(ArrayUtil.toInts(data),true,offset);
+        return new IntBuffer(ArrayUtil.toInts(data), true, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, int[] data, boolean copy) {
-        return new DoubleBuffer(ArrayUtil.toDoubles(data),true,offset);
+        return new DoubleBuffer(ArrayUtil.toDoubles(data), true, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, int[] data, boolean copy) {
-        return new FloatBuffer(ArrayUtil.toFloats(data),copy,offset);
+        return new FloatBuffer(ArrayUtil.toFloats(data), copy, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, int[] data, boolean copy) {
-        return new IntBuffer(data,copy,offset);
+        return new IntBuffer(data, copy, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, double[] data, boolean copy) {
-        return new DoubleBuffer(data,copy,offset);
+        return new DoubleBuffer(data, copy, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, double[] data, boolean copy) {
-        return new FloatBuffer(ArrayUtil.toFloats(data),copy,offset);
+        return new FloatBuffer(ArrayUtil.toFloats(data), copy, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, double[] data, boolean copy) {
-        return new IntBuffer(ArrayUtil.toInts(data),copy,offset);
+        return new IntBuffer(ArrayUtil.toInts(data), copy, offset);
     }
 
     @Override
     public DataBuffer createDouble(int offset, float[] data, boolean copy) {
-        return new DoubleBuffer(ArrayUtil.toDoubles(data),copy,offset);
+        return new DoubleBuffer(ArrayUtil.toDoubles(data), copy, offset);
     }
 
     @Override
     public DataBuffer createFloat(int offset, float[] data, boolean copy) {
-        return  new FloatBuffer(data,copy,offset);
+        return new FloatBuffer(data, copy, offset);
     }
 
     @Override
     public DataBuffer createInt(int offset, float[] data, boolean copy) {
-        return new IntBuffer(ArrayUtil.toInts(data),copy,offset);
+        return new IntBuffer(ArrayUtil.toInts(data), copy, offset);
     }
 
     @Override
     public DataBuffer createInt(ByteBuffer buffer, int length) {
-        return new IntBuffer(buffer,length);
+        return new IntBuffer(buffer, length);
     }
 
     @Override
     public DataBuffer createFloat(ByteBuffer buffer, int length) {
-        return new FloatBuffer(buffer,length);
+        return new FloatBuffer(buffer, length);
     }
 
     @Override
     public DataBuffer createDouble(ByteBuffer buffer, int length) {
-        return new DoubleBuffer(buffer,length);
+        return new DoubleBuffer(buffer, length);
     }
 
     @Override
@@ -224,7 +222,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer createDouble(long length, boolean initialize){
+    public DataBuffer createDouble(long length, boolean initialize) {
         return new DoubleBuffer(length, initialize);
     }
 
@@ -234,7 +232,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer createFloat(long length, boolean initialize){
+    public DataBuffer createFloat(long length, boolean initialize) {
         return new FloatBuffer(length, initialize);
     }
 
@@ -269,13 +267,13 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer createDouble(byte[] data,int length) {
-        return new DoubleBuffer(ByteBuffer.wrap(data),length);
+    public DataBuffer createDouble(byte[] data, int length) {
+        return new DoubleBuffer(ByteBuffer.wrap(data), length);
     }
 
     @Override
-    public DataBuffer createFloat(byte[] data,int length) {
-        return new FloatBuffer(ByteBuffer.wrap(data),length);
+    public DataBuffer createFloat(byte[] data, int length) {
+        return new FloatBuffer(ByteBuffer.wrap(data), length);
     }
 
     @Override
@@ -363,10 +361,13 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
-        switch(type) {
-            case INT: return new IntBuffer(pointer,indexer,length);
-            case DOUBLE: return new DoubleBuffer(pointer,indexer,length);
-            case FLOAT: return new FloatBuffer(pointer,indexer,length);
+        switch (type) {
+            case INT:
+                return new IntBuffer(pointer, indexer, length);
+            case DOUBLE:
+                return new DoubleBuffer(pointer, indexer, length);
+            case FLOAT:
+                return new FloatBuffer(pointer, indexer, length);
         }
         throw new IllegalArgumentException("Invalid type " + type);
     }

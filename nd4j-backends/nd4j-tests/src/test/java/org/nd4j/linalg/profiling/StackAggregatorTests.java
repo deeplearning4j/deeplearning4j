@@ -71,13 +71,13 @@ public class StackAggregatorTests {
         log.info("Trace: {}", descriptor.toString());
 
         // we just want to make sure that OpProfiler methods are NOT included in trace
-        assertTrue(descriptor.getStackTrace()[descriptor.size()-1].getClassName().contains("StackAggregatorTests"));
+        assertTrue(descriptor.getStackTrace()[descriptor.size() - 1].getClassName().contains("StackAggregatorTests"));
     }
 
     @Test
     public void testTrailingFrames2() {
-        INDArray x = Nd4j.create(new int[]{10, 10}, 'f');
-        INDArray y = Nd4j.create(new int[]{10, 10}, 'c');
+        INDArray x = Nd4j.create(new int[] {10, 10}, 'f');
+        INDArray y = Nd4j.create(new int[] {10, 10}, 'c');
 
         x.assign(y);
 

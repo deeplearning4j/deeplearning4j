@@ -53,6 +53,8 @@ public class SkipGramChain implements Chain {
         } else if (message instanceof DotAggregation) {
             dotAggregation = (DotAggregation) message;
 
-        } else throw new ND4JIllegalStateException("Unknown message received: ["+message.getClass().getCanonicalName()+"]");
+        } else
+            throw new ND4JIllegalStateException(
+                            "Unknown message received: [" + message.getClass().getCanonicalName() + "]");
     }
 }

@@ -12,12 +12,13 @@ import java.lang.ref.WeakReference;
 public class GarbageBufferReference extends WeakReference<BaseDataBuffer> {
     private final AllocationPoint point;
 
-    public GarbageBufferReference(BaseDataBuffer referent, ReferenceQueue<? super BaseDataBuffer> q, AllocationPoint point) {
+    public GarbageBufferReference(BaseDataBuffer referent, ReferenceQueue<? super BaseDataBuffer> q,
+                    AllocationPoint point) {
         super(referent, q);
         this.point = point;
     }
 
-    public AllocationPoint getPoint(){
+    public AllocationPoint getPoint() {
         return point;
     }
 }

@@ -22,17 +22,28 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {
-    @Getter @Setter protected short aggregationType = -1;
-    @Getter @Setter protected short aggregationWidth;
-    @Getter @Setter protected int numberOfElements;
-    @Getter protected short shardIndex;
+    @Getter
+    @Setter
+    protected short aggregationType = -1;
+    @Getter
+    @Setter
+    protected short aggregationWidth;
+    @Getter
+    @Setter
+    protected int numberOfElements;
+    @Getter
+    protected short shardIndex;
 
 
-    @Getter @Setter protected INDArray payload;
+    @Getter
+    @Setter
+    protected INDArray payload;
 
     // transient part
-    @Getter protected transient AtomicInteger chunksCounter;
-    @Getter protected transient Map<Short, INDArray> chunks;
+    @Getter
+    protected transient AtomicInteger chunksCounter;
+    @Getter
+    protected transient Map<Short, INDArray> chunks;
 
     protected BaseAggregation() {
         chunksCounter = new AtomicInteger(1);
@@ -80,7 +91,8 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
         if (aggregationWidth == 1) {
             return chunks.get((short) 0);
-        } else return Nd4j.hstack(chunks.values());
+        } else
+            return Nd4j.hstack(chunks.values());
     }
 
     @Override

@@ -9,7 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class LossUtil {
 
-    public static INDArray dLdZsoftmaxPreOut(INDArray dlda, INDArray z){
+    public static INDArray dLdZsoftmaxPreOut(INDArray dlda, INDArray z) {
         return dLdZsoftmax(dlda, Nd4j.getExecutioner().execAndReturn(new SoftMax(z.dup())));
     }
 
@@ -24,7 +24,7 @@ public class LossUtil {
      * @param a       output activations array (shape [minibatchSize, nOut])
      * @return
      */
-    public static INDArray dLdZsoftmax(INDArray dlda, INDArray a){
+    public static INDArray dLdZsoftmax(INDArray dlda, INDArray a) {
         INDArray x = a.mul(dlda).sum(1);
         return a.mul(dlda.subColumnVector(x));
     }
@@ -40,7 +40,7 @@ public class LossUtil {
      * @param a       output activations array (shape [minibatchSize, nOut])
      * @return
      */
-    public static INDArray dLdZsoftmaxi(INDArray dlda, INDArray a){
+    public static INDArray dLdZsoftmaxi(INDArray dlda, INDArray a) {
         INDArray x = a.mul(dlda).sum(1);
         return a.muli(dlda.subiColumnVector(x));
     }

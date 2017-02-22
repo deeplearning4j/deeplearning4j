@@ -76,8 +76,10 @@ public abstract class BaseTransport implements Transport {
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
     // TODO: make this auto-configurable
-    @Getter protected short targetIndex = 0;
-    @Getter protected short shardIndex = 0;
+    @Getter
+    protected short targetIndex = 0;
+    @Getter
+    protected short shardIndex = 0;
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
@@ -87,7 +89,7 @@ public abstract class BaseTransport implements Transport {
         sendCommandToShard(message);
         AtomicLong cnt = new AtomicLong(0);
 
-//        log.info("Sent message to shard: {}, taskId: {}, originalId: {}", message.getClass().getSimpleName(), message.getTaskId(), taskId);
+        //        log.info("Sent message to shard: {}, taskId: {}, originalId: {}", message.getClass().getSimpleName(), message.getTaskId(), taskId);
 
         long currentTime = System.currentTimeMillis();
 
@@ -118,7 +120,8 @@ public abstract class BaseTransport implements Transport {
         long timeSpent = endTime - startTime;
 
         if (message instanceof Frame && frameCount.incrementAndGet() % 1000 == 0)
-            log.info("Frame of {} messages [{}] processed in {} ms", ((Frame) message).size(), message.getTaskId(), timeSpent);
+            log.info("Frame of {} messages [{}] processed in {} ms", ((Frame) message).size(), message.getTaskId(),
+                            timeSpent);
 
 
         return msg;
@@ -155,7 +158,8 @@ public abstract class BaseTransport implements Transport {
                 if (message.isBlockingMessage()) {
                     // we issue blocking message, but we don't care about response
                     sendMessageAndGetResponse(message);
-                } else sendCommandToShard(message);
+                } else
+                    sendCommandToShard(message);
                 break;
             // messages 10..19 inclusive are reserved for Shard->Clients commands
             case 10:
@@ -261,7 +265,7 @@ public abstract class BaseTransport implements Transport {
         if (nodeRole != NodeRole.SHARD)
             throw new RuntimeException("This method shouldn't be called only from Shard context");
 
-//        log.info("Sending message to All shards");
+        //        log.info("Sending message to All shards");
 
         message.setTargetId((short) -1);
         //publicationForShards.offer(message.asUnsafeBuffer());
@@ -279,7 +283,8 @@ public abstract class BaseTransport implements Transport {
      * @param shardIndex
      */
     @Override
-    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort, short shardIndex) {
+    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp,
+                    int localPort, short shardIndex) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownSilent()));
     }
 
@@ -309,7 +314,7 @@ public abstract class BaseTransport implements Transport {
 
                 threadA.start();
             }
-            break;
+                break;
             case DEDICATED_THREADS: {
                 // we start separate thread for each handler
 
@@ -360,16 +365,17 @@ public abstract class BaseTransport implements Transport {
                 while (!localRunner.get())
                     try {
                         Thread.sleep(50);
-                    } catch (Exception e) { }
+                    } catch (Exception e) {
+                    }
             }
-            break;
+                break;
             case SAME_THREAD: {
                 // no additional threads at all, we do poll within takeMessage loop
                 log.warn("SAME_THREAD model is used, performance will be dramatically reduced");
             }
-            break;
+                break;
             default:
-                throw new IllegalStateException("Unknown thread model: ["+ threading.toString()+"]");
+                throw new IllegalStateException("Unknown thread model: [" + threading.toString() + "]");
         }
     }
 
@@ -497,12 +503,13 @@ public abstract class BaseTransport implements Transport {
 
         long result = publicationForShards.offer(buffer);
 
-        if (result  < 0)
+        if (result < 0)
             for (int i = 0; i < 5 && result < 0; i++) {
                 try {
                     // TODO: make this configurable
                     Thread.sleep(1000);
-                } catch (Exception e) { }
+                } catch (Exception e) {
+                }
                 result = publicationForShards.offer(buffer);
             }
 

@@ -24,15 +24,15 @@ public class ShapeTestC extends BaseNd4jTest {
 
     @Test
     public void testToOffsetZero() {
-        INDArray matrix  =  Nd4j.rand(3,5);
+        INDArray matrix = Nd4j.rand(3, 5);
         INDArray rowOne = matrix.getRow(1);
         INDArray row1Copy = Shape.toOffsetZero(rowOne);
-        assertEquals(rowOne,row1Copy);
-        INDArray rows =  matrix.getRows(1, 2);
+        assertEquals(rowOne, row1Copy);
+        INDArray rows = matrix.getRows(1, 2);
         INDArray rowsOffsetZero = Shape.toOffsetZero(rows);
-        assertEquals(rows,rowsOffsetZero);
+        assertEquals(rows, rowsOffsetZero);
 
-        INDArray tensor = Nd4j.rand(new int[]{3,3,3});
+        INDArray tensor = Nd4j.rand(new int[] {3, 3, 3});
         INDArray getTensor = tensor.slice(1).slice(1);
         INDArray getTensorZero = Shape.toOffsetZero(getTensor);
         assertEquals(getTensor, getTensorZero);
@@ -43,10 +43,10 @@ public class ShapeTestC extends BaseNd4jTest {
 
     @Test
     public void testElementWiseCompareOnesInMiddle() {
-        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
-        INDArray onesInMiddle = Nd4j.linspace(1,6,6).reshape(2,1,3);
-        for(int i = 0; i < arr.length(); i++)
-            assertEquals(arr.getDouble(i),onesInMiddle.getDouble(i),1e-3);
+        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
+        for (int i = 0; i < arr.length(); i++)
+            assertEquals(arr.getDouble(i), onesInMiddle.getDouble(i), 1e-3);
     }
 
     @Override

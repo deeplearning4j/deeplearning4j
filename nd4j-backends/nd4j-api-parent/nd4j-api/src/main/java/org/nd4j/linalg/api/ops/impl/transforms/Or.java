@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ public class Or extends BaseTransformOp {
 
     protected double comparable;
 
-    public Or() {
-    }
+    public Or() {}
 
     public Or(@NonNull INDArray x, @NonNull INDArray y) {
         this(x, y, 0.0);
@@ -64,7 +63,7 @@ public class Or extends BaseTransformOp {
     public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
         super(x, y, z, n);
         this.comparable = comparable.doubleValue();
-        this.extraArgs = new Object[]{ this.comparable };
+        this.extraArgs = new Object[] {this.comparable};
     }
 
 
@@ -122,7 +121,8 @@ public class Or extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new Or(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Or(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Or(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -132,7 +132,8 @@ public class Or extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new Or(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Or(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Or(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

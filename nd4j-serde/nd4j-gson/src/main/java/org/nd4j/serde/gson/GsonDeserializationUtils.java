@@ -65,7 +65,7 @@ public class GsonDeserializationUtils {
 
     private static INDArray buildArray(List<Integer> dimensions, String rawArray) {
         int[] shape = Ints.toArray(dimensions);
-        String[] entries  = StringUtils.replacePattern(rawArray, "[\\[\\]\\n]", "").split(",");
+        String[] entries = StringUtils.replacePattern(rawArray, "[\\[\\]\\n]", "").split(",");
         double[] entryValues = new double[entries.length];
 
         for (int i = 0; i < entries.length; i++) {

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,42 +35,45 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable  {
+public interface INDArray extends Serializable {
     /**
      * Returns the shape information debugging
      * information
      * @return the shape information debugging information
      */
-   String shapeInfoToString();
+    String shapeInfoToString();
+
     /**
      * Shape info
      * @return
      */
     DataBuffer shapeInfoDataBuffer();
+
     /**
      * Shape info
      * @return
      */
     IntBuffer shapeInfo();
+
     /**
      * Returns true if this array is a view or not
      * @return
      */
     boolean isView();
 
- /**
-  * Returns true if this array is compressed, and false otherwise
-  * @return
-  */
- boolean isCompressed();
+    /**
+     * Returns true if this array is compressed, and false otherwise
+     * @return
+     */
+    boolean isCompressed();
 
- /**
-  * This method marks INDArray instance as compressed
-  * PLEASE NOTE: Do not use this method unless you 100% have to
-  *
-  * @param reallyCompressed
-  */
- void markAsCompressed(boolean reallyCompressed);
+    /**
+     * This method marks INDArray instance as compressed
+     * PLEASE NOTE: Do not use this method unless you 100% have to
+     *
+     * @param reallyCompressed
+     */
+    void markAsCompressed(boolean reallyCompressed);
 
     /**
      * Set the ndarray to wrap around
@@ -158,7 +161,7 @@ public interface INDArray extends Serializable  {
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(int offset,double value);
+    INDArray putScalarUnsafe(int offset, double value);
 
     /**
      * Return the major stride for an ndarray
@@ -208,13 +211,14 @@ public interface INDArray extends Serializable  {
      * @return the vector along a particular dimension
      */
     INDArray vectorAlongDimension(int index, int dimension);
+
     /**
      * Returns the number of possible vectors for a given dimension
      *
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    int tensorssAlongDimension(int...dimension);
+    int tensorssAlongDimension(int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -223,7 +227,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray tensorAlongDimension(int index, int...dimension);
+    INDArray tensorAlongDimension(int index, int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -232,7 +236,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray javaTensorAlongDimension(int index, int...dimension);
+    INDArray javaTensorAlongDimension(int index, int... dimension);
 
 
     /**
@@ -260,24 +264,24 @@ public interface INDArray extends Serializable  {
      */
     INDArray assign(INDArray arr);
 
-     /**
-     * Assign all elements from given ndarray that are matching given condition,
-     * ndarray to this ndarray
+    /**
+    * Assign all elements from given ndarray that are matching given condition,
+    * ndarray to this ndarray
+    *
+    * @param arr the elements to assign
+    * @return this
+    */
+    INDArray assignIf(INDArray arr, Condition condition);
+
+
+    /**
+    * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
      *
-     * @param arr the elements to assign
-     * @return this
-     */
-     INDArray assignIf(INDArray arr, Condition condition);
-
-
-     /**
-     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
-      *
-     * @param arr
-     * @param condition
-     * @return
-     */
-     INDArray replaceWhere(INDArray arr, Condition condition);
+    * @param arr
+    * @param condition
+    * @return
+    */
+    INDArray replaceWhere(INDArray arr, Condition condition);
 
 
     /**
@@ -423,7 +427,7 @@ public interface INDArray extends Serializable  {
      */
     INDArray gt(Number other);
 
-   /**
+    /**
     * Returns binary ndarray for "Greter or equals" comparison.
     *
     * @param other the number to compare.
@@ -431,7 +435,7 @@ public interface INDArray extends Serializable  {
     */
     INDArray gte(Number other);
 
-   /**
+    /**
     * Returns the binary ndarray for "Less or equals" comparison.
     *
     * @param other the number to compare.
@@ -439,7 +443,7 @@ public interface INDArray extends Serializable  {
     */
     INDArray lte(Number other);
 
-   /**
+    /**
     * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
     *
     * @param other the number to compare.
@@ -447,7 +451,7 @@ public interface INDArray extends Serializable  {
     */
     INDArray gtei(Number other);
 
-   /**
+    /**
     * Returns the binary ndarray for "Less or equals" comparison. In-place method.
     *
     * @param other the number to compare.
@@ -778,14 +782,13 @@ public interface INDArray extends Serializable  {
 
 
 
-
     /**
      * Get a list of specified columns
      *
      * @param columns
      * @return
      */
-    INDArray getColumns(int...columns);
+    INDArray getColumns(int... columns);
 
     /**
      * Get a list of rows
@@ -793,7 +796,7 @@ public interface INDArray extends Serializable  {
      * @param rows
      * @return
      */
-    INDArray getRows(int...rows);
+    INDArray getRows(int... rows);
 
     /**
      * Reverse division
@@ -881,7 +884,6 @@ public interface INDArray extends Serializable  {
 
 
 
-
     /**
      * Validate dimensions are equal
      *
@@ -928,14 +930,13 @@ public interface INDArray extends Serializable  {
 
 
 
-
     /**
      * Replicate and tile array to fill out to the given shape
      *
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
-    INDArray repmat(int...shape);
+    INDArray repmat(int... shape);
 
 
     /**
@@ -945,7 +946,7 @@ public interface INDArray extends Serializable  {
      * @param repeats the number of elements to repeat on each element
      * @return
      */
-    INDArray repeat(int dimension,int...repeats);
+    INDArray repeat(int dimension, int... repeats);
 
     /**
      * Returns a flat array
@@ -953,7 +954,7 @@ public interface INDArray extends Serializable  {
      * @param repeats
      * @return
      */
-    INDArray repeat(int...repeats);
+    INDArray repeat(int... repeats);
 
     /**
      * Insert a row in to this array
@@ -1462,7 +1463,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    INDArray normmax(int...dimension);
+    INDArray normmax(int... dimension);
 
     /**
      *
@@ -1482,7 +1483,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
-    INDArray norm2(int...dimension);
+    INDArray norm2(int... dimension);
 
     /**
      *
@@ -1502,7 +1503,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    INDArray norm1(int...dimension);
+    INDArray norm1(int... dimension);
 
     /**
      *
@@ -1522,7 +1523,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(int...dimension);
+    INDArray std(int... dimension);
 
     /**
      *
@@ -1536,7 +1537,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(boolean biasCorrected,int...dimension);
+    INDArray std(boolean biasCorrected, int... dimension);
 
     /**
      *
@@ -1556,7 +1557,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
-    INDArray prod(int...dimension);
+    INDArray prod(int... dimension);
 
     /**
      *
@@ -1576,7 +1577,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray mean(int...dimension);
+    INDArray mean(int... dimension);
 
     Number meanNumber();
 
@@ -1588,7 +1589,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray var(int...dimension);
+    INDArray var(int... dimension);
 
     /**
      * Returns the overall variance of this ndarray
@@ -1597,7 +1598,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray var(boolean biasCorrected, int...dimension);
+    INDArray var(boolean biasCorrected, int... dimension);
 
     /**
      *
@@ -1617,7 +1618,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray max(int...dimension);
+    INDArray max(int... dimension);
 
     /**
      *
@@ -1637,7 +1638,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray min(int...dimension);
+    INDArray min(int... dimension);
 
     Number minNumber();
 
@@ -1649,7 +1650,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(int...dimension);
+    INDArray sum(int... dimension);
 
     /**
      * Sum the entire array
@@ -1667,13 +1668,13 @@ public interface INDArray extends Serializable  {
      * stride setter
      * @param stride
      */
-    void setStride(int...stride);
+    void setStride(int... stride);
 
     /**
      * Shape setter
      * @param shape
      */
-    void setShape(int...shape);
+    void setShape(int... shape);
 
     /**
      * Set the ordering
@@ -1703,7 +1704,7 @@ public interface INDArray extends Serializable  {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    INDArray getScalar(int...indices);
+    INDArray getScalar(int... indices);
 
     /**
      *
@@ -1859,7 +1860,7 @@ public interface INDArray extends Serializable  {
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
-    INDArray reshape(char order,int... newShape);
+    INDArray reshape(char order, int... newShape);
 
 
     /**
@@ -1869,7 +1870,7 @@ public interface INDArray extends Serializable  {
      * @param columns the columns of the matrix
      * @return the reshaped ndarray
      */
-    INDArray reshape(char order,int rows, int columns);
+    INDArray reshape(char order, int rows, int columns);
 
 
     /**
@@ -1944,9 +1945,9 @@ public interface INDArray extends Serializable  {
      * http://deeplearning.net/software/theano/library/tensor/basic.html
      *
      *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of ‘x’ characters in dimensions where this tensor should be broadcasted.
-
+    
      A few examples of patterns and their effect:
-
+    
      (‘x’) -> make a 0d (scalar) into a 1d vector
      (0, 1) -> identity for 2d vectors
      (1, 0) -> inverts the first and second dimensions
@@ -1956,7 +1957,7 @@ public interface INDArray extends Serializable  {
      (0, ‘x’, 1) -> AxB to Ax1xB
      (1, ‘x’, 0) -> AxB to Bx1xA
      (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
-
+    
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
@@ -2294,16 +2295,16 @@ public interface INDArray extends Serializable  {
      */
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
-   /**
+    /**
     * This method checks 2 INDArrays equality with given eps
     *
     * @param o
     * @param eps
     * @return
     */
-   boolean equalsWithEps(Object o, double eps);
+    boolean equalsWithEps(Object o, double eps);
 
-   INDArray unsafeDuplication();
+    INDArray unsafeDuplication();
 
 
     INDArray remainder(INDArray denominator);

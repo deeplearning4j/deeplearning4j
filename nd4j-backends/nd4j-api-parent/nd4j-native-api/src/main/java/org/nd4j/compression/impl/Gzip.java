@@ -72,7 +72,7 @@ public class Gzip extends AbstractCompressor {
             dos.close();
 
             byte[] bytes = stream.toByteArray();
-//            logger.info("Bytes: {}", Arrays.toString(bytes));
+            //            logger.info("Bytes: {}", Arrays.toString(bytes));
             BytePointer pointer = new BytePointer(bytes);
             CompressionDescriptor descriptor = new CompressionDescriptor(buffer, this);
             descriptor.setCompressedLength(bytes.length);
@@ -86,7 +86,8 @@ public class Gzip extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

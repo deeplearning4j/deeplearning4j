@@ -6,8 +6,7 @@ package org.nd4j.linalg.exception;
  * @author Alex Black
  */
 public class ND4JException extends RuntimeException {
-    public ND4JException() {
-    }
+    public ND4JException() {}
 
     public ND4JException(String message) {
         super(message);

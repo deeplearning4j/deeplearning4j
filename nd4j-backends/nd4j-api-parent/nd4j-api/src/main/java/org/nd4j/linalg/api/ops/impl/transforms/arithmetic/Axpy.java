@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,19 +38,19 @@ public class Axpy extends BaseTransformOp {
     }
 
     public Axpy(INDArray x, INDArray z, double p) {
-  //      super(x, z, z, z.lengthLong());
+        //      super(x, z, z, z.lengthLong());
         this.p = p;
         init(x, z, z, x.length());
     }
 
     public Axpy(INDArray x, INDArray z, double p, long n) {
-//        super(x, z, n);
+        //        super(x, z, n);
         this.p = p;
         init(x, z, z, n);
     }
 
     public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
-//        super(x,y,z,n);
+        //        super(x,y,z,n);
         this.p = p;
         init(x, y, z, x.length());
     }
@@ -111,7 +111,7 @@ public class Axpy extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Axpy(xAlongDimension, z.vectorAlongDimension(index, dimension), p,  xAlongDimension.length());
+            return new Axpy(xAlongDimension, z.vectorAlongDimension(index, dimension), p, xAlongDimension.length());
         else
             throw new IllegalStateException("op.Y can't be null");
     }
@@ -129,11 +129,12 @@ public class Axpy extends BaseTransformOp {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
+        super.init(x, y, z, n);
 
         if (x.lengthLong() < n || y.lengthLong() < n || z.lengthLong() < n)
-            throw new IllegalStateException("Mis matched lengths: X: ["+x.lengthLong()+"], Y: ["+y.lengthLong()+"], Z: ["+z.lengthLong()+"], N: ["+n+"]");
+            throw new IllegalStateException("Mis matched lengths: X: [" + x.lengthLong() + "], Y: [" + y.lengthLong()
+                            + "], Z: [" + z.lengthLong() + "], N: [" + n + "]");
 
-        this.extraArgs = new Object[]{p, (double) n};
+        this.extraArgs = new Object[] {p, (double) n};
     }
 }

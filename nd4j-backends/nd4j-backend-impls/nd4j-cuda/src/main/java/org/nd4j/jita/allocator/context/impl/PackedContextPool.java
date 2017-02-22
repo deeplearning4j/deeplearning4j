@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Deprecated
 public class PackedContextPool extends BasicContextPool implements ContextPool {
 
-    protected static final int LANES_PER_THREAD = CudaEnvironment.getInstance().getConfiguration().getCommandLanesNumber();
+    protected static final int LANES_PER_THREAD =
+                    CudaEnvironment.getInstance().getConfiguration().getCommandLanesNumber();
 
     private volatile Map<Long, ContextPack> contextsPool = new ConcurrentHashMap<>();
 

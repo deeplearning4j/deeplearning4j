@@ -12,6 +12,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  */
 public class AddressRetriever {
     private static final AtomicAllocator allocator = AtomicAllocator.getInstance();
+
     /**
      * Retrieves the device pointer
      * for the given data buffer
@@ -31,7 +32,7 @@ public class AddressRetriever {
      * @return
      */
     public static long retrieveHostAddress(DataBuffer buffer) {
-        return  allocator.getHostPointer(buffer).address();
+        return allocator.getHostPointer(buffer).address();
     }
 
     /**
@@ -53,6 +54,6 @@ public class AddressRetriever {
      * @return
      */
     public static Pointer retrieveHostPointer(DataBuffer buffer) {
-        return  allocator.getHostPointer(buffer);
+        return allocator.getHostPointer(buffer);
     }
 }

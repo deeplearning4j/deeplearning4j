@@ -21,8 +21,8 @@ public class StringCounter {
     }
 
     public void reset() {
-        for (String key: counter.keySet()) {
-//            counter.remove(key);
+        for (String key : counter.keySet()) {
+            //            counter.remove(key);
             counter.put(key, new ComparableAtomicLong(0));
         }
 
@@ -57,7 +57,7 @@ public class StringCounter {
 
         Map<String, ComparableAtomicLong> sortedCounter = ArrayUtil.sortMapByValue(counter);
 
-        for (String key: sortedCounter.keySet()) {
+        for (String key : sortedCounter.keySet()) {
             long currentCnt = sortedCounter.get(key).get();
             long totalCnt = totals.get();
 
@@ -66,7 +66,8 @@ public class StringCounter {
 
             float perc = currentCnt * 100 / totalCnt;
 
-            builder.append(key).append("  >>> [").append(currentCnt).append("]").append(" perc: [").append(perc).append("]").append("\n");
+            builder.append(key).append("  >>> [").append(currentCnt).append("]").append(" perc: [").append(perc)
+                            .append("]").append("\n");
         }
 
         return builder.toString();

@@ -50,14 +50,15 @@ public class LossL1 implements ILossFunction {
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr;
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray output = activationFn.getActivation(preOutput.dup(),true);
+        INDArray output = activationFn.getActivation(preOutput.dup(), true);
         scoreArr = output.subi(labels);
         Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
 
         //Weighted loss function
         if (weights != null) {
             if (weights.length() != output.size(1)) {
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+                throw new IllegalStateException("Weights vector (length " + weights.length()
+                                + ") does not match output.size(1)=" + output.size(1));
             }
             scoreArr.muliRowVector(weights);
         }
@@ -69,12 +70,14 @@ public class LossL1 implements ILossFunction {
     }
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         double score = scoreArr.sumNumber().doubleValue();
 
-        if (average) score /= scoreArr.size(0);
+        if (average)
+            score /= scoreArr.size(0);
 
         return score;
     }
@@ -87,7 +90,7 @@ public class LossL1 implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        INDArray output = activationFn.getActivation(preOutput.dup(),true);
+        INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray outSubLabels = output.sub(labels);
         INDArray dLda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels));
@@ -97,7 +100,7 @@ public class LossL1 implements ILossFunction {
         }
 
         //dL/dz
-        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();  //TODO activation function param gradients
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation function param gradients
 
         if (mask != null) {
             gradients.muliColumnVector(mask);
@@ -107,17 +110,18 @@ public class LossL1 implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels,
+                    INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
-        return new Pair<>(
-                computeScore(labels, preOutput, activationFn, mask, average),
-                computeGradient(labels, preOutput, activationFn, mask));
+        return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
+                        computeGradient(labels, preOutput, activationFn, mask));
     }
 
     @Override
     public String toString() {
-        if (weights == null) return "LossL1()";
+        if (weights == null)
+            return "LossL1()";
         return "LossL1(weights=" + weights + ")";
     }
 }

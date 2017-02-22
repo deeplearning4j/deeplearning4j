@@ -26,6 +26,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     private long originalElementSize;
     //40 bytes for the compression descriptor bytebuffer
     public final static int COMPRESSION_BYTE_BUFFER_LENGTH = 40;
+
     public CompressionDescriptor() {
 
     }
@@ -124,7 +125,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     }
 
     @Override
-    public CompressionDescriptor clone()  {
+    public CompressionDescriptor clone() {
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.compressionType = this.compressionType;
         descriptor.compressionAlgorithm = this.compressionAlgorithm;

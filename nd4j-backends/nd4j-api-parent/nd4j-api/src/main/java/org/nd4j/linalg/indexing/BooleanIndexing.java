@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -156,7 +156,7 @@ public class BooleanIndexing {
         boolean[] result = new boolean[arr.length()];
 
         for (int i = 0; i < arr.length(); i++) {
-            if (arr.getDouble(i) > 0 )
+            if (arr.getDouble(i) > 0)
                 result[i] = true;
             else
                 result[i] = false;
@@ -204,17 +204,18 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-          // keep original java implementation for dynamic
+    public static void applyWhere(final INDArray to, final Condition condition,
+                    final Function<Number, Number> function) {
+        // keep original java implementation for dynamic
 
-            Shape.iterate(to, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    if (condition.apply(to.getDouble(coord[0])))
-                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
+        Shape.iterate(to, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                if (condition.apply(to.getDouble(coord[0])))
+                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
 
-                }
-            });
+            }
+        });
     }
 
     /**
@@ -233,7 +234,7 @@ public class BooleanIndexing {
         } else {
             final double value = number.doubleValue();
 
-            final Function<Number,Number> dynamic = new Function<Number, Number>() {
+            final Function<Number, Number> dynamic = new Function<Number, Number>() {
                 @Override
                 public Number apply(Number number) {
                     return value;
@@ -276,7 +277,7 @@ public class BooleanIndexing {
      * @param from
      * @param condition
      */
-    public static void replaceWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+    public static void replaceWhere(@NonNull INDArray to, @NonNull INDArray from, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -294,7 +295,7 @@ public class BooleanIndexing {
      * @param set
      * @param condition
      */
-    public static void replaceWhere(@NonNull INDArray to,@NonNull Number set, @NonNull Condition condition) {
+    public static void replaceWhere(@NonNull INDArray to, @NonNull Number set, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -309,7 +310,8 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,final Function<Number, Number> alternativeFunction) {
+    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,
+                    final Function<Number, Number> alternativeFunction) {
         Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
@@ -331,7 +333,8 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(IComplexNDArray to, Condition condition, Function<IComplexNumber, IComplexNumber> function) {
+    public static void applyWhere(IComplexNDArray to, Condition condition,
+                    Function<IComplexNumber, IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();
         for (int i = 0; i < linear.linearView().length(); i++) {
             if (condition.apply(linear.getDouble(i))) {

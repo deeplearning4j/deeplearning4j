@@ -28,7 +28,7 @@ public class TrainerProvider {
     protected Clipboard clipboard;
     protected Storage storage;
 
-    private TrainerProvider(){
+    private TrainerProvider() {
         scanClasspath();
     }
 
@@ -41,8 +41,8 @@ public class TrainerProvider {
         Reflections reflections = new Reflections("org");
         Set<Class<? extends TrainingDriver>> classes = reflections.getSubTypesOf(TrainingDriver.class);
 
-        for (Class clazz: classes) {
-            if (clazz.isInterface() ||  Modifier.isAbstract(clazz.getModifiers() ))
+        for (Class clazz : classes) {
+            if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()))
                 continue;
 
             try {
@@ -57,21 +57,22 @@ public class TrainerProvider {
             throw new ND4JIllegalStateException("No TrainingDrivers were found");
     }
 
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, @NonNull Storage storage, @NonNull Clipboard clipboard) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport,
+                    @NonNull Storage storage, @NonNull Clipboard clipboard) {
         this.voidConfiguration = voidConfiguration;
         this.transport = transport;
         this.clipboard = clipboard;
         this.storage = storage;
 
-        for (TrainingDriver<?> trainer: trainers.values()) {
-            trainer.init(voidConfiguration, transport, storage,  clipboard);
+        for (TrainingDriver<?> trainer : trainers.values()) {
+            trainer.init(voidConfiguration, transport, storage, clipboard);
         }
     }
 
 
 
     @SuppressWarnings("unchecked")
-    protected  <T extends TrainingMessage> TrainingDriver<T> getTrainer(T message){
+    protected <T extends TrainingMessage> TrainingDriver<T> getTrainer(T message) {
         TrainingDriver<?> driver = trainers.get(message.getClass().getSimpleName());
         if (driver == null)
             throw new ND4JIllegalStateException("Can't find trainer for [" + message.getClass().getSimpleName() + "]");

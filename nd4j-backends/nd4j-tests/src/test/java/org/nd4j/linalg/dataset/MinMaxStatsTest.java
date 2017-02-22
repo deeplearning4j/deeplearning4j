@@ -22,19 +22,13 @@ public class MinMaxStatsTest extends BaseNd4jTest {
 
     @Test
     public void testEnforcingNonZeroRange() {
-        INDArray lower =  Nd4j.create(new double[]{2, 3, 4, 5});
+        INDArray lower = Nd4j.create(new double[] {2, 3, 4, 5});
 
-        MinMaxStats stats = new MinMaxStats(
-            lower.dup(),
-            Nd4j.create(new double[]{8, 3, 3.9, 5 + Nd4j.EPS_THRESHOLD * 0.5})
-        );
+        MinMaxStats stats = new MinMaxStats(lower.dup(),
+                        Nd4j.create(new double[] {8, 3, 3.9, 5 + Nd4j.EPS_THRESHOLD * 0.5}));
 
-        INDArray expectedUpper =  Nd4j.create(new double[]{
-            8,
-            3 + Nd4j.EPS_THRESHOLD,
-            4 + Nd4j.EPS_THRESHOLD,
-            5 + Nd4j.EPS_THRESHOLD
-        });
+        INDArray expectedUpper = Nd4j.create(
+                        new double[] {8, 3 + Nd4j.EPS_THRESHOLD, 4 + Nd4j.EPS_THRESHOLD, 5 + Nd4j.EPS_THRESHOLD});
 
         assertEquals(lower, stats.getLower());
         assertEquals(expectedUpper, stats.getUpper());

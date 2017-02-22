@@ -33,7 +33,7 @@ public class GridFlowController extends SynchronousFlowController {
             }
         }
 
-            super.synchronizeToHost(point);
+        super.synchronizeToHost(point);
     }
 
     /**

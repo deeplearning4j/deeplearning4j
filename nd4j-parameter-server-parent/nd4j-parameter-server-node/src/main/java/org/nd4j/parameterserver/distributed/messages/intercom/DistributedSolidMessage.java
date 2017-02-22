@@ -37,8 +37,7 @@ public class DistributedSolidMessage extends BaseVoidMessage implements Distribu
     public void processMessage() {
         if (overwrite)
             storage.setArray(key, payload);
-        else
-            if (!storage.arrayExists(key))
-                storage.setArray(key, payload);
+        else if (!storage.arrayExists(key))
+            storage.setArray(key, payload);
     }
 }

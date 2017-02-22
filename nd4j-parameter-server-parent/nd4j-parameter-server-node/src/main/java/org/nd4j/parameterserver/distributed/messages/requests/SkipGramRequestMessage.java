@@ -49,7 +49,8 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         super(0);
     }
 
-    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes, short negSamples, double lr, long nextRandom) {
+    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes, short negSamples, double lr,
+                    long nextRandom) {
         this();
         this.w1 = w1;
         this.w2 = w2;
@@ -93,16 +94,23 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
 
         SkipGramRequestMessage message = (SkipGramRequestMessage) o;
 
-        if (w1 != message.w1) return false;
-        if (w2 != message.w2) return false;
-        if (negSamples != message.negSamples) return false;
-        if (!Arrays.equals(points, message.points)) return false;
+        if (w1 != message.w1)
+            return false;
+        if (w2 != message.w2)
+            return false;
+        if (negSamples != message.negSamples)
+            return false;
+        if (!Arrays.equals(points, message.points))
+            return false;
         return Arrays.equals(codes, message.codes);
     }
 

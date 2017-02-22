@@ -78,17 +78,17 @@ public class BasicContextPool implements ContextPool {
                 // this is lockable thing, but since it locks once per thread initialization, performance impact won't be big
                 lock.acquire();
                 // we create 1 CUcontext per device, which will be shared for all threads/streams on this device
-/*
+                /*
                 if (!cuPool.containsKey(deviceId)) {
                     CUcontext cuContext = createNewContext(deviceId);
                     cuPool.put(deviceId, cuContext);
                 }
-
+                
                 int result = JCudaDriver.cuCtxSetCurrent(cuPool.get(deviceId));
                 if (result != CUresult.CUDA_SUCCESS) {
                     throw new RuntimeException("Failed to set context on assigner");
                 }
-*/
+                */
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
                 }
@@ -133,9 +133,9 @@ public class BasicContextPool implements ContextPool {
                         context.setSolverHandle(solverHandle);
 
                         // TODO: actually we don't need this anymore
-//                        cudaStream_t cublasStream = new cudaStream_t();
-                  //      JCublas2.cublasGetStream(handle, cublasStream);
-  //                      context.setCublasStream(cublasStream);
+                        //                        cudaStream_t cublasStream = new cudaStream_t();
+                        //      JCublas2.cublasGetStream(handle, cublasStream);
+                        //                      context.setCublasStream(cublasStream);
                     }
 
                     // we need this sync to finish memset
@@ -203,7 +203,8 @@ public class BasicContextPool implements ContextPool {
         cusolverDnContext pointer = new cusolverDnContext();
         int result = cusolverDnCreate(pointer);
         if (result != 0) {
-            throw new IllegalStateException("Can't create new cuBLAS handle! cusolverDn errorCode: [" + result + "] from cusolverDnCreate()");
+            throw new IllegalStateException("Can't create new cuBLAS handle! cusolverDn errorCode: [" + result
+                            + "] from cusolverDnCreate()");
         }
 
         cusolverDnHandle_t handle = new cusolverDnHandle_t(pointer);
@@ -220,20 +221,20 @@ public class BasicContextPool implements ContextPool {
         logger.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
-
+        
         //JCuda.cudaSetDevice(deviceId);
-
-
+        
+        
         int result = cuDeviceGet(device, deviceId);
         if (result != CUresult.CUDA_SUCCESS) {
             throw new RuntimeException("Failed to setDevice on driver");
         }
-
+        
         result = cuCtxCreate(context, 0, device);
         if (result != CUresult.CUDA_SUCCESS) {
             throw new RuntimeException("Failed to create context on driver");
         }
-
+        
         return context;
         */
         return null;
@@ -250,14 +251,14 @@ public class BasicContextPool implements ContextPool {
             logger.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
         }
-
+        
         cuPool.clear();
         contextsForDevices.clear();
         contextsPool.clear();
         cublasPool.clear();
-
-	solverPool.clear();
-
+        
+        solverPool.clear();
+        
         acquireContextForDevice(deviceId);
         */
     }
@@ -277,7 +278,7 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        Pointer  reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        Pointer reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
@@ -285,11 +286,11 @@ public class BasicContextPool implements ContextPool {
 
         context.syncOldStream();
 
-        Pointer  allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
+        Pointer allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        Pointer  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
+        Pointer scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
         if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
@@ -297,7 +298,7 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        Pointer  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
+        Pointer specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 

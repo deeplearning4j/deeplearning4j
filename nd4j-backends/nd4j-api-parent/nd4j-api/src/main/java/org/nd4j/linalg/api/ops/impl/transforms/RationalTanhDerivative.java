@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class RationalTanhDerivative extends BaseTransformOp {
 
-    public RationalTanhDerivative() {
-    }
+    public RationalTanhDerivative() {}
 
     public RationalTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -107,9 +106,12 @@ public class RationalTanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanhDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -118,9 +120,12 @@ public class RationalTanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanhDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

@@ -15,6 +15,6 @@ public interface IndexMapper {
      * @param ordering the ordering for the array
      * @return the coordinates
      */
-    int[] ind2sub(int[] shape,int index,int numIndices,char ordering);
+    int[] ind2sub(int[] shape, int index, int numIndices, char ordering);
 
 }

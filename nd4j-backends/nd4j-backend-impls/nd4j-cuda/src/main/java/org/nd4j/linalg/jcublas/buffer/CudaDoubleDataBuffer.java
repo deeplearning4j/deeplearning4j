@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -55,7 +55,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, 8);
     }
 
-    public CudaDoubleDataBuffer(long length, boolean initialize){
+    public CudaDoubleDataBuffer(long length, boolean initialize) {
         super(length, 8, initialize);
     }
 
@@ -128,7 +128,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaDoubleDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int)length);
+        super(buffer, (int) length);
     }
 
     public CudaDoubleDataBuffer(ByteBuffer buffer, long length, long offset) {
@@ -142,7 +142,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             /*long offset = indices[0];
@@ -160,7 +161,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             /*long offset = indices[0];
@@ -192,9 +194,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
 
 
-
-
-
     @Override
     public DataBuffer create(double[] data) {
         return new CudaDoubleDataBuffer(data);
@@ -210,8 +209,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         return new CudaDoubleDataBuffer(data);
     }
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws java.io.IOException {
+    private void writeObject(java.io.ObjectOutputStream stream) throws java.io.IOException {
         stream.defaultWriteObject();
 
         if (getHostPointer() == null) {
@@ -226,8 +224,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         }
     }
 
-    private void readObject(java.io.ObjectInputStream stream)
-            throws java.io.IOException, ClassNotFoundException {
+    private void readObject(java.io.ObjectInputStream stream) throws java.io.IOException, ClassNotFoundException {
         stream.defaultReadObject();
 
         int n = stream.readInt();
@@ -243,7 +240,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         //wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
         //wrappedBuffer.order(ByteOrder.nativeOrder());
 
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, Type.DOUBLE), false);
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                        new AllocationShape(length, elementSize, Type.DOUBLE), false);
         this.trackingPoint = allocationPoint.getObjectId();
         this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
         this.wrappedBuffer.order(ByteOrder.nativeOrder());

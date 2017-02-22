@@ -61,34 +61,47 @@ public class CudaBlas extends Nd4jBlas {
     }
 
     static int convertTranspose(int op) {
-        switch(op) {
-            case 78: return CUBLAS_OP_N;
-            case 84: return CUBLAS_OP_T;
-            case 67: return CUBLAS_OP_C;
-            default: return CUBLAS_OP_N;
+        switch (op) {
+            case 78:
+                return CUBLAS_OP_N;
+            case 84:
+                return CUBLAS_OP_T;
+            case 67:
+                return CUBLAS_OP_C;
+            default:
+                return CUBLAS_OP_N;
         }
     }
 
     static int convertPointerMode(int pointerMode) {
-        switch(pointerMode) {
-            case 0: return CUBLAS_POINTER_MODE_HOST;
-            case 1: return CUBLAS_POINTER_MODE_DEVICE;
-            default: return CUBLAS_POINTER_MODE_HOST;
-        }}
-
-    static int convertSideMode(int sideMode) {
-        switch(sideMode) {
-            case 0: return CUBLAS_SIDE_LEFT;
-            case 1: return CUBLAS_SIDE_RIGHT;
-            default: return CUBLAS_SIDE_LEFT;
+        switch (pointerMode) {
+            case 0:
+                return CUBLAS_POINTER_MODE_HOST;
+            case 1:
+                return CUBLAS_POINTER_MODE_DEVICE;
+            default:
+                return CUBLAS_POINTER_MODE_HOST;
         }
     }
 
-    @Override public void setMaxThreads(int num) {
+    static int convertSideMode(int sideMode) {
+        switch (sideMode) {
+            case 0:
+                return CUBLAS_SIDE_LEFT;
+            case 1:
+                return CUBLAS_SIDE_RIGHT;
+            default:
+                return CUBLAS_SIDE_LEFT;
+        }
+    }
+
+    @Override
+    public void setMaxThreads(int num) {
         // no-op
     }
 
-    @Override public int getMaxThreads() {
+    @Override
+    public int getMaxThreads() {
         // 0 - cuBLAS
         return 0;
     }

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class NoUpdateStorage extends BaseUpdateStorage {
     private AtomicInteger updateCount = new AtomicInteger(0);
+
     /**
      * Add an ndarray to the storage
      *

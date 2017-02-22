@@ -120,12 +120,12 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
      * @param statistics the files to persist
      * @throws IOException
      */
-    void load(File...statistics) throws IOException;
+    void load(File... statistics) throws IOException;
 
     /**
      * Save the accumulated statistics
      * @param statistics the statistics to save
      * @throws IOException
      */
-    void save(File...statistics) throws IOException;
+    void save(File... statistics) throws IOException;
 }

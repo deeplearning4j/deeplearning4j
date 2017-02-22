@@ -11,7 +11,7 @@ public class UniformDistribution extends BaseRandomOp {
     private double from;
     private double to;
 
-    public UniformDistribution(){
+    public UniformDistribution() {
         super();
     }
 
@@ -25,7 +25,7 @@ public class UniformDistribution extends BaseRandomOp {
         init(null, null, z, z.lengthLong());
         this.from = from;
         this.to = to;
-        this.extraArgs = new Object[]{this.from, this.to};
+        this.extraArgs = new Object[] {this.from, this.to};
     }
 
     /**

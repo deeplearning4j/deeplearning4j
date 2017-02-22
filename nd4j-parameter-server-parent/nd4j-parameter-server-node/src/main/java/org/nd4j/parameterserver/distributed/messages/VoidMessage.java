@@ -38,7 +38,8 @@ public interface VoidMessage extends Serializable {
 
     static <T extends VoidMessage> T fromBytes(byte[] array) {
         try {
-            ObjectInputStream in = new ClassLoaderObjectInputStream(Thread.currentThread().getContextClassLoader(), new ByteArrayInputStream(array));
+            ObjectInputStream in = new ClassLoaderObjectInputStream(Thread.currentThread().getContextClassLoader(),
+                            new ByteArrayInputStream(array));
 
             T result = (T) in.readObject();
             return result;
@@ -51,7 +52,8 @@ public interface VoidMessage extends Serializable {
     /**
      * This method initializes message for further processing
      */
-    void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex);
+    void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer,
+                    Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex);
 
     void extractContext(BaseVoidMessage message);
 

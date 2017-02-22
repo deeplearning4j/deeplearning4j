@@ -10,10 +10,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  */
 public interface RetransmissionHandler {
     public enum TransmissionStatus {
-        MESSAGE_SENT,
-        NOT_CONNECTED,
-        BACKPRESSURE,
-        ADMIN_ACTION,
+        MESSAGE_SENT, NOT_CONNECTED, BACKPRESSURE, ADMIN_ACTION,
     }
 
     void init(VoidConfiguration configuration, Transport transport);
@@ -27,7 +24,7 @@ public interface RetransmissionHandler {
             return TransmissionStatus.MESSAGE_SENT;
         } else if (resp == -1) {
             return TransmissionStatus.NOT_CONNECTED;
-        } else  if (resp == -2) {
+        } else if (resp == -2) {
             return TransmissionStatus.BACKPRESSURE;
         } else if (resp == -3) {
             return TransmissionStatus.ADMIN_ACTION;

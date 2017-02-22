@@ -30,7 +30,8 @@ public abstract class BaseVoidMessage implements VoidMessage {
     protected transient short shardIndex;
     protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
-    @Setter(AccessLevel.PRIVATE) protected transient int retransmitCount = 0;
+    @Setter(AccessLevel.PRIVATE)
+    protected transient int retransmitCount = 0;
 
     protected BaseVoidMessage(int messageType) {
         this.messageType = messageType;
@@ -52,7 +53,9 @@ public abstract class BaseVoidMessage implements VoidMessage {
     }
 
     @Override
-    public void attachContext(@NonNull VoidConfiguration voidConfiguration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+    public void attachContext(@NonNull VoidConfiguration voidConfiguration,
+                    @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard,
+                    @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
         this.voidConfiguration = voidConfiguration;
         this.clipboard = clipboard;
         this.transport = transport;
@@ -64,7 +67,7 @@ public abstract class BaseVoidMessage implements VoidMessage {
 
     @Override
     public void extractContext(@NonNull BaseVoidMessage message) {
-        this.voidConfiguration =  message.voidConfiguration;
+        this.voidConfiguration = message.voidConfiguration;
         this.clipboard = message.clipboard;
         this.transport = message.transport;
         this.storage = message.storage;

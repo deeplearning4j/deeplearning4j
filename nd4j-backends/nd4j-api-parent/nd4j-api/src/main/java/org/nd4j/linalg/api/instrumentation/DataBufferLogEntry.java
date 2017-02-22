@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,8 +38,7 @@ public class DataBufferLogEntry implements Serializable {
     protected long timestamp;
     protected String status = "created";
 
-    public DataBufferLogEntry() {
-    }
+    public DataBufferLogEntry() {}
 
     public DataBufferLogEntry(DataBuffer buffer, String status) {
         this.length = buffer.length();
@@ -57,12 +56,8 @@ public class DataBufferLogEntry implements Serializable {
 
     @Override
     public String toString() {
-        return "DataBufferLogEntry{" +
-                "length=" + length +
-                ", references=" + references +
-                ", dataType='" + dataType + '\'' +
-                ", stackTraceElements=" + Arrays.toString(stackTraceElements) +
-                '}';
+        return "DataBufferLogEntry{" + "length=" + length + ", references=" + references + ", dataType='" + dataType
+                        + '\'' + ", stackTraceElements=" + Arrays.toString(stackTraceElements) + '}';
     }
 
     public String getStatus() {
@@ -75,17 +70,25 @@ public class DataBufferLogEntry implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DataBufferLogEntry)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof DataBufferLogEntry))
+            return false;
 
         DataBufferLogEntry that = (DataBufferLogEntry) o;
 
-        if (length != that.length) return false;
-        if (timestamp != that.timestamp) return false;
-        if (dataType != null ? !dataType.equals(that.dataType) : that.dataType != null) return false;
-        if (references != null ? !references.equals(that.references) : that.references != null) return false;
-        if (!Arrays.equals(stackTraceElements, that.stackTraceElements)) return false;
-        if (status != null ? !status.equals(that.status) : that.status != null) return false;
+        if (length != that.length)
+            return false;
+        if (timestamp != that.timestamp)
+            return false;
+        if (dataType != null ? !dataType.equals(that.dataType) : that.dataType != null)
+            return false;
+        if (references != null ? !references.equals(that.references) : that.references != null)
+            return false;
+        if (!Arrays.equals(stackTraceElements, that.stackTraceElements))
+            return false;
+        if (status != null ? !status.equals(that.status) : that.status != null)
+            return false;
 
         return true;
     }

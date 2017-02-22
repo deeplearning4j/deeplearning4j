@@ -23,7 +23,7 @@ public class ActivationSoftmax extends BaseActivationFunction {
     }
 
     @Override
-    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
+    public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         /*
         //libnd4j only returns diagonal elements, fix in libnd4j?
         //derivative of softmax(in) shape = minibatchxclasses should give minibatch x classes x classes
@@ -33,19 +33,19 @@ public class ActivationSoftmax extends BaseActivationFunction {
         INDArray z = Nd4j.zeros(miniBatchSize,classSize,classSize);
         INDArray i = Nd4j.eye(classSize);
         INDArray out = z.dup();
-
+        
         //identity matrix extended to 3d
         Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(z,i,out,new int[] {1,2}));
-
+        
         //D_jS_j = S_i * (delta_ij - S_j)
         Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(out,in,z,new int[] {0,1}));//1-p or -p
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(z,in,out,new int[] {0,1}));//p*(1-p) or -pi*pj
-
+        
         gradient = out;
         */
         //use loss fn utils and push this for next release
-//        Nd4j.getExecutioner().execAndReturn(new SoftMax(in).derivative());
-//        return in;
+        //        Nd4j.getExecutioner().execAndReturn(new SoftMax(in).derivative());
+        //        return in;
 
         INDArray out = Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
 

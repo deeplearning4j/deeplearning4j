@@ -39,7 +39,7 @@ public class EnvironmentUtils {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
 
-            for (NetworkInterface networkInterface: interfaces) {
+            for (NetworkInterface networkInterface : interfaces) {
                 try {
                     byte[] arr = networkInterface.getHardwareAddress();
                     long seed = 0;
@@ -58,6 +58,6 @@ public class EnvironmentUtils {
             ; // do nothing here
         }
 
-        return ret ;
+        return ret;
     }
 }

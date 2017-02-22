@@ -14,6 +14,6 @@ public class ConvolutionOpRunner implements OpRunner {
 
     @Override
     public void runOp() {
-        Convolution.conv2d(arr,arr, Convolution.Type.FULL);
+        Convolution.conv2d(arr, arr, Convolution.Type.FULL);
     }
 }

@@ -25,12 +25,13 @@ public class ImagePreProcessingScaler implements DataNormalization {
     private int maxBits;
 
     public ImagePreProcessingScaler() {
-        this(0,1,8);
+        this(0, 1, 8);
     }
 
     public ImagePreProcessingScaler(double a, double b) {
         this(a, b, 8);
     }
+
     /**
      * Preprocessor can take a range as minRange and maxRange
      * @param a, default = 0
@@ -41,7 +42,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
         //Image values are not always from 0 to 255 though
         //some images are 16-bit, some 32-bit, integer, or float, and those BTW already come with values in [0..1]...
         //If the max expected value is 1, maxBits should be specified as 1
-        maxPixelVal = Math.pow(2,maxBits) - 1;
+        maxPixelVal = Math.pow(2, maxBits) - 1;
         this.minRange = a;
         this.maxRange = b;
     }
@@ -103,7 +104,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
-    public void transformLabel(INDArray label){
+    public void transformLabel(INDArray label) {
         //No op
     }
 
@@ -119,11 +120,11 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void revertFeatures(INDArray features) {
-        if(minRange != 0){
+        if (minRange != 0) {
             features.subi(minRange);
         }
-        if(maxRange - minRange != 1.0){
-            features.divi(maxRange-minRange);
+        if (maxRange - minRange != 1.0) {
+            features.divi(maxRange - minRange);
         }
         features.muli(this.maxPixelVal);
     }
@@ -145,7 +146,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void fitLabel(boolean fitLabels) {
-        if(fitLabels){
+        if (fitLabels) {
             log.warn("Labels fitting not currently supported for ImagePreProcessingScaler. Labels will not be modified");
         }
     }

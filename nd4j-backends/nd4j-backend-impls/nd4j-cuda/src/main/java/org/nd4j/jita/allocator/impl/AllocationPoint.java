@@ -41,8 +41,12 @@ public class AllocationPoint {
     // thread safety is guaranteed by cudaLock
     private volatile PointersPair pointerInfo;
 
-    @Getter @Setter private Long objectId;
-    @Getter @Setter private Long bucketId;
+    @Getter
+    @Setter
+    private Long objectId;
+    @Getter
+    @Setter
+    private Long bucketId;
 
     // thread safety is guaranteed by allocLock
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
@@ -64,15 +68,20 @@ public class AllocationPoint {
 
     protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-    @Getter @Setter protected volatile cudaEvent_t writeLane;
+    @Getter
+    @Setter
+    protected volatile cudaEvent_t writeLane;
 
-    @Getter protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
+    @Getter
+    protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
 
-    @Getter @Setter private boolean constant;
+    @Getter
+    @Setter
+    private boolean constant;
 
     // TODO: timer should be instantiated externally
-//    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
-//    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+    //    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
+    //    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
      device, where memory was/will be allocated.
@@ -101,13 +110,15 @@ public class AllocationPoint {
     /*
         We assume 1D memory chunk allocations.
     */
-    @Getter @Setter private AllocationShape shape;
+    @Getter
+    @Setter
+    private AllocationShape shape;
 
     private AtomicLong deviceTicks = new AtomicLong(0);
 
-//    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
+    //    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
-//    @Getter private AtomicState accessState = new AtomicState();
+    //    @Getter private AtomicState accessState = new AtomicState();
 
     private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
 
@@ -115,9 +126,13 @@ public class AllocationPoint {
 
     private AtomicBoolean enqueued = new AtomicBoolean(false);
 
-    @Getter @Setter private cudaEvent_t lastWriteEvent;
+    @Getter
+    @Setter
+    private cudaEvent_t lastWriteEvent;
 
-    @Getter @Setter private cudaEvent_t lastReadEvent;
+    @Getter
+    @Setter
+    private cudaEvent_t lastReadEvent;
 
     private cudaEvent_t lastEvent;
 
@@ -192,7 +207,8 @@ public class AllocationPoint {
     public DataBuffer getBuffer() {
         if (originalDataBufferReference != null) {
             return originalDataBufferReference.get();
-        } else return null;
+        } else
+            return null;
     }
 
     /**
@@ -200,7 +216,7 @@ public class AllocationPoint {
      * @return
      */
     public AllocationStatus getAllocationStatus() {
-            return allocationStatus;
+        return allocationStatus;
     }
 
     /**
@@ -208,7 +224,7 @@ public class AllocationPoint {
      * @param status
      */
     public void setAllocationStatus(@NonNull AllocationStatus status) {
-            allocationStatus = status;
+        allocationStatus = status;
     }
 
     /**
@@ -219,11 +235,11 @@ public class AllocationPoint {
      * @return
      */
     public Pointer getDevicePointer() {
-            if (pointerInfo == null) {
-                log.info("pointerInfo is null");
-                return null;
-            }
-            return pointerInfo.getDevicePointer();
+        if (pointerInfo == null) {
+            log.info("pointerInfo is null");
+            return null;
+        }
+        return pointerInfo.getDevicePointer();
     }
 
     /**
@@ -234,10 +250,10 @@ public class AllocationPoint {
      * @return
      */
     public Pointer getHostPointer() {
-            if (pointerInfo == null)
-                return null;
+        if (pointerInfo == null)
+            return null;
 
-            return pointerInfo.getHostPointer();
+        return pointerInfo.getHostPointer();
     }
 
     /**
@@ -252,7 +268,7 @@ public class AllocationPoint {
     }
 
     public PointersPair getPointers() {
-            return this.pointerInfo;
+        return this.pointerInfo;
     }
 
     public long getDeviceTicks() {
@@ -260,9 +276,9 @@ public class AllocationPoint {
     }
 
     public void tickDeviceRead() {
-//        this.deviceTicks.incrementAndGet();
-//        this.timerShort.triggerEvent();
-//        this.timerLong.triggerEvent();
+        //        this.deviceTicks.incrementAndGet();
+        //        this.timerShort.triggerEvent();
+        //        this.timerLong.triggerEvent();
         //this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
     }
@@ -318,7 +334,7 @@ public class AllocationPoint {
      *
      */
     public void tickDeviceWrite() {
-//        deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        //        deviceAccessTime.set(realTimeProvider.getCurrentTime());
         tickDeviceRead();
         accessDeviceWrite.set(timeProvider.getCurrentTime());
     }
@@ -338,7 +354,8 @@ public class AllocationPoint {
      */
     public boolean isActualOnHostSide() {
         //log.info("isActuialOnHostSide() -> Host side: [{}], Device side: [{}]", accessHostRead.get(), accessDeviceRead.get());
-        boolean result = accessHostWrite.get() >= accessDeviceWrite.get() || accessHostRead.get() >= accessDeviceWrite.get();
+        boolean result = accessHostWrite.get() >= accessDeviceWrite.get()
+                        || accessHostRead.get() >= accessDeviceWrite.get();
         //log.info("isActuialOnHostSide() -> {}, shape: {}", result, shape);
         return result;
     }
@@ -350,8 +367,9 @@ public class AllocationPoint {
      */
     public boolean isActualOnDeviceSide() {
         //log.info("isActuialOnDeviceSide() -> Host side: [{}], Device side: [{}]", accessHostWrite.get(), accessDeviceWrite.get());
-        boolean result = accessDeviceWrite.get() >= accessHostWrite.get() || accessDeviceRead.get() >= accessHostWrite.get(); //accessHostWrite.get() <= getDeviceAccessTime();
-//        log.info("isActuialOnDeviceSide() -> {} ({}), Shape: {}", result, objectId, shape);
+        boolean result = accessDeviceWrite.get() >= accessHostWrite.get()
+                        || accessDeviceRead.get() >= accessHostWrite.get(); //accessHostWrite.get() <= getDeviceAccessTime();
+        //        log.info("isActuialOnDeviceSide() -> {} ({}), Shape: {}", result, objectId, shape);
         return result;
     }
 
@@ -365,10 +383,6 @@ public class AllocationPoint {
 
     @Override
     public String toString() {
-        return "AllocationPoint{" +
-                "deviceId=" + deviceId +
-                ", objectId=" + objectId +
-                ", shape=" + shape +
-                '}';
+        return "AllocationPoint{" + "deviceId=" + deviceId + ", objectId=" + objectId + ", shape=" + shape + '}';
     }
 }

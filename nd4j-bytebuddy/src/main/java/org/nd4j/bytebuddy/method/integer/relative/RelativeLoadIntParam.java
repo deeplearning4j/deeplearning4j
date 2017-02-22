@@ -17,8 +17,9 @@ public class RelativeLoadIntParam implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        methodVisitor.visitIntInsn(Opcodes.ILOAD,offset);
-        return new Size(1,1);
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
+        methodVisitor.visitIntInsn(Opcodes.ILOAD, offset);
+        return new Size(1, 1);
     }
 }

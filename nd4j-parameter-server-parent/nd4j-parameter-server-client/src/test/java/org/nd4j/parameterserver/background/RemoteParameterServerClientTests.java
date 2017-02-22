@@ -32,22 +32,19 @@ public class RemoteParameterServerClientTests {
 
     @Before
     public void before() throws Exception {
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .dirsDeleteOnStart(true)
-                .termBufferSparseFile(false)
-                .conductorIdleStrategy(new BusySpinIdleStrategy())
-                .receiverIdleStrategy(new BusySpinIdleStrategy())
-                .senderIdleStrategy(new BusySpinIdleStrategy());
+        final MediaDriver.Context ctx =
+                        new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED).dirsDeleteOnStart(true)
+                                        .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
+                                        .receiverIdleStrategy(new BusySpinIdleStrategy())
+                                        .senderIdleStrategy(new BusySpinIdleStrategy());
 
         mediaDriver = MediaDriver.launchEmbedded(ctx);
         aeron = Aeron.connect(getContext());
 
         Thread t = new Thread(() -> {
             try {
-                masterStatus.set(BackgroundDaemonStarter.startMaster(
-                        parameterLength,
-                        mediaDriver.aeronDirectoryName()));
+                masterStatus.set(
+                                BackgroundDaemonStarter.startMaster(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -57,9 +54,7 @@ public class RemoteParameterServerClientTests {
         log.info("Started master");
         Thread t2 = new Thread(() -> {
             try {
-                slaveStatus.set(BackgroundDaemonStarter.startSlave(
-                        parameterLength,
-                        mediaDriver.aeronDirectoryName()));
+                slaveStatus.set(BackgroundDaemonStarter.startSlave(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -80,22 +75,17 @@ public class RemoteParameterServerClientTests {
 
     @Test
     public void remoteTests() throws Exception {
-        if(masterStatus.get() != 0 || slaveStatus.get() != 0)
+        if (masterStatus.get() != 0 || slaveStatus.get() != 0)
             throw new IllegalStateException("Master or slave failed to start. Exiting");
 
-        ParameterServerClient client = ParameterServerClient
-                .builder()
-                .aeron(aeron)
-                .ndarrayRetrieveUrl(BackgroundDaemonStarter.masterResponderUrl())
-                .ndarraySendUrl(BackgroundDaemonStarter.slaveConnectionUrl())
-                .subscriberHost("localhost")
-                .masterStatusHost("localhost")
-                .masterStatusPort(9200)
-                .subscriberPort(40125)
-                .subscriberStream(12).build();
+        ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)
+                        .ndarrayRetrieveUrl(BackgroundDaemonStarter.masterResponderUrl())
+                        .ndarraySendUrl(BackgroundDaemonStarter.slaveConnectionUrl()).subscriberHost("localhost")
+                        .masterStatusHost("localhost").masterStatusPort(9200).subscriberPort(40125).subscriberStream(12)
+                        .build();
 
-        assertEquals("localhost:40125:12",client.connectionUrl());
-        while(!client.masterStarted()) {
+        assertEquals("localhost:40125:12", client.connectionUrl());
+        while (!client.masterStarted()) {
             Thread.sleep(1000);
             log.info("Waiting on master starting.");
         }
@@ -109,16 +99,16 @@ public class RemoteParameterServerClientTests {
          */
         log.info("Pushing ndarray");
         client.pushNDArray(Nd4j.ones(parameterLength));
-        while(client.arraysSentToResponder() < 1) {
+        while (client.arraysSentToResponder() < 1) {
             Thread.sleep(1000);
             log.info("Waiting on ndarray responder to receive array");
         }
 
         log.info("Pushed ndarray");
         INDArray arr = client.getArray();
-        assertEquals(Nd4j.ones(1000),arr);
+        assertEquals(Nd4j.ones(1000), arr);
 
-/*
+        /*
         StopWatch stopWatch = new StopWatch();
         long nanoTimeTotal = 0;
         int n = 1000;
@@ -129,9 +119,9 @@ public class RemoteParameterServerClientTests {
             nanoTimeTotal += stopWatch.getNanoTime();
             stopWatch.reset();
         }
-
+        
         System.out.println(nanoTimeTotal / n);
-*/
+        */
 
 
 
@@ -139,15 +129,13 @@ public class RemoteParameterServerClientTests {
 
 
 
-
-
     private Aeron.Context getContext() {
-        if(ctx == null)
+        if (ctx == null)
             ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                    .availableImageHandler(AeronUtil::printAvailableImage)
-                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                    .errorHandler(e -> log.error(e.toString(), e));
+                            .availableImageHandler(AeronUtil::printAvailableImage)
+                            .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                            .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }
 

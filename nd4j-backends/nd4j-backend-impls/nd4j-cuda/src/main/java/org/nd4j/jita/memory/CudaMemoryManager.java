@@ -36,7 +36,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
             return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
             return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
-        } else throw new RuntimeException("Unknown MemoryKind requested: " + kind);
+        } else
+            throw new RuntimeException("Unknown MemoryKind requested: " + kind);
     }
 
     /**
@@ -54,7 +55,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
         int cnt = -1;
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        for(INDArray array: arrays) {
+        for (INDArray array : arrays) {
             cnt++;
             // we don't collect views, since they don't have their own memory
             if (array == null || array.isView())
@@ -69,7 +70,9 @@ public class CudaMemoryManager extends BasicMemoryManager {
                 allocator.getMemoryHandler().free(point, AllocationStatus.HOST);
             } else if (point.getAllocationStatus() == AllocationStatus.DEALLOCATED) {
                 // do nothing
-            } else throw new RuntimeException("Unknown AllocationStatus: " + point.getAllocationStatus() + " for argument: " + cnt);
+            } else
+                throw new RuntimeException(
+                                "Unknown AllocationStatus: " + point.getAllocationStatus() + " for argument: " + cnt);
 
             point.setAllocationStatus(AllocationStatus.DEALLOCATED);
         }
@@ -82,13 +85,13 @@ public class CudaMemoryManager extends BasicMemoryManager {
     @Override
     public synchronized void purgeCaches() {
         // reset device cache offset
-//        Nd4j.getConstantHandler().purgeConstants();
+        //        Nd4j.getConstantHandler().purgeConstants();
 
         // reset TADs
-//        ((CudaGridExecutioner) Nd4j.getExecutioner()).getTadManager().purgeBuffers();
+        //        ((CudaGridExecutioner) Nd4j.getExecutioner()).getTadManager().purgeBuffers();
 
         // purge shapes
-//        Nd4j.getShapeInfoProvider().purgeCache();
+        //        Nd4j.getShapeInfoProvider().purgeCache();
 
         // purge memory cache
         AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
@@ -114,17 +117,17 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
                 AtomicAllocator.getInstance().synchronizeHostData(srcBuffer);
 
-               // Pointer src = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
+                // Pointer src = AtomicAllocator.getInstance().getPointer(srcBuffer, context);
 
-               // NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstBuffer.addressPointer(), src, size, 2, context.getSpecialStream());
-               // context.syncSpecialStream();
+                // NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstBuffer.addressPointer(), src, size, 2, context.getSpecialStream());
+                // context.syncSpecialStream();
 
-            }// else {
-                // copying host -> host
-                Pointer src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
+            } // else {
+              // copying host -> host
+            Pointer src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
 
-                Pointer.memcpy(dstBuffer.addressPointer(), src, size);
-           // }
+            Pointer.memcpy(dstBuffer.addressPointer(), src, size);
+            // }
 
         } else if (!(dstBuffer instanceof CompressedDataBuffer) && srcBuffer instanceof CompressedDataBuffer) {
             // destination is NOT compressed, source is compressed
@@ -138,7 +141,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
             // both buffers are compressed, just fire memcpy
 
 
-            Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(), srcBuffer.length() * srcBuffer.getElementSize());
+            Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
+                            srcBuffer.length() * srcBuffer.getElementSize());
         } else {
             // both buffers are NOT compressed
             AtomicAllocator.getInstance().memcpy(dstBuffer, srcBuffer);

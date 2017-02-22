@@ -24,15 +24,15 @@ public class ParamsTestsF extends BaseNd4jTest {
     @Test
     public void testGemm() {
         INDArray a = Nd4j.create(2, 2);
-        INDArray b = Nd4j.create(2,3);
-        INDArray c = Nd4j.create(2,3);
-        GemmParams params = new GemmParams(a,b,c);
-        assertEquals(a.rows(),params.getM());
-        assertEquals(b.columns(),params.getN());
-        assertEquals(a.columns(),params.getK());
-        assertEquals(a.rows(),params.getLda());
-        assertEquals(b.rows(),params.getLdb());
-        assertEquals(c.rows(),params.getLdc());
+        INDArray b = Nd4j.create(2, 3);
+        INDArray c = Nd4j.create(2, 3);
+        GemmParams params = new GemmParams(a, b, c);
+        assertEquals(a.rows(), params.getM());
+        assertEquals(b.columns(), params.getN());
+        assertEquals(a.columns(), params.getK());
+        assertEquals(a.rows(), params.getLda());
+        assertEquals(b.rows(), params.getLdb());
+        assertEquals(c.rows(), params.getLdc());
     }
 
     @Override

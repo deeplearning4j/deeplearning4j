@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -104,27 +104,27 @@ public interface Accumulation extends Op {
     /** Complex update.
      * @see #update(double, double)
      */
-    IComplexNumber update( IComplexNumber accum, double x);
+    IComplexNumber update(IComplexNumber accum, double x);
 
     /** Complex update.
      * @see #update(double, double, double)
      */
-    IComplexNumber update( IComplexNumber accum, double x, double y);
+    IComplexNumber update(IComplexNumber accum, double x, double y);
 
     /** Complex update.
      * @see #update(double, double)
      */
-    IComplexNumber update( IComplexNumber accum, IComplexNumber x);
+    IComplexNumber update(IComplexNumber accum, IComplexNumber x);
 
     /** Complex update.
      * @see #update(double, double, double)
      */
-    IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y);
+    IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y);
 
     /** Complex update.
      * @see #update(double, double, double)
      */
-    IComplexNumber update( IComplexNumber accum, IComplexNumber x, double y);
+    IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y);
 
     /** Combine sub-results, when the Accumulation operation is split and executed in
      * parallel.<br>

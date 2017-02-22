@@ -8,8 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class NDArrayMath {
 
 
-    private NDArrayMath() {
-    }
+    private NDArrayMath() {}
 
     /**
      * Compute the offset for a given slice
@@ -18,7 +17,7 @@ public class NDArrayMath {
      * @param slice the slice to compute the offset for
      * @return the offset for a given slice
      */
-    public static int offsetForSlice(INDArray arr,int slice) {
+    public static int offsetForSlice(INDArray arr, int slice) {
         return slice * lengthPerSlice(arr);
     }
 
@@ -31,7 +30,7 @@ public class NDArrayMath {
      * @return the number of elements in a slice along
      * arbitrary dimensions
      */
-    public static int lengthPerSlice(INDArray arr,int...dimension) {
+    public static int lengthPerSlice(INDArray arr, int... dimension) {
         int[] remove = ArrayUtil.removeIndex(arr.shape(), dimension);
         return ArrayUtil.prod(remove);
     }
@@ -53,13 +52,13 @@ public class NDArrayMath {
      * @return the number of vectors for the given array
      */
     public static int numVectors(INDArray arr) {
-        if(arr.rank() == 1)
+        if (arr.rank() == 1)
             return 1;
-        else if(arr.rank() == 2)
+        else if (arr.rank() == 2)
             return arr.size(0);
         else {
             int prod = 1;
-            for(int i = 0; i < arr.rank() - 1; i++) {
+            for (int i = 0; i < arr.rank() - 1; i++) {
                 prod *= arr.size(i);
             }
 
@@ -77,8 +76,8 @@ public class NDArrayMath {
      * @return the number of vectors per slice
      */
     public static int vectorsPerSlice(INDArray arr) {
-        if(arr.rank() > 2) {
-            return ArrayUtil.prod(new int[]{arr.size(-1),arr.size(-2)});
+        if (arr.rank() > 2) {
+            return ArrayUtil.prod(new int[] {arr.size(-1), arr.size(-2)});
         }
 
         return arr.slices();
@@ -92,7 +91,7 @@ public class NDArrayMath {
      * @param tensorShape the desired tensor shape
      * @return the tensors per slice of an ndarray
      */
-    public static int tensorsPerSlice(INDArray arr,int[] tensorShape) {
+    public static int tensorsPerSlice(INDArray arr, int[] tensorShape) {
         return lengthPerSlice(arr) / ArrayUtil.prod(tensorShape);
     }
 
@@ -105,12 +104,11 @@ public class NDArrayMath {
      * @return the number of vectors per slice
      */
     public static int matricesPerSlice(INDArray arr) {
-        if(arr.rank() == 3) {
+        if (arr.rank() == 3) {
             return 1;
-        }
-        else if(arr.rank() > 3) {
+        } else if (arr.rank() > 3) {
             int ret = 1;
-            for(int i = 1; i < arr.rank() - 2; i++) {
+            for (int i = 1; i < arr.rank() - 2; i++) {
                 ret *= arr.size(i);
             }
             return ret;
@@ -127,8 +125,8 @@ public class NDArrayMath {
      * @param rank the dimensions to get the number of vectors per slice for
      * @return the number of vectors per slice
      */
-    public static int vectorsPerSlice(INDArray arr,int...rank) {
-        if(arr.rank() > 2) {
+    public static int vectorsPerSlice(INDArray arr, int... rank) {
+        if (arr.rank() > 2) {
             return arr.size(-2) * arr.size(-1);
         }
 
@@ -161,7 +159,7 @@ public class NDArrayMath {
      * @param rank the dimensions to compute a slice for
      * @return the mapped index
      */
-    public static int mapIndexOntoTensor(int index,INDArray arr,int...rank) {
+    public static int mapIndexOntoTensor(int index, INDArray arr, int... rank) {
         int ret = index * ArrayUtil.prod(ArrayUtil.removeIndex(arr.shape(), rank));
         return ret;
     }
@@ -176,7 +174,7 @@ public class NDArrayMath {
      *            for indexing
      * @return the mapped index
      */
-    public static int mapIndexOntoVector(int index,INDArray arr) {
+    public static int mapIndexOntoVector(int index, INDArray arr) {
         int ret = index * arr.size(-1);
         return ret;
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,13 +31,13 @@ import java.nio.Buffer;
  */
 public interface JCudaBuffer extends DataBuffer {
 
-	/**
-	 * Get the underlying host bytebuffer
-	 * @return
-	 */
+    /**
+     * Get the underlying host bytebuffer
+     * @return
+     */
     @Deprecated
-	Buffer getHostBuffer();
-	
+    Buffer getHostBuffer();
+
     /**
      * THe pointer for the buffer
      *

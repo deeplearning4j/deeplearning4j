@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -48,7 +48,7 @@ public class IntBuffer extends BaseDataBuffer {
         super(length);
     }
 
-    public IntBuffer(long length, boolean initialize){
+    public IntBuffer(long length, boolean initialize) {
         super(length, initialize);
     }
 
@@ -92,10 +92,9 @@ public class IntBuffer extends BaseDataBuffer {
         super(underlyingBuffer, length, offset);
     }
 
-    public IntBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public IntBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
-
 
 
 
@@ -123,12 +122,12 @@ public class IntBuffer extends BaseDataBuffer {
 
     @Override
     public DataBuffer create(float[] data) {
-       return new IntBuffer(data);
+        return new IntBuffer(data);
     }
 
     @Override
     public DataBuffer create(int[] data) {
-       return new IntBuffer(data);
+        return new IntBuffer(data);
     }
 
     @Override
@@ -145,7 +144,6 @@ public class IntBuffer extends BaseDataBuffer {
     public IntBuffer(int[] data, boolean copy) {
         super(data, copy);
     }
-
 
 
 

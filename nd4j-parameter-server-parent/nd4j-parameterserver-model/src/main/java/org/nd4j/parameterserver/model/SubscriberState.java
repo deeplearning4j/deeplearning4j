@@ -21,13 +21,13 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubscriberState implements Serializable,Comparable<SubscriberState> {
+public class SubscriberState implements Serializable, Comparable<SubscriberState> {
     private boolean isMaster;
     private String serverState;
     private int totalUpdates;
     private int streamId;
     private String connectionInfo;
-    private Map<String,Number> parameterUpdaterStatus;
+    private Map<String, Number> parameterUpdaterStatus;
     private boolean isAsync;
     private boolean isReady;
 
@@ -40,9 +40,8 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
      * @return an empty subscriber state
      */
     public static SubscriberState empty() {
-        return SubscriberState.builder().serverState("empty")
-                .streamId(-1).parameterUpdaterStatus(Collections.emptyMap())
-                .totalUpdates(-1).isMaster(false).build();
+        return SubscriberState.builder().serverState("empty").streamId(-1)
+                        .parameterUpdaterStatus(Collections.emptyMap()).totalUpdates(-1).isMaster(false).build();
     }
 
 
@@ -76,12 +75,8 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
      * @throws IOException
      */
     public static SubscriberState read(DataInput dataInput) throws IOException {
-        return SubscriberState.builder()
-                .isMaster(dataInput.readBoolean())
-                .serverState(dataInput.readUTF())
-                .totalUpdates(dataInput.readInt())
-                .streamId(dataInput.readInt())
-                .build();
+        return SubscriberState.builder().isMaster(dataInput.readBoolean()).serverState(dataInput.readUTF())
+                        .totalUpdates(dataInput.readInt()).streamId(dataInput.readInt()).build();
     }
 
 
@@ -134,6 +129,6 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
      */
     @Override
     public int compareTo(SubscriberState o) {
-        return Integer.compare(streamId,o.streamId);
+        return Integer.compare(streamId, o.streamId);
     }
 }

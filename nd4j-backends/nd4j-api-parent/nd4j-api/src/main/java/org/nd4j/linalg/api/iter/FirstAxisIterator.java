@@ -33,7 +33,7 @@ public class FirstAxisIterator implements Iterator<Object> {
     @Override
     public Object next() {
         INDArray s = iterateOver.slice(i++);
-        if(s.isScalar()) {
+        if (s.isScalar()) {
             return s.getDouble(0);
         } else {
             return s;

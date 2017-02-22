@@ -22,7 +22,7 @@ import net.bytebuddy.jar.asm.Opcodes;
  * @author Adam Gibson
  */
 public class RelativeByteBuddyIntArithmetic implements Implementation {
-    private int val1,val2;
+    private int val1, val2;
     private Operation op;
 
 
@@ -47,13 +47,19 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
      * @return the stack manipulation for the given operation
      */
     public static StackManipulation opFor(Operation operation) {
-        switch(operation) {
-            case ADD: return IntegerAddition.INSTANCE;
-            case SUB: return IntegerSubtraction.INSTANCE;
-            case MUL: return IntegerMultiplication.INSTANCE;
-            case DIV: return IntegerDivision.INSTANCE;
-            case MOD: return IntegerMod.INSTANCE;
-            default: throw new IllegalArgumentException("Illegal type of operation ");
+        switch (operation) {
+            case ADD:
+                return IntegerAddition.INSTANCE;
+            case SUB:
+                return IntegerSubtraction.INSTANCE;
+            case MUL:
+                return IntegerMultiplication.INSTANCE;
+            case DIV:
+                return IntegerDivision.INSTANCE;
+            case MOD:
+                return IntegerMod.INSTANCE;
+            default:
+                throw new IllegalArgumentException("Illegal type of operation ");
         }
     }
 
@@ -65,11 +71,11 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new RelativeIntegerArithmeticByteCodeAppender(val1,val2,op);
+        return new RelativeIntegerArithmeticByteCodeAppender(val1, val2, op);
     }
 
     public enum Operation {
-        ADD,SUB,MUL,DIV,MOD
+        ADD, SUB, MUL, DIV, MOD
     }
 
     public enum IntegerSubtraction implements StackManipulation {
@@ -158,11 +164,9 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
      * @param val2
      * @return
      */
-    public static StackManipulation[] mod(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerMod.INSTANCE,
-                MethodReturn.INTEGER};
+    public static StackManipulation[] mod(int val1, int val2) {
+        return new StackManipulation[] {IntegerConstant.forValue(val1), IntegerConstant.forValue(val2),
+                        IntegerMod.INSTANCE, MethodReturn.INTEGER};
     }
 
     /**
@@ -171,11 +175,9 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
      * @param val2
      * @return
      */
-    public static StackManipulation[] div(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerDivision.INSTANCE,
-                MethodReturn.INTEGER};
+    public static StackManipulation[] div(int val1, int val2) {
+        return new StackManipulation[] {IntegerConstant.forValue(val1), IntegerConstant.forValue(val2),
+                        IntegerDivision.INSTANCE, MethodReturn.INTEGER};
     }
 
 
@@ -185,11 +187,9 @@ public class RelativeByteBuddyIntArithmetic implements Implementation {
      * @param val2
      * @return
      */
-    public static StackManipulation[] times(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerMultiplication.INSTANCE,
-                MethodReturn.INTEGER};
+    public static StackManipulation[] times(int val1, int val2) {
+        return new StackManipulation[] {IntegerConstant.forValue(val1), IntegerConstant.forValue(val2),
+                        IntegerMultiplication.INSTANCE, MethodReturn.INTEGER};
     }
 
 

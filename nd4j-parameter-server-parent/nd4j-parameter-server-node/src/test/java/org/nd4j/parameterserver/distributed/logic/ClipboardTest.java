@@ -41,7 +41,8 @@ public class ClipboardTest {
         Random rng = new Random(12345L);
 
         for (int i = 0; i < 100; i++) {
-            VectorAggregation aggregation = new VectorAggregation(rng.nextLong(), (short) 100, (short) i, Nd4j.create(5));
+            VectorAggregation aggregation =
+                            new VectorAggregation(rng.nextLong(), (short) 100, (short) i, Nd4j.create(5));
 
             clipboard.pin(aggregation);
         }
@@ -61,7 +62,8 @@ public class ClipboardTest {
 
         short shardIdx = 0;
         for (int i = 0; i < 300; i++) {
-            VectorAggregation aggregation = new VectorAggregation(rng.nextLong(), (short) 100, (short) 1, Nd4j.create(5));
+            VectorAggregation aggregation =
+                            new VectorAggregation(rng.nextLong(), (short) 100, (short) 1, Nd4j.create(5));
 
             // imitating valid
             if (i % 2 == 0 && shardIdx < 100) {
@@ -148,9 +150,9 @@ public class ClipboardTest {
             for (int m = 0; m < NUM_MESSAGES; m++) {
                 List<VoidAggregation> list = new ArrayList<>();
 
-                int stepSize =  MESSAGE_SIZE / NUM_SHARDS;
+                int stepSize = MESSAGE_SIZE / NUM_SHARDS;
                 for (int s = 0; s < NUM_SHARDS; s++) {
-                    INDArray payload = Nd4j.linspace((stepSize * s) + 1, (stepSize * (s+1)), stepSize);
+                    INDArray payload = Nd4j.linspace((stepSize * s) + 1, (stepSize * (s + 1)), stepSize);
 
                     VoidAggregation aggregation = new VectorAggregation(m, (short) NUM_SHARDS, (short) s, payload);
                     aggregation.setOriginatorId(0L);

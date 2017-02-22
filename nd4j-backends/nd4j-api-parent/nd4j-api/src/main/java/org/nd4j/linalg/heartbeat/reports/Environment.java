@@ -64,11 +64,9 @@ public class Environment implements Serializable {
             builder.append(backendUsed).append(" ");
         */
 
-        builder.append(backendUsed).append(" (")
-                .append(numCores).append(" cores ")
-                .append(Math.max(availableMemory / 1024 / 1024 / 1024,1 )).append("GB ")
-                .append(osName).append(" ")
-                .append(osArch).append(")");
+        builder.append(backendUsed).append(" (").append(numCores).append(" cores ")
+                        .append(Math.max(availableMemory / 1024 / 1024 / 1024, 1)).append("GB ").append(osName)
+                        .append(" ").append(osArch).append(")");
 
         return builder.toString();
     }

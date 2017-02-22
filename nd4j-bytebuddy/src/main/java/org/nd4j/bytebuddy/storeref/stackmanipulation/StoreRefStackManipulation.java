@@ -29,7 +29,7 @@ public class StoreRefStackManipulation implements StackManipulation {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
-        methodVisitor.visitVarInsn(Opcodes.ASTORE,storeId);
+        methodVisitor.visitVarInsn(Opcodes.ASTORE, storeId);
         return new Size(1, 1);
     }
 }

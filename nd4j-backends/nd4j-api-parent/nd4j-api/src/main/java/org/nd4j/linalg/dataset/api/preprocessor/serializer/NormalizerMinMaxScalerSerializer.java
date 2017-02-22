@@ -46,7 +46,8 @@ public class NormalizerMinMaxScalerSerializer {
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public static void write(@NonNull NormalizerMinMaxScaler normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull NormalizerMinMaxScaler normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
             dos.writeDouble(normalizer.getTargetMin());
@@ -71,10 +72,7 @@ public class NormalizerMinMaxScalerSerializer {
      * @throws IOException
      */
     public static NormalizerMinMaxScaler restore(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
+        try (FileInputStream fis = new FileInputStream(file); DataInputStream dis = new DataInputStream(fis)) {
             boolean fitLabels = dis.readBoolean();
             double targetMin = dis.readDouble();
             double targetMax = dis.readDouble();

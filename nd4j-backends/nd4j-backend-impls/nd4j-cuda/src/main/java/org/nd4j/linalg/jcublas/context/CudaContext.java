@@ -88,8 +88,8 @@ public class CudaContext {
      * on the old stream
      */
     public void syncOldStream() {
-//        ContextHolder.getInstance().setContext();
-//        System.out.println("old sync called");
+        //        ContextHolder.getInstance().setContext();
+        //        System.out.println("old sync called");
         syncOldStream(false);
     }
 
@@ -98,33 +98,36 @@ public class CudaContext {
     }
 
     public void syncOldStream(boolean syncCuBlas) {
-//        ContextHolder.getInstance().setContext();
+        //        ContextHolder.getInstance().setContext();
         nativeOps.streamSynchronize(oldStream);
 
-        if (syncCuBlas) syncCublasStream();
+        if (syncCuBlas)
+            syncCublasStream();
     }
 
     public void syncCublasStream() {
         if (cublasStream != null) {
             nativeOps.streamSynchronize(cublasStream);
-        } else throw new IllegalStateException("cuBLAS stream isnt set");
+        } else
+            throw new IllegalStateException("cuBLAS stream isnt set");
     }
 
 
     public void syncSolverStream() {
         if (solverStream != null) {
             nativeOps.streamSynchronize(solverStream);
-        } else throw new IllegalStateException("cuBLAS stream isnt set");
+        } else
+            throw new IllegalStateException("cuBLAS stream isnt set");
     }
+
     /**
      * Associates
      * the handle on this context
      * to the given stream
      */
-    public synchronized  void associateHandle() {
+    public synchronized void associateHandle() {
         //JCublas2.cublasSetStream(handle,oldStream);
     }
-
 
 
 
@@ -132,7 +135,7 @@ public class CudaContext {
      * Initializes the stream
      */
     public void initStream() {
-//        ContextHolder.getInstance().setContext();
+        //        ContextHolder.getInstance().setContext();
         /*
         if(stream == null) {
             stream = new CUstream();
@@ -147,8 +150,8 @@ public class CudaContext {
      * Initializes the old stream
      */
     public void initOldStream() {
-//        ContextHolder.getInstance().setContext();
-        if(oldStream == null)  {
+        //        ContextHolder.getInstance().setContext();
+        if (oldStream == null) {
             oldStreamFromPool = false;
             oldStream = new cudaStream_t(nativeOps.createStream());
             //JCuda.cudaStreamCreate(oldStream);
@@ -161,7 +164,6 @@ public class CudaContext {
 
 
 
-
     /**
      * Initializes a handle and
      * associates with the given stream.
@@ -170,9 +172,9 @@ public class CudaContext {
      */
     public void initHandle() {
         /*
-
+        
         We don't create handles here anymore
-
+        
         if(handle == null) {
             handle = new cublasHandle();
             JCublas2.cublasCreate(handle);
@@ -186,8 +188,7 @@ public class CudaContext {
      * and associated resources
      */
     @Deprecated
-    public void destroy(CublasPointer resultPointer,boolean freeIfNotEqual) {
-    }
+    public void destroy(CublasPointer resultPointer, boolean freeIfNotEqual) {}
 
 
     /**

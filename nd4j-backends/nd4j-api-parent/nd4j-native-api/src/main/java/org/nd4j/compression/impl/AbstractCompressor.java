@@ -65,6 +65,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     }
 
     public abstract DataBuffer decompress(DataBuffer buffer);
+
     public abstract DataBuffer compress(DataBuffer buffer);
 
     protected DataBuffer.TypeEx convertType(DataBuffer.Type type) {
@@ -99,7 +100,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
      */
     @Override
     public INDArray compress(float[] data) {
-        return compress(data, new int[]{1, data.length}, Nd4j.order());
+        return compress(data, new int[] {1, data.length}, Nd4j.order());
     }
 
     /**
@@ -111,7 +112,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
      */
     @Override
     public INDArray compress(double[] data) {
-        return compress(data, new int[]{1, data.length}, Nd4j.order());
+        return compress(data, new int[] {1, data.length}, Nd4j.order());
     }
 
     /**
@@ -150,5 +151,6 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
         return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
     }
 
-    protected abstract CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize);
+    protected abstract CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize);
 }

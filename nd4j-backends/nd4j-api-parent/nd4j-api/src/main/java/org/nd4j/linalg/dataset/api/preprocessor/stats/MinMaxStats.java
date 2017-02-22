@@ -24,8 +24,10 @@ import java.util.Arrays;
 @Slf4j
 public class MinMaxStats implements NormalizerStats {
 
-    @Getter private final INDArray lower;
-    @Getter private final INDArray upper;
+    @Getter
+    private final INDArray lower;
+    @Getter
+    private final INDArray upper;
     private INDArray range;
 
     /**
@@ -98,11 +100,12 @@ public class MinMaxStats implements NormalizerStats {
                 return this;
             }
 
-            INDArray tad = data.javaTensorAlongDimension(0,0);
+            INDArray tad = data.javaTensorAlongDimension(0, 0);
             INDArray batchMin = data.min(0);
             INDArray batchMax = data.max(0);
-            if(!Arrays.equals(batchMin.shape(),batchMax.shape()))
-                throw new IllegalStateException("Data min and max must be same shape. Likely a bug in the operation changing the input?");
+            if (!Arrays.equals(batchMin.shape(), batchMax.shape()))
+                throw new IllegalStateException(
+                                "Data min and max must be same shape. Likely a bug in the operation changing the input?");
             if (runningLower == null) {
                 // First batch
                 // Create copies because min and max are views to the same data set, which will cause problems with the

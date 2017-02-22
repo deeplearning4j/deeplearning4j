@@ -45,7 +45,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class VoidParameterServer {
     private static final VoidParameterServer INSTANCE = new VoidParameterServer();
 
-    @Getter protected volatile NodeRole nodeRole;
+    @Getter
+    protected volatile NodeRole nodeRole;
 
     protected volatile VoidConfiguration voidConfiguration;
 
@@ -75,7 +76,8 @@ public class VoidParameterServer {
     protected Map<String, Frame<TrainingMessage>> frames = new ConcurrentHashMap<>();
 
     protected static final int numThreads = Runtime.getRuntime().availableProcessors() * 2;
-    protected ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+    protected ThreadPoolExecutor executor =
+                    (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
 
     ////////////////////// SeqVec part
@@ -157,7 +159,8 @@ public class VoidParameterServer {
      *
      * PLEASE NOTE: This method is blocking for first caller only
      */
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, TrainingDriver<? extends TrainingMessage> trainer){
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport,
+                    TrainingDriver<? extends TrainingMessage> trainer) {
         /**
          * Basic plan here:
          *      start publishers/listeners/subscribers
@@ -180,9 +183,11 @@ public class VoidParameterServer {
                 this.transport = transport;
 
                 // first we need to check, if our current IP matches designated shards or backup
-                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
+                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null
+                                || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
                     Pair<NodeRole, String> pair = null;
-                    if (voidConfiguration.getShardAddresses().size() == 1 && voidConfiguration.getShardAddresses().get(0).contains("127.0.0.1")) {
+                    if (voidConfiguration.getShardAddresses().size() == 1
+                                    && voidConfiguration.getShardAddresses().get(0).contains("127.0.0.1")) {
                         pair = Pair.create(NodeRole.SHARD, voidConfiguration.getShardAddresses().get(0));
                     } else {
                         pair = getRole(voidConfiguration, getLocalAddresses());
@@ -205,12 +210,13 @@ public class VoidParameterServer {
                     // if we're Shard here, we should define shardIndex
                     if (nodeRole == NodeRole.SHARD && voidConfiguration.getShardAddresses().size() > 1) {
                         short cnt = 0;
-                        for (String shard: voidConfiguration.getShardAddresses()) {
+                        for (String shard : voidConfiguration.getShardAddresses()) {
                             String lIp = null;
                             if (shard.contains(":")) {
                                 String[] split = ipAndPort.split(":");
                                 lIp = split[0];
-                            } else lIp = shard;
+                            } else
+                                lIp = shard;
 
                             if (lIp.equals(ip)) {
                                 shardIndex = cnt;
@@ -225,7 +231,8 @@ public class VoidParameterServer {
                     if (nodeRole == NodeRole.NONE)
                         nodeRole = voidConfiguration.getForcedRole();
 
-                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1", voidConfiguration.getUnicastPort(), shardIndex);
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1",
+                                    voidConfiguration.getUnicastPort(), shardIndex);
                 }
 
 
@@ -236,15 +243,15 @@ public class VoidParameterServer {
                     processingThreads = new Thread[numThreads];
                     processingRunnables = new Runnable[numThreads];
 
-                    for(int x = 0; x < numThreads; x++) {
+                    for (int x = 0; x < numThreads; x++) {
                         processingThreads[x] = new Thread(() -> {
                             runner.set(true);
                             while (runner.get()) {
                                 try {
                                     //VoidMessage message = transport.takeMessage();
 
-//                                    if (nodeRole == NodeRole.SHARD)
-//                                        log.info("Processing message: {}", message.getClass().getSimpleName());
+                                    //                                    if (nodeRole == NodeRole.SHARD)
+                                    //                                        log.info("Processing message: {}", message.getClass().getSimpleName());
 
                                     handleMessage(transport.takeMessage());
 
@@ -260,8 +267,6 @@ public class VoidParameterServer {
 
 
 
-
-
                         processingThreads[x].setDaemon(true);
                         processingThreads[x].setName("VoidParameterServer messages handling thread");
                         processingThreads[x].start();
@@ -270,8 +275,8 @@ public class VoidParameterServer {
 
                 // TODO: uncomment this line on later stages
                 //if (!(NodeRole.SHARD == nodeRole && voidConfiguration.getShardAddresses().size() == 1)) {
-                    log.info("Launching transport...");
-                    transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+                log.info("Launching transport...");
+                transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
                 //}
                 trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
 
@@ -297,18 +302,19 @@ public class VoidParameterServer {
      * @param localIPs
      * @return
      */
-    protected Pair<NodeRole, String> getRole(@NonNull VoidConfiguration voidConfiguration, @NonNull Collection<String> localIPs) {
+    protected Pair<NodeRole, String> getRole(@NonNull VoidConfiguration voidConfiguration,
+                    @NonNull Collection<String> localIPs) {
         NodeRole result = NodeRole.CLIENT;
 
-        for (String ip: voidConfiguration.getShardAddresses()) {
-            String cleansed = ip.replaceAll(":.*","");
+        for (String ip : voidConfiguration.getShardAddresses()) {
+            String cleansed = ip.replaceAll(":.*", "");
             if (localIPs.contains(cleansed))
                 return Pair.create(NodeRole.SHARD, ip);
         }
 
         if (voidConfiguration.getBackupAddresses() != null)
-            for (String ip: voidConfiguration.getBackupAddresses()) {
-                String cleansed = ip.replaceAll(":.*","");
+            for (String ip : voidConfiguration.getBackupAddresses()) {
+                String cleansed = ip.replaceAll(":.*", "");
                 if (localIPs.contains(cleansed))
                     return Pair.create(NodeRole.BACKUP, ip);
             }
@@ -358,7 +364,7 @@ public class VoidParameterServer {
                 if (networkInterface.isLoopback() || !networkInterface.isUp())
                     continue;
 
-                for(InterfaceAddress address: networkInterface.getInterfaceAddresses()) {
+                for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
                     String addr = address.getAddress().getHostAddress();
 
                     if (addr == null || addr.isEmpty() || addr.contains(":"))
@@ -378,16 +384,17 @@ public class VoidParameterServer {
     // TODO: remove @NonNull check here
     protected void handleMessage(@NonNull VoidMessage message) {
         if (message == null) {
-//            log.info("sI_{} got null message", getShardIndex());
+            //            log.info("sI_{} got null message", getShardIndex());
             return;
         }
 
         if (message.getTargetId() >= 0 && message.getTargetId() != shardIndex) {
-            log.warn("sI_{}: Skipping message: [{}]; TargetIdx: [{}]", shardIndex, message.getClass().getSimpleName(), message.getTargetId());
+            log.warn("sI_{}: Skipping message: [{}]; TargetIdx: [{}]", shardIndex, message.getClass().getSimpleName(),
+                            message.getTargetId());
             return;
         }
 
-  //      log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
+        //      log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
 
         message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();
@@ -399,8 +406,10 @@ public class VoidParameterServer {
      * PLEASE NOTE: This method is blocking
      */
     // TODO: right now we support only columnar splits over tables
-    public void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs, boolean useNegSampling) {
-        InitializationRequestMessage dim = new InitializationRequestMessage(vectorLength, numWords, seed, useHs, useNegSampling, columnsPerShard);
+    public void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs,
+                    boolean useNegSampling) {
+        InitializationRequestMessage dim = new InitializationRequestMessage(vectorLength, numWords, seed, useHs,
+                        useNegSampling, columnsPerShard);
         transport.sendMessage(dim);
     }
 

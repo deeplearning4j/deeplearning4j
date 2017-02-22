@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -50,8 +50,7 @@ public class Sin extends BaseTransformOp {
         super(x);
     }
 
-    public Sin() {
-    }
+    public Sin() {}
 
     @Override
     public int opNum() {
@@ -113,9 +112,11 @@ public class Sin extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Sin(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Sin(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Sin(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Sin(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -124,9 +125,11 @@ public class Sin extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Sin(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Sin(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Sin(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Sin(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 }

@@ -67,8 +67,10 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         if (message.getSyn0rows() == null || message.getSyn0rows().length < 1)
             throw new RuntimeException("Empty syn0rows!");
 
-        DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), row_syn1, message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
-        dcdm.setTargetId((short) - 1);
+        DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(),
+                        row_syn1, message.getW1(), message.getCodes(), message.getCodes().length > 0,
+                        (short) message.getNegSamples(), (float) message.getAlpha());
+        dcdm.setTargetId((short) -1);
         dcdm.setOriginatorId(message.getOriginatorId());
 
         if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
@@ -80,7 +82,8 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
 
     @Override
     public void pickTraining(CbowRequestMessage message) {
-        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
+        RequestDescriptor descriptor =
+                        RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
         if (!chains.containsKey(descriptor)) {
             CbowChain chain = new CbowChain(message);
             chain.addElement(message);
@@ -92,9 +95,12 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
     public void aggregationFinished(VoidAggregation aggregation) {
         // we just pick DotAggregation here
 
-        CbowChain chain = chains.get(RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId()));
+        CbowChain chain = chains.get(
+                        RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId()));
         if (chain == null) {
-            throw new RuntimeException("sI_" + transport.getShardIndex() + " Unable to find chain for specified originatorId: ["+ aggregation.getOriginatorId()+"]; taskId: [" + aggregation.getTaskId() + "]");
+            throw new RuntimeException("sI_" + transport.getShardIndex()
+                            + " Unable to find chain for specified originatorId: [" + aggregation.getOriginatorId()
+                            + "]; taskId: [" + aggregation.getTaskId() + "]");
         }
 
         chain.addElement((DotAggregation) aggregation);
@@ -124,7 +130,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         INDArray syn1 = storage.getArray(WordVectorStorage.SYN_1);
         INDArray syn1Neg = storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
 
-        INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1, cbr.getSyn0rows(), 'c' );
+        INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1, cbr.getSyn0rows(), 'c');
         INDArray neue = words.mean(0);
 
         INDArray neu1e = Nd4j.create(syn0.columns());
@@ -167,9 +173,9 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
                 double g = 0.0f;
 
                 if (dot > HS_MAX_EXP)
-                    g = (code - 1 ) * alpha;
-                else if (dot <- HS_MAX_EXP)
-                    g = (code - 0 ) * alpha;
+                    g = (code - 1) * alpha;
+                else if (dot < -HS_MAX_EXP)
+                    g = (code - 0) * alpha;
                 else {
                     int idx = (int) ((dot + HS_MAX_EXP) * (expTable.length() / HS_MAX_EXP / 2.0));
                     if (idx >= expTable.length() || idx < 0)
@@ -196,7 +202,8 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
             completionHandler.notifyFrame(chain.getOriginatorId(), chain.getFrameId(), chain.getTaskId());
 
             if (completionHandler.isCompleted(descriptor)) {
-                FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
+                FrameCompletionHandler.FrameDescriptor frameDescriptor =
+                                completionHandler.getCompletedFrameInfo(descriptor);
 
 
                 // TODO: there is possible race condition here

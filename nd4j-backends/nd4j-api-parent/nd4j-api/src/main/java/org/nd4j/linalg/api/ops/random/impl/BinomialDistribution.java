@@ -13,7 +13,7 @@ public class BinomialDistribution extends BaseRandomOp {
     private int trials;
     private double probability;
 
-    public BinomialDistribution(){
+    public BinomialDistribution() {
         super();
     }
 
@@ -27,7 +27,7 @@ public class BinomialDistribution extends BaseRandomOp {
         init(z, z, z, z.lengthLong());
         this.trials = trials;
         this.probability = probability;
-        this.extraArgs = new Object[]{(double) this.trials, this.probability};
+        this.extraArgs = new Object[] {(double) this.trials, this.probability};
     }
 
     /**
@@ -47,7 +47,7 @@ public class BinomialDistribution extends BaseRandomOp {
 
         this.trials = trials;
         this.probability = 0.0;
-        this.extraArgs = new Object[]{(double) this.trials, this.probability};
+        this.extraArgs = new Object[] {(double) this.trials, this.probability};
     }
 
 

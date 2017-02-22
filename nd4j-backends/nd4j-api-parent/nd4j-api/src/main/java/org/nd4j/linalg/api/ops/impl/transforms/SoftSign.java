@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,8 +36,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class SoftSign extends BaseTransformOp {
 
-    public SoftSign() {
-    }
+    public SoftSign() {}
 
     public SoftSign(INDArray x, INDArray z) {
         super(x, z);
@@ -72,19 +71,19 @@ public class SoftSign extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	return origin.div(ComplexUtil.abs(origin).addi(1.0));
+        return origin.div(ComplexUtil.abs(origin).addi(1.0));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	return origin.div(ComplexUtil.abs(origin).addi(1.0));
+        return origin.div(ComplexUtil.abs(origin).addi(1.0));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	return origin.div(ComplexUtil.abs(origin).addi(1.0));
+        return origin.div(ComplexUtil.abs(origin).addi(1.0));
     }
-    
+
     @Override
     public float op(float origin, float other) {
         return (float) softsign(origin);
@@ -115,7 +114,8 @@ public class SoftSign extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftSign(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSign(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftSign(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
@@ -124,12 +124,13 @@ public class SoftSign extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftSign(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSign(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftSign(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
-    
-    private static double softsign(double x){
-    	return x / (1.0 + Math.abs(x));
+
+    private static double softsign(double x) {
+        return x / (1.0 + Math.abs(x));
     }
 }

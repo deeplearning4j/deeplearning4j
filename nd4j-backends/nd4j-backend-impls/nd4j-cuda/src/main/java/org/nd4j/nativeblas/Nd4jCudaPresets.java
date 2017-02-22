@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,16 +25,19 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  *
  * @author saudet
  */
-@Properties(target = "org.nd4j.nativeblas.Nd4jCuda", value =
-        @Platform(include = "NativeOps.h", compiler = "cpp11", library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"))
+@Properties(target = "org.nd4j.nativeblas.Nd4jCuda", value = @Platform(include = "NativeOps.h", compiler = "cpp11",
+                library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"))
 public class Nd4jCudaPresets implements InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
         infoMap.put(new Info("thread_local", "ND4J_EXPORT").cppTypes().annotations())
-               .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
-               .put(new Info("const char", "char").valueTypes("char").pointerTypes("String", "@Cast(\"const char*\") BytePointer"))
-               .put(new Info("Nd4jPointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
-               .put(new Info("Nd4jIndex").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer", "long[]"))
-               .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer", "short[]"));
+                        .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
+                        .put(new Info("const char", "char").valueTypes("char").pointerTypes("String",
+                                        "@Cast(\"const char*\") BytePointer"))
+                        .put(new Info("Nd4jPointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
+                        .put(new Info("Nd4jIndex").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
+                                        "long[]"))
+                        .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
+                                        "short[]"));
     }
 }

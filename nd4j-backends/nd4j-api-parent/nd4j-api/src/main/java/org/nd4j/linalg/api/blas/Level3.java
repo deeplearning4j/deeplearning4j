@@ -39,18 +39,14 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void gemm( char Order,  char TransA,
-          char TransB,
-         double alpha,  INDArray A,
-          INDArray B,
-          double beta, INDArray C);
+    void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C);
 
     /** A convenience method for matrix-matrix operations with transposes.
      * Implements C = alpha*op(A)*op(B) + beta*C
      * Matrices A and B can be any order and offset (though will have copy overhead if elements are not contiguous in buffer)
      * but matrix C MUST be f order, 0 offset and have length == data.length
      */
-    void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta );
+    void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta);
 
 
     /**
@@ -69,11 +65,7 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void symm( char Order,  char Side,
-               char Uplo,
-               double alpha,  INDArray A,
-               INDArray B, double beta,
-              INDArray C);
+    void symm(char Order, char Side, char Uplo, double alpha, INDArray A, INDArray B, double beta, INDArray C);
 
     /**
      * syrk performs a rank-n update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -90,10 +82,7 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void syrk( char Order,  char Uplo,
-               char Trans,
-               double alpha,  INDArray A,
-               double beta, INDArray C);
+    void syrk(char Order, char Uplo, char Trans, double alpha, INDArray A, double beta, INDArray C);
 
     /**
      * yr2k performs a rank-2k update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -111,11 +100,7 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void syr2k( char Order,  char Uplo,
-                char Trans,
-                double alpha,  INDArray A,
-                INDArray B, double beta,
-               INDArray C);
+    void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta, INDArray C);
 
     /**
      * syr2k performs a rank-2k update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -134,11 +119,8 @@ public interface Level3 {
      * @param B
      * @param C
      */
-    void trmm(char Order, char Side,
-              char Uplo, char TransA,
-              char Diag,
-              double alpha, INDArray A,
-              INDArray B, INDArray C);
+    void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B,
+                    INDArray C);
 
     /**
      * ?trsm solves one of the following matrix equations:
@@ -157,11 +139,7 @@ public interface Level3 {
      * @param A
      * @param B
      */
-    void trsm( char Order,  char Side,
-               char Uplo,  char TransA,
-               char Diag,
-               double alpha,  INDArray A,
-              INDArray B);
+    void trsm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B);
 
 
     /**
@@ -179,11 +157,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void gemm( char Order,  char TransA,
-               char TransB,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray B,
-               IComplexNumber beta, IComplexNDArray C);
+    void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C);
 
     /**
      * hemm performs one of the following matrix-matrix operations:
@@ -200,11 +175,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void hemm( char Order,  char Side,
-               char Uplo,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray B,IComplexNumber beta,
-               IComplexNDArray C);
+    void hemm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C);
 
     /**
      * herk performs a rank-n update of a Hermitian matrix, that is, one of the following operations:
@@ -221,10 +193,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void herk( char Order,  char Uplo,
-               char Trans,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNumber beta, IComplexNDArray C);
+    void herk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
+                    IComplexNDArray C);
 
     /**
      *  @param Order
@@ -236,11 +206,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void her2k( char Order,  char Uplo,
-                char Trans,
-                IComplexNumber alpha,  IComplexNDArray A,
-                IComplexNDArray B, IComplexNumber beta,
-                IComplexNDArray C);
+    void her2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C);
 
     /**
      * her2k performs a rank-2k update of an n-by-n Hermitian matrix c, that is, one of the following operations:
@@ -258,11 +225,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void symm( char Order,  char Side,
-               char Uplo,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray B, IComplexNumber beta,
-               IComplexNDArray C);
+    void symm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C);
 
     /**
      * syrk performs a rank-n update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -279,10 +243,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void syrk( char Order,  char Uplo,
-               char Trans,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNumber beta, IComplexNDArray C);
+    void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
+                    IComplexNDArray C);
 
     /**
      * yr2k performs a rank-2k update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -300,11 +262,8 @@ public interface Level3 {
      * @param beta
      * @param C
      */
-    void syr2k( char Order,  char Uplo,
-                char Trans,
-                IComplexNumber alpha,  IComplexNDArray A,
-                IComplexNDArray B,IComplexNumber beta,
-                IComplexNDArray C);
+    void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C);
 
     /**
      * syr2k performs a rank-2k update of an n-by-n symmetric matrix c, that is, one of the following operations:
@@ -323,11 +282,8 @@ public interface Level3 {
      * @param B
      * @param C
      */
-    void trmm(char Order, char Side,
-              char Uplo, char TransA,
-              char Diag,
-              IComplexNumber alpha, IComplexNDArray A,
-              IComplexNDArray B, IComplexNDArray C);
+    void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray B, IComplexNDArray C);
 
     /**
      * ?trsm solves one of the following matrix equations:
@@ -346,11 +302,8 @@ public interface Level3 {
      * @param A
      * @param B
      */
-    void trsm( char Order,  char Side,
-               char Uplo,  char TransA,
-               char Diag,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray B);
+    void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray B);
 
 
 }

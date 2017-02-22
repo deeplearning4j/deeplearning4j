@@ -35,7 +35,8 @@ public class Clipboard {
      * @return TRUE, if given VoidAggregation was the last chunk, FALSE otherwise
      */
     public boolean pin(@NonNull VoidAggregation aggregation) {
-        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId());
+        RequestDescriptor descriptor =
+                        RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId());
         VoidAggregation existing = clipboard.get(descriptor);
         if (existing == null) {
             existing = aggregation;
@@ -50,10 +51,11 @@ public class Clipboard {
 
         int missing = existing.getMissingChunks();
         if (missing == 0) {
-          //  completedQueue.add(existing);
+            //  completedQueue.add(existing);
             completedCounter.incrementAndGet();
             return true;
-        } else return false;
+        } else
+            return false;
     }
 
     /**
@@ -78,10 +80,11 @@ public class Clipboard {
             trackingCounter.decrementAndGet();
 
             // FIXME: we don't want this here
-//            completedQueue.clear();
+            //            completedQueue.clear();
 
             return aggregation;
-        } else return null;
+        } else
+            return null;
     }
 
     /**

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -41,8 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class SoftMax extends BaseTransformOp {
 
-    public SoftMax() {
-    }
+    public SoftMax() {}
 
     public SoftMax(INDArray x, INDArray z) {
         super(x, z);
@@ -82,9 +81,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int)numProcessed);
+        IComplexNumber ret = arr.getComplex((int) numProcessed);
         numProcessed++;
         return ret;
     }
@@ -92,9 +91,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int)numProcessed);
+        IComplexNumber ret = arr.getComplex((int) numProcessed);
         numProcessed++;
         return ret;
     }
@@ -102,9 +101,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int)numProcessed);
+        IComplexNumber ret = arr.getComplex((int) numProcessed);
         numProcessed++;
         return ret;
     }
@@ -125,18 +124,18 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public double op(double origin) {
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        double ret = y.getDouble((int)numProcessed);
+        double ret = y.getDouble((int) numProcessed);
         numProcessed++;
         return ret;
     }
 
     @Override
     public float op(float origin) {
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        float ret = (y.getFloat((int)numProcessed));
+        float ret = (y.getFloat((int) numProcessed));
         numProcessed++;
         return ret;
     }
@@ -144,9 +143,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        if(numProcessed >= Integer.MAX_VALUE)
+        if (numProcessed >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
-        IComplexNumber ret = arr.getComplex((int)numProcessed);
+        IComplexNumber ret = arr.getComplex((int) numProcessed);
         numProcessed++;
         return ret;
     }
@@ -161,7 +160,8 @@ public class SoftMax extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -171,7 +171,8 @@ public class SoftMax extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -191,17 +192,17 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public void exec(int... dimensions) {
-        if(dimensions[0] != 1)
+        if (dimensions[0] != 1)
             throw new IllegalArgumentException("Only supports row wise calculations");
-        if(x.isMatrix()) {
+        if (x.isMatrix()) {
             INDArray maxAlongDimension = x.max(dimensions);
-            if(!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
+            if (!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
                 throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
 
             INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
 
             INDArray exp;
-            if(z != null) {
+            if (z != null) {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
             } else {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
@@ -210,12 +211,12 @@ public class SoftMax extends BaseTransformOp {
             INDArray sum = exp.sum(dimensions);
             exp.diviColumnVector(sum);
 
-            if(z == null) z = exp;
-        }
-        else if(x.isVector()) {
-           double max = x.maxNumber().doubleValue();
+            if (z == null)
+                z = exp;
+        } else if (x.isVector()) {
+            double max = x.maxNumber().doubleValue();
             INDArray exp;
-            if(z != null){
+            if (z != null) {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
             } else {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));

@@ -28,7 +28,7 @@ public class ActivationELU extends BaseActivationFunction {
         this(DEFAULT_ALPHA);
     }
 
-    public ActivationELU (double alpha) {
+    public ActivationELU(double alpha) {
         this.alpha = alpha;
     }
 
@@ -44,8 +44,7 @@ public class ActivationELU extends BaseActivationFunction {
             INDArray alphaMultiple = Nd4j.getExecutioner().execAndReturn(new ELU(in.dup()));
             alphaMultiple.muli(alpha);
             BooleanIndexing.replaceWhere(in, alphaMultiple, Conditions.lessThan(0));
-        }
-        else {
+        } else {
             Nd4j.getExecutioner().execAndReturn(new ELU(in));
         }
         return in;
@@ -57,7 +56,7 @@ public class ActivationELU extends BaseActivationFunction {
              = 1 ; x >= 0
      */
     @Override
-    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
+    public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         // no support in ELU native to override alpha
         if (alpha != 1.00) {
             INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new ELUDerivative(in.dup()));
@@ -77,6 +76,6 @@ public class ActivationELU extends BaseActivationFunction {
 
     @Override
     public String toString() {
-        return "elu(alpha="+alpha+")";
+        return "elu(alpha=" + alpha + ")";
     }
 }

@@ -9,7 +9,7 @@ public class SpecifiedIndex implements INDArrayIndex {
     private int[] indexes;
     private int counter = 0;
 
-    public SpecifiedIndex(int...indexes) {
+    public SpecifiedIndex(int... indexes) {
         this.indexes = indexes;
     }
 

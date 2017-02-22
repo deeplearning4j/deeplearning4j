@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Round extends BaseTransformOp {
-    public Round() {
-    }
+    public Round() {}
 
     public Round(INDArray x, INDArray z) {
         super(x, z);
@@ -107,9 +106,11 @@ public class Round extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Round(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Round(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Round(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Round(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -118,9 +119,11 @@ public class Round extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Round(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Round(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Round(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Round(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 }

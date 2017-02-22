@@ -57,7 +57,7 @@ public class LimitedContextPool extends BasicContextPool {
         int device = AtomicAllocator.getInstance().getDeviceId();
 
         cublasHandle_t handle = createNewCublasHandle();
-        for (int cnt = 0; cnt < numResources; cnt++ ) {
+        for (int cnt = 0; cnt < numResources; cnt++) {
             CudaContext context = createNewStream(device);
             context.initOldStream();
             getDeviceBuffers(context, device);
@@ -79,13 +79,13 @@ public class LimitedContextPool extends BasicContextPool {
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        for (Integer device: devices) {
+        for (Integer device : devices) {
             nativeOps.setDevice(new CudaPointer(device));
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
 
             cublasHandle_t handle = createNewCublasHandle();
-	cusolverDnHandle_t solverHandle = createNewSolverHandle();
-            for (int cnt = 0; cnt < numResources; cnt++ ) {
+            cusolverDnHandle_t solverHandle = createNewSolverHandle();
+            for (int cnt = 0; cnt < numResources; cnt++) {
                 CudaContext context = createNewStream(device);
                 context.initOldStream();
                 getDeviceBuffers(context, device);
@@ -118,7 +118,8 @@ public class LimitedContextPool extends BasicContextPool {
             int col = RandomUtils.nextInt(0, collectors.size());
             collectors.get(col);
 
-            GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
+            GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col),
+                            context, deviceId.intValue());
             context.attachReference(reference);
             //Garba reference = new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
             //point.attachReference(reference);
@@ -136,13 +137,15 @@ public class LimitedContextPool extends BasicContextPool {
                         int col = RandomUtils.nextInt(0, collectors.size());
                         collectors.get(col);
 
-                        GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
+                        GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(),
+                                        queueMap.get(col), context, deviceId.intValue());
                         context.attachReference(reference);
 
                         acquired.put(threadIdx, context);
                         context.setDeviceId(deviceId);
                     } else {
-                        if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize() * 3) {
+                        if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()
+                                        * 3) {
                             addResourcesToPool(16);
 
                             // there's possible race condition, but we don't really care

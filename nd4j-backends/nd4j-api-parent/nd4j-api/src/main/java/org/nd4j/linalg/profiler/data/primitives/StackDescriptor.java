@@ -12,7 +12,8 @@ import java.util.Arrays;
  */
 @Slf4j
 public class StackDescriptor {
-    @Getter protected StackTraceElement stackTrace[];
+    @Getter
+    protected StackTraceElement stackTrace[];
 
     public StackDescriptor(@NonNull StackTraceElement stack[]) {
         // we cut off X first elements from stack, because they belong to profiler
@@ -24,9 +25,11 @@ public class StackDescriptor {
         }
 
         // in tests it's quite possible to have no DefaultOpExecutioner calls being used
-        if (start == stack.length) {;
+        if (start == stack.length) {
+            ;
             for (start = 0; start < stack.length; start++) {
-                if (!stack[start+1].getClassName().contains("OpProfiler") && !stack[start+1].getClassName().contains("StackAggregator"))
+                if (!stack[start + 1].getClassName().contains("OpProfiler")
+                                && !stack[start + 1].getClassName().contains("StackAggregator"))
                     break;
             }
         } else {
@@ -50,7 +53,8 @@ public class StackDescriptor {
     }
 
     public String getElementName(int idx) {
-        return stackTrace[idx].getClassName() + "." + stackTrace[idx].getMethodName() + ":" + stackTrace[idx].getLineNumber();
+        return stackTrace[idx].getClassName() + "." + stackTrace[idx].getMethodName() + ":"
+                        + stackTrace[idx].getLineNumber();
     }
 
     public int size() {
@@ -59,8 +63,10 @@ public class StackDescriptor {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         StackDescriptor that = (StackDescriptor) o;
 

@@ -35,7 +35,7 @@ public class ConstantProtector {
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
-        for (int i = 0; i < numDevices; i++ ) {
+        for (int i = 0; i < numDevices; i++) {
             deviceCache.add(i, new ConcurrentHashMap<ShapeDescriptor, DataBuffer>());
         }
     }
@@ -44,7 +44,7 @@ public class ConstantProtector {
         protector.add(buffer);
     }
 
-    public void persistDataBuffer(int deviceId, ShapeDescriptor descriptor, DataBuffer buffer ) {
+    public void persistDataBuffer(int deviceId, ShapeDescriptor descriptor, DataBuffer buffer) {
         deviceCache.get(deviceId).put(descriptor, buffer);
     }
 

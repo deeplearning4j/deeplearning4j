@@ -28,7 +28,7 @@ public abstract class BaseParameterUpdater implements ParameterServerUpdater {
      */
     @Override
     public boolean isReady() {
-        return  numUpdates()  == requiredUpdatesForPass();
+        return numUpdates() == requiredUpdatesForPass();
     }
 
     /**

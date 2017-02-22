@@ -45,7 +45,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
-        for(int i = 0; i < ITERATIONS; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             int slice = RandomUtils.nextInt(0, x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
@@ -57,7 +57,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray x = Nd4j.create(new int[] {64, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {64, 64, 1024}, 'f');
 
-        for(int i = 0; i < ITERATIONS; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             int slice = RandomUtils.nextInt(0, x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
@@ -72,7 +72,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
-        for(int i = 0; i < ITERATIONS; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             int slice = RandomUtils.nextInt(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
@@ -84,7 +84,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {96, 64, 1024}, 'f');
 
-        for(int i = 0; i < 1; i++) {
+        for (int i = 0; i < 1; i++) {
             int slice = 0; //RandomUtils.nextInt(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }

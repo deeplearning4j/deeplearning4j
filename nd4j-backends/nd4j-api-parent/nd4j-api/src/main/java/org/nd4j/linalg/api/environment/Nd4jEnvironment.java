@@ -58,7 +58,7 @@ public class Nd4jEnvironment implements Serializable {
     public final static String CPU_CORES_KEY = "cores";
 
     public final static String OMP_THREADS_KEY = "omp.threads";
-    public final static String  BLAS_THREADS_KEY = "blas.threads";
+    public final static String BLAS_THREADS_KEY = "blas.threads";
 
     /**
      * Load an {@link Nd4jEnvironment} from
@@ -69,19 +69,17 @@ public class Nd4jEnvironment implements Serializable {
      */
     public static Nd4jEnvironment getEnvironment() {
         Properties envInfo = Nd4j.getExecutioner().getEnvironmentInformation();
-        Nd4jEnvironment ret =  Nd4jEnvironment.builder()
-                .numCores(Integer.parseInt(envInfo.getProperty(CPU_CORES_KEY,"0")))
-                .ram(Long.parseLong(envInfo.getProperty(RAM_KEY,"0")))
-                .os(envInfo.getProperty(OS_KEY))
-                .blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
-                .blasThreads(Long.parseLong(envInfo.getProperty(BLAS_THREADS_KEY,"0")))
-                .ompThreads(Integer.parseInt(envInfo.getProperty(OMP_THREADS_KEY,"0")))
-                .numGpus(Integer.parseInt(envInfo.getProperty(CUDA_NUM_GPUS_KEY,"0")))
-                .build();
-        if(envInfo.containsKey(CUDA_DEVICE_INFORMATION_KEY)) {
+        Nd4jEnvironment ret = Nd4jEnvironment.builder()
+                        .numCores(Integer.parseInt(envInfo.getProperty(CPU_CORES_KEY, "0")))
+                        .ram(Long.parseLong(envInfo.getProperty(RAM_KEY, "0"))).os(envInfo.getProperty(OS_KEY))
+                        .blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
+                        .blasThreads(Long.parseLong(envInfo.getProperty(BLAS_THREADS_KEY, "0")))
+                        .ompThreads(Integer.parseInt(envInfo.getProperty(OMP_THREADS_KEY, "0")))
+                        .numGpus(Integer.parseInt(envInfo.getProperty(CUDA_NUM_GPUS_KEY, "0"))).build();
+        if (envInfo.containsKey(CUDA_DEVICE_INFORMATION_KEY)) {
             List<Map<String, Object>> deviceInfo = (List<Map<String, Object>>) envInfo.get(CUDA_DEVICE_INFORMATION_KEY);
             List<Long> gpuRam = new ArrayList<>();
-            for(Map<String,Object> info : deviceInfo) {
+            for (Map<String, Object> info : deviceInfo) {
                 gpuRam.add(Long.parseLong(info.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY).toString()));
             }
 

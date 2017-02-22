@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -43,9 +43,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ComplexNDArray extends BaseComplexNDArray {
-	
-	public void close() {
-	}
+
+    public void close() {}
 
 
     /**

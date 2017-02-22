@@ -8,8 +8,7 @@ import java.util.Map.Entry;
 
 
 public abstract class CollectionUtils {
-    public CollectionUtils() {
-    }
+    public CollectionUtils() {}
 
     public static boolean isEmpty(Collection collection) {
         return collection == null || collection.isEmpty();
@@ -24,14 +23,14 @@ public abstract class CollectionUtils {
     }
 
     public static void mergeArrayIntoCollection(Object array, Collection collection) {
-        if(collection == null) {
+        if (collection == null) {
             throw new IllegalArgumentException("Collection must not be null");
         } else {
             Object[] arr = ObjectUtils.toObjectArray(array);
             Object[] arr$ = arr;
             int len$ = arr.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Object elem = arr$[i$];
                 collection.add(elem);
             }
@@ -40,16 +39,16 @@ public abstract class CollectionUtils {
     }
 
     public static void mergePropertiesIntoMap(Properties props, Map map) {
-        if(map == null) {
+        if (map == null) {
             throw new IllegalArgumentException("Map must not be null");
         } else {
             String key;
             Object value;
-            if(props != null) {
-                for(Enumeration en = props.propertyNames(); en.hasMoreElements(); map.put(key, value)) {
-                    key = (String)en.nextElement();
+            if (props != null) {
+                for (Enumeration en = props.propertyNames(); en.hasMoreElements(); map.put(key, value)) {
+                    key = (String) en.nextElement();
                     value = props.getProperty(key);
-                    if(value == null) {
+                    if (value == null) {
                         value = props.get(key);
                     }
                 }
@@ -59,10 +58,10 @@ public abstract class CollectionUtils {
     }
 
     public static boolean contains(Iterator iterator, Object element) {
-        if(iterator != null) {
-            while(iterator.hasNext()) {
+        if (iterator != null) {
+            while (iterator.hasNext()) {
                 Object candidate = iterator.next();
-                if(ObjectUtils.nullSafeEquals(candidate, element)) {
+                if (ObjectUtils.nullSafeEquals(candidate, element)) {
                     return true;
                 }
             }
@@ -72,10 +71,10 @@ public abstract class CollectionUtils {
     }
 
     public static boolean contains(Enumeration enumeration, Object element) {
-        if(enumeration != null) {
-            while(enumeration.hasMoreElements()) {
+        if (enumeration != null) {
+            while (enumeration.hasMoreElements()) {
                 Object candidate = enumeration.nextElement();
-                if(ObjectUtils.nullSafeEquals(candidate, element)) {
+                if (ObjectUtils.nullSafeEquals(candidate, element)) {
                     return true;
                 }
             }
@@ -85,12 +84,12 @@ public abstract class CollectionUtils {
     }
 
     public static boolean containsInstance(Collection collection, Object element) {
-        if(collection != null) {
+        if (collection != null) {
             Iterator i$ = collection.iterator();
 
-            while(i$.hasNext()) {
+            while (i$.hasNext()) {
                 Object candidate = i$.next();
-                if(candidate == element) {
+                if (candidate == element) {
                     return true;
                 }
             }
@@ -100,17 +99,17 @@ public abstract class CollectionUtils {
     }
 
     public static boolean containsAny(Collection source, Collection candidates) {
-        if(!isEmpty(source) && !isEmpty(candidates)) {
+        if (!isEmpty(source) && !isEmpty(candidates)) {
             Iterator i$ = candidates.iterator();
 
             Object candidate;
             do {
-                if(!i$.hasNext()) {
+                if (!i$.hasNext()) {
                     return false;
                 }
 
                 candidate = i$.next();
-            } while(!source.contains(candidate));
+            } while (!source.contains(candidate));
 
             return true;
         } else {
@@ -119,17 +118,17 @@ public abstract class CollectionUtils {
     }
 
     public static Object findFirstMatch(Collection source, Collection candidates) {
-        if(!isEmpty(source) && !isEmpty(candidates)) {
+        if (!isEmpty(source) && !isEmpty(candidates)) {
             Iterator i$ = candidates.iterator();
 
             Object candidate;
             do {
-                if(!i$.hasNext()) {
+                if (!i$.hasNext()) {
                     return null;
                 }
 
                 candidate = i$.next();
-            } while(!source.contains(candidate));
+            } while (!source.contains(candidate));
 
             return candidate;
         } else {
@@ -138,16 +137,16 @@ public abstract class CollectionUtils {
     }
 
     public static <T> T findValueOfType(Collection<?> collection, Class<T> type) {
-        if(isEmpty((Collection)collection)) {
+        if (isEmpty((Collection) collection)) {
             return null;
         } else {
             Object value = null;
             Iterator i$ = collection.iterator();
 
-            while(i$.hasNext()) {
+            while (i$.hasNext()) {
                 Object element = i$.next();
-                if(type == null || type.isInstance(element)) {
-                    if(value != null) {
+                if (type == null || type.isInstance(element)) {
+                    if (value != null) {
                         return null;
                     }
 
@@ -160,14 +159,14 @@ public abstract class CollectionUtils {
     }
 
     public static Object findValueOfType(Collection<?> collection, Class<?>[] types) {
-        if(!isEmpty((Collection)collection) && !ObjectUtils.isEmpty(types)) {
+        if (!isEmpty((Collection) collection) && !ObjectUtils.isEmpty(types)) {
             Class[] arr$ = types;
             int len$ = types.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Class type = arr$[i$];
                 Object value = findValueOfType(collection, type);
-                if(value != null) {
+                if (value != null) {
                     return value;
                 }
             }
@@ -179,19 +178,19 @@ public abstract class CollectionUtils {
     }
 
     public static boolean hasUniqueObject(Collection collection) {
-        if(isEmpty(collection)) {
+        if (isEmpty(collection)) {
             return false;
         } else {
             boolean hasCandidate = false;
             Object candidate = null;
             Iterator i$ = collection.iterator();
 
-            while(i$.hasNext()) {
+            while (i$.hasNext()) {
                 Object elem = i$.next();
-                if(!hasCandidate) {
+                if (!hasCandidate) {
                     hasCandidate = true;
                     candidate = elem;
-                } else if(candidate != elem) {
+                } else if (candidate != elem) {
                     return false;
                 }
             }
@@ -201,18 +200,18 @@ public abstract class CollectionUtils {
     }
 
     public static Class<?> findCommonElementType(Collection collection) {
-        if(isEmpty(collection)) {
+        if (isEmpty(collection)) {
             return null;
         } else {
             Class candidate = null;
             Iterator i$ = collection.iterator();
 
-            while(i$.hasNext()) {
+            while (i$.hasNext()) {
                 Object val = i$.next();
-                if(val != null) {
-                    if(candidate == null) {
+                if (val != null) {
+                    if (candidate == null) {
                         candidate = val.getClass();
-                    } else if(candidate != val.getClass()) {
+                    } else if (candidate != val.getClass()) {
                         return null;
                     }
                 }
@@ -225,7 +224,7 @@ public abstract class CollectionUtils {
     public static <A, E extends A> A[] toArray(Enumeration<E> enumeration, A[] array) {
         ArrayList elements = new ArrayList();
 
-        while(enumeration.hasMoreElements()) {
+        while (enumeration.hasMoreElements()) {
             elements.add(enumeration.nextElement());
         }
 
@@ -245,9 +244,9 @@ public abstract class CollectionUtils {
         LinkedHashMap result = new LinkedHashMap(map.size());
         Iterator unmodifiableMap = map.entrySet().iterator();
 
-        while(unmodifiableMap.hasNext()) {
-            Entry entry = (Entry)unmodifiableMap.next();
-            List values = Collections.unmodifiableList((List)entry.getValue());
+        while (unmodifiableMap.hasNext()) {
+            Entry entry = (Entry) unmodifiableMap.next();
+            List values = Collections.unmodifiableList((List) entry.getValue());
             result.put(entry.getKey(), values);
         }
 
@@ -265,7 +264,7 @@ public abstract class CollectionUtils {
 
         public void add(K key, V value) {
             List<V> values = this.map.get(key);
-            if(values == null) {
+            if (values == null) {
                 values = new LinkedList<>();
                 this.map.put(key, values);
             }
@@ -275,7 +274,7 @@ public abstract class CollectionUtils {
 
         public V getFirst(K key) {
             List values = this.map.get(key);
-            return values != null? (V) values.get(0): null;
+            return values != null ? (V) values.get(0) : null;
         }
 
         public void set(K key, V value) {
@@ -287,9 +286,9 @@ public abstract class CollectionUtils {
         public void setAll(Map<K, V> values) {
             Iterator i$ = values.entrySet().iterator();
 
-            while(i$.hasNext()) {
-                Entry entry = (Entry)i$.next();
-                this.set((K) entry.getKey(),(V)  entry.getValue());
+            while (i$.hasNext()) {
+                Entry entry = (Entry) i$.next();
+                this.set((K) entry.getKey(), (V) entry.getValue());
             }
 
         }
@@ -298,9 +297,9 @@ public abstract class CollectionUtils {
             LinkedHashMap singleValueMap = new LinkedHashMap(this.map.size());
             Iterator i$ = this.map.entrySet().iterator();
 
-            while(i$.hasNext()) {
-                Entry entry = (Entry)i$.next();
-                singleValueMap.put(entry.getKey(), ((List)entry.getValue()).get(0));
+            while (i$.hasNext()) {
+                Entry entry = (Entry) i$.next();
+                singleValueMap.put(entry.getKey(), ((List) entry.getValue()).get(0));
             }
 
             return singleValueMap;
@@ -355,7 +354,7 @@ public abstract class CollectionUtils {
         }
 
         public boolean equals(Object other) {
-            return this == other?true:this.map.equals(other);
+            return this == other ? true : this.map.equals(other);
         }
 
         public int hashCode() {

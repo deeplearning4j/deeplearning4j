@@ -59,7 +59,8 @@ public class NoOp extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressionType(getCompressionType());

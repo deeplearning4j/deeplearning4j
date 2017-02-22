@@ -45,6 +45,7 @@ import static org.junit.Assert.*;
 @Ignore
 public class VoidParameterServerStressTest {
     private static final int NUM_WORDS = 100000;
+
     @Before
     public void setUp() throws Exception {
 
@@ -60,10 +61,8 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceStandalone1() {
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .networkMask("192.168.0.0/16")
-                .numberOfShards(1)
-                .build();
+        VoidConfiguration voidConfiguration =
+                        VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
 
         voidConfiguration.setShardAddresses("192.168.1.35");
 
@@ -82,7 +81,7 @@ public class VoidParameterServerStressTest {
 
                 int chunk = NUM_WORDS / threads.length;
                 int start = e * chunk;
-                int end =  (e + 1) * chunk;
+                int end = (e + 1) * chunk;
 
                 for (int i = 0; i < 1000000; i++) {
                     long time1 = System.nanoTime();
@@ -104,7 +103,8 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             try {
                 threads[t].join();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         }
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -121,10 +121,8 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceStandalone2() {
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .networkMask("192.168.0.0/16")
-                .numberOfShards(1)
-                .build();
+        VoidConfiguration voidConfiguration =
+                        VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
 
         voidConfiguration.setShardAddresses("192.168.1.35");
 
@@ -143,7 +141,7 @@ public class VoidParameterServerStressTest {
 
                 int chunk = NUM_WORDS / threads.length;
                 int start = e * chunk;
-                int end =  (e + 1) * chunk;
+                int end = (e + 1) * chunk;
 
                 for (int i = 0; i < 100000; i++) {
                     SkipGramRequestMessage sgrm = getSGRM();
@@ -166,7 +164,8 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             try {
                 threads[t].join();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         }
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -182,10 +181,8 @@ public class VoidParameterServerStressTest {
 
     @Test
     public void testPerformanceMulticast1() throws Exception {
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .networkMask("192.168.0.0/16")
-                .numberOfShards(1)
-                .build();
+        VoidConfiguration voidConfiguration =
+                        VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
 
         List<String> addresses = new ArrayList<>();
         for (int s = 0; s < 5; s++) {
@@ -198,16 +195,14 @@ public class VoidParameterServerStressTest {
         VoidConfiguration[] voidConfigurations = new VoidConfiguration[5];
         VoidParameterServer[] shards = new VoidParameterServer[5];
         for (int s = 0; s < shards.length; s++) {
-            voidConfigurations[s] = VoidConfiguration.builder()
-                    .unicastPort(Integer.valueOf("3789" + s))
-                    .networkMask("192.168.0.0/16")
-                    .build();
+            voidConfigurations[s] = VoidConfiguration.builder().unicastPort(Integer.valueOf("3789" + s))
+                            .networkMask("192.168.0.0/16").build();
 
             voidConfigurations[s].setShardAddresses(addresses);
 
             MulticastTransport transport = new MulticastTransport();
             transport.setIpAndPort("192.168.1.35", Integer.valueOf("3789" + s));
-            shards[s] =  new VoidParameterServer(false);
+            shards[s] = new VoidParameterServer(false);
             shards[s].setShardIndex((short) s);
             shards[s].init(voidConfigurations[s], transport, new SkipGramTrainer());
 
@@ -236,7 +231,7 @@ public class VoidParameterServerStressTest {
 
                 int chunk = NUM_WORDS / threads.length;
                 int start = e * chunk;
-                int end =  (e + 1) * chunk;
+                int end = (e + 1) * chunk;
 
                 for (int i = 0; i < 100000; i++) {
                     long time1 = System.nanoTime();
@@ -258,7 +253,8 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             try {
                 threads[t].join();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         }
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -269,7 +265,7 @@ public class VoidParameterServerStressTest {
 
         parameterServer.shutdown();;
 
-        for (VoidParameterServer server: shards) {
+        for (VoidParameterServer server : shards) {
             server.shutdown();
         }
     }
@@ -284,18 +280,15 @@ public class VoidParameterServerStressTest {
             list.add("127.0.0.1:3838" + t);
         }
 
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .unicastPort(49823)
-                .numberOfShards(list.size())
-                .shardAddresses(list)
-                .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(list.size())
+                        .shardAddresses(list).build();
 
         VoidParameterServer[] shards = new VoidParameterServer[list.size()];
         for (int t = 0; t < shards.length; t++) {
             shards[t] = new VoidParameterServer(NodeRole.SHARD);
 
             Transport transport = new RoutedTransport();
-            transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
+            transport.setIpAndPort("127.0.0.1", Integer.valueOf("3838" + t));
 
             shards[t].setShardIndex((short) t);
             shards[t].init(voidConfiguration, transport, new SkipGramTrainer());
@@ -353,7 +346,8 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             try {
                 threads[t].join();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         }
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -363,7 +357,7 @@ public class VoidParameterServerStressTest {
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
 
         // shutdown everything
-        for (VoidParameterServer shard: shards) {
+        for (VoidParameterServer shard : shards) {
             shard.getTransport().shutdown();
         }
 
@@ -382,18 +376,15 @@ public class VoidParameterServerStressTest {
             list.add("127.0.0.1:3838" + t);
         }
 
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .unicastPort(49823)
-                .numberOfShards(list.size())
-                .shardAddresses(list)
-                .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(list.size())
+                        .shardAddresses(list).build();
 
         VoidParameterServer[] shards = new VoidParameterServer[list.size()];
         for (int t = 0; t < shards.length; t++) {
             shards[t] = new VoidParameterServer(NodeRole.SHARD);
 
             Transport transport = new RoutedTransport();
-            transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
+            transport.setIpAndPort("127.0.0.1", Integer.valueOf("3838" + t));
 
             shards[t].setShardIndex((short) t);
             shards[t].init(voidConfiguration, transport, new SkipGramTrainer());
@@ -432,7 +423,8 @@ public class VoidParameterServerStressTest {
                 int end = (e + 1) * chunk;
 
                 for (int i = 0; i < 200; i++) {
-                    Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
+                    Frame<SkipGramRequestMessage> frame =
+                                    new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
                     for (int f = 0; f < 128; f++) {
                         frame.stackMessage(getSGRM());
                     }
@@ -455,7 +447,8 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             try {
                 threads[t].join();
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         }
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -465,7 +458,7 @@ public class VoidParameterServerStressTest {
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
 
         // shutdown everything
-        for (VoidParameterServer shard: shards) {
+        for (VoidParameterServer shard : shards) {
             shard.getTransport().shutdown();
         }
 
@@ -479,11 +472,8 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceUnicast3() throws Exception {
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .unicastPort(49823)
-                .numberOfShards(1)
-                .shardAddresses(Arrays.asList("127.0.0.1:49823"))
-                .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(1)
+                        .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();
 
         Transport transport = new RoutedTransport();
         transport.setIpAndPort("127.0.0.1", Integer.valueOf("49823"));
@@ -498,7 +488,7 @@ public class VoidParameterServerStressTest {
 
         for (int i = 0; i < 200; i++) {
             Frame<CbowRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
-            for(int f = 0; f < 128; f++) {
+            for (int f = 0; f < 128; f++) {
                 frame.stackMessage(getCRM());
             }
             long time1 = System.nanoTime();
@@ -523,11 +513,8 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceUnicast4() throws Exception {
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .unicastPort(49823)
-                .numberOfShards(1)
-                .shardAddresses(Arrays.asList("127.0.0.1:49823"))
-                .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(1)
+                        .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();
 
         Transport transport = new RoutedTransport();
         transport.setIpAndPort("127.0.0.1", Integer.valueOf("49823"));
@@ -544,7 +531,7 @@ public class VoidParameterServerStressTest {
             clients[c] = new VoidParameterServer(NodeRole.CLIENT);
 
             Transport clientTransport = new RoutedTransport();
-            clientTransport.setIpAndPort("127.0.0.1",Integer.valueOf("4872" + c));
+            clientTransport.setIpAndPort("127.0.0.1", Integer.valueOf("4872" + c));
 
             clients[c].init(voidConfiguration, clientTransport, new SkipGramTrainer());
 
@@ -559,7 +546,7 @@ public class VoidParameterServerStressTest {
             threads[t] = new Thread(() -> {
                 List<Long> results = new ArrayList<>();
                 AtomicLong sequence = new AtomicLong(0);
-                for( int i = 0; i < 20000; i++) {
+                for (int i = 0; i < 20000; i++) {
                     Frame<SkipGramRequestMessage> frame = new Frame<>(sequence.incrementAndGet());
                     for (int f = 0; f < 128; f++) {
                         frame.stackMessage(getSGRM());
@@ -583,7 +570,7 @@ public class VoidParameterServerStressTest {
 
 
 
-        for (Thread thread: threads)
+        for (Thread thread : threads)
             thread.join();
 
         List<Long> newTimes = new ArrayList<>(times);
@@ -592,7 +579,7 @@ public class VoidParameterServerStressTest {
 
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
 
-        for (VoidParameterServer client: clients) {
+        for (VoidParameterServer client : clients) {
             client.shutdown();
         }
 

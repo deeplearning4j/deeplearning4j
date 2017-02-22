@@ -37,19 +37,11 @@ public class DistributedSgDotMessage extends BaseVoidMessage implements Distribu
 
     @Deprecated
     public DistributedSgDotMessage(long taskId, int rowA, int rowB) {
-        this(taskId, new int[]{rowA}, new int[]{rowB}, 0, 0, new byte[]{}, false, (short) 0, 0.001f);
+        this(taskId, new int[] {rowA}, new int[] {rowB}, 0, 0, new byte[] {}, false, (short) 0, 0.001f);
     }
 
-    public DistributedSgDotMessage(long taskId,
-                                   @NonNull int[] rowsA,
-                                   @NonNull int[] rowsB,
-                                   int w1,
-                                   int w2,
-                                   @NonNull byte[] codes,
-                                   boolean useHS,
-                                   short negSamples,
-                                   float alpha
-                                 ) {
+    public DistributedSgDotMessage(long taskId, @NonNull int[] rowsA, @NonNull int[] rowsB, int w1, int w2,
+                    @NonNull byte[] codes, boolean useHS, short negSamples, float alpha) {
         this();
         this.rowsA = rowsA;
         this.rowsB = rowsB;
@@ -71,7 +63,7 @@ public class DistributedSgDotMessage extends BaseVoidMessage implements Distribu
         // this only picks up new training round
         //log.info("sI_{} Processing DistributedSgDotMessage taskId: {}", transport.getShardIndex(), getTaskId());
 
-        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119);
         if (negSamples > 0) {
             // unfortunately we have to get copy of negSamples here
             int negatives[] = Arrays.copyOfRange(rowsB, codes.length, rowsB.length);
@@ -94,13 +86,15 @@ public class DistributedSgDotMessage extends BaseVoidMessage implements Distribu
         INDArray result = Nd4j.createUninitialized(resultLength, 1);
         int e = 0;
         for (; e < codes.length; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2), storage.getArray(WordVectorStorage.SYN_1).getRow(rowsB[e]));
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2),
+                            storage.getArray(WordVectorStorage.SYN_1).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 
         // negSampling round
-        for (; e< resultLength; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2), storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
+        for (; e < resultLength; e++) {
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2),
+                            storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 
@@ -110,9 +104,10 @@ public class DistributedSgDotMessage extends BaseVoidMessage implements Distribu
             dot.setTargetId((short) -1);
             dot.setOriginatorId(getOriginatorId());
             transport.putMessage(dot);
-        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED){
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
             // send this message to everyone
-            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
+            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex,
+                            result);
             dot.setTargetId((short) -1);
             dot.setOriginatorId(getOriginatorId());
             transport.sendMessage(dot);

@@ -15,15 +15,20 @@ import org.nd4j.linalg.factory.Nd4j;
 public class AggregateSkipGram extends BaseAggregate {
     private int vectorLength;
 
-    public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, INDArray inferenceVector) {
-        this(syn0, syn1, syn1Neg, expTable, negTable, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength, alpha, nextRandom, vocabSize);
+    public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable,
+                    int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength,
+                    double alpha, long nextRandom, int vocabSize, INDArray inferenceVector) {
+        this(syn0, syn1, syn1Neg, expTable, negTable, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength,
+                        alpha, nextRandom, vocabSize);
 
         arguments.set(5, inferenceVector);
 
         indexingArguments.set(8, inferenceVector == null ? 0 : 1); // set isInference to true
     }
 
-    public AggregateSkipGram(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateSkipGram(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable,
+                    INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter,
+                    int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(idxSyn0);
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);

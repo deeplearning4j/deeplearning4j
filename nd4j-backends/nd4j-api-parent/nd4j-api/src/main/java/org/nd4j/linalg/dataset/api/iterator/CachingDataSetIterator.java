@@ -25,7 +25,8 @@ public class CachingDataSetIterator implements DataSetIterator {
         this(sourceIterator, cache, namespace, false);
     }
 
-    public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache, String namespace, boolean allowPrefetching) {
+    public CachingDataSetIterator(DataSetIterator sourceIterator, DataSetCache cache, String namespace,
+                    boolean allowPrefetching) {
         this.sourceIterator = sourceIterator;
         this.cache = cache;
         this.namespace = namespace;
@@ -64,7 +65,7 @@ public class CachingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 

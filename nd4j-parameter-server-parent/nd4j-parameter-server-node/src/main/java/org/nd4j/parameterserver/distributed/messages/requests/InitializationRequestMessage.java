@@ -14,7 +14,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitial
  */
 @Slf4j
 @Builder
-public class InitializationRequestMessage extends BaseVoidMessage  implements RequestMessage {
+public class InitializationRequestMessage extends BaseVoidMessage implements RequestMessage {
     protected int vectorLength;
     protected int numWords;
     protected long seed;
@@ -27,7 +27,8 @@ public class InitializationRequestMessage extends BaseVoidMessage  implements Re
         taskId = -119L;
     }
 
-    public InitializationRequestMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
+    public InitializationRequestMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg,
+                    int columnsPerShard) {
         this();
         this.vectorLength = vectorLength;
         this.numWords = numWords;
@@ -40,9 +41,11 @@ public class InitializationRequestMessage extends BaseVoidMessage  implements Re
 
     @Override
     public void processMessage() {
-        DistributedInitializationMessage dim = new DistributedInitializationMessage(vectorLength, numWords, seed, useHs, useNeg, columnsPerShard);
+        DistributedInitializationMessage dim = new DistributedInitializationMessage(vectorLength, numWords, seed, useHs,
+                        useNeg, columnsPerShard);
 
-        InitializationAggregation aggregation = new InitializationAggregation((short) voidConfiguration.getNumberOfShards(), transport.getShardIndex());
+        InitializationAggregation aggregation = new InitializationAggregation(
+                        (short) voidConfiguration.getNumberOfShards(), transport.getShardIndex());
         aggregation.setOriginatorId(this.originatorId);
 
         clipboard.pin(aggregation);

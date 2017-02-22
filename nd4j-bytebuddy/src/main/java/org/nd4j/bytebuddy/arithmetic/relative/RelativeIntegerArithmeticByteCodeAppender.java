@@ -35,17 +35,15 @@ public class RelativeIntegerArithmeticByteCodeAppender implements ByteCodeAppend
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         if (!instrumentedMethod.getReturnType().represents(int.class)) {
             throw new IllegalArgumentException(instrumentedMethod + " must return int");
         }
 
-        StackManipulation.Size operandStackSize = new StackManipulation.Compound(
-                IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                op,
-                MethodReturn.INTEGER
-        ).apply(methodVisitor, implementationContext);
+        StackManipulation.Size operandStackSize =
+                        new StackManipulation.Compound(IntegerConstant.forValue(val1), IntegerConstant.forValue(val2),
+                                        op, MethodReturn.INTEGER).apply(methodVisitor, implementationContext);
         return new Size(operandStackSize.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

@@ -17,8 +17,9 @@ public class StackManipulationByteCodeAppender implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        StackManipulation.Size size =  stackManipulation.apply(methodVisitor, implementationContext);
-        return new Size(size.getMaximalSize(),instrumentedMethod.getStackSize());
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
+        StackManipulation.Size size = stackManipulation.apply(methodVisitor, implementationContext);
+        return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

@@ -25,9 +25,8 @@ public class InterleavedRouterTest {
     @Before
     public void setUp() {
         configuration = VoidConfiguration.builder()
-                .shardAddresses(Arrays.asList("1.2.3.4","2.3.4.5","3.4.5.6","4.5.6.7"))
-                .numberOfShards(4) // we set it manually here
-                .build();
+                        .shardAddresses(Arrays.asList("1.2.3.4", "2.3.4.5", "3.4.5.6", "4.5.6.7")).numberOfShards(4) // we set it manually here
+                        .build();
 
         transport = new RoutedTransport();
         transport.setIpAndPort("8.9.10.11", 87312);
@@ -63,10 +62,11 @@ public class InterleavedRouterTest {
         InterleavedRouter router = new InterleavedRouter();
         router.init(configuration, transport);
 
-        int w1[] = new int[]{512, 345, 486, 212};
+        int w1[] = new int[] {512, 345, 486, 212};
 
         for (int i = 0; i < w1.length; i++) {
-            SkipGramRequestMessage message = new SkipGramRequestMessage(w1[i],1, new int[]{1,2,3}, new byte[]{0, 0, 1}, (short) 0, 0.02, 119 );
+            SkipGramRequestMessage message = new SkipGramRequestMessage(w1[i], 1, new int[] {1, 2, 3},
+                            new byte[] {0, 0, 1}, (short) 0, 0.02, 119);
             int target = router.assignTarget(message);
 
             assertEquals(w1[i] % configuration.getNumberOfShards(), target);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class ScalarSetValue extends BaseScalarOp {
-    public ScalarSetValue() {
-    }
+    public ScalarSetValue() {}
 
     public ScalarSetValue(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);

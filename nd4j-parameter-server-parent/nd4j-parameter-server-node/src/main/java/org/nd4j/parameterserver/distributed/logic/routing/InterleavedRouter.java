@@ -64,7 +64,8 @@ public class InterleavedRouter extends BaseRouter {
         setOriginator(message);
         if (message instanceof Frame) {
             message.setTargetId((short) Math.abs(counter.incrementAndGet() % voidConfiguration.getNumberOfShards()));
-        } else message.setTargetId(targetIndex);
+        } else
+            message.setTargetId(targetIndex);
         return message.getTargetId();
     }
 }

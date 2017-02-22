@@ -6,8 +6,7 @@ package org.nd4j.linalg.jcublas.util;
  */
 public class OpUtil {
 
-    private OpUtil() {
-    }
+    private OpUtil() {}
 
     /**
      * Return op for the given character

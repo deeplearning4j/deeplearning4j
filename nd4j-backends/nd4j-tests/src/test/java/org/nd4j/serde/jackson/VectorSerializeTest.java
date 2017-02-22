@@ -27,10 +27,10 @@ public class VectorSerializeTest {
 
     @Test
     public void testSerde() throws Exception {
-        String json = objectMapper.writeValueAsString(Nd4j.create(2,2));
-        INDArray assertion = Nd4j.create(2,2);
-        INDArray test = objectMapper.readValue(json,INDArray.class);
-        assertEquals(assertion,test);
+        String json = objectMapper.writeValueAsString(Nd4j.create(2, 2));
+        INDArray assertion = Nd4j.create(2, 2);
+        INDArray test = objectMapper.readValue(json, INDArray.class);
+        assertEquals(assertion, test);
     }
 
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class TimesOneMinus extends BaseTransformOp {
 
-    public TimesOneMinus() {
-    }
+    public TimesOneMinus() {}
 
     public TimesOneMinus(INDArray x, INDArray z) {
         super(x, z);
@@ -107,7 +106,8 @@ public class TimesOneMinus extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new TimesOneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TimesOneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new TimesOneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
     }
@@ -117,7 +117,8 @@ public class TimesOneMinus extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new TimesOneMinus(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TimesOneMinus(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new TimesOneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
     }

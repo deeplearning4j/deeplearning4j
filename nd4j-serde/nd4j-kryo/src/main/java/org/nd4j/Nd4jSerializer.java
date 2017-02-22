@@ -29,7 +29,7 @@ public class Nd4jSerializer extends Serializer<INDArray> {
     public void write(Kryo kryo, Output output, INDArray object) {
         DataOutputStream dos = new DataOutputStream(output);
         try {
-            Nd4j.write(object,dos);
+            Nd4j.write(object, dos);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

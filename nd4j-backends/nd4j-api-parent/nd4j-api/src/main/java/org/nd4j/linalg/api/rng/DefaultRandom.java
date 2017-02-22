@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,11 +39,14 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
     protected long seed;
+
     /**
      * Initialize with a System.currentTimeMillis()
      * seed
      */
-    public DefaultRandom() { this(System.currentTimeMillis()); }
+    public DefaultRandom() {
+        this(System.currentTimeMillis());
+    }
 
     public DefaultRandom(long seed) {
         this.seed = seed;
@@ -62,7 +65,6 @@ public class DefaultRandom implements Random, RandomGenerator {
 
 
 
-
     @Override
     public void setSeed(int[] seed) {
         throw new UnsupportedOperationException();
@@ -70,7 +72,7 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public void setSeed(long seed) {
-        this.seed= seed;
+        this.seed = seed;
         getRandomGenerator().setSeed(seed);
     }
 
@@ -120,12 +122,12 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     @Override
-    public INDArray nextGaussian(char order, int[] shape){
+    public INDArray nextGaussian(char order, int[] shape) {
         int length = ArrayUtil.prod(shape);
-        INDArray ret = Nd4j.create(shape,order);
+        INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             data.put(i, nextGaussian());
         }
 
@@ -138,12 +140,12 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     @Override
-    public INDArray nextDouble(char order, int[] shape){
+    public INDArray nextDouble(char order, int[] shape) {
         int length = ArrayUtil.prod(shape);
-        INDArray ret = Nd4j.create(shape,order);
+        INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             data.put(i, nextDouble());
         }
 
@@ -161,7 +163,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             data.put(i, nextFloat());
         }
 
@@ -174,7 +176,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
 
         DataBuffer data = ret.data();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             data.put(i, nextInt());
         }
 
@@ -187,7 +189,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
 
         DataBuffer data = ret.data();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             data.put(i, nextInt(n));
         }
 
@@ -199,7 +201,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         return randomGenerator;
     }
 
-    public synchronized long getSeed(){
+    public synchronized long getSeed() {
         return this.seed;
     }
 

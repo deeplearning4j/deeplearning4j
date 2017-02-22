@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ public class Not extends BaseTransformOp {
 
     protected double comparable;
 
-    public Not() {
-    }
+    public Not() {}
 
     public Not(@NonNull INDArray x) {
         this(x, 0.0);
@@ -60,7 +59,7 @@ public class Not extends BaseTransformOp {
     public Not(@NonNull INDArray x, INDArray z, Number comparable, long n) {
         super(x, null, z, n);
         this.comparable = comparable.doubleValue();
-        this.extraArgs = new Object[]{ this.comparable };
+        this.extraArgs = new Object[] {this.comparable};
     }
 
 
@@ -117,14 +116,14 @@ public class Not extends BaseTransformOp {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-            return new Not(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+        return new Not(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-            return new Not(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        return new Not(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

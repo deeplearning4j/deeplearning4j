@@ -9,9 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface AffinityManager {
 
     enum Location {
-        HOST,
-        DEVICE,
-        EVERYWHERE,
+        HOST, DEVICE, EVERYWHERE,
     }
 
     /**

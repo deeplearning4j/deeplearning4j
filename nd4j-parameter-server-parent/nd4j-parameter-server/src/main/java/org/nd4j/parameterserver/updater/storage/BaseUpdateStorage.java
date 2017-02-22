@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public abstract  class BaseUpdateStorage implements UpdateStorage {
+public abstract class BaseUpdateStorage implements UpdateStorage {
     /**
      * Get the update at the specified index
      *
@@ -18,8 +18,9 @@ public abstract  class BaseUpdateStorage implements UpdateStorage {
      */
     @Override
     public NDArrayMessage getUpdate(int index) {
-        if(index >= numUpdates())
-            throw new IndexOutOfBoundsException("Index passed in " + index + " was >= current number of updates " + numUpdates());
+        if (index >= numUpdates())
+            throw new IndexOutOfBoundsException(
+                            "Index passed in " + index + " was >= current number of updates " + numUpdates());
         return doGetUpdate(index);
     }
 

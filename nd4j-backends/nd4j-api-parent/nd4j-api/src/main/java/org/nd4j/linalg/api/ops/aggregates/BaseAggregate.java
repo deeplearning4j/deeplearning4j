@@ -59,7 +59,8 @@ public abstract class BaseAggregate implements Aggregate {
         result += maxArguments() * 8; // pointers
         result += maxShapes() * 8; // pointers
         result += maxIndexArguments() * 4;
-        result += maxRealArguments() * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2);
+        result += maxRealArguments() * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
+                        : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2);
         result += 5 * 4; // numArgs
 
         return result * Batch.getBatchLimit();

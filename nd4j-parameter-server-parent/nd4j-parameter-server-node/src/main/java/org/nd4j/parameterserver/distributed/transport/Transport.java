@@ -14,8 +14,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 public interface Transport {
     enum ThreadingModel {
         SAME_THREAD, // DO NOT USE IT IN REAL ENVIRONMENT!!!11oneoneeleven
-        SINGLE_THREAD,
-        DEDICATED_THREADS,
+        SINGLE_THREAD, DEDICATED_THREADS,
     }
 
     void setIpAndPort(String ip, int port);
@@ -39,7 +38,8 @@ public interface Transport {
      * @param role
      * @param localIp
      */
-    void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort, short shardIndex);
+    void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort,
+                    short shardIndex);
 
 
     /**

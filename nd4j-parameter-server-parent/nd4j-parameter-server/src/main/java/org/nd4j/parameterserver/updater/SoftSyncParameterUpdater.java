@@ -8,10 +8,10 @@ import java.util.Map;
 /**
  * Created by agibsonccc on 12/1/16.
  */
-public class SoftSyncParameterUpdater extends BaseParameterUpdater  {
+public class SoftSyncParameterUpdater extends BaseParameterUpdater {
     //track time stamps of messages coming in to find out which generation a message is meant for
     //alxways log where the message time stamp began
-    private Map<Long,Integer> timeStampsForGeneration;
+    private Map<Long, Integer> timeStampsForGeneration;
     //s is the number of updates
     private int s;
     private int currentVersion;

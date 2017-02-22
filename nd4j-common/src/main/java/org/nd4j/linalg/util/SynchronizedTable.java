@@ -11,8 +11,8 @@ import java.util.Set;
  *
  * @author Adam Gibson
  */
-public class SynchronizedTable<R,C,V> implements Table<R,C,V> {
-    private Table<R,C,V> wrapped;
+public class SynchronizedTable<R, C, V> implements Table<R, C, V> {
+    private Table<R, C, V> wrapped;
 
     public SynchronizedTable(Table<R, C, V> wrapped) {
         this.wrapped = wrapped;
@@ -20,7 +20,7 @@ public class SynchronizedTable<R,C,V> implements Table<R,C,V> {
 
     @Override
     public synchronized boolean contains(Object rowKey, Object columnKey) {
-        return wrapped.contains(rowKey,columnKey);
+        return wrapped.contains(rowKey, columnKey);
     }
 
     @Override
@@ -40,12 +40,12 @@ public class SynchronizedTable<R,C,V> implements Table<R,C,V> {
 
     @Override
     public synchronized V get(Object rowKey, Object columnKey) {
-        return get(rowKey,columnKey);
+        return get(rowKey, columnKey);
     }
 
     @Override
     public synchronized boolean isEmpty() {
-        return  wrapped.isEmpty();
+        return wrapped.isEmpty();
     }
 
     @Override
@@ -55,22 +55,22 @@ public class SynchronizedTable<R,C,V> implements Table<R,C,V> {
 
     @Override
     public synchronized void clear() {
-      wrapped.clear();
+        wrapped.clear();
     }
 
     @Override
     public synchronized V put(R rowKey, C columnKey, V value) {
-        return wrapped.put(rowKey,columnKey,value);
+        return wrapped.put(rowKey, columnKey, value);
     }
 
     @Override
     public synchronized void putAll(Table<? extends R, ? extends C, ? extends V> table) {
-         wrapped.putAll(table);
+        wrapped.putAll(table);
     }
 
     @Override
     public synchronized V remove(Object rowKey, Object columnKey) {
-        return wrapped.remove(rowKey,columnKey);
+        return wrapped.remove(rowKey, columnKey);
     }
 
     @Override

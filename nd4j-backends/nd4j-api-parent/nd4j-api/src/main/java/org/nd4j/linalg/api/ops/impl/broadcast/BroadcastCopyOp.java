@@ -10,10 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class BroadcastCopyOp extends BaseBroadcastOp {
 
-    public BroadcastCopyOp() {
-    }
+    public BroadcastCopyOp() {}
 
-    public BroadcastCopyOp(INDArray x, INDArray y, INDArray z, int...dimension) {
+    public BroadcastCopyOp(INDArray x, INDArray y, INDArray z, int... dimension) {
         super(x, y, z, dimension);
     }
 

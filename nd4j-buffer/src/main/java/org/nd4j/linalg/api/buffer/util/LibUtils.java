@@ -1,4 +1,4 @@
-/*
+/*-
  * JCuda - Java bindings for NVIDIA CUDA driver and runtime API
  *
  * Copyright (c) 2009-2015 Marco Hutter - http://www.jcuda.org
@@ -43,22 +43,19 @@ import java.util.Locale;
  * http://javablog.co.uk/2007/05/19/making-jni-cross-platform/
  * and extended with http://lopica.sourceforge.net/os.html
  */
-public final class LibUtils
-{
+public final class LibUtils {
     /**
      * Enumeration of common operating systems, independent of version
      * or architecture.
      */
-    public  enum OSType
-    {
+    public enum OSType {
         APPLE, LINUX, SUN, WINDOWS, UNKNOWN
     }
 
     /**
      * Enumeration of common CPU architectures.
      */
-    public  enum ARCHType
-    {
+    public enum ARCHType {
         PPC, PPC_64, SPARC, X86, X86_64, ARM, MIPS, RISC, UNKNOWN
     }
 
@@ -100,33 +97,22 @@ public final class LibUtils
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
 
-            pw.println("Error while loading native library \"" +
-                    libName + "\" with base name \""+baseName+"\"");
-            pw.println("Operating system name: "+
-                    System.getProperty("os.name"));
-            pw.println("Architecture         : "+
-                    System.getProperty("os.arch"));
-            pw.println("Architecture bit size: "+
-                    System.getProperty("sun.arch.data.model"));
+            pw.println("Error while loading native library \"" + libName + "\" with base name \"" + baseName + "\"");
+            pw.println("Operating system name: " + System.getProperty("os.name"));
+            pw.println("Architecture         : " + System.getProperty("os.arch"));
+            pw.println("Architecture bit size: " + System.getProperty("sun.arch.data.model"));
 
-            if (throwable != null)
-            {
-                pw.println(
-                        "Stack trace from the attempt to " +
-                                "load the library as a resource:");
+            if (throwable != null) {
+                pw.println("Stack trace from the attempt to " + "load the library as a resource:");
                 throwable.printStackTrace(pw);
             }
 
-            pw.println(
-                    "Stack trace from the attempt to " +
-                            "load the library as a file:");
+            pw.println("Stack trace from the attempt to " + "load the library as a file:");
             t.printStackTrace(pw);
 
             pw.flush();
             pw.close();
-            throw new UnsatisfiedLinkError(
-                    "Could not load the native library.\n"+
-                            sw.toString());
+            throw new UnsatisfiedLinkError("Could not load the native library.\n" + sw.toString());
         }
     }
 
@@ -137,32 +123,26 @@ public final class LibUtils
      * @param libName The library name
      * @throws Throwable If the library could not be loaded
      */
-    public static void loadTempBinaryFile(String libName) throws Exception
-    {
+    public static void loadTempBinaryFile(String libName) throws Exception {
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
         String fullName = libPrefix + libName;
         String resourceName = fullName + "." + libExtension;
         ClassPathResource resource = new ClassPathResource(resourceName);
         InputStream inputStream = resource.getInputStream();
-        if (inputStream == null)
-        {
-            throw new NullPointerException(
-                    "No resource found with name '" + resourceName + "'");
+        if (inputStream == null) {
+            throw new NullPointerException("No resource found with name '" + resourceName + "'");
         }
 
-        File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "." + libExtension);
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), fullName + "." + libExtension);
         tempFile.deleteOnExit();
         OutputStream outputStream = null;
-        try
-        {
+        try {
             outputStream = new FileOutputStream(tempFile);
             byte[] buffer = new byte[8192];
-            while (true)
-            {
+            while (true) {
                 int read = inputStream.read(buffer);
-                if (read < 0)
-                {
+                if (read < 0) {
                     break;
                 }
                 outputStream.write(buffer, 0, read);
@@ -172,11 +152,8 @@ public final class LibUtils
             outputStream = null;
 
             System.load(tempFile.getAbsolutePath());
-        }
-        finally
-        {
-            if (outputStream != null)
-            {
+        } finally {
+            if (outputStream != null) {
                 outputStream.close();
             }
         }
@@ -195,32 +172,26 @@ public final class LibUtils
         String resourceFolder = os + "-" + arch;
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
-        StringBuilder sb = new StringBuilder()
-                .append(libName.getPackage().getName().replace(".","/") + "/")
-                .append(resourceFolder).append("/").append(libPrefix).append("jni" + libName.getSimpleName() + ".")
-                .append(libExtension);
+        StringBuilder sb = new StringBuilder().append(libName.getPackage().getName().replace(".", "/") + "/")
+                        .append(resourceFolder).append("/").append(libPrefix)
+                        .append("jni" + libName.getSimpleName() + ".").append(libExtension);
         String resourceName = sb.toString();
         ClassPathResource resource = new ClassPathResource(resourceName);
         InputStream inputStream = resource.getInputStream();
-        if (inputStream == null)
-        {
-            throw new NullPointerException(
-                    "No resource found with name '" + resourceName + "'");
+        if (inputStream == null) {
+            throw new NullPointerException("No resource found with name '" + resourceName + "'");
         }
 
         String fullName = libPrefix + "jni" + libName.getSimpleName() + "." + libExtension;
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), fullName );
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), fullName);
         tempFile.deleteOnExit();
         OutputStream outputStream = null;
-        try
-        {
+        try {
             outputStream = new FileOutputStream(tempFile);
             byte[] buffer = new byte[8192];
-            while (true)
-            {
+            while (true) {
                 int read = inputStream.read(buffer);
-                if (read < 0)
-                {
+                if (read < 0) {
                     break;
                 }
                 outputStream.write(buffer, 0, read);
@@ -230,11 +201,8 @@ public final class LibUtils
             outputStream = null;
 
             System.load(tempFile.getAbsolutePath());
-        }
-        finally
-        {
-            if (outputStream != null)
-            {
+        } finally {
+            if (outputStream != null) {
                 outputStream.close();
             }
         }
@@ -249,31 +217,25 @@ public final class LibUtils
      * @param libName The library name
      * @throws Throwable If the library could not be loaded
      */
-    public static void loadJavaCppResource(String libName) throws Throwable
-    {
+    public static void loadJavaCppResource(String libName) throws Throwable {
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
         String fullName = libPrefix + libName;
         String resourceName = fullName + "." + libExtension;
         ClassPathResource resource = new ClassPathResource(resourceName);
         InputStream inputStream = resource.getInputStream();
-        if (inputStream == null)
-        {
-            throw new NullPointerException(
-                    "No resource found with name '" + resourceName + "'");
+        if (inputStream == null) {
+            throw new NullPointerException("No resource found with name '" + resourceName + "'");
         }
-        File tempFile = File.createTempFile(fullName, "."+libExtension);
+        File tempFile = File.createTempFile(fullName, "." + libExtension);
         tempFile.deleteOnExit();
         OutputStream outputStream = null;
-        try
-        {
+        try {
             outputStream = new FileOutputStream(tempFile);
             byte[] buffer = new byte[8192];
-            while (true)
-            {
+            while (true) {
                 int read = inputStream.read(buffer);
-                if (read < 0)
-                {
+                if (read < 0) {
                     break;
                 }
                 outputStream.write(buffer, 0, read);
@@ -282,11 +244,8 @@ public final class LibUtils
             outputStream.close();
             outputStream = null;
             System.load(tempFile.toString());
-        }
-        finally
-        {
-            if (outputStream != null)
-            {
+        } finally {
+            if (outputStream != null) {
                 outputStream.close();
             }
         }
@@ -304,18 +263,18 @@ public final class LibUtils
         usrPathsField.setAccessible(true);
 
         //get array of paths
-        final String[] paths = (String[])usrPathsField.get(null);
+        final String[] paths = (String[]) usrPathsField.get(null);
 
         //check if the path to add is already present
-        for(String path : paths) {
-            if(path.equals(pathToAdd)) {
+        for (String path : paths) {
+            if (path.equals(pathToAdd)) {
                 return;
             }
         }
 
         //add the new path
         final String[] newPaths = Arrays.copyOf(paths, paths.length + 1);
-        newPaths[newPaths.length-1] = pathToAdd;
+        newPaths[newPaths.length - 1] = pathToAdd;
         usrPathsField.set(null, newPaths);
     }
 
@@ -326,31 +285,24 @@ public final class LibUtils
      * @param libName The library name
      * @throws Throwable If the library could not be loaded
      */
-    private static void loadLibraryResource(String libName) throws Throwable
-    {
+    private static void loadLibraryResource(String libName) throws Throwable {
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
         String fullName = libPrefix + libName;
         String resourceName = "/lib/" + fullName + "." + libExtension;
-        InputStream inputStream =
-                LibUtils.class.getResourceAsStream(resourceName);
-        if (inputStream == null)
-        {
-            throw new NullPointerException(
-                    "No resource found with name '" + resourceName + "'");
+        InputStream inputStream = LibUtils.class.getResourceAsStream(resourceName);
+        if (inputStream == null) {
+            throw new NullPointerException("No resource found with name '" + resourceName + "'");
         }
-        File tempFile = File.createTempFile(fullName, "."+libExtension);
+        File tempFile = File.createTempFile(fullName, "." + libExtension);
         tempFile.deleteOnExit();
         OutputStream outputStream = null;
-        try
-        {
+        try {
             outputStream = new FileOutputStream(tempFile);
             byte[] buffer = new byte[8192];
-            while (true)
-            {
+            while (true) {
                 int read = inputStream.read(buffer);
-                if (read < 0)
-                {
+                if (read < 0) {
                     break;
                 }
                 outputStream.write(buffer, 0, read);
@@ -359,11 +311,8 @@ public final class LibUtils
             outputStream.close();
             outputStream = null;
             System.load(tempFile.toString());
-        }
-        finally
-        {
-            if (outputStream != null)
-            {
+        } finally {
+            if (outputStream != null) {
                 outputStream.close();
             }
         }
@@ -376,8 +325,7 @@ public final class LibUtils
      */
     public static String getOsName() {
         OSType osType = calculateOS();
-        switch (osType)
-        {
+        switch (osType) {
             case APPLE:
                 return "macosx";
             case LINUX:
@@ -393,13 +341,20 @@ public final class LibUtils
     public static String getArchName() {
         ARCHType archType = calculateArch();
         switch (archType) {
-            case X86: return "x86";
-            case X86_64: return "x86_64";
-            case ARM: return "arm";
-            case PPC: return "ppc";
-            case PPC_64: return "ppc64";
-            case RISC: return "risc";
-            default: return "unknown";
+            case X86:
+                return "x86";
+            case X86_64:
+                return "x86_64";
+            case ARM:
+                return "arm";
+            case PPC:
+                return "ppc";
+            case PPC_64:
+                return "ppc64";
+            case RISC:
+                return "risc";
+            default:
+                return "unknown";
 
         }
     }
@@ -411,11 +366,9 @@ public final class LibUtils
      *
      * @return The library extension
      */
-    private static String createLibExtension()
-    {
+    private static String createLibExtension() {
         OSType osType = calculateOS();
-        switch (osType)
-        {
+        switch (osType) {
             case APPLE:
                 return "dylib";
             case LINUX:
@@ -435,11 +388,9 @@ public final class LibUtils
      *
      * @return The library prefix
      */
-    private static String createLibPrefix()
-    {
+    private static String createLibPrefix() {
         OSType osType = calculateOS();
-        switch (osType)
-        {
+        switch (osType) {
             case APPLE:
             case LINUX:
             case SUN:
@@ -463,8 +414,7 @@ public final class LibUtils
      * @param baseName The base name of the library
      * @return The library name
      */
-    public static String createLibName(String baseName)
-    {
+    public static String createLibName(String baseName) {
         OSType osType = calculateOS();
         ARCHType archType = calculateArch();
         String libName = baseName;
@@ -478,24 +428,19 @@ public final class LibUtils
      *
      * @return The current OSType
      */
-    public static OSType calculateOS()
-    {
+    public static OSType calculateOS() {
         String osName = System.getProperty("os.name");
         osName = osName.toLowerCase(Locale.ENGLISH);
-        if (osName.startsWith("mac os"))
-        {
+        if (osName.startsWith("mac os")) {
             return OSType.APPLE;
         }
-        if (osName.startsWith("windows"))
-        {
+        if (osName.startsWith("windows")) {
             return OSType.WINDOWS;
         }
-        if (osName.startsWith("linux"))
-        {
+        if (osName.startsWith("linux")) {
             return OSType.LINUX;
         }
-        if (osName.startsWith("sun"))
-        {
+        if (osName.startsWith("sun")) {
             return OSType.SUN;
         }
         return OSType.UNKNOWN;
@@ -507,42 +452,31 @@ public final class LibUtils
      *
      * @return The current ARCHType
      */
-    public static ARCHType calculateArch()
-    {
+    public static ARCHType calculateArch() {
         String osArch = System.getProperty("os.arch");
         osArch = osArch.toLowerCase(Locale.ENGLISH);
-        if (osArch.equals("i386") ||
-                osArch.equals("x86")  ||
-                osArch.equals("i686"))
-        {
+        if (osArch.equals("i386") || osArch.equals("x86") || osArch.equals("i686")) {
             return ARCHType.X86;
         }
-        if (osArch.startsWith("amd64") || osArch.startsWith("x86_64"))
-        {
+        if (osArch.startsWith("amd64") || osArch.startsWith("x86_64")) {
             return ARCHType.X86_64;
         }
-        if (osArch.equals("ppc") || osArch.equals("powerpc"))
-        {
+        if (osArch.equals("ppc") || osArch.equals("powerpc")) {
             return ARCHType.PPC;
         }
-        if (osArch.startsWith("ppc"))
-        {
+        if (osArch.startsWith("ppc")) {
             return ARCHType.PPC_64;
         }
-        if (osArch.startsWith("sparc"))
-        {
+        if (osArch.startsWith("sparc")) {
             return ARCHType.SPARC;
         }
-        if (osArch.startsWith("arm"))
-        {
+        if (osArch.startsWith("arm")) {
             return ARCHType.ARM;
         }
-        if (osArch.startsWith("mips"))
-        {
+        if (osArch.startsWith("mips")) {
             return ARCHType.MIPS;
         }
-        if (osArch.contains("risc"))
-        {
+        if (osArch.contains("risc")) {
             return ARCHType.RISC;
         }
         return ARCHType.UNKNOWN;
@@ -551,7 +485,5 @@ public final class LibUtils
     /**
      * Private constructor to prevent instantiation.
      */
-    private LibUtils()
-    {
-    }
+    private LibUtils() {}
 }

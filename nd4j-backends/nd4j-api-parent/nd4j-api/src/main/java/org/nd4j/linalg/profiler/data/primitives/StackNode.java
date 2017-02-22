@@ -39,7 +39,7 @@ public class StackNode implements Comparable<StackNode> {
 
         System.out.println(builder.toString());
 
-        for (StackNode node: entries.values()) {
+        for (StackNode node : entries.values()) {
             node.traverse(ownLevel + 1, displayCounts);
         }
     }
@@ -61,7 +61,7 @@ public class StackNode implements Comparable<StackNode> {
                 }
             } else {
                 // after current entry is found, we just fill first node after it
-                if(!entries.containsKey(entryName))
+                if (!entries.containsKey(entryName))
                     entries.put(entryName, new StackNode(entryName));
 
                 entries.get(entryName).consume(descriptor, e);

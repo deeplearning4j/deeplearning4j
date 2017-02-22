@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
  * @author raver119@gmail.com
  */
 public class HardSigmoid extends BaseTransformOp {
-    public HardSigmoid() {
-    }
+    public HardSigmoid() {}
 
     public HardSigmoid(INDArray x, INDArray z) {
         super(x, z);
@@ -123,9 +122,11 @@ public class HardSigmoid extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoid(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoid(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardSigmoid(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoid(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -134,9 +135,11 @@ public class HardSigmoid extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoid(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoid(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardSigmoid(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoid(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 

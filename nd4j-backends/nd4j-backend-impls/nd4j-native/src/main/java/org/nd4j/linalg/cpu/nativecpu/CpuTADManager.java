@@ -73,12 +73,8 @@ public class CpuTADManager implements TADManager {
                 Pointer targetPointer = outputBuffer.addressPointer();
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
-                nativeOps.tadOnlyShapeInfo(
-                        (IntPointer) xShapeInfo,
-                        (IntPointer) dimensionPointer,
-                        dimension.length,
-                        (IntPointer) targetPointer,
-                        (IntPointer) offsetsPointer);
+                nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
+                                (IntPointer) targetPointer, (IntPointer) offsetsPointer);
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side

@@ -33,33 +33,25 @@ public class CompressedRamStorageTests extends BaseNd4jTest {
     @Before
     public void setUp() throws Exception {
         if (halfsStorageInplace == null) {
-            halfsStorageInplace = new CompressedRamStorage.Builder<Integer>()
-                                                    .setCompressor(new Float16())
-                                                    .useInplaceCompression(true)
-                                                    .build();
+            halfsStorageInplace = new CompressedRamStorage.Builder<Integer>().setCompressor(new Float16())
+                            .useInplaceCompression(true).build();
 
-            halfsStorageNIP = new CompressedRamStorage.Builder<Integer>()
-                    .setCompressor(new Float16())
-                    .useInplaceCompression(false)
-                    .build();
+            halfsStorageNIP = new CompressedRamStorage.Builder<Integer>().setCompressor(new Float16())
+                            .useInplaceCompression(false).build();
         }
 
         if (noopStorageInplace == null) {
-            noopStorageInplace = new CompressedRamStorage.Builder<Integer>()
-                    .setCompressor(new NoOp())
-                    .useInplaceCompression(true)
-                    .build();
+            noopStorageInplace = new CompressedRamStorage.Builder<Integer>().setCompressor(new NoOp())
+                            .useInplaceCompression(true).build();
 
-            noopStorageNIP = new CompressedRamStorage.Builder<Integer>()
-                    .setCompressor(new NoOp())
-                    .useInplaceCompression(false)
-                    .build();
+            noopStorageNIP = new CompressedRamStorage.Builder<Integer>().setCompressor(new NoOp())
+                            .useInplaceCompression(false).build();
         }
     }
 
     @Test
     public void testFP16StorageInplace1() throws Exception {
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
         INDArray exp = array.dup();
 
 
@@ -74,7 +66,7 @@ public class CompressedRamStorageTests extends BaseNd4jTest {
 
     @Test
     public void testFP16StorageNIP1() throws Exception {
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
         INDArray exp = array.dup();
 
 
@@ -90,7 +82,7 @@ public class CompressedRamStorageTests extends BaseNd4jTest {
 
     @Test
     public void testNoOpStorageInplace1() throws Exception {
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
         INDArray exp = array.dup();
 
         noopStorageInplace.store(1, array);
@@ -104,7 +96,7 @@ public class CompressedRamStorageTests extends BaseNd4jTest {
 
     @Test
     public void testNoOpStorageNIP1() throws Exception {
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
         INDArray exp = array.dup();
 
         noopStorageNIP.store(1, array);

@@ -54,7 +54,7 @@ public class VoidAggregationTest {
 
 
         VectorAggregation aggregation = aggregations.get(0);
-        for (VectorAggregation vectorAggregation: aggregations) {
+        for (VectorAggregation vectorAggregation : aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
         }
 
@@ -96,7 +96,7 @@ public class VoidAggregationTest {
         DotAggregation aggregation = aggregations.get(0);
 
 
-        for (DotAggregation vectorAggregation: aggregations) {
+        for (DotAggregation vectorAggregation : aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
         }
 
@@ -130,7 +130,7 @@ public class VoidAggregationTest {
         DotAggregation aggregation = aggregations.get(0);
 
         int cnt = 1;
-        for (DotAggregation vectorAggregation: aggregations) {
+        for (DotAggregation vectorAggregation : aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
             cnt++;
 

@@ -12,7 +12,8 @@ import java.lang.ref.WeakReference;
  * @author raver119@gmail.com
  */
 public class GarbageStateReference extends WeakReference<NativePack> {
-    @Getter private Pointer statePointer;
+    @Getter
+    private Pointer statePointer;
 
     public GarbageStateReference(NativePack referent, ReferenceQueue<? super NativePack> queue) {
         super(referent, queue);

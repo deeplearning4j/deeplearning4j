@@ -52,12 +52,12 @@ public class NDArrayMessage implements Serializable {
     //represents the constant for indicating using the whole array for an update (-1)
     private static int WHOLE_ARRAY_INDEX = -1;
 
-    public  enum MessageValidity {
-        VALID,NULL_VALUE,INCONSISTENT_DIMENSIONS
+    public enum MessageValidity {
+        VALID, NULL_VALUE, INCONSISTENT_DIMENSIONS
     }
 
     public enum MessageType {
-        CHUNKED,WHOLE
+        CHUNKED, WHOLE
     }
 
     /**
@@ -66,11 +66,11 @@ public class NDArrayMessage implements Serializable {
      * @param chunkSize
      * @return
      */
-    public static int numChunksForMessage(NDArrayMessage message,int chunkSize) {
+    public static int numChunksForMessage(NDArrayMessage message, int chunkSize) {
         int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(message);
         int numMessages = sizeOfMessage / chunkSize;
         //increase by 1 for padding
-        if(numMessages * chunkSize < sizeOfMessage)
+        if (numMessages * chunkSize < sizeOfMessage)
             numMessages++;
         return numMessages;
     }
@@ -82,17 +82,15 @@ public class NDArrayMessage implements Serializable {
      * @param chunkSize
      * @return
      */
-    public static NDArrayMessage[] chunkedMessages(NDArrayMessage arrayMessage,int chunkSize) {
+    public static NDArrayMessage[] chunkedMessages(NDArrayMessage arrayMessage, int chunkSize) {
         int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(arrayMessage) - 4;
         int numMessages = sizeOfMessage / chunkSize;
         ByteBuffer direct = NDArrayMessage.toBuffer(arrayMessage).byteBuffer();
         NDArrayMessage[] ret = new NDArrayMessage[numMessages];
-        for(int i = 0; i < numMessages; i++) {
+        for (int i = 0; i < numMessages; i++) {
             byte[] chunk = new byte[chunkSize];
-            direct.get(chunk,i * chunkSize,chunkSize);
-            ret[i] = NDArrayMessage.builder().chunk(chunk)
-                    .numChunks(numMessages)
-                    .build();
+            direct.get(chunk, i * chunkSize, chunkSize);
+            ret[i] = NDArrayMessage.builder().chunk(chunk).numChunks(numMessages).build();
         }
         return ret;
     }
@@ -107,10 +105,8 @@ public class NDArrayMessage implements Serializable {
      * @return
      */
     public static NDArrayMessage wholeArrayUpdate(INDArray arr) {
-        return NDArrayMessage.builder()
-                .arr(arr).dimensions(WHOLE_ARRAY_UPDATE)
-                .index(WHOLE_ARRAY_INDEX)
-                .sent(getCurrentTimeUtc()).build();
+        return NDArrayMessage.builder().arr(arr).dimensions(WHOLE_ARRAY_UPDATE).index(WHOLE_ARRAY_INDEX)
+                        .sent(getCurrentTimeUtc()).build();
     }
 
     /**
@@ -126,22 +122,20 @@ public class NDArrayMessage implements Serializable {
      * @param index the index to use
      * @return the created
      */
-    public static NDArrayMessage of(INDArray arr,int[] dimensions,long index) {
+    public static NDArrayMessage of(INDArray arr, int[] dimensions, long index) {
         //allow null dimensions as long as index is -1
-        if(dimensions == null) {
+        if (dimensions == null) {
             dimensions = WHOLE_ARRAY_UPDATE;
         }
 
         //validate index being built
-        if(index > 0) {
-            if(dimensions.length > 1 || dimensions.length == 1 && dimensions[0] != -1)
-                throw new IllegalArgumentException("Inconsistent message. Your index is > 0 indicating you want to send a whole ndarray message but your dimensions indicate you are trying to send a partial update. Please ensure you use a 1 length int array with negative 1 as an element or use NDArrayMesage.wholeArrayUpdate(ndarray) for creation instead");
+        if (index > 0) {
+            if (dimensions.length > 1 || dimensions.length == 1 && dimensions[0] != -1)
+                throw new IllegalArgumentException(
+                                "Inconsistent message. Your index is > 0 indicating you want to send a whole ndarray message but your dimensions indicate you are trying to send a partial update. Please ensure you use a 1 length int array with negative 1 as an element or use NDArrayMesage.wholeArrayUpdate(ndarray) for creation instead");
         }
 
-        return NDArrayMessage.builder()
-                .index(index)
-                .dimensions(dimensions)
-                .sent(getCurrentTimeUtc()).arr(arr).build();
+        return NDArrayMessage.builder().index(index).dimensions(dimensions).sent(getCurrentTimeUtc()).arr(arr).build();
     }
 
 
@@ -154,10 +148,10 @@ public class NDArrayMessage implements Serializable {
      * @return 1 of: NULL_VALUE,INCONSISTENT_DIMENSIONS,VALID see {@link MessageValidity}
      */
     public static MessageValidity validMessage(NDArrayMessage message) {
-        if(message.getDimensions() == null || message.getArr() == null)
+        if (message.getDimensions() == null || message.getArr() == null)
             return MessageValidity.NULL_VALUE;
 
-        if(message.getIndex() != -1 && message.getDimensions().length == 1 && message.getDimensions()[0] != -1)
+        if (message.getIndex() != -1 && message.getDimensions().length == 1 && message.getDimensions()[0] != -1)
             return MessageValidity.INCONSISTENT_DIMENSIONS;
         return MessageValidity.VALID;
     }
@@ -192,7 +186,8 @@ public class NDArrayMessage implements Serializable {
         int sizeofDimensionLength = 4;
         int timeStampSize = 8;
         int indexSize = 8;
-        return enumSize + nInts + sizeofDimensionLength + timeStampSize + indexSize + AeronNDArraySerde.byteBufferSizeFor(message.getArr());
+        return enumSize + nInts + sizeofDimensionLength + timeStampSize + indexSize
+                        + AeronNDArraySerde.byteBufferSizeFor(message.getArr());
     }
 
 
@@ -215,9 +210,9 @@ public class NDArrayMessage implements Serializable {
         int overAllCapacity = chunks[0].getChunkSize() * chunks.length;
 
         ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity).order(ByteOrder.nativeOrder());
-        for(int i = 0; i < chunks.length; i++) {
+        for (int i = 0; i < chunks.length; i++) {
             ByteBuffer curr = chunks[i].getData();
-            if(curr.capacity() > chunks[0].getChunkSize()) {
+            if (curr.capacity() > chunks[0].getChunkSize()) {
                 curr.position(0).limit(chunks[0].getChunkSize());
                 curr = curr.slice();
             }
@@ -228,7 +223,7 @@ public class NDArrayMessage implements Serializable {
         UnsafeBuffer unsafeBuffer = new UnsafeBuffer(all);
         //rewind the buffer
         all.rewind();
-        return NDArrayMessage.fromBuffer(unsafeBuffer,0);
+        return NDArrayMessage.fromBuffer(unsafeBuffer, 0);
     }
 
 
@@ -249,21 +244,19 @@ public class NDArrayMessage implements Serializable {
      * @param chunkSize the chunk size
      * @return an array of buffers
      */
-    public static NDArrayMessageChunk[] chunks(NDArrayMessage message,int chunkSize) {
-        int numChunks = numChunksForMessage(message,chunkSize);
+    public static NDArrayMessageChunk[] chunks(NDArrayMessage message, int chunkSize) {
+        int numChunks = numChunksForMessage(message, chunkSize);
         NDArrayMessageChunk[] ret = new NDArrayMessageChunk[numChunks];
         DirectBuffer wholeBuffer = NDArrayMessage.toBuffer(message);
         String messageId = UUID.randomUUID().toString();
-        for(int i = 0; i < ret.length; i++) {
+        for (int i = 0; i < ret.length; i++) {
             //data: only grab a chunk of the data
             ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().asReadOnlyBuffer().position(i * chunkSize);
-            view.limit(Math.min(i * chunkSize + chunkSize,wholeBuffer.capacity()));
+            view.limit(Math.min(i * chunkSize + chunkSize, wholeBuffer.capacity()));
             view.order(ByteOrder.nativeOrder());
             view = view.slice();
-            NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
-                    .id(messageId).chunkSize(chunkSize).numChunks(numChunks)
-                    .messageType(MessageType.CHUNKED).chunkIndex(i)
-                    .data(view).build();
+            NDArrayMessageChunk chunk = NDArrayMessageChunk.builder().id(messageId).chunkSize(chunkSize)
+                            .numChunks(numChunks).messageType(MessageType.CHUNKED).chunkIndex(i).data(view).build();
             //insert in to the array itself
             ret[i] = chunk;
         }
@@ -279,15 +272,15 @@ public class NDArrayMessage implements Serializable {
      * @return a direct byte buffer representing this message.
      */
     public static DirectBuffer toBuffer(NDArrayMessage message) {
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(byteBufferSizeForMessage(message)).order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuffer =
+                        ByteBuffer.allocateDirect(byteBufferSizeForMessage(message)).order(ByteOrder.nativeOrder());
         //declare message type
         byteBuffer.putInt(MessageType.WHOLE.ordinal());
         //perform the ndarray put on the
-        if(message.getArr().isCompressed()) {
-            AeronNDArraySerde.doByteBufferPutCompressed(message.getArr(),byteBuffer,false);
-        }
-        else {
-            AeronNDArraySerde.doByteBufferPutUnCompressed(message.getArr(),byteBuffer,false);
+        if (message.getArr().isCompressed()) {
+            AeronNDArraySerde.doByteBufferPutCompressed(message.getArr(), byteBuffer, false);
+        } else {
+            AeronNDArraySerde.doByteBufferPutUnCompressed(message.getArr(), byteBuffer, false);
         }
 
         long sent = message.getSent();
@@ -296,7 +289,7 @@ public class NDArrayMessage implements Serializable {
         byteBuffer.putLong(sent);
         byteBuffer.putLong(index);
         byteBuffer.putInt(message.getDimensions().length);
-        for(int i = 0; i < message.getDimensions().length; i++) {
+        for (int i = 0; i < message.getDimensions().length; i++) {
             byteBuffer.putInt(message.getDimensions()[i]);
         }
 
@@ -330,9 +323,9 @@ public class NDArrayMessage implements Serializable {
      *                This means whatever offset you pass in will be increased by 4 (the size of an int)
      * @return the ndarray message based on this direct buffer.
      */
-    public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
+    public static NDArrayMessage fromBuffer(DirectBuffer buffer, int offset) {
         //skip the message type
-        Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset + 4);
+        Pair<INDArray, ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset + 4);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);
         //use the rest of the buffer, of note here the offset is already set, we should only need to use
@@ -341,17 +334,12 @@ public class NDArrayMessage implements Serializable {
         long index = rest.getLong();
         //get the array next for dimensions
         int dimensionLength = rest.getInt();
-        if(dimensionLength <= 0)
+        if (dimensionLength <= 0)
             throw new IllegalArgumentException("Invalid dimension length " + dimensionLength);
         int[] dimensions = new int[dimensionLength];
-        for(int i = 0; i < dimensionLength; i++)
+        for (int i = 0; i < dimensionLength; i++)
             dimensions[i] = rest.getInt();
-        return  NDArrayMessage.builder()
-                .sent(time)
-                .arr(arr)
-                .index(index)
-                .dimensions(dimensions)
-                .build();
+        return NDArrayMessage.builder().sent(time).arr(arr).index(index).dimensions(dimensions).build();
     }
 
 }

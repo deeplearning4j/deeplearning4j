@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,7 +36,7 @@ public interface OpFactory {
      * @param y the output
      * @return a loss function representing the delta between the 2
      */
-    LossFunction createLossFunction(String name,INDArray x,INDArray y);
+    LossFunction createLossFunction(String name, INDArray x, INDArray y);
 
     /**
      * Accumulation operation

@@ -17,9 +17,9 @@ public class BufferUtil {
      * @return the merged byte buffer
      *
      */
-    public static ByteBuffer concat(ByteBuffer[] buffers,int overAllCapacity) {
+    public static ByteBuffer concat(ByteBuffer[] buffers, int overAllCapacity) {
         ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity);
-        for(int i = 0; i < buffers.length; i++) {
+        for (int i = 0; i < buffers.length; i++) {
             ByteBuffer curr = buffers[i].slice();
             all.put(curr);
         }
@@ -35,12 +35,12 @@ public class BufferUtil {
      */
     public static ByteBuffer concat(ByteBuffer[] buffers) {
         int overAllCapacity = 0;
-        for(int i = 0; i < buffers.length; i++)
+        for (int i = 0; i < buffers.length; i++)
             overAllCapacity += buffers[i].limit() - buffers[i].position();
         //padding
         overAllCapacity += buffers[0].limit() - buffers[0].position();
         ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity);
-        for(int i = 0; i < buffers.length; i++) {
+        for (int i = 0; i < buffers.length; i++) {
             ByteBuffer curr = buffers[i];
             all.put(curr);
         }

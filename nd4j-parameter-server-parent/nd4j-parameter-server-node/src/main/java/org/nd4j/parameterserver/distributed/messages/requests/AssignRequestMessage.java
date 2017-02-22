@@ -11,7 +11,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignM
  * @author raver119@gmail.com
  */
 @Slf4j
-public class AssignRequestMessage extends BaseVoidMessage  implements RequestMessage {
+public class AssignRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     protected Integer key;
 
@@ -30,7 +30,7 @@ public class AssignRequestMessage extends BaseVoidMessage  implements RequestMes
     public AssignRequestMessage(@NonNull Integer key, @NonNull INDArray array) {
         this();
         this.key = key;
-        this.payload = array.isView() ? array.dup(array.ordering()) : array ;
+        this.payload = array.isView() ? array.dup(array.ordering()) : array;
     }
 
     public AssignRequestMessage(@NonNull Integer key, @NonNull Number value, int rowIdx) {

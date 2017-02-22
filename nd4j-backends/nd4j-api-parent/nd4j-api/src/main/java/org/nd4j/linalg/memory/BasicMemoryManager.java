@@ -43,6 +43,7 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
-        Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(), srcBuffer.length() * srcBuffer.getElementSize());
+        Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
+                        srcBuffer.length() * srcBuffer.getElementSize());
     }
 }

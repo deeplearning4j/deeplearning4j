@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class FFTBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public FFTBenchmarkPerformer(int nTimes) {
-        super(new FFTOpRunner(),nTimes);
+        super(new FFTOpRunner(), nTimes);
     }
 
 

@@ -8,7 +8,7 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
  * @author Adam Gibson
  */
 public class RelativeArrayAssignWithValueImplementation implements Implementation {
-    private int index,val;
+    private int index, val;
 
     public RelativeArrayAssignWithValueImplementation(int index, int val) {
         this.index = index;
@@ -22,17 +22,20 @@ public class RelativeArrayAssignWithValueImplementation implements Implementatio
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new RelativeArrayAssignWithValueValueAppender(index,val);
+        return new RelativeArrayAssignWithValueValueAppender(index, val);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RelativeArrayAssignWithValueImplementation)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof RelativeArrayAssignWithValueImplementation))
+            return false;
 
         RelativeArrayAssignWithValueImplementation that = (RelativeArrayAssignWithValueImplementation) o;
 
-        if (index != that.index) return false;
+        if (index != that.index)
+            return false;
         return val == that.val;
 
     }

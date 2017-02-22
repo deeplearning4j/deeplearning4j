@@ -51,7 +51,7 @@ public class StatusServer {
      *                   the status server on
      * @return the started server
      */
-    public static Server startServer(StatusStorage statusStorage,int statusServerPort) {
+    public static Server startServer(StatusStorage statusStorage, int statusServerPort) {
         log.info("Starting server on port " + statusServerPort);
         RoutingDsl dsl = new RoutingDsl();
         dsl.GET("/ids/").routeTo(new F.Function0<Result>() {
@@ -74,24 +74,27 @@ public class StatusServer {
         dsl.GET("/type/:id").routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
-                return ok(toJson(
-                        ServerTypeJson.builder().type(statusStorage.getState(Integer.parseInt(id)).serverType())));
+                return ok(toJson(ServerTypeJson.builder()
+                                .type(statusStorage.getState(Integer.parseInt(id)).serverType())));
             }
         });
 
 
-        dsl .GET("/started/:id").routeTo(new F.Function<String, Result>() {
+        dsl.GET("/started/:id").routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
-                return statusStorage.getState(Integer.parseInt(id)).isMaster() ?
-                        ok(toJson(MasterStatus.builder()
-                                .master(statusStorage.getState(Integer.parseInt(id)).getServerState())
-                                //note here that a responder is is + 1
-                                .responder(statusStorage.getState(Integer.parseInt(id) + 1).getServerState())
-                                .responderN(statusStorage.getState(Integer.parseInt(id)).getTotalUpdates())
-                                .build()))
-                        :  ok(toJson(SlaveStatus.builder().slave(
-                        statusStorage.getState(Integer.parseInt(id)).serverType()).build()));
+                return statusStorage.getState(Integer.parseInt(id)).isMaster()
+                                ? ok(toJson(MasterStatus.builder()
+                                                .master(statusStorage.getState(Integer.parseInt(id)).getServerState())
+                                                //note here that a responder is is + 1
+                                                .responder(statusStorage
+                                                                .getState(Integer.parseInt(id) + 1).getServerState())
+                                                .responderN(statusStorage
+                                                                .getState(Integer.parseInt(id)).getTotalUpdates())
+                                                .build()))
+                                : ok(toJson(SlaveStatus.builder()
+                                                .slave(statusStorage.getState(Integer.parseInt(id)).serverType())
+                                                .build()));
             }
         });
 
@@ -104,11 +107,10 @@ public class StatusServer {
             }
         });
 
-        dsl.POST("/updatestatus/:id")
-                .routeTo(new F.Function<String, Result>() {
+        dsl.POST("/updatestatus/:id").routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
-                SubscriberState subscriberState = Json.fromJson(request().body().asJson(),SubscriberState.class);
+                SubscriberState subscriberState = Json.fromJson(request().body().asJson(), SubscriberState.class);
                 statusStorage.updateState(subscriberState);
                 return ok(toJson(subscriberState));
             }

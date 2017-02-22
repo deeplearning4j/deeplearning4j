@@ -30,11 +30,13 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                 synchronized (this) {
                     if (!shapeCache.containsKey(descriptor)) {
                         counter.incrementAndGet();
-                        DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                        DataBuffer buffer =
+                                        super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
                         shapeCache.put(descriptor, buffer);
 
                         return buffer;
-                    } else return shapeCache.get(descriptor);
+                    } else
+                        return shapeCache.get(descriptor);
                 }
             } else {
                 return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);

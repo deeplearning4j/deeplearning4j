@@ -26,14 +26,20 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T> , VoidMessage {
+public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T>, VoidMessage {
 
-    @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
+    @Getter(AccessLevel.PROTECTED)
+    @Setter(AccessLevel.PROTECTED)
     protected List<T> list = new ArrayList<T>();
 
-    @Getter protected long originatorId;
-    @Getter @Setter protected short targetId;
-    @Getter @Setter protected long taskId;
+    @Getter
+    protected long originatorId;
+    @Getter
+    @Setter
+    protected short targetId;
+    @Getter
+    @Setter
+    protected long taskId;
 
 
     protected transient VoidConfiguration voidConfiguration;
@@ -44,7 +50,9 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     protected transient short shardIndex;
     protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
-    @Getter @Setter(AccessLevel.PRIVATE) protected transient int retransmitCount = 0;
+    @Getter
+    @Setter(AccessLevel.PRIVATE)
+    protected transient int retransmitCount = 0;
 
     protected Frame() {
 
@@ -100,7 +108,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
      * @param messages
      */
     public synchronized void stackMessages(@NonNull Collection<T> messages) {
-        for (T message: messages) {
+        for (T message : messages) {
             stackMessageUnlocked(message);
         }
     }
@@ -112,7 +120,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
      * @param messages
      */
     public synchronized void stackMessages(T... messages) {
-        for (T message: messages) {
+        for (T message : messages) {
             if (message != null)
                 stackMessageUnlocked(message);
         }
@@ -147,7 +155,9 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     }
 
     @Override
-    public void attachContext(@NonNull VoidConfiguration voidConfiguration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+    public void attachContext(@NonNull VoidConfiguration voidConfiguration,
+                    @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard,
+                    @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
         this.voidConfiguration = voidConfiguration;
         this.clipboard = clipboard;
         this.transport = transport;
@@ -171,7 +181,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void processMessage() {
-//        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
+        //        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
 
         // we register all messages first
         list.forEach((message) -> {
@@ -179,7 +189,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         });
 
         //list.parallelStream().forEach((message) -> {
-        for (TrainingMessage message: list) {
+        for (TrainingMessage message : list) {
             message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
             // if there's more then 1 round should be applied
@@ -187,7 +197,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
                 //log.info("Firing message {}; originator: {}; frameId: {}; taskId: {}", message.getClass().getSimpleName(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
                 message.processMessage();
             }
-        };
+        } ;
     }
 
     @Override

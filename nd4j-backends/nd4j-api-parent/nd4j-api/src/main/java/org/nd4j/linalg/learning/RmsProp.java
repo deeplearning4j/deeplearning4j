@@ -29,7 +29,7 @@ public class RmsProp implements GradientUpdater {
         this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
     }
 
-    public RmsProp(double learningRate, double rmsDecay, double epsilon){
+    public RmsProp(double learningRate, double rmsDecay, double epsilon) {
         this.learningRate = learningRate;
         this.rmsDecay = rmsDecay;
         this.epsilon = epsilon;
@@ -42,13 +42,16 @@ public class RmsProp implements GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(epsilon);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(epsilon);
         this.lastGradient = viewArray;
 
         //Reshape to match the expected shape of the input gradient arrays
         this.lastGradient = Shape.newShapeNoCopy(this.lastGradient, gradientShape, gradientOrder == 'f');
-        if (lastGradient == null) throw new IllegalStateException("Could not correctly reshape gradient view array");
+        if (lastGradient == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view array");
     }
 
     @Override
@@ -60,7 +63,8 @@ public class RmsProp implements GradientUpdater {
 
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (lastGradient == null) throw new IllegalStateException("Updater has not been initialized with view state");
+        if (lastGradient == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / (sqrt(cache) + 1e-8)
@@ -70,7 +74,8 @@ public class RmsProp implements GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         RmsPropAggregator ag = new RmsPropAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 
@@ -89,7 +94,8 @@ public class RmsProp implements GradientUpdater {
 
         @Override
         public void aggregate(GradientUpdater updater) {
-            if (!(updater instanceof RmsProp)) throw new UnsupportedOperationException();
+            if (!(updater instanceof RmsProp))
+                throw new UnsupportedOperationException();
             RmsProp rmsProp = (RmsProp) updater;
             if (lastGradientSum == null) {
                 lastGradientSum = rmsProp.lastGradient.dup();

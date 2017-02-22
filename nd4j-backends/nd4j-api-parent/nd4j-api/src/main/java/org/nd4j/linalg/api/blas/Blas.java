@@ -9,10 +9,7 @@ public interface Blas {
 
     public enum Vendor {
 
-        UNKNOWN,
-        CUBLAS,
-        OPENBLAS,
-        MKL,
+        UNKNOWN, CUBLAS, OPENBLAS, MKL,
     }
 
     void setMaxThreads(int num);
