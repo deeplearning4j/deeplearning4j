@@ -31,9 +31,9 @@ namespace randomOps {
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
-            __shared__ int xLength;
-            __shared__ int yLength;
-            __shared__ int zLength;
+            __shared__ Nd4jIndex xLength;
+            __shared__ Nd4jIndex yLength;
+            __shared__ Nd4jIndex zLength;
 
             __shared__ int xEWS;
             __shared__ int yEWS;
@@ -69,10 +69,10 @@ namespace randomOps {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
-                for (int e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
+                for (Nd4jIndex e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
                     T prob = buffer->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
-                    for (int f = 0; f < yLength; f++) {
+                    for (Nd4jIndex f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
                         cumProb += relProb;
 
@@ -124,14 +124,14 @@ namespace randomOps {
                 }
                 __syncthreads();
 
-                for (int i = tid; i < zLength; i+=blockDim.x * gridDim.x) {
+                for (Nd4jIndex i = tid; i < zLength; i+=blockDim.x * gridDim.x) {
                     shape::ind2sub(zRank, zShape, i, zCoord);
 
                     Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
                     T prob = buffer->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
-                    for (int f = 0; f < yLength; f++) {
+                    for (Nd4jIndex f = 0; f < yLength; f++) {
                         shape::ind2sub(yRank, yShape, i, yCoord);
                         Nd4jIndex yOffset2 = shape::getOffset(yOffset, yShape, yStride, yCoord, yRank);
 
@@ -168,9 +168,9 @@ namespace randomOps {
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
-            int xLength = shape::length(xShapeBuffer);
-            int yLength = shape::length(yShapeBuffer);
-            int zLength = shape::length(zShapeBuffer);
+            Nd4jIndex xLength = shape::length(xShapeBuffer);
+            Nd4jIndex yLength = shape::length(yShapeBuffer);
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
 
             int xEWS = shape::elementWiseStride(xShapeBuffer);
             int yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -182,10 +182,10 @@ namespace randomOps {
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                for (int e = 0; e < zLength; e++) {
+                for (Nd4jIndex e = 0; e < zLength; e++) {
                     T prob = buffer->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
-                    for (int f = 0; f < yLength; f++) {
+                    for (Nd4jIndex f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
                         cumProb += relProb;
 
@@ -217,14 +217,14 @@ namespace randomOps {
                 int zOffset = shape::offset(zShapeBuffer);
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                for (int i = 0; i < zLength; i++) {
+                for (Nd4jIndex i = 0; i < zLength; i++) {
                     shape::ind2sub(zRank, zShape, i, zCoord);
 
                     Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
                     T prob = buffer->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
-                    for (int f = 0; f < yLength; f++) {
+                    for (Nd4jIndex f = 0; f < yLength; f++) {
                         shape::ind2sub(yRank, yShape, i, yCoord);
                         Nd4jIndex yOffset2 = shape::getOffset(yOffset, yShape, yStride, yCoord, yRank);
 
@@ -268,7 +268,7 @@ namespace randomOps {
             __shared__ T epsilon;
             __shared__ T two_pi;
 
-            __shared__ int zLength;
+            __shared__ Nd4jIndex zLength;
             __shared__ int zEWS;
             __shared__ int yEWS;
             __shared__ T mean;
@@ -314,7 +314,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (int e = tid; e < zLength; e += step) {
+            for (Nd4jIndex e = tid; e < zLength; e += step) {
                 // we need to get random values
 
                 tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
@@ -347,7 +347,7 @@ namespace randomOps {
             const T epsilon = std::numeric_limits<T>::min();
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
 
-            int zLength = shape::length(zShapeBuffer);
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
             int yEWS = shape::elementWiseStride(yShapeBuffer);
             int zEWS = shape::elementWiseStride(zShapeBuffer);
 
@@ -365,8 +365,8 @@ namespace randomOps {
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
-                int start = span * tid;
-                int end = span * (tid + 1);
+                Nd4jIndex start = span * tid;
+                Nd4jIndex end = span * (tid + 1);
                 if (end > zLength) end = zLength;
 
                 T z0, z1;
@@ -374,7 +374,7 @@ namespace randomOps {
 
                 bool generated = false;
 
-                for (int e = start; e < end; e++) {
+                for (Nd4jIndex e = start; e < end; e++) {
                     if (!generated) {
                         /*
                          * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
@@ -426,7 +426,7 @@ namespace randomOps {
             int trials = (int) extraArguments[0];
             T prob = extraArguments[1];
 
-            __shared__ int zLength;
+            __shared__ Nd4jIndex zLength;
             __shared__ int yEWS;
             __shared__ int zEWS;
 
@@ -455,7 +455,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+            for (Nd4jIndex e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
                 for (int t = 1; t <= trials; t++) {
                     T randVal = buffer->relativeT<T>((e+1) * t);
@@ -484,7 +484,7 @@ namespace randomOps {
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
 
-            int zLength = shape::length(zShapeBuffer);
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
 
             int yEWS = shape::elementWiseStride(yShapeBuffer);
             int zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -500,13 +500,13 @@ namespace randomOps {
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
-                int start = span * tid;
-                int end = span * (tid + 1);
+                Nd4jIndex start = span * tid;
+                Nd4jIndex end = span * (tid + 1);
                 if (end > zLength) end = zLength;
 
                 T prob = extraArguments[1];
 
-                for (int e = start; e < end; e++) {
+                for (Nd4jIndex e = start; e < end; e++) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {

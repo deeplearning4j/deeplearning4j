@@ -41,7 +41,7 @@ namespace functions {
                     return;
                 } else {
 
-                __shared__ int length;
+                __shared__ Nd4jIndex length;
                 __shared__ int xEWS;
                 __shared__ int yEWS;
                 __shared__ int zEWS;
@@ -74,7 +74,7 @@ namespace functions {
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
-                    for (int e = tid; e < length; e += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex e = tid; e < length; e += blockDim.x * gridDim.x) {
                         z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
                     }
                 } else {
@@ -99,7 +99,7 @@ namespace functions {
                     int yOffset = shape::offset(yShapeBuffer);
                     int zOffset = shape::offset(zShapeBuffer);
 
-                    for (int i = tid; i < length; i += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex i = tid; i < length; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(xRank, xShape, i, xCoord);
                         shape::ind2sub(yRank, yShape, i, yCoord);
                         shape::ind2sub(zRank, zShape, i, zCoord);
@@ -127,7 +127,7 @@ namespace functions {
                     return;
                 }
 
-                int length = shape::length(zShapeBuffer);
+                Nd4jIndex length = shape::length(zShapeBuffer);
                 int xEWS = shape::elementWiseStride(xShapeBuffer);
                 int yEWS = shape::elementWiseStride(yShapeBuffer);
                 int zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -141,13 +141,13 @@ namespace functions {
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
                     if (xEWS == 1 && yEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jIndex e = 0; e < length; e++) {
                             z[e] = OpClass::op(x[e], y[e], e, length, buffer, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jIndex e = 0; e < length; e++) {
                             z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
                         }
                     }
@@ -174,7 +174,7 @@ namespace functions {
                     int zOffset = shape::offset(zShapeBuffer);
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(xCoord, yCoord, zCoord)
-                    for (int i = 0; i < length; i++) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
                         shape::ind2sub(xRank, xShape, i, xCoord);
                         shape::ind2sub(yRank, yShape, i, yCoord);
                         shape::ind2sub(zRank, zShape, i, zCoord);
@@ -196,7 +196,7 @@ namespace functions {
 #ifdef __CUDACC__
             template<typename OpClass>
             __device__ static inline void execTransformCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-                __shared__ int length;
+                __shared__ Nd4jIndex length;
                 __shared__ int xEWS;
                 __shared__ int zEWS;
 
@@ -225,7 +225,7 @@ namespace functions {
 
 
                 if (xEWS >= 1 && zEWS >= 1) {
-                    for (int e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
                         z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
@@ -245,7 +245,7 @@ namespace functions {
                     int xOffset = shape::offset(xShapeBuffer);
                     int zOffset = shape::offset(zShapeBuffer);
 
-                    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(xRank, xShape, i, xCoord);
                         shape::ind2sub(zRank, zShape, i, zCoord);
 
@@ -264,7 +264,7 @@ namespace functions {
 
             template<typename OpClass>
             static inline void execTransform(Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-                int length = shape::length(zShapeBuffer);
+                Nd4jIndex length = shape::length(zShapeBuffer);
                 int xEWS = shape::elementWiseStride(xShapeBuffer);
                 int zEWS = shape::elementWiseStride(zShapeBuffer);
 
@@ -277,13 +277,13 @@ namespace functions {
                 if (xEWS >= 1 && zEWS >= 1) {
                     if (xEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jIndex e = 0; e < length; e++) {
                             z[e] = OpClass::op(x[e], e, length,  buffer, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jIndex e = 0; e < length; e++) {
                             z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                         }
                     }
@@ -305,7 +305,7 @@ namespace functions {
                     int zOffset = shape::offset(zShapeBuffer);
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord, xCoord)
-                    for (int i = 0; i < length; i++) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
                         shape::ind2sub(xRank, xShape, i, xCoord);
                         shape::ind2sub(zRank, zShape, i, zCoord);
 
@@ -323,7 +323,7 @@ namespace functions {
 #ifdef __CUDACC__
             template<typename OpClass>
             __device__ static inline void execTransformCuda(Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
-                int length = shape::length(zShapeBuffer);
+                Nd4jIndex length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
                 __shared__ nd4j::random::RandomBuffer *buffer;
@@ -348,7 +348,7 @@ namespace functions {
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 if (ews >= 1) {
-                    for (int x = tid; x < length; x += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex x = tid; x < length; x += blockDim.x * gridDim.x) {
                         z[x * ews] = OpClass::op(x, length, buffer, extraArguments);
                     }
                 } else {
@@ -360,7 +360,7 @@ namespace functions {
                     int *zStride = shape::stride(zShapeBuffer);
                     int zOffset = shape::offset(zShapeBuffer);
 
-                    for (int i = tid; i < length; i += blockDim.x * gridDim.x) {
+                    for (Nd4jIndex i = tid; i < length; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(zRank, zShape, i, zCoord);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
                         z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
@@ -374,7 +374,7 @@ namespace functions {
 
             template<typename OpClass>
             static inline void execTransform(Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
-                int length = shape::length(zShapeBuffer);
+                Nd4jIndex length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
                 nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
@@ -386,13 +386,13 @@ namespace functions {
                 if (ews >= 1) {
                     if (ews == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int x = 0; x < length; x++) {
+                        for (Nd4jIndex x = 0; x < length; x++) {
                             z[x] = OpClass::op(x, length, buffer, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                        for (int x = 0; x < length; x++) {
+                        for (Nd4jIndex x = 0; x < length; x++) {
                             z[x * ews] = OpClass::op(x, length, buffer, extraArguments);
                         }
                     }
@@ -406,7 +406,7 @@ namespace functions {
                     int zOffset = shape::offset(zShapeBuffer);
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord)
-                    for (int i = 0; i < length; i++) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
                         shape::ind2sub(zRank, zShape, i, zCoord);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
                         z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
