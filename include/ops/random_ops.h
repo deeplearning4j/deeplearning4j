@@ -12,9 +12,9 @@
 #endif
 
 // since we can't inherit/overwrite static methods - we just define default impls
-#define method_idx  random_def T op(int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -1.0f; }
-#define method_X  random_def T op(T valueX, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -2.0f; }
-#define method_XY  random_def T op(T valueX, T valueY, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -3.0f; }
+#define method_idx  random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -1.0f; }
+#define method_X  random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -2.0f; }
+#define method_XY  random_def T op(T valueX, T valueY, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -3.0f; }
 
 #define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
 
@@ -41,7 +41,7 @@ namespace randomOps {
         method_idx
         method_X
 
-        random_def T op(T valueX, T valueY, int idx,  int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, T valueY, Nd4jIndex idx,  Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T threshold = extraParams[0];
             T randVal = helper->relativeT<T>(idx);
 
@@ -62,7 +62,7 @@ namespace randomOps {
         method_XY
         method_X
 
-        random_def T op(int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             return helper->relativeT<T>(idx, extraParams[0], extraParams[1]);
         }
     };
@@ -79,7 +79,7 @@ namespace randomOps {
         method_XY
         method_X
 
-        random_def T op(int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             return extraParams[0] < helper->relativeT<T>(idx) ? (T) 1.0 : (T) 0.0f;
         }
     };
@@ -99,7 +99,7 @@ namespace randomOps {
         method_XY
 
         // please note: prob is chance to retain original value
-        random_def T op(T valueX, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T randVal = helper->relativeT<T>(idx);
             return randVal >= extraParams[0] ? (T) 0.0f : valueX;
         }
@@ -119,7 +119,7 @@ namespace randomOps {
         method_XY
 
         // please note: prob is chance to retain original value
-        random_def T op(T valueX, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T prob = extraParams[0];
             T randVal = helper->relativeT<T>(idx);
             return randVal >= prob ? (T) 0.0f : valueX / prob;
@@ -137,7 +137,7 @@ namespace randomOps {
         method_X
         method_XY
 
-        random_def T op(int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T from = extraParams[0];
             T to = extraParams[1];
 
