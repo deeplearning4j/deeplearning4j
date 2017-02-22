@@ -192,8 +192,8 @@ public class TransferLearningComplex {
         }
 
         ComputationGraph graph2 = new TransferLearning.GraphBuilder(graph)
-                .fineTuneConfiguration(new NeuralNetConfiguration.Builder()
-                        .learningRate(2e-2))
+                .fineTuneConfiguration(new FineTuneConfiguration.Builder()
+                        .learningRate(2e-2).build())
                 .setFeatureExtractor("C")
                 .build();
 

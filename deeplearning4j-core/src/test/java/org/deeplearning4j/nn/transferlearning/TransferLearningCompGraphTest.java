@@ -78,12 +78,12 @@ public class TransferLearningCompGraphTest {
         //model after applying changes with transfer learning
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
                 .fineTuneConfiguration(
-                        new NeuralNetConfiguration.Builder()
+                        new FineTuneConfiguration.Builder()
                                 .seed(rng)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .updater(Updater.RMSPROP)
                                 .learningRate(0.0001)
-                                .regularization(true))
+                                .regularization(true).build())
                 .build();
 
         //Check json
@@ -101,6 +101,8 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10,4),Nd4j.rand(10,2));
 
         NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY).build();
+
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder()
                 .addInputs("layer0In")
                 .addLayer("layer0", new DenseLayer.Builder()
@@ -120,7 +122,7 @@ public class TransferLearningCompGraphTest {
                 .build());
         modelToFineTune.init();
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
-                .fineTuneConfiguration(overallConf)
+                .fineTuneConfiguration(fineTuneConfiguration)
                 .nOutReplace("layer3", 2, WeightInit.XAVIER)
                 .nOutReplace("layer0", 3,  new NormalDistribution(1, 1e-1), WeightInit.XAVIER)
                 .build();
@@ -171,6 +173,8 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10,4),Nd4j.rand(10,3));
 
         NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).activation(Activation.IDENTITY).build();
+
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder()
                 .addInputs("layer0In")
                 .addLayer("layer0", new DenseLayer.Builder()
@@ -191,7 +195,7 @@ public class TransferLearningCompGraphTest {
         modelToFineTune.init();
 
        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
-                .fineTuneConfiguration(overallConf)
+                .fineTuneConfiguration(fineTuneConfiguration)
                 .nOutReplace("layer0", 7, WeightInit.XAVIER, WeightInit.XAVIER)
                 .nOutReplace("layer2", 5, WeightInit.XAVIER)
                 .removeVertexKeepConnections("layer3")
@@ -281,8 +285,10 @@ public class TransferLearningCompGraphTest {
 
         //this will override the learning configuration set in the model
         NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD).build();
+
         ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
-                .fineTuneConfiguration(overallConf)
+                .fineTuneConfiguration(fineTuneConfiguration)
                 .setFeatureExtractor("layer1")
                 .nOutReplace("layer4",600,WeightInit.XAVIER)
                 .removeVertexAndConnections("layer5")

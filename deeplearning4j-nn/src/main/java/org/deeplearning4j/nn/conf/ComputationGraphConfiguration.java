@@ -425,6 +425,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.globalConfiguration = globalConfiguration;
         }
 
+        @Deprecated
         public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration, boolean overrideLearning) {
 
             ComputationGraphConfiguration clonedConf = newConf.clone();
@@ -456,6 +457,24 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     }
                 }
             }
+        }
+
+        public GraphBuilder(ComputationGraphConfiguration newConf) {
+
+            ComputationGraphConfiguration clonedConf = newConf.clone();
+
+            this.vertices = clonedConf.getVertices();
+            this.vertexInputs = clonedConf.getVertexInputs();
+
+            this.networkInputs = clonedConf.getNetworkInputs();
+            this.networkOutputs = clonedConf.getNetworkOutputs();
+
+            this.pretrain = clonedConf.isPretrain();
+            this.backprop = clonedConf.isBackprop();
+            this.backpropType = clonedConf.getBackpropType();
+            this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
+            this.tbpttBackLength = clonedConf.getTbpttBackLength();
+            this.globalConfiguration = globalConfiguration;
         }
 
         /**

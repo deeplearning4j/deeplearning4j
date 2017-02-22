@@ -112,7 +112,7 @@ public class FineTuneConfiguration {
                 l.setLearningRate(learningRate);
                 l.setBiasLearningRate(learningRate);
             }
-            if (biasLearningRate != null) l.setBiasInit(biasLearningRate);
+            if (biasLearningRate != null) l.setBiasLearningRate(biasLearningRate);
             if (learningRateSchedule != null) l.setLearningRateSchedule(learningRateSchedule);
 //        if(lrScoreBasedDecay != null)
             if (l1 != null) l.setL1(l1);
@@ -156,7 +156,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf){
-
         if(pretrain != null) conf.setPretrain(pretrain);
         if(backprop != null) conf.setBackprop(backprop);
         if(backpropType != null) conf.setBackpropType(backpropType);
@@ -165,8 +164,11 @@ public class FineTuneConfiguration {
     }
 
     public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf){
-
-        throw new RuntimeException("TODO");
+        if(pretrain != null) conf.setPretrain(pretrain);
+        if(backprop != null) conf.setBackprop(backprop);
+        if(backpropType != null) conf.setBackpropType(backpropType);
+        if(tbpttFwdLength != null) conf.setTbpttFwdLength(tbpttFwdLength);
+        if(tbpttBackLength != null) conf.setTbpttBackLength(tbpttBackLength);
     }
 
     public NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
@@ -181,7 +183,7 @@ public class FineTuneConfiguration {
             confBuilder.setLearningRate(learningRate);
             confBuilder.setBiasLearningRate(learningRate);
         }
-        if (biasLearningRate != null) confBuilder.setBiasInit(biasLearningRate);
+        if (biasLearningRate != null) confBuilder.setBiasLearningRate(biasLearningRate);
         if (learningRateSchedule != null) confBuilder.setLearningRateSchedule(learningRateSchedule);
 //      if(lrScoreBasedDecay != null)
         if (l1 != null) confBuilder.setL1(l1);

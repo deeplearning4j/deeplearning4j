@@ -47,16 +47,6 @@ public class TransferLearning {
 
         @Deprecated
         private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-        @Deprecated
-        private boolean pretrain = false;
-        @Deprecated
-        private boolean backprop = true;
-        @Deprecated
-        private BackpropType backpropType = BackpropType.Standard;
-        @Deprecated
-        private int tbpttFwdLength = 20;
-        @Deprecated
-        private int tbpttBackLength = 20;
 
         private InputType inputType;
 
@@ -65,38 +55,10 @@ public class TransferLearning {
             this.origConf = origModel.getLayerWiseConfigurations().clone();
 
             this.inputPreProcessors = origConf.getInputPreProcessors();
-            this.backpropType = origConf.getBackpropType();
-            this.tbpttFwdLength = origConf.getTbpttFwdLength();
-            this.tbpttBackLength = origConf.getTbpttBackLength();
         }
 
         public Builder fineTuneConfiguration(FineTuneConfiguration finetuneConfiguration){
             this.finetuneConfiguration = finetuneConfiguration;
-            return this;
-        }
-
-        /**
-         * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
-         * Note that this will clear and override all other learning related settings in non frozen layers
-         *
-         * @param newDefaultConfBuilder
-         * @return
-         */
-        @Deprecated
-        public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
-            return this;
-        }
-
-        @Deprecated
-        public Builder setTbpttFwdLength(int l) {
-            this.tbpttFwdLength = l;
-            return this;
-        }
-
-        @Deprecated
-        public Builder setTbpttBackLength(int l) {
-            this.tbpttBackLength = l;
             return this;
         }
 
@@ -274,7 +236,6 @@ public class TransferLearning {
         /**
          * Specify the preprocessor for the added layers
          * for cases where they cannot be inferred automatically.
-         * @param index of the layer
          * @param processor to be used on the data
          * @return
          */
@@ -458,11 +419,10 @@ public class TransferLearning {
     }
 
     public static class GraphBuilder {
-
         private ComputationGraph origGraph;
         private ComputationGraphConfiguration origConfig;
 
-        private NeuralNetConfiguration.Builder globalConfig;
+        private FineTuneConfiguration fineTuneConfiguration;
         private ComputationGraphConfiguration.GraphBuilder editedConfigBuilder;
 
         private String frozenOutputAt;
@@ -475,12 +435,30 @@ public class TransferLearning {
 
         }
 
-        public GraphBuilder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
-            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,globalConfig,true);
-            return this;
+        public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration){
+            this.fineTuneConfiguration = fineTuneConfiguration;
+            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig);
+
+            for (Map.Entry<String, GraphVertex> gv : this.editedConfigBuilder.getVertices().entrySet()) {
+                if (gv.getValue() instanceof LayerVertex) {
+                    LayerVertex lv = (LayerVertex) gv.getValue();
+//                    Layer l = lv.getLayerConf().getLayer();
+//                    l.resetLayerDefaultConfig();
+                    //same as addLayer to override what is in vertices, need not overwrite vertexInputs
+//                    NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
+//                    builder.layer(l);
+//                    NeuralNetConfiguration nnc = lv.getLayerConf().clone();
+//                    vertices.put(gv.getKey(), new LayerVertex(builder.build(),lv.getPreProcessor()));
+//                    l.setLayerName(gv.getKey());
+                }
+            }
+
+
+//            return this;
+            throw new RuntimeException("Not yet implemented");
         }
 
+        @Deprecated
         public GraphBuilder setTbpttFwdLength(int l) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.setTbpttFwdLength(l);
@@ -491,6 +469,7 @@ public class TransferLearning {
             return this;
         }
 
+        @Deprecated
         public GraphBuilder setTbpttBackLength(int l) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.setTbpttBackLength(l);
@@ -654,6 +633,10 @@ public class TransferLearning {
 
         public ComputationGraph build() {
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
+
+
+
+
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 
