@@ -525,6 +525,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
+        public Builder() {
+            //
+        }
+
+        public Builder(NeuralNetConfiguration newConf) {
+            if (newConf != null) {
+                minimize = newConf.minimize;
+                maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
+                layer = newConf.layer;
+                numIterations = newConf.numIterations;
+                useRegularization = newConf.useRegularization;
+                optimizationAlgo = newConf.optimizationAlgo;
+                seed = newConf.seed;
+                stepFunction = newConf.stepFunction;
+                useDropConnect = newConf.useDropConnect;
+                miniBatch = newConf.miniBatch;
+                learningRatePolicy = newConf.learningRatePolicy;
+                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
+                lrPolicySteps = newConf.lrPolicySteps;
+                lrPolicyPower = newConf.lrPolicyPower;
+                pretrain = newConf.pretrain;
+            }
+        }
+
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
         public Builder miniBatch(boolean miniBatch) {

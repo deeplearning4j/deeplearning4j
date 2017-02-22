@@ -250,8 +250,11 @@ public class TransferLearning {
 
             // Use the fineTune config to create the required NeuralNetConfiguration + Layer instances
             //instantiate dummy layer to get the params
-            NeuralNetConfiguration layerConf = finetuneConfiguration.toNeuralNetConfiguration();
-            layerConf.setLayer(layer);
+
+            //build a nn config builder with settings from finetune
+            //set layer with the added layer
+            //.clone().layer(layer).build()
+            NeuralNetConfiguration layerConf = finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 
             int numParams = layer.initializer().numParams(layerConf);
             INDArray params;
@@ -302,15 +305,16 @@ public class TransferLearning {
                 editedModel.setLayers(layers);
             }
 
-
             return editedModel;
         }
 
         private void doPrep() {
 
+            /*
             if (finetuneConfiguration == null) {
                 throw new IllegalArgumentException("FineTune config must be set with .fineTuneConfiguration");
             }
+            */
 
             //first set finetune configs on all layers in model
             fineTuneConfigurationBuild();
@@ -362,8 +366,13 @@ public class TransferLearning {
                 editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
                 */
 
-                NeuralNetConfiguration layerConf = origConf.getConf(i).clone();
-                finetuneConfiguration.applyToNeuralNetConfiguration(layerConf);
+                NeuralNetConfiguration layerConf;
+                if (finetuneConfiguration != null) {
+                    layerConf = finetuneConfiguration.appliedNeuralNetConfiguration(origConf.getConf(i).clone());
+                }
+                else {
+                    layerConf = origConf.getConf(i).clone();
+                }
                 editedConfs.add(layerConf);
             }
         }
@@ -440,7 +449,9 @@ public class TransferLearning {
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
                     .setInputType(this.inputType)
                     .confs(allConfs).build();
-            finetuneConfiguration.applyToMultiLayerConfiguration(conf);
+            if (finetuneConfiguration != null) {
+                finetuneConfiguration.applyToMultiLayerConfiguration(conf);
+            }
             return conf;
         }
     }

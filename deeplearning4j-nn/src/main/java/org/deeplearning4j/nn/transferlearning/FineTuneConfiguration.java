@@ -11,7 +11,6 @@ import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 
 import java.util.Map;
 
@@ -99,7 +98,7 @@ public class FineTuneConfiguration {
         }
     }
 
-    public void applyToNeuralNetConfiguration(NeuralNetConfiguration nnc){
+    public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc){
 
         Layer l = nnc.getLayer();
         if(l != null) {
@@ -107,7 +106,12 @@ public class FineTuneConfiguration {
             if (weightInit != null) l.setWeightInit(weightInit);
             if (biasInit != null) l.setBiasInit(biasInit);
             if (dist != null) l.setDist(dist);
-            if (learningRate != null) l.setLearningRate(learningRate);
+            if (learningRate != null) {
+                //usually the same learning rate is applied to both bias and weights
+                //so always overwrite the learning rate to both?
+                l.setLearningRate(learningRate);
+                l.setBiasLearningRate(learningRate);
+            }
             if (biasLearningRate != null) l.setBiasInit(biasLearningRate);
             if (learningRateSchedule != null) l.setLearningRateSchedule(learningRateSchedule);
 //        if(lrScoreBasedDecay != null)
@@ -146,6 +150,9 @@ public class FineTuneConfiguration {
         if(l instanceof SubsamplingLayer){
             ((SubsamplingLayer)l).setConvolutionMode(convolutionMode);
         }
+
+        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
+        return nnc;
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf){
@@ -162,11 +169,53 @@ public class FineTuneConfiguration {
         throw new RuntimeException("TODO");
     }
 
+    public NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
+        NeuralNetConfiguration.Builder confBuilder = new NeuralNetConfiguration.Builder();
+        if (activationFn != null) confBuilder.setActivationFn(activationFn);
+        if (weightInit != null) confBuilder.setWeightInit(weightInit);
+        if (biasInit != null) confBuilder.setBiasInit(biasInit);
+        if (dist != null) confBuilder.setDist(dist);
+        if (learningRate != null) {
+            //usually the same learning rate is applied to both bias and weights
+            //so always overwrite the learning rate to both?
+            confBuilder.setLearningRate(learningRate);
+            confBuilder.setBiasLearningRate(learningRate);
+        }
+        if (biasLearningRate != null) confBuilder.setBiasInit(biasLearningRate);
+        if (learningRateSchedule != null) confBuilder.setLearningRateSchedule(learningRateSchedule);
+//      if(lrScoreBasedDecay != null)
+        if (l1 != null) confBuilder.setL1(l1);
+        if (l2 != null) confBuilder.setL2(l2);
+        if (l1Bias != null) confBuilder.setL1Bias(l1Bias);
+        if (l2Bias != null) confBuilder.setL2Bias(l2Bias);
+        if (dropOut != null) confBuilder.setDropOut(dropOut);
+        if (updater != null) confBuilder.setUpdater(updater);
+        if (momentum != null) confBuilder.setMomentum(momentum);
+        if (momentumSchedule != null) confBuilder.setMomentum(momentum);
+        if (epsilon != null) confBuilder.setEpsilon(epsilon);
+        if (rho != null) confBuilder.setRho(rho);
+        if (rmsDecay != null) confBuilder.setRmsDecay(rmsDecay);
+        if (adamMeanDecay != null) confBuilder.setAdamMeanDecay(adamMeanDecay);
+        if (adamVarDecay != null) confBuilder.setAdamVarDecay(adamVarDecay);
+        if(miniBatch != null) confBuilder.setMiniBatch(miniBatch);
+        if(numIterations != null) confBuilder.setNumIterations(numIterations);
+        if(maxNumLineSearchIterations != null) confBuilder.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
+        if(seed != null) confBuilder.setSeed(seed);
+        if(useRegularization != null) confBuilder.setUseRegularization(useRegularization);
+        if(optimizationAlgo != null) confBuilder.setOptimizationAlgo(optimizationAlgo);
+        if(stepFunction != null) confBuilder.setStepFunction(stepFunction);
+        if(useDropConnect != null) confBuilder.setUseDropConnect(useDropConnect);
+        if(minimize != null) confBuilder.setMinimize(minimize);
+        if(gradientNormalization != null) confBuilder.setGradientNormalization(gradientNormalization);
+        if(gradientNormalizationThreshold != null) confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+        if(learningRatePolicy != null) confBuilder.setLearningRatePolicy(learningRatePolicy);
+        if(lrPolicySteps != null) confBuilder.setLrPolicySteps(lrPolicySteps);
+        if(lrPolicyPower != null) confBuilder.setLrPolicyPower(lrPolicyPower);
 
-    public NeuralNetConfiguration toNeuralNetConfiguration(){
-        //This gives us a NNC with the defaults set - and any appropriate overrides set
-        NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().build();
-        applyToNeuralNetConfiguration(nnc);
-        return nnc;
+        return confBuilder;
     }
+
+
+
+
 }
