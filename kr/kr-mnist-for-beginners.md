@@ -59,7 +59,7 @@ layout: default
 
 <section>
   <h2 id="building">신경망 구축</h2>
-  <p>Xavier Glorot와 Yoshua Bengio의 논문<a href="http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf" target="_blank">을 기반으로 우리는 피드 포워드(feedforward) 신경망을 구축할 예정입니다. 단일 히든 레이어로 기본 예제를 시작합니다. 그러나 일반적으로 신경망이 깊어질수록 (즉, 레이어가 많을수록) 복잡하고 미묘한 차이를 잡아내어 정확한 결과를 얻게 됩니다.</p>
+  <p>Xavier Glorot와 Yoshua Bengio의 논문<a href="http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf" target="_blank"></a>을 기반으로 우리는 피드 포워드(feedforward) 신경망을 구축할 예정입니다. 단일 히든 레이어로 기본 예제를 시작합니다. 그러나 일반적으로 신경망이 깊어질수록 (즉, 레이어가 많을수록) 복잡하고 미묘한 차이를 잡아내어 정확한 결과를 얻게 됩니다.</p>
   <img src="/img/onelayer.png"><br><br>
   <p>이 도표를 잊지 마십시오. 이것이 바로 우리가 구축하고있는 단일 레이어 신경망입니다.</p>
   <h3>하이퍼 파라미터 설정</h3>
@@ -76,7 +76,7 @@ layout: default
   </code></pre>
   <h5>.seed(rngSeed)</h5>
   <p>이 매개 변수는 임의로 생성 된 특정 웨이트(weight) 초기화를 사용합니다. 예제를 여러 번 실행하고 시작할 때마다 새로운 무작위 웨이트 초기값을 생성하면 신경망의 결과 - 정확도와 F1 점수 -가 매우 달라질 수 있습니다. 초기 웨이트가 다르면 알고리즘이 에러공간(errorscape)에서 다른 로컬미니마로 이끌 수 있기 때문입니다. 동일한 임의의 웨이트를 유지하면 다른 조건이 동일하게 유지되는 동안 다른 하이퍼 파라미터의 조정 효과를 보다 명확하게 분리 할 수 ​​있습니다.</p>
-  <h5>.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)</h4>
+  <h5>.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)</h5>
   <p>SGD (Stochastic gradient descent)는 비용 함수를 최적화하는 일반적인 방법입니다. 자세한 내용은 <a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng의 Machine Learning 과정</a>과 SGD 용어 정의<a href="http://deeplearning4j.org/glossary#stochasticgradientdescent" target="_blank">glossary</a>를 참조하십시오. 오류를 최소화 할 수 있는 SGD 및 기타 최적화 알고리즘에 대한 내용을 배울 수 있습니다.</p>
   <h5>.iterations(1)</h5>
   <p>각각의 이터레이션은 신경망에 대한 학습 단계 입니다. 다시 말해 모델 웨이트의 업데이트 주기를 의미 합니다.신경망은 데이터에 노출되어 데이터에 대한 추측을 하며 추측 오류에 근거하여 자체 매개 변수를 수정합니다. 반복이 많을수록 신경망은 더 많은 단계를 거치며 더 많은 것을 배워 오류를 최소화 할 수 있습니다.</p>
@@ -89,7 +89,7 @@ layout: default
   <p>우리는 L2정형화를 사용하여, 개별 웨이트가 전반적인 결과에 과도한 영향을 미치는 것을 방지합니다.</p>
   <h5>.list()</h5>
   <p>리스트는 신경망의 레이어 수를 지정합니다. 이 기능은 구성(configuration)을 n 번 복제하고 레이어별로 구성할 수 있게 해줍니다.</p>
-  <p>이해가 어렵다면  <a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng의 Machine Learning 과정</a>.</p>을 참조하십시오.</p>
+  <p>이해가 어렵다면  <a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng의 Machine Learning 과정</a>을 참조하십시오.</p>
   <h3>Building Layers</h3>
   <p>우리는 각각의 하이퍼 파라미터에 대한 연구 (예 : activation, weightInit)에 대해서는 다루지 않으려 합니다. 하이퍼 파라미터의 역할에 대해 간단히 정의할 것입니다. 하지만 왜 이것이 중요한지 더 알고 싶다면 <a href="http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf" target="_blank">Xavier Glorot와 Yoshua Bengio의 논문</a>을 참조하십시오.</p>
   <img src="/img/onelayer_labeled.png"><br>
