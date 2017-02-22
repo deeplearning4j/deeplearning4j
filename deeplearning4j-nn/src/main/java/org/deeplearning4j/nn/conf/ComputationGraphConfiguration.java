@@ -425,41 +425,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.globalConfiguration = globalConfiguration;
         }
 
-        @Deprecated
-        public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration, boolean overrideLearning) {
-
-            ComputationGraphConfiguration clonedConf = newConf.clone();
-
-            this.vertices = clonedConf.getVertices();
-            this.vertexInputs = clonedConf.getVertexInputs();
-
-            this.networkInputs = clonedConf.getNetworkInputs();
-            this.networkOutputs = clonedConf.getNetworkOutputs();
-
-            this.pretrain = clonedConf.isPretrain();
-            this.backprop = clonedConf.isBackprop();
-            this.backpropType = clonedConf.getBackpropType();
-            this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
-            this.tbpttBackLength = clonedConf.getTbpttBackLength();
-            this.globalConfiguration = globalConfiguration;
-
-            if (overrideLearning) {
-                for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
-                    if (gv.getValue() instanceof LayerVertex) {
-                        LayerVertex lv = (LayerVertex) gv.getValue();
-                        Layer l = lv.getLayerConf().getLayer();
-                        l.resetLayerDefaultConfig();
-                        //same as addLayer to override what is in vertices, need not overwrite vertexInputs
-                        NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
-                        builder.layer(l);
-                        vertices.put(gv.getKey(), new LayerVertex(builder.build(),lv.getPreProcessor()));
-                        l.setLayerName(gv.getKey());
-                    }
-                }
-            }
-        }
-
-        public GraphBuilder(ComputationGraphConfiguration newConf) {
+        public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration) {
 
             ComputationGraphConfiguration clonedConf = newConf.clone();
 

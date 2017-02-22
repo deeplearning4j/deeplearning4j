@@ -98,6 +98,7 @@ public class FineTuneConfiguration {
         }
     }
 
+    @Deprecated
     public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc){
 
         Layer l = nnc.getLayer();
@@ -153,6 +154,60 @@ public class FineTuneConfiguration {
 
         nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
         return nnc;
+    }
+
+    public void applyToNeuralNetConfiguration(NeuralNetConfiguration nnc){
+
+        Layer l = nnc.getLayer();
+        if(l != null) {
+            if (activationFn != null) l.setActivationFn(activationFn);
+            if (weightInit != null) l.setWeightInit(weightInit);
+            if (biasInit != null) l.setBiasInit(biasInit);
+            if (dist != null) l.setDist(dist);
+            if (learningRate != null) {
+                //usually the same learning rate is applied to both bias and weights
+                //so always overwrite the learning rate to both?
+                l.setLearningRate(learningRate);
+                l.setBiasLearningRate(learningRate);
+            }
+            if (biasLearningRate != null) l.setBiasLearningRate(biasLearningRate);
+            if (learningRateSchedule != null) l.setLearningRateSchedule(learningRateSchedule);
+//        if(lrScoreBasedDecay != null)
+            if (l1 != null) l.setL1(l1);
+            if (l2 != null) l.setL2(l2);
+            if (l1Bias != null) l.setL1Bias(l1Bias);
+            if (l2Bias != null) l.setL2Bias(l2Bias);
+            if (dropOut != null) l.setDropOut(dropOut);
+            if (updater != null) l.setUpdater(updater);
+            if (momentum != null) l.setMomentum(momentum);
+            if (momentumSchedule != null) l.setMomentum(momentum);
+            if (epsilon != null) l.setEpsilon(epsilon);
+            if (rho != null) l.setRho(rho);
+            if (rmsDecay != null) l.setRmsDecay(rmsDecay);
+            if (adamMeanDecay != null) l.setAdamMeanDecay(adamMeanDecay);
+            if (adamVarDecay != null) l.setAdamVarDecay(adamVarDecay);
+        }
+        if(miniBatch != null) nnc.setMiniBatch(miniBatch);
+        if(numIterations != null) nnc.setNumIterations(numIterations);
+        if(maxNumLineSearchIterations != null) nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
+        if(seed != null) nnc.setSeed(seed);
+        if(useRegularization != null) nnc.setUseRegularization(useRegularization);
+        if(optimizationAlgo != null) nnc.setOptimizationAlgo(optimizationAlgo);
+        if(stepFunction != null) nnc.setStepFunction(stepFunction);
+        if(useDropConnect != null) nnc.setUseDropConnect(useDropConnect);
+        if(minimize != null) nnc.setMinimize(minimize);
+        if(gradientNormalization != null) l.setGradientNormalization(gradientNormalization);
+        if(gradientNormalizationThreshold != null) l.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+        if(learningRatePolicy != null) nnc.setLearningRatePolicy(learningRatePolicy);
+        if(lrPolicySteps != null) nnc.setLrPolicySteps(lrPolicySteps);
+        if(lrPolicyPower != null) nnc.setLrPolicyPower(lrPolicyPower);
+
+        if(l instanceof ConvolutionLayer){
+            ((ConvolutionLayer)l).setConvolutionMode(convolutionMode);
+        }
+        if(l instanceof SubsamplingLayer){
+            ((SubsamplingLayer)l).setConvolutionMode(convolutionMode);
+        }
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf){

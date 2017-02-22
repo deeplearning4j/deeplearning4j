@@ -341,7 +341,7 @@ public class TransferLearningCompGraphTest {
         modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
         modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
 
-        assertEquals(modelNow.getConfiguration().toJson(),modelExpectedArch.getConfiguration().toJson());
+        assertEquals(modelExpectedArch.getConfiguration().toJson(), modelNow.getConfiguration().toJson());
         modelNow.setParams(modelExpectedArch.params());
         int i = 0;
         while (i<5) {

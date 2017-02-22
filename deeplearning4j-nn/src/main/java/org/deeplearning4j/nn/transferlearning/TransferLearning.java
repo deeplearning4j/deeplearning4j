@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -205,17 +206,11 @@ public class TransferLearning {
             if (!prepDone) {
                 doPrep();
             }
-//            // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get the NeuralNetConfig
-//            //instantiate dummy layer to get the params
-//            NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
-//            Layer layerImpl = layerConf.getLayer();
 
             // Use the fineTune config to create the required NeuralNetConfiguration + Layer instances
             //instantiate dummy layer to get the params
 
-            //build a nn config builder with settings from finetune
-            //set layer with the added layer
-            //.clone().layer(layer).build()
+            //Build a nn config builder with settings from finetune. Set layer with the added layer
             NeuralNetConfiguration layerConf = finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 
             int numParams = layer.initializer().numParams(layerConf);
@@ -329,7 +324,10 @@ public class TransferLearning {
 
                 NeuralNetConfiguration layerConf;
                 if (finetuneConfiguration != null) {
-                    layerConf = finetuneConfiguration.appliedNeuralNetConfiguration(origConf.getConf(i).clone());
+                    NeuralNetConfiguration nnc = origConf.getConf(i).clone();
+                    finetuneConfiguration.applyToNeuralNetConfiguration(nnc);
+//                    layerConf = finetuneConfiguration.appliedNeuralNetConfiguration(origConf.getConf(i).clone());
+                    layerConf = nnc;
                 }
                 else {
                     layerConf = origConf.getConf(i).clone();
@@ -425,37 +423,32 @@ public class TransferLearning {
         private FineTuneConfiguration fineTuneConfiguration;
         private ComputationGraphConfiguration.GraphBuilder editedConfigBuilder;
 
-        private String frozenOutputAt;
+        private String[] frozenOutputAt;
         private boolean hasFrozen = false;
         private Set<String> editedVertices = new HashSet<>();
 
         public GraphBuilder(ComputationGraph origGraph) {
             this.origGraph = origGraph;
             this.origConfig = origGraph.getConfiguration().clone();
-
         }
 
         public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration){
             this.fineTuneConfiguration = fineTuneConfiguration;
-            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig);
+            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig, fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
-            for (Map.Entry<String, GraphVertex> gv : this.editedConfigBuilder.getVertices().entrySet()) {
+            Map<String,GraphVertex> vertices = this.editedConfigBuilder.getVertices();
+            for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
                 if (gv.getValue() instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv.getValue();
-//                    Layer l = lv.getLayerConf().getLayer();
-//                    l.resetLayerDefaultConfig();
-                    //same as addLayer to override what is in vertices, need not overwrite vertexInputs
-//                    NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
-//                    builder.layer(l);
-//                    NeuralNetConfiguration nnc = lv.getLayerConf().clone();
-//                    vertices.put(gv.getKey(), new LayerVertex(builder.build(),lv.getPreProcessor()));
-//                    l.setLayerName(gv.getKey());
+                    NeuralNetConfiguration nnc = lv.getLayerConf().clone();
+                    fineTuneConfiguration.applyToNeuralNetConfiguration(nnc);
+                    vertices.put(gv.getKey(), new LayerVertex(nnc,lv.getPreProcessor()));
+                    nnc.getLayer().setLayerName(gv.getKey());
                 }
             }
 
 
-//            return this;
-            throw new RuntimeException("Not yet implemented");
+            return this;
         }
 
         @Deprecated
@@ -481,7 +474,7 @@ public class TransferLearning {
         }
 
         //FIXME: Make this more flexible to take a string.. that specifies unique path(s) from input(s) to vertex(vertices)
-        public GraphBuilder setFeatureExtractor(String layerName) {
+        public GraphBuilder setFeatureExtractor(String... layerName) {
             this.hasFrozen = true;
             this.frozenOutputAt = layerName;
             return this;
@@ -660,15 +653,48 @@ public class TransferLearning {
                 newGraph.setParams(origGraph.params());
             }
 
-            //freeze layers as necessary
+            //Freeze layers as necessary. Note: we can't simply say "everything before frozen layer X needs to be frozen
+            // also" as this won't always work. For example, in1->A->C, in2->B->C, freeze B; A shouldn't be frozen, even
+            // if A is before B in the topological sort order.
+            //How it should be handled: use the graph structure + topological sort order.
+            // If a vertex is marked to be frozen: freeze it
+            // Any descendants of a frozen layer should also be frozen
             if (hasFrozen) {
-                for (int i=0; i<topologicalOrder.length; i++) {
-                    if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+                //Store all frozen layers, and any vertices inheriting from said layers
+                Set<String> allFrozen = new HashSet<>();
+                Collections.addAll(allFrozen, frozenOutputAt);
+
+
+
+                for (int i=topologicalOrder.length-1; i>=0; i--) {
                     org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
-                    String layerName = vertices[topologicalOrder[i]].getVertexName();
-                    gv.setLayerAsFrozen();
-                    if (layerName.equals(frozenOutputAt)) {
-                        break;
+                    if(allFrozen.contains(gv.getVertexName())){
+                        if(gv.hasLayer()){
+                            //Need to freeze this layer
+                            org.deeplearning4j.nn.api.Layer l = gv.getLayer();
+                            gv.setLayerAsFrozen();
+
+                            //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                            //This could no doubt be done more efficiently
+                            org.deeplearning4j.nn.api.Layer[] layers = newGraph.getLayers();
+                            for( int j=0; j<layers.length; j++ ){
+                                if(layers[j] == l){
+                                    layers[j] = gv.getLayer();      //Place the new frozen layer to replace the original layer
+                                    break;
+                                }
+                            }
+                        }
+
+                        //Also: mark any inputs as to be frozen also
+                        VertexIndices[] inputs = gv.getInputVertices();
+                        if(inputs != null && inputs.length > 0) {
+                            for (int j = 0; j < inputs.length; j++) {
+                                int inputVertexIdx = inputs[j].getVertexIndex();
+                                String alsoFreeze = vertices[inputVertexIdx].getVertexName();
+                                allFrozen.add(alsoFreeze);
+                            }
+                        }
                     }
                 }
                 newGraph.initGradientsView();
