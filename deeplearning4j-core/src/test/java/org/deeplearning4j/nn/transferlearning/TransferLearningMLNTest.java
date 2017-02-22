@@ -619,4 +619,104 @@ public class TransferLearningMLNTest {
 
         assertEquals(BackpropType.TruncatedBPTT, net2.getLayerWiseConfigurations().getBackpropType());
     }
+
+    @Test
+    public void testAllWithCNNNew() {
+
+        DataSet randomData = new DataSet(Nd4j.rand(10,28*28*3).reshape(10,3,28,28),Nd4j.rand(10,10));
+        MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(1)
+                .learningRate(.01)
+                .weightInit(WeightInit.XAVIER)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.NESTEROVS).momentum(0.9)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder(5, 5)
+                        .nIn(3)
+                        .stride(1, 1)
+                        .nOut(20)
+                        .activation(Activation.IDENTITY)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
+                        .build())
+                .layer(2, new ConvolutionLayer.Builder(5, 5)
+                        .stride(1, 1)
+                        .nOut(50)
+                        .activation(Activation.IDENTITY)
+                        .build())
+                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
+                        .build())
+                .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
+                        .nOut(500).build())
+                .layer(5, new DenseLayer.Builder().activation(Activation.RELU)
+                        .nOut(250).build())
+                .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(100)
+                        .activation(Activation.SOFTMAX)
+                        .build())
+                .setInputType(InputType.convolutionalFlat(28,28,3)) //See note below
+                .backprop(true).pretrain(false).build());
+        modelToFineTune.init();
+        INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2,randomData.getFeatures(),false).get(2); //10x20x12x12
+
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder()
+                .learningRate(0.001)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.SGD).build();
+
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
+                .fineTuneConfiguration(overallConf)
+                .setFeatureExtractor(1)
+                .removeLayersFromOutput(5)
+                .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20*10).nOut(300).build())
+                .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(300).nOut(150).build())
+                .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(150).nOut(50).build())
+                .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
+                .build();
+
+
+        MultiLayerNetwork notFrozen = new MultiLayerNetwork(equivalentConf.list()
+                .layer(0, new DenseLayer.Builder().activation(Activation.RELU).nIn(12*12*20*10)
+                        .nOut(300).build())
+                .layer(1, new DenseLayer.Builder().activation(Activation.RELU)
+                        .nOut(150).build())
+                .layer(2, new DenseLayer.Builder().activation(Activation.RELU)
+                        .nOut(50).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(10)
+                        .activation(Activation.SOFTMAX)
+                        .build())
+                .backprop(true).pretrain(false).build());
+        notFrozen.init();
+
+        assertArrayEquals(modelToFineTune.getLayer(0).params().shape(), modelNow.getLayer(0).params().shape());
+        //subsampling has no params
+        //assertArrayEquals(modelExpectedArch.getLayer(1).params().shape(), modelNow.getLayer(1).params().shape());
+        assertArrayEquals(notFrozen.getLayer(0).params().shape(), modelNow.getLayer(2).params().shape());
+        modelNow.getLayer(2).setParams(notFrozen.getLayer(0).params());
+        assertArrayEquals(notFrozen.getLayer(1).params().shape(), modelNow.getLayer(3).params().shape());
+        modelNow.getLayer(3).setParams(notFrozen.getLayer(1).params());
+        assertArrayEquals(notFrozen.getLayer(2).params().shape(), modelNow.getLayer(4).params().shape());
+        modelNow.getLayer(4).setParams(notFrozen.getLayer(2).params());
+        assertArrayEquals(notFrozen.getLayer(3).params().shape(), modelNow.getLayer(5).params().shape());
+        modelNow.getLayer(5).setParams(notFrozen.getLayer(3).params());
+
+        int i = 0;
+        while (i<5) {
+            notFrozen.fit(new DataSet(asFrozenFeatures,randomData.getLabels()));
+            modelNow.fit(randomData);
+            i++;
+        }
+
+        INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer(0).params(),notFrozen.params());
+        assertEquals(expectedParams,modelNow.params());
+    }
+
+
 }
