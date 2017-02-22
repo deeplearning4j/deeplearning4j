@@ -447,6 +447,7 @@ public class TransferLearning {
 //                    .setInputType(this.inputType)
 //                    .confs(allConfs).build();
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
+                    .inputPreProcessors(inputPreProcessors)
                     .setInputType(this.inputType)
                     .confs(allConfs).build();
             if (finetuneConfiguration != null) {

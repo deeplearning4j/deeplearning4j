@@ -534,7 +534,6 @@ public class TransferLearningMLNTest {
         modelNow.getLayer(2).setParams(notFrozen.getLayer(0).params());
         //subsampling has no params
         //assertArrayEquals(notFrozen.getLayer(1).params().shape(), modelNow.getLayer(3).params().shape());
-        assertEquals(notFrozen.getLayer(2).conf().toJson(),modelNow.getLayer(4).conf().toJson());
         assertArrayEquals(notFrozen.getLayer(2).params().shape(), modelNow.getLayer(4).params().shape());
         modelNow.getLayer(4).setParams(notFrozen.getLayer(2).params());
         assertArrayEquals(notFrozen.getLayer(3).params().shape(), modelNow.getLayer(5).params().shape());
