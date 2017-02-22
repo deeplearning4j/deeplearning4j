@@ -571,7 +571,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int length(int *shapeInfo);
+    Nd4jIndex length(int *shapeInfo);
 
 /***
  * Returns the offset portion of an information buffer
@@ -1037,7 +1037,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int prodLong( int *data, int length);
+    INLINEDEF Nd4jIndex prodLong( int *data, int length);
 
     /**
      * Returns the rear most left over item not present in
@@ -3796,7 +3796,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
 
-    INLINEDEF int length(int *shapeInfo) {
+    INLINEDEF Nd4jIndex length(int *shapeInfo) {
         return shape::prodLong(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
     }
 
@@ -4726,8 +4726,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    INLINEDEF int prodLong( int *data, int length) {
-        int prod = 1;
+    INLINEDEF Nd4jIndex prodLong( int *data, int length) {
+        Nd4jIndex prod = 1;
         for (int i = 0; i < length; i++) {
             prod *= data[i];
         }
