@@ -1,11 +1,13 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -37,6 +39,7 @@ public class TransferLearningMLNTest {
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .updater(Updater.NESTEROVS).momentum(0.99)
                 .learningRate(0.01);
+
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(confToChange.list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(4).nOut(3)
@@ -55,15 +58,23 @@ public class TransferLearningMLNTest {
                                 .seed(rng)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .updater(Updater.RMSPROP)
-                                .learningRate(0.5) //is the intention to override both weight and bias learning? I think that should be the case and force users to specify the bias learning rate if they want to keep it?
+                                .learningRate(0.5) //Intent: override both weight and bias LR, unless bias LR is manually set also
+                                .l2(0.4)
                                 .regularization(true).build())
                 .build();
+
+        for(org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()){
+            assertEquals(Updater.RMSPROP, l.conf().getLayer().getUpdater());
+            assertEquals(0.5, l.conf().getLayer().getLearningRate(), 1e-6);
+        }
+
 
         NeuralNetConfiguration.Builder confSet = new NeuralNetConfiguration.Builder()
                 .seed(rng)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP)
                 .learningRate(0.5)
+                .l2(0.4)
                 .regularization(true);
 
         MultiLayerNetwork expectedModel = new MultiLayerNetwork(confSet.list()
@@ -75,15 +86,23 @@ public class TransferLearningMLNTest {
                         .nIn(3).nOut(3)
                         .build())
                 .build());
+        expectedModel.init();
+        expectedModel.setParams(modelToFineTune.params().dup());
+
+        assertEquals(expectedModel.params(), modelNow.params());
 
         //Check json - will fail since momentum is set in the config but is unused in fit...
-        //assertEquals(expectedConf.toJson(), modelNow.getLayerWiseConfigurations().toJson());
+//        MultiLayerConfiguration expectedConf = expectedModel.getLayerWiseConfigurations();
+//        assertEquals(expectedConf.toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
         //Check params after fit
         modelNow.fit(randomData);
         expectedModel.fit(randomData);
-        assertTrue(modelNow.score() == expectedModel.score());
-        assertEquals(modelNow.params(), expectedModel.params());
+
+        assertEquals(modelNow.score(), expectedModel.score(), 1e-6);
+        INDArray pExp = expectedModel.params();
+        INDArray pNow = modelNow.params();
+        assertEquals(pExp, pNow);
     }
 
     @Test
@@ -483,7 +502,11 @@ public class TransferLearningMLNTest {
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2,randomData.getFeatures(),false).get(2); //10x20x12x12
 
-        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.001)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.SGD);
+
         FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder()
                 .learningRate(0.001)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)

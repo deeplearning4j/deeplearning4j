@@ -265,13 +265,6 @@ public class TransferLearning {
         }
 
         private void doPrep() {
-
-            /*
-            if (finetuneConfiguration == null) {
-                throw new IllegalArgumentException("FineTune config must be set with .fineTuneConfiguration");
-            }
-            */
-
             //first set finetune configs on all layers in model
             fineTuneConfigurationBuild();
 
@@ -326,7 +319,6 @@ public class TransferLearning {
                 if (finetuneConfiguration != null) {
                     NeuralNetConfiguration nnc = origConf.getConf(i).clone();
                     finetuneConfiguration.applyToNeuralNetConfiguration(nnc);
-//                    layerConf = finetuneConfiguration.appliedNeuralNetConfiguration(origConf.getConf(i).clone());
                     layerConf = nnc;
                 }
                 else {
