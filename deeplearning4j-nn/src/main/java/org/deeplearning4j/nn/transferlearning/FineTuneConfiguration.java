@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -98,10 +99,21 @@ public class FineTuneConfiguration {
         }
     }
 
+
     public NeuralNetConfiguration appliedNeuralNetConfiguration(NeuralNetConfiguration nnc){
+        applyToNeuralNetConfiguration(nnc);
+        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
+        return nnc;
+    }
+
+    public void applyToNeuralNetConfiguration(NeuralNetConfiguration nnc){
 
         Layer l = nnc.getLayer();
+        Updater originalUpdater = null;
+        WeightInit origWeightInit = null;
         if(l != null) {
+            originalUpdater = l.getUpdater();
+            origWeightInit = l.getWeightInit();
             if (activationFn != null) l.setActivationFn(activationFn);
             if (weightInit != null) l.setWeightInit(weightInit);
             if (biasInit != null) l.setBiasInit(biasInit);
@@ -112,7 +124,7 @@ public class FineTuneConfiguration {
                 l.setLearningRate(learningRate);
                 l.setBiasLearningRate(learningRate);
             }
-            if (biasLearningRate != null) l.setBiasInit(biasLearningRate);
+            if (biasLearningRate != null) l.setBiasLearningRate(biasLearningRate);
             if (learningRateSchedule != null) l.setLearningRateSchedule(learningRateSchedule);
 //        if(lrScoreBasedDecay != null)
             if (l1 != null) l.setL1(l1);
@@ -144,19 +156,65 @@ public class FineTuneConfiguration {
         if(lrPolicySteps != null) nnc.setLrPolicySteps(lrPolicySteps);
         if(lrPolicyPower != null) nnc.setLrPolicyPower(lrPolicyPower);
 
-        if(l instanceof ConvolutionLayer){
+        if(convolutionMode != null && l instanceof ConvolutionLayer){
             ((ConvolutionLayer)l).setConvolutionMode(convolutionMode);
         }
-        if(l instanceof SubsamplingLayer){
+        if(convolutionMode != null && l instanceof SubsamplingLayer){
             ((SubsamplingLayer)l).setConvolutionMode(convolutionMode);
         }
 
-        nnc = new NeuralNetConfiguration.Builder(nnc.clone()).build();
-        return nnc;
+        //Check the updater config. If we change updaters, we want to remove the old config to avoid warnings
+        if(l != null && updater != null && originalUpdater != null && updater != originalUpdater){
+            switch (originalUpdater){
+                case ADAM:
+                    if(adamMeanDecay == null) l.setAdamMeanDecay(Double.NaN);
+                    if(adamVarDecay == null) l.setAdamVarDecay(Double.NaN);
+                    break;
+                case ADADELTA:
+                    if(rho == null) l.setRho(Double.NaN);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case NESTEROVS:
+                    if(momentum == null) l.setMomentum(Double.NaN);
+                    if(momentumSchedule == null) l.setMomentumSchedule(null);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case ADAGRAD:
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+                case RMSPROP:
+                    if(rmsDecay == null) l.setRmsDecay(Double.NaN);
+                    if(epsilon == null) l.setEpsilon(Double.NaN);
+                    break;
+
+                //Other cases: no changes required
+            }
+        }
+
+        //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
+        if(l != null && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null && weightInit != WeightInit.DISTRIBUTION ){
+            l.setDist(null);
+        }
+
+        //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
+        if(l != null) {
+            LayerValidation.updaterValidation(l.getLayerName(), l, momentum, momentumSchedule, adamMeanDecay, adamVarDecay,
+                    rho, rmsDecay, epsilon);
+
+            boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
+            LayerValidation.generalValidation(l.getLayerName(), l, nnc.isUseRegularization(), useDropCon, dropOut,
+                    l2, l2Bias, l1, l1Bias, dist);
+        }
+
+        //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
+        if(nnc.variables(false) != null){
+            for(String s : nnc.variables(false)){
+                nnc.setLayerParamLR(s);
+            }
+        }
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf){
-
         if(pretrain != null) conf.setPretrain(pretrain);
         if(backprop != null) conf.setBackprop(backprop);
         if(backpropType != null) conf.setBackpropType(backpropType);
@@ -165,8 +223,11 @@ public class FineTuneConfiguration {
     }
 
     public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf){
-
-        throw new RuntimeException("TODO");
+        if(pretrain != null) conf.setPretrain(pretrain);
+        if(backprop != null) conf.setBackprop(backprop);
+        if(backpropType != null) conf.setBackpropType(backpropType);
+        if(tbpttFwdLength != null) conf.setTbpttFwdLength(tbpttFwdLength);
+        if(tbpttBackLength != null) conf.setTbpttBackLength(tbpttBackLength);
     }
 
     public NeuralNetConfiguration.Builder appliedNeuralNetConfigurationBuilder() {
@@ -181,7 +242,7 @@ public class FineTuneConfiguration {
             confBuilder.setLearningRate(learningRate);
             confBuilder.setBiasLearningRate(learningRate);
         }
-        if (biasLearningRate != null) confBuilder.setBiasInit(biasLearningRate);
+        if (biasLearningRate != null) confBuilder.setBiasLearningRate(biasLearningRate);
         if (learningRateSchedule != null) confBuilder.setLearningRateSchedule(learningRateSchedule);
 //      if(lrScoreBasedDecay != null)
         if (l1 != null) confBuilder.setL1(l1);
@@ -214,8 +275,4 @@ public class FineTuneConfiguration {
 
         return confBuilder;
     }
-
-
-
-
 }

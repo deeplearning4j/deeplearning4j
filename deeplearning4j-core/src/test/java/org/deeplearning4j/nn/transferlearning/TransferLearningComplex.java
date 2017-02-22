@@ -158,10 +158,10 @@ public class TransferLearningComplex {
 
 
     @Test
-    public void testMerge1(){
+    public void testMergeAndFreeze(){
         // in1 -> A -> B -> merge, in2 -> C -> merge -> D -> out
         //Goal here: test a number of things...
-        // (a) Ensure that freezing C doesn't impact A and B
+        // (a) Ensure that freezing C doesn't impact A and B. Only C should be frozen in this config
         // (b) Test global override (should be selective)
 
 
@@ -192,24 +192,29 @@ public class TransferLearningComplex {
         }
 
         ComputationGraph graph2 = new TransferLearning.GraphBuilder(graph)
-                .fineTuneConfiguration(new NeuralNetConfiguration.Builder()
-                        .learningRate(2e-2))
+                .fineTuneConfiguration(new FineTuneConfiguration.Builder()
+                        .learningRate(2e-2).build())
                 .setFeatureExtractor("C")
                 .build();
 
         boolean cFound = false;
-        for(Layer l : graph2.getLayers()){
+        Layer[] layers = graph2.getLayers();
+
+        for(Layer l : layers){
+            String name = l.conf().getLayer().getLayerName();
+            System.out.println(name + "\t frozen: " + (l instanceof FrozenLayer));
             if ("C".equals(l.conf().getLayer().getLayerName())){
+                //Only C should be frozen in this config
                 cFound = true;
-                assertTrue(l instanceof FrozenLayer);
+                assertTrue(name, l instanceof FrozenLayer);
             } else {
-                assertFalse(l instanceof FrozenLayer);
+                assertFalse(name, l instanceof FrozenLayer);
             }
 
             //Also check config:
             assertEquals(Updater.ADAM, l.conf().getLayer().getUpdater());
             assertEquals(2e-2, l.conf().getLayer().getLearningRate(), 1e-5);
-            assertEquals(Activation.TANH.getActivationFunction(), l.conf().getLayer().getActivationFn());
+            assertEquals(Activation.LEAKYRELU.getActivationFunction(), l.conf().getLayer().getActivationFn());
         }
         assertTrue(cFound);
 

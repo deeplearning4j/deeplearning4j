@@ -425,7 +425,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.globalConfiguration = globalConfiguration;
         }
 
-        public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration, boolean overrideLearning) {
+        public GraphBuilder(ComputationGraphConfiguration newConf, NeuralNetConfiguration.Builder globalConfiguration) {
 
             ComputationGraphConfiguration clonedConf = newConf.clone();
 
@@ -441,21 +441,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
             this.tbpttBackLength = clonedConf.getTbpttBackLength();
             this.globalConfiguration = globalConfiguration;
-
-            if (overrideLearning) {
-                for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
-                    if (gv.getValue() instanceof LayerVertex) {
-                        LayerVertex lv = (LayerVertex) gv.getValue();
-                        Layer l = lv.getLayerConf().getLayer();
-                        l.resetLayerDefaultConfig();
-                        //same as addLayer to override what is in vertices, need not overwrite vertexInputs
-                        NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
-                        builder.layer(l);
-                        vertices.put(gv.getKey(), new LayerVertex(builder.build(),lv.getPreProcessor()));
-                        l.setLayerName(gv.getKey());
-                    }
-                }
-            }
         }
 
         /**

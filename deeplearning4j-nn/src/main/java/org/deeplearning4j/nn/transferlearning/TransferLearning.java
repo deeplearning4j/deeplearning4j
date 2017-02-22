@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -47,16 +48,6 @@ public class TransferLearning {
 
         @Deprecated
         private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-        @Deprecated
-        private boolean pretrain = false;
-        @Deprecated
-        private boolean backprop = true;
-        @Deprecated
-        private BackpropType backpropType = BackpropType.Standard;
-        @Deprecated
-        private int tbpttFwdLength = 20;
-        @Deprecated
-        private int tbpttBackLength = 20;
 
         private InputType inputType;
 
@@ -65,38 +56,10 @@ public class TransferLearning {
             this.origConf = origModel.getLayerWiseConfigurations().clone();
 
             this.inputPreProcessors = origConf.getInputPreProcessors();
-            this.backpropType = origConf.getBackpropType();
-            this.tbpttFwdLength = origConf.getTbpttFwdLength();
-            this.tbpttBackLength = origConf.getTbpttBackLength();
         }
 
         public Builder fineTuneConfiguration(FineTuneConfiguration finetuneConfiguration){
             this.finetuneConfiguration = finetuneConfiguration;
-            return this;
-        }
-
-        /**
-         * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
-         * Note that this will clear and override all other learning related settings in non frozen layers
-         *
-         * @param newDefaultConfBuilder
-         * @return
-         */
-        @Deprecated
-        public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
-            return this;
-        }
-
-        @Deprecated
-        public Builder setTbpttFwdLength(int l) {
-            this.tbpttFwdLength = l;
-            return this;
-        }
-
-        @Deprecated
-        public Builder setTbpttBackLength(int l) {
-            this.tbpttBackLength = l;
             return this;
         }
 
@@ -243,17 +206,11 @@ public class TransferLearning {
             if (!prepDone) {
                 doPrep();
             }
-//            // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get the NeuralNetConfig
-//            //instantiate dummy layer to get the params
-//            NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
-//            Layer layerImpl = layerConf.getLayer();
 
             // Use the fineTune config to create the required NeuralNetConfiguration + Layer instances
             //instantiate dummy layer to get the params
 
-            //build a nn config builder with settings from finetune
-            //set layer with the added layer
-            //.clone().layer(layer).build()
+            //Build a nn config builder with settings from finetune. Set layer with the added layer
             NeuralNetConfiguration layerConf = finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 
             int numParams = layer.initializer().numParams(layerConf);
@@ -274,7 +231,6 @@ public class TransferLearning {
         /**
          * Specify the preprocessor for the added layers
          * for cases where they cannot be inferred automatically.
-         * @param index of the layer
          * @param processor to be used on the data
          * @return
          */
@@ -309,13 +265,6 @@ public class TransferLearning {
         }
 
         private void doPrep() {
-
-            /*
-            if (finetuneConfiguration == null) {
-                throw new IllegalArgumentException("FineTune config must be set with .fineTuneConfiguration");
-            }
-            */
-
             //first set finetune configs on all layers in model
             fineTuneConfigurationBuild();
 
@@ -368,7 +317,9 @@ public class TransferLearning {
 
                 NeuralNetConfiguration layerConf;
                 if (finetuneConfiguration != null) {
-                    layerConf = finetuneConfiguration.appliedNeuralNetConfiguration(origConf.getConf(i).clone());
+                    NeuralNetConfiguration nnc = origConf.getConf(i).clone();
+                    finetuneConfiguration.applyToNeuralNetConfiguration(nnc);
+                    layerConf = nnc;
                 }
                 else {
                     layerConf = origConf.getConf(i).clone();
@@ -458,29 +409,41 @@ public class TransferLearning {
     }
 
     public static class GraphBuilder {
-
         private ComputationGraph origGraph;
         private ComputationGraphConfiguration origConfig;
 
-        private NeuralNetConfiguration.Builder globalConfig;
+        private FineTuneConfiguration fineTuneConfiguration;
         private ComputationGraphConfiguration.GraphBuilder editedConfigBuilder;
 
-        private String frozenOutputAt;
+        private String[] frozenOutputAt;
         private boolean hasFrozen = false;
         private Set<String> editedVertices = new HashSet<>();
 
         public GraphBuilder(ComputationGraph origGraph) {
             this.origGraph = origGraph;
             this.origConfig = origGraph.getConfiguration().clone();
-
         }
 
-        public GraphBuilder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
-            this.globalConfig = newDefaultConfBuilder;
-            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,globalConfig,true);
+        public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration){
+            this.fineTuneConfiguration = fineTuneConfiguration;
+            this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig, fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
+
+            Map<String,GraphVertex> vertices = this.editedConfigBuilder.getVertices();
+            for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+                if (gv.getValue() instanceof LayerVertex) {
+                    LayerVertex lv = (LayerVertex) gv.getValue();
+                    NeuralNetConfiguration nnc = lv.getLayerConf().clone();
+                    fineTuneConfiguration.applyToNeuralNetConfiguration(nnc);
+                    vertices.put(gv.getKey(), new LayerVertex(nnc,lv.getPreProcessor()));
+                    nnc.getLayer().setLayerName(gv.getKey());
+                }
+            }
+
+
             return this;
         }
 
+        @Deprecated
         public GraphBuilder setTbpttFwdLength(int l) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.setTbpttFwdLength(l);
@@ -491,6 +454,7 @@ public class TransferLearning {
             return this;
         }
 
+        @Deprecated
         public GraphBuilder setTbpttBackLength(int l) {
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.setTbpttBackLength(l);
@@ -502,7 +466,7 @@ public class TransferLearning {
         }
 
         //FIXME: Make this more flexible to take a string.. that specifies unique path(s) from input(s) to vertex(vertices)
-        public GraphBuilder setFeatureExtractor(String layerName) {
+        public GraphBuilder setFeatureExtractor(String... layerName) {
             this.hasFrozen = true;
             this.frozenOutputAt = layerName;
             return this;
@@ -534,6 +498,7 @@ public class TransferLearning {
         }
 
         private GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme, WeightInit schemeNext, Distribution dist, Distribution distNext) {
+            initBuilderIfReq();
 
             if (origGraph.getVertex(layerName).hasLayer()) {
 
@@ -590,6 +555,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder removeVertexKeepConnections(String outputName) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.removeVertex(outputName,false);
             }
@@ -600,6 +567,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder removeVertexAndConnections(String vertexName) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.removeVertex(vertexName,true);
             }
@@ -610,6 +579,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addLayer(layerName, layer, null, layerInputs);
                 editedVertices.add(layerName);
@@ -621,6 +592,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
                 editedVertices.add(layerName);
@@ -632,6 +605,8 @@ public class TransferLearning {
         }
 
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+            initBuilderIfReq();
+
             if (editedConfigBuilder != null) {
                 editedConfigBuilder.addVertex(vertexName,vertex,vertexInputs);
                 editedVertices.add(vertexName);
@@ -652,8 +627,22 @@ public class TransferLearning {
             return this;
         }
 
+        private void initBuilderIfReq(){
+            if(editedConfigBuilder == null){
+                //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
+                //So: create an empty finetune config, which won't override anything
+                fineTuneConfiguration(new FineTuneConfiguration.Builder().build());
+            }
+        }
+
         public ComputationGraph build() {
+            initBuilderIfReq();
+
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
+
+
+
+
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 
@@ -677,15 +666,48 @@ public class TransferLearning {
                 newGraph.setParams(origGraph.params());
             }
 
-            //freeze layers as necessary
+            //Freeze layers as necessary. Note: we can't simply say "everything before frozen layer X needs to be frozen
+            // also" as this won't always work. For example, in1->A->C, in2->B->C, freeze B; A shouldn't be frozen, even
+            // if A is before B in the topological sort order.
+            //How it should be handled: use the graph structure + topological sort order.
+            // If a vertex is marked to be frozen: freeze it
+            // Any descendants of a frozen layer should also be frozen
             if (hasFrozen) {
-                for (int i=0; i<topologicalOrder.length; i++) {
-                    if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+
+                //Store all frozen layers, and any vertices inheriting from said layers
+                Set<String> allFrozen = new HashSet<>();
+                Collections.addAll(allFrozen, frozenOutputAt);
+
+
+
+                for (int i=topologicalOrder.length-1; i>=0; i--) {
                     org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
-                    String layerName = vertices[topologicalOrder[i]].getVertexName();
-                    gv.setLayerAsFrozen();
-                    if (layerName.equals(frozenOutputAt)) {
-                        break;
+                    if(allFrozen.contains(gv.getVertexName())){
+                        if(gv.hasLayer()){
+                            //Need to freeze this layer
+                            org.deeplearning4j.nn.api.Layer l = gv.getLayer();
+                            gv.setLayerAsFrozen();
+
+                            //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                            //This could no doubt be done more efficiently
+                            org.deeplearning4j.nn.api.Layer[] layers = newGraph.getLayers();
+                            for( int j=0; j<layers.length; j++ ){
+                                if(layers[j] == l){
+                                    layers[j] = gv.getLayer();      //Place the new frozen layer to replace the original layer
+                                    break;
+                                }
+                            }
+                        }
+
+                        //Also: mark any inputs as to be frozen also
+                        VertexIndices[] inputs = gv.getInputVertices();
+                        if(inputs != null && inputs.length > 0) {
+                            for (int j = 0; j < inputs.length; j++) {
+                                int inputVertexIdx = inputs[j].getVertexIndex();
+                                String alsoFreeze = vertices[inputVertexIdx].getVertexName();
+                                allFrozen.add(alsoFreeze);
+                            }
+                        }
                     }
                 }
                 newGraph.initGradientsView();
