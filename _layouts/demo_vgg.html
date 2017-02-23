@@ -98,7 +98,9 @@
       console.log('Classification success', data);
 
       for(var i = 0; i < predictions.length; i++) {
-        $('#results-data').append('<span class="label label-default">'+predictions[i].label+' '+Math.round(predictions[i].prediction*10)/10+'%</span> &nbsp;');
+        var prettyLabel = predictions[i].label.replace('_',' ');
+        prettyLabel = capitalizeFirstLetter(prettyLabel);
+        $('#results-data').append('<span class="label label-default">'+prettyLabel+' '+Math.round(predictions[i].prediction*10)/10+'%</span> &nbsp;');
       }
 
       $('#results-feedforward').text(results.performance.feedforward+"ms");
@@ -117,6 +119,10 @@
       $('.demo-view').hide();
       $('#demo-error').show();
     });
+
+    function capitalizeFirstLetter(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
 
   });
 </script>
