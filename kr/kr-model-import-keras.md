@@ -10,7 +10,7 @@ layout: default
 deeplearning4j-modelimport 모듈은 Keras를 사용하여 구성되고 훈련된 신경망 모델을 가져오기 위한 방법을 제공합니다. [Keras](https://keras.io/)는 파이썬 딥러닝 라이브러리 가운데 하나이며[Theano](http://deeplearning.net/software/theano/)나[TensorFlow](https://www.tensorflow.org) 백엔드 위에 동작하는 추상레이어(Abstraction Layer)를 제공합니다.
 Keras 모델 저장은[FAQ 페이지](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) 에서 자세히 알 수 있습니다.
 
-![Model Import Schema](./img/model-import-keras.png)
+![Model Import Schema](../img/model-import-keras.png)
 
 현재 Deeplearning4j에서 지원되지 않는 Keras 모델 설정을 가져오려고 할 때 바로  ‘IncompatibleKerasConfigurationException’메세지가 나타납니다. (모델 가져오기에서 지원되지 않거나  DL4J자체에서 모델, 레이어 또는 기능을 구현하지 않았기 때문임).
 
