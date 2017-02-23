@@ -98,7 +98,8 @@
       console.log('Classification success', data);
 
       for(var i = 0; i < predictions.length; i++) {
-        var prettyLabel = predictions[i].label.replace('_',' ');
+        var prettyLabel = predictions[i].label;
+        prettyLabel = prettyLabel.replace('_',' ');
         prettyLabel = capitalizeFirstLetter(prettyLabel);
         $('#results-data').append('<span class="label label-default">'+prettyLabel+' '+Math.round(predictions[i].prediction*10)/10+'%</span> &nbsp;');
       }
