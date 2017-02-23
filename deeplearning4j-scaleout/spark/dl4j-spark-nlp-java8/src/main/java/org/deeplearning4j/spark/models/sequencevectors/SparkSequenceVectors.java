@@ -270,7 +270,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
 
         // FIXME: probably we need to reconsider this approach
-        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
+        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunctionFlat<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
         vocabRDD.count();
 
         /**
