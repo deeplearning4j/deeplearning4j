@@ -338,3 +338,21 @@ SparkConf conf = new SparkConf();
   <li><a href="iterativereduce">迭代式归纳简介</a></li>
 </ul>
 <p>&nbsp;</p>
+
+<p><h2>备注</h2></p>
+<p><h3>注意！！！Spark在Ubuntu 16.04上的问题可能会影响DL4J用户</h3></p>
+<p>在装有Ubuntu 16.04的计算机上的YARN集群中运行Spark时，有可能出现这种情况：完成一项任务后，运行Hadoop/YARN的用户所有的全部进程都被杀死。该问题与Ubuntu的一项bug有关，相关记录参见<a href="https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499" target="_blank">https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499</a>。Stackoverflow上也有关于此问题的讨论，参见<a href="http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04" target="_blank">http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04</a>。</p>
+<p>目前已经有人提出一些解决方法。 </p>
+<p><h3>方法1：</h3></p>
+<p>添加</p>
+<pre class="line-numbers"><code class="language-java">
+[login]
+KillUserProcesses=no
+</code></pre>
+<p>至/etc/systemd/logind.conf，然后重启。</p>
+<p><h3>方法2：</h3></p>
+<p>复制并改用Ubuntu 14.04的/bin/kill二进制文件。</p>
+<p><h3>方法3：</h3></p>
+<p>降级至Ubuntu 14.04</p>
+<p><h3>方法4：</h3></p>
+<p>在集群节点上运行<pre class="line-numbers"><code class="language-java">sudo loginctl enable-linger hadoop_user_name</code></pre></p>
