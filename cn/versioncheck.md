@@ -1,12 +1,12 @@
 ---
-title: Deeplearning4j Version Check
+title: Deeplearning4j版本检查
 layout: cn-default
 ---
 
-# Deeplearning4j's Version Check
+# Deeplearning4j的版本检查
 
-Deeplearning4j includes a version check, which may produce HTTP client debug messages in your logs. The version check helps us know whether an up-to-date versions of the library is being used. The version check can be turned off by adding the following line of code to the Java file where you configure your model:
+Deeplearning4j包含一项版本检查功能，有可能在您的记录中生成HTTP客户端调试消息。该功能帮助我们了解DL4J库的最新版本是否得到使用。如果需要关闭版本检查，您可以在配置模型的Java文件中添加以下代码：
 
     Heartbeat.getInstance().disableHeartbeat();
 
-While we realize that some users may prefer to turn off the version check, please keep in mind that Deeplearning4j is free, and allowing us to check the version is one way that members of the community can help us. 
+我们知道有些用户可能倾向于关闭版本检查，但我们还是希望Deeplearning4j社区的成员能允许我们检查版本，以此来帮助这一免费提供的学习库。 
