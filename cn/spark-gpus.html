@@ -173,6 +173,24 @@ public static void main(String[] args) throws Exception {
 </ol>
 <p>如果您希望直接与我们讨论，请在Gitter上加入我们： <a href="https://gitter.im/deeplearning4j/deeplearning4j">https://gitter.im/deeplearning4j/deeplearning4j</a></p>
 <br>
+<p><h2>备注</h2></p>
+<p><h3>注意！！！Spark在Ubuntu 16.04上的问题可能会影响DL4J用户</h3></p>
+<p>在装有Ubuntu 16.04的计算机上的YARN集群中运行Spark时，有可能出现这种情况：完成一项任务后，运行Hadoop/YARN的用户所有的全部进程都被杀死。该问题与Ubuntu的一项bug有关，相关记录参见<a href="https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499" target="_blank">https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499</a>。Stackoverflow上也有关于此问题的讨论，参见<a href="http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04" target="_blank">http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04</a>。</p>
+<p>目前已经有人提出一些解决方法。 </p>
+<p><h3>方法1：</h3></p>
+<p>添加</p>
+<pre class="line-numbers"><code class="language-java">
+[login]
+KillUserProcesses=no
+</code></pre>
+<p>至/etc/systemd/logind.conf，然后重启。</p>
+<p><h3>方法2：</h3></p>
+<p>复制并改用Ubuntu 14.04的/bin/kill二进制文件。</p>
+<p><h3>方法3：</h3></p>
+<p>降级至Ubuntu 14.04</p>
+<p><h3>方法4：</h3></p>
+<p>在集群节点上运行<pre class="line-numbers"><code class="language-java">sudo loginctl enable-linger hadoop_user_name</code></pre></p>
+<br>
 <p><h2>参考资料</h2></p>
 <p>[1] 《Training with intra-block parallel optimization and blockwise model-update filtering》；2016年IEEE国际声学、语音与信号处理会议（ICASSP）论丛，第5880～5884页；IEEE，2016。</p>
 <p>[2] Jeffrey Dean、Greg Corrado、Rajat Monga、Kai Chen、Matthieu Devin、Mark Mao、Andrew Senior、Paul Tucker、Ke Yang、Quoc V Le等：《Large scale distributed deep networks》；神经信息处理系统进展大会（Advances inNeural Information Processing Systems）论丛，第1223～1231页，2012。</p>
