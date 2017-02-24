@@ -16,20 +16,8 @@
 
 package org.datavec.api.transform.transform.geo;
 
-import com.maxmind.geoip2.DatabaseReader;
-import com.maxmind.geoip2.exception.GeoIp2Exception;
-import com.maxmind.geoip2.model.CityResponse;
-import com.maxmind.geoip2.record.Location;
-import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.metadata.StringMetaData;
-import org.datavec.api.transform.transform.BaseColumnTransform;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.transform.geo.LocationType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
@@ -39,26 +27,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author saudet
  */
-public class IPAddressToCoordinatesTransform extends BaseColumnTransform  {
-
-    private static File database;
-    private static DatabaseReader reader;
-
-    public final static String DEFAULT_DELIMITER = ":";
-    protected String delimiter = DEFAULT_DELIMITER;
-
-    private static synchronized void init() throws IOException {
-        // A File object pointing to your GeoIP2 or GeoLite2 database:
-        // http://dev.maxmind.com/geoip/geoip2/geolite2/
-        if (database == null) {
-            database = GeoIPFetcher.fetchCityDB();
-        }
-
-        // This creates the DatabaseReader object, which should be reused across lookups.
-        if (reader == null) {
-            reader = new DatabaseReader.Builder(database).build();
-        }
-    }
+public class IPAddressToCoordinatesTransform extends IPAddressToLocationTransform  {
 
     public IPAddressToCoordinatesTransform(@JsonProperty("columnName") String columnName) throws IOException {
         this(columnName, DEFAULT_DELIMITER);
@@ -66,45 +35,11 @@ public class IPAddressToCoordinatesTransform extends BaseColumnTransform  {
 
     public IPAddressToCoordinatesTransform(@JsonProperty("columnName") String columnName,
             @JsonProperty("delimiter") String delimiter) throws IOException {
-        super(columnName);
-        this.delimiter = delimiter;
-        init();
-    }
-
-    @Override
-    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
-        return new StringMetaData(newName); //Output after transform: String (Text)
-    }
-
-    @Override
-    public Writable map(Writable columnWritable) {
-        try {
-            InetAddress ipAddress = InetAddress.getByName(columnWritable.toString());
-            CityResponse response = reader.city(ipAddress);
-            Location location = response.getLocation();
-            return new Text(location.getLatitude() + delimiter + location.getLongitude());
-        } catch (GeoIp2Exception | IOException e) {
-            throw new RuntimeException(e);
-        }
+        super(columnName, LocationType.COORDINATES, delimiter);
     }
 
     @Override
     public String toString() {
         return "IPAddressToCoordinatesTransform";
-    }
-
-    //Custom serialization methods, because GeoIP2 doesn't allow DatabaseReader objects to be serialized :(
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-    }
-
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        init();
-    }
-
-    @Override
-    public Object map(Object input) {
-        return null;
     }
 }

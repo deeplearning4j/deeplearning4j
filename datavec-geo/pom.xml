@@ -25,10 +25,6 @@
 
     <artifactId>datavec-geo</artifactId>
 
-    <properties>
-        <geoip2.version>2.8.0</geoip2.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.datavec</groupId>
@@ -39,12 +35,6 @@
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
             <version>${geoip2.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
