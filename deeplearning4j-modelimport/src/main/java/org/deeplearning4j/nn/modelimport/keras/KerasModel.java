@@ -519,11 +519,15 @@ public class KerasModel {
             return this;
         }
 
-        public ModelBuilder modelHdf5Filename(String modelHdf5Filename) throws UnsupportedKerasConfigurationException {
+        public ModelBuilder modelHdf5Filename(String modelHdf5Filename)
+                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
             this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
             this.weightsRoot = HDF5_MODEL_WEIGHTS_ROOT;
+            if (!this.weightsArchive.hasAttribute(HDF5_MODEL_CONFIG_ATTRIBUTE))
+                throw new InvalidKerasConfigurationException("Model configuration attribute missing from " + modelHdf5Filename + " archive.");
             this.modelJson = this.weightsArchive.readAttributeAsJson(HDF5_MODEL_CONFIG_ATTRIBUTE);
-            this.trainingJson = this.weightsArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
+            if (this.trainingArchive.hasAttribute(HDF5_TRAINING_CONFIG_ATTRIBUTE))
+                this.trainingJson = this.trainingArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
             return this;
         }
 
