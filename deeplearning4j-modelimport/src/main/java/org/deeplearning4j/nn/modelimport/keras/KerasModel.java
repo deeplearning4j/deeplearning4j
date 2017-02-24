@@ -290,10 +290,15 @@ public class KerasModel {
         List<String> layerGroups = weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
         /* Set weights in KerasLayer for each entry in weights map. */
         for (String layerName : layerGroups) {
-            if (!this.layers.containsKey(layerName))
-                throw new InvalidKerasConfigurationException("Found weights for layer not in model (named " + layerName + ")");
-            Map<String, INDArray> weights = new HashMap<String,INDArray>();
             List<String> layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName) : weightsArchive.getDataSets(layerName);
+            if (layerParamNames.isEmpty())
+                continue;
+            if (!layerParamNames.isEmpty() && !this.layers.containsKey(layerName))
+                throw new InvalidKerasConfigurationException("Found weights for layer not in model (named " + layerName + ")");
+            KerasLayer layer = this.layers.get(layerName);
+            if (layerParamNames.size() != layer.getNumParams())
+                throw new InvalidKerasConfigurationException("Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams() + " trainable params (named " + layerName + ")");
+            Map<String, INDArray> weights = new HashMap<String,INDArray>();
             for (String layerParamName : layerParamNames) {
                 /* TODO: push this logic into KerasLayer subclasses. Layers know what
                  * parameters they have and should be looking for, so let them handle
@@ -331,17 +336,14 @@ public class KerasModel {
                 INDArray paramValue = weightsRoot != null ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName) : weightsArchive.readDataSet(layerParamName, layerName);
                 weights.put(paramName, paramValue);
             }
-            KerasLayer layer = this.layers.get(layerName);
-            if (!layer.hasWeights() && weights.size() > 0)
-                throw new InvalidKerasConfigurationException("Found weights for layer that has no parameters (named " + layerName + ")");
-            this.layers.get(layerName).setWeights(weights);
+            layer.setWeights(weights);
         }
 
         /* Look for layers in model with no corresponding entries in weights map. */
         Set<String> layerNames = new HashSet<String>(this.layers.keySet());
         layerNames.removeAll(layerGroups);
         for (String layerName : layerNames) {
-            if (this.layers.get(layerName).hasWeights())
+            if (this.layers.get(layerName).getNumParams() > 0)
                 throw new InvalidKerasConfigurationException("Could not find weights required for layer " + layerName);
          }
     }
@@ -370,14 +372,16 @@ public class KerasModel {
         List<InputType> inputTypeList = new ArrayList<InputType>();
         for (String inputLayerName : this.inputLayerNames)
             inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
-        InputType[] inputTypeArray = new InputType[inputTypeList.size()];
-        inputTypeList.toArray(inputTypeArray);
-        graphBuilder.setInputTypes(inputTypeArray);
+        InputType[] inputTypes = new InputType[inputTypeList.size()];
+        inputTypeList.toArray(inputTypes);
+        graphBuilder.setInputTypes(inputTypes);
 
         /* Build String array of output layer names, add to ComputationGraph. */
         String[] outputLayerNameArray = new String[this.outputLayerNames.size()];
         this.outputLayerNames.toArray(outputLayerNameArray);
         graphBuilder.setOutputs(outputLayerNameArray);
+
+        Map<String, InputPreProcessor> preprocessors = new HashMap<String, InputPreProcessor>();
 
         /* Add layersOrdered one at a time. */
         for (KerasLayer layer : this.layersOrdered) {
@@ -385,37 +389,42 @@ public class KerasModel {
             List<String> inboundLayerNames = layer.getInboundLayerNames();
             String[] inboundLayerNamesArray = new String[inboundLayerNames.size()];
             inboundLayerNames.toArray(inboundLayerNamesArray);
+
+            /* Get inbound InputTypes and InputPreProcessor, if necessary. */
+            List<InputType> inboundTypeList = new ArrayList<InputType>();
+            for (String layerName : inboundLayerNames)
+                inboundTypeList.add(this.outputTypes.get(layerName));
+            InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
+            inboundTypeList.toArray(inboundTypeArray);
+            InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
+
             if (layer.usesRegularization())
                 modelBuilder.setUseRegularization(true);
 
             if (layer.isLayer()) {
                 /* Add DL4J layer. */
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
                 /* Add DL4J vertex. */
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getVertex() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output vertex " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
-            } else if (layer.isInputPreProcessor()){
-                /* Add DL4J preprocessor vertex. */
-                List<InputType> inboundTypeList = new ArrayList<InputType>();
-                for (String layerName : inboundLayerNames)
-                    inboundTypeList.add(this.outputTypes.get(layerName));
-                InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
-                inboundTypeList.toArray(inboundTypeArray);
-
-                /* Get InputPreProcessor type. */
-                InputPreProcessor preprocessor = layer.getInputPreprocessor(inputTypeArray);
+            } else if (layer.isInputPreProcessor()) {
                 if (preprocessor == null)
                     throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName() + " could not be mapped to Layer, Vertex, or InputPreProcessor");
                 graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor), inboundLayerNamesArray);
-
-                if (this.outputLayerNames.contains(layer.getLayerName()))
-                    log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
+
+            if (this.outputLayerNames.contains(layer.getLayerName()))
+                log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
         }
+        graphBuilder.setInputPreProcessors(preprocessors);
 
         /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
         if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
@@ -550,7 +559,7 @@ public class KerasModel {
      * @return        Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    protected static Map<String,Object> parseJsonString(String json) throws IOException {
+    public static Map<String,Object> parseJsonString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
@@ -563,7 +572,7 @@ public class KerasModel {
      * @return        Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    protected static Map<String,Object> parseYamlString(String json) throws IOException {
+    public static Map<String,Object> parseYamlString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
@@ -598,8 +607,8 @@ public class KerasModel {
         }
 
         for (String layerName : layerNames) {
-            if (this.layers.get(layerName).hasWeights())
-                throw new InvalidKerasConfigurationException("Attemping to copy weights layer not in model (named " + layerName + ")");
+            if (this.layers.get(layerName).getNumParams() > 0)
+                throw new InvalidKerasConfigurationException("Attemping to copy weights for layer not in model (named " + layerName + ")");
         }
         return model;
     }

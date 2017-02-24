@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
 import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
@@ -145,10 +146,10 @@ public class LayerBuilderTest {
     
     @Test
     public void testGravesLSTM() throws Exception {
-    	GravesLSTM glstm = new GravesLSTM.Builder()
+        GravesLSTM glstm = new GravesLSTM.Builder()
                 .forgetGateBiasInit(1.5)
-                .activation("tanh")
-    			.nIn(numIn).nOut(numOut).build();
+                .activation(Activation.TANH)
+            .nIn(numIn).nOut(numOut).build();
     	
     	checkSerialization(glstm);
 
@@ -162,7 +163,7 @@ public class LayerBuilderTest {
     public void testGravesBidirectionalLSTM() throws Exception {
         final GravesBidirectionalLSTM glstm = new GravesBidirectionalLSTM.Builder()
                 .forgetGateBiasInit(1.5)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .nIn(numIn).nOut(numOut).build();
 
         checkSerialization(glstm);

@@ -18,10 +18,10 @@
 
 package org.deeplearning4j.nn.conf.inputs;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.*;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
@@ -31,6 +31,14 @@ import java.io.Serializable;
  * {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration#addPreProcessors(InputType...)}
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type( value = InputType.InputTypeFeedForward.class, name = "FeedForward" ),
+        @JsonSubTypes.Type( value = InputType.InputTypeRecurrent.class, name = "Recurrent" ),
+        @JsonSubTypes.Type( value = InputType.InputTypeConvolutional.class, name = "Convolutional" ),
+        @JsonSubTypes.Type( value = InputType.InputTypeConvolutionalFlat.class, name = "ConvolutionalFlat" )
+                })
 public abstract class InputType implements Serializable {
 
     /** The type of activations in/out of a given GraphVertex<br>
@@ -86,7 +94,7 @@ public abstract class InputType implements Serializable {
     }
 
 
-    @AllArgsConstructor @Getter
+    @AllArgsConstructor @Getter  @NoArgsConstructor
     public static class InputTypeFeedForward extends InputType{
         private int size;
 
@@ -101,7 +109,7 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor @Getter
+    @AllArgsConstructor @Getter  @NoArgsConstructor
     public static class InputTypeRecurrent extends InputType{
         private int size;
 
@@ -116,7 +124,7 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)
+    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false) @NoArgsConstructor
     public static class InputTypeConvolutional extends InputType {
         private int height;
         private int width;
@@ -133,7 +141,7 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)
+    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)  @NoArgsConstructor
     public static class InputTypeConvolutionalFlat extends InputType {
         private int height;
         private int width;

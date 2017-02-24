@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -28,7 +29,7 @@ public class TestMasking {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .iterations(1).seed(12345).list()
                     .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                            .activation("identity").nIn(1).nOut(1).build())
+                            .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
                     .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
                     .build();
 

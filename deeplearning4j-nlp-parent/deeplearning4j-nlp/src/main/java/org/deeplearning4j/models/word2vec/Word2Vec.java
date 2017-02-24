@@ -30,6 +30,8 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class Word2Vec extends SequenceVectors<VocabWord> {
+    private static final long serialVersionUID = 78249242142L;
+
     protected transient SentenceIterator sentenceIter;
     @Getter protected transient TokenizerFactory tokenizerFactory;
 

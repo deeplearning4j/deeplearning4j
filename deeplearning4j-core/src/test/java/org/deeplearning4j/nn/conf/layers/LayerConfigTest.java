@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,7 @@ public class LayerConfigTest {
     public void testActivationLayerwiseOverride(){
         //Without layerwise override:
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation("relu")
+                .activation(Activation.RELU)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
@@ -50,10 +51,10 @@ public class LayerConfigTest {
 
         //With
         conf = new NeuralNetConfiguration.Builder()
-                .activation("relu")
+                .activation(Activation.RELU)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).activation("tanh").build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).activation(Activation.TANH).build())
                 .build();
 
         net = new MultiLayerNetwork(conf);

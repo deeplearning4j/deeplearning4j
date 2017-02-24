@@ -17,6 +17,7 @@ import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -55,14 +56,14 @@ public class FlowIterationListenerTest {
                     .graphBuilder()
                     .addInputs("inEn", "inFr")
                     .setInputTypes(InputType.recurrent(VOCAB_SIZE+1), InputType.recurrent(VOCAB_SIZE+1))
-                    .addLayer("embeddingEn", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inEn")
-                    .addLayer("encoder", new GravesLSTM.Builder().nIn(128).nOut(256).activation("softsign").build(),"embeddingEn")
+                    .addLayer("embeddingEn", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation(Activation.IDENTITY).build(),"inEn")
+                    .addLayer("encoder", new GravesLSTM.Builder().nIn(128).nOut(256).activation(Activation.SOFTSIGN).build(),"embeddingEn")
                     .addVertex("lastTimeStep", new LastTimeStepVertex("inEn"),"encoder")
                     .addVertex("duplicateTimeStep", new DuplicateToTimeSeriesVertex("inFr"), "lastTimeStep")
-                    .addLayer("embeddingFr", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation("identity").build(),"inFr")
+                    .addLayer("embeddingFr", new EmbeddingLayer.Builder().nIn(VOCAB_SIZE+1).nOut(128).activation(Activation.IDENTITY).build(),"inFr")
                     .addVertex("embeddingFrSeq", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "embeddingFr")
-                    .addLayer("decoder", new GravesLSTM.Builder().nIn(128 + 256).nOut(256).activation("softsign").build(), "embeddingFrSeq", "duplicateTimeStep")
-                    .addLayer("output", new RnnOutputLayer.Builder().nIn(256).nOut(VOCAB_SIZE + 1).activation("softmax").build(), "decoder")
+                    .addLayer("decoder", new GravesLSTM.Builder().nIn(128 + 256).nOut(256).activation(Activation.SOFTSIGN).build(), "embeddingFrSeq", "duplicateTimeStep")
+                    .addLayer("output", new RnnOutputLayer.Builder().nIn(256).nOut(VOCAB_SIZE + 1).activation(Activation.SOFTMAX).build(), "decoder")
                     .setOutputs("output")
                     .pretrain(false).backprop(true)
                     .build();
@@ -95,7 +96,7 @@ public class FlowIterationListenerTest {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                     .seed(seed)
                     .iterations(iterations)
-                    .activation("relu")
+                    .activation(Activation.RELU)
                     .weightInit(WeightInit.XAVIER)
                     .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -142,7 +143,7 @@ public class FlowIterationListenerTest {
                             .build())
                     .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                             .nOut(outputNum)
-                            .activation("softmax")
+                            .activation(Activation.SOFTMAX)
                             .build())
                     .backprop(true).pretrain(false);
             new ConvolutionLayerSetup(builder,numRows,numColumns,nChannels);

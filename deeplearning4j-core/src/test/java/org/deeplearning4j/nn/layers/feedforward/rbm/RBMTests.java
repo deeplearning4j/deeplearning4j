@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -196,30 +197,6 @@ public class RBMTests {
         INDArray actualVOut = rbm.propDown(actualHOut);
         assertEquals(expectedVOut, actualVOut);
 
-    }
-
-    @Test
-    public void testActivate(){
-        INDArray input = Nd4j.linspace(1, 10, 10);
-        List<HiddenUnit> hiddenUnits = getHiddenUnits();
-        INDArray expectedActivations = Nd4j.vstack(// Values pulled from running manually on different code base to compare
-                Nd4j.create(new double [] {4.910220720730024,-13.64843898938749,-1.747218346503771,1.6665777059638043,6.491630456704968}),
-                Nd4j.create(new double [] {0.9926830708198294,1.1818374480644151E-6,0.1483983894256057,0.841119006965182,0.9984862199072947}),
-                Nd4j.create(new double [] {4.954922217451361,-16.139613593144162,-1.6414330260460845,2.4691976168056016,4.9705341334151845}),
-                Nd4j.create(new double [] {4.910220720730024,0.0,0.0,1.6665777059638043,6.491630456704968}),
-                Nd4j.create(new double [] {0.1694309103994393,1.4759414882855348E-9,2.1762239920588365E-4,0.0066114448846620886,0.8237400208407513})
-        );
-        INDArray params = getStandardParams(10, 5);
-
-        INDArray actualActivations;
-        int idx = 0;
-        for (HiddenUnit hidden: hiddenUnits) {
-            RBM rbm = getRBMLayer(10, 5, hidden, VisibleUnit.BINARY, params, true, true, 1, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-            rbm.setInput(input);
-            actualActivations = rbm.activate();
-            assertEquals(expectedActivations.get(NDArrayIndex.point(idx), NDArrayIndex.all()), actualActivations);
-            idx++;
-        }
     }
 
     @Test
@@ -413,7 +390,7 @@ public class RBMTests {
                                 .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                                 .nOut(nOut2).build(),
                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation("relu")
+                                .activation(Activation.RELU)
                                 .nOut(nOut3).build()
                 )
                 .pretrain(pretrain)

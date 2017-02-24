@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -168,12 +169,12 @@ public class LocalResponseTest {
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
                 .layer(1, new LocalResponseNormalization.Builder().build())
                 .layer(2, new DenseLayer.Builder().nOut(2).build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .nIn(2).nOut(10).build())
                 .backprop(true).pretrain(false)
                 .setInputType(InputType.convolutionalFlat(28,28,1))

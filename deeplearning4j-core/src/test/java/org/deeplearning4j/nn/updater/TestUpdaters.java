@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.*;
@@ -409,13 +410,12 @@ public class TestUpdaters {
         uArr[0] = new LayerUpdater();
         uArr[1] = new LayerUpdater();
         uArr[2] = new LayerUpdater();
-        int updaterStateSize = uArr[2].stateSizeForLayer(net.getLayer(2));
-        INDArray updaterState = Nd4j.create(1, updaterStateSize);
+        INDArray updaterState = Nd4j.create(1,6*7 + 7, 'f');
         uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
 
         uArr[3] = new LayerUpdater();
-        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
-        updaterState = Nd4j.create(1, updaterStateSize);
+//        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
+        updaterState = Nd4j.create(1,7*8+8, 'f');
         uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
 
         int[] nIns = {4, 5, 6, 7};
@@ -427,7 +427,7 @@ public class TestUpdaters {
 
             for (int j = 0; j < net.getnLayers(); j++) {
                 //Generate test gradient:
-                INDArray wGrad = Nd4j.rand(1, nIns[j]*nOuts[j]);
+                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
                 INDArray bGrad = Nd4j.rand(1, nOuts[j]);
 
                 String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;
@@ -600,7 +600,7 @@ public class TestUpdaters {
                 .layer(
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation("identity").updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                                .activation(Activation.IDENTITY).updater(org.deeplearning4j.nn.conf.Updater.SGD)
                                 .nIn(nIn).nOut(nOut).build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);

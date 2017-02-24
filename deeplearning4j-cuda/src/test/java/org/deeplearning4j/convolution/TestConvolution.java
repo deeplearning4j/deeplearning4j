@@ -97,7 +97,7 @@ public class TestConvolution {
                         .layer(0, l)
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                 .nOut(10)
-                                .activation("softmax")
+                                .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
                         .backprop(true).pretrain(false).build();
