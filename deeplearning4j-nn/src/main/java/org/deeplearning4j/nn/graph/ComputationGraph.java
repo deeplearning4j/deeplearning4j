@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.Setter;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -33,12 +35,15 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -46,8 +51,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -61,8 +66,6 @@ import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.dataset.api.DataSet;
-
 
 import java.io.Serializable;
 import java.util.*;
@@ -1183,6 +1186,8 @@ public class ComputationGraph implements Serializable, Model {
             GraphVertex current = vertices[topologicalOrder[i]];
 
             if (current.isInputVertex()) continue;   //No op
+            //FIXME: make the frozen vertex feature extraction more flexible
+            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer) break;
 
             if (current.isOutputVertex()) {
                 //Two reasons for a vertex to be an output vertex:
@@ -1259,6 +1264,13 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
         cg.listeners = this.listeners;
+        for (int i=0; i<topologicalOrder.length; i++) {
+            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+            String layerName = vertices[topologicalOrder[i]].getVertexName();
+            if (getLayer(layerName) instanceof FrozenLayer) {
+                cg.getVertex(layerName).setLayerAsFrozen();
+            }
+        }
         return cg;
     }
 
@@ -2270,6 +2282,72 @@ public class ComputationGraph implements Serializable, Model {
             else e.eval(labels,out[0]);
         }
         return e;
+    }
+
+    /**
+     * String detailing the architecture of the computation graph.
+     * Vertices are printed in a topological sort order.
+     * Columns are Vertex Names with layer/vertex type, nIn, nOut, Total number of parameters and the Shapes of the parameters
+     * And the inputs to the vertex
+     * Will also give information about frozen layers/vertices, if any.
+     * @return Summary as a string
+     */
+    public String summary() {
+        String ret = StringUtils.repeat("=", 140);
+        ret += "\n";
+        ret += String.format("%-40s%-15s%-15s%-30s %s\n","VertexName (VertexType)","nIn,nOut","TotalParams", "ParamsShape", "Vertex Inputs");
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        int frozenParams = 0;
+        for (int currVertexIdx : topologicalOrder) {
+            GraphVertex current = vertices[currVertexIdx];
+
+            String name = current.getVertexName();
+            String [] classNameArr = current.getClass().toString().split("\\.");
+            String className = classNameArr[classNameArr.length-1];
+
+            String connections = "-";
+            if (!current.isInputVertex()) {
+               connections = configuration.getVertexInputs().get(name).toString();
+            }
+            String paramCount = "-";
+            String in = "-";
+            String out = "-";
+            String paramShape = "-";
+            if (current.hasLayer()) {
+                Layer currentLayer = ((LayerVertex) current).getLayer();
+                classNameArr = currentLayer.getClass().getName().split("\\.");
+                className = classNameArr[classNameArr.length-1];
+                paramCount = String.valueOf(currentLayer.numParams());
+                if (currentLayer.numParams() > 0) {
+                    paramShape = "";
+                    in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                    out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                    for (String aP : paraNames) {
+                        String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
+                        paramShape += aP + ":" + paramS + ", ";
+                    }
+                    paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
+                }
+                if (currentLayer instanceof FrozenLayer) {
+                    frozenParams+= currentLayer.numParams();
+                    classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
+                    className = "Frozen " + classNameArr[classNameArr.length-1];
+                }
+            }
+            ret += String.format("%-40s%-15s%-15s%-30s %s",name+" ("+className+")",in+","+out,paramCount,paramShape,connections);
+            ret += "\n";
+        }
+        ret += StringUtils.repeat("-", 140);
+        ret += String.format("\n%30s %d","Total Parameters: ",params().length());
+        ret += String.format("\n%30s %d","Trainable Parameters: ",params().length()-frozenParams);
+        ret += String.format("\n%30s %d","Frozen Parameters: ",frozenParams);
+        ret += "\n";
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+
+        return ret;
     }
 
 
