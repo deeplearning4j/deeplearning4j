@@ -23,7 +23,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.*;
 
 /**
- * Created by susaneraly on 2/15/17.
+ * The transfer learning API can be used to modify the architecture or the learning parameters of an existing multilayernetwork or computation graph.
+ * It allows one to
+ *  - change nOut of an existing layer
+ *  - remove and add existing layers/vertices
+ *  - fine tune learning configuration (learning rate, updater etc)
+ *  - hold parameters for specified layers as a constant
  */
 @Slf4j
 public class TransferLearning {
@@ -33,8 +38,6 @@ public class TransferLearning {
         private MultiLayerNetwork origModel;
 
         private MultiLayerNetwork editedModel;
-        @Deprecated
-        private NeuralNetConfiguration.Builder globalConfig;
         private FineTuneConfiguration finetuneConfiguration;
         private int frozenTill = -1;
         private int popN = 0;
@@ -51,6 +54,10 @@ public class TransferLearning {
 
         private InputType inputType;
 
+        /**
+         * Multilayer Network to tweak for transfer learning
+         * @param origModel
+         */
         public Builder(MultiLayerNetwork origModel) {
             this.origModel = origModel;
             this.origConf = origModel.getLayerWiseConfigurations().clone();
@@ -58,11 +65,24 @@ public class TransferLearning {
             this.inputPreProcessors = origConf.getInputPreProcessors();
         }
 
+        /**
+         * Fine tune configurations specified will overwrite the existing configuration if any
+         * Usage example: specify a learning rate will set specified learning rate on all layers
+         * Refer to the fineTuneConfiguration class for more details
+         * @param finetuneConfiguration
+         * @return Builder
+         */
         public Builder fineTuneConfiguration(FineTuneConfiguration finetuneConfiguration) {
             this.finetuneConfiguration = finetuneConfiguration;
             return this;
         }
 
+        /**
+         * Specify a layer to set as a "feature extractor"
+         * The specified layer and the layers preceding it will be "frozen" with parameters staying constant
+         * @param layerNum
+         * @return Builder
+         */
         public Builder setFeatureExtractor(int layerNum) {
             this.frozenTill = layerNum;
             return this;
@@ -75,7 +95,7 @@ public class TransferLearning {
          * @param layerNum The index of the layer to change nOut of
          * @param nOut     Value of nOut to change to
          * @param scheme   Weight Init scheme to use for params in layernum and layernum+1
-         * @return
+         * @return Builder
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme) {
             return nOutReplace(layerNum, nOut, scheme, scheme, null, null);
@@ -88,7 +108,7 @@ public class TransferLearning {
          * @param layerNum The index of the layer to change nOut of
          * @param nOut     Value of nOut to change to
          * @param dist     Distribution to use in conjunction with weight init DISTRIBUTION for params in layernum and layernum+1
-         * @return
+         * @return Builder
          * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist) {
@@ -104,7 +124,7 @@ public class TransferLearning {
          * @param nOut       Value of nOut to change to
          * @param scheme     Weight Init scheme to use for params in the layerNum
          * @param schemeNext Weight Init scheme to use for params in the layerNum+1
-         * @return
+         * @return Builder
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
             return nOutReplace(layerNum, nOut, scheme, schemeNext, null, null);
@@ -119,7 +139,7 @@ public class TransferLearning {
          * @param nOut     Value of nOut to change to
          * @param dist     Distribution to use for params in the layerNum
          * @param distNext Distribution to use for parmas in layerNum+1
-         * @return
+         * @return Builder
          * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist, Distribution distNext) {
@@ -135,7 +155,7 @@ public class TransferLearning {
          * @param nOut     Value of nOut to change to
          * @param scheme   Weight init scheme to use for params in layerNum
          * @param distNext Distribution to use for parmas in layerNum+1
-         * @return
+         * @return Builder
          * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, Distribution distNext) {
@@ -151,7 +171,7 @@ public class TransferLearning {
          * @param nOut       Value of nOut to change to
          * @param dist       Distribution to use for parmas in layerNum
          * @param schemeNext Weight init scheme to use for params in layerNum+1
-         * @return
+         * @return Builder
          * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist, WeightInit schemeNext) {
@@ -168,9 +188,9 @@ public class TransferLearning {
         /**
          * Helper method to remove the outputLayer of the net.
          * Only one of the two - removeOutputLayer() or removeLayersFromOutput(layerNum) - can be specified
-         * When layers are popped at the very least an output layer should be added with .addLayer(...)
+         * When removing layers at the very least an output layer should be added with .addLayer(...)
          *
-         * @return
+         * @return Builder
          */
         public Builder removeOutputLayer() {
             popN = 1;
@@ -178,28 +198,28 @@ public class TransferLearning {
         }
 
         /**
-         * Pop last "n" layers of the net
-         *
-         * @param layerNum number of layers to pop, 1 will pop output layer only and so on...
-         * @return
+         * Remove last "n" layers of the net
+         * At least an output layer must be added back in
+         * @param layerNum number of layers to remove
+         * @return Builder
          */
         public Builder removeLayersFromOutput(int layerNum) {
             if (popN == 0) {
                 popN = layerNum;
             } else {
-                throw new IllegalArgumentException("Pop from can only be called once");
+                throw new IllegalArgumentException("Remove layers from can only be called once");
             }
             return this;
         }
 
         /**
          * Add layers to the net
-         * Required if layers are popped. Can be called multiple times and layers will be added in the order with which they were called.
+         * Required if layers are removed. Can be called multiple times and layers will be added in the order with which they were called.
          * At the very least an outputLayer must be added (output layer should be added last - as per the note on order)
-         * Learning configs like updaters, learning rate etc specified per layer, here will be honored
+         * Learning configs (like updaters, learning rate etc) specified with the layer here will be honored
          *
-         * @param layer layer conf to add
-         * @return
+         * @param layer layer conf to add (similar to the NeuralNetConfiguration .list().layer(...)
+         * @return Builder
          */
         public Builder addLayer(Layer layer) {
 
@@ -232,7 +252,7 @@ public class TransferLearning {
          * for cases where they cannot be inferred automatically.
          *
          * @param processor to be used on the data
-         * @return
+         * @return Builder
          */
         public Builder setInputPreProcessor(int layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
@@ -243,7 +263,7 @@ public class TransferLearning {
          * Returns a model with the fine tune configuration and specified architecture changes.
          * .init() need not be called. Can be directly fit.
          *
-         * @return
+         * @return MultiLayerNetwork
          */
         public MultiLayerNetwork build() {
 
@@ -306,14 +326,6 @@ public class TransferLearning {
         private void fineTuneConfigurationBuild() {
 
             for (int i = 0; i < origConf.getConfs().size(); i++) {
-                /*
-                NeuralNetConfiguration layerConf = origConf.getConf(i);
-                Layer layerConfImpl = layerConf.getLayer().clone();
-                //clear the learning related params for all layers in the origConf and set to defaults
-                layerConfImpl.resetLayerDefaultConfig();
-                editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
-                */
-
                 NeuralNetConfiguration layerConf;
                 if (finetuneConfiguration != null) {
                     NeuralNetConfiguration nnc = origConf.getConf(i).clone();
@@ -416,11 +428,21 @@ public class TransferLearning {
         private boolean hasFrozen = false;
         private Set<String> editedVertices = new HashSet<>();
 
+        /**
+         * Computation Graph to tweak for transfer learning
+         * @param origGraph
+         */
         public GraphBuilder(ComputationGraph origGraph) {
             this.origGraph = origGraph;
             this.origConfig = origGraph.getConfiguration().clone();
         }
 
+        /**
+         * Set parameters to selectively override existing learning parameters
+         * Usage eg. specify a lower learning rate. This will get applied to all layers
+         * @param fineTuneConfiguration
+         * @return GraphBuilder
+         */
         public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration) {
             this.fineTuneConfiguration = fineTuneConfiguration;
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig, fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
@@ -436,45 +458,64 @@ public class TransferLearning {
                 }
             }
 
-
             return this;
         }
 
-        @Deprecated
-        public GraphBuilder setTbpttFwdLength(int l) {
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.setTbpttFwdLength(l);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
-            return this;
-        }
-
-        @Deprecated
-        public GraphBuilder setTbpttBackLength(int l) {
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.setTbpttBackLength(l);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
-            return this;
-        }
-
-        //FIXME: Make this more flexible to take a string.. that specifies unique path(s) from input(s) to vertex(vertices)
+        /**
+         * Specify a layer vertex to set as a "feature extractor"
+         * The specified layer vertex and the layers on the path from an input vertex to it it will be "frozen" with parameters staying constant
+         * @param layerName
+         * @return Builder
+         */
         public GraphBuilder setFeatureExtractor(String... layerName) {
             this.hasFrozen = true;
             this.frozenOutputAt = layerName;
             return this;
         }
 
+        /**
+         * Modify the architecture of a vertex layer by changing nOut
+         * Note this will also affect the vertex layer that follows the layer specified, unless it is the output layer
+         * Currently does not support modifying nOut of layers that feed into non-layer vertices like merge, subset etc
+         * To modify nOut for such vertices use remove vertex, followed by add vertex
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         *
+         * @param layerName The name of the layer to change nOut of
+         * @param nOut      Value of nOut to change to
+         * @param scheme    Weight init scheme to use for params in layerName and the layers following it
+         * @return GraphBuilder
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         */
         public GraphBuilder nOutReplace(String layerName, int nOut, WeightInit scheme) {
             return nOutReplace(layerName, nOut, scheme, scheme, null, null);
         }
 
+        /**
+         * Modify the architecture of a vertex layer by changing nOut
+         * Note this will also affect the vertex layer that follows the layer specified, unless it is the output layer
+         * Currently does not support modifying nOut of layers that feed into non-layer vertices like merge, subset etc
+         * To modify nOut for such vertices use remove vertex, followed by add vertex
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         *
+         * @param layerName The name of the layer to change nOut of
+         * @param nOut      Value of nOut to change to
+         * @param dist      Weight distribution scheme to use
+         * @return GraphBuilder
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         */
         public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist) {
             return nOutReplace(layerName, nOut, WeightInit.DISTRIBUTION, WeightInit.DISTRIBUTION, dist, dist);
         }
 
+        /**
+         * Modified nOut of specified layer. Also affects layers following layerName unless they are output layers
+         * @param layerName The name of the layer to change nOut of
+         * @param nOut      Value of nOut to change to
+         * @param dist      Weight distribution scheme to use for layerName
+         * @param distNext  Weight distribution scheme for layers following layerName
+         * @return GraphBuilder
+         * @see org.deeplearning4j.nn.weights.WeightInit DISTRIBUTION
+         */
         public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist, Distribution distNext) {
             return nOutReplace(layerName, nOut, WeightInit.DISTRIBUTION, WeightInit.DISTRIBUTION, dist, distNext);
         }
@@ -548,70 +589,82 @@ public class TransferLearning {
             return this;
         }
 
+        /**
+         * Remove the specified vertex from the computation graph but keep it's connections.
+         * Note the expectation here is to then add back another vertex with the same name or else the graph will be left in an invalid state
+         * Possibly with references to vertices that no longer exist
+         * @param outputName
+         * @return
+         */
         public GraphBuilder removeVertexKeepConnections(String outputName) {
             initBuilderIfReq();
-
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.removeVertex(outputName, false);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            editedConfigBuilder.removeVertex(outputName, false);
             return this;
         }
 
+        /**
+         * Remove specified vertex and it's connections from the computation graph
+         * @param vertexName
+         * @return
+         */
         public GraphBuilder removeVertexAndConnections(String vertexName) {
             initBuilderIfReq();
-
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.removeVertex(vertexName, true);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            editedConfigBuilder.removeVertex(vertexName, true);
             return this;
         }
 
+        /**
+         * Add a layer of the specified configuration to the computation graph
+         * @param layerName
+         * @param layer
+         * @param layerInputs
+         * @return
+         */
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
             initBuilderIfReq();
-
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.addLayer(layerName, layer, null, layerInputs);
-                editedVertices.add(layerName);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            editedConfigBuilder.addLayer(layerName, layer, null, layerInputs);
+            editedVertices.add(layerName);
             return this;
         }
 
+        /**
+         * Add a layer with a specified preprocessor
+         * @param layerName
+         * @param layer
+         * @param preProcessor
+         * @param layerInputs
+         * @return
+         */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor, String... layerInputs) {
             initBuilderIfReq();
-
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
-                editedVertices.add(layerName);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
+            editedVertices.add(layerName);
             return this;
         }
 
+        /**
+         * Add a vertex of the given configuration to the computation graph
+         * @param vertexName
+         * @param vertex
+         * @param vertexInputs
+         * @return
+         */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
             initBuilderIfReq();
-
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.addVertex(vertexName, vertex, vertexInputs);
-                editedVertices.add(vertexName);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            editedConfigBuilder.addVertex(vertexName, vertex, vertexInputs);
+            editedVertices.add(vertexName);
             return this;
         }
 
+        /**
+         * Set outputs to the computation graph, will add to ones that are existing
+         * Also determines the order, like in ComputationGraphConfiguration
+         * @param outputNames
+         * @return
+         */
         public GraphBuilder setOutputs(String... outputNames) {
-            if (editedConfigBuilder != null) {
-                editedConfigBuilder.setOutputs(outputNames);
-            } else {
-                throw new IllegalArgumentException("Fine tune configuration must be set first");
-            }
+            initBuilderIfReq();
+            editedConfigBuilder.setOutputs(outputNames);
             return this;
         }
 
@@ -623,6 +676,11 @@ public class TransferLearning {
             }
         }
 
+        /**
+         * Returns a computation graph build to specifications.
+         * Init has been internally called. Can be fit directly.
+         * @return Computation graph
+         */
         public ComputationGraph build() {
             initBuilderIfReq();
 
@@ -695,6 +753,5 @@ public class TransferLearning {
             }
             return newGraph;
         }
-
     }
 }

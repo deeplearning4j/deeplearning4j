@@ -317,4 +317,37 @@ public class TransferLearningComplex {
         }
 
     }
+
+    @Test
+    public void testAddOutput() {
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.9)
+                .activation(Activation.IDENTITY)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.SGD);
+
+        ComputationGraphConfiguration conf = overallConf.graphBuilder()
+                .addInputs("inCentre", "inRight")
+                .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inCentre")
+                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
+                .addVertex("mergeRight", new MergeVertex(),"denseCentre0","denseRight0")
+                .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
+                .setOutputs("outRight")
+                .build();
+        ComputationGraph modelToTune = new ComputationGraph(conf);
+        modelToTune.init();
+
+        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToTune)
+                .addLayer("outCentre", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(3).build(),"denseCentre0")
+                .setOutputs("outCentre")
+                .build();
+
+        assertEquals(2,modelNow.getNumOutputArrays());
+        MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,2)},new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,3)});
+        modelNow.fit(rand);
+        System.out.println(modelNow.output(false,rand.getFeatures())[0]);
+        System.out.println(modelNow.output(false,rand.getFeatures())[1]);
+        System.out.println(modelNow.summary());
+
+    }
 }
