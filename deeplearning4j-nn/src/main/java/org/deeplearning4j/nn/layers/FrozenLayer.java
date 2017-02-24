@@ -413,6 +413,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
             logTestMode = true;
         }
     }
+
+    public LayerT getInsideLayer() {
+        return insideLayer;
+    }
 }
 
 

@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import lombok.Setter;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -31,10 +33,10 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.FrozenLayer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -2456,4 +2458,49 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
     }
+
+    public String summary() {
+        String ret = StringUtils.repeat("=", 140);
+        ret += "\n";
+        ret += String.format("%-40s%-15s%-15s%-30s\n","LayerName (LayerType)","nIn,nOut","TotalParams", "ParamsShape");
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        int frozenParams = 0;
+        for (Layer currentLayer : layers) {
+            String name = String.valueOf(currentLayer.getIndex());
+            String paramShape = "-";
+            String in = "-";
+            String out = "-";
+            String [] classNameArr = currentLayer.getClass().getName().split("\\.");
+            String className = classNameArr[classNameArr.length-1];
+            String paramCount = String.valueOf(currentLayer.numParams());
+            if (currentLayer.numParams() > 0) {
+                paramShape = "";
+                in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                for (String aP : paraNames) {
+                    String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
+                    paramShape += aP + ":" + paramS + ", ";
+                }
+                paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
+            }
+            if (currentLayer instanceof FrozenLayer) {
+                frozenParams+= currentLayer.numParams();
+                classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
+                className = "Frozen "+classNameArr[classNameArr.length-1];
+            }
+            ret += String.format("%-40s%-15s%-15s%-30s", name + " (" + className + ")", in + "," + out, paramCount, paramShape);
+            ret += "\n";
+        }
+        ret += StringUtils.repeat("-", 140);
+        ret += String.format("\n%30s %d","Total Parameters: ",params().length());
+        ret += String.format("\n%30s %d","Trainable Parameters: ",params().length()-frozenParams);
+        ret += String.format("\n%30s %d","Frozen Parameters: ",frozenParams);
+        ret += "\n";
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        return ret;
+    }
+
 }
