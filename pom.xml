@@ -58,7 +58,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
         <dl4j.version>0.7.3-SNAPSHOT</dl4j.version>
-        <javacv.version>1.2</javacv.version>
+        <javacv.version>1.3.1</javacv.version>
         <slf4j.version>1.7.12</slf4j.version>
         <logback.version>1.1.2</logback.version>
         <maven.compiler.source>1.7</maven.compiler.source>
