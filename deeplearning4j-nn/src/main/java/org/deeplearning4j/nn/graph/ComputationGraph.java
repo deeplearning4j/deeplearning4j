@@ -2284,6 +2284,14 @@ public class ComputationGraph implements Serializable, Model {
         return e;
     }
 
+    /**
+     * String detailing the architecture of the computation graph.
+     * Vertices are printed in a topological sort order.
+     * Columns are Vertex Names with layer/vertex type, nIn, nOut, Total number of parameters and the Shapes of the parameters
+     * And the inputs to the vertex
+     * Will also give information about frozen layers/vertices, if any.
+     * @return Summary as a string
+     */
     public String summary() {
         String ret = StringUtils.repeat("=", 140);
         ret += "\n";

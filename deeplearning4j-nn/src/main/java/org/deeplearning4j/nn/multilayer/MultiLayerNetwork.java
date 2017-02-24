@@ -2459,6 +2459,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /**
+     * String detailing the architecture of the multilayernetwork.
+     * Columns are LayerIndex with layer type, nIn, nOut, Total number of parameters and the Shapes of the parameters
+     * Will also give information about frozen layers, if any.
+     * @return Summary as a string
+     */
     public String summary() {
         String ret = StringUtils.repeat("=", 140);
         ret += "\n";
