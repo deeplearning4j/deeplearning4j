@@ -49,7 +49,6 @@ public class TransferLearning {
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
         private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
 
-        @Deprecated
         private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
 
         private InputType inputType;
