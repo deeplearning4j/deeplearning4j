@@ -20,7 +20,8 @@ import java.util.Properties;
  * cpu ram
  * number of cpu cores
  * number of gpus
- * the amount of total ram for each gpu this backend is using (indexed by device ordering, you can usually see this from nvidia-smi)
+ * the amount of total ram for each gpu this backend is using
+ * (indexed by device ordering, you can usually see this from nvidia-smi)
  * the blas vendor (typically openblas or cublas)
  * the number of max threads for blas
  * the number of open mp threads being used
