@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -7,19 +8,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-// These imports are for multi-gpu cuda tests. Do not remove please
-/*
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.conf.CudaEnvironment;
-*/
-
 import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
  */
-@Ignore
+@Slf4j
 public class MagicQueueTest {
     @Before
     public void setUp() throws Exception {
@@ -113,9 +107,6 @@ public class MagicQueueTest {
      */
     @Test
     public void test_cuda_multiGPU_testAffinityChange1() throws Exception {
-/*
-        CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(true).allowCrossDeviceAccess(false);
-
         MagicQueue queue = new MagicQueue.Builder().build();
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
@@ -130,16 +121,12 @@ public class MagicQueueTest {
         DataSet dataSet_8 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
 
 
-        AllocationPoint point_1 = AtomicAllocator.getInstance().getAllocationPoint(dataSet_1.getFeatures());
-        AllocationPoint point_2 = AtomicAllocator.getInstance().getAllocationPoint(dataSet_2.getFeatures());
-        AllocationPoint point_3 = AtomicAllocator.getInstance().getAllocationPoint(dataSet_3.getFeatures());
-        AllocationPoint point_4 = AtomicAllocator.getInstance().getAllocationPoint(dataSet_4.getFeatures());
 
         // All arrays are located on same initial device
-        assertEquals(0, point_1.getDeviceId().intValue());
-        assertEquals(0, point_2.getDeviceId().intValue());
-        assertEquals(0, point_3.getDeviceId().intValue());
-        assertEquals(0, point_4.getDeviceId().intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_1.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_2.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_3.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_4.getFeatures()).intValue());
 
         queue.add(dataSet_1);
         queue.add(dataSet_2);
@@ -154,12 +141,43 @@ public class MagicQueueTest {
 
         assertEquals(8 / numDevices, queue.size());
 
+        log.info("Checking first device...");
+
         // All arrays are spread over all available devices
-        assertEquals(0, point_1.getDeviceId().intValue());
-        assertEquals(1, point_2.getDeviceId().intValue());
-        assertEquals(0, point_3.getDeviceId().intValue());
-        assertEquals(1, point_4.getDeviceId().intValue());
-*/
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_1.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_1.getLabels()).intValue());
+
+        int nextDev = 0;
+        if (numDevices > 1) {
+            log.info("Checking second device...");
+            nextDev++;
+        }
+
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_2.getFeatures()).intValue());
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_2.getLabels()).intValue());
+
+        if (numDevices > 2) {
+            log.info("Checking third device...");
+            nextDev++;
+        } else {
+            log.info("Checking first device...");
+            nextDev = 0;
+        }
+
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_3.getFeatures()).intValue());
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_3.getLabels()).intValue());
+
+        if (numDevices > 2) {
+            log.info("Checking fourth device...");
+            nextDev++;
+        } else {
+            log.info("Checking second device...");
+            nextDev = 1;
+        }
+
+
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_4.getFeatures()).intValue());
+        assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_4.getLabels()).intValue());
     }
 
 }
