@@ -12,10 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,7 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class AsyncDataSetIterator implements DataSetIterator {
     private final DataSetIterator baseIterator;
-    private final BlockingQueue<DataSet> blockingQueue;
+    private BlockingQueue<DataSet> blockingQueue;
     private Thread thread;
     private IteratorRunnable runnable;
 
@@ -51,21 +48,15 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, 8);
     }
 
-    /**
-     * Create an AsyncDataSetIterator with a specified queue size.
-     *
-     * @param baseIterator The DataSetIterator to load data from asynchronously
-     * @param queueSize    size of the queue (max number of elements to load into queue)
-     */
-    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
         if (queueSize < 2)
             queueSize = 2;
 
-        this.baseIterator = baseIterator;
+        this.baseIterator = iterator;
         if (this.baseIterator.resetSupported()) this.baseIterator.reset();
-        blockingQueue = new LinkedBlockingDeque<>(queueSize);
+        blockingQueue = queue;
         runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = runnable;
 
@@ -77,6 +68,16 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /**
+     * Create an AsyncDataSetIterator with a specified queue size.
+     *
+     * @param baseIterator The DataSetIterator to load data from asynchronously
+     * @param queueSize    size of the queue (max number of elements to load into queue)
+     */
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>());
     }
 
 

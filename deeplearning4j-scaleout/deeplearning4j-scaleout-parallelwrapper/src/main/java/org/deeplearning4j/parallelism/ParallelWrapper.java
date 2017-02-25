@@ -38,8 +38,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * This is simple data-parallel wrapper
  * suitable for multi-cpu/multi-gpu environments.
  *
+ * PLEASE NOTE: This implementation is NOT NUMA-aware.
+ *
  * @author raver119@gmail.com
  */
+// TODO: We want this thing to be NUMA-aware in foreseable future
 @Slf4j
 public class ParallelWrapper implements AutoCloseable {
     private Model model;
