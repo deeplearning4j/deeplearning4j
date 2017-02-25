@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
+import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
@@ -30,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int walkLength = 5;
     protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
-    protected IGraph<T, ?> sourceGraph;
+    @Getter protected IGraph<T, ?> sourceGraph;
     protected AtomicInteger position = new AtomicInteger(0);
     protected Random rng = new Random(System.currentTimeMillis());
     protected long seed;
@@ -53,6 +54,11 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     @Override
     public boolean hasNext() {
         return position.get() < sourceGraph.numVertices();
+    }
+
+    @Override
+    public boolean isLabelEnabled() {
+        return false;
     }
 
     /**
