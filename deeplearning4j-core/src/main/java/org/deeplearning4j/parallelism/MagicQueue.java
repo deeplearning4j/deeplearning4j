@@ -1,10 +1,12 @@
 package org.deeplearning4j.parallelism;
 
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -18,11 +20,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class MagicQueue implements Queue<DataSet> {
+public class MagicQueue implements BlockingQueue<DataSet> {
     protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
     protected final AtomicInteger nextBucket = new AtomicInteger(0);
     protected final int numberOfBuckets;
     protected final List<QueueHandler> handlers;
+    protected int capacity = 10;
+
+
 
     protected MagicQueue(int numberOfFlows) {
         backingQueues = new ArrayList<>();
@@ -82,6 +87,16 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public boolean contains(Object o) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int drainTo(Collection<? super DataSet> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int drainTo(Collection<? super DataSet> c, int maxElements) {
         throw new UnsupportedOperationException();
     }
 
@@ -185,7 +200,34 @@ public class MagicQueue implements Queue<DataSet> {
 
     @Override
     public boolean offer(DataSet dataSet) {
-        return false;
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return backingQueues.get(deviceId).offer(dataSet);
+        } else return backingQueues.get(0).offer(dataSet);
+    }
+
+    @Override
+    public void put(DataSet dataSet) throws InterruptedException {
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            backingQueues.get(deviceId).put(dataSet);
+        } else backingQueues.get(0).put(dataSet);
+    }
+
+    @Override
+    public boolean offer(DataSet dataSet, long timeout, TimeUnit unit) throws InterruptedException {
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return backingQueues.get(deviceId).offer(dataSet, timeout, unit);
+        } else return backingQueues.get(0).offer(dataSet, timeout, unit);
+    }
+
+    @Override
+    public DataSet take() throws InterruptedException {
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return backingQueues.get(deviceId).take();
+        } else return backingQueues.get(0).take();
     }
 
     @Override
@@ -209,6 +251,11 @@ public class MagicQueue implements Queue<DataSet> {
             int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             return backingQueues.get(deviceId).poll(time, timeUnit);
         } else return backingQueues.get(0).poll(time, timeUnit);
+    }
+
+    @Override
+    public int remainingCapacity() {
+        return 0;
     }
 
     /**
@@ -239,6 +286,7 @@ public class MagicQueue implements Queue<DataSet> {
 
     public static class Builder {
         private int numberOfBuckets = -1;
+        private int capacity = 16;
 
         public Builder() {
 
@@ -247,6 +295,20 @@ public class MagicQueue implements Queue<DataSet> {
         public Builder setNumberOfBuckets(int number) {
             this.numberOfBuckets = number;
 
+            return this;
+        }
+
+        /**
+         * This method defines, how
+         *
+         * @param capacityPerFlow
+         * @return
+         */
+        public Builder setCapacityPerFlow(int capacityPerFlow) {
+            if (capacityPerFlow <= 0)
+                throw new ND4JIllegalStateException("Capacity per flow value should be positive value");
+
+            this.capacity = capacityPerFlow;
             return this;
         }
 
