@@ -671,8 +671,14 @@ public class TransferLearning {
             if (editedConfigBuilder == null) {
                 //No fine tune config has been set. One isn't required, but we need one to create the editedConfigBuilder
                 //So: create an empty finetune config, which won't override anything
-                fineTuneConfiguration(new FineTuneConfiguration.Builder().build());
+                //but keep the seed
+                fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(origConfig.getDefaultConfiguration().getSeed()).build());
             }
+        }
+
+        protected GraphBuilder addInputs(String... inputNames) {
+            editedConfigBuilder.addInputs(inputNames);
+            return this;
         }
 
         /**
