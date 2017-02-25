@@ -93,6 +93,22 @@ public class Hdf5Archive {
     }
 
     /**
+     * Check whether group path contains string attribute.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return                  Boolean indicating whether attribute exists in group path.
+     */
+    public boolean hasAttribute(String attributeName, String... groups) {
+        if (groups.length == 0)
+            return this.file.attrExists(attributeName);
+        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++)
+            group = group.asCommonFG().openGroup(groups[i]);
+        return group.attrExists(attributeName);
+    }
+
+    /**
      * Get list of data sets from group path.
      *
      * @param groups    Array of zero or more ancestor groups from root to parent.
