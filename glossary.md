@@ -360,7 +360,7 @@ Probability densities are used in unsupervised learning, with algorithms such as
 
 ### <a name="distribution">Probability Distribution</a> 
 
-A probability distribution is a mathematical function and/or graph that tells us how likely something is to happen.
+"A probability distribution is a mathematical function and/or graph that tells us how likely something is to happen.
 
 So, for example, if you're rolling two dice and you want to find the likelihood of each possible number you can get, you could make a [chart that looks like this](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg). As you can see, you're most likely to get a 7, then a 6, then an 8, and so on. The numbers on the left are the percent of the time where you'll get that value, and the ones on the right are a fraction (they mean the same thing, just different forms of the same number). The way that it you use the distribution to find the likelihood of each outcome is this:
 
@@ -373,7 +373,7 @@ So, for more complex probability distributions, the way that the distribution is
 
 The percentages in the shaded areas are also important. Just like earlier when I said that the sum of all the probabilities has to equal 1 or 100%, the area under the curve of a probability distribution has to equal 1, too. You don't need to know why that is (it involves calculus), but it's worth mentioning. You can see that the graph I linked is actually helpfully labeled; the reason they do that is to show you that you what percentage of the time you're going to end up somewhere in that area.
 
-So, for example, about 68% of the time, you'll end up between -1σ and 1σ.
+So, for example, about 68% of the time, you'll end up between -1σ and 1σ." *[--u/corpuscle634](https://www.reddit.com/r/explainlikeimfive/comments/1aglls/eli5_probability_distributions/)*
 
 ### <a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
