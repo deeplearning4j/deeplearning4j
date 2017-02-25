@@ -33,6 +33,11 @@ public abstract class BasicAffinityManager implements AffinityManager {
     }
 
     @Override
+    public Integer getDeviceForArray(INDArray array) {
+        return 0;
+    }
+
+    @Override
     public int getNumberOfDevices() {
         return 1;
     }

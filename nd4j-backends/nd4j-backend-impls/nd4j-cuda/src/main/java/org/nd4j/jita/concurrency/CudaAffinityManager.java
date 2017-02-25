@@ -1,5 +1,6 @@
 package org.nd4j.jita.concurrency;
 
+import lombok.NonNull;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -318,5 +319,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostRead();
         }
+    }
+
+    @Override
+    public Integer getDeviceForArray(@NonNull INDArray array) {
+        return AtomicAllocator.getInstance().getDeviceId(array);
     }
 }
