@@ -100,6 +100,16 @@ public class ParagraphVectors extends Word2Vec {
     }
 
     /**
+     * This method defines SequenceIterator instance, that will be used as training corpus source.
+     * Main difference with other iterators here: it allows you to pass already tokenized Sequence<VocabWord> for training
+     *
+     * @param iterator
+     */
+    public void setSequenceIterator(@NonNull SequenceIterator<VocabWord> iterator) {
+        this.iterator = iterator;
+    }
+
+    /**
      * This method predicts label of the document.
      * Computes a similarity wrt the mean of the
      * representation of words in the document
