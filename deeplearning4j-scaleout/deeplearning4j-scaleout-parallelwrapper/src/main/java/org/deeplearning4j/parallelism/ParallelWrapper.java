@@ -45,19 +45,21 @@ import java.util.concurrent.atomic.AtomicLong;
 // TODO: We want this thing to be NUMA-aware in foreseable future
 @Slf4j
 public class ParallelWrapper implements AutoCloseable {
-    private Model model;
-    private int workers = 2;
-    private int prefetchSize = 2;
-    private int averagingFrequency = 1;
-    private Trainer zoo[];
-    private AtomicLong iterationsCounter = new AtomicLong(0);
-    private boolean reportScore = false;
-    private boolean averageUpdaters = true;
-    private boolean legacyAveraging = false;
-    private boolean wasAveraged = false;
-    private AtomicBoolean stopFit = new AtomicBoolean(false);
-    private List<IterationListener> listeners = new ArrayList<>();
-    private StatsStorageRouter storageRouter;
+    protected Model model;
+    protected int workers = 2;
+    protected int prefetchSize = 2;
+    protected int averagingFrequency = 1;
+    protected Trainer zoo[];
+    protected AtomicLong iterationsCounter = new AtomicLong(0);
+    protected boolean reportScore = false;
+    protected boolean averageUpdaters = true;
+    protected boolean legacyAveraging = false;
+    protected boolean wasAveraged = false;
+    protected AtomicBoolean stopFit = new AtomicBoolean(false);
+    protected List<IterationListener> listeners = new ArrayList<>();
+    protected StatsStorageRouter storageRouter;
+    protected boolean isMQ;
+
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -336,7 +338,13 @@ public class ParallelWrapper implements AutoCloseable {
 
         DataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
-            iterator = new AsyncDataSetIterator(source, prefetchSize);
+            if (isMQ) {
+                if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
+                    log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers, Nd4j.getAffinityManager().getNumberOfDevices());
+
+                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL).setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+                iterator = new AsyncDataSetIterator(source, prefetchSize, queue);
+            } else iterator = new AsyncDataSetIterator(source, prefetchSize);
         } else iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
@@ -480,13 +488,14 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     public static class Builder<T extends Model> {
-        private T model;
-        private int workers = 2;
-        private int prefetchSize = 16;
-        private int averagingFrequency = 1;
-        private boolean reportScore = false;
-        private boolean averageUpdaters = true;
-        private boolean legacyAveraging = true;
+        protected T model;
+        protected int workers = Nd4j.getAffinityManager().getNumberOfDevices();
+        protected int prefetchSize = 16;
+        protected int averagingFrequency = 1;
+        protected boolean reportScore = false;
+        protected boolean averageUpdaters = true;
+        protected boolean legacyAveraging = true;
+        protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -534,6 +543,18 @@ public class ParallelWrapper implements AutoCloseable {
          */
         public Builder averageUpdaters(boolean reallyAverage) {
             this.averageUpdaters = reallyAverage;
+            return this;
+        }
+
+        /**
+         * This method enables/disable MagicQueue use
+         *
+         * Default: true for systems with more then 1 computational device. I.e. 2 or more GPUs
+         * @param reallyUse
+         * @return
+         */
+        public Builder useMQ(boolean reallyUse) {
+            this.isMQ = reallyUse;
             return this;
         }
 
@@ -592,6 +613,7 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.reportScore = this.reportScore;
             wrapper.averageUpdaters = this.averageUpdaters;
             wrapper.legacyAveraging = this.legacyAveraging;
+            wrapper.isMQ = this.isMQ;
 
             return wrapper;
         }

@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import lombok.NonNull;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,16 +22,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 public class MagicQueue implements BlockingQueue<DataSet> {
+    public enum Mode {
+        THREADED,
+        SEQUENTIAL,
+    }
+
     protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
     protected final AtomicInteger nextBucket = new AtomicInteger(0);
     protected final int numberOfBuckets;
     protected final List<QueueHandler> handlers;
     protected int capacity = 10;
+    protected Mode mode = Mode.THREADED;
+    protected AtomicInteger interleavedCounter = new AtomicInteger(0);
 
 
 
-    protected MagicQueue(int numberOfFlows) {
+    protected MagicQueue(int numberOfFlows, int capacity) {
         backingQueues = new ArrayList<>();
+        this.capacity = capacity;
         handlers = new ArrayList<>();
         if (numberOfFlows > 1) {
             for (int i = 0; i < numberOfFlows; i++) {
@@ -247,10 +256,17 @@ public class MagicQueue implements BlockingQueue<DataSet> {
      * @return
      */
     public DataSet poll(long time, TimeUnit timeUnit) throws InterruptedException {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).poll(time, timeUnit);
-        } else return backingQueues.get(0).poll(time, timeUnit);
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                return backingQueues.get(deviceId).poll(time, timeUnit);
+            } else return backingQueues.get(0).poll(time, timeUnit);
+        } else {
+            DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll(time, timeUnit);
+            if (interleavedCounter.get() >= backingQueues.size())
+                interleavedCounter.set(0);
+            return ds;
+        }
     }
 
     @Override
@@ -268,10 +284,17 @@ public class MagicQueue implements BlockingQueue<DataSet> {
      */
     @Override
     public DataSet poll() {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).poll();
-        } else return backingQueues.get(0).poll();
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                return backingQueues.get(deviceId).poll();
+            } else return backingQueues.get(0).poll();
+        } else {
+            DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll();
+            if (interleavedCounter.get() >= backingQueues.size())
+                interleavedCounter.set(0);
+            return ds;
+        }
     }
 
     @Override
@@ -285,16 +308,32 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     }
 
     public static class Builder {
-        private int numberOfBuckets = -1;
+        private int numberOfBuckets = Nd4j.getAffinityManager().getNumberOfDevices();
         private int capacity = 16;
+        private Mode mode = Mode.THREADED;
 
         public Builder() {
 
         }
 
+        /**
+         *
+         * @param number
+         * @return
+         */
         public Builder setNumberOfBuckets(int number) {
             this.numberOfBuckets = number;
 
+            return this;
+        }
+
+        /**
+         *
+         * @param mode
+         * @return
+         */
+        public Builder setMode(@NonNull Mode mode) {
+            this.mode = mode;
             return this;
         }
 
@@ -316,7 +355,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             if (numberOfBuckets < 1)
                 numberOfBuckets = Nd4j.getAffinityManager().getNumberOfDevices();
 
-            MagicQueue queue = new MagicQueue(numberOfBuckets);
+            MagicQueue queue = new MagicQueue(numberOfBuckets, capacity);
 
 
             return queue;

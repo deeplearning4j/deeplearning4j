@@ -257,6 +257,7 @@ public class Node2Vec<V extends SequenceElement, E extends Number> extends Seque
 
         public Node2Vec<V,E> build() {
             Node2Vec<V,E> node2vec = new Node2Vec<>();
+            node2vec.iterator = this.iterator;
 
             return node2vec;
         }
