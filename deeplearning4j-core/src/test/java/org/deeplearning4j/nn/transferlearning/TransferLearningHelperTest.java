@@ -156,6 +156,9 @@ public class TransferLearningHelperTest {
         assertEquals(modelIdentical.getLayer("denseLeft0").params(),modelToTune.getLayer("denseLeft0").params());
         assertEquals(modelIdentical.getLayer("outLeft").params(),modelToTune.getLayer("outLeft").params());
 
+        System.out.println(modelIdentical.summary());
+        System.out.println(helper.unfrozenGraph().summary());
+
 
     }
 }
