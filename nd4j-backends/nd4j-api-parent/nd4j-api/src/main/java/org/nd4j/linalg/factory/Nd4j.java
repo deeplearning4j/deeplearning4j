@@ -104,13 +104,9 @@ public class Nd4j {
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
-    public final static String TASK_FACTORY = "taskfactory.class";
-    public final static String RANDOM = "rng";
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
-    public final static String RESOURCE_MANAGER = "resourcemanager";
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
-    public final static String ALLOC = "alloc";
     public final static String EXECUTION_MODE = "opexec.mode";
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
     public final static String CONSTANT_PROVIDER = "constantsprovider";
