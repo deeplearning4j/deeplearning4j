@@ -55,7 +55,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p><h2><a name="python">Python框架</a></h2></p>
 <p><h3><a name="theano">Theano及其生态系统</a></h3></p>
 <p>深度学习领域的许多学术研究者依赖 <a href="http://deeplearning.net/software/theano/" target="_blank"><strong>Theano</strong></a>，Theano是深度学习框架中的元老，用<a href="http://darkf.github.io/posts/problems-i-have-with-python.html" target="_blank"> Python</a> 编写。Theano和NumPy一样，是处理多维数组的学习库。Theano可与其他学习库配合使用，非常适合数据探索和研究活动。</p>
-<p>现在已有大量基于Theano的开源深度学习库，包括<a href="https://github.com/fchollet/keras" target="_blank"> Keras</a>、 <a href="https://lasagne.readthedocs.org/en/latest/" target="_blank">Lasagne</a> 和 <a href="https://github.com/mila-udem/blocks" target="_blank">Blocks</a>。这些学习库试着在Theano有时不够直观的界面之上添加一层便于使用的API。（截至2016年3月，另一个与Theano相关的学习库 <a href="https://github.com/lisa-lab/pylearn2" target="_blank">Pylearn2似乎已经停止开发</a>。）</p>
+<p>现在已有大量基于Theano的开源深度学习库，包括<a href="https://github.com/fchollet/keras" target="_blank"> Keras</a>、 <a href="https://lasagne.readthedocs.org/en/latest/" target="_blank">Lasagne</a> 和 <a href="https://github.com/mila-udem/blocks" target="_blank">Blocks</a>。这些学习库试着在Theano有时不够直观的接口之上添加一层便于使用的API。（截至2016年3月，另一个与Theano相关的学习库 <a href="https://github.com/lisa-lab/pylearn2" target="_blank">Pylearn2似乎已经停止开发</a>。）</p>
 <p>相比之下，Deeplearning4j致力于将深度学习引入生产环境，以Java和Scala等JVM语言开发解决方案。力求以可扩展、多个GPU或CPU并行的方式让尽可能多的控制点实现自动化，在需要时与Hadoop和 <a href="spark.html">Spark </a>集成。</p>
 <br />
 <p><h4>利与弊:</h4></p>
@@ -63,7 +63,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-success">+</span> 计算图是良好的抽象化方式 <br />
 <span class="label label-success">+</span> 原始的Theano级别偏低 <br />
 <span class="label label-success">+</span> RNN与计算图匹配良好 <br />
-<span class="label label-success">+</span> 高级的包装界面（Keras、Lasagne）减少了使用时的麻烦 <br />
+<span class="label label-success">+</span> 高级的包装（Keras、Lasagne）减少了使用时的麻烦 <br />
 <span class="label label-danger">-</span> 原始的Theano级别偏低 <br />
 <span class="label label-danger">-</span> 错误信息可能没有帮助 <br />
 <span class="label label-danger">-</span> 大型模型的编译时间可能较长 <br />
@@ -109,7 +109,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-success">+</span> 适合前馈网络和图像处理 <br />
 <span class="label label-success">+</span> 适合微调已有的网络 <br />
 <span class="label label-success">+</span> 定型模型而无需编写任何代码 <br />
-<span class="label label-success">+</span> Python界面相当有用 <br />
+<span class="label label-success">+</span> Python接口相当有用 <br />
 <span class="label label-danger">-</span> 需要用C++ / CUDA编写新的GPU层 <br />
 <span class="label label-danger">-</span> 不适合循环网络 <br />
 <span class="label label-danger">-</span> 用于大型网络（GoogLeNet、ResNet）时过于繁琐 <br />
