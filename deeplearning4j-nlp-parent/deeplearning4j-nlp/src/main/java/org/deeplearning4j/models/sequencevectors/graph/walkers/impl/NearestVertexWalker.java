@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
 import org.deeplearning4j.models.sequencevectors.graph.enums.SamplingMode;
+import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
@@ -13,10 +14,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -83,10 +81,20 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
         } else {
             // if walks are limited, we care about sampling mode
             switch (samplingMode) {
-                case MAX_POPULARITY:
-                case MEDIAN_POPULARITY:
+                case MAX_POPULARITY: {
+                    Collections.sort(vertices, new VertexComparator<>(sourceGraph));
+                    for (int i = 0; i < walkLength; i++)
+                        sequence.addElement(vertices.get(i).getValue());
+                }
+                case MEDIAN_POPULARITY: {
+                    Collections.sort(vertices, new VertexComparator<>(sourceGraph));
+                    for (int i = (vertices.size() / 2) - (walkLength / 2), e = 0; e < walkLength && i < vertices.size(); i++, e++)
+                        sequence.addElement(vertices.get(i).getValue());
+                }
                 case MIN_POPULARITY: {
-                    throw new UnsupportedOperationException();
+                    Collections.sort(vertices, new VertexComparator<>(sourceGraph));
+                    for (int i = vertices.size(), e = 0; e < walkLength && i >= 0; i--, e++)
+                        sequence.addElement(vertices.get(i).getValue());
                 }
                 case RANDOM: {
                     // we randomly sample some number of connected vertices
@@ -95,10 +103,9 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                             sequence.addElement(vertex.getValue());
                     else {
                         Set<V> elements = new HashSet<>();
-                        while (elements.size() < walkLength) {
-                            Vertex<V> vertex = ArrayUtil.getRandomElement(vertices);
-                            elements.add(vertex.getValue());
-                        }
+                        while (elements.size() < walkLength)
+                            elements.add(ArrayUtil.getRandomElement(vertices).getValue());
+
                         sequence.addElements(elements);
                     }
                 }
@@ -178,6 +185,19 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
             walker.reset(true);
 
             return walker;
+        }
+    }
+
+    protected class VertexComparator<V extends SequenceElement, E extends Number> implements Comparator<Vertex<V>> {
+        private IGraph<V, E> graph;
+
+        public VertexComparator(@NonNull IGraph<V, E> graph) {
+            this.graph = graph;
+        }
+
+        @Override
+        public int compare(Vertex<V> o1, Vertex<V> o2) {
+            return Integer.compare(graph.getConnectedVertices(o2.vertexID()).size(), graph.getConnectedVertices(o1.vertexID()).size());
         }
     }
 }
