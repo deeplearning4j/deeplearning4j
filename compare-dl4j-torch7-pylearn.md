@@ -15,7 +15,7 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Lua
 
-* <a href="#torch">Torch</a>
+* <a href="#torch">Torch & Pytorch</a>
 
 Python Frameworks
 
@@ -41,7 +41,7 @@ JVM Considerations
 
 ## Lua
 
-### <a name="torch">Torch</a>
+### <a name="torch">Torch & Pytorch</a>
 
 [**Torch**](http://torch.ch/) is a computational framework with an API written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
