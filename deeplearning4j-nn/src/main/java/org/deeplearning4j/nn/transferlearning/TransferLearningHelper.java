@@ -9,6 +9,10 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.*;
 
@@ -26,7 +30,9 @@ public class TransferLearningHelper extends TransferLearning{
     private MultiLayerNetwork origMLN;
     private ComputationGraph unFrozenSubsetGraph;
     private MultiLayerNetwork unFrozenSubsetMLN;
-    Set<String> frozenInputVertices = new HashSet<>();
+    Set<String> frozenInputVertices = new HashSet<>(); //name map so no problem
+    List<String> graphInputs;
+    Set<Integer> frozenInputLayers = new HashSet<>(); //layer indices will offset
 
     /**
      * Expecting a computation graph or a multilayer network with frozen layer/vertices
@@ -47,7 +53,10 @@ public class TransferLearningHelper extends TransferLearning{
         }
     }
 
-    public ComputationGraph unfrozenGraph() {
+    /*
+        only for tests
+     */
+    protected ComputationGraph unfrozenGraph() {
         return unFrozenSubsetGraph;
     }
 
@@ -59,7 +68,7 @@ public class TransferLearningHelper extends TransferLearning{
 
         //parent vertices added in when seen
         Set<String> seenAsParents = new HashSet<>();
-        int [] backPropOrder = origGraph.topologicalSortOrder();
+        int [] backPropOrder = origGraph.topologicalSortOrder().clone();
         ArrayUtils.reverse(backPropOrder);
 
         for (int i = 0; i<backPropOrder.length;i++) {
@@ -121,12 +130,13 @@ public class TransferLearningHelper extends TransferLearning{
         }
         frozenInputVerticesSorted.addAll(frozenInputVertices);
         //to have a predictable order
-        List<String> finalInputs = new ArrayList(frozenInputVerticesSorted);
-        Collections.sort(finalInputs);
+        graphInputs = new ArrayList(frozenInputVerticesSorted);
+        Collections.sort(graphInputs);
         for (String asInput: frozenInputVerticesSorted) {
             builder.addInputs(asInput);
         }
         unFrozenSubsetGraph = builder.build();
+        copyParamsToGraph();
 
         if (frozenInputVertices.isEmpty()) {
             throw new IllegalArgumentException("No frozen layers found");
@@ -147,7 +157,78 @@ public class TransferLearningHelper extends TransferLearning{
         //remove some input vertices
         //set new inputs
 
+    }
 
+    public MultiDataSet featurize(MultiDataSet input) {
+        if (!isGraph) {
+            throw new IllegalArgumentException("Cannot use multidatasets with MultiLayerNetworks.");
+        }
+        INDArray[] labels = input.getLabels();
+        INDArray[] features = input.getFeatures();
+        if (input.getFeaturesMaskArrays() != null) {
+            throw new IllegalArgumentException("Currently cannot support featurizing datasets with feature masks");
+        }
+        INDArray[] featureMasks = null;
+        INDArray[] labelMasks = input.getLabelsMaskArrays();
+
+        INDArray[] featuresNow = new INDArray[graphInputs.size()];
+        Map<String,INDArray> activationsNow = origGraph.feedForward(features,false);
+        for (int i=0; i<graphInputs.size();i++) {
+            String anInput = graphInputs.get(i);
+            if (origGraph.getVertex(anInput).isInputVertex()) {
+                //was an original input to the graph
+                int inputIndex = origGraph.getConfiguration().getNetworkInputs().indexOf(anInput);
+                featuresNow[i] = origGraph.getInput(inputIndex);
+            }
+            else {
+                //needs to be grabbed from the internal activations
+                featuresNow[i] = activationsNow.get(anInput);
+            }
+        }
+
+        return new MultiDataSet(featuresNow,labels,featureMasks,labelMasks);
+    }
+
+    public DataSet featurizeFrozen(DataSet input) {
+        if (isGraph) {
+            //trying to featurize for a computation graph
+            if (origGraph.getNumInputArrays() > 1 || origGraph.getNumOutputArrays() > 1) {
+                throw new IllegalArgumentException("Input size to a computation graph is greater than one. Requires use of a multidataset.");
+            }
+            else {
+                MultiDataSet inbW = new MultiDataSet(new INDArray[] {input.getFeatures()}, new INDArray[] {input.getLabels()}, new INDArray[] {input.getFeaturesMaskArray()}, new INDArray[] {input.getLabelsMaskArray()});
+                MultiDataSet ret = featurize(inbW);
+                return new DataSet(ret.getFeatures()[0],input.getLabels(),ret.getLabelsMaskArrays()[0],input.getLabelsMaskArray());
+            }
+        }
+        else {
+            //this is an MLN
+            throw new IllegalArgumentException("FIXME");
+        }
+    }
+
+    public void fitFeaturized(MultiDataSetIterator iter) {
+        unFrozenSubsetGraph.fit(iter);
+        copyParamsForGraph();
+    }
+
+    public void fitFeaturized(MultiDataSet input) {
+        unFrozenSubsetGraph.fit(input);
+        copyParamsForGraph();
+    }
+
+    private void copyParamsForGraph() {
+        for (GraphVertex aVertex: unFrozenSubsetGraph.getVertices()) {
+            if (!aVertex.hasLayer()) continue;
+            origGraph.getVertex(aVertex.getVertexName()).getLayer().setParams(aVertex.getLayer().params());
+        }
+    }
+
+    private void copyParamsToGraph() {
+        for (GraphVertex aVertex: unFrozenSubsetGraph.getVertices()) {
+            if (!aVertex.hasLayer()) continue;
+            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params().dup());
+        }
     }
 
 }
