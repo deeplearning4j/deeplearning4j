@@ -2,13 +2,11 @@ package org.deeplearning4j.nn.transferlearning;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -25,25 +23,26 @@ import java.util.*;
  */
 public class TransferLearningHelper extends TransferLearning{
 
-    private boolean isGraph = false;
+    private boolean isGraph = true;
     private ComputationGraph origGraph;
-    private MultiLayerNetwork origMLN;
+    //private MultiLayerNetwork origMLN;
     private ComputationGraph unFrozenSubsetGraph;
-    private MultiLayerNetwork unFrozenSubsetMLN;
+    //private MultiLayerNetwork unFrozenSubsetMLN;
     Set<String> frozenInputVertices = new HashSet<>(); //name map so no problem
     List<String> graphInputs;
-    Set<Integer> frozenInputLayers = new HashSet<>(); //layer indices will offset
+    //Set<Integer> frozenInputLayers = new HashSet<>(); //layer indices will offset
 
     /**
      * Expecting a computation graph or a multilayer network with frozen layer/vertices
      * @param orig either a computation graph or a multi layer network
      */
-    public TransferLearningHelper(Model orig) {
-        if (orig instanceof ComputationGraph) {
+    public TransferLearningHelper(ComputationGraph orig) {
+        //if (orig instanceof ComputationGraph) {
             isGraph = true;
             origGraph = (ComputationGraph) orig;
             initHelperGraph();
-        }
+        //}
+        /*
         else if (orig instanceof MultiLayerNetwork) {
             origMLN = (MultiLayerNetwork) orig;
             initHelperMLN();
@@ -51,6 +50,7 @@ public class TransferLearningHelper extends TransferLearning{
         else {
             throw new IllegalArgumentException("Unknown model.");
         }
+        */
     }
 
     /*
@@ -144,10 +144,7 @@ public class TransferLearningHelper extends TransferLearning{
 
     }
 
-    /**
-     * Runs through the mln and saves off a new model that is simply the unfrozen part of the origModel
-     * This "unfrozen" model is then used for training and featurizing
-     */
+    /*
     private void initHelperMLN() {
 
         //make smaller graph - loop back in topographical order
@@ -158,6 +155,7 @@ public class TransferLearningHelper extends TransferLearning{
         //set new inputs
 
     }
+    */
 
     public MultiDataSet featurize(MultiDataSet input) {
         if (!isGraph) {
@@ -189,7 +187,7 @@ public class TransferLearningHelper extends TransferLearning{
         return new MultiDataSet(featuresNow,labels,featureMasks,labelMasks);
     }
 
-    public DataSet featurizeFrozen(DataSet input) {
+    public DataSet featurize(DataSet input) {
         if (isGraph) {
             //trying to featurize for a computation graph
             if (origGraph.getNumInputArrays() > 1 || origGraph.getNumOutputArrays() > 1) {
