@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This walker represents connections of a given node.
+ * This walker represents connections of a given node + their neighborhoods up to certain depth.
  * Basically it's the same idea as context for a given node.
  *
  * So this walker produces Sequences, with label defined. And label - is element itself.
@@ -34,6 +34,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
     protected SamplingMode samplingMode = SamplingMode.RANDOM;
     protected int[] order;
     protected Random rng;
+    protected int depth;
 
     private AtomicInteger position = new AtomicInteger(0);
 
@@ -48,7 +49,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
 
     @Override
     public Sequence<V> next() {
-        return walk(sourceGraph.getVertex(order[position.getAndIncrement()]));
+        return walk(sourceGraph.getVertex(order[position.getAndIncrement()]),1);
     }
 
     @Override
@@ -66,7 +67,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
         }
     }
 
-    protected Sequence<V> walk(Vertex<V> node) {
+    protected Sequence<V> walk(Vertex<V> node, int cDepth) {
         Sequence<V> sequence = new Sequence<>();
 
         int idx = node.vertexID();
@@ -83,18 +84,50 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
             switch (samplingMode) {
                 case MAX_POPULARITY: {
                     Collections.sort(vertices, new VertexComparator<>(sourceGraph));
-                    for (int i = 0; i < walkLength; i++)
+                    for (int i = 0; i < walkLength; i++) {
                         sequence.addElement(vertices.get(i).getValue());
+
+                        // going for one more depth level
+                        if (depth > 1 && cDepth < depth) {
+                            Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
+                            for (V element: nextDepth.getElements()){
+                                if (sequence.getElementByLabel(element.getLabel()) == null)
+                                    sequence.addElement(element);
+                            }
+                        }
+                    }
+
                 }
                 case MEDIAN_POPULARITY: {
                     Collections.sort(vertices, new VertexComparator<>(sourceGraph));
-                    for (int i = (vertices.size() / 2) - (walkLength / 2), e = 0; e < walkLength && i < vertices.size(); i++, e++)
+                    for (int i = (vertices.size() / 2) - (walkLength / 2), e = 0; e < walkLength && i < vertices.size(); i++, e++) {
                         sequence.addElement(vertices.get(i).getValue());
+
+                        // going for one more depth level
+                        if (depth > 1 && cDepth < depth) {
+                            Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
+                            for (V element: nextDepth.getElements()){
+                                if (sequence.getElementByLabel(element.getLabel()) == null)
+                                    sequence.addElement(element);
+                            }
+                        }
+                    }
+
                 }
                 case MIN_POPULARITY: {
                     Collections.sort(vertices, new VertexComparator<>(sourceGraph));
-                    for (int i = vertices.size(), e = 0; e < walkLength && i >= 0; i--, e++)
+                    for (int i = vertices.size(), e = 0; e < walkLength && i >= 0; i--, e++) {
                         sequence.addElement(vertices.get(i).getValue());
+
+                        // going for one more depth level
+                        if (depth > 1 && cDepth < depth) {
+                            Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
+                            for (V element: nextDepth.getElements()){
+                                if (sequence.getElementByLabel(element.getLabel()) == null)
+                                    sequence.addElement(element);
+                            }
+                        }
+                    }
                 }
                 case RANDOM: {
                     // we randomly sample some number of connected vertices
@@ -103,8 +136,19 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                             sequence.addElement(vertex.getValue());
                     else {
                         Set<V> elements = new HashSet<>();
-                        while (elements.size() < walkLength)
-                            elements.add(ArrayUtil.getRandomElement(vertices).getValue());
+                        while (elements.size() < walkLength) {
+                            Vertex<V> vertex = ArrayUtil.getRandomElement(vertices);
+                            elements.add(vertex.getValue());
+
+                            // going for one more depth level
+                            if (depth > 1 && cDepth < depth) {
+                                Sequence<V> nextDepth = walk(vertex, ++cDepth);
+                                for (V element: nextDepth.getElements()){
+                                    if (sequence.getElementByLabel(element.getLabel()) == null)
+                                        sequence.addElement(element);
+                                }
+                            }
+                        }
 
                         sequence.addElements(elements);
                     }
@@ -128,6 +172,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
         protected IGraph<V, ?> sourceGraph;
         protected SamplingMode samplingMode = SamplingMode.RANDOM;
         protected long seed;
+        protected int depth = 1;
 
         public Builder(@NonNull IGraph<V, ?> graph) {
             this.sourceGraph = graph;
@@ -143,11 +188,24 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
          *
          * PLEASE NOTE: If set to 0 - no limits will be used.
          *
+         * Default value: 0
          * @param length
          * @return
          */
         public Builder setWalkLength(int length){
             walkLength = length;
+            return this;
+        }
+
+        /**
+         * This method specifies, how deep walker goes from starting point
+         *
+         * Default value: 1
+         * @param depth
+         * @return
+         */
+        public Builder setDepth(int depth) {
+            this.depth = depth;
             return this;
         }
 
@@ -174,6 +232,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;
             walker.samplingMode = this.samplingMode;
+            walker.depth = this.depth;
 
             walker.order = new int[sourceGraph.numVertices()];
             for (int i =0; i < walker.order.length; i++) {
