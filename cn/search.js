@@ -405,4 +405,10 @@ var PAGES = [{
 "title": "深度置信网络与MNIST数据集教程",
 "description": "深度置信网络（DBN）可以定义为一系列堆叠起来的受限玻尔兹曼机（RBM，介绍见此处），每个RBM层都与其前后的层进行通信。单个层中的节点之间不会横向通信。",
 "tags": ["mnist", "深度置信网络", "dbm", "rbm", "deepbelief", "超参数", "hyperparameter", "mnistDataSetIterator", "DataSetIterator "]
+},
+{
+"url": "https://deeplearning4j.org/cn/versioncheck",
+"title": "Deeplearning4j的版本检查",
+"description": "Deeplearning4j包含一项版本检查功能，有可能在您的记录中生成HTTP客户端调试消息。该功能帮助我们了解DL4J库的最新版本是否得到使用。",
+"tags": ["version", "版本", "deeplearning4j", "版本检查", "heartbeat"]
 }];
