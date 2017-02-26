@@ -66,7 +66,7 @@ redirect_from: /zh-restrictedboltzmannmachine
 <p>下面我们来介绍概率分布。如果掷两枚骰子，则所有结果的概率分布情况如下图所示：</p>
 <img class="img-responsive center-block" src="https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg" alt="deeplearning4j" style="max-width: 600px;">
 <p>也就是说，7是最有可能出现的结果，任何预测掷骰子结果的公式需要考虑这一点。</p>
-<p>语言中的字母也有特定的概率分布，因为一种语言使用某些字母的频率会高于其他语言。在英语中，字母<em>e</em>、<em>t</em>和<em>a</em>是最常见的，而冰岛语中最常见的字母则是<em>a</em>、<em>r</em>和<em>n</em>。若用处理英语文本的权重来重构冰岛语，结果就会出现较大的误差。</p>
+<p>或另一个例子：语言中的字母也有特定的概率分布，因为一种语言使用某些字母的频率会高于其他语言。在英语中，字母<em>e</em>、<em>t</em>和<em>a</em>是最常见的，而冰岛语中最常见的字母则是<em>a</em>、<em>r</em>和<em>n</em>。若用处理英语文本的权重来重构冰岛语，结果就会出现较大的误差。</p>
 <p>与此类似，图像数据集的像素值也有独特的概率分布，具体取决于数据集所包含图像的类别。数据集可能包括MNIST的手写数字图像：</p>
 <img class="img-responsive center-block" src="../img/mnist_render.png" alt="deeplearning4j">
 <p>或是自然脸部检测数据集（Labeled Faces in the Wild）中的头像：</p>
@@ -157,7 +157,7 @@ public class RBMIrisExample {
 
 
 <p><h2><a name="params">参数与变量k</a></h2></p>
-<p>变量k是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
+<p>变量 'k' 是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
 <p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。k的值通常为1。</p>
 <p>在上文的示例中，可以看到如何用更为通用的<code>MultiLayerConfiguration</code>来创建多个RBM层。每个点后面都是一项调节深度神经网络结构和性能产生的额外参数。大多数参数的定义都可在本网站内找到。</p>
 <p><strong>weightInit</strong>或<code>weightInitialization</code>表示用于放大或削弱进入每个节点的输入的系数的初始值。合理的初始权重可以节约大量定型时间，因为网络定型无非是通过调整系数来传输最佳的信号，进而让网络能进行准确的分类。</p>
