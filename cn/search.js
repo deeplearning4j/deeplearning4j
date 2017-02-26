@@ -411,4 +411,10 @@ var PAGES = [{
 "title": "Deeplearning4j的版本检查",
 "description": "Deeplearning4j包含一项版本检查功能，有可能在您的记录中生成HTTP客户端调试消息。该功能帮助我们了解DL4J库的最新版本是否得到使用。",
 "tags": ["version", "版本", "deeplearning4j", "版本检查", "heartbeat"]
+},
+{
+"url": "https://deeplearning4j.org/cn/core-concepts",
+"title": "DL4J核心概念简介",
+"description": "本页内容假设您已安装最新版本的DL4J。如果您不确定最新的版本是什么，请克隆快速入门指南中的示例，然后查看其中的pom.xml文件。",
+"tags": ["数据加工", "标准化", "dataset", "indarray", "模型", "构建", "定型", "评估"]
 }];
