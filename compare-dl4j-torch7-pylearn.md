@@ -22,8 +22,10 @@ Python Frameworks
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
+* <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
+* <a href="#dsstne">DyNet</a>
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
@@ -83,7 +85,7 @@ Pros and Cons
 * (-) Much “fatter” than Torch
 * (-) Patchy support for pretrained models
 * (-) Buggy on AWS
-
+* (-) Single GPU
 
 ### <a name="tensorflow">TensorFlow</a>
 
@@ -131,10 +133,15 @@ Pros and Cons:
 * (-) Cumbersome for big networks (GoogLeNet, ResNet)
 * (-) Not extensible, bit of a hairball
 * (-) No commercial support
+* (-) Probably dying; slow development
 
 ### <a name="cntk">CNTK</a>
 
 [**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. This license does not apply to the method by which CNTK makes distributed training easy -- one-bit SGD -- which is not licensed for commercial use. 
+
+### <a name="chainer">Chainer</a>
+
+Chainer is an open-source neural network framework with a Python API, whose core team of developers work at [Preferred Networks](https://www.crunchbase.com/organization/preferred-networks#/entity), a machine-learning startup based in Tokyo drawing its engineers largely from the University of Tokyo. Until the advent of DyNet at CMU, and PyTorch at Facebook, Chainer was the leading neural network framework for dynamic computation graphs, or nets that allowed for input of varying length, a popular feature for NLP tasks. By its own [benchmarks](http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html), Chainer is notably faster than other Python-oriented frameworks, with TensorFlow the slowest of a test group that includes MxNet and CNTK. 
 
 ### <a name="dsstne">DSSTNE</a>
 
@@ -144,9 +151,21 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
 * (-) Amazon has chosen another framework for use on AWS.
 
+### <a name="dynet">DyNet</a>
+
+[DyNet](https://github.com/clab/dynet), the [Dynamic Neural Network Toolkit](https://arxiv.org/abs/1701.03980), came out of Carnegie Mellon University and used to be called cnn. Its notable feature is the dynamic computation graph, which allows for inputs of varying length, which is great for NLP. PyTorch and Chainer offer the same. 
+
+* (+) Dynamic computation graph
+* (-) Small user community
+
 ### <a name="keras">Keras</a>
 
-[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j relies on Keras as its [Python API](./keras) and [imports models from Keras and through Keras from Theano and TensorFlow](./model-import-keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
+
+* (+) Intuitive API inspired by Torch
+* (+) Works with Theano, TensorFlow and Deeplearning4j backends (CNTK backend to come)
+* (+) Fast growing framework
+* (+) Likely to become standard Python API for NNs
 
 ### <a name="mxnet">MxNet</a>
 
