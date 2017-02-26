@@ -147,8 +147,7 @@ public class TransferLearningComplex {
                 "denseCentre1",
                 "denseCentre2",
                 "denseLeft0",
-                //Can't figure out why these are failing - but the simpler case is covered in the last test here
-                //looks like the biases become zero..
+                //Can't figure out why these are failing - could be a bug
                 //"denseRight",
                 //"denseRight0",
                 //"denseRight1",
@@ -160,13 +159,27 @@ public class TransferLearningComplex {
             if (n == 0) {
                 INDArray activationsM = modelNow.feedForward(features,false).get("denseCentre2");
                 assertEquals(denseCentre2,activationsM);
-                INDArray activationsR = rightGraph.feedForward(rightDataSet.getFeatures(),false).get("mergeRight");
-                assertEquals(activationsR,modelNow.feedForward(features,false).get("mergeRight"));
+                assertEquals(rightGraph.feedForward(rightDataSet.getFeatures(),false).get("denseRight"),modelNow.feedForward(features,false).get("denseRight"));
+                assertEquals(rightGraph.feedForward(rightDataSet.getFeatures(),false).get("denseRight0"),modelNow.feedForward(features,false).get("denseRight0"));
+                assertEquals(rightGraph.feedForward(rightDataSet.getFeatures(),false).get("mergeRight"),modelNow.feedForward(features,false).get("mergeRight"));
+                assertEquals(rightGraph.feedForward(rightDataSet.getFeatures(),false).get("denseRight1"),modelNow.feedForward(features,false).get("denseRight1"));
+                assertEquals(rightGraph.feedForward(rightDataSet.getFeatures(),false).get("outRight"),modelNow.feedForward(features,false).get("outRight"));
+
+                assertEquals(rightGraph.getLayer("denseRight").conf().toJson(),modelNow.getLayer("denseRight").conf().toJson());
+                assertEquals(rightGraph.getLayer("denseRight0").conf().toJson(),modelNow.getLayer("denseRight0").conf().toJson());
+                assertEquals(rightGraph.getLayer("denseRight1").conf().toJson(),modelNow.getLayer("denseRight1").conf().toJson());
+                assertEquals(rightGraph.getLayer("outRight").conf().toJson(),modelNow.getLayer("outRight").conf().toJson());
+
+                // will fail because params are different
+                // assertEquals(rightGraph.getConfiguration().getDefaultConfiguration().toJson(),modelNow.getConfiguration().getDefaultConfiguration().toJson());
             }
             leftGraph.fit(new DataSet(subsetLeft, labels[0]));
             centreGraph.fit(new DataSet(denseCentre2, labels[1]));
+            assertEquals(rightDataSet,new MultiDataSet(new INDArray[] {modelNow.feedForward(features,false).get("denseCentre2"),rightDataSet.getFeatures(1)},new INDArray[] {labels[2]}));
+
             rightGraph.fit(rightDataSet);
             modelNow.fit(new MultiDataSet(features, labels));
+            assertEquals(modelNow.getLayer("denseCentre2").params(),frozenGraph.getLayer("denseCentre2").params());
             System.out.println("Fit after "+n);
             for (int i = 0; i < listOfLayers.length; i++) {
                 String currentLayer = listOfLayers[i];
@@ -263,6 +276,17 @@ public class TransferLearningComplex {
                 .activation(Activation.IDENTITY)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.SGD);
+
+        /*
+                inCentre                inRight
+                   |                        |
+             denseCentre0               denseRight0
+                   |                        |
+                   |------ mergeRight ------|
+                                |
+                              outRight
+
+        */
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder()
                 .addInputs("inCentre", "inRight")
