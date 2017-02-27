@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * This is simple data-parallel wrapper
@@ -810,11 +811,7 @@ public class ParallelWrapper implements AutoCloseable {
                 if (thrownException != null)
                     throw new RuntimeException(thrownException);
 
-                try {
-                    Thread.sleep(10);
-                } catch (Exception e) {
-                    ;
-                }
+                LockSupport.parkNanos(50000L);
             }
         }
     }
