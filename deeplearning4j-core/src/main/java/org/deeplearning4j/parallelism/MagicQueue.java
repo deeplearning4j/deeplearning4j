@@ -188,7 +188,14 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public boolean addAll(Collection<? extends DataSet> c) {
-        return false;
+        for (DataSet ds: c) {
+            boolean result = add(ds);
+
+            if (!result)
+                return result;
+        }
+
+        return true;
     }
 
     /**
@@ -216,6 +223,9 @@ public class MagicQueue implements BlockingQueue<DataSet> {
         for(Queue<DataSet> queue: backingQueues) {
             queue.clear();
         }
+
+        cntPut.set(0);
+        cntGet.set(0);
     }
 
     @Override
