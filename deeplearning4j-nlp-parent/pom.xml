@@ -18,4 +18,14 @@
         <module>deeplearning4j-nlp-korean</module>
         <module>deeplearning4j-nlp-japanese</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
+
 </project>
