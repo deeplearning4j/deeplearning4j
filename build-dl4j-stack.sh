@@ -48,6 +48,22 @@ case $key in
     -s|--shallow)
     SHALLOW="YES"
     ;;
+    -d|--delete-repos)
+    DELETE_REPOS="YES"
+    ;;
+    --testnd4j)
+    TEST_ND4J="YES"
+    ;;
+    --testdatavec)
+    TEST_DATAVEC="YES"
+    ;;
+    --testdl4j)
+    TEST_DL4J="YES"
+    ;;
+    --mvnopts)
+    MVN_OPTS="$2"
+    shift
+    ;;
     *)
             # unknown option
     ;;
@@ -88,10 +104,12 @@ for dirName in $JAVA_PROJECTS; do
 done
 
 # removes any existing repositories to ensure a clean build
-PROJECTS="libnd4j nd4j datavec" # deeplearning4j
-for dirName in $PROJECTS; do
-    find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
-done
+if ! [ -z "$DELETE_REPOS" ]; then
+    PROJECTS="libnd4j nd4j datavec" # deeplearning4j
+    for dirName in $PROJECTS; do
+        find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
+    done
+fi
 
 # set git cloning to a shallow depth if the option says so
 if [ -z $SHALLOW ]; then
@@ -101,14 +119,19 @@ else
 fi
 
 # Report argument values
-echo BUILD      = "${BUILD}"
-echo PACKAGING  = "${PACKAGING}"
-echo CHIP       = "${CHIP}"
-echo COMPUTE    = "${COMPUTE}"
-echo NATIVE     = "${NATIVE}"
-echo LIBTYPE    = "${LIBTYPE}"
-echo SCALAV     = "${SCALAV}"
-echo SHALLOW    = "${SHALLOW}"
+echo BUILD        = "${BUILD}"
+echo PACKAGING    = "${PACKAGING}"
+echo CHIP         = "${CHIP}"
+echo COMPUTE      = "${COMPUTE}"
+echo NATIVE       = "${NATIVE}"
+echo LIBTYPE      = "${LIBTYPE}"
+echo SCALAV       = "${SCALAV}"
+echo SHALLOW      = "${SHALLOW}"
+echo DELETE_REPOS = "${DELETE_REPOS}"
+echo TEST_ND4J    = "${TEST_ND4J}"
+echo TEST_DATAVEC = "${TEST_DATAVEC}"
+echo TEST_DL4J    = "${TEST_DL4J}"
+echo MVN_OPTS     = "${MVN_OPTS}"
 
 # compile libnd4j
 checkexit "$GIT_CLONE" https://github.com/deeplearning4j/libnd4j.git
@@ -128,43 +151,65 @@ if [ "$CHIP" == "cuda" ]; then
 fi
 LIBND4J_HOME=$(pwd)
 export LIBND4J_HOME
-
 popd
 
 # build and install nd4j to maven locally
 checkexit "$GIT_CLONE" https://github.com/deeplearning4j/nd4j.git
+if [ -z "$TEST_ND4J" ]; then
+    ND4J_OPTIONS="-DskipTests"
+else
+    ND4J_OPTIONS=""
+fi
 pushd nd4j
 if [ "$CHIP" == "cpu" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests' "$ND4J_OPTIONS" "$MVN_OPTS"
 else
-  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$ND4J_OPTIONS" "$MVN_OPTS"
 fi
 popd
 
 # build and install datavec
 checkexit "$GIT_CLONE" https://github.com/deeplearning4j/datavec.git
+if [ -z "$TEST_DATAVEC" ]; then
+    DATAVEC_OPTIONS="-DskipTests"
+else
+    if [ "$CHIP" == "cuda" ]; then
+        DATAVEC_OPTIONS="-Ptest-nd4j-cuda-8.0"
+    else
+        DATAVEC_OPTIONS="-Ptest-nd4j-native"
+    fi
+fi
 pushd datavec
 if [ "$SCALAV" == "" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DATAVEC_OPTIONS" "$MVN_OPTS"
 else
-  checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version=$SCALA
+  checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DATAVEC_OPTIONS" "$MVN_OPTS"
 fi
 popd
 
 # build and install deeplearning4j
 #checkexit "$GIT_CLONE" https://github.com/deeplearning4j/deeplearning4j.git
+if [ -z "$TEST_DL4J" ]; then
+    DL4J_OPTIONS="-DskipTests"
+else
+    if [ "$CHIP" == "cuda" ]; then
+        DL4J_OPTIONS="-Ptest-nd4j-cuda-8.0"
+    else
+        DL4J_OPTIONS="-Ptest-nd4j-native"
+    fi
+fi
 pushd deeplearning4j
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
-    checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0'
+    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0' "$DL4J_OPTIONS" "$MVN_OPTS"
   else
-    checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DL4J_OPTIONS" "$MVN_OPTS"
   fi
 else
   if [ "$CHIP" == "cpu" ]; then
-    checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version=$SCALA  -pl '!:deeplearning4j-cuda-8.0'
+    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA"  -pl '!:deeplearning4j-cuda-8.0' "$DL4J_OPTIONS" "$MVN_OPTS"
   else
-    checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version=$SCALA
+    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DL4J_OPTIONS" "$MVN_OPTS"
   fi
 fi
 popd
