@@ -131,14 +131,16 @@ done
 
 # removes any existing repositories to ensure a clean build
 if ! [ -z "$DELETE_REPOS" ]; then
-    PROJECTS="libnd4j nd4j datavec" # deeplearning4j
+    PROJECTS="libnd4j nd4j datavec deeplearning4j"
     for dirName in $PROJECTS; do
         find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
     done
 fi
 
 # compile libnd4j
-checkexit "$GIT_CLONE" https://github.com/deeplearning4j/libnd4j.git
+if ! [ -z $DELETE_REPOS ] || ! [ -d libnd4j ]; then
+    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/libnd4j.git
+fi
 pushd libnd4j
 if [ -z "$NATIVE" ]; then
     checkexit bash buildnativeoperations.sh "$@" -a native
@@ -158,7 +160,9 @@ export LIBND4J_HOME
 popd
 
 # build and install nd4j to maven locally
-checkexit "$GIT_CLONE" https://github.com/deeplearning4j/nd4j.git
+if ! [ -z $DELETE_REPOS ] || ! [ -d nd4j ]; then
+    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/nd4j.git
+fi
 if [ -z "$TEST_ND4J" ]; then
     ND4J_OPTIONS="-DskipTests"
 else
@@ -173,7 +177,9 @@ fi
 popd
 
 # build and install datavec
-checkexit "$GIT_CLONE" https://github.com/deeplearning4j/datavec.git
+if ! [ -z $DELETE_REPOS ] || ! [ -d datavec ]; then
+    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/datavec.git
+fi
 if [ -z "$TEST_DATAVEC" ]; then
     DATAVEC_OPTIONS="-DskipTests"
 else
@@ -192,7 +198,9 @@ fi
 popd
 
 # build and install deeplearning4j
-#checkexit "$GIT_CLONE" https://github.com/deeplearning4j/deeplearning4j.git
+if ! [ -z $DELETE_REPOS ] || ! [ -d deeplearning4j ]; then
+    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/deeplearning4j.git
+fi
 if [ -z "$TEST_DL4J" ]; then
     DL4J_OPTIONS="-DskipTests"
 else
