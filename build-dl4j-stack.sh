@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # helper function that ensures cmd returns 0 exit code
 function checkexit {
@@ -73,12 +73,12 @@ done
 
 # default for chip
 if [ -z "$CHIP" ]; then
- CHIP="cpu"
-fi
-
-# test for cuda libraries
-if [ "$(ldconfig -p | grep -q libcuda\.so)" -eq 0 ] && [ -z "$CHIP" ]; then
-    CHIP="cuda"
+    # test for cuda libraries
+    if (ldconfig -p | grep -q libcuda\.so) then
+        CHIP="cuda"
+    else
+        CHIP="cpu"
+    fi
 fi
 
 # adjust scala versions
@@ -88,27 +88,6 @@ fi
 # adjust scala versions
 if [ "$SCALAV" == "2.11" ]; then
   SCALA="2.11.7"
-fi
-
-pushd ..
-
-# removes lingering snapshot artifacts from existing maven cache to ensure a
-# clean build
-JAVA_PROJECTS="nd4j datavec deeplearning4j"
-for dirName in $JAVA_PROJECTS; do
-    if [ -d "$dirName" ]; then
-        pushd "$dirName"
-        mvn dependency:purge-local-repository -DreResolve=false
-        popd
-    fi
-done
-
-# removes any existing repositories to ensure a clean build
-if ! [ -z "$DELETE_REPOS" ]; then
-    PROJECTS="libnd4j nd4j datavec" # deeplearning4j
-    for dirName in $PROJECTS; do
-        find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
-    done
 fi
 
 # set git cloning to a shallow depth if the option says so
@@ -132,6 +111,31 @@ echo TEST_ND4J    = "${TEST_ND4J}"
 echo TEST_DATAVEC = "${TEST_DATAVEC}"
 echo TEST_DL4J    = "${TEST_DL4J}"
 echo MVN_OPTS     = "${MVN_OPTS}"
+
+###########################
+# Script execution starts #
+###########################
+
+pushd ..
+
+# removes lingering snapshot artifacts from existing maven cache to ensure a
+# clean build
+JAVA_PROJECTS="nd4j datavec deeplearning4j"
+for dirName in $JAVA_PROJECTS; do
+    if [ -d "$dirName" ]; then
+        pushd "$dirName"
+        mvn dependency:purge-local-repository -DreResolve=false
+        popd
+    fi
+done
+
+# removes any existing repositories to ensure a clean build
+if ! [ -z "$DELETE_REPOS" ]; then
+    PROJECTS="libnd4j nd4j datavec" # deeplearning4j
+    for dirName in $PROJECTS; do
+        find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
+    done
+fi
 
 # compile libnd4j
 checkexit "$GIT_CLONE" https://github.com/deeplearning4j/libnd4j.git
