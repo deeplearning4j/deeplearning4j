@@ -12,7 +12,7 @@ function checkexit {
 }
 
 # check incoming parameters
-while [[ $# > 1 ]]
+while [[ $# -gt 1 ]]
 do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
@@ -44,9 +44,6 @@ case $key in
      --scalav)
     SCALAV="$2"
     shift # past argument
-    ;;
-    --default)
-    DEFAULT=YES
     ;;
     *)
             # unknown option
