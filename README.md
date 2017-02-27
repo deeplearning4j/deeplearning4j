@@ -15,6 +15,12 @@ ND4S is already included in official Maven repositories.
 
 With IntelliJ, incorporation of ND4S is easy: just create a new Scala project, go to "Project Settings"/Libraries, add "From Maven...", and search for nd4s.
 
+As an alternative, one may simply add the line below to `build.sbt` and re-build project.
+
+```scala
+libraryDependencies += "org.nd4j" %% "nd4s" % "0.7.2"
+```
+
 No need for git-cloning & compiling!
 
 ## Clone from the GitHub Repo
