@@ -37,7 +37,7 @@ public interface IActivation extends Serializable {
      * Can support separate behaviour during test
      * @param in
      * @param training
-     * @return tranformed activation
+     * @return transformed activation
      */
     INDArray getActivation(INDArray in, boolean training);
 

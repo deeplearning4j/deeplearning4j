@@ -273,8 +273,40 @@ public class NDArrayIndex implements INDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static INDArrayIndex[] resolve(DataBuffer shapeInfo, INDArrayIndex... intendedIndexes) {
+        int numSpecified = 0;
+        for(int i = 0; i < intendedIndexes.length; i++) {
+            if(intendedIndexes[i] instanceof SpecifiedIndex)
+                numSpecified++;
+        }
+
+        if(numSpecified > 0) {
+            DataBuffer shape = Shape.shapeOf(shapeInfo);
+            INDArrayIndex[] ret = new INDArrayIndex[intendedIndexes.length];
+            for(int i = 0; i < intendedIndexes.length; i++) {
+                if(intendedIndexes[i] instanceof SpecifiedIndex)
+                    ret[i] = intendedIndexes[i];
+                else {
+                    if(intendedIndexes[i] instanceof NDArrayIndexAll) {
+                        SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0,shape.getInt(i)));
+                        ret[i] = specifiedIndex;
+                    }
+                    else if(intendedIndexes[i] instanceof NDArrayIndexEmpty) {
+                        ret[i] = new SpecifiedIndex(new int[0]);
+                    }
+                    else if(intendedIndexes[i] instanceof IntervalIndex) {
+                        IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
+                        ret[i] = new SpecifiedIndex(ArrayUtil.range(0,intervalIndex.end(),intervalIndex.stride()));
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+
         /**
-         * If it's a vector and index asking for a scalar just return the array
+         * If it's a vector and index asking
+         * for a scalar just return the array
          */
         int rank = Shape.rank(shapeInfo);
         DataBuffer shape = Shape.shapeOf(shapeInfo);
@@ -383,7 +415,7 @@ public class NDArrayIndex implements INDArrayIndex {
     protected static INDArrayIndex validate(int size, INDArrayIndex index) {
         if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current() && size > 1)
             throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.current()
-                            + " must be less than its size: " + size);
+                    + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && size < index.end()) {
             int begin = ((IntervalIndex) index).begin;
             index = NDArrayIndex.interval(begin, index.stride(), size);

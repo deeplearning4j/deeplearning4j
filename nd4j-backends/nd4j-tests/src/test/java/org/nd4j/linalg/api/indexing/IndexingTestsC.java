@@ -9,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 
 import static org.junit.Assert.*;
 
@@ -32,6 +33,32 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         assertEquals(100, arr2.length()); //Returning: length 0
         assertEquals(arr2, Nd4j.linspace(1, 100, 100));
+    }
+
+    @Test
+    public void testSpecifiedIndexVector() {
+        INDArray rootMatrix =  Nd4j.linspace(1,16,16).reshape(4, 4);
+        INDArray threeD = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        INDArray get =  rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1,3},
+                {5,7},
+                {9,11},
+                {13,15}
+        });
+
+        assertEquals(assertion,get);
+
+        INDArray assertion2 = Nd4j.create(new double[][]{
+                {1,3,4},
+                {5,7,8},
+                {9,11,12},
+                {13,15,16}
+        });
+        INDArray get2 =  rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2,3));
+
+        assertEquals(assertion2,get2);
+
     }
 
 
