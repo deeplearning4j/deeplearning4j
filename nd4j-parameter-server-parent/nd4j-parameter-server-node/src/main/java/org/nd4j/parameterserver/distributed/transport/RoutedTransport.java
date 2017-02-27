@@ -38,29 +38,30 @@ public class RoutedTransport extends BaseTransport {
 
     protected List<RemoteConnection> shards = new ArrayList<>();
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
-    @Getter @Setter protected ClientRouter router;
+    @Getter
+    @Setter
+    protected ClientRouter router;
 
     protected long originatorId;
 
-    public RoutedTransport(){
+    public RoutedTransport() {
         //
     }
 
     @Override
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, int localPort, short shardIndex) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role,
+                    @NonNull String localIp, int localPort, short shardIndex) {
         this.nodeRole = role;
         this.clipboard = clipboard;
         this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
         this.messages = new LinkedBlockingQueue<>();
         //shutdown hook
-        super.init(voidConfiguration,clipboard,role,localIp,localPort,shardIndex);
+        super.init(voidConfiguration, clipboard, role, localIp, localPort, shardIndex);
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
-        context = new Aeron.Context()
-                .publicationConnectionTimeout(30000000000L)
-                .driverTimeoutMs(30000)
-                .keepAliveInterval(100000000);
+        context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
+                        .keepAliveInterval(100000000);
 
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());
@@ -92,8 +93,7 @@ public class RoutedTransport extends BaseTransport {
 
 
         messageHandlerForClients = new FragmentAssembler(
-                (buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header)
-        );
+                        (buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
 
         /*
             Now, regardless of current role,
@@ -102,7 +102,7 @@ public class RoutedTransport extends BaseTransport {
         String shardChannelUri = null;
         String remoteIp = null;
         int remotePort = 0;
-        for (String ip: voidConfiguration.getShardAddresses()) {
+        for (String ip : voidConfiguration.getShardAddresses()) {
             if (ip.contains(":")) {
                 shardChannelUri = "aeron:udp?endpoint=" + ip;
                 String[] split = ip.split(":");
@@ -116,18 +116,15 @@ public class RoutedTransport extends BaseTransport {
 
             Publication publication = aeron.addPublication(shardChannelUri, voidConfiguration.getStreamId());
 
-            RemoteConnection connection = RemoteConnection.builder()
-                    .ip(remoteIp)
-                    .port(remotePort)
-                    .publication(publication)
-                    .locker(new Object())
-                    .build();
+            RemoteConnection connection = RemoteConnection.builder().ip(remoteIp).port(remotePort)
+                            .publication(publication).locker(new Object()).build();
 
             shards.add(connection);
         }
 
         if (nodeRole == NodeRole.SHARD)
-            log.info("Initialized as [{}]; ShardIndex: [{}]; Own endpoint: [{}]", nodeRole, shardIndex, unicastChannelUri);
+            log.info("Initialized as [{}]; ShardIndex: [{}]; Own endpoint: [{}]", nodeRole, shardIndex,
+                            unicastChannelUri);
         else
             log.info("Initialized as [{}]; Own endpoint: [{}]", nodeRole, unicastChannelUri);
 
@@ -137,25 +134,25 @@ public class RoutedTransport extends BaseTransport {
 
             }
             case SHARD: {
-                    /*
-                        For unicast transport we want to have interconnects between all shards first of all, because we know their IPs in advance.
-                        But due to design requirements, clients have the same first step, so it's kinda shared for all states :)
-                     */
+                /*
+                    For unicast transport we want to have interconnects between all shards first of all, because we know their IPs in advance.
+                    But due to design requirements, clients have the same first step, so it's kinda shared for all states :)
+                 */
 
-                    /*
-                        Next step is connections setup for backup nodes.
-                        TODO: to be implemented
-                     */
+                /*
+                    Next step is connections setup for backup nodes.
+                    TODO: to be implemented
+                 */
                 addClient(ip, port);
             }
-            break;
+                break;
             case CLIENT: {
-                    /*
-                        For Clients on unicast transport, we either set up connection to single Shard, or to multiple shards
-                        But since this code is shared - we don't do anything here
-                     */
+                /*
+                    For Clients on unicast transport, we either set up connection to single Shard, or to multiple shards
+                    But since this code is shared - we don't do anything here
+                 */
             }
-            break;
+                break;
             default:
                 throw new ND4JIllegalStateException("Unknown NodeRole being passed: " + nodeRole);
         }
@@ -175,7 +172,7 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-//        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
@@ -190,7 +187,7 @@ public class RoutedTransport extends BaseTransport {
         final DirectBuffer buffer = message.asUnsafeBuffer();
 
         // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
-        shards.parallelStream().forEach((rc) ->{
+        shards.parallelStream().forEach((rc) -> {
             RetransmissionHandler.TransmissionStatus res;
             long retr = 0;
             boolean delivered = false;
@@ -217,23 +214,26 @@ public class RoutedTransport extends BaseTransport {
                             retr++;
 
                             if (retr > 20)
-                                throw new ND4JIllegalStateException("Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+                                throw new ND4JIllegalStateException(
+                                                "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
 
                             try {
                                 Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                            } catch (Exception e) {}
+                            } catch (Exception e) {
+                            }
                         } else {
                             throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
                         }
                     }
-                    break;
+                        break;
                     case ADMIN_ACTION:
                     case BACKPRESSURE: {
                         try {
                             Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (Exception e) {}
+                        } catch (Exception e) {
+                        }
                     }
-                    break;
+                        break;
                     case MESSAGE_SENT:
                         delivered = true;
                         rc.getActivated().set(true);
@@ -275,7 +275,8 @@ public class RoutedTransport extends BaseTransport {
 
         while (!delivered) {
             synchronized (connection.locker) {
-                result = RetransmissionHandler.getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
+                result = RetransmissionHandler
+                                .getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
             }
 
             switch (result) {
@@ -283,15 +284,17 @@ public class RoutedTransport extends BaseTransport {
                 case BACKPRESSURE: {
                     try {
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                    } catch (Exception e) { }
+                    } catch (Exception e) {
+                    }
                 }
-                break;
+                    break;
                 case NOT_CONNECTED: {
                     // client dead? sleep and forget
                     // TODO: we might want to delay this message & move it to separate queue?
                     try {
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                    } catch (Exception e) { }
+                    } catch (Exception e) {
+                    }
                 }
                 // do not break here, we can't do too much here, if client is dead
                 case MESSAGE_SENT:
@@ -359,7 +362,8 @@ public class RoutedTransport extends BaseTransport {
 
         while (!delivered) {
             synchronized (connection.locker) {
-                result = RetransmissionHandler.getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
+                result = RetransmissionHandler
+                                .getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
             }
 
             switch (result) {
@@ -368,9 +372,10 @@ public class RoutedTransport extends BaseTransport {
                     // we just sleep, and retransmit again later
                     try {
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                    } catch (Exception e) { }
+                    } catch (Exception e) {
+                    }
                 }
-                break;
+                    break;
                 case NOT_CONNECTED:
                     /*
                         two possible cases here:
@@ -381,7 +386,8 @@ public class RoutedTransport extends BaseTransport {
                         // wasn't initialized before, just sleep and re-transmit
                         try {
                             Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (Exception e) { }
+                        } catch (Exception e) {
+                        }
                     } else {
                         throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
                     }
@@ -413,7 +419,7 @@ public class RoutedTransport extends BaseTransport {
 
         VoidMessage message = VoidMessage.fromBytes(data);
 
-//        log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
+        //        log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
 
         //if (messages.size() > 500)
         //    log.info("sI_{} got {} messages", shardIndex, messages.size());
@@ -471,13 +477,13 @@ public class RoutedTransport extends BaseTransport {
         super.launch(threading);
 
         // send introductory message
-//        if (nodeRole == NodeRole.CLIENT) {
-//            shards.parallelStream().forEach((rc) -> {
+        //        if (nodeRole == NodeRole.CLIENT) {
+        //            shards.parallelStream().forEach((rc) -> {
         IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
         irm.setTargetId((short) -1);
         sendCoordinationCommand(irm);
-//            });
-//        }
+        //            });
+        //        }
     }
 
     @Override
@@ -486,13 +492,10 @@ public class RoutedTransport extends BaseTransport {
         if (clients.containsKey(hash))
             return;
 
-        RemoteConnection connection = RemoteConnection.builder()
-                .ip(ip)
-                .port(port)
-                .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port, voidConfiguration.getStreamId()))
-                .locker(new Object())
-                .activated(new AtomicBoolean(false))
-                .build();
+        RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
+                        .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
+                                        voidConfiguration.getStreamId()))
+                        .locker(new Object()).activated(new AtomicBoolean(false)).build();
 
 
         log.info("sI_{}: Adding connection: [{}] to {}:{}", shardIndex, hash, ip, port);

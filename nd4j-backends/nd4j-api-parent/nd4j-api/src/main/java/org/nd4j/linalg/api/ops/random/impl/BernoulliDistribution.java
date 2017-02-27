@@ -12,19 +12,19 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 public class BernoulliDistribution extends BaseRandomOp {
     private double prob;
 
-    public BernoulliDistribution(){
+    public BernoulliDistribution() {
         super();
     }
 
     /**
      * This op fills Z with random values within from...to boundaries
      * @param z
-
+    
      */
     public BernoulliDistribution(@NonNull INDArray z, double prob) {
-        init(null, null, z, z.length());
+        init(null, null, z, z.lengthLong());
         this.prob = prob;
-        this.extraArgs = new Object[]{this.prob};
+        this.extraArgs = new Object[] {this.prob};
     }
 
 

@@ -45,7 +45,8 @@ public class VectorRequestMessage extends BaseVoidMessage implements RequestMess
      */
     @Override
     public void processMessage() {
-        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(), getShardIndex(), storage.getArray(key).getRow(rowIndex).dup());
+        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(),
+                        getShardIndex(), storage.getArray(key).getRow(rowIndex).dup());
         aggregation.setOriginatorId(this.getOriginatorId());
 
         clipboard.pin(aggregation);

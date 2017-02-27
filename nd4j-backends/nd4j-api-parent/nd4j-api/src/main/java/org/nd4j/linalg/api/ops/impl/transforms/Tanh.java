@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Tanh extends BaseTransformOp {
 
-    public Tanh() {
-    }
+    public Tanh() {}
 
     public Tanh(INDArray x, INDArray z) {
         super(x, z);
@@ -116,7 +115,8 @@ public class Tanh extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new Tanh(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Tanh(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Tanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -126,7 +126,8 @@ public class Tanh extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new Tanh(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Tanh(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Tanh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

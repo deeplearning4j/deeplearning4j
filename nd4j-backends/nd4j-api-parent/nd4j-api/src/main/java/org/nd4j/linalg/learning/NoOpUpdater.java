@@ -33,7 +33,7 @@ public class NoOpUpdater implements GradientUpdater {
     }
 
     @EqualsAndHashCode
-    private static class NoOpUpdaterAggregator implements GradientUpdaterAggregator{
+    private static class NoOpUpdaterAggregator implements GradientUpdaterAggregator {
         @Override
         public GradientUpdater getUpdater() {
             return new NoOpUpdater();

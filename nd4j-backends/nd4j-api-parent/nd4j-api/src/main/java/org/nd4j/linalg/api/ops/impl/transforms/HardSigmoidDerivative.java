@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class HardSigmoidDerivative extends BaseTransformOp {
 
-    public HardSigmoidDerivative() {
-    }
+    public HardSigmoidDerivative() {}
 
     public HardSigmoidDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -62,42 +61,42 @@ public class HardSigmoidDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin, float other) {
-        return (float)hardSigmoidDeriv(origin);
+        return (float) hardSigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-    	return hardSigmoidDeriv(origin);
+        return hardSigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin) {
-    	return hardSigmoidDeriv(origin);
+        return hardSigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin) {
-    	return (float)hardSigmoidDeriv(origin);
+        return (float) hardSigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
@@ -105,9 +104,12 @@ public class HardSigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoidDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -116,16 +118,19 @@ public class HardSigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardSigmoidDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-    
+
     private static double hardSigmoidDeriv(double input) {
         return input < -2.5 || input > 2.5 ? 0.0 : 0.2;
     }
-    
+
     private static IComplexNumber sigmoidDeriv(IComplexNumber number) {
         return null;
     }

@@ -26,28 +26,26 @@ public class TestNd4jKryoSerialization {
     private JavaSparkContext sc;
 
     @Before
-    public void before(){
+    public void before() {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[*]");
         sparkConf.setAppName("Iris");
 
-        sparkConf.set("spark.serializer","org.apache.spark.serializer.KryoSerializer");
+        sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
         sparkConf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 
         sc = new JavaSparkContext(sparkConf);
     }
 
     @Test
-    public void testSerialization(){
+    public void testSerialization() {
 
-        Tuple2<INDArray,INDArray> t2 = new Tuple2<>(
-                Nd4j.linspace(1,10,10),
-                Nd4j.linspace(10,20,10));
+        Tuple2<INDArray, INDArray> t2 = new Tuple2<>(Nd4j.linspace(1, 10, 10), Nd4j.linspace(10, 20, 10));
 
-        Broadcast<Tuple2<INDArray,INDArray>> b = sc.broadcast(t2);
+        Broadcast<Tuple2<INDArray, INDArray>> b = sc.broadcast(t2);
 
         List<INDArray> list = new ArrayList<>();
-        for( int i=0; i<100; i++ ){
+        for (int i = 0; i < 100; i++) {
             list.add(Nd4j.ones(5));
         }
 
@@ -58,20 +56,21 @@ public class TestNd4jKryoSerialization {
 
 
     @After
-    public void after(){
-        if(sc != null) sc.close();
+    public void after() {
+        if (sc != null)
+            sc.close();
     }
 
     @AllArgsConstructor
     public static class AssertFn implements VoidFunction<INDArray> {
 
-        private Broadcast<Tuple2<INDArray,INDArray>> b;
+        private Broadcast<Tuple2<INDArray, INDArray>> b;
 
         @Override
         public void call(INDArray arr) throws Exception {
-            Tuple2<INDArray,INDArray> t2 = b.getValue();
-            assertEquals(Nd4j.linspace(1,10,10), t2._1());
-            assertEquals(Nd4j.linspace(10,20,10), t2._2());
+            Tuple2<INDArray, INDArray> t2 = b.getValue();
+            assertEquals(Nd4j.linspace(1, 10, 10), t2._1());
+            assertEquals(Nd4j.linspace(10, 20, 10), t2._2());
 
             assertEquals(Nd4j.ones(5), arr);
         }

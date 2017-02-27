@@ -10,15 +10,15 @@ public class IndexInfo {
     private int numNewAxes = 0;
     private int numPoints = 0;
 
-    public IndexInfo(INDArrayIndex...indexes) {
+    public IndexInfo(INDArrayIndex... indexes) {
         this.indexes = indexes;
-        for(int i = 0; i < indexes.length; i++) {
-            if(indexes[i] instanceof PointIndex)
+        for (int i = 0; i < indexes.length; i++) {
+            if (indexes[i] instanceof PointIndex)
                 numPoints++;
-            if(indexes[i] instanceof IntervalIndex) {
+            if (indexes[i] instanceof IntervalIndex) {
 
             }
-            if(indexes[i] instanceof NewAxis)
+            if (indexes[i] instanceof NewAxis)
                 numNewAxes++;
         }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 @RunWith(Parameterized.class)
-public  class ComplexNumberTests  extends BaseNd4jTest {
+public class ComplexNumberTests extends BaseNd4jTest {
     public ComplexNumberTests(Nd4jBackend backend) {
         super(backend);
     }
@@ -54,7 +54,7 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(getFailureMessage(),1, test.imaginaryComponent(), 1e-1);
+        assertEquals(getFailureMessage(), 1, test.imaginaryComponent(), 1e-1);
         test.muli(2);
         assertEquals(2, test.realComponent().doubleValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
@@ -78,7 +78,7 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
         assertEquals(1, test.realComponent().floatValue(), 1e-1);
-        assertEquals(getFailureMessage(),1, test.imaginaryComponent(), 1e-1);
+        assertEquals(getFailureMessage(), 1, test.imaginaryComponent(), 1e-1);
         test.muli(2);
         assertEquals(2, test.realComponent().floatValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
@@ -96,15 +96,15 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
     @Test
     public void testExponentFloat() {
         IComplexFloat test = Nd4j.createFloat(1, 1);
-        assertEquals(test.realComponent(), 1.468694,1e-3);
-        assertEquals(test.imaginaryComponent(), 2.2873552,1e-3);
+        assertEquals(test.realComponent(), 1.468694, 1e-3);
+        assertEquals(test.imaginaryComponent(), 2.2873552, 1e-3);
     }
 
     @Test
     public void testExponentDouble() {
         IComplexDouble test = Nd4j.createDouble(1, 1);
-        assertEquals(test.realComponent(), 1.4686939399158851,1e-3);
-        assertEquals(test.imaginaryComponent(), 2.2873552871788423,1e-3);
+        assertEquals(test.realComponent(), 1.4686939399158851, 1e-3);
+        assertEquals(test.imaginaryComponent(), 2.2873552871788423, 1e-3);
     }
 
     @Test

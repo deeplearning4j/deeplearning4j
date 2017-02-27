@@ -24,19 +24,19 @@ public class ActivationLReLU extends BaseActivationFunction {
         this(DEFAULT_ALPHA);
     }
 
-    public ActivationLReLU (double alpha) {
+    public ActivationLReLU(double alpha) {
         this.alpha = alpha;
     }
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in,alpha));
+        Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in, alpha));
         return in;
     }
 
     @Override
-    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
-        INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in,alpha).derivative());
+    public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
+        INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in, alpha).derivative());
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);
     }

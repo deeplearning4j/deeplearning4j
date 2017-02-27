@@ -16,12 +16,16 @@ public class AllocUtil {
      * Get the allocation mode from the context
      * @return
      */
-    public static  DataBuffer.AllocationMode getAllocationModeFromContext(String allocMode) {
-        switch(allocMode) {
-            case "heap": return DataBuffer.AllocationMode.HEAP;
-            case "javacpp": return DataBuffer.AllocationMode.JAVACPP;
-            case "direct": return DataBuffer.AllocationMode.DIRECT;
-            default: return DataBuffer.AllocationMode.JAVACPP;
+    public static DataBuffer.AllocationMode getAllocationModeFromContext(String allocMode) {
+        switch (allocMode) {
+            case "heap":
+                return DataBuffer.AllocationMode.HEAP;
+            case "javacpp":
+                return DataBuffer.AllocationMode.JAVACPP;
+            case "direct":
+                return DataBuffer.AllocationMode.DIRECT;
+            default:
+                return DataBuffer.AllocationMode.JAVACPP;
         }
     }
 
@@ -31,11 +35,15 @@ public class AllocUtil {
      * @return
      */
     public static String getAllocModeName(DataBuffer.AllocationMode allocationMode) {
-        switch(allocationMode) {
-            case HEAP: return "heap";
-            case JAVACPP: return "javacpp";
-            case DIRECT: return "direct";
-            default: return "javacpp";
+        switch (allocationMode) {
+            case HEAP:
+                return "heap";
+            case JAVACPP:
+                return "javacpp";
+            case DIRECT:
+                return "direct";
+            default:
+                return "javacpp";
         }
     }
 
@@ -64,9 +72,10 @@ public class AllocUtil {
      * @param allocationModeForContext
      */
     public static void setAllocationModeForContext(String allocationModeForContext) {
-        if(!allocationModeForContext.equals("heap") && !allocationModeForContext.equals("javacpp") && !allocationModeForContext.equals("direct"))
+        if (!allocationModeForContext.equals("heap") && !allocationModeForContext.equals("javacpp")
+                        && !allocationModeForContext.equals("direct"))
             throw new IllegalArgumentException("Allocation mode must be one of: heap,javacpp, or direct");
-        Nd4jContext.getInstance().getConf().put("alloc",allocationModeForContext);
+        Nd4jContext.getInstance().getConf().put("alloc", allocationModeForContext);
     }
 
 }

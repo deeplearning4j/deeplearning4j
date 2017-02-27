@@ -50,11 +50,11 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-//        log.info("sI_{} adding SkipGramChain originator: {}; frame: {}; task: {}", transport.getShardIndex(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
+        //        log.info("sI_{} adding SkipGramChain originator: {}; frame: {}; task: {}", transport.getShardIndex(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
         SkipGramChain chain = new SkipGramChain(message.getOriginatorId(), message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
-//        log.info("Starting chain [{}]", chain.getTaskId());
+        //        log.info("Starting chain [{}]", chain.getTaskId());
 
 
         chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
@@ -62,54 +62,51 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // we assume this is HS round
         //if (message.getPoints() != null && message.getPoints().length > 0) {
 
-            int row_syn0[] = new int[0]; //replicate(message.getW2(), message.getPoints().length);
+        int row_syn0[] = new int[0]; //replicate(message.getW2(), message.getPoints().length);
 
-            int row_syn1[] = message.getPoints();
+        int row_syn1[] = message.getPoints();
 
-            if (message.getNegSamples() > 0) {
-                int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
-                int tempArray[] = new int[message.getNegSamples() + 1];
-                tempArray[0] = message.getW1();
+        if (message.getNegSamples() > 0) {
+            int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
+            int tempArray[] = new int[message.getNegSamples() + 1];
+            tempArray[0] = message.getW1();
 
-                for (int e = 1; e < message.getNegSamples() + 1; e++) {
-                    while (true) {
-                        int rnd = RandomUtils.nextInt(0, rows);
-                        if (rnd != message.getW1()) {
-                            tempArray[e] = rnd;
-                            break;
-                        }
+            for (int e = 1; e < message.getNegSamples() + 1; e++) {
+                while (true) {
+                    int rnd = RandomUtils.nextInt(0, rows);
+                    if (rnd != message.getW1()) {
+                        tempArray[e] = rnd;
+                        break;
                     }
                 }
-
-                row_syn1 = ArrayUtils.addAll(row_syn1, tempArray);
-
-                message.setNegatives(tempArray);
             }
 
-            if (message.getPoints().length != message.getCodes().length)
-                throw new RuntimeException("Mismatiching points/codes lengths here!");
+            row_syn1 = ArrayUtils.addAll(row_syn1, tempArray);
 
-            // FIXME: taskId should be real here, since it'll be used for task chain tracking
-            // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
-            DistributedSgDotMessage ddm = new DistributedSgDotMessage(message.getTaskId(), row_syn0, row_syn1,
-                    message.getW1(),
-                    message.getW2(),
-                    message.getCodes(),
-                    message.getCodes() != null && message.getCodes().length > 0,
-                    message.getNegSamples(),
-                    (float) message.getAlpha());
+            message.setNegatives(tempArray);
+        }
 
-            ddm.setTargetId((short) - 1);
-            ddm.setOriginatorId(message.getOriginatorId());
+        if (message.getPoints().length != message.getCodes().length)
+            throw new RuntimeException("Mismatiching points/codes lengths here!");
+
+        // FIXME: taskId should be real here, since it'll be used for task chain tracking
+        // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
+        DistributedSgDotMessage ddm = new DistributedSgDotMessage(message.getTaskId(), row_syn0, row_syn1,
+                        message.getW1(), message.getW2(), message.getCodes(),
+                        message.getCodes() != null && message.getCodes().length > 0, message.getNegSamples(),
+                        (float) message.getAlpha());
+
+        ddm.setTargetId((short) -1);
+        ddm.setOriginatorId(message.getOriginatorId());
 
 
-            if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
-                transport.putMessage(ddm);
-            } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
-                transport.sendMessage(ddm);
-            }
+        if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+            transport.putMessage(ddm);
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+            transport.sendMessage(ddm);
+        }
 
-      //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
+        //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
     }
 
@@ -119,10 +116,11 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
      */
     @Override
     public void pickTraining(@NonNull SkipGramRequestMessage message) {
-        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
+        RequestDescriptor descriptor =
+                        RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
         if (!chains.containsKey(descriptor)) {
             SkipGramChain chain = new SkipGramChain(message);
-//            log.info("sI_{} Picking chain: originator: {}; taskId: {}", transport.getShardIndex(), message.getOriginatorId(), message.getTaskId());
+            //            log.info("sI_{} Picking chain: originator: {}; taskId: {}", transport.getShardIndex(), message.getOriginatorId(), message.getTaskId());
             chains.put(descriptor, chain);
         }
     }
@@ -141,10 +139,13 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // the only possible aggregation here is DotAggregation, actually
         // so we just calculate gradients here
 
-        SkipGramChain chain = chains.get(RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId()));
+        SkipGramChain chain = chains.get(
+                        RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId()));
 
         if (chain == null) {
-            throw new RuntimeException("sI_" + transport.getShardIndex() + " Unable to find chain for specified originatorId: ["+ aggregation.getOriginatorId()+"]; taskId: [" + aggregation.getTaskId() + "]");
+            throw new RuntimeException("sI_" + transport.getShardIndex()
+                            + " Unable to find chain for specified originatorId: [" + aggregation.getOriginatorId()
+                            + "]; taskId: [" + aggregation.getTaskId() + "]");
         }
 
         chain.addElement((DotAggregation) aggregation);
@@ -216,9 +217,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 double g = 0.0f;
 
                 if (dot > HS_MAX_EXP)
-                    g = (code - 1 ) * alpha;
-                else if (dot <- HS_MAX_EXP)
-                    g = (code - 0 ) * alpha;
+                    g = (code - 1) * alpha;
+                else if (dot < -HS_MAX_EXP)
+                    g = (code - 0) * alpha;
                 else {
                     int idx = (int) ((dot + HS_MAX_EXP) * (expTable.length() / HS_MAX_EXP / 2.0));
                     if (idx >= expTable.length() || idx < 0)
@@ -229,7 +230,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
                 updated = true;
                 Nd4j.getBlasWrapper().axpy(new Double(g), syn1Neg.getRow(sgrm.getNegatives()[cnt]), neu1e);
-                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1Neg.getRow(sgrm.getNegatives()[cnt]));
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()),
+                                syn1Neg.getRow(sgrm.getNegatives()[cnt]));
             }
         }
 
@@ -243,7 +245,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             completionHandler.notifyFrame(chain.getOriginatorId(), chain.getFrameId(), chain.getTaskId());
 
             if (completionHandler.isCompleted(descriptor)) {
-                FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
+                FrameCompletionHandler.FrameDescriptor frameDescriptor =
+                                completionHandler.getCompletedFrameInfo(descriptor);
 
 
                 // TODO: there is possible race condition here
@@ -256,7 +259,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 }
             }
         } else {
-            log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
+            log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}",
+                            transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId);
         }
 
         if (cntRounds.incrementAndGet() % 100000 == 0)

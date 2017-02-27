@@ -13,23 +13,21 @@ import java.io.Serializable;
 /**
  * Interface for loss functions
  */
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),
-        @JsonSubTypes.Type(value = LossCosineProximity.class, name = "CosineProximity"),
-        @JsonSubTypes.Type(value = LossHinge.class, name = "Hinge"),
-        @JsonSubTypes.Type(value = LossKLD.class, name = "KLD"),
-        @JsonSubTypes.Type(value = LossMAE.class, name = "MAE"),
-        @JsonSubTypes.Type(value = LossL1.class, name = "L1"),
-        @JsonSubTypes.Type(value = LossMAPE.class, name = "MAPE"),
-        @JsonSubTypes.Type(value = LossMCXENT.class, name = "MCXENT"),
-        @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
-        @JsonSubTypes.Type(value = LossL2.class, name = "L2"),
-        @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE"),
-        @JsonSubTypes.Type(value = LossNegativeLogLikelihood.class, name = "NegativeLogLikelihood"),
-        @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
-        @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),
+                @JsonSubTypes.Type(value = LossCosineProximity.class, name = "CosineProximity"),
+                @JsonSubTypes.Type(value = LossHinge.class, name = "Hinge"),
+                @JsonSubTypes.Type(value = LossKLD.class, name = "KLD"),
+                @JsonSubTypes.Type(value = LossMAE.class, name = "MAE"),
+                @JsonSubTypes.Type(value = LossL1.class, name = "L1"),
+                @JsonSubTypes.Type(value = LossMAPE.class, name = "MAPE"),
+                @JsonSubTypes.Type(value = LossMCXENT.class, name = "MCXENT"),
+                @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
+                @JsonSubTypes.Type(value = LossL2.class, name = "L2"),
+                @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE"),
+                @JsonSubTypes.Type(value = LossNegativeLogLikelihood.class, name = "NegativeLogLikelihood"),
+                @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
+                @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge")})
 public interface ILossFunction extends Serializable {
 
     /**
@@ -75,6 +73,7 @@ public interface ILossFunction extends Serializable {
      * @return The score (loss function value) and gradient
      */
     //TODO: do we want to use the apache commons pair here?
-    Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average);
+    Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
+                    INDArray mask, boolean average);
 
 }

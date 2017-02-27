@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -101,13 +101,11 @@ public class NormalDistribution extends BaseDistribution {
      * @param sd   Standard deviation for this distribution.
      * @throws org.apache.commons.math3.exception.NotStrictlyPositiveException if {@code sd <= 0}.
      */
-    public NormalDistribution(double mean, double sd)
-            throws NotStrictlyPositiveException {
+    public NormalDistribution(double mean, double sd) throws NotStrictlyPositiveException {
         this(mean, sd, DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
     }
 
-    public NormalDistribution(Random rng, double mean, double sd)
-            throws NotStrictlyPositiveException {
+    public NormalDistribution(Random rng, double mean, double sd) throws NotStrictlyPositiveException {
         this(rng, mean, sd, DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
     }
 
@@ -121,8 +119,7 @@ public class NormalDistribution extends BaseDistribution {
      * @throws NotStrictlyPositiveException if {@code sd <= 0}.
      * @since 2.1
      */
-    public NormalDistribution(double mean, double sd, double inverseCumAccuracy)
-            throws NotStrictlyPositiveException {
+    public NormalDistribution(double mean, double sd, double inverseCumAccuracy) throws NotStrictlyPositiveException {
         this(Nd4j.getRandom(), mean, sd, inverseCumAccuracy);
     }
 
@@ -136,11 +133,8 @@ public class NormalDistribution extends BaseDistribution {
      * @throws NotStrictlyPositiveException if {@code sd <= 0}.
      * @since 3.1
      */
-    public NormalDistribution(Random rng,
-                              double mean,
-                              double sd,
-                              double inverseCumAccuracy)
-            throws NotStrictlyPositiveException {
+    public NormalDistribution(Random rng, double mean, double sd, double inverseCumAccuracy)
+                    throws NotStrictlyPositiveException {
         super(rng);
 
         if (sd <= 0) {
@@ -227,8 +221,7 @@ public class NormalDistribution extends BaseDistribution {
      */
     @Override
     @Deprecated
-    public double cumulativeProbability(double x0, double x1)
-            throws NumberIsTooLargeException {
+    public double cumulativeProbability(double x0, double x1) throws NumberIsTooLargeException {
         return probability(x0, x1);
     }
 
@@ -236,12 +229,9 @@ public class NormalDistribution extends BaseDistribution {
      * {@inheritDoc}
      */
     @Override
-    public double probability(double x0,
-                              double x1)
-            throws NumberIsTooLargeException {
+    public double probability(double x0, double x1) throws NumberIsTooLargeException {
         if (x0 > x1) {
-            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_ENDPOINT_ABOVE_UPPER_ENDPOINT,
-                    x0, x1, true);
+            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_ENDPOINT_ABOVE_UPPER_ENDPOINT, x0, x1, true);
         }
         final double denom = standardDeviation * SQRT2;
         final double v0 = (x0 - mean) / denom;
@@ -341,13 +331,15 @@ public class NormalDistribution extends BaseDistribution {
     public INDArray sample(int[] shape) {
         if (random.getStatePointer() != null) {
             if (means != null) {
-                return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
+                return Nd4j.getExecutioner().exec(new GaussianDistribution(
+                                Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
             } else {
-                return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
+                return Nd4j.getExecutioner().exec(new GaussianDistribution(
+                                Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
             }
         } else {
             INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
-            Iterator<int[]> idxIter = new NdIndexIterator(shape);    //For consistent values irrespective of c vs. fortran ordering
+            Iterator<int[]> idxIter = new NdIndexIterator(shape); //For consistent values irrespective of c vs. fortran ordering
             int len = ret.length();
             if (means != null) {
                 for (int i = 0; i < len; i++) {

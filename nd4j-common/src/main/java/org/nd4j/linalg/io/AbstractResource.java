@@ -9,8 +9,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 public abstract class AbstractResource implements Resource {
-    public AbstractResource() {
-    }
+    public AbstractResource() {}
 
     public boolean exists() {
         try {
@@ -60,7 +59,7 @@ public abstract class AbstractResource implements Resource {
             long size = 0L;
 
             int read;
-            for(byte[] buf = new byte[255]; (read = is.read(buf)) != -1; size += (long)read) {
+            for (byte[] buf = new byte[255]; (read = is.read(buf)) != -1; size += (long) read) {
                 ;
             }
 
@@ -78,8 +77,9 @@ public abstract class AbstractResource implements Resource {
 
     public long lastModified() throws IOException {
         long lastModified = this.getFileForLastModifiedCheck().lastModified();
-        if(lastModified == 0L) {
-            throw new FileNotFoundException(this.getDescription() + " cannot be resolved in the file system for resolving its last-modified timestamp");
+        if (lastModified == 0L) {
+            throw new FileNotFoundException(this.getDescription()
+                            + " cannot be resolved in the file system for resolving its last-modified timestamp");
         } else {
             return lastModified;
         }
@@ -102,7 +102,8 @@ public abstract class AbstractResource implements Resource {
     }
 
     public boolean equals(Object obj) {
-        return obj == this || obj instanceof Resource && ((Resource)obj).getDescription().equals(this.getDescription());
+        return obj == this
+                        || obj instanceof Resource && ((Resource) obj).getDescription().equals(this.getDescription());
     }
 
     public int hashCode() {

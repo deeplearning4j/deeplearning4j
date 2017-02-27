@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,8 +39,7 @@ public class LastIndex extends BaseIndexAccumulation {
     protected double eps;
     protected int mode;
 
-    public LastIndex() {
-    }
+    public LastIndex() {}
 
 
     public LastIndex(INDArray x, @NonNull Condition condition) {
@@ -60,28 +59,28 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public int update(double accum, int accumIdx, double x, int xIdx){
+    public int update(double accum, int accumIdx, double x, int xIdx) {
         return (accum >= x ? accumIdx : xIdx);
     }
 
     @Override
-    public int update(float accum, int accumIdx, float x, int xIdx){
+    public int update(float accum, int accumIdx, float x, int xIdx) {
         return (accum >= x ? accumIdx : xIdx);
     }
 
     @Override
-    public int update(double accum, int accumIdx, double x, double y, int idx){
-        return (accum >=x ? accumIdx : idx);
-    }
-
-    @Override
-    public int update(float accum, int accumIdx, float x, float y, int idx){
+    public int update(double accum, int accumIdx, double x, double y, int idx) {
         return (accum >= x ? accumIdx : idx);
     }
 
     @Override
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx){
-        return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : xIdx);
+    public int update(float accum, int accumIdx, float x, float y, int idx) {
+        return (accum >= x ? accumIdx : idx);
+    }
+
+    @Override
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : xIdx);
     }
 
     @Override
@@ -95,7 +94,7 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx){
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx) {
         return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : idx);
     }
 
@@ -151,12 +150,12 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return 0.0f;
     }
 
     @Override
-    public double zeroDouble(){
+    public double zeroDouble() {
         return 0.0;
     }
 
@@ -166,8 +165,8 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public IComplexNumber zeroComplex(){
-        return Nd4j.createComplexNumber(-Double.MAX_VALUE,0);
+    public IComplexNumber zeroComplex() {
+        return Nd4j.createComplexNumber(-Double.MAX_VALUE, 0);
     }
 
     @Override

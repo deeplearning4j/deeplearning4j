@@ -44,8 +44,8 @@ public class ParameterServerNode implements AutoCloseable {
      * @param mediaDriver the media driver to sue for communication
      * @param statusPort the port for the server status
      */
-    public ParameterServerNode(MediaDriver mediaDriver,int statusPort) {
-        this(mediaDriver,statusPort,Runtime.getRuntime().availableProcessors());
+    public ParameterServerNode(MediaDriver mediaDriver, int statusPort) {
+        this(mediaDriver, statusPort, Runtime.getRuntime().availableProcessors());
 
     }
 
@@ -54,7 +54,7 @@ public class ParameterServerNode implements AutoCloseable {
      * @param mediaDriver the media driver to sue for communication
      * @param statusPort the port for the server status
      */
-    public ParameterServerNode(MediaDriver mediaDriver,int statusPort,int numWorkers) {
+    public ParameterServerNode(MediaDriver mediaDriver, int statusPort, int numWorkers) {
         this.mediaDriver = mediaDriver;
         this.statusPort = statusPort;
         this.numWorkers = numWorkers;
@@ -69,7 +69,7 @@ public class ParameterServerNode implements AutoCloseable {
      * @param mediaDriver
      */
     public ParameterServerNode(MediaDriver mediaDriver) {
-        this(mediaDriver,9000);
+        this(mediaDriver, 9000);
     }
 
     /**
@@ -79,8 +79,8 @@ public class ParameterServerNode implements AutoCloseable {
      * @param args the arguments for the {@link ParameterServerSubscriber}
      */
     public void runMain(String[] args) {
-        server = StatusServer.startServer(new InMemoryStatusStorage(),statusPort);
-        if(mediaDriver == null)
+        server = StatusServer.startServer(new InMemoryStatusStorage(), statusPort);
+        if (mediaDriver == null)
             mediaDriver = MediaDriver.launchEmbedded();
         log.info("Started media driver with aeron directory " + mediaDriver.aeronDirectoryName());
         //cache a reference to the first listener.
@@ -90,31 +90,29 @@ public class ParameterServerNode implements AutoCloseable {
         //like averaging we try.
         NDArrayCallback parameterServerListener = null;
         ParameterServerListener cast = null;
-        for(int i = 0; i < numWorkers; i++) {
+        for (int i = 0; i < numWorkers; i++) {
             subscriber[i] = new ParameterServerSubscriber(mediaDriver);
             //ensure reuse of aeron wherever possible
-            if(aeron == null)
+            if (aeron == null)
                 aeron = Aeron.connect(getContext(mediaDriver));
             subscriber[i].setAeron(aeron);
             List<String> multiArgs = new ArrayList<>(Arrays.asList(args));
-            if(multiArgs.contains("-id")) {
+            if (multiArgs.contains("-id")) {
                 int streamIdIdx = multiArgs.indexOf("-id") + 1;
                 int streamId = Integer.parseInt(multiArgs.get(streamIdIdx)) + i;
-                multiArgs.set(streamIdIdx,String.valueOf(streamId)) ;
-            }
-            else if(multiArgs.contains("--streamId")) {
+                multiArgs.set(streamIdIdx, String.valueOf(streamId));
+            } else if (multiArgs.contains("--streamId")) {
                 int streamIdIdx = multiArgs.indexOf("--streamId") + 1;
                 int streamId = Integer.parseInt(multiArgs.get(streamIdIdx)) + i;
-                multiArgs.set(streamIdIdx,String.valueOf(streamId)) ;
+                multiArgs.set(streamIdIdx, String.valueOf(streamId));
             }
 
 
-            if(i == 0) {
+            if (i == 0) {
                 subscriber[i].run(multiArgs.toArray(new String[args.length]));
                 parameterServerListener = subscriber[i].getCallback();
                 cast = subscriber[i].getParameterServerListener();
-            }
-            else {
+            } else {
                 //note that we set both the callback AND the listener here
                 subscriber[i].setCallback(parameterServerListener);
                 subscriber[i].setParameterServerListener(cast);
@@ -131,8 +129,6 @@ public class ParameterServerNode implements AutoCloseable {
 
 
 
-
-
     /**
      * Returns true if all susbcribers in the
      * subscriber pool have been launched
@@ -140,7 +136,7 @@ public class ParameterServerNode implements AutoCloseable {
      */
     public boolean subscriberLaunched() {
         boolean launched = true;
-        for(int i = 0; i < numWorkers; i++) {
+        for (int i = 0; i < numWorkers; i++) {
             launched = launched && subscriber[i].subscriberLaunched();
         }
 
@@ -154,30 +150,30 @@ public class ParameterServerNode implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(subscriber != null) {
-            for(int i = 0; i < subscriber.length; i++) {
-                if(subscriber[i] != null) {
+        if (subscriber != null) {
+            for (int i = 0; i < subscriber.length; i++) {
+                if (subscriber[i] != null) {
                     subscriber[i].close();
                 }
             }
         }
-        if(server != null)
+        if (server != null)
             server.stop();
-        if(mediaDriver != null)
+        if (mediaDriver != null)
             CloseHelper.quietClose(mediaDriver);
-        if(aeron != null)
+        if (aeron != null)
             CloseHelper.quietClose(aeron);
 
     }
 
 
 
-    private static  Aeron.Context getContext(MediaDriver mediaDriver) {
+    private static Aeron.Context getContext(MediaDriver mediaDriver) {
         return new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                .errorHandler(e -> log.error(e.toString(), e));
+                        .availableImageHandler(AeronUtil::printAvailableImage)
+                        .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                        .errorHandler(e -> log.error(e.toString(), e));
     }
 
 

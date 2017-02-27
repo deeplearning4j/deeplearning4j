@@ -12,7 +12,7 @@ import org.nd4j.parameterserver.distributed.messages.RequestMessage;
  * @author raver119@gmail.com
  */
 @Data
-public class DistributedAssignMessage extends BaseVoidMessage  implements DistributedMessage {
+public class DistributedAssignMessage extends BaseVoidMessage implements DistributedMessage {
     /**
      * The only use of this message is negTable sharing.
      */
@@ -21,7 +21,7 @@ public class DistributedAssignMessage extends BaseVoidMessage  implements Distri
     private Integer key;
     private INDArray payload;
 
-    protected DistributedAssignMessage(){
+    protected DistributedAssignMessage() {
         super();
     }
 

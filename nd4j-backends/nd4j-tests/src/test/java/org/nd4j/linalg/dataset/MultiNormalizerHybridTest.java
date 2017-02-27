@@ -29,15 +29,10 @@ public class MultiNormalizerHybridTest extends BaseNd4jTest {
     public void setUp() {
         SUT = new MultiNormalizerHybrid();
         data = new MultiDataSet(
-            new INDArray[]{
-                Nd4j.create(new float[][]{{1, 2}, {3, 4}}),
-                Nd4j.create(new float[][]{{3, 4}, {5, 6}}),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{10, 11}, {12, 13}}),
-                Nd4j.create(new float[][]{{14, 15}, {16, 17}}),
-            }
-        );
+                        new INDArray[] {Nd4j.create(new float[][] {{1, 2}, {3, 4}}),
+                                        Nd4j.create(new float[][] {{3, 4}, {5, 6}}),},
+                        new INDArray[] {Nd4j.create(new float[][] {{10, 11}, {12, 13}}),
+                                        Nd4j.create(new float[][] {{14, 15}, {16, 17}}),});
         dataCopy = data.copy();
     }
 
@@ -50,7 +45,7 @@ public class MultiNormalizerHybridTest extends BaseNd4jTest {
         SUT.fit(data);
         SUT.preProcess(data);
         assertEquals(dataCopy, data);
-        
+
         SUT.revert(data);
         assertEquals(dataCopy, data);
     }
@@ -59,96 +54,66 @@ public class MultiNormalizerHybridTest extends BaseNd4jTest {
     public void testGlobalNormalization() {
         SUT.standardizeAllInputs().minMaxScaleAllOutputs(-10, 10).fit(data);
         SUT.preProcess(data);
-        
+
         MultiDataSet expected = new MultiDataSet(
-            new INDArray[]{
-                Nd4j.create(new float[][]{{-1, -1}, {1, 1}}),
-                Nd4j.create(new float[][]{{-1, -1}, {1, 1}}),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{-10, -10}, {10, 10}}),
-                Nd4j.create(new float[][]{{-10, -10}, {10, 10}}),
-            }
-        );
-        
+                        new INDArray[] {Nd4j.create(new float[][] {{-1, -1}, {1, 1}}),
+                                        Nd4j.create(new float[][] {{-1, -1}, {1, 1}}),},
+                        new INDArray[] {Nd4j.create(new float[][] {{-10, -10}, {10, 10}}),
+                                        Nd4j.create(new float[][] {{-10, -10}, {10, 10}}),});
+
         assertEquals(expected, data);
 
         SUT.revert(data);
         assertEquals(dataCopy, data);
     }
-    
+
     @Test
     public void testSpecificInputOutputNormalization() {
         SUT.minMaxScaleAllInputs().standardizeInput(1).standardizeOutput(0).fit(data);
         SUT.preProcess(data);
 
         MultiDataSet expected = new MultiDataSet(
-            new INDArray[]{
-                Nd4j.create(new float[][]{{0, 0}, {1, 1}}),
-                Nd4j.create(new float[][]{{-1, -1}, {1, 1}}),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{-1, -1}, {1, 1}}),
-                Nd4j.create(new float[][]{{14, 15}, {16, 17}}),
-            }
-        );
+                        new INDArray[] {Nd4j.create(new float[][] {{0, 0}, {1, 1}}),
+                                        Nd4j.create(new float[][] {{-1, -1}, {1, 1}}),},
+                        new INDArray[] {Nd4j.create(new float[][] {{-1, -1}, {1, 1}}),
+                                        Nd4j.create(new float[][] {{14, 15}, {16, 17}}),});
 
         assertEquals(expected, data);
 
         SUT.revert(data);
         assertEquals(dataCopy, data);
     }
-    
+
     @Test
     public void testMasking() {
         MultiDataSet timeSeries = new MultiDataSet(
-            new INDArray[]{
-                Nd4j.create(new float[]{1, 2, 3, 4, 5, 0, 7, 0}).reshape(2, 2, 2),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[]{0, 20, 0, 40, 50, 60, 70, 80}).reshape(2, 2, 2)
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{1, 1}, {1, 0}})
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{0, 1}, {1, 1}})
-            }
-        );
+                        new INDArray[] {Nd4j.create(new float[] {1, 2, 3, 4, 5, 0, 7, 0}).reshape(2, 2, 2),},
+                        new INDArray[] {Nd4j.create(new float[] {0, 20, 0, 40, 50, 60, 70, 80}).reshape(2, 2, 2)},
+                        new INDArray[] {Nd4j.create(new float[][] {{1, 1}, {1, 0}})},
+                        new INDArray[] {Nd4j.create(new float[][] {{0, 1}, {1, 1}})});
         MultiDataSet timeSeriesCopy = timeSeries.copy();
-        
+
         SUT.minMaxScaleAllInputs(-10, 10).minMaxScaleAllOutputs(-10, 10).fit(timeSeries);
         SUT.preProcess(timeSeries);
 
         MultiDataSet expected = new MultiDataSet(
-            new INDArray[]{
-                Nd4j.create(new float[]{-10, -5, -10, -5, 10, 0, 10, 0}).reshape(2, 2, 2),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[]{0, -10, 0, -10, 5, 10, 5, 10}).reshape(2, 2, 2),
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{1, 1}, {1, 0}})
-            },
-            new INDArray[]{
-                Nd4j.create(new float[][]{{0, 1}, {1, 1}})
-            }
-        );
-        
+                        new INDArray[] {Nd4j.create(new float[] {-10, -5, -10, -5, 10, 0, 10, 0}).reshape(2, 2, 2),},
+                        new INDArray[] {Nd4j.create(new float[] {0, -10, 0, -10, 5, 10, 5, 10}).reshape(2, 2, 2),},
+                        new INDArray[] {Nd4j.create(new float[][] {{1, 1}, {1, 0}})},
+                        new INDArray[] {Nd4j.create(new float[][] {{0, 1}, {1, 1}})});
+
         assertEquals(expected, timeSeries);
-        
+
         SUT.revert(timeSeries);
-        
+
         assertEquals(timeSeriesCopy, timeSeries);
     }
 
     private void assertSmallDifference(double expected, double actual) {
         double delta = Math.abs(expected - actual);
         double deltaPerc = (delta / expected) * 100;
-        assertTrue(
-            String.format("Failed to assert that expected value %f is close to actual value %f", expected, actual),
-            deltaPerc < TOLERANCE_PERC
-        );
+        assertTrue(String.format("Failed to assert that expected value %f is close to actual value %f", expected,
+                        actual), deltaPerc < TOLERANCE_PERC);
     }
 
     @Override

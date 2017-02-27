@@ -35,7 +35,7 @@ public class RandomPerformanceTests extends BaseNd4jTest {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
 
-        for (int i = 100; i < 100000001; i*=10) {
+        for (int i = 100; i < 100000001; i *= 10) {
             INDArray x1 = Nd4j.createUninitialized(i);
             INDArray x2 = Nd4j.createUninitialized(i);
 
@@ -63,7 +63,8 @@ public class RandomPerformanceTests extends BaseNd4jTest {
             time2 = System.nanoTime();
             long timeRecent = time2 - time1;
 
-            log.info("Length: {}; Legacy time: {} us, Current time: {} us; Legacy NPE: {} ns; Current NPE: {}", i, timeLegacy / 1000, timeRecent / 1000, timeLegacy / x1.length(), timeRecent / x1.length());
+            log.info("Length: {}; Legacy time: {} us, Current time: {} us; Legacy NPE: {} ns; Current NPE: {}", i,
+                            timeLegacy / 1000, timeRecent / 1000, timeLegacy / x1.length(), timeRecent / x1.length());
         }
     }
 

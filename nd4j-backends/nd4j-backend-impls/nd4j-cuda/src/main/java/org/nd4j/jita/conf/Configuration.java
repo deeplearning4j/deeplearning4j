@@ -8,7 +8,6 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,128 +21,158 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Configuration implements Serializable {
 
     public enum ExecutionModel {
-        SEQUENTIAL,
-        ASYNCHRONOUS,
-        OPTIMIZED,
+        SEQUENTIAL, ASYNCHRONOUS, OPTIMIZED,
     }
 
     public enum AllocationModel {
-        DIRECT,
-        CACHE_HOST,
-        CACHE_ALL,
+        DIRECT, CACHE_HOST, CACHE_ALL,
     }
 
     public enum MemoryModel {
-        IMMEDIATE,
-        DELAYED
+        IMMEDIATE, DELAYED
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
+    @Getter
+    private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
+    @Getter
+    private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
+    @Getter
+    private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
+    @Getter
+    private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
 
-    @Getter private boolean debug = false;
+    @Getter
+    private boolean debug = false;
 
-    @Getter private boolean verbose = false;
+    @Getter
+    private boolean verbose = false;
 
-    @Getter private boolean fillDashboard = false;
+    @Getter
+    private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
 
     /**
      * Keep this value between 0.01 and 0.95 please
      */
-    @Getter private double maximumDeviceMemoryUsed = 0.85;
+    @Getter
+    private double maximumDeviceMemoryUsed = 0.85;
 
     /**
      * Minimal number of activations for relocation threshold
      */
-    @Getter private int minimumRelocationThreshold = 5;
+    @Getter
+    private int minimumRelocationThreshold = 5;
 
     /**
      * Minimal guaranteed TTL for memory chunk
      */
-    @Getter private long minimumTTLMilliseconds = 10 * 1000L;
+    @Getter
+    private long minimumTTLMilliseconds = 10 * 1000L;
 
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads = 6;
+    @Getter
+    private int numberOfGcThreads = 6;
 
     /**
      * Deallocation aggressiveness
      */
-    @Getter private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
+    @Getter
+    private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
 
-    @Getter private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
+    @Getter
+    private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Allocation aggressiveness
      */
-    @Getter private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
+    @Getter
+    private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
 
 
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    @Getter private long maximumDeviceAllocation = 4 * 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumDeviceAllocation = 4 * 1024 * 1024 * 1024L;
 
 
     /**
      * Maximum allocatable zero-copy/pinned/pageable memory
      */
-    @Getter private long maximumZeroAllocation = Runtime.getRuntime().maxMemory() + (500 * 1024 * 1024L);
+    @Getter
+    private long maximumZeroAllocation = Runtime.getRuntime().maxMemory() + (500 * 1024 * 1024L);
 
     /**
      * True if allowed, false if relocation required
      */
-    @Getter private boolean crossDeviceAccessAllowed = true;
+    @Getter
+    private boolean crossDeviceAccessAllowed = true;
 
     /**
      * True, if allowed, false otherwise
      */
-    @Getter private boolean zeroCopyFallbackAllowed = false;
+    @Getter
+    private boolean zeroCopyFallbackAllowed = false;
 
     /**
      * Maximum length of single memory chunk
      */
-    @Getter private long maximumSingleHostAllocation = Long.MAX_VALUE;
+    @Getter
+    private long maximumSingleHostAllocation = Long.MAX_VALUE;
 
-    @Getter private long maximumSingleDeviceAllocation = 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumSingleDeviceAllocation = 1024 * 1024 * 1024L;
 
-    @Getter private List<Integer> availableDevices = new ArrayList<>();
+    @Getter
+    private List<Integer> availableDevices = new ArrayList<>();
 
-    @Getter private List<Integer> bannedDevices = new ArrayList<>();
+    @Getter
+    private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 4096;
+    @Getter
+    private int maximumGridSize = 4096;
 
-    @Getter private int maximumBlockSize = 256;
+    @Getter
+    private int maximumBlockSize = 256;
 
-    @Getter private int minimumBlockSize = 32;
+    @Getter
+    private int minimumBlockSize = 32;
 
-    @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
-    @Getter private long maximumDeviceCache = 1024 * 1024 * 1024L;
+    @Getter
+    private long maximumDeviceCache = 1024 * 1024 * 1024L;
 
-    @Getter private boolean usePreallocation = true;
+    @Getter
+    private boolean usePreallocation = true;
 
-    @Getter private int preallocationCalls = 10;
+    @Getter
+    private int preallocationCalls = 10;
 
-    @Getter private long maximumHostCacheableLength = 100663296;
+    @Getter
+    private long maximumHostCacheableLength = 100663296;
 
-    @Getter private long maximumDeviceCacheableLength = 100663296;
+    @Getter
+    private long maximumDeviceCacheableLength = 100663296;
 
-    @Getter private int commandQueueLength = 3;
+    @Getter
+    private int commandQueueLength = 3;
 
-    @Getter private int commandLanesNumber = 4;
+    @Getter
+    private int commandLanesNumber = 4;
 
-    @Getter private int debugTriggered = 0;
+    @Getter
+    private int debugTriggered = 0;
 
-    @Getter private int poolSize = 32;
+    @Getter
+    private int poolSize = 32;
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -336,7 +365,8 @@ public class Configuration implements Serializable {
     public Configuration setMaximumDeviceMemoryUsed(double percentage) {
         if (percentage < 0.02 || percentage > 0.95) {
             this.maximumDeviceMemoryUsed = 0.85;
-        } else this.maximumDeviceMemoryUsed = percentage;
+        } else
+            this.maximumDeviceMemoryUsed = percentage;
 
         return this;
     }
@@ -357,7 +387,7 @@ public class Configuration implements Serializable {
 
         // if we have multi-gpu system - force DELAYED memory model by default
         //if (cnt > 1 && !forceSingleGPU)
-            //this.memoryModel = MemoryModel.DELAYED;
+        //this.memoryModel = MemoryModel.DELAYED;
     }
 
     /**
@@ -410,7 +440,7 @@ public class Configuration implements Serializable {
      */
     public Configuration useDevices(@NonNull int... devices) {
         List<Integer> usableDevices = new ArrayList<>();
-        for (int device: devices) {
+        for (int device : devices) {
             if (!availableDevices.contains(device)) {
                 log.warn("Non-existent device [{}] requested, ignoring...", device);
             } else {
@@ -465,7 +495,7 @@ public class Configuration implements Serializable {
      * @param max
      * @return
      */
-    public Configuration setMaximumSingleHostAllocation(long max){
+    public Configuration setMaximumSingleHostAllocation(long max) {
         this.maximumSingleHostAllocation = max;
 
         return this;
@@ -479,7 +509,7 @@ public class Configuration implements Serializable {
      * @param max
      * @return
      */
-    public Configuration setMaximumSingleDeviceAllocation(long max){
+    public Configuration setMaximumSingleDeviceAllocation(long max) {
         this.maximumSingleDeviceAllocation = max;
 
         return this;
@@ -622,7 +652,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
-        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST && initialMemory != AllocationStatus.DELAYED)
+        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST
+                        && initialMemory != AllocationStatus.DELAYED)
             throw new IllegalStateException("First memory should be either [HOST], [DEVICE] or [DELAYED]");
 
         this.firstMemory = initialMemory;
@@ -647,7 +678,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setNumberOfGcThreads(int numThreads) {
-        if (numThreads <= 0 || numThreads >20)
+        if (numThreads <= 0 || numThreads > 20)
             throw new IllegalStateException("Please, use something in range of [1..20] as number of GC threads");
 
         if (!isInitialized())

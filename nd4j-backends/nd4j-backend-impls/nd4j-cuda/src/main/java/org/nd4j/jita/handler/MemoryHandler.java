@@ -72,7 +72,8 @@ public interface MemoryHandler {
      * @param targetStatus
      * @param point
      */
-    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape, CudaContext context);
+    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point,
+                    AllocationShape shape, CudaContext context);
 
     /**
      * Copies memory from device to host, if needed.

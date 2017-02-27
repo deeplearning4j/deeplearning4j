@@ -67,19 +67,28 @@ public class ParameterServerSubscriber implements AutoCloseable {
     private int streamId = 10;
     @Parameter(names = {"-h", "--host"}, description = "Host for the server to bind to", arity = 1)
     private String host = "localhost";
-    @Parameter(names = {"-d", "--deleteDirectoryOnStart"}, description = "Delete aeron directory on startup.", arity = 1)
+    @Parameter(names = {"-d", "--deleteDirectoryOnStart"}, description = "Delete aeron directory on startup.",
+                    arity = 1)
     private boolean deleteDirectoryOnStart = true;
     @Parameter(names = {"-m", "--master"}, description = "Whether this subscriber is a master node or not.", arity = 1)
     private boolean master = false;
-    @Parameter(names = {"-pm", "--publishmaster"}, description = "Publish master url: host:port - this is for peer nodes needing to publish to another peer.", arity = 1)
+    @Parameter(names = {"-pm", "--publishmaster"},
+                    description = "Publish master url: host:port - this is for peer nodes needing to publish to another peer.",
+                    arity = 1)
     private String publishMasterUrl = "localhost:40123";
-    @Parameter(names = {"-md", "--mediadriverdirectory"}, description = "The media driver directory name. This is for when the media driver is started as a separate process.", arity = 1)
+    @Parameter(names = {"-md", "--mediadriverdirectory"},
+                    description = "The media driver directory name. This is for when the media driver is started as a separate process.",
+                    arity = 1)
     private String mediaDriverDirectoryName;
-    @Parameter(names = {"-sp", "--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
+    @Parameter(names = {"-sp", "--statusserverport"}, description = "The status server port, defaults to 9000.",
+                    arity = 1)
     private int statusServerPort = 9000;
-    @Parameter(names = {"-sh", "--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
+    @Parameter(names = {"-sh", "--statusserverhost"}, description = "The status host, defaults to localhost.",
+                    arity = 1)
     private String statusServerHost = "localhost";
-    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.", arity = 1)
+    @Parameter(names = {"-up", "--update"},
+                    description = "The update type for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.",
+                    arity = 1)
     private String updateTypeString = UpdateType.SYNC.toString().toLowerCase();
 
     private UpdateType updateType = UpdateType.SYNC;
@@ -90,7 +99,8 @@ public class ParameterServerSubscriber implements AutoCloseable {
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
-    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1,required = true)
+    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1,
+                    required = true)
     private int updatesPerEpoch;
 
 
@@ -99,12 +109,13 @@ public class ParameterServerSubscriber implements AutoCloseable {
      * Note that this class must be a fully qualified classname
      */
     public final static String CUSTOM_UPDATE_TYPE = "org.nd4j.parameterserver.updatetype";
+
     /**
      * Update types are for
      * instantiating various kinds of update types
      */
     public enum UpdateType {
-        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC,CUSTOM
+        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC, CUSTOM
     }
 
 
@@ -139,14 +150,17 @@ public class ParameterServerSubscriber implements AutoCloseable {
      */
     public SubscriberState asState() {
         return SubscriberState.builder()
-                .parameterUpdaterStatus(parameterServerListener == null ? Collections.emptyMap() : parameterServerListener.getUpdater().status())
-                .isMaster(isMaster()).connectionInfo(isMaster() ? masterConnectionInfo().toString() : slaveConnectionInfo().toString())
-                .isAsync(parameterServerListener.getUpdater().isAsync()).isReady(parameterServerListener.getUpdater().isReady())
-                .totalUpdates(getResponder().getNdArrayHolder().totalUpdates()).streamId(streamId)
-                .serverState(subscriberLaunched() ?
-                        ServerState.STARTED.name().toLowerCase() :
-                        ServerState.STOPPED.name().toLowerCase())
-                .build();
+                        .parameterUpdaterStatus(parameterServerListener == null ? Collections.emptyMap()
+                                        : parameterServerListener.getUpdater().status())
+                        .isMaster(isMaster())
+                        .connectionInfo(isMaster() ? masterConnectionInfo().toString()
+                                        : slaveConnectionInfo().toString())
+                        .isAsync(parameterServerListener.getUpdater().isAsync())
+                        .isReady(parameterServerListener.getUpdater().isReady())
+                        .totalUpdates(getResponder().getNdArrayHolder().totalUpdates()).streamId(streamId)
+                        .serverState(subscriberLaunched() ? ServerState.STARTED.name().toLowerCase()
+                                        : ServerState.STOPPED.name().toLowerCase())
+                        .build();
     }
 
     /**
@@ -160,9 +174,8 @@ public class ParameterServerSubscriber implements AutoCloseable {
     public SlaveConnectionInfo slaveConnectionInfo() {
         if (isMaster())
             throw new IllegalStateException("Unable to determine slave connection info. This is a master node");
-        return SlaveConnectionInfo.builder()
-                .connectionUrl(subscriber.connectionUrl())
-                .masterUrl(publishMasterUrl).build();
+        return SlaveConnectionInfo.builder().connectionUrl(subscriber.connectionUrl()).masterUrl(publishMasterUrl)
+                        .build();
 
     }
 
@@ -179,10 +192,8 @@ public class ParameterServerSubscriber implements AutoCloseable {
     public MasterConnectionInfo masterConnectionInfo() {
         if (!isMaster())
             throw new IllegalStateException("Unable to determine master connection info. This is a slave node");
-        return MasterConnectionInfo.builder()
-                .connectionUrl(subscriber.connectionUrl())
-                .responderUrl(responder.connectionUrl())
-                .slaveUrls(new ArrayList<>()).build();
+        return MasterConnectionInfo.builder().connectionUrl(subscriber.connectionUrl())
+                        .responderUrl(responder.connectionUrl()).slaveUrls(new ArrayList<>()).build();
     }
 
     /**
@@ -210,7 +221,6 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
 
 
-
         if (publishMasterUrl == null && !master)
             throw new IllegalStateException("Please specify a master url or set master to true");
 
@@ -226,16 +236,12 @@ public class ParameterServerSubscriber implements AutoCloseable {
             ipcLength += 64;
             //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
             System.setProperty("aeron.socket.so_rcvbuf", String.valueOf(ipcLength));
-            final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
-                    .threadingMode(ThreadingMode.DEDICATED)
-                    .dirsDeleteOnStart(deleteDirectoryOnStart)
-                    .termBufferSparseFile(false)
-                    .ipcTermBufferLength(ipcLength)
-                    .publicationTermBufferLength(ipcLength)
-                    .maxTermBufferLength(ipcLength)
-                    .conductorIdleStrategy(new BusySpinIdleStrategy())
-                    .receiverIdleStrategy(new BusySpinIdleStrategy())
-                    .senderIdleStrategy(new BusySpinIdleStrategy());
+            final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED)
+                            .dirsDeleteOnStart(deleteDirectoryOnStart).termBufferSparseFile(false)
+                            .ipcTermBufferLength(ipcLength).publicationTermBufferLength(ipcLength)
+                            .maxTermBufferLength(ipcLength).conductorIdleStrategy(new BusySpinIdleStrategy())
+                            .receiverIdleStrategy(new BusySpinIdleStrategy())
+                            .senderIdleStrategy(new BusySpinIdleStrategy());
 
             mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx);
             //set the variable since we are using a media driver directly
@@ -248,35 +254,41 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
 
         if (master) {
-            if(this.callback == null) {
+            if (this.callback == null) {
                 ParameterServerUpdater updater = null;
                 //instantiate with shape instead of just length
-                switch(updateType) {
-                    case HOGWILD: break;
-                    case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),new InMemoryNDArrayHolder(Ints.toArray(shape)),updatesPerEpoch); break;
-                    case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
-                    case TIME_DELAYED: break;
+                switch (updateType) {
+                    case HOGWILD:
+                        break;
+                    case SYNC:
+                        updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),
+                                        new InMemoryNDArrayHolder(Ints.toArray(shape)), updatesPerEpoch);
+                        break;
+                    case SOFTSYNC:
+                        updater = new SoftSyncParameterUpdater();
+                        break;
+                    case TIME_DELAYED:
+                        break;
                     case CUSTOM:
                         try {
-                            updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE)).newInstance();
-                        }catch(Exception e) {
+                            updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE))
+                                            .newInstance();
+                        } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
                         break;
-                    default: throw new IllegalStateException("Illegal type of updater");
+                    default:
+                        throw new IllegalStateException("Illegal type of updater");
                 }
 
-                callback = new ParameterServerListener(Ints.toArray(shape),updater);
+                callback = new ParameterServerListener(Ints.toArray(shape), updater);
                 parameterServerListener = (ParameterServerListener) callback;
 
             }
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
-            responder = AeronNDArrayResponder.startSubscriber(
-                    aeron,
-                    host, port + 1,
-                    cast.getUpdater().ndArrayHolder(),
-                    streamId + 1);
+            responder = AeronNDArrayResponder.startSubscriber(aeron, host, port + 1, cast.getUpdater().ndArrayHolder(),
+                            streamId + 1);
             log.info("Started responder on master node " + responder.connectionUrl());
         } else {
             String[] publishMasterUrlArr = publishMasterUrl.split(":");
@@ -284,22 +296,15 @@ public class ParameterServerSubscriber implements AutoCloseable {
                 throw new IllegalStateException("Please specify publish master url as host:port");
 
             callback = new PublishingListener(
-                    String.format("aeron:udp?endpoint=%s:%s",
-                            publishMasterUrlArr[0],
-                            publishMasterUrlArr[1]),
-                    Integer.parseInt(publishMasterUrlArr[2]),
-                    getContext());
+                            String.format("aeron:udp?endpoint=%s:%s", publishMasterUrlArr[0], publishMasterUrlArr[1]),
+                            Integer.parseInt(publishMasterUrlArr[2]), getContext());
         }
 
         log.info("Starting subscriber on " + host + ":" + port + " and stream " + streamId);
         AtomicBoolean running = new AtomicBoolean(true);
 
         //start a node
-        subscriber = AeronNDArraySubscriber.startSubscriber(
-                aeron,
-                host, port,
-                callback,
-                streamId, running);
+        subscriber = AeronNDArraySubscriber.startSubscriber(aeron, host, port, callback, streamId, running);
 
         while (!subscriber.launched()) {
             LockSupport.parkNanos(100000);
@@ -313,22 +318,25 @@ public class ParameterServerSubscriber implements AutoCloseable {
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
                     //
-                    if(failCount.get() >= 3)
+                    if (failCount.get() >= 3)
                         return;
                     SubscriberState subscriberState = asState();
                     JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
-                    String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId);
-                    HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json").body(jsonObject).asString();
+                    String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort,
+                                    streamId);
+                    HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json")
+                                    .body(jsonObject).asString();
                 } catch (Exception e) {
                     failCount.incrementAndGet();
-                    if(failCount.get() >= 3) {
-                        log.warn("Failed to send update, shutting down likely?",e);
+                    if (failCount.get() >= 3) {
+                        log.warn("Failed to send update, shutting down likely?", e);
                     }
                 }
             }, 0, heartbeatMs, TimeUnit.MILLISECONDS);
 
         } else {
-            log.info("No status server found. Will not send heartbeats. Specified host was " + statusServerHost + " and port was " + statusServerPort);
+            log.info("No status server found. Will not send heartbeats. Specified host was " + statusServerHost
+                            + " and port was " + statusServerPort);
         }
 
 
@@ -353,16 +361,13 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
 
 
-
-
     //get a context
     public Aeron.Context getContext() {
         Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriverDirectoryName)
-                .keepAliveInterval(100000)
-                .errorHandler(e -> log.error(e.toString(), e));
+                        .availableImageHandler(AeronUtil::printAvailableImage)
+                        .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                        .aeronDirectoryName(mediaDriverDirectoryName).keepAliveInterval(100000)
+                        .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }
 

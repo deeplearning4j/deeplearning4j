@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -49,29 +49,27 @@ import java.util.Set;
  * @author Adam Gibson
  */
 public class DefaultOpFactory implements OpFactory {
-    private Map<String,Class<? extends Op>> opClazzes;
+    private Map<String, Class<? extends Op>> opClazzes;
 
 
     public DefaultOpFactory() {
         opClazzes = new HashMap<>();
 
-        Reflections f = new Reflections(new ConfigurationBuilder()
-                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
-                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*")  //Exclude any not in the ops directory
-                )
+        Reflections f = new Reflections(new ConfigurationBuilder().filterInputsBy(
+                        new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
+        )
 
-                .setUrls(ClasspathHelper.forPackage("org.nd4j"))
-                .setScanners(new SubTypesScanner()));
+                        .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
 
         Set<Class<? extends Op>> clazzes = f.getSubTypesOf(Op.class);
 
-        for(Class<? extends Op> clazz : clazzes) {
-            if(Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
+        for (Class<? extends Op> clazz : clazzes) {
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
                 continue;
 
             try {
-                opClazzes.put(clazz.newInstance().name(),clazz);
+                opClazzes.put(clazz.newInstance().name(), clazz);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -82,8 +80,9 @@ public class DefaultOpFactory implements OpFactory {
     public LossFunction createLossFunction(String name, INDArray x, INDArray y) {
         Class<? extends Op> clazz = opClazzes.get(name);
         try {
-            Constructor<Op> constructor = (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class,INDArray.class);
-            Op create = constructor.newInstance(x,y);
+            Constructor<Op> constructor =
+                            (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
+            Op create = constructor.newInstance(x, y);
             return (LossFunction) create;
         } catch (Exception e) {
             throw new IllegalArgumentException("Illegal op " + name);
@@ -188,8 +187,8 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public IndexAccumulation createIndexAccum(String name, INDArray x){
-        switch(name){
+    public IndexAccumulation createIndexAccum(String name, INDArray x) {
+        switch (name) {
             case "iamax":
                 return new IAMax(x);
             case "imax":
@@ -202,14 +201,14 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y){
-        switch(name){
+    public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y) {
+        switch (name) {
             case "iamax":
-                return new IAMax(x,y);
+                return new IAMax(x, y);
             case "imax":
-                return new IMax(x,y);
+                return new IMax(x, y);
             case "imin":
-                return new IMin(x,y);
+                return new IMin(x, y);
             default:
                 throw new IllegalArgumentException("Illegal name: " + name);
         }
@@ -219,7 +218,7 @@ public class DefaultOpFactory implements OpFactory {
     public TransformOp createTransform(String name, INDArray x, INDArray y) {
         switch (name) {
             case "relu":
-                return new RectifedLinear(x,0);
+                return new RectifedLinear(x, 0);
             case "abs":
                 return new Abs(x, y);
             case "acos":
@@ -247,9 +246,9 @@ public class DefaultOpFactory implements OpFactory {
             case "log":
                 return new Log(x, y);
             case "logsoftmax":
-                return new LogSoftMax(x,y);
+                return new LogSoftMax(x, y);
             case "leakyrelu":
-            	return new LeakyReLU(x,y);
+                return new LeakyReLU(x, y);
             case "maxout":
                 return new MaxOut(x, y);
             case "negative":
@@ -265,7 +264,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sin":
                 return new Sin(x, y);
             case "softsign":
-            	return new SoftSign(x,y);
+                return new SoftSign(x, y);
             case "sqrt":
                 return new Sqrt(x, y);
             case "stabilize":
@@ -275,13 +274,13 @@ public class DefaultOpFactory implements OpFactory {
             case "rationaltanh":
                 return new RationalTanh(x, y);
             case "timesoneminus":
-            	return new TimesOneMinus(x,y);
+                return new TimesOneMinus(x, y);
             case "softmax":
                 return new SoftMax(x, y);
             case "softplus":
                 return new SoftPlus(x);
             case "step":
-            	return new Step(x,y);
+                return new Step(x, y);
             case "cube":
                 return new Cube(x, y);
             default:
@@ -294,7 +293,7 @@ public class DefaultOpFactory implements OpFactory {
     public TransformOp createTransform(String name, INDArray x) {
         switch (name) {
             case "relu":
-                return new RectifedLinear(x,0);
+                return new RectifedLinear(x, 0);
             case "abs":
                 return new Abs(x);
             case "acos":
@@ -320,7 +319,7 @@ public class DefaultOpFactory implements OpFactory {
             case "identity":
                 return new Identity(x);
             case "leakyrelu":
-            	return new LeakyReLU(x);
+                return new LeakyReLU(x);
             case "log":
                 return new Log(x);
             case "logsoftmax":
@@ -340,7 +339,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sin":
                 return new Sin(x);
             case "softsign":
-            	return new SoftSign(x);
+                return new SoftSign(x);
             case "sqrt":
                 return new Sqrt(x);
             case "stabilize":
@@ -350,13 +349,13 @@ public class DefaultOpFactory implements OpFactory {
             case "rationaltanh":
                 return new RationalTanh(x);
             case "timesoneminus":
-            	return new TimesOneMinus(x);
+                return new TimesOneMinus(x);
             case "softmax":
                 return new SoftMax(x);
             case "softplus":
                 return new SoftPlus(x);
             case "step":
-            	return new Step(x);
+                return new Step(x);
             case "cube":
                 return new Cube(x);
             default:
@@ -364,13 +363,12 @@ public class DefaultOpFactory implements OpFactory {
         }
 
     }
-    
+
     @Override
     public TransformOp createTransform(String name, INDArray x, Object[] extraArgs) {
-        if (extraArgs == null || extraArgs.length == 0 ){
+        if (extraArgs == null || extraArgs.length == 0) {
             return createTransform(name, x);
-        }
-        else {
+        } else {
             switch (name) {
                 //placeholder for adding relu param as user specified
                 case "relu":
@@ -380,7 +378,7 @@ public class DefaultOpFactory implements OpFactory {
                 default:
                     throw new IllegalArgumentException("Illegal name " + name);
             }
-       }
+        }
     }
 
 
@@ -388,7 +386,7 @@ public class DefaultOpFactory implements OpFactory {
     public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
         switch (name) {
             case "relu":
-                return new RectifedLinear(x,z,0);
+                return new RectifedLinear(x, z, 0);
             case "abs":
                 return new Abs(x, z);
             case "acos":
@@ -414,11 +412,11 @@ public class DefaultOpFactory implements OpFactory {
             case "identity":
                 return new Identity(x, z);
             case "leakyrelu":
-            	return new LeakyReLU(x,z);
+                return new LeakyReLU(x, z);
             case "log":
                 return new Log(x, z);
             case "logsoftmax":
-                return new LogSoftMax(x,z);
+                return new LogSoftMax(x, z);
             case "maxout":
                 return new MaxOut(x, z);
             case "negative":
@@ -434,7 +432,7 @@ public class DefaultOpFactory implements OpFactory {
             case "sin":
                 return new Sin(x, z);
             case "softsign":
-            	return new SoftSign(x,z);
+                return new SoftSign(x, z);
             case "sqrt":
                 return new Sqrt(x, z);
             case "stabilize":
@@ -444,13 +442,13 @@ public class DefaultOpFactory implements OpFactory {
             case "rationaltanh":
                 return new RationalTanh(x, z);
             case "timesoneminus":
-            	return new TimesOneMinus(x,z);
+                return new TimesOneMinus(x, z);
             case "softmax":
                 return new SoftMax(x, z);
             case "softplus":
-                return new SoftPlus(x,z);
+                return new SoftPlus(x, z);
             case "cube":
-                return new Cube(x,z);
+                return new Cube(x, z);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -462,44 +460,44 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension){
-        switch(name){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension) {
+        switch (name) {
             case "broadcastadd":
-                return new BroadcastAddOp(x,y,z,dimension);
+                return new BroadcastAddOp(x, y, z, dimension);
             case "broadcastsub":
-                return new BroadcastSubOp(x,y,z,dimension);
+                return new BroadcastSubOp(x, y, z, dimension);
             case "broadcastmul":
-                return new BroadcastMulOp(x,y,z,dimension);
+                return new BroadcastMulOp(x, y, z, dimension);
             case "broadcastdiv":
-                return new BroadcastDivOp(x,y,z,dimension);
+                return new BroadcastDivOp(x, y, z, dimension);
             case "broadcastrsub":
-                return new BroadcastRSubOp(x,y,z,dimension);
+                return new BroadcastRSubOp(x, y, z, dimension);
             case "broadcastrdiv":
-                return new BroadcastRDivOp(x,y,z,dimension);
+                return new BroadcastRDivOp(x, y, z, dimension);
             case "broadcastcopy":
-                return new BroadcastCopyOp(x,y,z,dimension);
+                return new BroadcastCopyOp(x, y, z, dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
     }
 
     @Override
-    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension){
-        switch(name){
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension) {
+        switch (name) {
             case "broadcastadd":
-                return new BroadcastAddOp(x,y,x,dimension);
+                return new BroadcastAddOp(x, y, x, dimension);
             case "broadcastsub":
-                return new BroadcastSubOp(x,y,x,dimension);
+                return new BroadcastSubOp(x, y, x, dimension);
             case "broadcastmul":
-                return new BroadcastMulOp(x,y,x,dimension);
+                return new BroadcastMulOp(x, y, x, dimension);
             case "broadcastdiv":
-                return new BroadcastDivOp(x,y,x,dimension);
+                return new BroadcastDivOp(x, y, x, dimension);
             case "broadcastrsub":
-                return new BroadcastRSubOp(x,y,x,dimension);
+                return new BroadcastRSubOp(x, y, x, dimension);
             case "broadcastrdiv":
-                return new BroadcastRDivOp(x,y,x,dimension);
+                return new BroadcastRDivOp(x, y, x, dimension);
             case "broadcastcopy":
-                return new BroadcastCopyOp(x,y,x,dimension);
+                return new BroadcastCopyOp(x, y, x, dimension);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }

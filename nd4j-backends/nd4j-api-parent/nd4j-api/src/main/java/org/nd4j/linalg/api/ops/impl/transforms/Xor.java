@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ public class Xor extends BaseTransformOp {
 
     protected double comparable;
 
-    public Xor() {
-    }
+    public Xor() {}
 
     public Xor(@NonNull INDArray x, @NonNull INDArray y) {
         this(x, y, 0.0);
@@ -64,7 +63,7 @@ public class Xor extends BaseTransformOp {
     public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
         super(x, y, z, n);
         this.comparable = comparable.doubleValue();
-        this.extraArgs = new Object[]{ this.comparable };
+        this.extraArgs = new Object[] {this.comparable};
     }
 
 
@@ -122,7 +121,8 @@ public class Xor extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new Xor(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Xor(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Xor(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -132,7 +132,8 @@ public class Xor extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new Xor(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Xor(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Xor(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

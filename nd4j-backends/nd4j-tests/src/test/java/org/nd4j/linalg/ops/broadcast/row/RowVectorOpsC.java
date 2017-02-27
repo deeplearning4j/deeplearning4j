@@ -23,14 +23,12 @@ public class RowVectorOpsC extends BaseNd4jTest {
 
     @Test
     public void testAddi() {
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
-        arr.addiRowVector(Nd4j.create(new double[]{1,2}));
-        INDArray assertion  = Nd4j.create(new double[][]{
-                {2,4},
-                {4,6}
-        });
-        assertEquals(assertion,arr);
+        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        arr.addiRowVector(Nd4j.create(new double[] {1, 2}));
+        INDArray assertion = Nd4j.create(new double[][] {{2, 4}, {4, 6}});
+        assertEquals(assertion, arr);
     }
+
     @Override
     public char ordering() {
         return 'c';

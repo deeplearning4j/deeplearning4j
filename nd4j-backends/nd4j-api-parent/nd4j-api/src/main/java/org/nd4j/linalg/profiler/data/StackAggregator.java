@@ -16,11 +16,11 @@ public class StackAggregator {
         // nothing to do here so far
     }
 
-    public void renderTree(){
+    public void renderTree() {
         tree.renderTree(false);
     }
 
-    public void renderTree(boolean displayCounts){
+    public void renderTree(boolean displayCounts) {
         tree.renderTree(displayCounts);
     }
 

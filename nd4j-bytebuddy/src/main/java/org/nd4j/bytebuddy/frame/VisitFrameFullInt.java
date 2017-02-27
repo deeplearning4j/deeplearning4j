@@ -11,7 +11,7 @@ import org.nd4j.bytebuddy.shape.OffsetMapper;
  */
 public class VisitFrameFullInt implements StackManipulation {
     private int nLocal = -1;
-    private  int nStack = -1;
+    private int nStack = -1;
 
 
     public VisitFrameFullInt(int nLocal, int nStack) {
@@ -26,20 +26,25 @@ public class VisitFrameFullInt implements StackManipulation {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
-        methodVisitor.visitFrame(Opcodes.F_FULL, nLocal, new Object[] {OffsetMapper.class.getName().replace(".","/"), Opcodes.INTEGER, "[I", "[I", "[I"}
-                , nStack, new Object[] {Opcodes.INTEGER, Opcodes.INTEGER});
-        return new Size(0,0);
+        methodVisitor.visitFrame(
+                        Opcodes.F_FULL, nLocal, new Object[] {OffsetMapper.class.getName().replace(".", "/"),
+                                        Opcodes.INTEGER, "[I", "[I", "[I"},
+                        nStack, new Object[] {Opcodes.INTEGER, Opcodes.INTEGER});
+        return new Size(0, 0);
     }
 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         VisitFrameFullInt that = (VisitFrameFullInt) o;
 
-        if (nLocal != that.nLocal) return false;
+        if (nLocal != that.nLocal)
+            return false;
         return nStack == that.nStack;
 
     }

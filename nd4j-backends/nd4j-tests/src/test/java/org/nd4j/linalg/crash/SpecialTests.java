@@ -22,13 +22,13 @@ import java.util.Arrays;
 @RunWith(Parameterized.class)
 public class SpecialTests extends BaseNd4jTest {
     public SpecialTests(Nd4jBackend backend) {
-            super(backend);
-        }
+        super(backend);
+    }
 
 
     @Test
     public void testDimensionalThings1() {
-        INDArray x = Nd4j.rand(new int[]{20, 30, 50});
+        INDArray x = Nd4j.rand(new int[] {20, 30, 50});
         INDArray y = Nd4j.rand(x.shape());
 
         INDArray result = transform(x, y);
@@ -36,7 +36,7 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void testDimensionalThings2() {
-        INDArray x = Nd4j.rand(new int[]{20, 30, 50});
+        INDArray x = Nd4j.rand(new int[] {20, 30, 50});
         INDArray y = Nd4j.rand(x.shape());
 
 
@@ -53,7 +53,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     protected static INDArray transform(INDArray a, INDArray b) {
-        int nShape[] = new int[]{1,2};
+        int nShape[] = new int[] {1, 2};
         INDArray a_reduced = a.sum(nShape);
         INDArray b_reduced = b.sum(nShape);
 

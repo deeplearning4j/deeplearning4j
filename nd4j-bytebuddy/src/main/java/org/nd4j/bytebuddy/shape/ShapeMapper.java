@@ -31,8 +31,7 @@ import java.util.List;
  */
 public class ShapeMapper {
 
-    private ShapeMapper() {
-    }
+    private ShapeMapper() {}
 
     /**
      * Get an ind2sub instance
@@ -41,16 +40,13 @@ public class ShapeMapper {
      * @param rank the rank
      * @return the ind2sub instance
      */
-    public static IndexMapper getInd2SubInstance(char ordering,int rank) {
+    public static IndexMapper getInd2SubInstance(char ordering, int rank) {
         Implementation impl = ShapeMapper.getInd2Sub(ordering, rank);
-        DynamicType.Unloaded<IndexMapper> c = new ByteBuddy()
-                .subclass(IndexMapper.class).method(ElementMatchers.isDeclaredBy(IndexMapper.class))
-                .intercept(impl)
-                .make();
+        DynamicType.Unloaded<IndexMapper> c = new ByteBuddy().subclass(IndexMapper.class)
+                        .method(ElementMatchers.isDeclaredBy(IndexMapper.class)).intercept(impl).make();
 
-        Class<IndexMapper> dynamicType = (Class<IndexMapper>)
-                c.load(IndexMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                        .getLoaded();
+        Class<IndexMapper> dynamicType = (Class<IndexMapper>) c
+                        .load(IndexMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded();
         try {
             return dynamicType.newInstance();
         } catch (Exception e) {
@@ -68,14 +64,11 @@ public class ShapeMapper {
      */
     public static OffsetMapper getOffsetMapperInstance(int rank) {
         Implementation impl = ShapeMapper.getOffsetMapper(rank);
-        DynamicType.Unloaded<OffsetMapper> c = new ByteBuddy()
-                .subclass(OffsetMapper.class).method(ElementMatchers.isDeclaredBy(OffsetMapper.class))
-                .intercept(impl)
-                .make();
+        DynamicType.Unloaded<OffsetMapper> c = new ByteBuddy().subclass(OffsetMapper.class)
+                        .method(ElementMatchers.isDeclaredBy(OffsetMapper.class)).intercept(impl).make();
 
-        Class<OffsetMapper> dynamicType = (Class<OffsetMapper>)
-                c.load(OffsetMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                        .getLoaded();
+        Class<OffsetMapper> dynamicType = (Class<OffsetMapper>) c
+                        .load(OffsetMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded();
         try {
             return dynamicType.newInstance();
         } catch (Exception e) {
@@ -107,7 +100,7 @@ public class ShapeMapper {
         int indicesIndex = 4;
         List<StackManipulation> impls = new ArrayList<>();
 
-        for(int i = 0; i < rank; i++) {
+        for (int i = 0; i < rank; i++) {
             Label label = new Label();
             Label goToLabel = new Label();
             impls.add(MethodVariableAccess.INTEGER.loadOffset(startOffsetIndex));
@@ -129,10 +122,10 @@ public class ShapeMapper {
             impls.add(ByteBuddyIntArithmetic.IntegerMultiplication.INSTANCE);
             impls.add(new GoToOp(goToLabel));
             impls.add(new LabelVisitorStackManipulation(label));
-            impls.add(new VisitFrameSameInt(0,1));
+            impls.add(new VisitFrameSameInt(0, 1));
             impls.add(IntegerConstant.forValue(i));
             impls.add(new LabelVisitorStackManipulation(goToLabel));
-            impls.add(new VisitFrameFullInt(5,2));
+            impls.add(new VisitFrameFullInt(5, 2));
             //add to the offset +=
             impls.add(ByteBuddyIntArithmetic.IntegerAddition.INSTANCE);
             impls.add(new StoreIntStackManipulation(startOffsetIndex));
@@ -142,8 +135,7 @@ public class ShapeMapper {
         impls.add(MethodVariableAccess.INTEGER.loadOffset(startOffsetIndex));
         impls.add(MethodReturn.INTEGER);
         return new StackManipulationImplementation(
-                new StackManipulation.Compound(impls.toArray(new StackManipulation[impls.size()]))
-        );
+                        new StackManipulation.Compound(impls.toArray(new StackManipulation[impls.size()])));
 
     }
 
@@ -164,10 +156,10 @@ public class ShapeMapper {
          *  int[] map(int[] shape,int index,int numIndices,char ordering);
          Load int param grabs numIndices because the instance
          variable stack indexing starts with this at zero
-
+        
          4 here represents creating a variable and storing
          the value of the last argument in the method in the value
-
+        
          */
         int retArrayIndex = 4;
 
@@ -184,9 +176,9 @@ public class ShapeMapper {
         impls.add(IntegerConstant.forValue(rank));
         impls.add(new CreateIntArrayStackManipulation());
         impls.add(new StoreRefStackManipulation(retArrayIndex));
-        if(ordering == 'f') {
+        if (ordering == 'f') {
             //linearIndex of the assignment
-            for(int i = rank - 1; i >= 0; i--) {
+            for (int i = rank - 1; i >= 0; i--) {
                 //index /= shape[i]
                 //load the linear index for divide
                 impls.add(MethodVariableAccess.INTEGER.loadOffset(totalindexarg));
@@ -220,10 +212,9 @@ public class ShapeMapper {
 
 
 
-        }
-        else {
+        } else {
             //index of the assignment
-            for(int i = 0; i < rank; i++) {
+            for (int i = 0; i < rank; i++) {
                 //index /= shape[i]
                 //load the linear index for divide
                 impls.add(MethodVariableAccess.INTEGER.loadOffset(totalindexarg));
@@ -260,8 +251,7 @@ public class ShapeMapper {
         impls.add(MethodVariableAccess.REFERENCE.loadOffset(retArrayIndex));
         impls.add(MethodReturn.REFERENCE);
         return new StackManipulationImplementation(
-                new StackManipulation.Compound(impls.toArray(new StackManipulation[impls.size()]))
-        );
+                        new StackManipulation.Compound(impls.toArray(new StackManipulation[impls.size()])));
     }
 
 

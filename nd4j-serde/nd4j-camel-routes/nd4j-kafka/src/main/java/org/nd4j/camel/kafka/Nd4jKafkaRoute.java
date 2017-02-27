@@ -25,25 +25,25 @@ import java.util.UUID;
 @Builder
 public class Nd4jKafkaRoute extends RouteBuilder {
     private KafkaConnectionInformation kafkaConnectionInformation;
+
     @Override
     public void configure() throws Exception {
         final String kafkaUri = kafkaConnectionInformation.kafkaUri();
-        from("direct:start")
-                .process(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        final INDArray arr = (INDArray)  exchange.getIn().getBody();
-                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                        DataOutputStream dos = new DataOutputStream(bos);
-                        Nd4j.write(arr, dos);
-                        byte[] bytes = bos.toByteArray();
-                        String base64 = Base64.encodeBase64String(bytes);
-                        exchange.getIn().setBody(base64, String.class);
-                        String id = UUID.randomUUID().toString();
-                        exchange.getIn().setHeader(KafkaConstants.KEY,id);
-                        exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY,id);
-                    }
-                }).to(kafkaUri);
+        from("direct:start").process(new Processor() {
+            @Override
+            public void process(Exchange exchange) throws Exception {
+                final INDArray arr = (INDArray) exchange.getIn().getBody();
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(bos);
+                Nd4j.write(arr, dos);
+                byte[] bytes = bos.toByteArray();
+                String base64 = Base64.encodeBase64String(bytes);
+                exchange.getIn().setBody(base64, String.class);
+                String id = UUID.randomUUID().toString();
+                exchange.getIn().setHeader(KafkaConstants.KEY, id);
+                exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY, id);
+            }
+        }).to(kafkaUri);
 
         from(kafkaUri).process(new Processor() {
             @Override

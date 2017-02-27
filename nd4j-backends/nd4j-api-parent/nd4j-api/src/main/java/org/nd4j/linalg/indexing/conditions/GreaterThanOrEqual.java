@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,7 +29,7 @@ public class GreaterThanOrEqual extends BaseCondition {
     /**
      * Special constructor for pairwise boolean operations.
      */
-    public GreaterThanOrEqual(){
+    public GreaterThanOrEqual() {
         super(0.0);
     }
 

@@ -38,24 +38,24 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //Hack before setting datatype - fix already in r119_various branch
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream dos = new DataOutputStream(baos)){
-            Nd4j.write(arr,dos);
+        try (DataOutputStream dos = new DataOutputStream(baos)) {
+            Nd4j.write(arr, dos);
         }
         byte[] bytes = baos.toByteArray();
 
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is "+Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        System.out.println("The data type is " + Nd4j.dataType());
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
         INDArray arr2;
-        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))){
+        try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))) {
             arr2 = Nd4j.read(dis);
         }
 
@@ -68,11 +68,11 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(arr);
         }
         byte[] bytes = baos.toByteArray();
@@ -80,12 +80,12 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is "+Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        System.out.println("The data type is " + Nd4j.dataType());
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
         INDArray arr2;
-        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             arr2 = (INDArray) ois.readObject();
         }
 
@@ -97,24 +97,24 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
-        INDArray sub = arr.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream dos = new DataOutputStream(baos)){
-            Nd4j.write(sub,dos);
+        try (DataOutputStream dos = new DataOutputStream(baos)) {
+            Nd4j.write(sub, dos);
         }
         byte[] bytes = baos.toByteArray();
 
         //SET DATA TYPE TO FLOAT and initialize another array with the same contents
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is "+Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1,length,length).reshape('c',10,10);
-        INDArray sub1 = arr1.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        System.out.println("The data type is " + Nd4j.dataType());
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         INDArray arr2;
-        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))){
+        try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))) {
             arr2 = Nd4j.read(dis);
         }
 
@@ -127,22 +127,22 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
 
-        INDArray sub = arr.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(sub);
         }
         byte[] bytes = baos.toByteArray();
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
-        System.out.println("The data type is "+Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1,length,length).reshape('c',10,10);
-        INDArray sub1 = arr1.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        System.out.println("The data type is " + Nd4j.dataType());
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         INDArray arr2;
-        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             arr2 = (INDArray) ois.readObject();
         }
 
@@ -153,7 +153,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
     @After
     public void after() {
         DataTypeUtil.setDTypeForContext(this.initialType);
-        System.out.println("AFTER DATATYPE HERE: "+ Nd4j.dataType());
+        System.out.println("AFTER DATATYPE HERE: " + Nd4j.dataType());
     }
 
     @Override

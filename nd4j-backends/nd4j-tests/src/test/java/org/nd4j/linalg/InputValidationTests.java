@@ -28,49 +28,49 @@ public class InputValidationTests extends BaseNd4jTest {
     ///////////////////// Broadcast Tests ///////////////////////
 
     @Test
-    public void testInvalidColVectorOp1(){
-        INDArray first = Nd4j.create(10,10);
-        INDArray col = Nd4j.create(5,1);
-        try{
+    public void testInvalidColVectorOp1() {
+        INDArray first = Nd4j.create(10, 10);
+        INDArray col = Nd4j.create(5, 1);
+        try {
             first.muliColumnVector(col);
             fail("Should have thrown IllegalStateException");
-        }catch(IllegalStateException e){
+        } catch (IllegalStateException e) {
             //OK
         }
     }
 
     @Test
-    public void testInvalidColVectorOp2(){
-        INDArray first = Nd4j.create(10,10);
-        INDArray col = Nd4j.create(5,1);
-        try{
+    public void testInvalidColVectorOp2() {
+        INDArray first = Nd4j.create(10, 10);
+        INDArray col = Nd4j.create(5, 1);
+        try {
             first.addColumnVector(col);
             fail("Should have thrown IllegalStateException");
-        }catch(IllegalStateException e){
+        } catch (IllegalStateException e) {
             //OK
         }
     }
 
     @Test
-    public void testInvalidRowVectorOp1(){
-        INDArray first = Nd4j.create(10,10);
-        INDArray row = Nd4j.create(1,5);
-        try{
+    public void testInvalidRowVectorOp1() {
+        INDArray first = Nd4j.create(10, 10);
+        INDArray row = Nd4j.create(1, 5);
+        try {
             first.addiRowVector(row);
             fail("Should have thrown IllegalStateException");
-        }catch(IllegalStateException e){
+        } catch (IllegalStateException e) {
             //OK
         }
     }
 
     @Test
-    public void testInvalidRowVectorOp2(){
-        INDArray first = Nd4j.create(10,10);
-        INDArray row = Nd4j.create(1,5);
-        try{
+    public void testInvalidRowVectorOp2() {
+        INDArray first = Nd4j.create(10, 10);
+        INDArray row = Nd4j.create(1, 5);
+        try {
             first.subRowVector(row);
             fail("Should have thrown IllegalStateException");
-        }catch(IllegalStateException e){
+        } catch (IllegalStateException e) {
             //OK
         }
     }

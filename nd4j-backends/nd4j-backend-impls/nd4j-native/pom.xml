@@ -30,44 +30,8 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
+            <artifactId>openblas-platform</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>android-arm</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>android-x86</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>macosx-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>linux-ppc64le</classifier>
         </dependency>
 
         <dependency>

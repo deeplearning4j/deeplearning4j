@@ -22,7 +22,7 @@ public class ActivationReLU extends BaseActivationFunction {
     }
 
     @Override
-    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
+    public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in).derivative());
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);

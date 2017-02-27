@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 
 public class LogSoftMax extends BaseTransformOp {
-    public LogSoftMax() {
-    }
+    public LogSoftMax() {}
 
     public LogSoftMax(INDArray x, INDArray z) {
         super(x, z);
@@ -57,7 +56,7 @@ public class LogSoftMax extends BaseTransformOp {
 
     @Override
     public int opNum() {
-       return 40;
+        return 40;
     }
 
 
@@ -111,7 +110,8 @@ public class LogSoftMax extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new LogSoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LogSoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new LogSoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -121,7 +121,8 @@ public class LogSoftMax extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new LogSoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LogSoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new LogSoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -139,9 +140,9 @@ public class LogSoftMax extends BaseTransformOp {
 
     @Override
     public void exec(int... dimensions) {
-        if(dimensions[0] != 1)
+        if (dimensions[0] != 1)
             throw new IllegalArgumentException("Only supports row wise calculations");
-        if(x.isMatrix()) {
+        if (x.isMatrix()) {
 
             INDArray rowMax = x.max(1);
             INDArray xMinusRowMax = x.subColumnVector(rowMax);
@@ -150,20 +151,21 @@ public class LogSoftMax extends BaseTransformOp {
             Nd4j.getExecutioner().exec(new Log(logRowSumExp));
 
             INDArray logsoftmax = xMinusRowMax.subiColumnVector(logRowSumExp);
-            if(this.z != null)
+            if (this.z != null)
                 z.assign(logsoftmax);
             else
                 this.z = logsoftmax;
-        }
-        else if(x.isVector()) {
-           double max = x.maxNumber().doubleValue();
+        } else if (x.isVector()) {
+            double max = x.maxNumber().doubleValue();
             INDArray xMinusMax = x.sub(max);
             INDArray expXMinusMax = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax.dup()));
             double logRowSumExp = FastMath.log(expXMinusMax.sumNumber().doubleValue());
 
             INDArray logsoftmax = xMinusMax.subi(logRowSumExp);
-            if(this.z != null) z.assign(logsoftmax);
-            else this.z = logsoftmax;
+            if (this.z != null)
+                z.assign(logsoftmax);
+            else
+                this.z = logsoftmax;
         }
     }
 }

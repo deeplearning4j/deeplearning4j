@@ -8,7 +8,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedShutdow
  * This message
  * @author raver119@gmail.com
  */
-public class ShutdownRequestMessage extends BaseVoidMessage  implements RequestMessage {
+public class ShutdownRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     public ShutdownRequestMessage() {
         super(8);
@@ -21,7 +21,8 @@ public class ShutdownRequestMessage extends BaseVoidMessage  implements RequestM
 
         try {
             Thread.sleep(1000);
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
         transport.shutdown();
         storage.shutdown();

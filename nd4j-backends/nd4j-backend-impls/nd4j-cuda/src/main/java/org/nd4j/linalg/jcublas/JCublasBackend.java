@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,7 +38,7 @@ public class JCublasBackend extends Nd4jBackend {
     public boolean isAvailable() {
         // execute SimpleJCublas static initializer to confirm that the library is usable
         try {
-            if(!canRun())
+            if (!canRun())
                 return false;
         } catch (Throwable e) {
             throw new RuntimeException(e);

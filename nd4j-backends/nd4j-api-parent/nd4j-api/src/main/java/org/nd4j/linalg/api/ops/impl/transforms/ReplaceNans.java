@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -44,13 +44,13 @@ public class ReplaceNans extends BaseTransformOp {
     }
 
     public ReplaceNans(INDArray x, INDArray z, double set) {
-        super(x,z);
+        super(x, z);
         this.set = set;
         init(x, null, z, x.length());
     }
 
     public ReplaceNans(INDArray x, INDArray z, double set, long n) {
-        super(x,z,n);
+        super(x, z, n);
         this.set = set;
         init(x, null, x, n);
     }
@@ -111,9 +111,11 @@ public class ReplaceNans extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set,
+                            xAlongDimension.length());
         else
-            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.vectorAlongDimension(index, dimension), set,
+                            xAlongDimension.length());
     }
 
     @Override
@@ -121,16 +123,18 @@ public class ReplaceNans extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set,
+                            xAlongDimension.length());
         else
-            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set, xAlongDimension.length());
+            return new ReplaceNans(xAlongDimension, z.tensorAlongDimension(index, dimension), set,
+                            xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{set, (double) n};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {set, (double) n};
     }
 }
 

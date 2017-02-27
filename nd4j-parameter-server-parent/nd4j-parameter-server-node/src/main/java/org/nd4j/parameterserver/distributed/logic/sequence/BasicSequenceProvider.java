@@ -16,7 +16,7 @@ public class BasicSequenceProvider implements SequenceProvider {
 
     }
 
-    public static BasicSequenceProvider getInstance(){
+    public static BasicSequenceProvider getInstance() {
         return INSTANCE;
     }
 

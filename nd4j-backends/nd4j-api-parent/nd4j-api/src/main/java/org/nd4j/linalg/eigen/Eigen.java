@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,14 +39,7 @@ public class Eigen {
         assert A.rows() == A.columns();
         INDArray WR = Nd4j.create(A.rows(), A.rows());
         INDArray WI = WR.dup();
-        Nd4j.getBlasWrapper().geev(
-                'N',
-                'N',
-                A.dup(),
-                WR,
-                WI,
-                dummy,
-                dummy);
+        Nd4j.getBlasWrapper().geev('N', 'N', A.dup(), WR, WI, dummy, dummy);
         return Nd4j.createComplex(WR, WI);
     }
 
@@ -60,19 +53,7 @@ public class Eigen {
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
         INDArray eigenvalues = Nd4j.create(A.rows());
         int isuppz[] = new int[2 * A.rows()];
-        Nd4j.getBlasWrapper().syevr(
-                'N',
-                'A',
-                'U',
-                A.dup(),
-                0,
-                0,
-                0,
-                0,
-                0,
-                eigenvalues,
-                Nd4j.ones(1),
-                isuppz);
+        Nd4j.getBlasWrapper().syevr('N', 'A', 'U', A.dup(), 0, 0, 0, 0, 0, eigenvalues, Nd4j.ones(1), isuppz);
         return eigenvalues;
 
     }
@@ -97,14 +78,7 @@ public class Eigen {
         INDArray VR = Nd4j.create(A.rows(), A.rows());
         INDArray VL = Nd4j.create(A.rows(), A.rows());
 
-        Nd4j.getBlasWrapper().geev(
-                'v',
-                'v',
-                A.dup(),
-                WR,
-                WI,
-                VL,
-                VR);
+        Nd4j.getBlasWrapper().geev('v', 'v', A.dup(), WR, WI, VL, VR);
 
         // transferring the result
         IComplexNDArray E = Nd4j.createComplex(WR, WI);
@@ -120,7 +94,7 @@ public class Eigen {
                 i += 1;
             }
         }
-        return new IComplexNDArray[]{Nd4j.diag(E), V};
+        return new IComplexNDArray[] {Nd4j.diag(E), V};
     }
 
 

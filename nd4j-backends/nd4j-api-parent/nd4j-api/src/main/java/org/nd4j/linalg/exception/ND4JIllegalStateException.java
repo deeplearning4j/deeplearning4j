@@ -6,8 +6,7 @@ package org.nd4j.linalg.exception;
  * @author Alex Black
  */
 public class ND4JIllegalStateException extends ND4JException {
-    public ND4JIllegalStateException() {
-    }
+    public ND4JIllegalStateException() {}
 
     public ND4JIllegalStateException(String message) {
         super(message);

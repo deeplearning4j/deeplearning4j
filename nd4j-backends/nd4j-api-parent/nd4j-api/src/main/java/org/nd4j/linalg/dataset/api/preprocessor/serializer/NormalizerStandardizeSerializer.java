@@ -45,7 +45,8 @@ public class NormalizerStandardizeSerializer {
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
 
@@ -68,10 +69,7 @@ public class NormalizerStandardizeSerializer {
      * @throws IOException
      */
     public static NormalizerStandardize restore(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
+        try (FileInputStream fis = new FileInputStream(file); DataInputStream dis = new DataInputStream(fis)) {
             boolean fitLabels = dis.readBoolean();
 
             NormalizerStandardize result = new NormalizerStandardize(Nd4j.read(dis), Nd4j.read(dis));

@@ -19,7 +19,7 @@ public class LossSquaredHinge implements ILossFunction {
         hinge loss is max(0,1-y_hat*y)
          */
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray output = activationFn.getActivation(preOutput.dup(),true);
+        INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray scoreArr = output.muli(labels); //y*yhat
         scoreArr.rsubi(1.0); //1 - y*yhat
@@ -31,10 +31,12 @@ public class LossSquaredHinge implements ILossFunction {
     }
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
         INDArray scoreArr = computeScoreArray(labels, preOutput, activationFn, mask);
         double score = scoreArr.sumNumber().doubleValue();
-        if (average) score /= scoreArr.size(0);
+        if (average)
+            score /= scoreArr.size(0);
         return score;
     }
 
@@ -60,7 +62,7 @@ public class LossSquaredHinge implements ILossFunction {
         INDArray dLda = scoreArr.muli(2).muli(labels.neg());
         dLda.muli(bitMaskRowCol);
 
-        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();     //TODO activation functions with params
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with params
 
         if (mask != null) {
             gradients.muliColumnVector(mask);
@@ -70,12 +72,12 @@ public class LossSquaredHinge implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels,
+                    INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
-        return new Pair<>(
-                computeScore(labels, preOutput, activationFn, mask, average),
-                computeGradient(labels, preOutput, activationFn, mask));
+        return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
+                        computeGradient(labels, preOutput, activationFn, mask));
     }
 
     @Override

@@ -20,7 +20,8 @@ public abstract class BaseTrainer<T extends TrainingMessage> implements Training
     protected FrameCompletionHandler completionHandler = new FrameCompletionHandler();
 
     @Override
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, @NonNull Storage storage, @NonNull Clipboard clipboard) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport,
+                    @NonNull Storage storage, @NonNull Clipboard clipboard) {
         this.clipboard = clipboard;
         this.transport = transport;
         this.voidConfiguration = voidConfiguration;

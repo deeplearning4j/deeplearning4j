@@ -31,22 +31,15 @@ public class ParameterServerNodeTest {
     @BeforeClass
     public static void before() throws Exception {
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
-        System.setProperty("play.server.dir","/tmp");
+        System.setProperty("play.server.dir", "/tmp");
         aeron = Aeron.connect(getContext());
-        parameterServerNode = new ParameterServerNode(mediaDriver,statusPort);
-        parameterServerNode.runMain(new String[] {
-                "-m","true",
-                "-s","1," + String.valueOf(parameterLength),
-                "-p",String.valueOf(masterStatusPort),
-                "-h","localhost",
-                "-id","11",
-                "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", String.valueOf(statusPort),
-                "-sh","localhost",
-                "-u",String.valueOf(Runtime.getRuntime().availableProcessors())
-        });
+        parameterServerNode = new ParameterServerNode(mediaDriver, statusPort);
+        parameterServerNode.runMain(new String[] {"-m", "true", "-s", "1," + String.valueOf(parameterLength), "-p",
+                        String.valueOf(masterStatusPort), "-h", "localhost", "-id", "11", "-md",
+                        mediaDriver.aeronDirectoryName(), "-sp", String.valueOf(statusPort), "-sh", "localhost", "-u",
+                        String.valueOf(Runtime.getRuntime().availableProcessors())});
 
-        while(!parameterServerNode.subscriberLaunched()) {
+        while (!parameterServerNode.subscriberLaunched()) {
             Thread.sleep(10000);
         }
 
@@ -58,39 +51,39 @@ public class ParameterServerNodeTest {
         ExecutorService executorService = Executors.newFixedThreadPool(numCores);
         ParameterServerClient[] clients = new ParameterServerClient[numCores];
         String host = "localhost";
-        for(int i = 0; i < numCores; i++) {
-            clients[i] = ParameterServerClient.builder()
-                    .aeron(aeron).masterStatusHost(host)
-                    .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
-                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
-                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
-                    .build();
+        for (int i = 0; i < numCores; i++) {
+            clients[i] = ParameterServerClient.builder().aeron(aeron).masterStatusHost(host)
+                            .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i)
+                            .subscriberStream(10 + i)
+                            .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
+                            .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
+                            .build();
         }
 
         Thread.sleep(60000);
 
         //no arrays have been sent yet
-        for(int i = 0; i < numCores; i++) {
+        for (int i = 0; i < numCores; i++) {
             assertFalse(clients[i].isReadyForNext());
         }
 
         //send "numCores" arrays, the default parameter server updater
         //is synchronous so it should be "ready" when number of updates == number of workers
-        for(int i = 0; i < numCores; i++) {
+        for (int i = 0; i < numCores; i++) {
             clients[i].pushNDArrayMessage(NDArrayMessage.wholeArrayUpdate(Nd4j.ones(parameterLength)));
         }
 
         Thread.sleep(10000);
 
         //all arrays should have been sent
-        for(int i = 0; i < numCores; i++) {
+        for (int i = 0; i < numCores; i++) {
             assertTrue(clients[i].isReadyForNext());
         }
 
         Thread.sleep(10000);
 
-        for(int i = 0; i < 1; i++) {
-            assertEquals(Nd4j.valueArrayOf(1,parameterLength,4),clients[i].getArray());
+        for (int i = 0; i < 1; i++) {
+            assertEquals(Nd4j.valueArrayOf(1, parameterLength, 4), clients[i].getArray());
             Thread.sleep(1000);
         }
 
@@ -104,12 +97,12 @@ public class ParameterServerNodeTest {
     }
 
 
-    private static  Aeron.Context getContext() {
+    private static Aeron.Context getContext() {
         return new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                .errorHandler(e -> log.error(e.toString(), e));
+                        .availableImageHandler(AeronUtil::printAvailableImage)
+                        .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                        .errorHandler(e -> log.error(e.toString(), e));
     }
 
 

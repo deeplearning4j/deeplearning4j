@@ -24,7 +24,7 @@ public interface Lapack {
      * @returns Permutation array
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public INDArray getrf( INDArray A );
+    public INDArray getrf(INDArray A);
 
 
     /**
@@ -42,7 +42,7 @@ public interface Lapack {
      * @param VT the right singular vectors as a (transposed) matrix. Maybe null if no V required
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public void sgesvd( INDArray A, INDArray S, INDArray U, INDArray VT ) ;
+    public void sgesvd(INDArray A, INDArray S, INDArray U, INDArray VT);
 
 
 
@@ -58,7 +58,7 @@ public interface Lapack {
     * @param ipiv - the vector returned from a refactoring
     * @returned the square permutation matrix - size is the M x M
     */
-    public INDArray getPFactor( int M, INDArray ipiv ) ;
+    public INDArray getPFactor(int M, INDArray ipiv);
 
 
     /**
@@ -68,7 +68,7 @@ public interface Lapack {
     * @param A - the combined L & U matrices returned from factorization
     * @returned the lower triangular with unit diagonal
     */
-    public INDArray getLFactor( INDArray A ) ;
+    public INDArray getLFactor(INDArray A);
 
 
     /**
@@ -78,7 +78,7 @@ public interface Lapack {
     * @param A - the combined L & U matrices returned from factorization
     * @returned the upper triangular matrix
     */
-    public INDArray getUFactor( INDArray A ) ;
+    public INDArray getUFactor(INDArray A);
 
 
     // generate inverse of a matrix given its LU decomposition

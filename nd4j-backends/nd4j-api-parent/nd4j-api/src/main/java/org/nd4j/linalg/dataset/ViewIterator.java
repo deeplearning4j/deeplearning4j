@@ -17,7 +17,7 @@ public class ViewIterator implements DataSetIterator {
     private DataSet data;
     private DataSetPreProcessor preProcessor;
 
-    public ViewIterator(DataSet data,int batchSize) {
+    public ViewIterator(DataSet data, int batchSize) {
         this.batchSize = batchSize;
         this.data = data;
     }
@@ -43,7 +43,7 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 
@@ -94,16 +94,15 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
-    public void remove() {
-    }
+    public void remove() {}
 
     @Override
     public DataSet next() {
         //only loop to the end
-        if(cursor + batch() > numExamples())
+        if (cursor + batch() > numExamples())
             cursor = cursor() + batch() - numExamples();
-        DataSet next = (DataSet) data.getRange(cursor,cursor + batch());
-        if(preProcessor != null)
+        DataSet next = (DataSet) data.getRange(cursor, cursor + batch());
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         cursor += batch();
         return next;

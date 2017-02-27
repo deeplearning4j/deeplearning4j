@@ -110,15 +110,16 @@ public class TadCollapseAccumulation extends BaseOp {
     protected int tadsForLargerDimension;
     public final static String DEFAULT_NAME = "collapseTad";
 
-    public TadCollapseAccumulation() {
-    }
+    public TadCollapseAccumulation() {}
+
     /**
      *
      * @param accum the operation to accumulate
      * @param originalDimension the bigger problem
      * @param smallerDimension the smaller problem
      */
-    public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension,boolean performSmallerDimension) {
+    public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension,
+                    boolean performSmallerDimension) {
         this.accum = accum;
         this.performSmallerDimension = performSmallerDimension;
         this.originalDimension = originalDimension;
@@ -127,6 +128,7 @@ public class TadCollapseAccumulation extends BaseOp {
         tadsForLargerDimension = accum.x().tensorssAlongDimension(originalDimension);
 
     }
+
     /**
      *
      * @param accum the operation to accumulate
@@ -134,7 +136,7 @@ public class TadCollapseAccumulation extends BaseOp {
      * @param smallerDimension the smaller problem
      */
     public TadCollapseAccumulation(Op accum, int[] originalDimension, int[] smallerDimension) {
-        this(accum, originalDimension, smallerDimension,true);
+        this(accum, originalDimension, smallerDimension, true);
     }
 
     public TadCollapseAccumulation(Op accum, int[] originalDimension) {
@@ -178,19 +180,18 @@ public class TadCollapseAccumulation extends BaseOp {
     @Override
     public void exec() {
         //take the last dimension
-        if(smallerDimension == null) {
+        if (smallerDimension == null) {
             smallerDimension = new int[] {originalDimension[originalDimension.length - 1]};
         }
 
-        if(accum instanceof Accumulation && performSmallerDimension) {
+        if (accum instanceof Accumulation && performSmallerDimension) {
             Accumulation acc2 = (Accumulation) accum;
             //avoid the final transform till towards the end
             acc2.setApplyFinalTransform(false);
-            Nd4j.getExecutioner().exec(acc2,smallerDimension);
-        }
-        else if(accum instanceof IndexAccumulation && performSmallerDimension) {
+            Nd4j.getExecutioner().exec(acc2, smallerDimension);
+        } else if (accum instanceof IndexAccumulation && performSmallerDimension) {
             IndexAccumulation acc2 = (IndexAccumulation) accum;
-            Nd4j.getExecutioner().exec(acc2,smallerDimension);
+            Nd4j.getExecutioner().exec(acc2, smallerDimension);
         }
 
 
@@ -201,28 +202,28 @@ public class TadCollapseAccumulation extends BaseOp {
         INDArray aggregated = Nd4j.create(ArrayUtil.removeIndex(accum.x().shape(), originalDimension));
         int smallerProblem = accum.x().tensorssAlongDimension(smallerDimension);
         int biggerProblem = accum.x().tensorssAlongDimension(originalDimension);
-        if(accum instanceof Accumulation) {
-            int biggerTadLength = accum.x().tensorAlongDimension(0,originalDimension).length();
+        if (accum instanceof Accumulation) {
+            int biggerTadLength = accum.x().tensorAlongDimension(0, originalDimension).length();
             Accumulation accumulation = (Accumulation) accum;
-            for(int i = 0; i < smallerProblem; i++) {
-                int reductionIndex = reductionIndexForTad(i,biggerProblem,smallerProblem);
-                aggregated.putScalar(reductionIndex,accumulation.combineSubResults(aggregated.getDouble(reductionIndex),accumulation.z().getDouble(i)));
+            for (int i = 0; i < smallerProblem; i++) {
+                int reductionIndex = reductionIndexForTad(i, biggerProblem, smallerProblem);
+                aggregated.putScalar(reductionIndex, accumulation.combineSubResults(
+                                aggregated.getDouble(reductionIndex), accumulation.z().getDouble(i)));
             }
 
             accum.setN(biggerTadLength);
             accumulation.setApplyFinalTransform(true);
-            for(int i = 0; i < aggregated.length(); i++) {
-                aggregated.putScalar(i,accumulation.calculateFinalResult(aggregated.getDouble(i),biggerTadLength));
+            for (int i = 0; i < aggregated.length(); i++) {
+                aggregated.putScalar(i, accumulation.calculateFinalResult(aggregated.getDouble(i), biggerTadLength));
             }
-        }
-        else if(accum instanceof IndexAccumulation) {
+        } else if (accum instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) accum;
-            for(int i = 0; i < smallerProblem; i++) {
-                int reductionIndex = reductionIndexForTad(i,biggerProblem,smallerProblem);
-                aggregated.putScalar(reductionIndex,indexAccumulation.combineSubResults(accum.x().getDouble(i), i, aggregated.getDouble(reductionIndex), reductionIndex));
+            for (int i = 0; i < smallerProblem; i++) {
+                int reductionIndex = reductionIndexForTad(i, biggerProblem, smallerProblem);
+                aggregated.putScalar(reductionIndex, indexAccumulation.combineSubResults(accum.x().getDouble(i), i,
+                                aggregated.getDouble(reductionIndex), reductionIndex));
             }
         }
-
 
 
 
@@ -238,7 +239,7 @@ public class TadCollapseAccumulation extends BaseOp {
 
     @Override
     public INDArray y() {
-       return accum.y();
+        return accum.y();
     }
 
     @Override
@@ -259,7 +260,7 @@ public class TadCollapseAccumulation extends BaseOp {
 
     @Override
     public String name() {
-        if(accum == null) {
+        if (accum == null) {
             return DEFAULT_NAME;
         }
         return accum.name();
@@ -267,12 +268,12 @@ public class TadCollapseAccumulation extends BaseOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return accum.op(origin,other);
+        return accum.op(origin, other);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return accum.op(origin,other);
+        return accum.op(origin, other);
     }
 
     @Override
@@ -312,10 +313,8 @@ public class TadCollapseAccumulation extends BaseOp {
 
     @Override
     public Op opForDimension(int index, int... dimension) {
-        return accum.opForDimension(index,dimension);
+        return accum.opForDimension(index, dimension);
     }
-
-
 
 
 
@@ -328,7 +327,7 @@ public class TadCollapseAccumulation extends BaseOp {
      * @param numElementsPerTad the number of elements
      * per tad
      */
-    public static int tadIndex(int i,int elementWiseStride,int numElementsPerTad) {
+    public static int tadIndex(int i, int elementWiseStride, int numElementsPerTad) {
         return i / (numElementsPerTad * elementWiseStride);
     }
 
@@ -340,8 +339,8 @@ public class TadCollapseAccumulation extends BaseOp {
      * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
      * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
      */
-    public static int reductionIndexForTad(int tadIndexForOriginal,int tadsForReduced,int tadsForOriginal) {
-        if(tadIndexForOriginal == 0)
+    public static int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal) {
+        if (tadIndexForOriginal == 0)
             return 0;
         return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
     }
@@ -351,7 +350,7 @@ public class TadCollapseAccumulation extends BaseOp {
      * per reduce index for the
      * reduction tad.
      */
-    public static int tadsPerReduceIndex(int tadsForReduce,int tadsForOriginal) {
+    public static int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal) {
         return tadsForOriginal / tadsForReduce;
     }
 
@@ -364,14 +363,10 @@ public class TadCollapseAccumulation extends BaseOp {
      * @param tadNum the number of tads for the shrunken problem
      * @param originalTadNum the tad number for the reduced version of the problem
      */
-    public static int reductionIndexForLinear(
-            int i
-            ,int elementWiseStride
-            ,int numElementsPerTad
-            ,int tadNum
-            ,int originalTadNum) {
-        int tad = tadIndex(i,elementWiseStride,numElementsPerTad);
-        return reductionIndexForTad(tad,tadNum,originalTadNum);
+    public static int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad, int tadNum,
+                    int originalTadNum) {
+        int tad = tadIndex(i, elementWiseStride, numElementsPerTad);
+        return reductionIndexForTad(tad, tadNum, originalTadNum);
     }
 
 

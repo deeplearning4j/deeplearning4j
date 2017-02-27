@@ -48,7 +48,8 @@ public class MultiNormalizerStandardizeSerializer {
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
             dos.writeInt(normalizer.numInputs());
@@ -76,10 +77,7 @@ public class MultiNormalizerStandardizeSerializer {
      * @throws IOException
      */
     public static MultiNormalizerStandardize restore(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
+        try (FileInputStream fis = new FileInputStream(file); DataInputStream dis = new DataInputStream(fis)) {
             boolean fitLabels = dis.readBoolean();
             int numInputs = dis.readInt();
             int numOutputs = dis.readInt();

@@ -32,16 +32,9 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startSlave(int parameterLength,String masterUrl,String mediaDriverDirectory) throws Exception {
-        return exec(ParameterServerSubscriber.class,
-                mediaDriverDirectory,
-                "-s",
-                "1," + String.valueOf(parameterLength),
-                "-p","40126",
-                "-h","localhost",
-                "-id","10",
-                "-pm",masterUrl,
-                "-sp","9500");
+    public static int startSlave(int parameterLength, String masterUrl, String mediaDriverDirectory) throws Exception {
+        return exec(ParameterServerSubscriber.class, mediaDriverDirectory, "-s", "1," + String.valueOf(parameterLength),
+                        "-p", "40126", "-h", "localhost", "-id", "10", "-pm", masterUrl, "-sp", "9500");
     }
 
     /**
@@ -55,8 +48,8 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startSlave(int parameterLength,String mediaDriverDirectory) throws Exception {
-        return startSlave(parameterLength,"localhost:40123:11",mediaDriverDirectory);
+    public static int startSlave(int parameterLength, String mediaDriverDirectory) throws Exception {
+        return startSlave(parameterLength, "localhost:40123:11", mediaDriverDirectory);
     }
 
 
@@ -87,15 +80,10 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int startMaster(int parameterLength,String mediaDriverDirectory) throws Exception {
-        return exec(ParameterServerSubscriber.class,
-                mediaDriverDirectory,
-                "-m","true",
-                "-s","1," + String.valueOf(parameterLength),
-                "-p","40123",
-                "-h","localhost",
-                "-id","11",
-                "-sp","9200");
+    public static int startMaster(int parameterLength, String mediaDriverDirectory) throws Exception {
+        return exec(ParameterServerSubscriber.class, mediaDriverDirectory, "-m", "true", "-s",
+                        "1," + String.valueOf(parameterLength), "-p", "40123", "-h", "localhost", "-id", "11", "-sp",
+                        "9200");
     }
 
 
@@ -108,29 +96,26 @@ public class BackgroundDaemonStarter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static int exec(Class klass,String mediaDriverDirectory,String...args) throws Exception {
+    public static int exec(Class klass, String mediaDriverDirectory, String... args) throws Exception {
         String javaHome = System.getProperty("java.home");
-        String javaBin = javaHome +
-                File.separator + "bin" +
-                File.separator + "java";
+        String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
         String className = klass.getCanonicalName();
-        if(args == null || args.length < 1) {
+        if (args == null || args.length < 1) {
             try {
-                return  new ProcessExecutor().command(javaBin, "-cp", classpath, className)
-                          .readOutput(true).redirectOutput(System.out).destroyOnExit()
-                          .redirectError(System.err).execute().getExitValue();
+                return new ProcessExecutor().command(javaBin, "-cp", classpath, className).readOutput(true)
+                                .redirectOutput(System.out).destroyOnExit().redirectError(System.err).execute()
+                                .getExitValue();
             } catch (TimeoutException e) {
                 e.printStackTrace();
             }
-        }
-        else {
-            List<String> args2 = new ArrayList<>(Arrays.asList(javaBin, "-cp", classpath,className,"-md",mediaDriverDirectory));
+        } else {
+            List<String> args2 = new ArrayList<>(
+                            Arrays.asList(javaBin, "-cp", classpath, className, "-md", mediaDriverDirectory));
             args2.addAll(Arrays.asList(args));
             try {
-                  new ProcessExecutor().command(args2).destroyOnExit()
-                        .readOutput(true).redirectOutput(System.out)
-                        .redirectError(System.err).execute().getExitValue();
+                new ProcessExecutor().command(args2).destroyOnExit().readOutput(true).redirectOutput(System.out)
+                                .redirectError(System.err).execute().getExitValue();
             } catch (TimeoutException e) {
                 e.printStackTrace();
             }

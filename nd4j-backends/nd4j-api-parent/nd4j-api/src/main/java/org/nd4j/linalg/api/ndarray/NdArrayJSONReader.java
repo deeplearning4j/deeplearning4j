@@ -24,12 +24,12 @@ public class NdArrayJSONReader {
     private INDArray loadNative(File jsonFile) {
         /*
           We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
-
+        
           But here we leverage our information of the tostring method to be more efficient
           With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
           This is more efficient than setting each value at a time with putScalar.
           This also means we can read the file one line at a time instead of loading the whole thing into memory
-
+        
           Future work involves enhancing the write json method to provide more features to make the load more efficient
          */
         int lineNum = 0;
@@ -47,7 +47,8 @@ public class NdArrayJSONReader {
                     String line = it.nextLine();
                     lineNum++;
                     line = line.replaceAll("\\s", "");
-                    if (line.equals("") || line.equals("}")) continue;
+                    if (line.equals("") || line.equals("}"))
+                        continue;
                     // is it from dl4j?
                     if (lineNum == 2) {
                         String[] lineArr = line.split(":");
@@ -72,26 +73,26 @@ public class NdArrayJSONReader {
                             try {
                                 theShape[i] = Integer.parseInt(shapeString[i]);
                             } catch (NumberFormatException nfe) {
-                            }
-                            ;
+                            } ;
                         }
-                        subsetArr = new double[theShape[rank-2]][theShape[rank-1]];
+                        subsetArr = new double[theShape[rank - 2]][theShape[rank - 1]];
                         newArr = Nd4j.zeros(theShape, theOrder);
                         continue;
                     }
                     //parse data
                     if (lineNum > 5) {
-                        String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(",");
-                        for (int i = 0; i < theShape[rank-1]; i++) {
+                        String[] entries =
+                                        line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\]", "").split(",");
+                        for (int i = 0; i < theShape[rank - 1]; i++) {
                             try {
                                 subsetArr[rowNum][i] = Double.parseDouble(entries[i]);
+                            } catch (NumberFormatException nfe) {
                             }
-                            catch (NumberFormatException nfe) {}
                         }
                         rowNum++;
-                        if (rowNum == theShape[rank-2]) {
+                        if (rowNum == theShape[rank - 2]) {
                             INDArray subTensor = Nd4j.create(subsetArr);
-                            newArr.tensorAlongDimension(tensorNum, rank-1,rank-2).addi(subTensor);
+                            newArr.tensorAlongDimension(tensorNum, rank - 1, rank - 2).addi(subTensor);
                             rowNum = 0;
                             tensorNum++;
                         }
@@ -100,15 +101,13 @@ public class NdArrayJSONReader {
             } finally {
                 LineIterator.closeQuietly(it);
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException("Error reading input", e);
         }
         return newArr;
     }
 
-    private INDArray loadNonNative (File jsonFile) {
+    private INDArray loadNonNative(File jsonFile) {
         /* WIP
         JSONTokener tokener = new JSONTokener(new FileReader("test.json"));
         JSONObject obj = new JSONObject(tokener);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,35 +39,34 @@ public class VectorIFFT extends BaseTransformOp {
     private int originalN = -1;
     protected boolean executed = false;
 
-    public VectorIFFT() {
-    }
+    public VectorIFFT() {}
 
-    public VectorIFFT(INDArray x, INDArray z,int fftLength) {
+    public VectorIFFT(INDArray x, INDArray z, int fftLength) {
         super(x, z);
         this.fftLength = fftLength;
         exec();
     }
 
-    public VectorIFFT(INDArray x, INDArray z, long n,int fftLength) {
+    public VectorIFFT(INDArray x, INDArray z, long n, int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
         exec();
     }
 
-    public VectorIFFT(INDArray x, INDArray y, INDArray z, long n,int fftLength) {
+    public VectorIFFT(INDArray x, INDArray y, INDArray z, long n, int fftLength) {
         super(x, y, z, n);
         this.fftLength = fftLength;
         exec();
     }
 
-    public VectorIFFT(INDArray x,int fftLength) {
+    public VectorIFFT(INDArray x, int fftLength) {
         super(x);
         this.fftLength = fftLength;
         exec();
     }
 
     public VectorIFFT(INDArray x) {
-        this(x,x.length());
+        this(x, x.length());
     }
 
     @Override
@@ -124,9 +123,11 @@ public class VectorIFFT extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorIFFT(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), fftLength);
         else
-            return new VectorIFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),
+                            fftLength);
 
     }
 
@@ -134,9 +135,11 @@ public class VectorIFFT extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorIFFT(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), fftLength);
         else
-            return new VectorIFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),
+                            fftLength);
 
     }
 
@@ -166,9 +169,9 @@ public class VectorIFFT extends BaseTransformOp {
 
     @Override
     public void exec() {
-        if(!x.isVector())
+        if (!x.isVector())
             return;
-        if(executed)
+        if (executed)
             return;
 
         executed = true;
@@ -177,7 +180,8 @@ public class VectorIFFT extends BaseTransformOp {
 
         //ifft(x) = conj(fft(conj(x)) / length(x)
         IComplexNDArray ndArray = x instanceof IComplexNDArray ? (IComplexNDArray) x : Nd4j.createComplex(x);
-        IComplexNDArray fft = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(ndArray.conj(),y,z,x.lengthLong(),fftLength));
+        IComplexNDArray fft = (IComplexNDArray) Nd4j.getExecutioner()
+                        .execAndReturn(new VectorFFT(ndArray.conj(), y, z, x.lengthLong(), fftLength));
         IComplexNDArray ret = fft.conj().divi(Nd4j.complexScalar(fftLength));
         //completely pass through
         this.z = originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;

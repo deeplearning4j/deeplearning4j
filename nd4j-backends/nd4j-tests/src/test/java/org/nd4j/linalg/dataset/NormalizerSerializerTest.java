@@ -40,10 +40,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
 
     @Test
     public void testNormalizerStandardizeNotFitLabels() throws IOException {
-        NormalizerStandardize original = new NormalizerStandardize(
-            Nd4j.create(new double[]{0.5, 1.5}),
-            Nd4j.create(new double[]{2.5, 3.5})
-        );
+        NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}),
+                        Nd4j.create(new double[] {2.5, 3.5}));
 
         NormalizerStandardizeSerializer.write(original, tmpFile);
         NormalizerStandardize restored = NormalizerStandardizeSerializer.restore(tmpFile);
@@ -53,12 +51,9 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
 
     @Test
     public void testNormalizerStandardizeFitLabels() throws IOException {
-        NormalizerStandardize original = new NormalizerStandardize(
-            Nd4j.create(new double[]{0.5, 1.5}),
-            Nd4j.create(new double[]{2.5, 3.5}),
-            Nd4j.create(new double[]{4.5, 5.5}),
-            Nd4j.create(new double[]{6.5, 7.5})
-        );
+        NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}),
+                        Nd4j.create(new double[] {2.5, 3.5}), Nd4j.create(new double[] {4.5, 5.5}),
+                        Nd4j.create(new double[] {6.5, 7.5}));
         original.fitLabel(true);
 
         NormalizerStandardizeSerializer.write(original, tmpFile);
@@ -70,10 +65,7 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     @Test
     public void testNormalizerMinMaxScalerNotFitLabels() throws IOException {
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
-        original.setFeatureStats(
-            Nd4j.create(new double[]{0.5, 1.5}),
-            Nd4j.create(new double[]{2.5, 3.5})
-        );
+        original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5}));
 
         NormalizerMinMaxScalerSerializer.write(original, tmpFile);
         NormalizerMinMaxScaler restored = NormalizerMinMaxScalerSerializer.restore(tmpFile);
@@ -84,14 +76,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     @Test
     public void testNormalizerMinMaxScalerFitLabels() throws IOException {
         NormalizerMinMaxScaler original = new NormalizerMinMaxScaler(0.1, 0.9);
-        original.setFeatureStats(
-            Nd4j.create(new double[]{0.5, 1.5}),
-            Nd4j.create(new double[]{2.5, 3.5})
-        );
-        original.setLabelStats(
-            Nd4j.create(new double[]{4.5, 5.5}),
-            Nd4j.create(new double[]{6.5, 7.5})
-        );
+        original.setFeatureStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5}));
+        original.setLabelStats(Nd4j.create(new double[] {4.5, 5.5}), Nd4j.create(new double[] {6.5, 7.5}));
         original.fitLabel(true);
 
         NormalizerMinMaxScalerSerializer.write(original, tmpFile);
@@ -104,15 +90,10 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     public void testMultiNormalizerStandardizeNotFitLabels() throws IOException {
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
-            new DistributionStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new DistributionStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new DistributionStats(Nd4j.create(new double[] {0.5, 1.5}),
+                                        Nd4j.create(new double[] {2.5, 3.5})),
+                        new DistributionStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
 
         MultiNormalizerStandardizeSerializer.write(original, tmpFile);
         MultiNormalizerStandardize restored = MultiNormalizerStandardizeSerializer.restore(tmpFile);
@@ -124,29 +105,16 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     public void testMultiNormalizerStandardizeFitLabels() throws IOException {
         MultiNormalizerStandardize original = new MultiNormalizerStandardize();
         original.setFeatureStats(asList(
-            new DistributionStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new DistributionStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new DistributionStats(Nd4j.create(new double[] {0.5, 1.5}),
+                                        Nd4j.create(new double[] {2.5, 3.5})),
+                        new DistributionStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
         original.setLabelStats(asList(
-            new DistributionStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new DistributionStats(
-                Nd4j.create(new double[]{4.5}),
-                Nd4j.create(new double[]{7.5})
-            ),
-            new DistributionStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new DistributionStats(Nd4j.create(new double[] {0.5, 1.5}),
+                                        Nd4j.create(new double[] {2.5, 3.5})),
+                        new DistributionStats(Nd4j.create(new double[] {4.5}), Nd4j.create(new double[] {7.5})),
+                        new DistributionStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
         original.fitLabel(true);
 
         MultiNormalizerStandardizeSerializer.write(original, tmpFile);
@@ -159,15 +127,9 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     public void testMultiNormalizerMinMaxScalerNotFitLabels() throws IOException {
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
-            new MinMaxStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new MinMaxStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new MinMaxStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5})),
+                        new MinMaxStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
 
         MultiNormalizerMinMaxScalerSerializer.write(original, tmpFile);
         MultiNormalizerMinMaxScaler restored = MultiNormalizerMinMaxScalerSerializer.restore(tmpFile);
@@ -179,29 +141,14 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     public void testMultiNormalizerMinMaxScalerFitLabels() throws IOException {
         MultiNormalizerMinMaxScaler original = new MultiNormalizerMinMaxScaler(0.1, 0.9);
         original.setFeatureStats(asList(
-            new MinMaxStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new MinMaxStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new MinMaxStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5})),
+                        new MinMaxStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
         original.setLabelStats(asList(
-            new MinMaxStats(
-                Nd4j.create(new double[]{0.5, 1.5}),
-                Nd4j.create(new double[]{2.5, 3.5})
-            ),
-            new MinMaxStats(
-                Nd4j.create(new double[]{4.5}),
-                Nd4j.create(new double[]{7.5})
-            ),
-            new MinMaxStats(
-                Nd4j.create(new double[]{4.5, 5.5, 6.5}),
-                Nd4j.create(new double[]{7.5, 8.5, 9.5})
-            )
-        ));
+                        new MinMaxStats(Nd4j.create(new double[] {0.5, 1.5}), Nd4j.create(new double[] {2.5, 3.5})),
+                        new MinMaxStats(Nd4j.create(new double[] {4.5}), Nd4j.create(new double[] {7.5})),
+                        new MinMaxStats(Nd4j.create(new double[] {4.5, 5.5, 6.5}),
+                                        Nd4j.create(new double[] {7.5, 8.5, 9.5}))));
         original.fitLabel(true);
 
         MultiNormalizerMinMaxScalerSerializer.write(original, tmpFile);
@@ -227,13 +174,13 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
         MultiNormalizerHybrid original = new MultiNormalizerHybrid().minMaxScaleAllInputs().standardizeAllOutputs();
 
         Map<Integer, NormalizerStats> inputStats = new HashMap<>();
-        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{1, 2}), Nd4j.create(new float[] {3, 4})));
-        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{5, 6}), Nd4j.create(new float[] {7, 8})));
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[] {1, 2}), Nd4j.create(new float[] {3, 4})));
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[] {5, 6}), Nd4j.create(new float[] {7, 8})));
 
         Map<Integer, NormalizerStats> outputStats = new HashMap<>();
-        outputStats.put(0, new DistributionStats(Nd4j.create(new float[]{9, 10}), Nd4j.create(new float[] {11, 12})));
-        outputStats.put(0, new DistributionStats(Nd4j.create(new float[]{13, 14}), Nd4j.create(new float[] {15, 16})));
-        
+        outputStats.put(0, new DistributionStats(Nd4j.create(new float[] {9, 10}), Nd4j.create(new float[] {11, 12})));
+        outputStats.put(0, new DistributionStats(Nd4j.create(new float[] {13, 14}), Nd4j.create(new float[] {15, 16})));
+
         original.setInputStats(inputStats);
         original.setOutputStats(outputStats);
 
@@ -245,19 +192,16 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
 
     @Test
     public void testMultiNormalizerHybridGlobalAndSpecificStats() throws IOException {
-        MultiNormalizerHybrid original = new MultiNormalizerHybrid()
-            .standardizeAllInputs()
-            .minMaxScaleInput(0, -5, 5)
-            .minMaxScaleAllOutputs(-10, 10)
-            .standardizeOutput(1);
+        MultiNormalizerHybrid original = new MultiNormalizerHybrid().standardizeAllInputs().minMaxScaleInput(0, -5, 5)
+                        .minMaxScaleAllOutputs(-10, 10).standardizeOutput(1);
 
         Map<Integer, NormalizerStats> inputStats = new HashMap<>();
-        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{1, 2}), Nd4j.create(new float[] {3, 4})));
-        inputStats.put(1, new DistributionStats(Nd4j.create(new float[]{5, 6}), Nd4j.create(new float[] {7, 8})));
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[] {1, 2}), Nd4j.create(new float[] {3, 4})));
+        inputStats.put(1, new DistributionStats(Nd4j.create(new float[] {5, 6}), Nd4j.create(new float[] {7, 8})));
 
         Map<Integer, NormalizerStats> outputStats = new HashMap<>();
-        outputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{9, 10}), Nd4j.create(new float[] {11, 12})));
-        outputStats.put(1, new DistributionStats(Nd4j.create(new float[]{13, 14}), Nd4j.create(new float[] {15, 16})));
+        outputStats.put(0, new MinMaxStats(Nd4j.create(new float[] {9, 10}), Nd4j.create(new float[] {11, 12})));
+        outputStats.put(1, new DistributionStats(Nd4j.create(new float[] {13, 14}), Nd4j.create(new float[] {15, 16})));
 
         original.setInputStats(inputStats);
         original.setOutputStats(outputStats);

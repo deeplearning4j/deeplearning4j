@@ -17,10 +17,13 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements DataNormalization {
+public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
+                implements DataNormalization {
     protected NormalizerStrategy<S> strategy;
-    @Setter(AccessLevel.PROTECTED) private S featureStats;
-    @Setter(AccessLevel.PROTECTED) private S labelStats;
+    @Setter(AccessLevel.PROTECTED)
+    private S featureStats;
+    @Setter(AccessLevel.PROTECTED)
+    private S labelStats;
     private boolean fitLabels = false;
 
     protected AbstractDataSetNormalizer(NormalizerStrategy<S> strategy) {
@@ -135,7 +138,7 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
     }
 
     @Override
-    public void transform(INDArray features, INDArray featuresMask){
+    public void transform(INDArray features, INDArray featuresMask) {
         strategy.preProcess(features, featuresMask, getFeatureStats());
     }
 
@@ -148,7 +151,7 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
     }
 
     @Override
-    public void transformLabel(INDArray label, INDArray labelsMask){
+    public void transformLabel(INDArray label, INDArray labelsMask) {
         if (isFitLabel()) {
             strategy.preProcess(label, labelsMask, getLabelStats());
         }
@@ -178,7 +181,7 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
     }
 
     @Override
-    public void revertLabels(INDArray labels, INDArray labelsMask){
+    public void revertLabels(INDArray labels, INDArray labelsMask) {
         if (isFitLabel()) {
             strategy.revert(labels, labelsMask, getLabelStats());
         }
@@ -191,7 +194,7 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
      */
     @Override
     public void revert(DataSet data) {
-        revertFeatures(data.getFeatures(),  data.getFeaturesMaskArray());
+        revertFeatures(data.getFeatures(), data.getFeaturesMaskArray());
         revertLabels(data.getLabels(), data.getLabelsMaskArray());
     }
 }

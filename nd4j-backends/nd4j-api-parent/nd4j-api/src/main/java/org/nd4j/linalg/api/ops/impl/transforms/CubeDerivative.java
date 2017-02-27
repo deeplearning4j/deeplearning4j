@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class CubeDerivative extends BaseTransformOp {
 
-    public CubeDerivative() {
-    }
+    public CubeDerivative() {}
 
     public CubeDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -61,7 +60,7 @@ public class CubeDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
@@ -77,7 +76,7 @@ public class CubeDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return (float)(3 * FastMath.pow(origin, 2));
+        return (float) (3 * FastMath.pow(origin, 2));
     }
 
     @Override
@@ -92,7 +91,7 @@ public class CubeDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-        return (float)(3 * FastMath.pow(origin, 2));
+        return (float) (3 * FastMath.pow(origin, 2));
     }
 
     @Override
@@ -105,9 +104,12 @@ public class CubeDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CubeDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CubeDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new CubeDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CubeDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -116,9 +118,12 @@ public class CubeDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CubeDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CubeDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new CubeDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CubeDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

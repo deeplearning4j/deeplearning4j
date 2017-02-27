@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class PointIndex implements INDArrayIndex {
     private int point;
     private boolean notUsed = true;
+
     /**
      *
      * @param point
@@ -48,7 +49,7 @@ public class PointIndex implements INDArrayIndex {
 
     @Override
     public int next() {
-        int ret =  point;
+        int ret = point;
         notUsed = false;
         return ret;
     }
@@ -91,12 +92,15 @@ public class PointIndex implements INDArrayIndex {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof PointIndex)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof PointIndex))
+            return false;
 
         PointIndex that = (PointIndex) o;
 
-        if (point != that.point) return false;
+        if (point != that.point)
+            return false;
         return notUsed == that.notUsed;
 
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,31 +34,30 @@ import org.nd4j.linalg.util.ComplexUtil;
 public class LogX extends BaseTransformOp {
     private double base;
 
-    public LogX() {
-    }
+    public LogX() {}
 
     public LogX(INDArray x, INDArray z, double base) {
         super(x, z);
         this.base = base;
-        this.extraArgs = new Object[]{base};
+        this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, INDArray z, double base, long n) {
         super(x, z, n);
         this.base = base;
-        this.extraArgs = new Object[]{base};
+        this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, INDArray y, INDArray z, double base, long n) {
         super(x, y, z, n);
         this.base = base;
-        this.extraArgs = new Object[]{base};
+        this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, double base) {
         super(x);
         this.base = base;
-        this.extraArgs = new Object[]{base};
+        this.extraArgs = new Object[] {base};
     }
 
     @Override
@@ -103,7 +102,7 @@ public class LogX extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-        return (float) FastMath.log(origin)  / (float) FastMath.log(base);
+        return (float) FastMath.log(origin) / (float) FastMath.log(base);
     }
 
     @Override
@@ -116,7 +115,8 @@ public class LogX extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LogX(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), base, xAlongDimension.length());
+            return new LogX(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), base, xAlongDimension.length());
         else
             return new LogX(xAlongDimension, z.vectorAlongDimension(index, dimension), base, x.lengthLong());
 
@@ -127,7 +127,8 @@ public class LogX extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LogX(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), base, xAlongDimension.length());
+            return new LogX(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), base, xAlongDimension.length());
         else
             return new LogX(xAlongDimension, z.tensorAlongDimension(index, dimension), base, x.lengthLong());
 

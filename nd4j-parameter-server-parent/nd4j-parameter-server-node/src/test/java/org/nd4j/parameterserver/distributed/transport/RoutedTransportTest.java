@@ -45,10 +45,8 @@ public class RoutedTransportTest {
             list.add("127.0.0.1:3838" + t);
         }
 
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                .shardAddresses(list)
-                .unicastPort(43120) // this port will be used only by client
-                .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().shardAddresses(list).unicastPort(43120) // this port will be used only by client
+                        .build();
 
         // first of all we start shards
         RoutedTransport[] transports = new RoutedTransport[list.size()];
@@ -58,7 +56,8 @@ public class RoutedTransportTest {
 
             transports[t] = new RoutedTransport();
             transports[t].setIpAndPort("127.0.0.1", Integer.valueOf("3838" + t));
-            transports[t].init(voidConfiguration, clipboard, NodeRole.SHARD, "127.0.0.1", voidConfiguration.getUnicastPort(), (short) t);
+            transports[t].init(voidConfiguration, clipboard, NodeRole.SHARD, "127.0.0.1",
+                            voidConfiguration.getUnicastPort(), (short) t);
         }
 
         for (int t = 0; t < transports.length; t++) {
@@ -75,7 +74,8 @@ public class RoutedTransportTest {
         clientTransport.setRouter(router);
         router.init(voidConfiguration, clientTransport);
 
-        clientTransport.init(voidConfiguration, clipboard, NodeRole.CLIENT, "127.0.0.1",voidConfiguration.getUnicastPort(), (short) -1);
+        clientTransport.init(voidConfiguration, clipboard, NodeRole.CLIENT, "127.0.0.1",
+                        voidConfiguration.getUnicastPort(), (short) -1);
         clientTransport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
 
         // we send message somewhere

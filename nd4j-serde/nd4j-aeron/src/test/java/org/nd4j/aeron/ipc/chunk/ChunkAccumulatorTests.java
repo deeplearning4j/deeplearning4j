@@ -16,13 +16,13 @@ public class ChunkAccumulatorTests {
         ChunkAccumulator chunkAccumulator = new InMemoryChunkAccumulator();
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.ones(1000));
         int chunkSize = 128;
-        NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message,chunkSize);
-        for(int i = 0; i < chunks.length; i++) {
+        NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message, chunkSize);
+        for (int i = 0; i < chunks.length; i++) {
             chunkAccumulator.accumulateChunk(chunks[i]);
         }
 
         NDArrayMessage message1 = chunkAccumulator.reassemble(chunks[0].getId());
-        assertEquals(message,message1);
+        assertEquals(message, message1);
     }
 
 }

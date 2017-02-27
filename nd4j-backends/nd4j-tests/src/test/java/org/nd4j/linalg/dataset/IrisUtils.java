@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,7 +29,7 @@ import java.util.List;
 
 public class IrisUtils {
 
-    public static List<DataSet> loadIris(int from,int to) throws IOException {
+    public static List<DataSet> loadIris(int from, int to) throws IOException {
         ClassPathResource resource = new ClassPathResource("/iris.dat", IrisUtils.class.getClassLoader());
         @SuppressWarnings("unchecked")
         List<String> lines = IOUtils.readLines(resource.getInputStream());
@@ -38,11 +38,11 @@ public class IrisUtils {
         double[][] outcomes = new double[lines.size()][3];
         int putCount = 0;
 
-        for(int i = from; i < to; i++) {
+        for (int i = from; i < to; i++) {
             String line = lines.get(i);
             String[] split = line.split(",");
 
-            addRow(ret,putCount++,split);
+            addRow(ret, putCount++, split);
 
             String outcome = split[split.length - 1];
             double[] rowOutcome = new double[3];
@@ -50,15 +50,15 @@ public class IrisUtils {
             outcomes[i] = rowOutcome;
         }
 
-        for(int i = 0; i < ret.rows(); i++)
+        for (int i = 0; i < ret.rows(); i++)
             list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[from + i])));
 
         return list;
     }
 
-    private static void addRow(INDArray ret,int row,String[] line) {
+    private static void addRow(INDArray ret, int row, String[] line) {
         double[] vector = new double[4];
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
             vector[i] = Double.parseDouble(line[i]);
 
         ret.putRow(row, Nd4j.create(vector));

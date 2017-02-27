@@ -14,9 +14,7 @@ import net.bytebuddy.jar.asm.MethodVisitor;
  */
 public class ReturnAppender implements ByteCodeAppender {
     public enum ReturnType {
-        REFERENCE
-        ,VOID,
-        INT
+        REFERENCE, VOID, INT
     }
 
     private ReturnType returnType;
@@ -26,12 +24,20 @@ public class ReturnAppender implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         switch (returnType) {
-            case REFERENCE: return new Size(MethodReturn.REFERENCE.apply(methodVisitor,implementationContext).getMaximalSize(),instrumentedMethod.getStackSize());
-            case VOID:  return new Size(MethodReturn.VOID.apply(methodVisitor,implementationContext).getMaximalSize(),instrumentedMethod.getStackSize());
-            case INT:  return new Size(MethodReturn.INTEGER.apply(methodVisitor,implementationContext).getMaximalSize(),instrumentedMethod.getStackSize());
-            default: throw new IllegalStateException("Illegal type");
+            case REFERENCE:
+                return new Size(MethodReturn.REFERENCE.apply(methodVisitor, implementationContext).getMaximalSize(),
+                                instrumentedMethod.getStackSize());
+            case VOID:
+                return new Size(MethodReturn.VOID.apply(methodVisitor, implementationContext).getMaximalSize(),
+                                instrumentedMethod.getStackSize());
+            case INT:
+                return new Size(MethodReturn.INTEGER.apply(methodVisitor, implementationContext).getMaximalSize(),
+                                instrumentedMethod.getStackSize());
+            default:
+                throw new IllegalStateException("Illegal type");
         }
 
     }

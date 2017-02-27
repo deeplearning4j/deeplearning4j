@@ -16,8 +16,8 @@ import java.util.*;
  * @author Alex Black
  */
 public class CompactHeapStringList implements List<String> {
-    public static final int DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES = 8*1024*1024;        //8MB
-    public static final int DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES = 1024*1024;  //1MB - 262144 ints, 131k entries
+    public static final int DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES = 8 * 1024 * 1024; //8MB
+    public static final int DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES = 1024 * 1024; //1MB - 262144 ints, 131k entries
 
     private final int reallocationBlockSizeBytes;
     private final int reallocationIntegerBlockSizeBytes;
@@ -26,7 +26,7 @@ public class CompactHeapStringList implements List<String> {
     private char[] data;
     private int[] offsetAndLength;
 
-    public CompactHeapStringList(){
+    public CompactHeapStringList() {
         this(DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES, DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES);
     }
 
@@ -35,12 +35,12 @@ public class CompactHeapStringList implements List<String> {
      * @param reallocationBlockSizeBytes    Number of bytes by which to increase the char[], when allocating a new storage array
      * @param intReallocationBlockSizeBytes Number of bytes by which to increase the int[], when allocating a new storage array
      */
-    public CompactHeapStringList(int reallocationBlockSizeBytes, int intReallocationBlockSizeBytes){
+    public CompactHeapStringList(int reallocationBlockSizeBytes, int intReallocationBlockSizeBytes) {
         this.reallocationBlockSizeBytes = reallocationBlockSizeBytes;
         this.reallocationIntegerBlockSizeBytes = intReallocationBlockSizeBytes;
 
-        this.data = new char[this.reallocationBlockSizeBytes/2];
-        this.offsetAndLength = new int[this.reallocationIntegerBlockSizeBytes/4];
+        this.data = new char[this.reallocationBlockSizeBytes / 2];
+        this.offsetAndLength = new int[this.reallocationIntegerBlockSizeBytes / 4];
     }
 
     @Override
@@ -66,7 +66,7 @@ public class CompactHeapStringList implements List<String> {
     @Override
     public String[] toArray() {
         String[] str = new String[usedCount];
-        for( int i=0; i<usedCount; i++ ){
+        for (int i = 0; i < usedCount; i++) {
             str[i] = get(i);
         }
         return str;
@@ -85,28 +85,31 @@ public class CompactHeapStringList implements List<String> {
         //(b) doesn't fit in int[]
         //(c) fits OK in both
 
-        if(nextDataOffset + length > data.length){
+        if (nextDataOffset + length > data.length) {
             //Allocate new data array, if possible
-            if( nextDataOffset > Integer.MAX_VALUE - length){
-                throw new UnsupportedOperationException("Cannot allocate new data char[]: required array size exceeds Integer.MAX_VALUE");
+            if (nextDataOffset > Integer.MAX_VALUE - length) {
+                throw new UnsupportedOperationException(
+                                "Cannot allocate new data char[]: required array size exceeds Integer.MAX_VALUE");
             }
-            int toAdd = Math.max(reallocationBlockSizeBytes/2, length);
+            int toAdd = Math.max(reallocationBlockSizeBytes / 2, length);
             int newLength = data.length + Math.min(toAdd, Integer.MAX_VALUE - data.length);
             data = Arrays.copyOf(data, newLength);
         }
-        if(2*(usedCount + 1) >= offsetAndLength.length){
-            if(offsetAndLength.length >= Integer.MAX_VALUE - 2 ){
+        if (2 * (usedCount + 1) >= offsetAndLength.length) {
+            if (offsetAndLength.length >= Integer.MAX_VALUE - 2) {
                 //Should normally never happen
-                throw new UnsupportedOperationException("Cannot allocate new offset int[]: required array size exceeds Integer.MAX_VALUE");
+                throw new UnsupportedOperationException(
+                                "Cannot allocate new offset int[]: required array size exceeds Integer.MAX_VALUE");
             }
-            int newLength = offsetAndLength.length + Math.min(reallocationIntegerBlockSizeBytes/4, Integer.MAX_VALUE - offsetAndLength.length);
+            int newLength = offsetAndLength.length + Math.min(reallocationIntegerBlockSizeBytes / 4,
+                            Integer.MAX_VALUE - offsetAndLength.length);
             offsetAndLength = Arrays.copyOf(offsetAndLength, newLength);
         }
 
 
-        s.getChars(0,length,data,nextDataOffset);
-        offsetAndLength[2*usedCount] = nextDataOffset;
-        offsetAndLength[2*usedCount+1] = length;
+        s.getChars(0, length, data, nextDataOffset);
+        offsetAndLength[2 * usedCount] = nextDataOffset;
+        offsetAndLength[2 * usedCount + 1] = length;
         nextDataOffset += length;
         usedCount++;
 
@@ -126,7 +129,7 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public boolean addAll(Collection<? extends String> c) {
-        for(String s : c){
+        for (String s : c) {
             add(s);
         }
         return c.size() > 0;
@@ -152,30 +155,32 @@ public class CompactHeapStringList implements List<String> {
     public void clear() {
         usedCount = 0;
         nextDataOffset = 0;
-        data = new char[reallocationBlockSizeBytes/2];
-        offsetAndLength = new int[reallocationIntegerBlockSizeBytes/4];
+        data = new char[reallocationBlockSizeBytes / 2];
+        offsetAndLength = new int[reallocationIntegerBlockSizeBytes / 4];
     }
 
     @Override
     public String get(int index) {
-        if(index >= usedCount){
+        if (index >= usedCount) {
             throw new IllegalArgumentException("Invalid index: " + index + " >= size(). Size = " + usedCount);
         }
-        int offset = offsetAndLength[2*index];
-        int length = offsetAndLength[2*index+1];
-        return new String(data,offset,length);
+        int offset = offsetAndLength[2 * index];
+        int length = offsetAndLength[2 * index + 1];
+        return new String(data, offset, length);
     }
 
     @Override
     public String set(int index, String element) {
         //This *could* be done with array copy ops...
-        throw new UnsupportedOperationException("Set specified index: not supported due to serialized storage structure");
+        throw new UnsupportedOperationException(
+                        "Set specified index: not supported due to serialized storage structure");
     }
 
     @Override
     public void add(int index, String element) {
         //This *could* be done with array copy ops...
-        throw new UnsupportedOperationException("Set specified index: not supported due to serialized storage structure");
+        throw new UnsupportedOperationException(
+                        "Set specified index: not supported due to serialized storage structure");
     }
 
     @Override
@@ -185,29 +190,29 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public int indexOf(Object o) {
-        if(!(o instanceof String) ){
+        if (!(o instanceof String)) {
             return -1;
         }
 
-        String str = (String)o;
+        String str = (String) o;
         char[] ch = str.toCharArray();
 
 
-        for( int i=0; i<usedCount; i++ ){
-            if(offsetAndLength[2*i+1] != ch.length){
+        for (int i = 0; i < usedCount; i++) {
+            if (offsetAndLength[2 * i + 1] != ch.length) {
                 //Can't be this one: lengths differ
                 continue;
             }
-            int offset = offsetAndLength[2*i];
+            int offset = offsetAndLength[2 * i];
 
             boolean matches = true;
-            for( int j=0; j<ch.length; j++ ){
-                if(data[offset+j] != ch[j]){
+            for (int j = 0; j < ch.length; j++) {
+                if (data[offset + j] != ch[j]) {
                     matches = false;
                     break;
                 }
             }
-            if(matches){
+            if (matches) {
                 return i;
             }
         }
@@ -217,29 +222,29 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public int lastIndexOf(Object o) {
-        if(!(o instanceof String) ){
+        if (!(o instanceof String)) {
             return -1;
         }
 
-        String str = (String)o;
+        String str = (String) o;
         char[] ch = str.toCharArray();
 
 
-        for( int i=usedCount-1; i>=0; i-- ){
-            if(offsetAndLength[2*i+1] != ch.length){
+        for (int i = usedCount - 1; i >= 0; i--) {
+            if (offsetAndLength[2 * i + 1] != ch.length) {
                 //Can't be this one: lengths differ
                 continue;
             }
-            int offset = offsetAndLength[2*i];
+            int offset = offsetAndLength[2 * i];
 
             boolean matches = true;
-            for( int j=0; j<ch.length; j++ ){
-                if(data[offset+j] != ch[j]){
+            for (int j = 0; j < ch.length; j++) {
+                if (data[offset + j] != ch[j]) {
                     matches = false;
                     break;
                 }
             }
-            if(matches){
+            if (matches) {
                 return i;
             }
         }
@@ -274,7 +279,7 @@ public class CompactHeapStringList implements List<String> {
         while (e1.hasNext() && e2.hasNext()) {
             String o1 = e1.next();
             Object o2 = e2.next();
-            if (!(o1==null ? o2==null : o1.equals(o2)))
+            if (!(o1 == null ? o2 == null : o1.equals(o2)))
                 return false;
         }
         return !(e1.hasNext() || e2.hasNext());
@@ -290,7 +295,7 @@ public class CompactHeapStringList implements List<String> {
 
         @Override
         public String next() {
-            if(!hasNext()){
+            if (!hasNext()) {
                 throw new NoSuchElementException("No next element");
             }
             return get(currIdx++);
@@ -303,7 +308,7 @@ public class CompactHeapStringList implements List<String> {
 
         @Override
         public String previous() {
-            if(!hasPrevious()){
+            if (!hasPrevious()) {
                 throw new NoSuchElementException();
             }
             return get(currIdx--);

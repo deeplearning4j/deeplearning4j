@@ -31,7 +31,8 @@ public class InitializationAggregation extends BaseAggregation {
             clipboard.pin(this);
 
             if (clipboard.isReady(this.originatorId, taskId)) {
-                InitializationAggregation aggregation = (InitializationAggregation) clipboard.unpin(this.originatorId, taskId);
+                InitializationAggregation aggregation =
+                                (InitializationAggregation) clipboard.unpin(this.originatorId, taskId);
 
                 InitializationCompleteMessage icm = new InitializationCompleteMessage(taskId);
                 icm.setOriginatorId(aggregation.getOriginatorId());

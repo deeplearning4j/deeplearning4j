@@ -22,7 +22,7 @@ public abstract class BaseBenchmarkPerformer implements BenchMarkPerformer {
         stopWatch = new StopWatch();
     }
 
-    public BaseBenchmarkPerformer(OpRunner opRunner,int nTimes) {
+    public BaseBenchmarkPerformer(OpRunner opRunner, int nTimes) {
         stopWatch = new StopWatch();
         this.nTimes = nTimes;
         this.runner = opRunner;
@@ -46,12 +46,13 @@ public abstract class BaseBenchmarkPerformer implements BenchMarkPerformer {
         nd4j.initWithBackend(backend);
         averageTime = 0;
 
-        for(int i = 0; i < nTimes; i++) {
+        for (int i = 0; i < nTimes; i++) {
             stopWatch.start();
             runner.runOp();
             stopWatch.stop();
             averageTime += stopWatch.getNanoTime();
-            System.out.println("Time for trial " + i + " took " + stopWatch.getNanoTime() + "(ns) and " + TimeUnit.NANOSECONDS.toMillis(stopWatch.getNanoTime()) + " (ms)");
+            System.out.println("Time for trial " + i + " took " + stopWatch.getNanoTime() + "(ns) and "
+                            + TimeUnit.NANOSECONDS.toMillis(stopWatch.getNanoTime()) + " (ms)");
             stopWatch.reset();
         }
 

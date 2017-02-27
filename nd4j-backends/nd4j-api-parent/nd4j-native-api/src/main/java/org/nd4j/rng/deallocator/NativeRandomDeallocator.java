@@ -61,7 +61,8 @@ public class NativeRandomDeallocator {
         private final ReferenceQueue<NativePack> queue;
         private final Map<Long, GarbageStateReference> referenceMap;
 
-        protected DeallocatorThread(int threadId, @NonNull ReferenceQueue<NativePack> queue, Map<Long, GarbageStateReference> referenceMap) {
+        protected DeallocatorThread(int threadId, @NonNull ReferenceQueue<NativePack> queue,
+                        Map<Long, GarbageStateReference> referenceMap) {
             this.queue = queue;
             this.referenceMap = referenceMap;
             this.setName("NativeRandomDeallocator thread " + threadId);

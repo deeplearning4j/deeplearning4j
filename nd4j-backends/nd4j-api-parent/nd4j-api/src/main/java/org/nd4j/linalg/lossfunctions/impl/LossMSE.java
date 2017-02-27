@@ -13,8 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @EqualsAndHashCode(callSuper = true)
 public class LossMSE extends LossL2 {
 
-    public LossMSE() {
-    }
+    public LossMSE() {}
 
     /**
      * Mean Squared Error loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
@@ -28,7 +27,8 @@ public class LossMSE extends LossL2 {
     }
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
 
         double score = super.computeScore(labels, preOutput, activationFn, mask, average);
         score /= (labels.size(1));
@@ -49,7 +49,8 @@ public class LossMSE extends LossL2 {
 
     @Override
     public String toString() {
-        if (weights == null) return "LossMSE()";
+        if (weights == null)
+            return "LossMSE()";
         return "LossMSE(weights=" + weights + ")";
     }
 }

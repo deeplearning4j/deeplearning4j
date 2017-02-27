@@ -16,7 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @EqualsAndHashCode
 @Getter
-public class ActivationHardTanH extends BaseActivationFunction{
+public class ActivationHardTanH extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
@@ -25,7 +25,7 @@ public class ActivationHardTanH extends BaseActivationFunction{
     }
 
     @Override
-    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
+    public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new HardTanhDerivative(in));
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);

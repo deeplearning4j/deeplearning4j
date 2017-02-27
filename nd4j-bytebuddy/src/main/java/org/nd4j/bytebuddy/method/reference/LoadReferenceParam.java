@@ -18,8 +18,10 @@ public class LoadReferenceParam implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        StackManipulation.Size size = MethodVariableAccess.REFERENCE.loadOffset(offset).apply(methodVisitor, implementationContext);
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
+        StackManipulation.Size size =
+                        MethodVariableAccess.REFERENCE.loadOffset(offset).apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,8 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class PCA {
 
-    private PCA() {
-    }
+    private PCA() {}
 
 
     /**
@@ -58,8 +57,8 @@ public class PCA {
      * @return the reduced parameters of A
      */
     public static INDArray pca(INDArray A, int nDims, boolean normalize) {
-	INDArray factor = pca_factor( A, nDims, normalize ) ;
-	return A.mmul( factor ) ;
+        INDArray factor = pca_factor(A, nDims, normalize);
+        return A.mmul(factor);
     }
 
 
@@ -79,33 +78,33 @@ public class PCA {
      */
     public static INDArray pca_factor(INDArray A, int nDims, boolean normalize) {
 
-	if( normalize ) {
-		// Normalize to mean 0 for each feature ( each column has 0 mean )
-		INDArray mean = A.mean(0) ;		
-		A.subiRowVector( mean ) ;
-	}
+        if (normalize) {
+            // Normalize to mean 0 for each feature ( each column has 0 mean )
+            INDArray mean = A.mean(0);
+            A.subiRowVector(mean);
+        }
 
-	int m = A.rows() ;
-	int n = A.columns() ;
+        int m = A.rows();
+        int n = A.columns();
 
-	// The prepare SVD results, we'll decomp A to UxSxV'
-        INDArray s  = Nd4j.create( m<n?m:n ) ;
-        INDArray VT  = Nd4j.create( n, n, 'f' ) ;
+        // The prepare SVD results, we'll decomp A to UxSxV'
+        INDArray s = Nd4j.create(m < n ? m : n);
+        INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, null, VT );
-         
-	// for comparison k & nDims are the equivalent values in both methods implementing PCA
+        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+
+        // for comparison k & nDims are the equivalent values in both methods implementing PCA
 
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
-	INDArray V = VT.transpose() ;
-        INDArray factor = Nd4j.create( n, nDims, 'f' ) ;
-        for( int i=0 ; i<nDims ; i++ ) {
-        	factor.putColumn( i, V.getColumn(i) ) ;
+        INDArray V = VT.transpose();
+        INDArray factor = Nd4j.create(n, nDims, 'f');
+        for (int i = 0; i < nDims; i++) {
+            factor.putColumn(i, V.getColumn(i));
         }
 
-	return factor ;
+        return factor;
     }
 
 
@@ -124,8 +123,8 @@ public class PCA {
      * @return the matrix representing  a reduced feature set
      */
     public static INDArray pca(INDArray A, double variance, boolean normalize) {
-	INDArray factor = pca_factor( A, variance, normalize ) ;
-	return A.mmul( factor ) ;
+        INDArray factor = pca_factor(A, variance, normalize);
+        return A.mmul(factor);
     }
 
 
@@ -147,51 +146,51 @@ public class PCA {
      * @return the matrix to mulitiply a feature by to get a reduced feature set
      */
     public static INDArray pca_factor(INDArray A, double variance, boolean normalize) {
-	if( normalize ) {
-		// Normalize to mean 0 for each feature ( each column has 0 mean )
-		INDArray mean = A.mean(0) ;		
-		A.subiRowVector( mean ) ;
-	}
+        if (normalize) {
+            // Normalize to mean 0 for each feature ( each column has 0 mean )
+            INDArray mean = A.mean(0);
+            A.subiRowVector(mean);
+        }
 
-	int m = A.rows() ;
-	int n = A.columns() ;
+        int m = A.rows();
+        int n = A.columns();
 
-	// The prepare SVD results, we'll decomp A to UxSxV'
-        INDArray s  = Nd4j.create( m<n?m:n ) ;
-        INDArray VT  = Nd4j.create( n, n, 'f' ) ;
+        // The prepare SVD results, we'll decomp A to UxSxV'
+        INDArray s = Nd4j.create(m < n ? m : n);
+        INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, null, VT );
-        
+        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+
         // Now convert the eigs of X into the eigs of the covariance matrix
-        for( int i=0 ; i<s.length() ; i++ ) {
-        	s.putScalar(i, Math.sqrt( s.getDouble(i) ) / (m-1) ) ;
+        for (int i = 0; i < s.length(); i++) {
+            s.putScalar(i, Math.sqrt(s.getDouble(i)) / (m - 1));
         }
-        
+
         // Now find how many features we need to preserve the required variance
         // Which is the same percentage as a cumulative sum of the eigenvalues' percentages
-        double totalEigSum = s.sumNumber().doubleValue() * variance ;
-        int k = -1 ;		// we will reduce to k dimensions
-        double runningTotal = 0 ;
-        for( int i=0 ; i<s.length() ; i++ ) {
-                runningTotal += s.getDouble(i) ;
-                if( runningTotal >= totalEigSum ) {  // OK I know it's a float, but what else can we do ?
-                        k = i+1 ;        // we will keep this many features to preserve the reqd. variance
-                        break ;
-                }
+        double totalEigSum = s.sumNumber().doubleValue() * variance;
+        int k = -1; // we will reduce to k dimensions
+        double runningTotal = 0;
+        for (int i = 0; i < s.length(); i++) {
+            runningTotal += s.getDouble(i);
+            if (runningTotal >= totalEigSum) { // OK I know it's a float, but what else can we do ?
+                k = i + 1; // we will keep this many features to preserve the reqd. variance
+                break;
+            }
         }
-        if( k == -1 ) {   // if we need everything
-            throw new RuntimeException( "No reduction possible for reqd. variance - use smaller variance" ) ;
+        if (k == -1) { // if we need everything
+            throw new RuntimeException("No reduction possible for reqd. variance - use smaller variance");
         }
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
-	INDArray V = VT.transpose() ;
-        INDArray factor = Nd4j.create(  n, k, 'f' ) ;
-        for( int i=0 ; i<k ; i++ ) {
-        	factor.putColumn( i, V.getColumn(i) ) ;
+        INDArray V = VT.transpose();
+        INDArray factor = Nd4j.create(n, k, 'f');
+        for (int i = 0; i < k; i++) {
+            factor.putColumn(i, V.getColumn(i));
         }
 
-        return factor  ;
+        return factor;
     }
 
 }

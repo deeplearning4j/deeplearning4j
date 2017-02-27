@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,8 +35,7 @@ public class And extends BaseTransformOp {
 
     protected double comparable;
 
-    public And() {
-    }
+    public And() {}
 
     public And(@NonNull INDArray x, @NonNull INDArray y) {
         this(x, y, 0.0);
@@ -65,7 +64,7 @@ public class And extends BaseTransformOp {
     public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
         super(x, y, z, n);
         this.comparable = comparable.doubleValue();
-        this.extraArgs = new Object[]{ this.comparable };
+        this.extraArgs = new Object[] {this.comparable};
     }
 
 
@@ -123,7 +122,8 @@ public class And extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new And(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new And(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new And(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -133,7 +133,8 @@ public class And extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new And(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new And(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new And(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

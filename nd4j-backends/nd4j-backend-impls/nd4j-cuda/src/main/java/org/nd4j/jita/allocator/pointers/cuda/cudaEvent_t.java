@@ -11,15 +11,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author raver119@gmail.com
  */
-public class cudaEvent_t extends CudaPointer{
+public class cudaEvent_t extends CudaPointer {
 
     private AtomicBoolean destroyed = new AtomicBoolean(false);
 
-    @Getter @Setter private long clock;
+    @Getter
+    @Setter
+    private long clock;
 
-    @Getter @Setter private int laneId;
+    @Getter
+    @Setter
+    private int laneId;
 
-    @Getter @Setter private int deviceId;
+    @Getter
+    @Setter
+    private int deviceId;
 
     public cudaEvent_t(Pointer pointer) {
         super(pointer);

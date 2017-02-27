@@ -16,17 +16,17 @@ public class Nd4jBase64Test {
     @Test
     public void testBase64Several() throws IOException {
         INDArray[] arrs = new INDArray[2];
-        arrs[0] = Nd4j.linspace(1,4,4);
-        arrs[1]  = arrs[0].dup();
-        assertArrayEquals(arrs,Nd4jBase64.arraysFromBase64(Nd4jBase64.arraysToBase64(arrs)));
+        arrs[0] = Nd4j.linspace(1, 4, 4);
+        arrs[1] = arrs[0].dup();
+        assertArrayEquals(arrs, Nd4jBase64.arraysFromBase64(Nd4jBase64.arraysToBase64(arrs)));
     }
 
     @Test
     public void testBase64() throws Exception {
-        INDArray arr = Nd4j.linspace(1,4,4);
+        INDArray arr = Nd4j.linspace(1, 4, 4);
         String base64 = Nd4jBase64.base64String(arr);
-//        assertTrue(Nd4jBase64.isMultiple(base64));
+        //        assertTrue(Nd4jBase64.isMultiple(base64));
         INDArray from = Nd4jBase64.fromBase64(base64);
-        assertEquals(arr,from);
+        assertEquals(arr, from);
     }
 }

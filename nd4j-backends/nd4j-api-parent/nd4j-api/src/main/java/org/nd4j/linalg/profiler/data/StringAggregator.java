@@ -24,13 +24,13 @@ public class StringAggregator {
     }
 
     public void reset() {
-        for (String key: times.keySet()) {
-//            times.remove(key);
+        for (String key : times.keySet()) {
+            //            times.remove(key);
             times.put(key, new TimeSet());
         }
 
-        for (String key: longCalls.keySet()) {
-  //          longCalls.remove(key);
+        for (String key : longCalls.keySet()) {
+            //          longCalls.remove(key);
             longCalls.put(key, new ComparableAtomicLong(0));
         }
     }
@@ -84,20 +84,19 @@ public class StringAggregator {
         Map<String, TimeSet> sortedTimes = ArrayUtil.sortMapByValue(times);
 
         AtomicLong sum = new AtomicLong(0);
-        for (String key: sortedTimes.keySet()) {
+        for (String key : sortedTimes.keySet()) {
             sum.addAndGet(getSum(key));
         }
         builder.append("Total time spent: ").append(sum.get() / 1000000).append(" ms.").append("\n");
 
-        for (String key: sortedTimes.keySet()) {
+        for (String key : sortedTimes.keySet()) {
             long currentSum = getSum(key);
             float perc = currentSum * 100 / sum.get();
 
             long sumMs = currentSum / 1000000;
 
-            builder.append(key).append("  >>> ")
-                    .append(" perc: ").append(perc).append(" ")
-                    .append("Time spent: ").append(sumMs).append(" ms");
+            builder.append(key).append("  >>> ").append(" perc: ").append(perc).append(" ").append("Time spent: ")
+                            .append(sumMs).append(" ms");
 
             builder.append("\n");
         }
@@ -110,7 +109,7 @@ public class StringAggregator {
 
         Map<String, TimeSet> sortedTimes = ArrayUtil.sortMapByValue(times);
 
-        for (String key: sortedTimes.keySet()) {
+        for (String key : sortedTimes.keySet()) {
             long currentMax = getMaximum(key);
             long currentMin = getMinimum(key);
             long currentAvg = getAverage(key);
@@ -121,10 +120,9 @@ public class StringAggregator {
             if (longCalls.size() == 0)
                 builder.append(" ").append(sortedTimes.get(key).size()).append(" calls; ");
 
-            builder.append("Min: ").append(currentMin).append(" ns; ")
-                    .append("Max: ").append(currentMax).append(" ns; ")
-                    .append("Average: ").append(currentAvg).append(" ns; ")
-                    .append("Median: ").append(currentMed).append(" ns; ");
+            builder.append("Min: ").append(currentMin).append(" ns; ").append("Max: ").append(currentMax)
+                            .append(" ns; ").append("Average: ").append(currentAvg).append(" ns; ").append("Median: ")
+                            .append(currentMed).append(" ns; ");
 
             builder.append("\n");
         }
@@ -133,10 +131,9 @@ public class StringAggregator {
 
         Map<String, ComparableAtomicLong> sortedCalls = ArrayUtil.sortMapByValue(longCalls);
 
-        for (String key: sortedCalls.keySet()) {
+        for (String key : sortedCalls.keySet()) {
             long numCalls = sortedCalls.get(key).get();
-            builder.append(key).append("  >>> ")
-                    .append(numCalls);
+            builder.append(key).append("  >>> ").append(numCalls);
 
             builder.append("\n");
         }

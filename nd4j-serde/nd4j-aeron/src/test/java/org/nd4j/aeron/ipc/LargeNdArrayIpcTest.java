@@ -23,7 +23,7 @@ public class LargeNdArrayIpcTest {
     private Aeron.Context ctx;
     private String channel = "aeron:udp?endpoint=localhost:" + (40123 + new java.util.Random().nextInt(130));
     private int streamId = 10;
-    private  int length = (int) 1e7;
+    private int length = (int) 1e7;
 
     @Before
     public void before() {
@@ -44,44 +44,38 @@ public class LargeNdArrayIpcTest {
         int length = (int) 1e7;
         INDArray arr = Nd4j.ones(length);
         AeronNDArrayPublisher publisher;
-        ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .keepAliveInterval(10000)
-                .errorHandler(err -> err.printStackTrace());
+        ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+                        .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
+                        .errorHandler(err -> err.printStackTrace());
 
         final AtomicBoolean running = new AtomicBoolean(true);
         Aeron aeron = Aeron.connect(ctx);
         int numSubscribers = 1;
         AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
-        for(int i = 0; i < numSubscribers; i++) {
-            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
-                    .streamId(streamId)
-                    .ctx(getContext()).channel(channel).aeron(aeron)
-                    .running(running)
-                    .ndArrayCallback(new
-                                             NDArrayCallback() {
-                                                 /**
-                                                  * A listener for ndarray message
-                                                  *
-                                                  * @param message the message for the callback
-                                                  */
-                                                 @Override
-                                                 public void onNDArrayMessage(NDArrayMessage message) {
-                                                     running.set(false);
-                                                 }
+        for (int i = 0; i < numSubscribers; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId).ctx(getContext())
+                            .channel(channel).aeron(aeron).running(running).ndArrayCallback(new NDArrayCallback() {
+                                /**
+                                 * A listener for ndarray message
+                                 *
+                                 * @param message the message for the callback
+                                 */
+                                @Override
+                                public void onNDArrayMessage(NDArrayMessage message) {
+                                    running.set(false);
+                                }
 
-                                                 @Override
-                                                 public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                                @Override
+                                public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
 
-                                                 }
+                            }
 
-                                                 @Override
-                                                 public void onNDArray(INDArray arr) {
-                                                     running.set(false);
-                                                 }
-                                             }).build();
+                                @Override
+                                public void onNDArray(INDArray arr) {
+                                    running.set(false);
+                                }
+                            }).build();
 
 
             Thread t = new Thread(() -> {
@@ -100,14 +94,11 @@ public class LargeNdArrayIpcTest {
 
         Thread.sleep(10000);
 
-        publisher =   AeronNDArrayPublisher
-                .builder().publishRetryTimeOut(3000)
-                .streamId(streamId)
-                .channel(channel).aeron(aeron)
-                .build();
+        publisher = AeronNDArrayPublisher.builder().publishRetryTimeOut(3000).streamId(streamId).channel(channel)
+                        .aeron(aeron).build();
 
 
-        for(int i = 0; i< 1 && running.get(); i++) {
+        for (int i = 0; i < 1 && running.get(); i++) {
             log.info("About to send array.");
             publisher.publish(arr);
             log.info("Sent array");
@@ -118,7 +109,7 @@ public class LargeNdArrayIpcTest {
 
 
 
-        for(int i = 0; i < numSubscribers; i++)
+        for (int i = 0; i < numSubscribers; i++)
             CloseHelper.close(subscribers[i]);
         CloseHelper.close(aeron);
         CloseHelper.close(publisher);
@@ -127,15 +118,13 @@ public class LargeNdArrayIpcTest {
 
 
 
-
-
     private Aeron.Context getContext() {
-        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                .availableImageHandler(AeronUtil::printAvailableImage)
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .keepAliveInterval(10000)
-                .errorHandler(err -> err.printStackTrace());
+        if (ctx == null)
+            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+                            .availableImageHandler(AeronUtil::printAvailableImage)
+                            .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
+                            .errorHandler(err -> err.printStackTrace());
         return ctx;
     }
 }

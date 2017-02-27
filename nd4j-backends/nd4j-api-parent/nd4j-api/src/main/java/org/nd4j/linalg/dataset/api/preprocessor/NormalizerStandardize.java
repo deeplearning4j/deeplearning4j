@@ -24,8 +24,8 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
         fitLabel(false);
     }
 
-    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd, @NonNull INDArray labelMean,
-                                 @NonNull INDArray labelStd) {
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd,
+                    @NonNull INDArray labelMean, @NonNull INDArray labelStd) {
         this();
         setFeatureStats(new DistributionStats(featureMean, featureStd));
         setLabelStats(new DistributionStats(labelMean, labelStd));

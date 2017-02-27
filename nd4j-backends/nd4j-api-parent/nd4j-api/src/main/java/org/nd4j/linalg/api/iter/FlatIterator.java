@@ -33,14 +33,13 @@ public class FlatIterator implements Iterator<int[]> {
 
     @Override
     public int[] next() {
-        if(currentCoord[runningDimension] == shape[runningDimension]) {
+        if (currentCoord[runningDimension] == shape[runningDimension]) {
             runningDimension--;
             currentCoord[runningDimension] = 0;
-            if(runningDimension < shape.length) {
+            if (runningDimension < shape.length) {
 
             }
-        }
-        else {
+        } else {
             //bump to the next coordinate
             currentCoord[runningDimension]++;
         }

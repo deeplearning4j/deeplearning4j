@@ -27,7 +27,7 @@ public class DistributedSkipGramMessage extends BaseVoidMessage implements Distr
     protected long nextRandom;
 
 
-    protected DistributedSkipGramMessage(){
+    protected DistributedSkipGramMessage() {
         super(23);
     }
 

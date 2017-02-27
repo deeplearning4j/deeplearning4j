@@ -27,22 +27,22 @@ public class RationalTanhTest extends BaseNd4jTest {
     public void gradientCheck() {
 
         double eps = 1e-6;
-        INDArray A = Nd4j.linspace(-3,3,10).reshape(2,5);
+        INDArray A = Nd4j.linspace(-3, 3, 10).reshape(2, 5);
         INDArray ADer = Nd4j.getExecutioner().execAndReturn(new RationalTanhDerivative(A.dup()));
 
-        double [] a = A.data().asDouble();
-        double [] aDer = ADer.data().asDouble();
+        double[] a = A.data().asDouble();
+        double[] aDer = ADer.data().asDouble();
 
-        for (int i =0; i<10;i++) {
-            double empirical = (f(a[i]+eps)-f(a[i]-eps))/(2*eps);
+        for (int i = 0; i < 10; i++) {
+            double empirical = (f(a[i] + eps) - f(a[i] - eps)) / (2 * eps);
             double analytic = aDer[i];
-            assertTrue (Math.abs(empirical-analytic) / (Math.abs(empirical) + Math.abs(analytic)) < 0.001);
+            assertTrue(Math.abs(empirical - analytic) / (Math.abs(empirical) + Math.abs(analytic)) < 0.001);
         }
 
     }
 
-    public static double f(double x){
-        return 1.7159 * tanhApprox(2.0/3 * x);
+    public static double f(double x) {
+        return 1.7159 * tanhApprox(2.0 / 3 * x);
     }
 
     /*
@@ -51,8 +51,8 @@ public class RationalTanhTest extends BaseNd4jTest {
     }
     */
 
-    public static double tanhApprox(double y){
-        return Math.signum(y) * (1.0 - 1.0/(1+Math.abs(y) + y*y + 1.41645 * Math.pow(y,4.0)));
+    public static double tanhApprox(double y) {
+        return Math.signum(y) * (1.0 - 1.0 / (1 + Math.abs(y) + y * y + 1.41645 * Math.pow(y, 4.0)));
     }
 
     /*

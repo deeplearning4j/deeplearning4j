@@ -87,7 +87,8 @@ public class FrameCompletionHandler {
 
     public static class FrameDescriptor {
 
-        @Getter private long frameOriginatorId;
+        @Getter
+        private long frameOriginatorId;
 
         // messageId within frame, and it's state
         private Map<Long, AtomicBoolean> states = new ConcurrentHashMap<>();

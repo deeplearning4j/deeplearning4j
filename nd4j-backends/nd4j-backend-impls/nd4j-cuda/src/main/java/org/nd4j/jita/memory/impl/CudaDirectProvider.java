@@ -53,11 +53,12 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-               Pointer pointer = nativeOps.mallocHost(reqMem, 0);
+                Pointer pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == null)
-                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: " + Thread.currentThread().getId());
+                    throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: "
+                                    + Thread.currentThread().getId());
 
-//                log.info("Host allocation, Thread id: {}, ReqMem: {}, Pointer: {}", Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
+                //                log.info("Host allocation, Thread id: {}, ReqMem: {}, Pointer: {}", Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
                 Pointer hostPointer = new CudaPointer(pointer);
 
@@ -79,8 +80,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-//                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
-//                    throw new RuntimeException("Device allocation happened");
+                //                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
+                //                    throw new RuntimeException("Device allocation happened");
 
 
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
@@ -89,7 +90,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 if (pointer == null)
                     return null;
-                    //throw new RuntimeException("Can't allocate [DEVICE] memory!");
+                //throw new RuntimeException("Can't allocate [DEVICE] memory!");
 
                 Pointer devicePointer = new CudaPointer(pointer);
 
@@ -104,7 +105,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 return devicePointerInfo;
             }
             default:
-                throw new IllegalStateException("Unsupported location for malloc: ["+ location+"]");
+                throw new IllegalStateException("Unsupported location for malloc: [" + location + "]");
         }
     }
 
@@ -121,7 +122,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 // FIXME: it would be nice to get rid of typecasting here
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-              //  log.info("Deallocating {} bytes on [HOST]", reqMem);
+                //  log.info("Deallocating {} bytes on [HOST]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -130,7 +131,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
             }
-            break;
+                break;
             case DEVICE: {
                 // cudaFree call
                 //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
@@ -139,7 +140,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-         //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
+                //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -147,7 +148,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
             }
-            break;
+                break;
             default:
                 throw new IllegalStateException("Can't free memory on target [" + point.getAllocationStatus() + "]");
         }
@@ -164,14 +165,14 @@ public class CudaDirectProvider implements MemoryProvider {
         /*
         long[] totalMem = new long[1];
         long[] freeMem = new long[1];
-
-
+        
+        
         JCuda.cudaMemGetInfo(freeMem, totalMem);
-
+        
         long free = freeMem[0];
         long total = totalMem[0];
         long used = total - free;
-
+        
         /*
             We don't want to allocate memory if it's too close to the end of available ram.
          */
@@ -185,7 +186,8 @@ public class CudaDirectProvider implements MemoryProvider {
         long freeMem = nativeOps.getDeviceFreeMemory(new CudaPointer(-1));
         if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
             return false;
-        else return true;
+        else
+            return true;
     }
 
     protected void freeHost(Pointer pointer) {

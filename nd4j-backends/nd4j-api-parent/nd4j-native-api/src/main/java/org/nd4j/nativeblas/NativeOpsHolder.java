@@ -16,19 +16,21 @@ public class NativeOpsHolder {
     private static Logger log = LoggerFactory.getLogger(NativeOpsHolder.class);
     private static final NativeOpsHolder INSTANCE = new NativeOpsHolder();
 
-    @Getter private final NativeOps deviceNativeOps;
+    @Getter
+    private final NativeOps deviceNativeOps;
 
     private NativeOpsHolder() {
         try {
             Properties props = Nd4jContext.getInstance().getConf();
             Class<? extends NativeOps> nativeOpsClazz =
-                    Class.forName(System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString())).asSubclass(NativeOps.class);
+                            Class.forName(System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString()))
+                                            .asSubclass(NativeOps.class);
             deviceNativeOps = nativeOpsClazz.newInstance();
 
             deviceNativeOps.initializeDevicesAndFunctions();
             int numThreads;
             String numThreadsString = System.getenv("OMP_NUM_THREADS");
-            if(numThreadsString != null && !numThreadsString.isEmpty()) {
+            if (numThreadsString != null && !numThreadsString.isEmpty()) {
                 numThreads = Integer.parseInt(numThreadsString);
                 deviceNativeOps.setOmpNumThreads(numThreads);
             } else {
@@ -38,7 +40,9 @@ public class NativeOpsHolder {
 
             log.info("Number of threads used for NativeOps: {}", deviceNativeOps.ompGetMaxThreads());
         } catch (Exception | Error e) {
-            throw new RuntimeException("ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html", e);
+            throw new RuntimeException(
+                            "ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html",
+                            e);
         }
     }
 

@@ -83,27 +83,21 @@ public class NormalizerTests extends BaseNd4jTest {
 
 
 
-
     @Test
     public void testMasking() {
         Nd4j.getRandom().setSeed(235);
 
-        DataNormalization[] normalizers = new DataNormalization[]{
-                new NormalizerMinMaxScaler(),
-                new NormalizerStandardize()};
+        DataNormalization[] normalizers =
+                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
-        DataNormalization[] normalizersNoMask = new DataNormalization[] {
-                new NormalizerMinMaxScaler(),
-                new NormalizerStandardize()
-        };
+        DataNormalization[] normalizersNoMask =
+                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
-        DataNormalization[] normalizersByRow = new DataNormalization[] {
-                new NormalizerMinMaxScaler(),
-                new NormalizerStandardize()
-        };
+        DataNormalization[] normalizersByRow =
+                        new DataNormalization[] {new NormalizerMinMaxScaler(), new NormalizerStandardize()};
 
 
-        for(int i = 0; i < normalizers.length; i++) {
+        for (int i = 0; i < normalizers.length; i++) {
             //First: check that normalization is the same with/without masking arrays
             DataNormalization norm = normalizers[i];
             DataNormalization normFitSubset = normalizersNoMask[i];
@@ -112,17 +106,17 @@ public class NormalizerTests extends BaseNd4jTest {
             System.out.println(norm.getClass());
 
 
-            INDArray arr = Nd4j.rand('c', new int[]{2, 3, 5}).muli(100).addi(100);
+            INDArray arr = Nd4j.rand('c', new int[] {2, 3, 5}).muli(100).addi(100);
             arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3, 5)).assign(0);
             INDArray arrCopy = arr.dup();
 
-            INDArray arrPt1 = arr.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
-            INDArray arrPt2 = arr.get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3)).dup();
+            INDArray arrPt1 = arr.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray arrPt2 =
+                            arr.get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.interval(0, 3))
+                                            .dup();
 
 
-            INDArray mask = Nd4j.create(new double[][]{
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 0, 0}});
+            INDArray mask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}});
 
             DataSet ds = new DataSet(arr, null, mask, null);
             DataSet dsCopy1 = new DataSet(arr.dup(), null, mask, null);
@@ -135,22 +129,24 @@ public class NormalizerTests extends BaseNd4jTest {
             List<DataSet> toFitTimeSeries1Ex = new ArrayList<>();
             toFitTimeSeries1Ex.add(new DataSet(arrPt1, arrPt1));
             toFitTimeSeries1Ex.add(new DataSet(arrPt2, arrPt2));
-            normFitSubset.fit(new TestDataSetIterator(toFitTimeSeries1Ex,1));
+            normFitSubset.fit(new TestDataSetIterator(toFitTimeSeries1Ex, 1));
 
             List<DataSet> toFitRows = new ArrayList<>();
-            for(int j = 0; j < 5; j++) {
-                INDArray row = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
+            for (int j = 0; j < 5; j++) {
+                INDArray row = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(j, j, true))
+                                .transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
 
-            for(int j = 0; j < 3; j++) {
-                INDArray row = arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
+            for (int j = 0; j < 3; j++) {
+                INDArray row = arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(j, j, true))
+                                .transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
 
-            normByRow.fit(new TestDataSetIterator(toFitRows,1));
+            normByRow.fit(new TestDataSetIterator(toFitRows, 1));
 
             norm.transform(ds);
             normFitSubset.transform(dsCopy1);
@@ -160,14 +156,18 @@ public class NormalizerTests extends BaseNd4jTest {
             assertEquals(ds, dsCopy2);
 
             //Second: ensure time steps post normalization (and post revert) are 0.0
-            INDArray shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
-            INDArray shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
-            INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            INDArray shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
+            INDArray shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
+            INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
-            for(int j = 0; j < 2; j++) {
-                System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()));
+            for (int j = 0; j < 2; j++) {
+                System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(),
+                                NDArrayIndex.all()));
                 System.out.println();
             }
 
@@ -179,9 +179,12 @@ public class NormalizerTests extends BaseNd4jTest {
             norm.revert(ds);
             normFitSubset.revert(dsCopy1);
             normByRow.revert(dsCopy2);
-            shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
-            shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
-            shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
+            shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
+            shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                            NDArrayIndex.interval(3, 5));
 
             assertEquals(zeros, shouldBe0_1);
             assertEquals(zeros, shouldBe0_2);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,11 +37,11 @@ public class DropOut extends BaseRandomOp {
     }
 
     public DropOut(@NonNull INDArray x, double p) {
-        this(x, x, p, x.length());
+        this(x, x, p, x.lengthLong());
     }
 
     public DropOut(@NonNull INDArray x, @NonNull INDArray z, double p) {
-        this(x, z, p, x.length());
+        this(x, z, p, x.lengthLong());
     }
 
     public DropOut(@NonNull INDArray x, @NonNull INDArray z, double p, long n) {
@@ -62,7 +62,7 @@ public class DropOut extends BaseRandomOp {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{p, (double) n};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {p, (double) n};
     }
 }

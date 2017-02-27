@@ -26,11 +26,11 @@ public class MultiNormalizerMinMaxScaler extends AbstractMultiDataSetNormalizer<
     }
 
     public double getTargetMin() {
-        return ((MinMaxStrategy)strategy).getMinRange();
+        return ((MinMaxStrategy) strategy).getMinRange();
     }
 
     public double getTargetMax() {
-        return ((MinMaxStrategy)strategy).getMaxRange();
+        return ((MinMaxStrategy) strategy).getMaxRange();
     }
 
     @Override

@@ -33,7 +33,7 @@ public class FrameTest {
 
         Frame<TrainingMessage> frame = new Frame<>();
 
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             frame.stackMessage(new TrainingMessage() {
                 @Override
                 public byte getCounter() {
@@ -101,7 +101,9 @@ public class FrameTest {
                 }
 
                 @Override
-                public void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex) {
+                public void attachContext(VoidConfiguration voidConfiguration,
+                                TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard,
+                                Transport transport, Storage storage, NodeRole role, short shardIndex) {
                     // no-op intentionally
                 }
 
@@ -142,7 +144,8 @@ public class FrameTest {
 
     @Test
     public void testJoin1() throws Exception {
-        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[]{3,4,5}, new byte[]{0,1,0}, (short) 0, 0.01, 119L);
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[] {3, 4, 5}, new byte[] {0, 1, 0},
+                        (short) 0, 0.01, 119L);
         Frame<SkipGramRequestMessage> frame = new Frame<>(sgrm);
         for (int i = 0; i < 10; i++) {
             frame.stackMessage(sgrm);

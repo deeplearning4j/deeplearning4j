@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,18 +37,18 @@ import java.util.*;
  * @author Adam Gibson
  */
 @RunWith(Parameterized.class)
-public abstract class BaseNd4jTest  {
+public abstract class BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
     protected Nd4jBackend backend;
     protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
 
     public BaseNd4jTest() {
-        this("",getDefaultBackend());
+        this("", getDefaultBackend());
     }
 
     public BaseNd4jTest(String name) {
-        this(name,getDefaultBackend());
+        this(name, getDefaultBackend());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
@@ -57,7 +57,7 @@ public abstract class BaseNd4jTest  {
     }
 
     public BaseNd4jTest(Nd4jBackend backend) {
-        this(backend.getClass().getName() + UUID.randomUUID().toString(),backend);
+        this(backend.getClass().getName() + UUID.randomUUID().toString(), backend);
 
     }
 
@@ -68,9 +68,9 @@ public abstract class BaseNd4jTest  {
         backends = new ArrayList<>();
         List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
 
-        while(backendIterator.hasNext()) {
+        while (backendIterator.hasNext()) {
             Nd4jBackend backend = backendIterator.next();
-            if(backend.canRun() && backendsToRun.contains(backend.getClass().getName()) || backendsToRun.isEmpty())
+            if (backend.canRun() && backendsToRun.contains(backend.getClass().getName()) || backendsToRun.isEmpty())
                 backends.add(backend);
         }
 
@@ -79,8 +79,8 @@ public abstract class BaseNd4jTest  {
     @Parameterized.Parameters(name = "{index}: backend({0})={1}")
     public static Collection<Object[]> configs() {
         List<Object[]> ret = new ArrayList<>();
-        for(Nd4jBackend backend : backends)
-            ret.add(new Object[]{backend});
+        for (Nd4jBackend backend : backends)
+            ret.add(new Object[] {backend});
         return ret;
     }
 
@@ -95,14 +95,13 @@ public abstract class BaseNd4jTest  {
         String cpuBackend = "org.nd4j.linalg.cpu.nativecpu.CpuBackend";
         //String cpuBackend = "org.nd4j.linalg.cpu.CpuBackend";
         String gpuBackend = "org.nd4j.linalg.jcublas.JCublasBackend";
-        String clazz = System.getProperty(DEFAULT_BACKEND,cpuBackend);
+        String clazz = System.getProperty(DEFAULT_BACKEND, cpuBackend);
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
 
 
 
@@ -117,9 +116,10 @@ public abstract class BaseNd4jTest  {
     }
 
     @After
-    public void after() throws  Exception {
+    public void after() throws Exception {
         log.info("Ending " + getClass().getName());
-        if(System.getProperties().getProperty("backends") != null && !System.getProperty("backends").contains(backend.getClass().getName()))
+        if (System.getProperties().getProperty("backends") != null
+                        && !System.getProperty("backends").contains(backend.getClass().getName()))
             return;
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);

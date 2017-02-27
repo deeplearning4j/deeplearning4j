@@ -33,10 +33,12 @@ public abstract class Nd4jBlas implements Blas {
 
     private int getCores(int totals) {
         // that's special case for Xeon Phi
-        if (totals >= 256) return  64;
+        if (totals >= 256)
+            return 64;
 
         int ht_off = totals / 2; // we count off HyperThreading without any excuses
-        if (ht_off <= 4) return 4; // special case for Intel i5. and nobody likes i3 anyway
+        if (ht_off <= 4)
+            return 4; // special case for Intel i5. and nobody likes i3 anyway
 
         if (ht_off > 24) {
             int rounds = 0;
@@ -73,9 +75,7 @@ public abstract class Nd4jBlas implements Blas {
     @Override
     public Vendor getBlasVendor() {
         int vendor = getBlasVendorId();
-        boolean isUnknowVendor
-                = ((vendor > Vendor.values().length - 1)
-                || (vendor <= 0));
+        boolean isUnknowVendor = ((vendor > Vendor.values().length - 1) || (vendor <= 0));
         if (isUnknowVendor) {
             return Vendor.UNKNOWN;
         }

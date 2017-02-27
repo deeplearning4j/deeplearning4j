@@ -29,7 +29,8 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
     protected boolean useNeg;
     protected int columnsPerShard;
 
-    public DistributedInitializationMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
+    public DistributedInitializationMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg,
+                    int columnsPerShard) {
         super(4);
         this.vectorLength = vectorLength;
         this.numWords = numWords;
@@ -70,7 +71,7 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
                 }
             }
 
-            int[] shardShape = new int[]{numWords, columnsPerShard};
+            int[] shardShape = new int[] {numWords, columnsPerShard};
 
             syn0 = Nd4j.rand(shardShape, 'c').subi(0.5).divi(vectorLength);
 
@@ -93,7 +94,8 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
 
             storage.setArray(WordVectorStorage.EXP_TABLE, expTable);
 
-            InitializationAggregation ia = new InitializationAggregation((short) voidConfiguration.getNumberOfShards(), transport.getShardIndex());
+            InitializationAggregation ia = new InitializationAggregation((short) voidConfiguration.getNumberOfShards(),
+                            transport.getShardIndex());
             ia.setOriginatorId(this.originatorId);
             transport.sendMessage(ia);
         }
@@ -102,8 +104,8 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
     protected INDArray initExpTable(int tableWidth) {
         double[] expTable = new double[tableWidth];
         for (int i = 0; i < expTable.length; i++) {
-            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * 6);
-            expTable[i]  = tmp / (tmp + 1.0);
+            double tmp = FastMath.exp((i / (double) expTable.length * 2 - 1) * 6);
+            expTable[i] = tmp / (tmp + 1.0);
         }
 
         return Nd4j.create(expTable);

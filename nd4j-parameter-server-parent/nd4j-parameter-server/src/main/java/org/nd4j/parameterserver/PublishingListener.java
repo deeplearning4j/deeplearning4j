@@ -30,10 +30,8 @@ public class PublishingListener implements NDArrayCallback {
      */
     @Override
     public void onNDArrayMessage(NDArrayMessage message) {
-        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
-                .streamId(streamId)
-                .ctx(aeronContext).channel(masterUrl)
-                .build()) {
+        try (AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamId).ctx(aeronContext)
+                        .channel(masterUrl).build()) {
             publisher.publish(message);
             log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
         } catch (Exception e) {
@@ -52,10 +50,8 @@ public class PublishingListener implements NDArrayCallback {
      */
     @Override
     public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
-                .streamId(streamId)
-                .ctx(aeronContext).channel(masterUrl)
-                .build()) {
+        try (AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamId).ctx(aeronContext)
+                        .channel(masterUrl).build()) {
             publisher.publish(NDArrayMessage.builder().arr(arr).dimensions(dimensions).index(idx).build());
             log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
         } catch (Exception e) {
@@ -70,10 +66,8 @@ public class PublishingListener implements NDArrayCallback {
      */
     @Override
     public void onNDArray(INDArray arr) {
-        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
-                .streamId(streamId)
-                .ctx(aeronContext).channel(masterUrl)
-                .build()) {
+        try (AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamId).ctx(aeronContext)
+                        .channel(masterUrl).build()) {
             publisher.publish(arr);
             log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
         } catch (Exception e) {

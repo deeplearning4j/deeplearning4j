@@ -22,7 +22,7 @@ public class StoreIntStackManipulation implements StackManipulation {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
-        methodVisitor.visitVarInsn(Opcodes.ISTORE,storeId);
+        methodVisitor.visitVarInsn(Opcodes.ISTORE, storeId);
         return new Size(1, 1);
     }
 }

@@ -16,8 +16,7 @@ public class SoftPlus extends BaseTransformOp {
         super(x, z);
     }
 
-    public SoftPlus() {
-    }
+    public SoftPlus() {}
 
     public SoftPlus(INDArray x, INDArray z, long n) {
         super(x, z, n);
@@ -68,7 +67,7 @@ public class SoftPlus extends BaseTransformOp {
 
     @Override
     public double op(double origin) {
-        return  FastMath.log(1 + FastMath.exp(origin));
+        return FastMath.log(1 + FastMath.exp(origin));
     }
 
     @Override
@@ -85,7 +84,8 @@ public class SoftPlus extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftPlus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftPlus(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftPlus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
@@ -94,14 +94,15 @@ public class SoftPlus extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new Sigmoid(x,y,z,n);
+        return new Sigmoid(x, y, z, n);
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new SoftPlus(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftPlus(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftPlus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 

@@ -40,18 +40,11 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
 
     @Deprecated
     public DistributedCbowDotMessage(long taskId, int rowA, int rowB) {
-        this(taskId, new int[]{rowA}, new int[]{rowB}, rowA, new byte[]{}, false, (short) 0, 0.001f);
+        this(taskId, new int[] {rowA}, new int[] {rowB}, rowA, new byte[] {}, false, (short) 0, 0.001f);
     }
 
-    public DistributedCbowDotMessage(long taskId,
-                                     @NonNull int[] rowsA,
-                                     @NonNull int[] rowsB,
-                                     int w1,
-                                     @NonNull byte[] codes,
-                                     boolean useHS,
-                                     short negSamples,
-                                     float alpha
-                                 ) {
+    public DistributedCbowDotMessage(long taskId, @NonNull int[] rowsA, @NonNull int[] rowsB, int w1,
+                    @NonNull byte[] codes, boolean useHS, short negSamples, float alpha) {
         this();
         this.rowsA = rowsA;
         this.rowsB = rowsB;
@@ -76,7 +69,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
         // this only picks up new training round
         //log.info("sI_{} Starting CBOW dot...", transport.getShardIndex());
 
-        CbowRequestMessage cbrm = new CbowRequestMessage(rowsA, rowsB, w1, codes, negSamples, alpha, 119 );
+        CbowRequestMessage cbrm = new CbowRequestMessage(rowsA, rowsB, w1, codes, negSamples, alpha, 119);
         if (negSamples > 0) {
             // unfortunately we have to get copy of negSamples here
             int negatives[] = Arrays.copyOfRange(rowsB, codes.length, rowsB.length);
@@ -93,7 +86,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
 
 
         // we calculate dot for all involved rows, and first of all we get mean word
-        INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1,rowsA, 'c' );
+        INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1, rowsA, 'c');
         INDArray mean = words.mean(0);
 
         int resultLength = codes.length + (negSamples > 0 ? (negSamples + 1) : 0);
@@ -106,8 +99,9 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
         }
 
         // negSampling round
-        for (; e< resultLength; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(mean, storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
+        for (; e < resultLength; e++) {
+            double dot = Nd4j.getBlasWrapper().dot(mean,
+                            storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 
@@ -118,7 +112,8 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
             transport.putMessage(dot);
         } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
             // send this message to everyone
-            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
+            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex,
+                            result);
             dot.setTargetId((short) -1);
             dot.setOriginatorId(getOriginatorId());
             transport.sendMessage(dot);

@@ -11,7 +11,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedIntrodu
  *
  * @author raver119@gmail.com
  */
-public class IntroductionRequestMessage extends BaseVoidMessage  implements RequestMessage {
+public class IntroductionRequestMessage extends BaseVoidMessage implements RequestMessage {
     private String ip;
     private int port;
 
@@ -30,18 +30,18 @@ public class IntroductionRequestMessage extends BaseVoidMessage  implements Requ
         // redistribute this message over network
         transport.addClient(ip, port);
 
-//        DistributedIntroductionMessage dim = new DistributedIntroductionMessage(ip, port);
+        //        DistributedIntroductionMessage dim = new DistributedIntroductionMessage(ip, port);
 
-//        dim.extractContext(this);
-//        dim.processMessage();
+        //        dim.extractContext(this);
+        //        dim.processMessage();
 
-//        if (voidConfiguration.getNumberOfShards() > 1)
-//            transport.sendMessageToAllShards(dim);
+        //        if (voidConfiguration.getNumberOfShards() > 1)
+        //            transport.sendMessageToAllShards(dim);
 
-//        IntroductionCompleteMessage icm = new IntroductionCompleteMessage(this.taskId);
-//        icm.setOriginatorId(this.originatorId);
+        //        IntroductionCompleteMessage icm = new IntroductionCompleteMessage(this.taskId);
+        //        icm.setOriginatorId(this.originatorId);
 
-//        transport.sendMessage(icm);
+        //        transport.sendMessage(icm);
     }
 
     @Override

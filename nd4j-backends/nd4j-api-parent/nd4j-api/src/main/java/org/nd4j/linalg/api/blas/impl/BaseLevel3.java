@@ -39,122 +39,55 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+    public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
+                    INDArray C) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
-        GemmParams params = new GemmParams(A,B,C);
+        GemmParams params = new GemmParams(A, B, C);
 
         int charOder = Order;
-            if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), params.getC());
-                dgemm(Order
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , 1.0
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , 0
-                        , C
-                        , params.getLdc());
-            } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), params.getC());
-                sgemm(Order
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , 1.0f
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , 0
-                        , C
-                        , params.getLdc());
-            } else {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), params.getC());
-                hgemm(Order
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , 1.0f
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , 0
-                        , C
-                        , params.getLdc());
-            }
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), params.getC());
+            dgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
+        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), params.getC());
+            sgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0f,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), params.getC());
+            hgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0f,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
+        }
 
     }
 
     /**{@inheritDoc}
      */
     @Override
-    public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
+    public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha,
+                    double beta) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
-        GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-            if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), C);
-                dgemm(A.ordering()
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , alpha
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , beta
-                        , C
-                        , params.getLdc());
-            } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), C);
-                sgemm(A.ordering()
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , (float) alpha
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , (float) beta
-                        , C
-                        , params.getLdc());
-            } else {
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), C);
-                hgemm(A.ordering()
-                        , params.getTransA()
-                        , params.getTransB()
-                        , params.getM()
-                        , params.getN()
-                        , params.getK()
-                        , (float) alpha
-                        , params.getA()
-                        , params.getLda()
-                        , params.getB()
-                        , params.getLdb()
-                        , (float) beta
-                        , C
-                        , params.getLdc());
-            }
+        GemmParams params = new GemmParams(A, B, C, transposeA, transposeB);
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), C);
+            dgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), beta, C,
+                            params.getLdc());
+        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), C);
+            sgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
+                            C, params.getLdc());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), C);
+            hgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
+                            C, params.getLdc());
+        }
     }
 
 
@@ -179,12 +112,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
             dsymm(Order, Side, Uplo, C.rows(), C.columns(), alpha, A, A.size(0), B, B.size(0), beta, C, C.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
-            ssymm(Order, Side, Uplo, C.rows(), C.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C, C.size(0));
+            ssymm(Order, Side, Uplo, C.rows(), C.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C,
+                            C.size(0));
         }
 
     }
@@ -209,7 +143,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, C);
             dsyrk(Order, Uplo, Trans, C.rows(), 1, alpha, A, A.size(0), beta, C, C.size(0));
         } else {
@@ -236,16 +170,18 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+    public void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta,
+                    INDArray C) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
-            dsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0),beta,C,C.size(0));
+            dsyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0), beta, C, C.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
-            ssyr2k(Order, Uplo, Trans, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C, C.size(0));
+            ssyr2k(Order, Uplo, Trans, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta,
+                            C, C.size(0));
         }
 
     }
@@ -268,13 +204,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B, INDArray C) {
+    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B,
+                    INDArray C) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
-            dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
+            dtrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
             strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
@@ -304,9 +241,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B);
-            dtrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
+            dtrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B);
             strsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
@@ -330,43 +267,23 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
+    public void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
-        GemmParams params = new GemmParams(A,B,C);
+        GemmParams params = new GemmParams(A, B, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            zgemm(Order
-                    ,TransA
-                    ,TransB
-                    ,params.getM()
-                    ,params.getN()
-                    ,params.getK(),
-                    alpha.asDouble()
-                    ,A.ordering() == NDArrayFactory.C ? B : A
-                    ,params.getLda()
-                    ,B.ordering() == NDArrayFactory.C ? A : B
-                    ,params.getLdb()
-                    ,beta.asDouble()
-                    ,C
-                    ,params.getLdc());
-        }
-        else
-            cgemm(Order
-                    , TransA
-                    , TransB
-                    ,params.getM()
-                    , params.getN()
-                    ,params.getK()
-                    , alpha.asFloat()
-                    ,A.ordering() == NDArrayFactory.C ? B : A
-                    ,params.getLda()
-                    ,B.ordering() == NDArrayFactory.C ? A : B
-                    , params.getLdb()
-                    , beta.asFloat()
-                    , C
-                    ,params.getLdc());
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            zgemm(Order, TransA, TransB, params.getM(), params.getN(), params.getK(), alpha.asDouble(),
+                            A.ordering() == NDArrayFactory.C ? B : A, params.getLda(),
+                            B.ordering() == NDArrayFactory.C ? A : B, params.getLdb(), beta.asDouble(), C,
+                            params.getLdc());
+        } else
+            cgemm(Order, TransA, TransB, params.getM(), params.getN(), params.getK(), alpha.asFloat(),
+                            A.ordering() == NDArrayFactory.C ? B : A, params.getLda(),
+                            B.ordering() == NDArrayFactory.C ? A : B, params.getLdb(), beta.asFloat(), C,
+                            params.getLdc());
 
     }
 
@@ -386,11 +303,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void hemm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhemm(Order,Side,Uplo,B.rows(),B.columns(),alpha.asDouble(),A, A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+    public void hemm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zhemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
+                            beta.asDouble(), C, C.size(0));
         else
-            chemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            chemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(),
+                            C, C.size(0));
 
     }
 
@@ -410,11 +330,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void herk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zherk(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),beta.asDouble(),C,C.size(0));
+    public void herk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
+                    IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zherk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), beta.asDouble(), C,
+                            C.size(0));
         else
-            cherk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C, C.size(0));
+            cherk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C,
+                            C.size(0));
 
     }
 
@@ -429,11 +352,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void her2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zher2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+    public void her2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zher2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
+                            beta.asDouble(), C, C.size(0));
         else
-            cher2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            cher2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
+                            beta.asFloat(), C, C.size(0));
 
     }
 
@@ -454,11 +380,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void symm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsymm(Order,Side,Uplo,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+    public void symm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zsymm(Order, Side, Uplo, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
+                            beta.asDouble(), C, C.size(0));
         else
-            csymm(Order, Side, Uplo, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            csymm(Order, Side, Uplo, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(),
+                            C, C.size(0));
 
     }
 
@@ -478,11 +407,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsyrk(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),beta.asDouble(),C,C.size(0));
+    public void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
+                    IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zsyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), beta.asDouble(), C,
+                            C.size(0));
         else
-            csyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C, C.size(0));
+            csyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C,
+                            C.size(0));
 
     }
 
@@ -503,11 +435,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+    public void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
+                    IComplexNumber beta, IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zsyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
+                            beta.asDouble(), C, C.size(0));
         else
-            csyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            csyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
+                            beta.asFloat(), C, C.size(0));
 
     }
 
@@ -529,11 +464,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param C
      */
     @Override
-    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNDArray C) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            ztrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),C,C.size(0));
+    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray B, IComplexNDArray C) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            ztrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
+                            C, C.size(0));
         else
-            ctrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0),C,C.size(0));
+            ctrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
+                            C, C.size(0));
 
     }
 
@@ -555,185 +493,132 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param B
      */
     @Override
-    public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            ztrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0));
+    public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray B) {
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            ztrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0));
         else
-            ctrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0));
+            ctrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0));
 
     }
 
-/*
- * ===========================================================================
- * Prototypes for level 3 BLAS
- * ===========================================================================
- */
+    /*
+     * ===========================================================================
+     * Prototypes for level 3 BLAS
+     * ===========================================================================
+     */
 
     /* 
      * Routines with standard 4 prefixes (S, D, C, Z)
      */
-    protected abstract void hgemm( char Order,  char TransA,
-                                   char TransB,  int M,  int N,
-                                   int K,  float alpha,  INDArray A,
-                                   int lda,  INDArray B,  int ldb,
-                                   float beta, INDArray C,  int ldc);
+    protected abstract void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A,
+                    int lda, INDArray B, int ldb, float beta, INDArray C, int ldc);
 
 
-    protected abstract void sgemm( char Order,  char TransA,
-                                   char TransB,  int M,  int N,
-                                   int K,  float alpha,  INDArray A,
-                                   int lda,  INDArray B,  int ldb,
-                                   float beta, INDArray C,  int ldc);
+    protected abstract void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A,
+                    int lda, INDArray B, int ldb, float beta, INDArray C, int ldc);
 
-    protected abstract void ssymm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   float alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb,  float beta,
-                                   INDArray C,  int ldc);
+    protected abstract void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda,
+                    INDArray B, int ldb, float beta, INDArray C, int ldc);
 
-    protected abstract void ssyrk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   float alpha,  INDArray A,  int lda,
-                                   float beta, INDArray C,  int ldc);
+    protected abstract void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda,
+                    float beta, INDArray C, int ldc);
 
-    protected abstract void ssyr2k( char Order,  char Uplo,
-                                    char Trans,  int N,  int K,
-                                    float alpha,  INDArray A,  int lda,
-                                    INDArray B,  int ldb,  float beta,
-                                    INDArray C,  int ldc);
-    protected abstract void strmm(char Order, char Side,
-                                  char Uplo, char TransA,
-                                  char Diag, int M, int N,
-                                  float alpha, INDArray A, int lda,
-                                  INDArray B, int ldb);
-    protected abstract void strsm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   float alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb);
+    protected abstract void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda,
+                    INDArray B, int ldb, float beta, INDArray C, int ldc);
 
-    protected abstract void dgemm( char Order,  char TransA,
-                                   char TransB,  int M,  int N,
-                                   int K,  double alpha,  INDArray A,
-                                   int lda,  INDArray B,  int ldb,
-                                   double beta, INDArray C,  int ldc);
-    protected abstract void dsymm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   double alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb,  double beta,
-                                   INDArray C,  int ldc);
-    protected abstract void dsyrk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   double alpha,  INDArray A,  int lda,
-                                   double beta, INDArray C,  int ldc);
-    protected  abstract void dsyr2k( char Order,  char Uplo,
-                                     char Trans,  int N,  int K,
-                                     double alpha,  INDArray A,  int lda,
-                                     INDArray B,  int ldb,  double beta,
-                                     INDArray C,  int ldc);
-    protected abstract void dtrmm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   double alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb);
-    protected abstract void dtrsm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   double alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb);
+    protected abstract void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
+                    INDArray A, int lda, INDArray B, int ldb);
 
-    protected abstract void cgemm( char Order,  char TransA,
-                                   char TransB,  int M,  int N,
-                                   int K,  IComplexFloat alpha,  IComplexNDArray A,
-                                   int lda,  IComplexNDArray B,  int ldb,
-                                   IComplexFloat beta, IComplexNDArray C,  int ldc);
-    protected abstract void csymm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb,  IComplexFloat beta,
-                                   IComplexNDArray C,  int ldc);
-    protected abstract void csyrk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexFloat beta, IComplexNDArray C,  int ldc);
-    protected abstract void csyr2k( char Order,  char Uplo,
-                                    char Trans,  int N,  int K,
-                                    IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                    IComplexNDArray B,  int ldb,  IComplexFloat beta,
-                                    IComplexNDArray C,  int ldc);
-    protected abstract void ctrmm(char Order, char Side,
-                                  char Uplo, char TransA,
-                                  char Diag, int M, int N,
-                                  IComplexFloat alpha, IComplexNDArray A, int lda,
-                                  IComplexNDArray B, int ldb, IComplexNDArray C, int ldc);
-    protected abstract void ctrsm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb);
+    protected abstract void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
+                    INDArray A, int lda, INDArray B, int ldb);
 
-    protected abstract void zgemm( char Order,  char TransA,
-                                   char TransB,  int M,  int N,
-                                   int K,  IComplexDouble alpha,  IComplexNDArray A,
-                                   int lda,  IComplexNDArray B,  int ldb,
-                                   IComplexDouble beta, IComplexNDArray C,  int ldc);
-    protected abstract void zsymm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb,  IComplexDouble beta,
-                                   IComplexNDArray C,  int ldc);
-    protected abstract void zsyrk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexDouble beta, IComplexNDArray C,  int ldc);
-    protected abstract void zsyr2k( char Order,  char Uplo,
-                                    char Trans,  int N,  int K,
-                                    IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                    IComplexNDArray B,  int ldb,  IComplexDouble beta,
-                                    IComplexNDArray C,  int ldc);
-    protected abstract void ztrmm(char Order, char Side,
-                                  char Uplo, char TransA,
-                                  char Diag, int M, int N,
-                                  IComplexDouble alpha, IComplexNDArray A, int lda,
-                                  IComplexNDArray B, int ldb, IComplexNDArray C, int ldc);
-    protected abstract void ztrsm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb);
+    protected abstract void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A,
+                    int lda, INDArray B, int ldb, double beta, INDArray C, int ldc);
+
+    protected abstract void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda,
+                    INDArray B, int ldb, double beta, INDArray C, int ldc);
+
+    protected abstract void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
+                    double beta, INDArray C, int ldc);
+
+    protected abstract void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
+                    INDArray B, int ldb, double beta, INDArray C, int ldc);
+
+    protected abstract void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
+                    INDArray A, int lda, INDArray B, int ldb);
+
+    protected abstract void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
+                    INDArray A, int lda, INDArray B, int ldb);
+
+    protected abstract void cgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void csymm(char Order, char Side, char Uplo, int M, int N, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void csyrk(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexFloat beta, IComplexNDArray C, int ldc);
+
+    protected abstract void csyr2k(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void ctrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N,
+                    IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void ctrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N,
+                    IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb);
+
+    protected abstract void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void zsymm(char Order, char Side, char Uplo, int M, int N, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void zsyrk(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexDouble beta, IComplexNDArray C, int ldc);
+
+    protected abstract void zsyr2k(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void ztrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N,
+                    IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void ztrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N,
+                    IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb);
 
 
     /* 
      * Routines with prefixes C and Z only
      */
-    protected abstract void chemm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb,  IComplexFloat beta,
-                                   IComplexNDArray C,  int ldc);
-    protected abstract void cherk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexFloat beta, IComplexNDArray C,  int ldc);
-    protected abstract void cher2k( char Order,  char Uplo,
-                                    char Trans,  int N,  int K,
-                                    IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                    IComplexNDArray B,  int ldb,  IComplexFloat beta,
-                                    IComplexNDArray C,  int ldc);
+    protected abstract void chemm(char Order, char Side, char Uplo, int M, int N, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C,
+                    int ldc);
 
-    protected abstract void zhemm( char Order,  char Side,
-                                   char Uplo,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb,  IComplexDouble beta,
-                                   IComplexNDArray C,  int ldc);
-    protected abstract void zherk( char Order,  char Uplo,
-                                   char Trans,  int N,  int K,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexDouble beta, IComplexNDArray C,  int ldc);
-    protected abstract void zher2k( char Order,  char Uplo,
-                                    char Trans,  int N,  int K,
-                                    IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                    IComplexNDArray B,  int ldb,  IComplexDouble beta,
-                                    IComplexNDArray C,  int ldc);
+    protected abstract void cherk(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexFloat beta, IComplexNDArray C, int ldc);
+
+    protected abstract void cher2k(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void zhemm(char Order, char Side, char Uplo, int M, int N, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C,
+                    int ldc);
+
+    protected abstract void zherk(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexDouble beta, IComplexNDArray C, int ldc);
+
+    protected abstract void zher2k(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha,
+                    IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C,
+                    int ldc);
 
 }

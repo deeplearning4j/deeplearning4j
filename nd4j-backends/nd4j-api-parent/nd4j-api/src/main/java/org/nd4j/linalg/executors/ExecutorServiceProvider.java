@@ -13,31 +13,33 @@ public class ExecutorServiceProvider {
 
     static {
         int defaultThreads = Runtime.getRuntime().availableProcessors();
-        boolean enabled = Boolean.parseBoolean(System.getProperty(ENABLED,"true"));
-        if(!enabled) nThreads = 1;
-        else nThreads = Integer.parseInt(System.getProperty(EXEC_THREADS,String.valueOf(defaultThreads)));
+        boolean enabled = Boolean.parseBoolean(System.getProperty(ENABLED, "true"));
+        if (!enabled)
+            nThreads = 1;
+        else
+            nThreads = Integer.parseInt(System.getProperty(EXEC_THREADS, String.valueOf(defaultThreads)));
     }
 
     public static synchronized ExecutorService getExecutorService() {
-        if(executorService != null) return executorService;
+        if (executorService != null)
+            return executorService;
 
         executorService = new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS,
-                new LinkedTransferQueue<Runnable>(),
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread t = Executors.defaultThreadFactory().newThread(r);
-                        t.setDaemon(true);
-                        return t;
-                    }
-                });
+                        new LinkedTransferQueue<Runnable>(), new ThreadFactory() {
+                            @Override
+                            public Thread newThread(Runnable r) {
+                                Thread t = Executors.defaultThreadFactory().newThread(r);
+                                t.setDaemon(true);
+                                return t;
+                            }
+                        });
         return executorService;
     }
 
     public static synchronized ForkJoinPool getForkJoinPool() {
-        if(forkJoinPool != null )
+        if (forkJoinPool != null)
             return forkJoinPool;
-        forkJoinPool = new ForkJoinPool(nThreads,ForkJoinPool.defaultForkJoinWorkerThreadFactory,null,true);
+        forkJoinPool = new ForkJoinPool(nThreads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
         return forkJoinPool;
     }
 

@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class TransformBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public TransformBenchmarkPerformer(int nTimes) {
-        super(new TransformOpRunner(),nTimes);
+        super(new TransformOpRunner(), nTimes);
     }
 
 

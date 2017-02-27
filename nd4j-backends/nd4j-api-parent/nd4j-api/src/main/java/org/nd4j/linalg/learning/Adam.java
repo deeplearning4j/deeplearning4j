@@ -37,8 +37,10 @@ public class Adam implements Serializable, GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(0);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(0);
         int length = viewArray.length();
         this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length / 2));
         this.v = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length / 2, length));
@@ -46,7 +48,8 @@ public class Adam implements Serializable, GradientUpdater {
         //Reshape to match the expected shape of the input gradient arrays
         this.m = Shape.newShapeNoCopy(this.m, gradientShape, gradientOrder == 'f');
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
-        if (m == null || v == null) throw new IllegalStateException("Could not correctly reshape gradient view arrays");
+        if (m == null || v == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view arrays");
     }
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
@@ -82,7 +85,8 @@ public class Adam implements Serializable, GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (m == null || v == null) throw new IllegalStateException("Updater has not been initialized with view state");
+        if (m == null || v == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
         m.muli(beta1).addi(oneMinusBeta1Grad);
@@ -94,7 +98,8 @@ public class Adam implements Serializable, GradientUpdater {
         double beta2t = FastMath.pow(beta2, iteration + 1);
 
         double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
-        if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
+        if (Double.isNaN(alphat) || alphat == 0.0)
+            alphat = epsilon;
         INDArray sqrtV = Transforms.sqrt(v, true).addi(epsilon);
         INDArray ret = m.mul(alphat).divi(sqrtV);
         gradient.assign(ret);
@@ -104,7 +109,8 @@ public class Adam implements Serializable, GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         AdamAggregator ag = new AdamAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 

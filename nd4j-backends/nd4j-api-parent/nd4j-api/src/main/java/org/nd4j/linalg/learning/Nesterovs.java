@@ -30,13 +30,16 @@ public class Nesterovs implements Serializable, GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(0);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(0);
         this.v = viewArray;
 
         //Reshape to match the expected shape of the input gradient arrays
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
-        if (v == null) throw new IllegalStateException("Could not correctly reshape gradient view array");
+        if (v == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view array");
     }
 
     public Nesterovs(double momentum, double learningRate) {
@@ -68,7 +71,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (v == null) throw new IllegalStateException("Updater has not been initialized with view state");
+        if (v == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
         INDArray vPrev = v;
         v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
@@ -86,7 +90,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         NesterovsAggregator ag = new NesterovsAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 

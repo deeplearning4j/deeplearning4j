@@ -54,7 +54,8 @@ public class NormalizerSerializer {
      * @throws IOException
      * @deprecated
      */
-    public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         NormalizerStandardizeSerializer.write(normalizer, stream);
     }
 
@@ -102,7 +103,8 @@ public class NormalizerSerializer {
      * @throws IOException
      * @deprecated
      */
-    public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         MultiNormalizerStandardizeSerializer.write(normalizer, stream);
     }
 

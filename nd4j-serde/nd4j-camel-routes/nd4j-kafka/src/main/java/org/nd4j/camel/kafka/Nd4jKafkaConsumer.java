@@ -21,9 +21,9 @@ public class Nd4jKafkaConsumer {
      * @return
      */
     public INDArray receive() {
-        if(consumerTemplate == null)
+        if (consumerTemplate == null)
             consumerTemplate = camelContext.createConsumerTemplate();
-        return consumerTemplate.receiveBody("direct:receive",INDArray.class);
+        return consumerTemplate.receiveBody("direct:receive", INDArray.class);
     }
 
 }

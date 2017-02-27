@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * @author Adam Gibson
  */
 public class NormMax extends BaseAccumulation {
-    public NormMax() {
-    }
+    public NormMax() {}
 
     public NormMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -60,48 +59,53 @@ public class NormMax extends BaseAccumulation {
     @Override
     public double update(double accum, double x) {
         numProcessed++;
-        return FastMath.max(FastMath.abs(x),accum);
+        return FastMath.max(FastMath.abs(x), accum);
     }
 
     @Override
     public double update(double accum, double x, double y) {
-        return update(accum,x);
+        return update(accum, x);
     }
 
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return (x >= 0 ? (x > accum ? x : accum) : (-x > accum ? -x : accum));
     }
 
     @Override
     public float update(float accum, float x, float y) {
-        return (x>=0 ? (x>accum?x:accum) : (-x > accum ? -x : accum));
+        return (x >= 0 ? (x > accum ? x : accum) : (-x > accum ? -x : accum));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
-        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum : Nd4j.createComplexNumber(FastMath.abs(x),0));
+    public IComplexNumber update(IComplexNumber accum, double x) {
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum
+                        : Nd4j.createComplexNumber(FastMath.abs(x), 0));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum : Nd4j.createComplexNumber(FastMath.abs(x),0));
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum
+                        : Nd4j.createComplexNumber(FastMath.abs(x), 0));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
-        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum
+                        : Nd4j.createComplexNumber(x.absoluteValue(), 0));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
-        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum
+                        : Nd4j.createComplexNumber(x.absoluteValue(), 0));
     }
 
     @Override
     public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
-        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum
+                        : Nd4j.createComplexNumber(x.absoluteValue(), 0));
     }
 
     @Override

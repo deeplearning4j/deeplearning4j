@@ -54,7 +54,8 @@ public class MultiNormalizerHybridSerializer {
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public static void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream) throws IOException {
+    public static void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream)
+                    throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             writeStatsMap(normalizer.getInputStats(), dos);
             writeStatsMap(normalizer.getOutputStats(), dos);
@@ -73,10 +74,7 @@ public class MultiNormalizerHybridSerializer {
      * @throws IOException
      */
     public static MultiNormalizerHybrid restore(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
+        try (FileInputStream fis = new FileInputStream(file); DataInputStream dis = new DataInputStream(fis)) {
             MultiNormalizerHybrid result = new MultiNormalizerHybrid();
             result.setInputStats(readStatsMap(dis));
             result.setOutputStats(readStatsMap(dis));
@@ -130,7 +128,8 @@ public class MultiNormalizerHybridSerializer {
         }
     }
 
-    private static void writeDistributionStats(DistributionStats normalizerStats, DataOutputStream dos) throws IOException {
+    private static void writeDistributionStats(DistributionStats normalizerStats, DataOutputStream dos)
+                    throws IOException {
         dos.writeInt(Strategy.STANDARDIZE.ordinal());
         Nd4j.write(normalizerStats.getMean(), dos);
         Nd4j.write(normalizerStats.getStd(), dos);
@@ -150,7 +149,8 @@ public class MultiNormalizerHybridSerializer {
         return new MinMaxStats(Nd4j.read(dis), Nd4j.read(dis));
     }
 
-    private static void writeStrategyMap(Map<Integer, NormalizerStrategy> strategyMap, DataOutputStream dos) throws IOException {
+    private static void writeStrategyMap(Map<Integer, NormalizerStrategy> strategyMap, DataOutputStream dos)
+                    throws IOException {
         Set<Integer> indices = strategyMap.keySet();
         dos.writeInt(indices.size());
 
@@ -227,8 +227,6 @@ public class MultiNormalizerHybridSerializer {
      * in between existing values will corrupt normalizers serialized with previous versions.
      */
     private enum Strategy {
-        NULL,
-        STANDARDIZE,
-        MIN_MAX
+        NULL, STANDARDIZE, MIN_MAX
     }
 }

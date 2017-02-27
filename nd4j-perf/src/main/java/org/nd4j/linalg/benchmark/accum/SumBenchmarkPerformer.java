@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class SumBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public SumBenchmarkPerformer(int nTimes) {
-        super(new SumOpRunner(),nTimes);
+        super(new SumOpRunner(), nTimes);
     }
 
 

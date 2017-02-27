@@ -83,11 +83,8 @@ public class MultiNormalizerStandardize extends AbstractMultiDataSetNormalizer<D
     private void saveStats(List<DistributionStats> stats, List<File> files) throws IOException {
         int requiredFiles = stats.size() * 2;
         if (requiredFiles != files.size()) {
-            throw new RuntimeException(String.format(
-                "Need twice as many files as inputs / outputs (%d), got %d",
-                requiredFiles,
-                files.size()
-            ));
+            throw new RuntimeException(String.format("Need twice as many files as inputs / outputs (%d), got %d",
+                            requiredFiles, files.size()));
         }
 
         for (int i = 0; i < stats.size(); i++) {

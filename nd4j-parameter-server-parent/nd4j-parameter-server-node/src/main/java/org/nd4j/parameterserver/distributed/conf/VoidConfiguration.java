@@ -49,7 +49,7 @@ public class VoidConfiguration implements Serializable {
     private long responseTimeout;
 
     public void setStreamId(int streamId) {
-        if (streamId < 1 )
+        if (streamId < 1)
             throw new ND4JIllegalStateException("You can't use streamId 0, please specify other one");
 
         this.streamId = streamId;
@@ -63,7 +63,7 @@ public class VoidConfiguration implements Serializable {
     public void setShardAddresses(String... Ips) {
         shardAddresses = new ArrayList<>();
 
-        for (String ip: Ips) {
+        for (String ip : Ips) {
             if (ip != null)
                 shardAddresses.add(ip);
         }
@@ -76,7 +76,7 @@ public class VoidConfiguration implements Serializable {
     public void setBackupAddresses(String... Ips) {
         backupAddresses = new ArrayList<>();
 
-        for (String ip: Ips) {
+        for (String ip : Ips) {
             if (ip != null)
                 backupAddresses.add(ip);
         }

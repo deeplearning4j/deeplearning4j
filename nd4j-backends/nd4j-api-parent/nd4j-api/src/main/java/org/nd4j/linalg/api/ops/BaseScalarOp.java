@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,14 +35,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public int[] opDimension;
 
 
-    public BaseScalarOp() {
-    }
+    public BaseScalarOp() {}
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
         this.num = num;
-        if(x instanceof IComplexNDArray)
-            complexNumber = Nd4j.createComplexNumber(num,0);
+        if (x instanceof IComplexNDArray)
+            complexNumber = Nd4j.createComplexNumber(num, 0);
 
         init(x, y, z, n);
     }
@@ -50,8 +49,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
         this.num = num;
-        if(x instanceof IComplexNDArray)
-            complexNumber = Nd4j.createComplexNumber(num,0);
+        if (x instanceof IComplexNDArray)
+            complexNumber = Nd4j.createComplexNumber(num, 0);
 
         init(x, y, z, n);
 
@@ -78,7 +77,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public int[] broadcastShape() {
-        return new int[]{1,1};
+        return new int[] {1, 1};
     }
 
     @Override

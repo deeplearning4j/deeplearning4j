@@ -6,9 +6,8 @@ package org.nd4j.nativeblas;
  */
 public class NativeLapack {
 
-    public NativeLapack() {
-    }
-// LU decomoposition of a general matrix
+    public NativeLapack() {}
+    // LU decomoposition of a general matrix
 
     /**
      * LU decomposiiton of a matrix
@@ -19,7 +18,7 @@ public class NativeLapack {
      * @param IPIV
      * @param INFO
      */
-    public native void dgetrf(long[] extraPointers,int M, int N, long A, int lda, int[] IPIV, int INFO);
+    public native void dgetrf(long[] extraPointers, int M, int N, long A, int lda, int[] IPIV, int INFO);
 
     // generate inverse of a matrix given its LU decomposition
 
@@ -33,7 +32,7 @@ public class NativeLapack {
      * @param lwork
      * @param INFO
      */
-    public native void dgetri(long[] extraPointers,int N, long A, int lda, int[] IPIV, long WORK, int lwork, int INFO);
+    public native void dgetri(long[] extraPointers, int N, long A, int lda, int[] IPIV, long WORK, int lwork, int INFO);
 
     // LU decomoposition of a general matrix
 
@@ -46,7 +45,7 @@ public class NativeLapack {
      * @param IPIV
      * @param INFO
      */
-    public native void sgetrf(long[] extraPointers,int M, int N, long A, int lda, int[] IPIV, int INFO);
+    public native void sgetrf(long[] extraPointers, int M, int N, long A, int lda, int[] IPIV, int INFO);
 
     // generate inverse of a matrix given its LU decomposition
 
@@ -60,5 +59,5 @@ public class NativeLapack {
      * @param lwork
      * @param INFO
      */
-    public native void sgetri(long[] extraPointers,int N, long A, int lda, int[] IPIV, long WORK, int lwork, int INFO);
+    public native void sgetri(long[] extraPointers, int N, long A, int lda, int[] IPIV, long WORK, int lwork, int INFO);
 }

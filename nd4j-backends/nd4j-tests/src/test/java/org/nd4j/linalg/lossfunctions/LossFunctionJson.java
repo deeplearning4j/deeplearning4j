@@ -25,33 +25,14 @@ public class LossFunctionJson extends BaseNd4jTest {
     @Test
     public void testJsonSerialization() throws Exception {
 
-        INDArray w = Nd4j.create(new double[]{1.0,2.0,3.0});
+        INDArray w = Nd4j.create(new double[] {1.0, 2.0, 3.0});
 
-        ILossFunction[] lossFns = new ILossFunction[]{
-                new LossBinaryXENT(),
-                new LossBinaryXENT(w),
-                new LossCosineProximity(),
-                new LossHinge(),
-                new LossKLD(),
-                new LossL1(),
-                new LossL1(w),
-                new LossL2(),
-                new LossL2(w),
-                new LossMAE(),
-                new LossMAE(w),
-                new LossMAPE(),
-                new LossMAPE(w),
-                new LossMCXENT(),
-                new LossMCXENT(w),
-                new LossMSE(),
-                new LossMSE(w),
-                new LossMSLE(),
-                new LossMSLE(w),
-                new LossNegativeLogLikelihood(),
-                new LossNegativeLogLikelihood(w),
-                new LossPoisson(),
-                new LossSquaredHinge()
-        };
+        ILossFunction[] lossFns = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(w),
+                        new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossL1(), new LossL1(w),
+                        new LossL2(), new LossL2(w), new LossMAE(), new LossMAE(w), new LossMAPE(), new LossMAPE(w),
+                        new LossMCXENT(), new LossMCXENT(w), new LossMSE(), new LossMSE(w), new LossMSLE(),
+                        new LossMSLE(w), new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(w),
+                        new LossPoisson(), new LossSquaredHinge()};
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -59,9 +40,9 @@ public class LossFunctionJson extends BaseNd4jTest {
         mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-        for(ILossFunction lf : lossFns){
+        for (ILossFunction lf : lossFns) {
             String asJson = mapper.writeValueAsString(lf);
-//            System.out.println(asJson);
+            //            System.out.println(asJson);
 
             ILossFunction fromJson = mapper.readValue(asJson, ILossFunction.class);
             assertEquals(lf, fromJson);

@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @Slf4j
 public class InMemoryChunkAccumulator implements ChunkAccumulator {
-    private Map<String,List<NDArrayMessageChunk>> chunks = Maps.newConcurrentMap();
+    private Map<String, List<NDArrayMessageChunk>> chunks = Maps.newConcurrentMap();
 
     /**
      * Returns the number of chunks
@@ -28,7 +28,7 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
      */
     @Override
     public int numChunksSoFar(String id) {
-        if(!chunks.containsKey(id))
+        if (!chunks.containsKey(id))
             return 0;
         return chunks.get(id).size();
     }
@@ -41,7 +41,7 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
      */
     @Override
     public boolean allPresent(String id) {
-        if(!chunks.containsKey(id))
+        if (!chunks.containsKey(id))
             return false;
         List<NDArrayMessageChunk> chunkList = chunks.get(id);
         return chunkList.size() == chunkList.get(0).getNumChunks();
@@ -62,11 +62,12 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
     @Override
     public NDArrayMessage reassemble(String id) {
         List<NDArrayMessageChunk> chunkList = chunks.get(id);
-        if(chunkList.size() != chunkList.get(0).getNumChunks())
-            throw new IllegalStateException("Unable to reassemble message chunk " + id + " missing " + (chunkList.get(0).getNumChunks() - chunkList.size()) + "chunks");
+        if (chunkList.size() != chunkList.get(0).getNumChunks())
+            throw new IllegalStateException("Unable to reassemble message chunk " + id + " missing "
+                            + (chunkList.get(0).getNumChunks() - chunkList.size()) + "chunks");
         //ensure the chunks are in contiguous ordering according to their chunk index
         NDArrayMessageChunk[] inOrder = new NDArrayMessageChunk[chunkList.size()];
-        for(NDArrayMessageChunk chunk : chunkList) {
+        for (NDArrayMessageChunk chunk : chunkList) {
             inOrder[chunk.getChunkIndex()] = chunk;
         }
 
@@ -92,12 +93,11 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
     @Override
     public void accumulateChunk(NDArrayMessageChunk chunk) {
         String id = chunk.getId();
-        if(!chunks.containsKey(id)) {
+        if (!chunks.containsKey(id)) {
             List<NDArrayMessageChunk> list = new ArrayList<>();
             list.add(chunk);
-            chunks.put(id,list);
-        }
-        else {
+            chunks.put(id, list);
+        } else {
             List<NDArrayMessageChunk> chunkList = chunks.get(id);
             chunkList.add(chunk);
         }

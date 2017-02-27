@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,9 +31,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * cutoff = 0.0 usually.
  */
 public class Step extends BaseTransformOp {
-	private final double cutoff;
+    private final double cutoff;
+
     public Step() {
-    	cutoff = 0.0;
+        cutoff = 0.0;
     }
 
     public Step(INDArray x, INDArray z) {
@@ -55,7 +56,7 @@ public class Step extends BaseTransformOp {
         super(x);
         cutoff = 0.0;
     }
-    
+
     public Step(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
@@ -93,12 +94,12 @@ public class Step extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0)); 
+        return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
+        return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
@@ -108,22 +109,22 @@ public class Step extends BaseTransformOp {
 
     @Override
     public double op(double origin, double other) {
-    	return (origin > cutoff ? 1.0 : 0.0);
+        return (origin > cutoff ? 1.0 : 0.0);
     }
 
     @Override
     public double op(double origin) {
-    	return (origin > cutoff ? 1.0 : 0.0);
+        return (origin > cutoff ? 1.0 : 0.0);
     }
 
     @Override
     public float op(float origin) {
-    	return (origin > cutoff ? 1.0f : 0.0f);
+        return (origin > cutoff ? 1.0f : 0.0f);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
+        return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
@@ -131,9 +132,11 @@ public class Step extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Step(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),cutoff);
+            return new Step(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new Step(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),cutoff);
+            return new Step(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length(), cutoff);
 
     }
 
@@ -142,9 +145,11 @@ public class Step extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Step(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),cutoff);
+            return new Step(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new Step(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),cutoff);
+            return new Step(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length(), cutoff);
 
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -53,7 +53,7 @@ public class FloatBuffer extends BaseDataBuffer {
 
     }
 
-    public FloatBuffer(long length, boolean initialize){
+    public FloatBuffer(long length, boolean initialize) {
         super(length, initialize);
     }
 
@@ -83,11 +83,11 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     public FloatBuffer(int[] data) {
-        this(data,true);
+        this(data, true);
     }
 
     public FloatBuffer(double[] data) {
-        this(data,true);
+        this(data, true);
     }
 
     public FloatBuffer(int[] data, boolean copyOnOps) {
@@ -99,15 +99,15 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     public FloatBuffer(double[] data, boolean copyOnOps) {
-        super(data,copyOnOps);
+        super(data, copyOnOps);
     }
 
     public FloatBuffer(double[] data, boolean copy, int offset) {
         super(data, copy, offset);
     }
 
-    public FloatBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public FloatBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
     public FloatBuffer(ByteBuffer buffer, int length, int offset) {

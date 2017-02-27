@@ -13,8 +13,9 @@ import net.bytebuddy.jar.asm.MethodVisitor;
  */
 public class Duplicate2 implements ByteCodeAppender {
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         StackManipulation.Size size = Duplication.DOUBLE.apply(methodVisitor, implementationContext);
-        return new Size(size.getMaximalSize(),instrumentedMethod.getStackSize());
+        return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

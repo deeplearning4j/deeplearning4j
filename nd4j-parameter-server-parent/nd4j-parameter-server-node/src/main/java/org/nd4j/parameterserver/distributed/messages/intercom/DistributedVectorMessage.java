@@ -20,7 +20,7 @@ public class DistributedVectorMessage extends BaseVoidMessage implements Distrib
         messageType = 20;
     }
 
-    public DistributedVectorMessage(@NonNull Integer key, int rowIndex){
+    public DistributedVectorMessage(@NonNull Integer key, int rowIndex) {
         this();
         this.rowIndex = rowIndex;
         this.key = key;
@@ -31,7 +31,8 @@ public class DistributedVectorMessage extends BaseVoidMessage implements Distrib
      */
     @Override
     public void processMessage() {
-        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
+        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(),
+                        shardIndex, storage.getArray(key).getRow(rowIndex).dup());
         aggregation.setOriginatorId(this.getOriginatorId());
         transport.sendMessage(aggregation);
     }

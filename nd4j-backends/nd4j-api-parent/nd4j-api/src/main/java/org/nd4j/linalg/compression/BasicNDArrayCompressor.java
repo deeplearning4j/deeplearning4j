@@ -36,13 +36,13 @@ public class BasicNDArrayCompressor {
          */
         codecs = new ConcurrentHashMap<>();
         Set<Class<? extends NDArrayCompressor>> classes = new Reflections(new ConfigurationBuilder()
-                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
-                        .exclude("^(?!.*\\.class$).*$"))   //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                .setUrls(ClasspathHelper.forPackage("org.nd4j"))
-                .setScanners(new SubTypesScanner())).getSubTypesOf(NDArrayCompressor.class);
+                        .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
+                                        .exclude("^(?!.*\\.class$).*$")) //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                        .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()))
+                                        .getSubTypesOf(NDArrayCompressor.class);
 
         for (Class<? extends NDArrayCompressor> impl : classes) {
-            if(Modifier.isAbstract(impl.getModifiers()) || impl.isInterface())
+            if (Modifier.isAbstract(impl.getModifiers()) || impl.isInterface())
                 continue;
 
             try {
@@ -95,8 +95,8 @@ public class BasicNDArrayCompressor {
      */
     public BasicNDArrayCompressor setDefaultCompression(@NonNull String algorithm) {
         algorithm = algorithm.toUpperCase();
- //       if (!codecs.containsKey(algorithm))
-//            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
+        //       if (!codecs.containsKey(algorithm))
+        //            throw new RuntimeException("Non-existent compression algorithm requested: [" + algorithm + "]");
 
         synchronized (this) {
             defaultCompression = algorithm;
@@ -203,7 +203,8 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
     }
@@ -221,7 +222,8 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(array);
     }
@@ -241,9 +243,10 @@ public class BasicNDArrayCompressor {
         CompressionDescriptor descriptor = comp.getCompressionDescriptor();
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
-            throw new RuntimeException("Non-existent compression algorithm requested: [" + descriptor.getCompressionAlgorithm() + "]");
+            throw new RuntimeException("Non-existent compression algorithm requested: ["
+                            + descriptor.getCompressionAlgorithm() + "]");
 
-         codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
+        codecs.get(descriptor.getCompressionAlgorithm()).decompressi(array);
     }
 
     /**
@@ -251,7 +254,7 @@ public class BasicNDArrayCompressor {
      * @param arrays
      */
     public void autoDecompress(INDArray... arrays) {
-        for (INDArray array: arrays) {
+        for (INDArray array : arrays) {
             autoDecompress(array);
         }
     }

@@ -72,15 +72,9 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
      */
     @Override
     public void load(File... statistics) throws IOException {
-        setFeatureStats(new MinMaxStats(
-            Nd4j.readBinary(statistics[0]),
-            Nd4j.readBinary(statistics[1])
-        ));
+        setFeatureStats(new MinMaxStats(Nd4j.readBinary(statistics[0]), Nd4j.readBinary(statistics[1])));
         if (isFitLabel()) {
-            setLabelStats(new MinMaxStats(
-                Nd4j.readBinary(statistics[2]),
-                Nd4j.readBinary(statistics[3])
-            ));
+            setLabelStats(new MinMaxStats(Nd4j.readBinary(statistics[2]), Nd4j.readBinary(statistics[3])));
         }
     }
 

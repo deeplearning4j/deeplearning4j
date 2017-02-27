@@ -37,7 +37,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         OrderScanner2D scanner = new OrderScanner2D(array);
 
-        assertArrayEquals(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
+        assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
 
         System.out.println();
 
@@ -45,7 +45,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         System.out.println(array);
 
-        ArrayUtil.argMin(new int[]{});
+        ArrayUtil.argMin(new int[] {});
 
         assertTrue(scanner.compareRow(array));
     }
@@ -61,7 +61,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         OrderScanner2D scanner = new OrderScanner2D(array);
 
-        assertArrayEquals(new float[]{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f}, scanner.getMap(), 0.01f);
+        assertArrayEquals(new float[] {0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f}, scanner.getMap(), 0.01f);
 
         System.out.println();
 
@@ -83,7 +83,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         OrderScanner2D scanner = new OrderScanner2D(array);
 
-        assertArrayEquals(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f}, scanner.getMap(), 0.01f);
+        assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f}, scanner.getMap(), 0.01f);
 
         System.out.println();
 
@@ -91,7 +91,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         System.out.println(array);
 
-        ArrayUtil.argMin(new int[]{});
+        ArrayUtil.argMin(new int[] {});
 
         assertTrue(scanner.compareRow(array));
     }
@@ -109,7 +109,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         OrderScanner2D scanner = new OrderScanner2D(features);
 
-        assertArrayEquals(new float[]{0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
+        assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
 
         System.out.println();
 
@@ -125,7 +125,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         System.out.println(labels);
 
-        ArrayUtil.argMin(new int[]{});
+        ArrayUtil.argMin(new int[] {});
 
         assertTrue(scanner.compareRow(features));
 
@@ -133,7 +133,7 @@ public class ShufflesTests extends BaseNd4jTest {
             double val = features.getRow(x).getDouble(0);
             INDArray row = labels.getRow(x);
 
-            for (int y = 0; y < row.length(); y++ ) {
+            for (int y = 0; y < row.length(); y++) {
                 assertEquals(val, row.getDouble(y), 0.001);
             }
         }
@@ -175,7 +175,7 @@ public class ShufflesTests extends BaseNd4jTest {
             double val = features.slice(x).getDouble(0);
             INDArray row = labels.slice(x);
 
-            for (int y = 0; y < row.length(); y++ ) {
+            for (int y = 0; y < row.length(); y++) {
                 assertEquals(val, row.getDouble(y), 0.001);
             }
         }
@@ -208,10 +208,10 @@ public class ShufflesTests extends BaseNd4jTest {
         arrays.add(labelsMask);
 
         List<int[]> dimensions = new ArrayList<>();
-        dimensions.add(ArrayUtil.range(1,features.rank()));
-        dimensions.add(ArrayUtil.range(1,labels.rank()));
-        dimensions.add(ArrayUtil.range(1,featuresMask.rank()));
-        dimensions.add(ArrayUtil.range(1,labelsMask.rank()));
+        dimensions.add(ArrayUtil.range(1, features.rank()));
+        dimensions.add(ArrayUtil.range(1, labels.rank()));
+        dimensions.add(ArrayUtil.range(1, featuresMask.rank()));
+        dimensions.add(ArrayUtil.range(1, labelsMask.rank()));
 
         Nd4j.shuffle(arrays, new Random(11), dimensions);
 
@@ -227,15 +227,15 @@ public class ShufflesTests extends BaseNd4jTest {
             INDArray sliceLabelsMask = labelsMask.slice(x);
             INDArray sliceFeaturesMask = featuresMask.slice(x);
 
-            for (int y = 0; y < sliceLabels.length(); y++ ) {
+            for (int y = 0; y < sliceLabels.length(); y++) {
                 assertEquals(val, sliceLabels.getDouble(y), 0.001);
             }
 
-            for (int y = 0; y < sliceLabelsMask.length(); y++ ) {
+            for (int y = 0; y < sliceLabelsMask.length(); y++) {
                 assertEquals(val, sliceLabelsMask.getDouble(y), 0.001);
             }
 
-            for (int y = 0; y < sliceFeaturesMask.length(); y++ ) {
+            for (int y = 0; y < sliceFeaturesMask.length(); y++) {
                 assertEquals(val, sliceFeaturesMask.getDouble(y), 0.001);
             }
         }
@@ -258,11 +258,11 @@ public class ShufflesTests extends BaseNd4jTest {
 
         for (int i = 0; i < array1.length; i++) {
             if (i >= array1.length / 2) {
-                assertEquals("Failed on element ["+ i +"]", -1, array1[i]);
-                assertEquals("Failed on element ["+ i +"]", -1, array2[i]);
+                assertEquals("Failed on element [" + i + "]", -1, array1[i]);
+                assertEquals("Failed on element [" + i + "]", -1, array2[i]);
             } else {
-                assertNotEquals("Failed on element ["+ i +"]", -1, array1[i]);
-                assertNotEquals("Failed on element ["+ i +"]", -1, array2[i]);
+                assertNotEquals("Failed on element [" + i + "]", -1, array1[i]);
+                assertNotEquals("Failed on element [" + i + "]", -1, array2[i]);
             }
         }
     }
@@ -279,11 +279,11 @@ public class ShufflesTests extends BaseNd4jTest {
 
         for (int i = 0; i < array1.length; i++) {
             if (i % 2 != 0) {
-                assertEquals("Failed on element ["+ i +"]", -1, array1[i]);
-                assertEquals("Failed on element ["+ i +"]", -1, array2[i]);
+                assertEquals("Failed on element [" + i + "]", -1, array1[i]);
+                assertEquals("Failed on element [" + i + "]", -1, array2[i]);
             } else {
-                assertNotEquals("Failed on element ["+ i +"]", -1, array1[i]);
-                assertNotEquals("Failed on element ["+ i +"]", -1, array2[i]);
+                assertNotEquals("Failed on element [" + i + "]", -1, array1[i]);
+                assertNotEquals("Failed on element [" + i + "]", -1, array2[i]);
             }
         }
     }
@@ -291,6 +291,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
     public static class OrderScanner3D {
         private float[] map;
+
         public OrderScanner3D(INDArray data) {
             map = measureState(data);
         }
@@ -368,7 +369,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
             for (int x = 0; x < newData.rows(); x++) {
                 INDArray row = newData.getRow(x);
-                for (int y = 0; y < row.lengthLong(); y++ ) {
+                for (int y = 0; y < row.lengthLong(); y++) {
                     if (Math.abs(row.getFloat(y) - newMap[x]) > Nd4j.EPS_THRESHOLD) {
                         System.out.print("Different data in a row");
                         return false;
@@ -395,7 +396,7 @@ public class ShufflesTests extends BaseNd4jTest {
             for (int x = 0; x < newData.rows(); x++) {
                 INDArray column = newData.getColumn(x);
                 double val = column.getDouble(0);
-                for (int y = 0; y < column.lengthLong(); y++ ) {
+                for (int y = 0; y < column.lengthLong(); y++) {
                     if (Math.abs(column.getFloat(y) - val) > Nd4j.EPS_THRESHOLD) {
                         System.out.print("Different data in a column: " + column.getFloat(y));
                         return false;

@@ -14,8 +14,7 @@ public class IsMax extends BaseTransformOp {
         super(x, z);
     }
 
-    public IsMax() {
-    }
+    public IsMax() {}
 
     public IsMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
@@ -33,15 +32,15 @@ public class IsMax extends BaseTransformOp {
         super(x, z, n);
         this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
-        for( int i = 0; i < dimensions.length; i++)
+        for (int i = 0; i < dimensions.length; i++)
             this.extraArgs[i + 1] = dimensions[i];
     }
 
     public IsMax(INDArray x, INDArray y, INDArray z, long n, int... dimensions) {
         super(x, y, z, n);
-        this.extraArgs = new Object[dimensions.length+1];
+        this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
-        for( int i = 0; i < dimensions.length; i++)
+        for (int i = 0; i < dimensions.length; i++)
             this.extraArgs[i + 1] = dimensions[i];
     }
 
@@ -49,7 +48,7 @@ public class IsMax extends BaseTransformOp {
         super(x);
         this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
-        for( int i = 0; i < dimensions.length; i++ )
+        for (int i = 0; i < dimensions.length; i++)
             this.extraArgs[i + 1] = dimensions[i];
     }
 
@@ -108,9 +107,11 @@ public class IsMax extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new IsMax(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IsMax(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new IsMax(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IsMax(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -119,9 +120,11 @@ public class IsMax extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new IsMax(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IsMax(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new IsMax(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IsMax(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
  */
 public class RationalTanh extends BaseTransformOp {
 
-    public RationalTanh() {
-    }
+    public RationalTanh() {}
 
     public RationalTanh(INDArray x, INDArray z) {
         super(x, z);
@@ -114,9 +113,11 @@ public class RationalTanh extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new RationalTanh(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanh(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new RationalTanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanh(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -124,9 +125,11 @@ public class RationalTanh extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new RationalTanh(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanh(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new RationalTanh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RationalTanh(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 }

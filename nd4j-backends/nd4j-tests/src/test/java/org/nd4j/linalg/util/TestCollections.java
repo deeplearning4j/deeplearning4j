@@ -20,8 +20,8 @@ public class TestCollections extends BaseNd4jTest {
     @Test
     public void testCompactHeapStringList() {
 
-        int[] reallocSizeBytes = new int[]{1024, 1048576};
-        int[] intReallocSizeBytes = new int[]{1024, 1048576};
+        int[] reallocSizeBytes = new int[] {1024, 1048576};
+        int[] intReallocSizeBytes = new int[] {1024, 1048576};
 
         int numElementsToTest = 10000;
         int minLength = 1;
@@ -43,7 +43,7 @@ public class TestCollections extends BaseNd4jTest {
 
         for (int rb : reallocSizeBytes) {
             for (int irb : intReallocSizeBytes) {
-//                System.out.println(rb + "\t" + irb);
+                //                System.out.println(rb + "\t" + irb);
                 List<String> list = new CompactHeapStringList(rb, irb);
 
                 assertTrue(list.isEmpty());
@@ -54,7 +54,7 @@ public class TestCollections extends BaseNd4jTest {
                     String s = compare.get(i);
                     list.add(s);
 
-                    assertEquals(i+1, list.size());
+                    assertEquals(i + 1, list.size());
                     String s2 = list.get(i);
                     assertEquals(s, s2);
                 }
@@ -65,13 +65,13 @@ public class TestCollections extends BaseNd4jTest {
                 assertEquals(compare, list);
                 assertEquals(compare, Arrays.asList(list.toArray()));
 
-                for( int i=0; i<numElementsToTest; i++ ){
+                for (int i = 0; i < numElementsToTest; i++) {
                     assertEquals(i, list.indexOf(compare.get(i)));
                 }
 
                 Iterator<String> iter = list.iterator();
                 int count = 0;
-                while(iter.hasNext()){
+                while (iter.hasNext()) {
                     String s = iter.next();
                     assertEquals(s, compare.get(count++));
                 }

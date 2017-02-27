@@ -15,16 +15,18 @@ public class ImageFlatteningDataSetPreProcessor implements DataSetPreProcessor {
     @Override
     public void preProcess(DataSet toPreProcess) {
         INDArray input = toPreProcess.getFeatures();
-        if(input.rank() == 2) return; //No op: should usually never happen in a properly configured data pipeline
+        if (input.rank() == 2)
+            return; //No op: should usually never happen in a properly configured data pipeline
 
         //Assume input is standard rank 4 activations - i.e., CNN image data
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
-        if(input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
+        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
+            input = input.dup('c');
 
-        int[] inShape = input.shape();  //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[]{inShape[0], inShape[1]*inShape[2]*inShape[3]};
+        int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        INDArray reshaped = input.reshape('c',outShape);
+        INDArray reshaped = input.reshape('c', outShape);
         toPreProcess.setFeatures(reshaped);
     }
 }

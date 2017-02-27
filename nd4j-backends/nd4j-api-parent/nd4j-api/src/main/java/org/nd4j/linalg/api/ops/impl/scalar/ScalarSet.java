@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,9 +31,8 @@ import org.nd4j.linalg.api.ops.Op;
  *
  * @author Adam Gibson
  */
-public class  ScalarSet extends BaseScalarOp {
-    public ScalarSet() {
-    }
+public class ScalarSet extends BaseScalarOp {
+    public ScalarSet() {}
 
     public ScalarSet(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -125,9 +124,9 @@ public class  ScalarSet extends BaseScalarOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (num != null) {
-            this.extraArgs = new Object[]{num};
+            this.extraArgs = new Object[] {num};
         } else {
-            this.extraArgs = new Object[]{complexNumber};
+            this.extraArgs = new Object[] {complexNumber};
         }
 
     }
