@@ -74,10 +74,10 @@ fi
 cd ..
 
 # removes any existing repositories to ensure a clean build
-find . -maxdepth 1 -iname "libnd4j" -exec rm -rf "{}" \;
-find . -maxdepth 1 -iname "nd4j" -exec rm -rf "{}" \;
-find . -maxdepth 1 -iname "datavec" -exec rm -rf "{}" \;
-#find . -maxdepth 1 -iname "deeplearning4j" -exec rm -rf "{}" \;
+PROJECTS="libnd4j nd4j datavec" # deeplearning4j
+for dirName in $PROJECTS; do
+    find . -maxdepth 1 -iname $dirName -exec rm -rf "{}" \;
+done
 
 # Report argument values
 echo BUILD      = "${BUILD}"
@@ -104,7 +104,9 @@ if [ "$CHIP" == "cuda" ]; then
         checkexit bash buildnativeoperations.sh -c cuda --cc $COMPUTE
     fi
 fi
-export LIBND4J_HOME=`pwd`
+LIBND4J_HOME=$(pwd)
+export LIBND4J_HOME
+
 popd
 
 # build and install nd4j to maven locally
