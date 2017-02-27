@@ -111,6 +111,43 @@
     </properties>
 
     <profiles>
+
+          <!-- This controls skipping the test backend choice enforcement below -->
+          <profile>
+            <id>default</id>
+            <activation>
+              <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+              <skipBackendChoice>false</skipBackendChoice>
+            </properties>
+          </profile>
+          <profile>
+            <id>skipTestCompileAndRun</id>
+            <activation>
+              <property>
+                <name>maven.test.skip</name>
+                <value>true</value>
+              </property>
+            </activation>
+            <properties>
+              <skipBackendChoice>true</skipBackendChoice>
+            </properties>
+          </profile>
+          <profile>
+            <id>skipTestRun</id>
+            <activation>
+              <property>
+                <name>skipTests</name>
+              </property>
+            </activation>
+            <properties>
+              <skipBackendChoice>true</skipBackendChoice>
+            </properties>
+          </profile>
+          <!-- end of backend choice enforcement control -->
+
+
         <profile>
             <id>testresources</id>
             <activation>
@@ -175,7 +212,7 @@
         <profile>
             <id>qa</id>
             <build>
-                <plugins>
+                  <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
@@ -365,6 +402,30 @@
         </extensions>
 
         <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <version>1.4.1</version>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <id>enforce-choice-of-nd4j-test-backend</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <skip>${skipBackendChoice}</skip>
+                  <rules>
+                    <requireActiveProfile>
+                      <profiles>test-nd4j-native,test-nd4j-cuda-8.0</profiles>
+                      <all>false</all>
+                    </requireActiveProfile>
+                  </rules>
+                  <fail>true</fail>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
