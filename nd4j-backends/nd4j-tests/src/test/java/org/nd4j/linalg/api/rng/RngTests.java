@@ -33,50 +33,54 @@ public class RngTests extends BaseNd4jTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        INDArray arr = Nd4j.rand('c', 3, 4);
-        assertArrayEquals(new int[] {3, 4}, arr.shape());
+        int rows = 10;
+        int cols = 20;
+        int dim2 = 7;
+
+        INDArray arr = Nd4j.rand('c', rows, cols);
+        assertArrayEquals(new int[] {rows, cols}, arr.shape());
         assertEquals('c', arr.ordering());
         assertTrue(arr.minNumber().doubleValue() >= 0.0);
         assertTrue(arr.maxNumber().doubleValue() <= 1.0);
 
-        INDArray arr2 = Nd4j.rand('f', 3, 4);
-        assertArrayEquals(new int[] {3, 4}, arr2.shape());
+        INDArray arr2 = Nd4j.rand('f', rows, cols);
+        assertArrayEquals(new int[] {rows, cols}, arr2.shape());
         assertEquals('f', arr2.ordering());
         assertTrue(arr2.minNumber().doubleValue() >= 0.0);
         assertTrue(arr2.maxNumber().doubleValue() <= 1.0);
 
-        INDArray arr3 = Nd4j.rand('c', new int[] {3, 4, 5});
-        assertArrayEquals(new int[] {3, 4, 5}, arr3.shape());
+        INDArray arr3 = Nd4j.rand('c', new int[] {rows, cols, dim2});
+        assertArrayEquals(new int[] {rows, cols, dim2}, arr3.shape());
         assertEquals('c', arr3.ordering());
         assertTrue(arr3.minNumber().doubleValue() >= 0.0);
         assertTrue(arr3.maxNumber().doubleValue() <= 1.0);
 
-        INDArray arr4 = Nd4j.rand('f', new int[] {3, 4, 5});
-        assertArrayEquals(new int[] {3, 4, 5}, arr4.shape());
+        INDArray arr4 = Nd4j.rand('f', new int[] {rows, cols, dim2});
+        assertArrayEquals(new int[] {rows, cols, dim2}, arr4.shape());
         assertEquals('f', arr4.ordering());
         assertTrue(arr4.minNumber().doubleValue() >= 0.0);
         assertTrue(arr4.maxNumber().doubleValue() <= 1.0);
 
 
-        INDArray narr = Nd4j.randn('c', 3, 4);
-        assertArrayEquals(new int[] {3, 4}, narr.shape());
+        INDArray narr = Nd4j.randn('c', rows, cols);
+        assertArrayEquals(new int[] {rows, cols}, narr.shape());
         assertEquals('c', narr.ordering());
-        assertEquals(narr.meanNumber().doubleValue(), 0.0, 0.5);
+        assertEquals(narr.meanNumber().doubleValue(), 0.0, 0.05);
 
-        INDArray narr2 = Nd4j.randn('f', 3, 4);
-        assertArrayEquals(new int[] {3, 4}, narr2.shape());
+        INDArray narr2 = Nd4j.randn('f', rows, cols);
+        assertArrayEquals(new int[] {rows, cols}, narr2.shape());
         assertEquals('f', narr2.ordering());
-        assertEquals(narr2.meanNumber().doubleValue(), 0.0, 0.5);
+        assertEquals(narr2.meanNumber().doubleValue(), 0.0, 0.05);
 
-        INDArray narr3 = Nd4j.randn('c', new int[] {3, 4, 5});
-        assertArrayEquals(new int[] {3, 4, 5}, narr3.shape());
+        INDArray narr3 = Nd4j.randn('c', new int[] {rows, cols, dim2});
+        assertArrayEquals(new int[] {rows, cols, dim2}, narr3.shape());
         assertEquals('c', narr3.ordering());
-        assertEquals(narr3.meanNumber().doubleValue(), 0.0, 0.5);
+        assertEquals(narr3.meanNumber().doubleValue(), 0.0, 0.05);
 
-        INDArray narr4 = Nd4j.randn('f', new int[] {3, 4, 5});
-        assertArrayEquals(new int[] {3, 4, 5}, narr4.shape());
+        INDArray narr4 = Nd4j.randn('f', new int[] {rows, cols, dim2});
+        assertArrayEquals(new int[] {rows, cols, dim2}, narr4.shape());
         assertEquals('f', narr4.ordering());
-        assertEquals(narr4.meanNumber().doubleValue(), 0.0, 0.5);
+        assertEquals(narr4.meanNumber().doubleValue(), 0.0, 0.05);
 
     }
 
