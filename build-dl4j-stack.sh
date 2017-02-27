@@ -60,6 +60,10 @@ if [ -z "$CHIP" ]; then
  CHIP="cpu"
 fi
 
+# test for cuda libraries
+if [ "$(ldconfig -p | grep -q libcuda\.so)" -eq 0 ] && [ -z "$CHIP" ]; then
+    CHIP="cuda"
+fi
 
 # adjust scala versions
 if [ "$SCALAV" == "2.10" ]; then
