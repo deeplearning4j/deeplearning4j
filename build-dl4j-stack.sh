@@ -90,7 +90,7 @@ echo SCALAV     = "${SCALAV}"
 
 # compile libnd4j
 checkexit git clone https://github.com/deeplearning4j/libnd4j.git
-cd libnd4j
+pushd libnd4j
 if [ -z "$NATIVE" ]; then
     checkexit bash buildnativeoperations.sh "$@" -a native
 else
@@ -105,31 +105,31 @@ if [ "$CHIP" == "cuda" ]; then
     fi
 fi
 export LIBND4J_HOME=`pwd`
-cd ..
+popd
 
 # build and install nd4j to maven locally
 checkexit git clone https://github.com/deeplearning4j/nd4j.git
-cd nd4j
+pushd nd4j
 if [ "$CHIP" == "cpu" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
 else
   checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 fi
-cd ..
+popd
 
 # build and install datavec
 checkexit git clone https://github.com/deeplearning4j/datavec.git
-cd datavec
+pushd datavec
 if [ "$SCALAV" == "" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 else
   checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
 fi
-cd ..
+popd
 
 # build and install deeplearning4j
 #checkexit git clone https://github.com/deeplearning4j/deeplearning4j.git
-cd deeplearning4j
+pushd deeplearning4j
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
     checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0'
@@ -143,4 +143,4 @@ else
     checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
   fi
 fi
-cd ..
+popd
