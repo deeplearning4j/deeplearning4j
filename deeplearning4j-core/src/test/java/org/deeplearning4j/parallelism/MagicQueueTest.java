@@ -180,4 +180,50 @@ public class MagicQueueTest {
         assertEquals(nextDev, Nd4j.getAffinityManager().getDeviceForArray(dataSet_4.getLabels()).intValue());
     }
 
+
+    @Test
+    public void testSequential() throws Exception {
+        MagicQueue queue = new MagicQueue.Builder().setMode(MagicQueue.Mode.SEQUENTIAL).build();
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+
+
+
+        // All arrays are located on same initial device
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_1.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_2.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_3.getFeatures()).intValue());
+        assertEquals(0, Nd4j.getAffinityManager().getDeviceForArray(dataSet_4.getFeatures()).intValue());
+
+        queue.add(dataSet_1);
+        queue.add(dataSet_2);
+        queue.add(dataSet_3);
+        queue.add(dataSet_4);
+        queue.add(dataSet_5);
+        queue.add(dataSet_6);
+        queue.add(dataSet_7);
+        queue.add(dataSet_8);
+
+        assertEquals(8, queue.size());
+
+        int cnt = 0;
+        while (!queue.isEmpty()) {
+            DataSet ds = queue.take();
+
+            assertNotEquals("Failed on round " + cnt, null, ds);
+
+            cnt++;
+        }
+
+        assertEquals(8, cnt);
+    }
 }
