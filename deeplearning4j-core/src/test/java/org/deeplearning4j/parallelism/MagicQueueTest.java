@@ -99,7 +99,7 @@ public class MagicQueueTest {
 
     /**
      * THIS TEST REQUIRES CUDA BACKEND AND MULTI-GPU ENVIRONMENT
-     * TO USE THIS TEST - ENABLE ND4J-CUDA BACKEND FOR THIS MODULE
+     * TO USE THIS TEST EFFICIENTLY - ENABLE ND4J-CUDA BACKEND FOR THIS MODULE
      *
      * In this test we check actual data relocation within MagicQueue
      *
@@ -219,7 +219,12 @@ public class MagicQueueTest {
         while (!queue.isEmpty()) {
             DataSet ds = queue.take();
 
+            // making sure dataset isn't null
             assertNotEquals("Failed on round " + cnt, null, ds);
+
+            // making sure device for this array is a "next one"
+            assertEquals(cnt % numDevices, Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()).intValue());
+            assertEquals(cnt % numDevices, Nd4j.getAffinityManager().getDeviceForArray(ds.getLabels()).intValue());
 
             cnt++;
         }

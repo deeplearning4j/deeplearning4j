@@ -48,6 +48,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, 8);
     }
 
+    /**
+     * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
+     * single additional DataSet)
+     *
+     * @param iterator
+     * @param queueSize
+     * @param queue BlockingQueue instance that will be used as backing queue. MagicQueue probably?
+     */
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
@@ -72,6 +80,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     /**
      * Create an AsyncDataSetIterator with a specified queue size.
+     * LinkedBlockingQueue will be used as backing queue
      *
      * @param baseIterator The DataSetIterator to load data from asynchronously
      * @param queueSize    size of the queue (max number of elements to load into queue)
