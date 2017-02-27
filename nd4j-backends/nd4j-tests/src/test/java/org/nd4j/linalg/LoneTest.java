@@ -1,6 +1,5 @@
 package org.nd4j.linalg;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,7 +13,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -24,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 4/1/16.
  */
-@Slf4j
 @RunWith(Parameterized.class)
 public class LoneTest extends BaseNd4jTest {
     public LoneTest(Nd4jBackend backend) {
@@ -170,18 +167,15 @@ public class LoneTest extends BaseNd4jTest {
     @Test
     //broken at a threshold
     public void testArgMax() {
-        int max = 512;
+        int max = 63;
         INDArray A = Nd4j.linspace(1, max, max).reshape(1, max);
-        INDArray am = Nd4j.argMax(A);
-        log.info("am shape: {}", Arrays.toString(am.shapeInfoDataBuffer().asInt()));
-        log.info("AM: {}", am);
-        int currentArgMax = am.getInt(0);
-        assertEquals(max - 1, currentArgMax); //passes
+        int currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        assertEquals(max - 1, currentArgMax);
 
         max = 64;
         A = Nd4j.linspace(1, max, max).reshape(1, max);
         currentArgMax = Nd4j.argMax(A).getInt(0, 0);
         System.out.println("Returned argMax is " + currentArgMax);
-        assertEquals(max - 1, currentArgMax); //fails and returns 31
+        assertEquals(max - 1, currentArgMax);
     }
 }
