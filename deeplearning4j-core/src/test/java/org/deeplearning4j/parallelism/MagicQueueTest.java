@@ -1,12 +1,18 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -217,7 +223,7 @@ public class MagicQueueTest {
 
         int cnt = 0;
         while (!queue.isEmpty()) {
-            DataSet ds = queue.take();
+            DataSet ds = queue.poll(2, TimeUnit.SECONDS);
 
             // making sure dataset isn't null
             assertNotEquals("Failed on round " + cnt, null, ds);
@@ -230,5 +236,36 @@ public class MagicQueueTest {
         }
 
         assertEquals(8, cnt);
+    }
+
+    @Test
+    public void testSequentialIterable() throws Exception {
+        List<DataSet> list = new ArrayList<>();
+        for (int i = 0; i < 1024; i++)
+            list.add(new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f})));
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        ExistingDataSetIterator edsi = new ExistingDataSetIterator(list);
+
+        MagicQueue queue = new MagicQueue.Builder().setMode(MagicQueue.Mode.SEQUENTIAL).setCapacityPerFlow(32).build();
+
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(edsi, 10, queue);
+
+        int cnt = 0;
+        while (adsi.hasNext()) {
+            DataSet ds = adsi.next();
+
+            // making sure dataset isn't null
+            assertNotEquals("Failed on round " + cnt, null, ds);
+
+            // making sure device for this array is a "next one"
+            assertEquals(cnt % numDevices, Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()).intValue());
+            assertEquals(cnt % numDevices, Nd4j.getAffinityManager().getDeviceForArray(ds.getLabels()).intValue());
+
+            cnt++;
+        }
+
+        assertEquals(list.size(), cnt);
     }
 }

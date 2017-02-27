@@ -37,6 +37,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     protected int capacity = 10;
     protected Mode mode = Mode.THREADED;
     protected AtomicInteger interleavedCounter = new AtomicInteger(0);
+    protected AtomicInteger interleavedPutter = new AtomicInteger(0);
 
     protected AtomicLong cntPut = new AtomicLong(0);
     protected AtomicLong cntGet = new AtomicLong(0);
@@ -156,7 +157,6 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 if (nextBucket.get() >= backingQueues.size())
                     nextBucket.set(0);
             }
-
             handlers.get(nextBucket.getAndIncrement()).put(dataSet);
 
             return true;
@@ -250,11 +250,16 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public void put(DataSet dataSet) throws InterruptedException {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            backingQueues.get(deviceId).put(dataSet);
-        } else backingQueues.get(0).put(dataSet);
 
+        if (numberOfBuckets > 1) {
+            synchronized (this) {
+                if (nextBucket.get() >= backingQueues.size())
+                    nextBucket.set(0);
+            }
+            handlers.get(nextBucket.getAndIncrement()).put(dataSet);
+        } else {
+            backingQueues.get(0).add(dataSet);
+        }
         cntPut.incrementAndGet();
     }
 
@@ -336,7 +341,10 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 return ds;
             }
         } else {
+            //log.info("Trying queue_{}; queue_0: {}; queue_1: {}", interleavedCounter.get(), backingQueues.get(0).size(), backingQueues.get(1).size());
+
             DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll(time, timeUnit);
+
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
@@ -379,6 +387,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             }
         } else {
             DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll();
+
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
