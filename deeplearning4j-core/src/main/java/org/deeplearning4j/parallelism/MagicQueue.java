@@ -496,6 +496,8 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                         Nd4j.getAffinityManager().touch(ds.getFeatures());
                         Nd4j.getAffinityManager().touch(ds.getLabels());
 
+                        //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
+
                         targetQueue.add(ds);
                     }
                 } catch (Exception e) {
