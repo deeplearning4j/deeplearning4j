@@ -148,17 +148,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         long opY = op.y() == null ? 0 : AtomicAllocator.getInstance().getPointer(op.y(), context).address();
 
         if (opZ == pointer.address()) {
-            logger.error("op.Z matched: {}", pointer.address());
+            //logger.error("op.Z matched: {}", pointer.address());
             return true;
         }
 
         if (opY == pointer.address()) {
-            logger.error("op.Y matched: {}", pointer.address());
+            //logger.error("op.Y matched: {}", pointer.address());
             return true;
         }
 
         if (opX == pointer.address()) {
-            logger.error("op.X matched: {}", pointer.address());
+            //logger.error("op.X matched: {}", pointer.address());
             return true;
         }
 
@@ -571,6 +571,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else {
             ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
         }
+
         op.setZ(ret);
     }
 
@@ -610,6 +611,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else {
             ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
         }
+
         op.setZ(ret);
     }
 
@@ -651,6 +653,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             // So, that's scalar. We'll have to flush queue
             flushQueue();
 
+            buildZ(op, new int[] {Integer.MAX_VALUE});
             super.invoke(op, new int[] {Integer.MAX_VALUE});
         } else {
             buildZ(op, dimension);
