@@ -185,6 +185,7 @@ public class OperationProfilerTests {
     }
 
     @Test
+    @Ignore
     public void testBadTad4() throws Exception {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 

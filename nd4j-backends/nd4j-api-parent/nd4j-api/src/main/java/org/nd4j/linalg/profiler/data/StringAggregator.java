@@ -87,11 +87,17 @@ public class StringAggregator {
         for (String key : sortedTimes.keySet()) {
             sum.addAndGet(getSum(key));
         }
-        builder.append("Total time spent: ").append(sum.get() / 1000000).append(" ms.").append("\n");
+        long lSum = sum.get();
+        builder.append("Total time spent: ").append(lSum / 1000000).append(" ms.").append("\n");
 
         for (String key : sortedTimes.keySet()) {
             long currentSum = getSum(key);
-            float perc = currentSum * 100 / sum.get();
+            float perc;
+            if(lSum == 0){
+                perc = 0.0f;
+            } else {
+                perc = currentSum * 100.0f / sum.get();
+            }
 
             long sumMs = currentSum / 1000000;
 

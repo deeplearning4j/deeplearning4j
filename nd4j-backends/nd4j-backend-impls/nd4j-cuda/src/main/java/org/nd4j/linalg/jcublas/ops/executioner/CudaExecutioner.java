@@ -774,7 +774,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                                 + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z().isScalar() ? null : op.z(), op.x(), op.y());
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
@@ -809,15 +809,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 double result = nativeOps.execIndexReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
                                 (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs);
                 op.setFinalResult((int) result);
+                AtomicAllocator.getInstance().tickHostWrite(op.z());
+                op.z().putScalar(0, result);
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 float result = nativeOps.execIndexReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                 (IntPointer) xShapeInfo, (FloatPointer) extraArgs);
                 op.setFinalResult((int) result);
+                AtomicAllocator.getInstance().tickHostWrite(op.z());
+                op.z().putScalar(0, (float) result);
             } else {
                 float result = nativeOps.execIndexReduceScalarHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                 (IntPointer) xShapeInfo, (ShortPointer) extraArgs);
                 op.setFinalResult((int) result);
+                AtomicAllocator.getInstance().tickHostWrite(op.z());
+                op.z().putScalar(0, (float) result);
             }
+
+            AtomicAllocator.getInstance().registerAction(context, null, op.x(), op.y());
         } else {
             Arrays.sort(dimension);
 
@@ -840,9 +848,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 (IntPointer) xShapeInfo, (ShortPointer) extraArgs, (ShortPointer) z,
                                 (IntPointer) zShapeInfo, (IntPointer) dimensionPointer, dimension.length);
             }
+
+            AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
         }
 
-        AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
 
         profilingHookOut(op, st);
 
