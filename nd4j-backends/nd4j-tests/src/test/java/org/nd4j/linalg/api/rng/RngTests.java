@@ -33,7 +33,7 @@ public class RngTests extends BaseNd4jTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int rows = 10;
+        int rows = 20;
         int cols = 20;
         int dim2 = 7;
 
