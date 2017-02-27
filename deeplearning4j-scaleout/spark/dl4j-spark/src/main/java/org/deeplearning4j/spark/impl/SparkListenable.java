@@ -20,7 +20,7 @@ import java.util.List;
 
 /** Created by huitseeker on 2/15/17. */
 @Slf4j
-public class SparkListenable implements Serializable {
+public class SparkListenable {
 
   protected TrainingMaster trainingMaster;
   private List<IterationListener> listeners = new ArrayList<>();
@@ -73,14 +73,18 @@ public class SparkListenable implements Serializable {
       for (IterationListener l : listeners) {
         if (l instanceof RoutingIterationListener) {
           RoutingIterationListener rl = (RoutingIterationListener) l;
-          if (rl.getStorageRouter() == null) {
+          if (statsStorage == null) {
             log.warn(
                 "RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
                 l);
           } else if (!(rl.getStorageRouter() instanceof Serializable)) {
             //Spark would throw a (probably cryptic) serialization exception later anyway...
             throw new IllegalStateException(
-                "RoutingIterationListener provided with non-serializable storage router");
+                "RoutingIterationListener provided with non-serializable storage router "
+                    + "\nRoutingIterationListener class: "
+                    + rl.getClass().getName()
+                    + "\nStatsStorageRouter class: "
+                    + statsStorage.getClass().getName());
           }
 
           //Need to give workers a router provider...
