@@ -45,6 +45,9 @@ case $key in
     SCALAV="$2"
     shift # past argument
     ;;
+    -s|--shallow)
+    SHALLOW="YES"
+    ;;
     *)
             # unknown option
     ;;
@@ -73,11 +76,29 @@ fi
 
 cd ..
 
+# removes lingering snapshot artifacts from existing maven cache to ensure a
+# clean build
+JAVA_PROJECTS="nd4j datavec deeplearning4j"
+for dirName in $JAVA_PROJECTS; do
+    if [ -d $dirName ]; then
+        pushd $dirName
+        mvn dependency:purge-local-repository -DreResolve=false
+        popd
+    fi
+done
+
 # removes any existing repositories to ensure a clean build
 PROJECTS="libnd4j nd4j datavec" # deeplearning4j
 for dirName in $PROJECTS; do
     find . -maxdepth 1 -iname $dirName -exec rm -rf "{}" \;
 done
+
+# set git cloning to a shallow depth if the option says so
+if [ -z $SHALLOW ]; then
+    GIT_CLONE="git clone"
+else
+    GIT_CLONE="git clone --depth 1"
+fi
 
 # Report argument values
 echo BUILD      = "${BUILD}"
@@ -87,9 +108,10 @@ echo COMPUTE    = "${COMPUTE}"
 echo NATIVE     = "${NATIVE}"
 echo LIBTYPE    = "${LIBTYPE}"
 echo SCALAV     = "${SCALAV}"
+echo SHALLOW    = "${SHALLOW}"
 
 # compile libnd4j
-checkexit git clone https://github.com/deeplearning4j/libnd4j.git
+checkexit $GIT_CLONE https://github.com/deeplearning4j/libnd4j.git
 pushd libnd4j
 if [ -z "$NATIVE" ]; then
     checkexit bash buildnativeoperations.sh "$@" -a native
@@ -110,7 +132,7 @@ export LIBND4J_HOME
 popd
 
 # build and install nd4j to maven locally
-checkexit git clone https://github.com/deeplearning4j/nd4j.git
+checkexit $GIT_CLONE https://github.com/deeplearning4j/nd4j.git
 pushd nd4j
 if [ "$CHIP" == "cpu" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
@@ -120,7 +142,7 @@ fi
 popd
 
 # build and install datavec
-checkexit git clone https://github.com/deeplearning4j/datavec.git
+checkexit $GIT_CLONE https://github.com/deeplearning4j/datavec.git
 pushd datavec
 if [ "$SCALAV" == "" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
@@ -130,7 +152,7 @@ fi
 popd
 
 # build and install deeplearning4j
-#checkexit git clone https://github.com/deeplearning4j/deeplearning4j.git
+#checkexit $GIT_CLONE https://github.com/deeplearning4j/deeplearning4j.git
 pushd deeplearning4j
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
