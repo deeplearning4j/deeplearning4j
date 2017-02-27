@@ -139,7 +139,7 @@ fi
 
 # compile libnd4j
 if ! [ -z $DELETE_REPOS ] || ! [ -d libnd4j ]; then
-    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/libnd4j.git
+    checkexit $GIT_CLONE https://github.com/deeplearning4j/libnd4j.git
 fi
 pushd libnd4j
 if [ -z "$NATIVE" ]; then
@@ -161,7 +161,7 @@ popd
 
 # build and install nd4j to maven locally
 if ! [ -z $DELETE_REPOS ] || ! [ -d nd4j ]; then
-    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/nd4j.git
+    checkexit $GIT_CLONE https://github.com/deeplearning4j/nd4j.git
 fi
 if [ -z "$TEST_ND4J" ]; then
     ND4J_OPTIONS="-DskipTests"
@@ -178,7 +178,7 @@ popd
 
 # build and install datavec
 if ! [ -z $DELETE_REPOS ] || ! [ -d datavec ]; then
-    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/datavec.git
+    checkexit $GIT_CLONE https://github.com/deeplearning4j/datavec.git
 fi
 if [ -z "$TEST_DATAVEC" ]; then
     DATAVEC_OPTIONS="-DskipTests"
@@ -199,7 +199,7 @@ popd
 
 # build and install deeplearning4j
 if ! [ -z $DELETE_REPOS ] || ! [ -d deeplearning4j ]; then
-    checkexit "$GIT_CLONE" https://github.com/deeplearning4j/deeplearning4j.git
+    checkexit $GIT_CLONE https://github.com/deeplearning4j/deeplearning4j.git
 fi
 if [ -z "$TEST_DL4J" ]; then
     DL4J_OPTIONS="-DskipTests"
