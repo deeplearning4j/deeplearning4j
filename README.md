@@ -1,6 +1,6 @@
 #ND4S: Scala bindings for ND4J
 
-[![Join the chat at https://gitter.im/deeplearning4j/nd4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/nd4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ND4S is open-source Scala bindings for [ND4J](https://github.com/deeplearning4j/nd4j). Released under an Apache 2.0 license. 
 
@@ -14,6 +14,17 @@ ND4S is open-source Scala bindings for [ND4J](https://github.com/deeplearning4j/
 ND4S is already included in official Maven repositories.
 
 With IntelliJ, incorporation of ND4S is easy: just create a new Scala project, go to "Project Settings"/Libraries, add "From Maven...", and search for nd4s.
+
+As an alternative, one may simply add the line below to `build.sbt` and re-build project.
+
+```scala
+val nd4jVersion = "0.7.2"
+
+libraryDependencies += "org.nd4j" % "nd4j-native-platform" % nd4jVersion
+libraryDependencies += "org.nd4j" %% "nd4s" % nd4jVersion
+```
+
+One may want to check our [maven repository page](https://mvnrepository.com/artifact/org.nd4j/nd4s_2.11) and replace `0.7.2` with the latest version.
 
 No need for git-cloning & compiling!
 
