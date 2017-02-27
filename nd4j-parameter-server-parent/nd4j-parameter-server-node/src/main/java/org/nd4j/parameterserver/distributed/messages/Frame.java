@@ -184,15 +184,17 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         //        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
 
         // we register all messages first
-      if(list == null || trainer == null)
-          return;
-        list.forEach((message) -> {
-            if(message != null) trainer.addCompletionHook(getOriginatorId(), getTaskId(), message.getTaskId());
-        });
+//      if(list == null || trainer == null)
+//          return;
+        if(trainer != null && transport != null)
+            list.forEach((message) -> {
+                trainer.addCompletionHook(getOriginatorId(), getTaskId(), message.getTaskId());
+            });
 
         //list.parallelStream().forEach((message) -> {
         for (TrainingMessage message : list) {
-            message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
+            if (trainer!= null && transport != null)
+                message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
             // if there's more then 1 round should be applied
             for (int i = 0; i < message.getCounter(); i++) {
