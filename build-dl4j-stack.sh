@@ -90,7 +90,7 @@ if [ "$SCALAV" == "2.11" ]; then
   SCALA="2.11.7"
 fi
 
-cd ..
+pushd ..
 
 # removes lingering snapshot artifacts from existing maven cache to ensure a
 # clean build
@@ -212,4 +212,6 @@ else
     checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DL4J_OPTIONS" "$MVN_OPTS"
   fi
 fi
+popd
+
 popd
