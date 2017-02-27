@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Limited Queue implementation, suited for multi-gpu prefetch.
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class MagicQueue implements BlockingQueue<DataSet> {
     public enum Mode {
         THREADED,
@@ -34,6 +37,9 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     protected int capacity = 10;
     protected Mode mode = Mode.THREADED;
     protected AtomicInteger interleavedCounter = new AtomicInteger(0);
+
+    protected AtomicLong cntPut = new AtomicLong(0);
+    protected AtomicLong cntGet = new AtomicLong(0);
 
 
 
@@ -67,14 +73,18 @@ public class MagicQueue implements BlockingQueue<DataSet> {
      */
     @Override
     public int size() {
-        if (numberOfBuckets > 1) {
-            long cnt = 0;
-            for (int i = 0; i < numberOfBuckets; i++) {
-                cnt += backingQueues.get(i).size();
-            }
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                long cnt = 0;
+                for (int i = 0; i < numberOfBuckets; i++) {
+                    cnt += backingQueues.get(i).size();
+                }
 
-            return (int) Math.floor(cnt / numberOfBuckets);
-        } else return backingQueues.get(0).size();
+                return (int) Math.floor(cnt / numberOfBuckets);
+            } else return backingQueues.get(0).size();
+        } else {
+            return (int) (cntPut.get() - cntGet.get());
+        }
     }
 
     protected int size(int deviceId) {
@@ -140,6 +150,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public boolean add(DataSet dataSet) {
+        cntPut.incrementAndGet();
         if (numberOfBuckets > 1) {
             synchronized (this) {
                 if (nextBucket.get() >= backingQueues.size())
@@ -211,8 +222,20 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     public boolean offer(DataSet dataSet) {
         if (numberOfBuckets > 1) {
             int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).offer(dataSet);
-        } else return backingQueues.get(0).offer(dataSet);
+            boolean res = backingQueues.get(deviceId).offer(dataSet);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        } else {
+            boolean result = backingQueues.get(0).offer(dataSet);
+
+            if (result)
+                cntPut.incrementAndGet();
+
+            return result;
+        }
     }
 
     @Override
@@ -221,22 +244,51 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             backingQueues.get(deviceId).put(dataSet);
         } else backingQueues.get(0).put(dataSet);
+
+        cntPut.incrementAndGet();
     }
 
     @Override
     public boolean offer(DataSet dataSet, long timeout, TimeUnit unit) throws InterruptedException {
         if (numberOfBuckets > 1) {
             int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).offer(dataSet, timeout, unit);
-        } else return backingQueues.get(0).offer(dataSet, timeout, unit);
+
+            boolean res = backingQueues.get(deviceId).offer(dataSet, timeout, unit);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        } else {
+            boolean res = backingQueues.get(0).offer(dataSet, timeout, unit);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        }
     }
 
     @Override
     public DataSet take() throws InterruptedException {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).take();
-        } else return backingQueues.get(0).take();
+        try {
+            if (mode == Mode.THREADED) {
+                if (numberOfBuckets > 1) {
+                    int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    return backingQueues.get(deviceId).take();
+                } else return backingQueues.get(0).take();
+            } else {
+                DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).take();
+                if (interleavedCounter.get() >= backingQueues.size())
+                    interleavedCounter.set(0);
+
+                return ds;
+            }
+        } catch (InterruptedException e) {
+            throw e;
+        } finally {
+            cntGet.incrementAndGet();
+        }
     }
 
     @Override
@@ -259,12 +311,28 @@ public class MagicQueue implements BlockingQueue<DataSet> {
         if (mode == Mode.THREADED) {
             if (numberOfBuckets > 1) {
                 int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                return backingQueues.get(deviceId).poll(time, timeUnit);
-            } else return backingQueues.get(0).poll(time, timeUnit);
+                DataSet ds = backingQueues.get(deviceId).poll(time, timeUnit);
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            } else {
+                DataSet ds = backingQueues.get(0).poll(time, timeUnit);
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            }
         } else {
             DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll(time, timeUnit);
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
+
+            if (ds!=null)
+                cntGet.incrementAndGet();
+
             return ds;
         }
     }
@@ -287,12 +355,26 @@ public class MagicQueue implements BlockingQueue<DataSet> {
         if (mode == Mode.THREADED) {
             if (numberOfBuckets > 1) {
                 int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                return backingQueues.get(deviceId).poll();
-            } else return backingQueues.get(0).poll();
+                DataSet ds = backingQueues.get(deviceId).poll();
+                if (ds != null)
+                    cntGet.incrementAndGet();
+                return ds;
+            } else {
+                DataSet ds = backingQueues.get(0).poll();
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            }
         } else {
             DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll();
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
+
+            if (ds!=null)
+                cntGet.incrementAndGet();
+
             return ds;
         }
     }
@@ -356,6 +438,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 numberOfBuckets = Nd4j.getAffinityManager().getNumberOfDevices();
 
             MagicQueue queue = new MagicQueue(numberOfBuckets, capacity);
+            queue.mode = this.mode;
 
 
             return queue;
