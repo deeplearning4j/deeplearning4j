@@ -109,7 +109,7 @@ public class ShapeOffsetResolution implements Serializable {
                 } else if (indexes[0] instanceof IntervalIndex) {
                     //allow through
                 } else {
-                    throw new UnsupportedOperationException("Illegal combination of indexes for vector");
+                    return false;
 
                 }
             } else {
@@ -128,7 +128,7 @@ public class ShapeOffsetResolution implements Serializable {
                 } else if (indexes[0] instanceof IntervalIndex) {
                     //allow through
                 } else {
-                    throw new UnsupportedOperationException("Illegal combination of indexes for vector");
+                    return false;
                 }
             }
         }
