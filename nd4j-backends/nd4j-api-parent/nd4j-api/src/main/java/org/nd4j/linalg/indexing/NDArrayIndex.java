@@ -295,7 +295,7 @@ public class NDArrayIndex implements INDArrayIndex {
                     }
                     else if(intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
-                        ret[i] = new SpecifiedIndex(ArrayUtil.range(0,shape.getInt(i),intervalIndex.stride()));
+                        ret[i] = new SpecifiedIndex(ArrayUtil.range(0,intervalIndex.end(),intervalIndex.stride()));
                     }
                 }
             }
