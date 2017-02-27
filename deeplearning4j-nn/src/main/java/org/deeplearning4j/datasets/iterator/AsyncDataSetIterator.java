@@ -215,7 +215,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         if (!blockingQueue.isEmpty()) {
             runnable.feeder.decrementAndGet();
-            return blockingQueue.poll();    //non-blocking, but returns null if empty
+            try {
+                return blockingQueue.poll(2, TimeUnit.SECONDS);    //non-blocking, but returns null if empty
+            } catch (InterruptedException e) {
+                //
+            }
         }
 
         //Blocking queue is empty, but more to come
