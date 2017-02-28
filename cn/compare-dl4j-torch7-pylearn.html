@@ -16,9 +16,11 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <ol>
   <li><a href="#theano">Theano及其生态系统</a></li>
   <li><a href="#tensorflow">TensorFlow</a></li>
-  <li><a href="#caffe">Caffe</a></li>  
+  <li><a href="#caffe">Caffe</a></li>
   <li><a href="#cntk">CNTK</a></li>
+  <li><a href="#chainer">Chainer</a></li>
   <li><a href="#dsstne">DSSTNE</a></li>
+  <li><a href="#dynet">DyNet</a></li>
   <li><a href="#keras">Keras</a></li>
   <li><a href="#paddle">Paddle</a></li>
   <li><a href="#bigdl">BigDL</a></li>  
@@ -123,6 +125,10 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p><a href="https://github.com/Microsoft/CNTK" target="_blank"><strong>CNTK</strong></a>是微软的开源深度学习框架。CNTK的全称是&ldquo;计算网络工具包。&rdquo;此学习库包括前馈DNN、卷积网络和循环网络。CNTK提供基于C++代码的Python API。虽然CNTK遵循一个<a href="https://github.com/Microsoft/CNTK/blob/master/LICENSE.md" target="_blank">比较宽松的许可协议</a>，却并未采用ASF 2.0、BSD或MIT等一些较为传统的许可协议。这一许可协议不适用于CNTK旨在简化分布式定型的1-Bit随机梯度下降（SGD）方法，该组件不得用作商业用途。</p>
 <br />
 
+<p><h3><a name="chainer">Chainer</a></h3></p>
+<p>Chainer是一个带有Python API的开源神经网络框架，其核心开发团队隶属于东京一家名叫<a href="https://www.crunchbase.com/organization/preferred-networks#/entity" target="_blank">Preferred Networks</a>的机器学习创业公司，团队工程师主要来自东京大学。在CMU的DyNet和Facebook的PyTorch问世以前，Chainer是最领先的动态计算图神经网络框架。动态计算图能处理可变长度的输入，很适合进行自然语言分析任务。Chainer自己的<a href="http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html" target="_blank">对标研究</a>发现，该框架的速度明显快于包括MxNet和CNTK在内的其他面向Python的学习框架，而TensorFlow的速度最慢。 </p>
+<br />
+
 <p><h3><a name="dsstne">DSSTNE</a></h3></p>
 <p>亚马逊的深度可伸缩稀疏张量网络引擎又称<a href="https://github.com/amznlabs/amazon-dsstne" target="_blank"><strong>DSSTNE</strong></a>，是用于机器学习和深度学习建模的学习库。它是在TensorFlow和CNTK之后较晚发布的不少开源深度学习库之一，后来亚马逊开始以AWS力挺MxNet，所以DSSTNE的发展前景不太明朗。DSSTNE主要用C++写成，速度较快，不过吸引到的用户群体规模尚不及其他学习库。</p><br>
 
@@ -132,9 +138,18 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-danger">-</span> 亚马逊已决定在AWS上使用另一个框架。<br />
 <br />
 
+<p><h3><a name="dynet">DyNet</a></h3></p>
+<p><a href="https://github.com/clab/dynet" target="_blank">DyNet</a>亦称<a href="https://arxiv.org/abs/1701.03980" target="_blank">动态神经网络工具包</a>，由卡纳基梅隆大学推出，过去曾被称为cnn。它最值得一提的功能就是动态计算图，能够处理可变长度的输入，很适合自然语言分析。PyTorch和Chainer也提供同样的功能。</p>
+<span class="label label-success">+</span> 动态计算图 <br />
+<span class="label label-danger">-</span> 用户群较小 <br />
+<br />
+
 <p><h3><a name="keras">Keras</a></h3></p>
 <p><a href="https://github.com/fchollet/keras" target="_blank"><strong>Keras</strong></a> 是一个基于Theano和TensorFlow的深度学习库，具有一个受Torch启发、较为直观的API。这可能是目前最好的Python API。Deeplearning4j<a href="keras" target="_blank">可以导入Keras模型</a>。Keras是由谷歌软件工程师<a href="https://twitter.com/fchollet" target="_blank">Francois Chollet</a>开发的。</p>
-
+<span class="label label-success">+</span>受Torch启发的直观API <br />
+<span class="label label-success">+</span>可使用Theano、TensorFlow和Deeplearning4j后端（即将推出CNTK后端） <br />
+<span class="label label-success">+</span>该框架正快速成长 <br />
+<span class="label label-success">+</span>有可能成为用于开发神经网络的标准Python API <br />
 <br>
 
 <p><h3><a name="mxnet">MxNet</a></h3></p>
