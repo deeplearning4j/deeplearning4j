@@ -170,9 +170,9 @@ else
 fi
 pushd nd4j
 if [ "$CHIP" == "cpu" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests' "$ND4J_OPTIONS" "$MVN_OPTS"
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests' $ND4J_OPTIONS $MVN_OPTS
 else
-  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$ND4J_OPTIONS" "$MVN_OPTS"
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $ND4J_OPTIONS $MVN_OPTS
 fi
 popd
 
@@ -191,9 +191,9 @@ else
 fi
 pushd datavec
 if [ "$SCALAV" == "" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DATAVEC_OPTIONS" "$MVN_OPTS"
+  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $DATAVEC_OPTIONS $MVN_OPTS
 else
-  checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DATAVEC_OPTIONS" "$MVN_OPTS"
+  checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" $DATAVEC_OPTIONS $MVN_OPTS
 fi
 popd
 
@@ -213,15 +213,15 @@ fi
 pushd deeplearning4j
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
-    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0' "$DL4J_OPTIONS" "$MVN_OPTS"
+    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0' $DL4J_OPTIONS $MVN_OPTS
   else
-    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DL4J_OPTIONS" "$MVN_OPTS"
+    checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $DL4J_OPTIONS $MVN_OPTS
   fi
 else
   if [ "$CHIP" == "cpu" ]; then
-    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA"  -pl '!:deeplearning4j-cuda-8.0' "$DL4J_OPTIONS" "$MVN_OPTS"
+    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA"  -pl '!:deeplearning4j-cuda-8.0' $DL4J_OPTIONS $MVN_OPTS
   else
-    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DL4J_OPTIONS" "$MVN_OPTS"
+    checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" $DL4J_OPTIONS $MVN_OPTS
   fi
 fi
 popd
