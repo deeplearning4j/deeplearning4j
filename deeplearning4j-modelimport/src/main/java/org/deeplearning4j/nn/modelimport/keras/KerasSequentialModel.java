@@ -157,14 +157,20 @@ public class KerasSequentialModel extends KerasModel {
                 int nbInbound = layer.getInboundLayerNames().size();
                 if (nbInbound != 1)
                     throw new InvalidKerasConfigurationException("Layers in MultiLayerConfiguration must have exactly one inbound layer (found " + nbInbound + " for layer " + layer.getLayerName() + ")");
-                listBuilder.layer(layerIndex++, layer.getLayer());
-                if (prevLayer != null && prevLayer.isInputPreProcessor()) {
+                if (prevLayer != null) {
                     InputType[] inputTypes = new InputType[1];
-                    inputTypes[0] = this.outputTypes.get(prevLayer.getInboundLayerNames().get(0));
-                    InputPreProcessor preprocessor = prevLayer.getInputPreprocessor(inputTypes);
+                    InputPreProcessor preprocessor = null;
+                    if (prevLayer.isInputPreProcessor()) {
+                        inputTypes[0] = this.outputTypes.get(prevLayer.getInboundLayerNames().get(0));
+                        preprocessor = prevLayer.getInputPreprocessor(inputTypes);
+                    } else {
+                        inputTypes[0] = this.outputTypes.get(prevLayer.getLayerName());
+                        preprocessor = layer.getInputPreprocessor(inputTypes);
+                    }
                     if (preprocessor != null)
-                        listBuilder.inputPreProcessor(layerIndex-1, preprocessor);
+                        listBuilder.inputPreProcessor(layerIndex, preprocessor);
                 }
+                listBuilder.layer(layerIndex++, layer.getLayer());
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }

@@ -95,10 +95,6 @@ public interface GraphVertex extends Serializable {
      */
     void setInput(int inputNumber, INDArray input);
 
-    /** @deprecated as of 0.6.1 - use {@link #setEpsilon(INDArray)} */
-    @Deprecated
-    void setError(int errorNumber, INDArray error);
-
     /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
     void setEpsilon(INDArray epsilon);
 
@@ -126,10 +122,6 @@ public interface GraphVertex extends Serializable {
     /** Get the array of inputs previously set for this GraphVertex */
     INDArray[] getInputs();
 
-    /**@deprecated as of 0.6.1 - use {@link #getEpsilon()} */
-    @Deprecated
-    INDArray[] getErrors();
-
     /** Get the epsilon/error (i.e., dL/dOutput) array previously set for this GraphVertex */
     INDArray getEpsilon();
 
@@ -138,10 +130,6 @@ public interface GraphVertex extends Serializable {
      */
     void setInputs(INDArray... inputs);
 
-    /**@deprecated as of 0.6.1 - use {@link #setEpsilon(INDArray)} */
-    @Deprecated
-    void setErrors(INDArray... errors);
-
     /**
      * See {@link Layer#setBackpropGradientsViewArray(INDArray)}
      * @param backpropGradientsViewArray
@@ -149,4 +137,11 @@ public interface GraphVertex extends Serializable {
     void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
 
     Pair<INDArray,MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
+
+    /**
+     * Only applies to layer vertices. Will throw exceptions on others.
+     * If applied to a layer vertex it will treat the parameters of the layer within it as constant.
+     * Activations through these will be calculated as they would as test time regardless of training mode
+     */
+    void setLayerAsFrozen();
 }

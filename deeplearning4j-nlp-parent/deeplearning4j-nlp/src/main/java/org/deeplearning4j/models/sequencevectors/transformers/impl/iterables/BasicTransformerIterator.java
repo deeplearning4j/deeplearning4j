@@ -35,13 +35,14 @@ public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
     @Override
     public Sequence<VocabWord> next() {
         LabelledDocument document = iterator.nextDocument();
-        if  (document.getContent() == null) return new Sequence<>();
+        if  (document == null || document.getContent() == null) return new Sequence<>();
         Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
-        for (String label: document.getLabels()) {
-            if (label != null && !label.isEmpty())
-                sequence.addSequenceLabel(new VocabWord(1.0, label));
-        }
+        if (document.getLabels() != null)
+            for (String label: document.getLabels()) {
+                if (label != null && !label.isEmpty())
+                    sequence.addSequenceLabel(new VocabWord(1.0, label));
+            }
                 /*
                 if (document.getLabel() != null && !document.getLabel().isEmpty()) {
                     sequence.setSequenceLabel(new VocabWord(1.0, document.getLabel()));

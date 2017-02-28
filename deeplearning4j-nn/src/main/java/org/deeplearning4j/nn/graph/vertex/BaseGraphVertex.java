@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
@@ -122,11 +123,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public void setError(int errorNumber, INDArray error){
-        epsilon = error;
-    }
-
-    @Override
     public void setEpsilon(INDArray epsilon){
         this.epsilon = epsilon;
     }
@@ -159,20 +155,17 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public INDArray[] getErrors(){
-        return new INDArray[]{epsilon};
-    }
-
-    @Override
-    public void setErrors(INDArray... errors){
-        this.epsilon = errors[0];
-    }
-
-    @Override
     public INDArray getEpsilon(){
         return epsilon;
     }
 
     @Override
     public abstract String toString();
+
+    @Override
+    public void setLayerAsFrozen() {
+        if (!(this instanceof LayerVertex)) {
+            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
+        }
+    }
 }

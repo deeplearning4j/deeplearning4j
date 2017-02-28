@@ -93,6 +93,22 @@ public class Hdf5Archive {
     }
 
     /**
+     * Check whether group path contains string attribute.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return                  Boolean indicating whether attribute exists in group path.
+     */
+    public boolean hasAttribute(String attributeName, String... groups) {
+        if (groups.length == 0)
+            return this.file.attrExists(attributeName);
+        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++)
+            group = group.asCommonFG().openGroup(groups[i]);
+        return group.attrExists(attributeName);
+    }
+
+    /**
      * Get list of data sets from group path.
      *
      * @param groups    Array of zero or more ancestor groups from root to parent.
@@ -149,6 +165,18 @@ public class Hdf5Archive {
                         for (int i3 = 0; i3 < dims[2]; i3++)
                             for (int i4 = 0; i4 < dims[3]; i4++)
                                 data.putScalar(i1, i2, i3, i4, dataBuffer[j++]);
+                break;
+            case 3:
+                dataBuffer = new float[(int)(dims[0]*dims[1]*dims[2])];
+                fp = new FloatPointer(dataBuffer);
+                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                fp.get(dataBuffer);
+                data = Nd4j.create((int)dims[0], (int)dims[1], (int)dims[2]);
+                j = 0;
+                for (int i1 = 0; i1 < dims[0]; i1++)
+                    for (int i2 = 0; i2 < dims[1]; i2++)
+                        for (int i3 = 0; i3 < dims[2]; i3++)
+                            data.putScalar(i1, i2, i3, dataBuffer[j++]);
                 break;
             case 2: /* Dense and Recurrent weights */
                 dataBuffer = new float[(int)(dims[0]*dims[1])];

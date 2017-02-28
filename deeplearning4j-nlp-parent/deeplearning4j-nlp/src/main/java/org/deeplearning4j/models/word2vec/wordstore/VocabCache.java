@@ -134,6 +134,8 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      T wordFor(String word);
 
 
+    T wordFor(long id);
+
     /**
      *
      * @param index
@@ -141,6 +143,8 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      */
     void addWordToIndex(int index,String word);
 
+
+    void addWordToIndex(int index, long elementId);
 
     /**
      * Inserts the word as a vocab word
@@ -219,6 +223,8 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @return the vocab word for this token
      */
      T tokenFor(String word);
+
+    T tokenFor(long id);
 
     /**
      * Returns whether the cache
