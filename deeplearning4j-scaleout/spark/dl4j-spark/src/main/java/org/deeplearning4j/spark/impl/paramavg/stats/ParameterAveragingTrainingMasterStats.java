@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Statistics colected by a {@link org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster}
+ * Statistics collected by a {@link org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster}
  *
  * @author Alex Black
  */
