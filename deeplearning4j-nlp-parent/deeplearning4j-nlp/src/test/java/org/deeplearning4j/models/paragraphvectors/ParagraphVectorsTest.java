@@ -513,12 +513,23 @@ public class ParagraphVectorsTest {
         INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
         INDArray inferredA1 = vec.inferVector("This is my work");
         INDArray inferredB1 = vec.inferVector("This is my work .");
+        INDArray inferredC1 = vec.inferVector("This is my day");
+        INDArray inferredD1 = vec.inferVector("This is my night");
+
+        log.info("A: {}", Arrays.toString(inferredA1.data().asFloat()));
+        log.info("C: {}", Arrays.toString(inferredC1.data().asFloat()));
+
+        assertNotEquals(inferredA1, inferredC1);
 
         double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
         double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
+        double cosAC1 = Transforms.cosineSim(inferredA1.dup(), inferredC1.dup());
+        double cosCD1 = Transforms.cosineSim(inferredD1.dup(), inferredC1.dup());
 
         log.info("Cos O/A: {}", cosAO1);
         log.info("Cos A/B: {}", cosAB1);
+        log.info("Cos A/C: {}", cosAC1);
+        log.info("Cos C/D: {}", cosCD1);
 
     }
 
