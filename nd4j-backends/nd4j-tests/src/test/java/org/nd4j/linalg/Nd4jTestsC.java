@@ -1925,7 +1925,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testIterator() {
         INDArray x = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray repeated = x.repeat(new int[] {2});
+        INDArray repeated = x.repeat(1,new int[] {2});
         assertEquals(8, repeated.length());
         Iterator<Double> arrayIter = new INDArrayIterator(x);
         double[] vals = Nd4j.linspace(1, 4, 4).data().asDouble();
