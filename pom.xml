@@ -497,7 +497,6 @@
                     <failOnViolation>true</failOnViolation>
                     <onlyRunRules>
                         <rule>DuplicateDep</rule>
-                        <rule>RedundantDepVersion</rule>
                         <rule>RedundantPluginVersion</rule>
                         <rule>VersionProp</rule>
                         <rule>DotVersionProperty</rule>
