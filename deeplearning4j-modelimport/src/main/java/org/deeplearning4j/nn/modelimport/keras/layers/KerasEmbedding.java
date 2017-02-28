@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
@@ -9,6 +10,7 @@ import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationExce
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +29,7 @@ public class KerasEmbedding extends KerasLayer {
     /* Keras layer parameter names. */
     public static final int NUM_TRAINABLE_PARAMS = 1;
     public static final String KERAS_PARAM_NAME_W = "W";
+    public static final String KERAS_PARAM_NAME_B = "b";
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -96,8 +99,11 @@ public class KerasEmbedding extends KerasLayer {
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Embedding layer accepts only one input (received " + inputType.length + ")");
+        /* Check whether layer requires a preprocessor for this InputType. */
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
+        if (preprocessor != null) {
+            return this.getEmbeddingLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
         return this.getEmbeddingLayer().getOutputType(-1, inputType[0]);
     }
 
@@ -119,12 +125,15 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String,INDArray>();
-        if (weights.containsKey(KERAS_PARAM_NAME_W))
-            this.weights.put(DefaultParamInitializer.WEIGHT_KEY, weights.get(KERAS_PARAM_NAME_W));
-        else
+        if (!weights.containsKey(KERAS_PARAM_NAME_W))
             throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-
-        log.warn("Setting DL4J EmbeddingLayer bias to zero.");
+        INDArray W = weights.get(KERAS_PARAM_NAME_W);
+        if (!weights.containsKey(KERAS_PARAM_NAME_B)) {
+            log.warn("Setting DL4J EmbeddingLayer bias to zero.");
+            weights.put(KERAS_PARAM_NAME_B, Nd4j.zeros(W.size(1)));
+        }
+        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, W);
+        this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
 
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();

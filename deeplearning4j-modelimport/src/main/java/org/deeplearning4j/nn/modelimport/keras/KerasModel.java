@@ -372,14 +372,16 @@ public class KerasModel {
         List<InputType> inputTypeList = new ArrayList<InputType>();
         for (String inputLayerName : this.inputLayerNames)
             inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
-        InputType[] inputTypeArray = new InputType[inputTypeList.size()];
-        inputTypeList.toArray(inputTypeArray);
-        graphBuilder.setInputTypes(inputTypeArray);
+        InputType[] inputTypes = new InputType[inputTypeList.size()];
+        inputTypeList.toArray(inputTypes);
+        graphBuilder.setInputTypes(inputTypes);
 
         /* Build String array of output layer names, add to ComputationGraph. */
         String[] outputLayerNameArray = new String[this.outputLayerNames.size()];
         this.outputLayerNames.toArray(outputLayerNameArray);
         graphBuilder.setOutputs(outputLayerNameArray);
+
+        Map<String, InputPreProcessor> preprocessors = new HashMap<String, InputPreProcessor>();
 
         /* Add layersOrdered one at a time. */
         for (KerasLayer layer : this.layersOrdered) {
@@ -387,37 +389,42 @@ public class KerasModel {
             List<String> inboundLayerNames = layer.getInboundLayerNames();
             String[] inboundLayerNamesArray = new String[inboundLayerNames.size()];
             inboundLayerNames.toArray(inboundLayerNamesArray);
+
+            /* Get inbound InputTypes and InputPreProcessor, if necessary. */
+            List<InputType> inboundTypeList = new ArrayList<InputType>();
+            for (String layerName : inboundLayerNames)
+                inboundTypeList.add(this.outputTypes.get(layerName));
+            InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
+            inboundTypeList.toArray(inboundTypeArray);
+            InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
+
             if (layer.usesRegularization())
                 modelBuilder.setUseRegularization(true);
 
             if (layer.isLayer()) {
                 /* Add DL4J layer. */
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
                 /* Add DL4J vertex. */
+                if (preprocessor != null)
+                    preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getVertex() instanceof IOutputLayer))
                     log.warn("Model cannot be trained: output vertex " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
-            } else if (layer.isInputPreProcessor()){
-                /* Add DL4J preprocessor vertex. */
-                List<InputType> inboundTypeList = new ArrayList<InputType>();
-                for (String layerName : inboundLayerNames)
-                    inboundTypeList.add(this.outputTypes.get(layerName));
-                InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
-                inboundTypeList.toArray(inboundTypeArray);
-
-                /* Get InputPreProcessor type. */
-                InputPreProcessor preprocessor = layer.getInputPreprocessor(inputTypeArray);
+            } else if (layer.isInputPreProcessor()) {
                 if (preprocessor == null)
                     throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName() + " could not be mapped to Layer, Vertex, or InputPreProcessor");
                 graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor), inboundLayerNamesArray);
-
-                if (this.outputLayerNames.contains(layer.getLayerName()))
-                    log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
+
+            if (this.outputLayerNames.contains(layer.getLayerName()))
+                log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
         }
+        graphBuilder.setInputPreProcessors(preprocessors);
 
         /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
         if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
@@ -512,11 +519,15 @@ public class KerasModel {
             return this;
         }
 
-        public ModelBuilder modelHdf5Filename(String modelHdf5Filename) throws UnsupportedKerasConfigurationException {
+        public ModelBuilder modelHdf5Filename(String modelHdf5Filename)
+                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
             this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
             this.weightsRoot = HDF5_MODEL_WEIGHTS_ROOT;
+            if (!this.weightsArchive.hasAttribute(HDF5_MODEL_CONFIG_ATTRIBUTE))
+                throw new InvalidKerasConfigurationException("Model configuration attribute missing from " + modelHdf5Filename + " archive.");
             this.modelJson = this.weightsArchive.readAttributeAsJson(HDF5_MODEL_CONFIG_ATTRIBUTE);
-            this.trainingJson = this.weightsArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
+            if (this.trainingArchive.hasAttribute(HDF5_TRAINING_CONFIG_ATTRIBUTE))
+                this.trainingJson = this.trainingArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
             return this;
         }
 

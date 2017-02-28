@@ -355,7 +355,7 @@ public class WordVectorSerializerTest {
         iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
 
         vec2.setTokenizerFactory(t);
-        vec2.setSentenceIter(iter);
+        vec2.setSentenceIterator(iter);
 
         vec2.fit();
 
@@ -468,11 +468,11 @@ public class WordVectorSerializerTest {
         for (int i = 0; i < 100; i++) {
             VocabWord word = new VocabWord((float) i, "word_" + i);
             List<Integer> points = new ArrayList<>();
-            List<Integer> codes = new ArrayList<>();
+            List<Byte> codes = new ArrayList<>();
             int num = org.apache.commons.lang3.RandomUtils.nextInt(1,20);
             for (int x = 0; x < num; x++ ){
                 points.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
-                codes.add(org.apache.commons.lang3.RandomUtils.nextInt(1,100000));
+                codes.add(org.apache.commons.lang3.RandomUtils.nextBytes(10)[0]);
             }
             if (RandomUtils.nextInt(10) < 3) {
                 word.markAsLabel(true);
@@ -521,8 +521,8 @@ public class WordVectorSerializerTest {
                 assertEquals(originalPoints.get(x), restoredPoints.get(x));
             }
 
-            List<Integer> originalCodes = cache.elementAtIndex(i).getCodes();
-            List<Integer> restoredCodes = restoredVocab.elementAtIndex(i).getCodes();
+            List<Byte> originalCodes = cache.elementAtIndex(i).getCodes();
+            List<Byte> restoredCodes = restoredVocab.elementAtIndex(i).getCodes();
             assertEquals(originalCodes.size(), restoredCodes.size());
             for (int x = 0; x < originalCodes.size(); x++) {
                 assertEquals(originalCodes.get(x), restoredCodes.get(x));

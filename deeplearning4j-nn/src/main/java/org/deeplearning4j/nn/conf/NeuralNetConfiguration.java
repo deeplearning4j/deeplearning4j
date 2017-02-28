@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
@@ -246,6 +247,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 }
                 if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
                         "layer with index " + i + " is not defined)");
+
+                //Layer names: set to default, if not set
+                if( layerwise.get(i).getLayer().getLayerName() == null){
+                    layerwise.get(i).getLayer().setLayerName("layer" + i);
+                }
+
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
@@ -486,6 +493,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double lrScoreBasedDecay;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
+        protected double l1Bias = Double.NaN;
+        protected double l2Bias = Double.NaN;
         protected double dropOut = 0;
         protected Updater updater = Updater.SGD;
         protected double momentum = Double.NaN;
@@ -496,6 +505,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double adamMeanDecay = Double.NaN;
         protected double adamVarDecay = Double.NaN;
         protected Layer layer;
+        @Deprecated
         protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
         protected int numIterations = 1;
@@ -515,6 +525,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected boolean pretrain = false;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
+
+        public Builder() {
+            //
+        }
+
+        public Builder(NeuralNetConfiguration newConf) {
+            if (newConf != null) {
+                minimize = newConf.minimize;
+                maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
+                layer = newConf.layer;
+                numIterations = newConf.numIterations;
+                useRegularization = newConf.useRegularization;
+                optimizationAlgo = newConf.optimizationAlgo;
+                seed = newConf.seed;
+                stepFunction = newConf.stepFunction;
+                useDropConnect = newConf.useDropConnect;
+                miniBatch = newConf.miniBatch;
+                learningRatePolicy = newConf.learningRatePolicy;
+                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
+                lrPolicySteps = newConf.lrPolicySteps;
+                lrPolicyPower = newConf.lrPolicyPower;
+                pretrain = newConf.pretrain;
+            }
+        }
 
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
@@ -689,6 +723,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return activation(activation.getActivationFunction());
         }
 
+        /**
+         * @deprecated Use {@link #activation(IActivation)} with leaky relu, setting alpha value directly in constructor.
+         */
         @Deprecated
         public Builder leakyreluAlpha(double leakyreluAlpha) {
             this.leakyreluAlpha = leakyreluAlpha;
@@ -746,7 +783,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** L1 regularization coefficient.
+        /** L1 regularization coefficient for the weights.
          *  Use with .regularization(true)
          */
         public Builder l1(double l1) {
@@ -754,11 +791,27 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** L2 regularization coefficient
+        /** L2 regularization coefficient for the weights.
          * Use with .regularization(true)
          */
         public Builder l2(double l2) {
             this.l2 = l2;
+            return this;
+        }
+
+        /** L1 regularization coefficient for the bias.
+         *  Use with .regularization(true)
+         */
+        public Builder l1Bias(double l1Bias) {
+            this.l1Bias = l1Bias;
+            return this;
+        }
+
+        /** L2 regularization coefficient for the bias.
+         * Use with .regularization(true)
+         */
+        public Builder l2Bias(double l2Bias) {
+            this.l2Bias = l2Bias;
             return this;
         }
 
@@ -896,94 +949,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        // VALIDATION SECTION //
-        private void updaterValidation(String layerName){
-            if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn("Layer \"" + layerName + "\" momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
-            if ((momentumSchedule != null || layer.getMomentumSchedule() != null) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn("Layer \"" + layerName + "\" momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
-            if ((!Double.isNaN(adamVarDecay) || (!Double.isNaN(layer.getAdamVarDecay()))) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer \"" + layerName + "\" adamVarDecay is set but will not be applied unless the updater is set to Adam.");
-            if ((!Double.isNaN(adamMeanDecay) || !Double.isNaN(layer.getAdamMeanDecay())) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer \"" + layerName + "\" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
-            if ((!Double.isNaN(rho) || !Double.isNaN(layer.getRho())) && layer.getUpdater() != Updater.ADADELTA)
-                log.warn("Layer \"" + layerName + "\" rho is set but will not be applied unless the updater is set to ADADELTA.");
-            if ((!Double.isNaN(rmsDecay) || (!Double.isNaN(layer.getRmsDecay()))) && layer.getUpdater() != Updater.RMSPROP)
-                log.warn("Layer \"" + layerName + "\" rmsdecay is set but will not be applied unless the updater is set to RMSPROP.");
-
-            switch (layer.getUpdater()) {
-                case NESTEROVS:
-                    if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
-                        layer.setMomentum(Nesterovs.DEFAULT_NESTEROV_MOMENTUM);
-                        log.warn("Layer \"" + layerName + "\" momentum is automatically set to " + Nesterovs.DEFAULT_NESTEROV_MOMENTUM + ". Add momentum to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getMomentum()))
-                        layer.setMomentum(momentum);
-                    if (momentumSchedule != null && layer.getMomentumSchedule() == null)
-                        layer.setMomentumSchedule(momentumSchedule);
-                    else if (momentumSchedule == null && layer.getMomentumSchedule() == null)
-                        layer.setMomentumSchedule(new HashMap<Integer, Double>());
-                    break;
-                case ADAM:
-                    if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
-                        layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
-                        log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY + ". Add adamVarDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getAdamMeanDecay()))
-                        layer.setAdamMeanDecay(adamMeanDecay);
-
-                    if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
-                        layer.setAdamVarDecay(Adam.DEFAULT_ADAM_BETA2_VAR_DECAY);
-                        log.warn("Layer \"" + layerName + "\" adamVarDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA2_VAR_DECAY + ". Add adamVarDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getAdamVarDecay()))
-                        layer.setAdamVarDecay(adamVarDecay);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(Adam.DEFAULT_ADAM_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case ADADELTA:
-                    if (Double.isNaN(layer.getRho()))
-                        layer.setRho(rho);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
-                        log.warn("Layer \"" + layerName + "\" AdaDelta epsilon is automatically set to " + AdaDelta.DEFAULT_ADADELTA_EPSILON + ". Add epsilon to configuration to change the value.");
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case ADAGRAD:
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(AdaGrad.DEFAULT_ADAGRAD_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case RMSPROP:
-                    if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
-                        layer.setRmsDecay(RmsProp.DEFAULT_RMSPROP_RMSDECAY);
-                        log.warn("Layer \"" + layerName + "\" rmsDecay is automatically set to 0.95. Add rmsDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getRmsDecay()))
-                        layer.setRmsDecay(rmsDecay);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(RmsProp.DEFAULT_RMSPROP_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-
-                    break;
-
-
-            }
-
-        }
-
         private void learningRateValidation(String layerName){
             if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate) ) {
                 //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
@@ -1016,45 +981,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 throw new IllegalStateException("Layer \"" + layerName + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
 
         }
-
-        private void generalValidation(String layerName){
-            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-                log.warn("Layer \"" + layerName + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-            if(useDropConnect && dropOut == 0.0) log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
-            if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1())
-                    && Double.isNaN(l2) && Double.isNaN(layer.getL2())
-                    && (Double.isNaN(dropOut) || dropOut==0.0) && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
-                log.warn( "Layer \"" + layerName + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
-            // CompGraph may have null layers TODO confirm valid configuration
-            if (layer != null) {
-                if (useRegularization) {
-                    if (!Double.isNaN(l1) && Double.isNaN(layer.getL1()))
-                        layer.setL1(l1);
-                    if (!Double.isNaN(l2) && Double.isNaN(layer.getL2()))
-                        layer.setL2(l2);
-                } else if (!useRegularization &&
-                        ((!Double.isNaN(l1) && l1 > 0.0) ||
-                                (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
-                                (!Double.isNaN(l2) && l2 > 0.0) ||
-                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
-                    log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
-                if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
-                    layer.setL2(0.0);
-                if (Double.isNaN(l1) && Double.isNaN(layer.getL1()))
-                    layer.setL1(0.0);
-                if (layer.getWeightInit() == WeightInit.DISTRIBUTION) {
-                    if (dist != null && layer.getDist() == null)
-                        layer.setDist(dist);
-                    else if (dist == null && layer.getDist() == null) {
-                        layer.setDist(new NormalDistribution(0, 1));
-                        log.warn("Layer \"" + layerName + "\" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
-                    }
-                } else if ((dist != null || layer.getDist() != null))
-                    log.warn("Layer \"" + layerName + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
-            }
-
-        }
-
         ////////////////
 
         /**
@@ -1082,7 +1008,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.pretrain = pretrain;
             String layerName;
             if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
-            else layerName = "Layer " + layer.getLayerName() ;
+            else layerName = layer.getLayerName() ;
             learningRateValidation(layerName);
 
             if(layer != null ) {
@@ -1096,7 +1022,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null) layer.setUpdater(updater);
-                updaterValidation(layerName);
+//                updaterValidation(layerName);
+                LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay, adamVarDecay,
+                        rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))
                     layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
@@ -1113,7 +1041,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     }
                 }
             }
-            generalValidation(layerName);
+            LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
+                    l1, l1Bias, dist);
             return conf;
         }
 

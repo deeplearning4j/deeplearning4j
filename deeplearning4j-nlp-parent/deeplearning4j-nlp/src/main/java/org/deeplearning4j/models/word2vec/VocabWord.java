@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import lombok.NonNull;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,11 +54,17 @@ public  class VocabWord extends SequenceElement implements Serializable {
 	 * @param wordFrequency count of the word
 
 	 */
-	public VocabWord(double wordFrequency,String word) {
+	public VocabWord(double wordFrequency, @NonNull String word) {
 		if(word == null || word.isEmpty())
 			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
         this.elementFrequency.set(wordFrequency);
+        this.storageId = SequenceElement.getLongHash(word);
+	}
+
+	public VocabWord(double wordFrequency, @NonNull String word, long storageId) {
+		this(wordFrequency, word);
+		this.storageId = storageId;
 	}
 
 
