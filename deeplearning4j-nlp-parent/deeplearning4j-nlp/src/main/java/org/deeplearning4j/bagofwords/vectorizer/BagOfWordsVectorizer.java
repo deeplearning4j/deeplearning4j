@@ -116,8 +116,15 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         protected VocabCache<VocabWord> vocabCache;
         protected LabelsSource labelsSource = new LabelsSource();
         protected Collection<String> stopWords = new ArrayList<>();
+        protected boolean isParallel = true;
 
         public Builder() {
+        }
+
+
+        public Builder allowParallelTokenization(boolean reallyAllow) {
+            this.isParallel = reallyAllow;
+            return this;
         }
 
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -163,6 +170,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
             vectorizer.minWordFrequency = this.minWordFrequency;
             vectorizer.labelsSource = this.labelsSource;
             vectorizer.stopWords = this.stopWords;
+            vectorizer.isParallel = this.isParallel;
 
             if (this.vocabCache == null) {
                 this.vocabCache = new AbstractCache.Builder<VocabWord>().build();
