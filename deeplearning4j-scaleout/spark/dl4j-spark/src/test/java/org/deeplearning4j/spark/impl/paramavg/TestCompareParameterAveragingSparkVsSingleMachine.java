@@ -250,7 +250,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
                     if (!saveUpdater) net.setUpdater(null);
-                     net.fit(ds);
+                    net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
 
