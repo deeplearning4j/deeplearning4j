@@ -73,18 +73,18 @@ public class SparkListenable {
       for (IterationListener l : listeners) {
         if (l instanceof RoutingIterationListener) {
           RoutingIterationListener rl = (RoutingIterationListener) l;
-          if (statsStorage == null) {
+          if (statsStorage == null && rl.getStorageRouter() == null) {
             log.warn(
                 "RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
                 l);
-          } else if (!(rl.getStorageRouter() instanceof Serializable)) {
+          } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
             //Spark would throw a (probably cryptic) serialization exception later anyway...
             throw new IllegalStateException(
                 "RoutingIterationListener provided with non-serializable storage router "
                     + "\nRoutingIterationListener class: "
                     + rl.getClass().getName()
                     + "\nStatsStorageRouter class: "
-                    + statsStorage.getClass().getName());
+                    + rl.getStorageRouter().getClass().getName());
           }
 
           //Need to give workers a router provider...
