@@ -372,8 +372,8 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         return splits;
     }
 
-    private <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount) {
-        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
+    private <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount, int examplesPerDataSetObject) {
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(examplesPerDataSetObject);
 
         if (collectTrainingStats) stats.logSplitStart();
         JavaRDD<T>[] splits =
@@ -391,7 +391,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (storageLevel != null) trainingData.persist(storageLevel);
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingData);
-        JavaRDD<DataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount);
+        JavaRDD<DataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount, rddDataSetNumExamples);
 
         int splitNum = 1;
         for (JavaRDD<DataSet> split : splits) {
@@ -442,7 +442,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (storageLevelStreams != null) trainingDataPaths.persist(storageLevelStreams);
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingDataPaths);
-        JavaRDD<String>[] splits = getSplitRDDs(trainingDataPaths, (int) totalDataSetObjectCount);
+        JavaRDD<String>[] splits = getSplitRDDs(trainingDataPaths, (int) totalDataSetObjectCount, dataSetObjectsNumExamples);
 
         int splitNum = 1;
         for (JavaRDD<String> split : splits) {
@@ -483,7 +483,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingData);
 
-        JavaRDD<MultiDataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount);
+        JavaRDD<MultiDataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount, rddDataSetNumExamples);
 
         int splitNum = 1;
         for (JavaRDD<MultiDataSet> split : splits) {
@@ -551,7 +551,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         if (collectTrainingStats) stats.logFitStart();
         if (storageLevelStreams != null) trainingDataPaths.persist(storageLevelStreams);
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingDataPaths);
-        JavaRDD<String>[] splits = getSplitRDDs(trainingDataPaths, (int) totalDataSetObjectCount);
+        JavaRDD<String>[] splits = getSplitRDDs(trainingDataPaths, (int) totalDataSetObjectCount, rddDataSetNumExamples);
 
         int splitNum = 1;
         for (JavaRDD<String> split : splits) {
@@ -574,7 +574,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingMultiDataPaths);
 
-        JavaRDD<String>[] splits = getSplitRDDs(trainingMultiDataPaths, (int) totalDataSetObjectCount);
+        JavaRDD<String>[] splits = getSplitRDDs(trainingMultiDataPaths, (int) totalDataSetObjectCount, dataSetObjectsNumExamples);
 
         int splitNum = 1;
         for (JavaRDD<String> split : splits) {
