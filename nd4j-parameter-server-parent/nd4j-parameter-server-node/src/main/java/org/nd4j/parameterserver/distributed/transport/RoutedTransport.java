@@ -172,7 +172,7 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-        //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+//        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
@@ -192,7 +192,7 @@ public class RoutedTransport extends BaseTransport {
             long retr = 0;
             boolean delivered = false;
 
-            long address = StringUtils.getLongHash(getIp() + ":" + getPort());
+            long address = StringUtils.getLongHash(rc.getIp() + ":" + rc.getPort());
             if (originatorId == address) {
                 // this is local delivery
                 try {
@@ -203,6 +203,7 @@ public class RoutedTransport extends BaseTransport {
                 return;
             }
 
+      //      log.info("Trying to send [{}] to {}", message.getClass().getSimpleName(), address);
             while (!delivered) {
                 synchronized (rc.locker) {
                     res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));
@@ -263,13 +264,14 @@ public class RoutedTransport extends BaseTransport {
 
         RetransmissionHandler.TransmissionStatus result;
 
-        //log.info("sI_{} trying to send back {}", shardIndex, message.getClass().getSimpleName());
+        //log.info("sI_{} trying to send back {}/{}", shardIndex, targetAddress, message.getClass().getSimpleName());
 
         RemoteConnection connection = clients.get(targetAddress);
         boolean delivered = false;
 
         if (connection == null) {
             log.info("Can't get client with address [{}]", targetAddress);
+            log.info("Known clients: {}", clients.keySet());
             throw new RuntimeException();
         }
 
@@ -498,8 +500,9 @@ public class RoutedTransport extends BaseTransport {
                         .locker(new Object()).activated(new AtomicBoolean(false)).build();
 
 
-        log.info("sI_{}: Adding connection: [{}] to {}:{}", shardIndex, hash, ip, port);
+        log.info("sI_{} {}: Adding connection: [{}] to {}:{}", shardIndex, nodeRole, hash, ip, port);
         this.clients.put(hash, connection);
+        log.info("sI_{} {}: Known clients: {}", shardIndex, nodeRole, clients.keySet());
     }
 
 

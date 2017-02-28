@@ -341,9 +341,10 @@ public class VoidParameterServer {
             log.info("Shutting down transport...");
 
             // we just sending out ShutdownRequestMessage
-            transport.sendMessage(new ShutdownRequestMessage());
+//            transport.sendMessage(new ShutdownRequestMessage());
 
             executor.shutdown();
+
         }
     }
 

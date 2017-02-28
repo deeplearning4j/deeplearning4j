@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.distributed.transport;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -20,6 +21,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class RoutedTransportTest {
     @Before
     public void setUp() throws Exception {

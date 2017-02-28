@@ -285,7 +285,7 @@ public abstract class BaseTransport implements Transport {
     @Override
     public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp,
                     int localPort, short shardIndex) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownSilent()));
+        //Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdownSilent()));
     }
 
     /**

@@ -42,7 +42,6 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
-@Ignore
 public class VoidParameterServerStressTest {
     private static final int NUM_WORDS = 100000;
 
@@ -60,6 +59,7 @@ public class VoidParameterServerStressTest {
      * This test measures performance of blocking messages processing, VectorRequestMessage in this case
      */
     @Test
+    @Ignore
     public void testPerformanceStandalone1() {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -120,6 +120,7 @@ public class VoidParameterServerStressTest {
      * This test measures performance of non-blocking messages processing, SkipGramRequestMessage in this case
      */
     @Test
+    @Ignore
     public void testPerformanceStandalone2() {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -180,6 +181,7 @@ public class VoidParameterServerStressTest {
 
 
     @Test
+    @Ignore
     public void testPerformanceMulticast1() throws Exception {
         VoidConfiguration voidConfiguration =
                         VoidConfiguration.builder().networkMask("192.168.0.0/16").numberOfShards(1).build();
@@ -276,7 +278,7 @@ public class VoidParameterServerStressTest {
     @Test
     public void testPerformanceUnicast1() {
         List<String> list = new ArrayList<>();
-        for (int t = 0; t < 5; t++) {
+        for (int t = 0; t < 1; t++) {
             list.add("127.0.0.1:3838" + t);
         }
 
@@ -297,7 +299,7 @@ public class VoidParameterServerStressTest {
             assertEquals(NodeRole.SHARD, shards[t].getNodeRole());
         }
 
-        VoidParameterServer clientNode = new VoidParameterServer();
+        VoidParameterServer clientNode = new VoidParameterServer(NodeRole.CLIENT);
         RoutedTransport transport = new RoutedTransport();
         ClientRouter router = new InterleavedRouter(0);
 
@@ -370,6 +372,7 @@ public class VoidParameterServerStressTest {
      * Here we send non-blocking messages
      */
     @Test
+    @Ignore
     public void testPerformanceUnicast2() {
         List<String> list = new ArrayList<>();
         for (int t = 0; t < 5; t++) {
@@ -546,7 +549,7 @@ public class VoidParameterServerStressTest {
             threads[t] = new Thread(() -> {
                 List<Long> results = new ArrayList<>();
                 AtomicLong sequence = new AtomicLong(0);
-                for (int i = 0; i < 20000; i++) {
+                for (int i = 0; i < 500; i++) {
                     Frame<SkipGramRequestMessage> frame = new Frame<>(sequence.incrementAndGet());
                     for (int f = 0; f < 128; f++) {
                         frame.stackMessage(getSGRM());
