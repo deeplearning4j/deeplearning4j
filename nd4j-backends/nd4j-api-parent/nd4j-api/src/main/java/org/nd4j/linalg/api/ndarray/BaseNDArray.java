@@ -811,6 +811,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (dimension[i] < 0)
                 dimension[i] += rank();
 
+        //dedup
+        dimension = Ints.toArray(new ArrayList<>(new TreeSet<>(Ints.asList(dimension))));
+
         if (dimension.length > 1) {
             Arrays.sort(dimension);
         }
@@ -3429,24 +3432,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     /**
      * Replicate and tile array to fill out to the given shape
-     *
+     * See:
+     * https://github.com/numpy/numpy/blob/master/numpy/matlib.py#L310-L358
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
     @Override
     public INDArray repmat(int[] shape) {
-        INDArray ret = create(shape);
-        INDArray linear = ret;
-        INDArray thisLinear = this;
-        int bufferIdx = 0;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, thisLinear.getDouble(bufferIdx));
-            bufferIdx++;
-            if (bufferIdx >= length())
-                bufferIdx = 0;
-        }
-
-        return ret;
+       int  rows = rows() * shape[0];
+       int  cols = columns() * shape[1];
+        INDArray ret  = reshape(1, length()).repeat(0,shape[0]).reshape(rows, columns()).repeat(0,shape[1]);
+        return ret.reshape(rows,cols);
     }
 
     @Override

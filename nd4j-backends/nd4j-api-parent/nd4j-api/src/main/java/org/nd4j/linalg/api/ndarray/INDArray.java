@@ -96,7 +96,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns the rank of the ndarray (the number of dimensions).
-     * 
+     *
      * @return the rank for the ndarray.
      */
     int rank();
@@ -265,22 +265,22 @@ public interface INDArray extends Serializable {
     INDArray assign(INDArray arr);
 
     /**
-    * Assign all elements from given ndarray that are matching given condition,
-    * ndarray to this ndarray
-    *
-    * @param arr the elements to assign
-    * @return this
-    */
+     * Assign all elements from given ndarray that are matching given condition,
+     * ndarray to this ndarray
+     *
+     * @param arr the elements to assign
+     * @return this
+     */
     INDArray assignIf(INDArray arr, Condition condition);
 
 
     /**
-    * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
+     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
      *
-    * @param arr
-    * @param condition
-    * @return
-    */
+     * @param arr
+     * @param condition
+     * @return
+     */
     INDArray replaceWhere(INDArray arr, Condition condition);
 
 
@@ -428,35 +428,35 @@ public interface INDArray extends Serializable {
     INDArray gt(Number other);
 
     /**
-    * Returns binary ndarray for "Greter or equals" comparison.
-    *
-    * @param other the number to compare.
-    * @return binary ndarray for "Greter or equals" comparison.
-    */
+     * Returns binary ndarray for "Greter or equals" comparison.
+     *
+     * @param other the number to compare.
+     * @return binary ndarray for "Greter or equals" comparison.
+     */
     INDArray gte(Number other);
 
     /**
-    * Returns the binary ndarray for "Less or equals" comparison.
-    *
-    * @param other the number to compare.
-    * @return the binary ndarray for "Less or equals" comparison.
-    */
+     * Returns the binary ndarray for "Less or equals" comparison.
+     *
+     * @param other the number to compare.
+     * @return the binary ndarray for "Less or equals" comparison.
+     */
     INDArray lte(Number other);
 
     /**
-    * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
-    *
-    * @param other the number to compare.
-    * @return this object.
-    */
+     * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
+     *
+     * @param other the number to compare.
+     * @return this object.
+     */
     INDArray gtei(Number other);
 
     /**
-    * Returns the binary ndarray for "Less or equals" comparison. In-place method.
-    *
-    * @param other the number to compare.
-    * @return this object.
-    */
+     * Returns the binary ndarray for "Less or equals" comparison. In-place method.
+     *
+     * @param other the number to compare.
+     * @return this object.
+     */
     INDArray ltei(Number other);
 
     /**
@@ -503,7 +503,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns the binary ndarray for "Not equals" comparison.
-     * 
+     *
      * @param other the number to compare.
      * @return the binary ndarray for "Not equals" comparison.
      */
@@ -511,7 +511,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     * 
+     *
      * @param other the number to compare.
      * @return this object.
      */
@@ -519,7 +519,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns the binary ndarray for "Not equals" comparison.
-     * 
+     *
      * @param other the ndarray to compare.
      * @return the binary ndarray for "Not equals" comparison.
      */
@@ -527,7 +527,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     * 
+     *
      * @param other the ndarray to compare.
      * @return this object.
      */
@@ -1765,7 +1765,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Returns a copy of this ndarray, where the returned ndarray has the specified order
-     * 
+     *
      * @param order order of the NDArray. 'f' or 'c'
      * @return copy of ndarray with specified order
      */
@@ -1938,9 +1938,9 @@ public interface INDArray extends Serializable {
      * http://deeplearning.net/software/theano/library/tensor/basic.html
      *
      *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of ‘x’ characters in dimensions where this tensor should be broadcasted.
-    
+
      A few examples of patterns and their effect:
-    
+
      (‘x’) -> make a 0d (scalar) into a 1d vector
      (0, 1) -> identity for 2d vectors
      (1, 0) -> inverts the first and second dimensions
@@ -1950,7 +1950,7 @@ public interface INDArray extends Serializable {
      (0, ‘x’, 1) -> AxB to Ax1xB
      (1, ‘x’, 0) -> AxB to Bx1xA
      (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
-    
+
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
@@ -2289,38 +2289,96 @@ public interface INDArray extends Serializable {
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
     /**
-    * This method checks 2 INDArrays equality with given eps
-    *
-    * @param o
-    * @param eps
-    * @return
-    */
+     * This method checks 2 INDArrays equality with given eps
+     *
+     * @param o
+     * @param eps
+     * @return
+     */
     boolean equalsWithEps(Object o, double eps);
 
     INDArray unsafeDuplication();
 
-
+    /**
+     * Remainder operator
+     * @param denominator the denominator
+     * @return
+     */
     INDArray remainder(INDArray denominator);
 
+    /**
+     * Remainder operator
+     * @param denominator the denominator
+     * @param result the result array to put this in
+     * @return
+     */
     INDArray remainder(INDArray denominator, INDArray result);
 
+    /**
+     * The scalar denominator
+     * @param denominator the denominator as a scalar
+     * @return
+     */
     INDArray remainder(Number denominator);
 
+    /**
+     *
+     * @param denominator
+     * @param result
+     * @return
+     */
     INDArray remainder(Number denominator, INDArray result);
 
+    /**
+     * In place remainder
+     * @param denominator
+     * @return
+     */
     INDArray remainderi(INDArray denominator);
 
+    /**
+     * In place remainder
+     * @param denominator
+     * @return
+     */
     INDArray remainderi(Number denominator);
 
+    /**
+     * remainder of division
+     * @param denominator the array of denominators for each element
+     *                    in this array
+     * @return
+     */
     INDArray fmod(INDArray denominator);
 
+    /**
+     *  remainder of division
+     * @param denominator the
+     * @param result the result array
+     * @return
+     */
     INDArray fmod(INDArray denominator, INDArray result);
 
+    /**
+     *
+     * @param denominator
+     * @return
+     */
     INDArray fmod(Number denominator);
 
-    public INDArray fmod(Number denominator, INDArray result);
+    INDArray fmod(Number denominator, INDArray result);
 
+    /**
+     * In place fmod
+     * @param denominator
+     * @return
+     */
     INDArray fmodi(INDArray denominator);
 
+    /**
+     * In place fmod
+     * @param denominator
+     * @return
+     */
     INDArray fmodi(Number denominator);
 }
