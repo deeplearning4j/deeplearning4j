@@ -52,7 +52,7 @@ public class TestKryoWarning {
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).build();
 
-            SparkComputationGraph scg = new SparkComputationGraph(sc, conf, tm);
+            SparkListenable scg = new SparkComputationGraph(sc, conf, tm);
         } finally {
             sc.stop();
         }
