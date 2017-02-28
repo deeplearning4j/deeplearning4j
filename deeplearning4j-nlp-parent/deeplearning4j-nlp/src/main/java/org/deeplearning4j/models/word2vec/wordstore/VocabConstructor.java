@@ -538,7 +538,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 if (fetchLabels && document.getSequenceLabels() != null) {
                     for (T labelWord: document.getSequenceLabels()) {
-                        if (targetVocab.hasToken(labelWord.getLabel())) {
+                        if (!targetVocab.hasToken(labelWord.getLabel())) {
                             labelWord.setSpecial(true);
                             labelWord.markAsLabel(true);
                             labelWord.setElementFrequency(1);
