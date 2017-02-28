@@ -322,7 +322,7 @@ public class Word2VecTests {
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         vec.setTokenizerFactory(t);
-        vec.setSentenceIter(iter);
+        vec.setSentenceIterator(iter);
         vec.getConfiguration().setUseHierarchicSoftmax(false);
         vec.getConfiguration().setNegative(5.0);
         vec.setElementsLearningAlgorithm(new CBOW<VocabWord>());
@@ -375,7 +375,7 @@ public class Word2VecTests {
 
         Word2Vec restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, true);
         restoredVec.setTokenizerFactory(t);
-        restoredVec.setSentenceIter(iter);
+        restoredVec.setSentenceIterator(iter);
 
         assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
         assertTrue(restoredVec.getModelUtils() instanceof FlatModelUtils);
@@ -388,7 +388,7 @@ public class Word2VecTests {
         iter.reset();
         restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, false);
         restoredVec.setTokenizerFactory(t);
-        restoredVec.setSentenceIter(iter);
+        restoredVec.setSentenceIterator(iter);
 
         assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
         assertTrue(restoredVec.getModelUtils() instanceof BasicModelUtils);
