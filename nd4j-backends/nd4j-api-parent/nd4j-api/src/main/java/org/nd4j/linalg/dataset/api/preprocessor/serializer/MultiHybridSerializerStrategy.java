@@ -16,37 +16,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Utility class for saving and restoring {@link MultiNormalizerHybrid} instances in single binary files
+ * Strategy for saving and restoring {@link MultiNormalizerHybrid} instances in single binary files
  *
  * @author Ede Meijer
  */
-public class MultiNormalizerHybridSerializer {
-    /**
-     * Serialize a MultiNormalizerHybrid to the given file
-     *
-     * @param normalizer the normalizer
-     * @param file       the destination file
-     * @throws IOException
-     */
-    public static void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull File file) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            write(normalizer, out);
-        }
-    }
-
-    /**
-     * Serialize a MultiNormalizerHybrid to the given file path
-     *
-     * @param normalizer the normalizer
-     * @param path       the destination file path
-     * @throws IOException
-     */
-    public static void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull String path) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(path))) {
-            write(normalizer, out);
-        }
-    }
-
+public class MultiHybridSerializerStrategy implements NormalizerSerializerStrategy<MultiNormalizerHybrid> {
     /**
      * Serialize a MultiNormalizerHybrid to a output stream
      *
@@ -54,7 +28,7 @@ public class MultiNormalizerHybridSerializer {
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public static void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream)
+    public void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream)
                     throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             writeStatsMap(normalizer.getInputStats(), dos);
@@ -67,24 +41,29 @@ public class MultiNormalizerHybridSerializer {
     }
 
     /**
-     * Restore a MultiNormalizerHybrid that was previously serialized to the given file
+     * Restore a MultiNormalizerHybrid that was previously serialized by this strategy
      *
-     * @param file the file to restore from
+     * @param stream the input stream to restore from
      * @return the restored MultiNormalizerStandardize
      * @throws IOException
      */
-    public static MultiNormalizerHybrid restore(@NonNull File file) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file); DataInputStream dis = new DataInputStream(fis)) {
-            MultiNormalizerHybrid result = new MultiNormalizerHybrid();
-            result.setInputStats(readStatsMap(dis));
-            result.setOutputStats(readStatsMap(dis));
-            result.setGlobalInputStrategy(readStrategy(dis));
-            result.setGlobalOutputStrategy(readStrategy(dis));
-            result.setPerInputStrategies(readStrategyMap(dis));
-            result.setPerOutputStrategies(readStrategyMap(dis));
+    public MultiNormalizerHybrid restore(@NonNull InputStream stream) throws IOException {
+        DataInputStream dis = new DataInputStream(stream);
 
-            return result;
-        }
+        MultiNormalizerHybrid result = new MultiNormalizerHybrid();
+        result.setInputStats(readStatsMap(dis));
+        result.setOutputStats(readStatsMap(dis));
+        result.setGlobalInputStrategy(readStrategy(dis));
+        result.setGlobalOutputStrategy(readStrategy(dis));
+        result.setPerInputStrategies(readStrategyMap(dis));
+        result.setPerOutputStrategies(readStrategyMap(dis));
+
+        return result;
+    }
+
+    @Override
+    public NormalizerType getSupportedType() {
+        return NormalizerType.MULTI_HYBRID;
     }
 
     private static void writeStatsMap(Map<Integer, NormalizerStats> statsMap, DataOutputStream dos) throws IOException {
