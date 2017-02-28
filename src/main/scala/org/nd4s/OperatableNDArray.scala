@@ -91,6 +91,9 @@ trait OperatableNDArray[A <: INDArray] {
 
   def /=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.divi(underlying,that)
 
+  def %=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.remainderi(underlying,that)
+
+
   /** right division ... is this the correct symbol? */
   def \=(that: Number)(implicit ev:NDArrayEvidence[A,_]): A = ev.rdivi(underlying,that)
 
@@ -127,7 +130,7 @@ trait OperatableNDArray[A <: INDArray] {
 
   def sumT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.sum(underlying)
 
-  def meanT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.sum(underlying)
+  def meanT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.mean(underlying)
 
   def normMaxT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.normMax(underlying)
 

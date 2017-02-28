@@ -2,7 +2,7 @@ lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
 
 lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8"),
+  crossScalaVersions := Seq("2.10.6", "2.11.8","2.12.0"),
   name := "nd4s",
   version := "0.7.3-SNAPSHOT",
   organization := "org.nd4j",

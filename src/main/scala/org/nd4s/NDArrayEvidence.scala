@@ -1,6 +1,5 @@
 package org.nd4s
 
-import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.indexing.INDArrayIndex
 import org.nd4s.Implicits._
@@ -8,16 +7,16 @@ import org.nd4s.Implicits._
 object Evidences {
   implicit val double = DoubleNDArrayEvidence
   implicit val float = FloatNDArrayEvidence
-  implicit val complex = ComplexNDArrayEvidence
 }
 
 object NDArrayEvidence {
   implicit val doubleNDArrayEvidence = DoubleNDArrayEvidence
 
-  implicit val complexNDArrayEvidence = ComplexNDArrayEvidence
 }
 
 trait NDArrayEvidence[NDArray <: INDArray, Value] {
+
+
 
   def sum(ndarray: NDArray): Value
 
@@ -39,6 +38,8 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 
   def variance(ndarray: NDArray): Value
 
+  def remainder(a : NDArray,that : INDArray) : NDArray
+
   def add(a: NDArray, that: INDArray): NDArray
 
   def sub(a: NDArray, that: INDArray): NDArray
@@ -51,6 +52,7 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 
   def rdiv(a: NDArray, that: INDArray): NDArray
 
+
   def addi(a: NDArray, that: INDArray): NDArray
 
   def subi(a: NDArray, that: INDArray): NDArray
@@ -59,9 +61,14 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 
   def mmuli(a: NDArray, that: INDArray): NDArray
 
+  def remainderi(a : NDArray, that : INDArray) : NDArray
+
   def divi(a: NDArray, that: INDArray): NDArray
 
   def rdivi(a: NDArray, that: INDArray): NDArray
+
+  def remainder(a: NDArray, that: Number): NDArray
+
 
   def add(a: NDArray, that: Number): NDArray
 
@@ -117,6 +124,10 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 }
 
 trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
+
+  override def remainder(a: INDArray, that: INDArray): INDArray = a.remainder(that)
+
+
   override def add(a: INDArray, that: INDArray): INDArray = a.add(that)
 
   override def div(a: INDArray, that: INDArray): INDArray = a.div(that)
@@ -137,9 +148,15 @@ trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
 
   override def mmuli(a: INDArray, that: INDArray): INDArray = a.mmuli(that)
 
+
+  override def remainderi(a: INDArray, that: INDArray): INDArray = a.remainderi(that)
+
   override def divi(a: INDArray, that: INDArray): INDArray = a.divi(that)
 
   override def rdivi(a: INDArray, that: INDArray): INDArray = a.rdivi(that)
+
+  override def remainder(a: INDArray, that: Number): INDArray = a.remainder(that)
+
 
   override def add(a: INDArray, that: Number): INDArray = a.add(that)
 
@@ -233,6 +250,8 @@ case object DoubleNDArrayEvidence extends RealNDArrayEvidence[Double] {
   override def greaterThan(left: Double, right: Double): Boolean = left > right
 
   override def lessThan(left: Double, right: Double): Boolean = left < right
+
+
 }
 
 case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
@@ -286,118 +305,3 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
   override def lessThan(left: Float, right: Float): Boolean = left < right
 }
 
-case object ComplexNDArrayEvidence extends NDArrayEvidence[IComplexNDArray, IComplexNumber] {
-  override def sum(ndarray: IComplexNDArray): IComplexNumber = ndarray.sumComplex()
-
-  override def mean(ndarray: IComplexNDArray): IComplexNumber = ndarray.meanComplex()
-
-  override def variance(ndarray: IComplexNDArray): IComplexNumber = ndarray.varComplex()
-
-  override def norm2(ndarray: IComplexNDArray): IComplexNumber = ndarray.norm2Complex()
-
-  override def max(ndarray: IComplexNDArray): IComplexNumber = ndarray.maxComplex()
-
-  override def product(ndarray: IComplexNDArray): IComplexNumber = ndarray.prodComplex()
-
-  override def standardDeviation(ndarray: IComplexNDArray): IComplexNumber = ndarray.stdComplex()
-
-  override def normMax(ndarray: IComplexNDArray): IComplexNumber = ndarray.normmaxComplex()
-
-  override def min(ndarray: IComplexNDArray): IComplexNumber = ndarray.minComplex()
-
-  override def norm1(ndarray: IComplexNDArray): IComplexNumber = ndarray.norm1Complex()
-
-  override def add(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.add(that)
-
-  override def div(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.div(that)
-
-  override def mul(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.mul(that)
-
-  override def rdiv(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.rdiv(that)
-
-  override def sub(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.sub(that)
-
-  override def mmul(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.mmul(that)
-
-  override def addi(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.addi(that)
-
-  override def div(a: IComplexNDArray, that: Number): IComplexNDArray = a.div(that)
-
-  override def addi(a: IComplexNDArray, that: Number): IComplexNDArray = a.addi(that)
-
-  override def mul(a: IComplexNDArray, that: Number): IComplexNDArray = a.mul(that)
-
-  override def rdivi(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.rdivi(that)
-
-  override def rdivi(a: IComplexNDArray, that: Number): IComplexNDArray = a.rdivi(that)
-
-  override def divi(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.divi(that)
-
-  override def divi(a: IComplexNDArray, that: Number): IComplexNDArray = a.divi(that)
-
-  override def rdiv(a: IComplexNDArray, that: Number): IComplexNDArray = a.rdiv(that)
-
-  override def muli(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.muli(that)
-
-  override def muli(a: IComplexNDArray, that: Number): IComplexNDArray = a.muli(that)
-
-  override def sub(a: IComplexNDArray, that: Number): IComplexNDArray = a.sub(that)
-
-  override def subi(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.subi(that)
-
-  override def subi(a: IComplexNDArray, that: Number): IComplexNDArray = a.subi(that)
-
-  override def add(a: IComplexNDArray, that: Number): IComplexNDArray = a.add(that)
-
-  override def mmuli(a: IComplexNDArray, that: INDArray): IComplexNDArray = a.mmuli(that)
-
-  override def get(a: IComplexNDArray, i: Int): IComplexNumber = a.getComplex(i)
-
-  override def get(a: IComplexNDArray, i: Int, j: Int): IComplexNumber = a.getComplex(i, j)
-
-  override def get(a: IComplexNDArray, i: Int*): IComplexNumber = a.getComplex(i: _*)
-
-  override def get(a: IComplexNDArray, i: INDArrayIndex*): IComplexNDArray = a.get(i: _*)
-
-  override def put(a: IComplexNDArray, i: Int, element: INDArray): IComplexNDArray = a.put(i, element)
-
-  override def put(a: IComplexNDArray, i: Array[Int], element: INDArray): IComplexNDArray = a.put(i, element)
-
-  override def reshape(a: IComplexNDArray, i: Int*): IComplexNDArray = a.reshape(i: _*)
-
-  override def linearView(a: IComplexNDArray): IComplexNDArray = a.linearView()
-
-  override def dup(a: IComplexNDArray): IComplexNDArray = a.dup()
-
-  override def create(arr: Array[IComplexNumber]): IComplexNDArray = arr.toNDArray
-
-  override def create(arr: Array[IComplexNumber], shape: Int*):IComplexNDArray = arr.asNDArray(shape: _*)
-
-  override def create(arr: Array[IComplexNumber], shape: Array[Int], ordering: NDOrdering, offset: Int): IComplexNDArray = arr.mkNDArray(shape, ordering, offset)
-
-  def update(underlying:IComplexNDArray, ir:Array[IndexRange],num:IComplexNumber):IComplexNDArray = {
-    val u = underlying.asInstanceOf[IComplexNDArray]
-    if(ir.exists(_.hasNegative))
-      underlying.indicesFrom(ir: _*).indices.foreach { i =>
-        u.putScalar(i, num)
-      }
-    else
-      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
-    u
-  }
-
-  override def update(underlying: IComplexNDArray, ir: Array[IndexRange], num: IComplexNDArray): IComplexNDArray = {
-    import Implicits._
-    if (ir.exists(_.hasNegative))
-      underlying.indicesFrom(ir: _*).indices.foreach { i =>
-        underlying.put(i, num)
-      }
-    else
-      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
-    underlying
-  }
-
-  override def greaterThan(left: IComplexNumber, right: IComplexNumber): Boolean = left.absoluteValue().doubleValue() > right.absoluteValue().doubleValue()
-
-  override def lessThan(left: IComplexNumber, right: IComplexNumber): Boolean = left.absoluteValue().doubleValue() < right.absoluteValue().doubleValue()
-}

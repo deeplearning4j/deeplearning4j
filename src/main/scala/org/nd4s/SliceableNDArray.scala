@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 import _root_.scala.annotation.tailrec
 
-trait SliceableNDArray [A <: INDArray]{
+trait SliceableNDArray [A <: INDArray] {
   lazy val log = LoggerFactory.getLogger(classOf[SliceableNDArray[A]])
   val underlying:A
 
