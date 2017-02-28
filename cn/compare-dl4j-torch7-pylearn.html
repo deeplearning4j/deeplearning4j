@@ -105,7 +105,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <br />
 
 <p><h3><a name="caffe">Caffe</a></h3></p>
-<p><a href="http://caffe.berkeleyvision.org/" target="_blank"><strong>Caffe</strong></a>是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（<a href="https://sites.google.com/site/steveyegge2/google-at-delphi" target="_blank">参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡</a>）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。</p>
+<p><a href="http://caffe.berkeleyvision.org/" target="_blank"><strong>Caffe</strong></a> 是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（<a href="https://sites.google.com/site/steveyegge2/google-at-delphi" target="_blank">参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡</a>）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。</p>
 <p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预定型的模型。Deeplearning4j正在开发将Caffe模型导入Spark的<a href="https://github.com/deeplearning4j/deeplearning4j/pull/480" target="_blank">开发解析器</a>。 </p>
 <br />
 <p><h4>利与弊:</h4></p>
@@ -146,10 +146,10 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 
 <p><h3><a name="keras">Keras</a></h3></p>
 <p><a href="https://github.com/fchollet/keras" target="_blank"><strong>Keras</strong></a> 是一个基于Theano和TensorFlow的深度学习库，具有一个受Torch启发、较为直观的API。这可能是目前最好的Python API。Deeplearning4j<a href="keras" target="_blank">可以导入Keras模型</a>。Keras是由谷歌软件工程师<a href="https://twitter.com/fchollet" target="_blank">Francois Chollet</a>开发的。</p>
-<span class="label label-success">+</span>受Torch启发的直观API <br />
-<span class="label label-success">+</span>可使用Theano、TensorFlow和Deeplearning4j后端（即将推出CNTK后端） <br />
-<span class="label label-success">+</span>该框架正快速成长 <br />
-<span class="label label-success">+</span>有可能成为用于开发神经网络的标准Python API <br />
+<span class="label label-success">+</span> 受Torch启发的直观API <br />
+<span class="label label-success">+</span> 可使用Theano、TensorFlow和Deeplearning4j后端（即将推出CNTK后端） <br />
+<span class="label label-success">+</span> 该框架正快速成长 <br />
+<span class="label label-success">+</span> 有可能成为用于开发神经网络的标准Python API <br />
 <br>
 
 <p><h3><a name="mxnet">MxNet</a></h3></p>
