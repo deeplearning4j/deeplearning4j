@@ -11,15 +11,15 @@ import java.time.LocalTime;
  */
 public class TimeNotEqualTo extends ColumnFilter {
 
-  LocalTime value;
+    LocalTime value;
 
-  public TimeNotEqualTo(ColumnReference reference, LocalTime value) {
-    super(reference);
-    this.value = value;
-  }
+    public TimeNotEqualTo(ColumnReference reference, LocalTime value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    TimeColumn dateColumn = (TimeColumn) relation.column(columnReference.getColumnName());
-    return dateColumn.isNotEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        TimeColumn dateColumn = (TimeColumn) relation.column(columnReference.getColumnName());
+        return dateColumn.isNotEqualTo(value);
+    }
 }

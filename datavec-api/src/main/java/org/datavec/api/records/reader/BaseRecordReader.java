@@ -30,7 +30,7 @@ public abstract class BaseRecordReader implements RecordReader {
 
     /** Invokes {@link RecordListener#recordRead(RecordReader, Object)} on all listeners. */
     protected void invokeListeners(Object record) {
-        for(RecordListener listener : listeners) {
+        for (RecordListener listener : listeners) {
             listener.recordRead(this, record);
         }
     }
@@ -42,7 +42,7 @@ public abstract class BaseRecordReader implements RecordReader {
 
     @Override
     public void setListeners(Collection<RecordListener> listeners) {
-        this.listeners = (listeners instanceof List ? (List<RecordListener>)listeners : new ArrayList<>(listeners));
+        this.listeners = (listeners instanceof List ? (List<RecordListener>) listeners : new ArrayList<>(listeners));
     }
 
     @Override

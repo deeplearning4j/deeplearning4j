@@ -37,7 +37,7 @@ public class ImageInputFormat extends BaseInputFormat {
 
     @Override
     public RecordReader createReader(InputSplit split) throws IOException, InterruptedException {
-        return createReader(split,new Configuration());
+        return createReader(split, new Configuration());
     }
 
 }

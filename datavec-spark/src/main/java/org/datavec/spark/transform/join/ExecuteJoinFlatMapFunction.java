@@ -28,7 +28,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteJoinFlatMapFunction extends BaseFlatMapFunctionAdaptee<Tuple2<List<Writable>,Iterable<JoinValue>>, List<Writable>> {
+public class ExecuteJoinFlatMapFunction
+                extends BaseFlatMapFunctionAdaptee<Tuple2<List<Writable>, Iterable<JoinValue>>, List<Writable>> {
 
     public ExecuteJoinFlatMapFunction(Join join) {
         super(new ExecuteJoinFlatMapFunctionAdapter(join));

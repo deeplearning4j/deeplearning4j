@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Kurtosis extends SummaryFunction {
 
-  public Kurtosis(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Kurtosis(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.kurtosis;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.kurtosis;
+    }
 }

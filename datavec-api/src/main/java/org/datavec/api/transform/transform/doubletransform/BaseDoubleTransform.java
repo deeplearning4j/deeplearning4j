@@ -33,20 +33,20 @@ import java.util.List;
 @Data
 public abstract class BaseDoubleTransform extends BaseColumnTransform {
 
-    public BaseDoubleTransform(String column){
+    public BaseDoubleTransform(String column) {
         super(column);
     }
 
     public abstract Writable map(Writable writable);
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnMeta){
-        if(oldColumnMeta instanceof DoubleMetaData){
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnMeta) {
+        if (oldColumnMeta instanceof DoubleMetaData) {
             ColumnMetaData meta = oldColumnMeta.clone();
             meta.setName(newColumnName);
             return meta;
-        }
-        else return new DoubleMetaData(newColumnName);
+        } else
+            return new DoubleMetaData(newColumnName);
     }
 
 

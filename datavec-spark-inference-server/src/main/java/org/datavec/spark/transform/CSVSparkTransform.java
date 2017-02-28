@@ -23,6 +23,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CSVSparkTransform {
     private TransformProcess transformProcess;
+
     /**
      * Convert a raw record via
      * the {@link TransformProcess}
@@ -33,7 +34,7 @@ public class CSVSparkTransform {
      */
     public Base64NDArrayBody toArray(BatchRecord batch) throws IOException {
         List<List<Writable>> records = new ArrayList<>();
-        for(CSVRecord csvRecord : batch.getRecords()) {
+        for (CSVRecord csvRecord : batch.getRecords()) {
             List<Writable> record2 = transformProcess.transformRawStringsToInput(csvRecord.getValues());
             List<Writable> finalRecord = transformProcess.execute(record2);
             records.add(finalRecord);
@@ -66,11 +67,11 @@ public class CSVSparkTransform {
      */
     public BatchRecord transform(BatchRecord batch) {
         BatchRecord batchRecord = new BatchRecord();
-        for(CSVRecord record : batch.getRecords()) {
+        for (CSVRecord record : batch.getRecords()) {
             List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
             List<Writable> finalRecord = transformProcess.execute(record2);
             String[] values = new String[finalRecord.size()];
-            for(int i = 0; i < values.length; i++)
+            for (int i = 0; i < values.length; i++)
                 values[i] = finalRecord.get(i).toString();
             batchRecord.add(new CSVRecord(values));
         }
@@ -89,7 +90,7 @@ public class CSVSparkTransform {
         List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
         List<Writable> finalRecord = transformProcess.execute(record2);
         String[] values = new String[finalRecord.size()];
-        for(int i = 0; i < values.length; i++)
+        for (int i = 0; i < values.length; i++)
             values[i] = finalRecord.get(i).toString();
         return new CSVRecord(values);
 

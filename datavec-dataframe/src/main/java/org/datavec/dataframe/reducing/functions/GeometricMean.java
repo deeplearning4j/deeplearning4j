@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class GeometricMean extends SummaryFunction {
 
-  public GeometricMean(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public GeometricMean(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.geometricMean;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.geometricMean;
+    }
 }

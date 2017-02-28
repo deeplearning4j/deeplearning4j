@@ -13,17 +13,17 @@ import java.time.LocalDateTime;
  */
 public class DateTimeIsBefore extends ColumnFilter {
 
-  private LocalDateTime value;
+    private LocalDateTime value;
 
-  public DateTimeIsBefore(ColumnReference reference, LocalDateTime value) {
-    super(reference);
-    this.value = value;
-  }
+    public DateTimeIsBefore(ColumnReference reference, LocalDateTime value) {
+        super(reference);
+        this.value = value;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
+    @Override
+    public Selection apply(Table relation) {
 
-    DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
-    return dateColumn.isBefore(value);
-  }
+        DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
+        return dateColumn.isBefore(value);
+    }
 }

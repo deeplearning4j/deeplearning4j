@@ -33,7 +33,7 @@ import java.io.IOException;
 public class WavInputFormat extends BaseInputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
-       return createReader(split);
+        return createReader(split);
     }
 
     @Override

@@ -8,5 +8,5 @@ import org.datavec.dataframe.util.Selection;
  */
 public abstract class Filter {
 
-  public abstract Selection apply(Table relation);
+    public abstract Selection apply(Table relation);
 }

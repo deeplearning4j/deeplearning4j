@@ -9,18 +9,26 @@ import com.google.common.annotations.Beta;
 @Beta
 public abstract class DateInterval {
 
-  // boolean operations
-  abstract boolean equals(DateIntervalColumn interval);
-  abstract boolean before(DateIntervalColumn interval);
-  abstract boolean after(DateIntervalColumn interval);
-  abstract boolean contains(DateIntervalColumn interval);
-  abstract boolean containedIn(DateIntervalColumn interval);
-  abstract boolean meets(DateIntervalColumn interval);
+    // boolean operations
+    abstract boolean equals(DateIntervalColumn interval);
 
-  // combination operations
-  abstract DateInterval union(DateInterval interval);      // or
-  abstract DateInterval intersect(DateInterval interval);  // and
-  abstract DateInterval minus(DateInterval interval);      // and not
-  abstract DateInterval gap(DateInterval interval);        // the difference between two intervals
+    abstract boolean before(DateIntervalColumn interval);
+
+    abstract boolean after(DateIntervalColumn interval);
+
+    abstract boolean contains(DateIntervalColumn interval);
+
+    abstract boolean containedIn(DateIntervalColumn interval);
+
+    abstract boolean meets(DateIntervalColumn interval);
+
+    // combination operations
+    abstract DateInterval union(DateInterval interval); // or
+
+    abstract DateInterval intersect(DateInterval interval); // and
+
+    abstract DateInterval minus(DateInterval interval); // and not
+
+    abstract DateInterval gap(DateInterval interval); // the difference between two intervals
 
 }

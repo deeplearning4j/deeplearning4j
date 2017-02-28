@@ -34,7 +34,7 @@ import java.io.FileNotFoundException;
 public class CSVOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {
-        String outputPath = conf.get(OutputFormat.OUTPUT_PATH,".");
+        String outputPath = conf.get(OutputFormat.OUTPUT_PATH, ".");
         try {
             return new CSVRecordWriter(new File(outputPath));
         } catch (FileNotFoundException e) {

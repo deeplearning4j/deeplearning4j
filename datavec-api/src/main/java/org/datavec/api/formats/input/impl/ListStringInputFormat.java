@@ -41,7 +41,7 @@ public class ListStringInputFormat implements InputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
         RecordReader reader = new ListStringRecordReader();
-        reader.initialize(conf,split);
+        reader.initialize(conf, split);
         return reader;
     }
 

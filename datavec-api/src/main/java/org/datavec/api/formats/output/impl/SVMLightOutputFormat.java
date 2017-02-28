@@ -32,10 +32,10 @@ import java.io.File;
 public class SVMLightOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {
-        String outputPath = conf.get(OutputFormat.OUTPUT_PATH,".");
+        String outputPath = conf.get(OutputFormat.OUTPUT_PATH, ".");
         try {
             //return new LineRecordWriter(new File(outputPath));
-		return new SVMLightRecordWriter(new File(outputPath));
+            return new SVMLightRecordWriter(new File(outputPath));
         } catch (Exception e) {
             throw new DataVecException(e);
         }

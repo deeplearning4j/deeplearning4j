@@ -32,7 +32,7 @@ public class AppendStringColumnTransform extends BaseColumnTransform {
 
     private String toAppend;
 
-    public AppendStringColumnTransform(String columnName, String toAppend){
+    public AppendStringColumnTransform(String columnName, String toAppend) {
         super(columnName);
         this.toAppend = toAppend;
     }

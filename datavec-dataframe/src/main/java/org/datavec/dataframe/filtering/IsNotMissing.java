@@ -10,12 +10,12 @@ import org.datavec.dataframe.util.Selection;
  */
 public class IsNotMissing extends ColumnFilter {
 
-  public IsNotMissing(ColumnReference reference) {
-    super(reference);
-  }
+    public IsNotMissing(ColumnReference reference) {
+        super(reference);
+    }
 
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference.getColumnName());
-    return column.isNotMissing();
-  }
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference.getColumnName());
+        return column.isNotMissing();
+    }
 }

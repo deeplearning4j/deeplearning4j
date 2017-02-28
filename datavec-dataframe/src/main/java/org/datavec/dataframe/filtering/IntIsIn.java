@@ -11,22 +11,22 @@ import it.unimi.dsi.fastutil.ints.IntSet;
  */
 public class IntIsIn extends ColumnFilter {
 
-  private IntColumn filterColumn;
+    private IntColumn filterColumn;
 
-  public IntIsIn(ColumnReference reference, IntColumn filterColumn) {
-    super(reference);
-    this.filterColumn = filterColumn;
-  }
+    public IntIsIn(ColumnReference reference, IntColumn filterColumn) {
+        super(reference);
+        this.filterColumn = filterColumn;
+    }
 
-  public IntIsIn(ColumnReference reference, int ... ints) {
-    super(reference);
-    this.filterColumn = IntColumn.create("temp", new IntArrayList(ints));
-  }
+    public IntIsIn(ColumnReference reference, int... ints) {
+        super(reference);
+        this.filterColumn = IntColumn.create("temp", new IntArrayList(ints));
+    }
 
-  public Selection apply(Table relation) {
-    IntColumn intColumn = (IntColumn) relation.column(columnReference.getColumnName());
-    IntSet firstSet = intColumn.asSet();
-    firstSet.retainAll(filterColumn.data());
-    return intColumn.select(firstSet::contains);
-  }
+    public Selection apply(Table relation) {
+        IntColumn intColumn = (IntColumn) relation.column(columnReference.getColumnName());
+        IntSet firstSet = intColumn.asSet();
+        firstSet.retainAll(filterColumn.data());
+        return intColumn.select(firstSet::contains);
+    }
 }

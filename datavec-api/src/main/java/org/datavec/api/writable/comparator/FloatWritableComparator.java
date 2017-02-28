@@ -25,7 +25,7 @@ public class FloatWritableComparator implements WritableComparator {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "FloatWritableComparator()";
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class SequenceEmptyRecordFunction implements Function<List<List<Writable>>,Boolean>{
+public class SequenceEmptyRecordFunction implements Function<List<List<Writable>>, Boolean> {
     @Override
     public Boolean call(List<List<Writable>> v1) throws Exception {
         return v1.isEmpty();

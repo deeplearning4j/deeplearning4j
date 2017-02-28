@@ -29,12 +29,12 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkMapToPairByColumnFunction implements PairFunction<List<Writable>,Writable,List<Writable>> {
+public class SparkMapToPairByColumnFunction implements PairFunction<List<Writable>, Writable, List<Writable>> {
 
     private final int keyColumnIdx;
 
     @Override
     public Tuple2<Writable, List<Writable>> call(List<Writable> writables) throws Exception {
-        return new Tuple2<>(writables.get(keyColumnIdx),writables);
+        return new Tuple2<>(writables.get(keyColumnIdx), writables);
     }
 }

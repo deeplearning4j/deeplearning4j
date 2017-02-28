@@ -31,5 +31,6 @@ package org.datavec.api.records;
  */
 public interface Index {
     boolean done();
+
     void incr();
 }

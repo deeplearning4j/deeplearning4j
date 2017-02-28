@@ -16,9 +16,9 @@
 
 package org.datavec.audio.processor;
 
-public interface IntensityProcessor{
+public interface IntensityProcessor {
 
-	public void execute();
+    public void execute();
 
-  public double[][] getIntensities();
+    public double[][] getIntensities();
 }

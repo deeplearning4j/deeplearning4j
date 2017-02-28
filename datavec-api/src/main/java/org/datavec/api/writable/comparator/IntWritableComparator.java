@@ -25,7 +25,7 @@ public class IntWritableComparator implements WritableComparator {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "IntWritableComparator()";
     }
 }

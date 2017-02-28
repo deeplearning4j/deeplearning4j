@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapter<JoinedValue,List<Writable>> {
+public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapter<JoinedValue, List<Writable>> {
 
     private final Join.JoinType joinType;
 
@@ -25,7 +25,7 @@ public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapt
     @Override
     public Iterable<List<Writable>> call(JoinedValue joinedValue) throws Exception {
         boolean keep;
-        switch (joinType){
+        switch (joinType) {
             case Inner:
                 //Only keep joined values where we have both left and right
                 keep = joinedValue.isHaveLeft() && joinedValue.isHaveRight();
@@ -46,7 +46,7 @@ public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapt
                 throw new RuntimeException("Unknown/not implemented join type: " + joinType);
         }
 
-        if(keep){
+        if (keep) {
             return Collections.singletonList(joinedValue.getValues());
         } else {
             return Collections.emptyList();

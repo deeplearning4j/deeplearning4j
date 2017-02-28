@@ -15,34 +15,28 @@ public class CSVRecordTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testVectorAssertion() {
-        DataSet dataSet = new DataSet(Nd4j.create(2,2), Nd4j.create(1,1));
+        DataSet dataSet = new DataSet(Nd4j.create(2, 2), Nd4j.create(1, 1));
         CSVRecord csvRecord = CSVRecord.fromRow(dataSet);
         fail(csvRecord.toString() + " should have thrown an exception");
     }
 
     @Test
     public void testVectorOneHotLabel() {
-        DataSet dataSet = new DataSet(Nd4j.create(2,2), Nd4j.create(new double[][]{
-                {0,1},
-                {1,0}
-        }));
+        DataSet dataSet = new DataSet(Nd4j.create(2, 2), Nd4j.create(new double[][] {{0, 1}, {1, 0}}));
 
         //assert
         CSVRecord csvRecord = CSVRecord.fromRow(dataSet.get(0));
-        assertEquals(3,csvRecord.getValues().length);
+        assertEquals(3, csvRecord.getValues().length);
 
     }
 
     @Test
     public void testVectorRegression() {
-        DataSet dataSet = new DataSet(Nd4j.create(2,2), Nd4j.create(new double[][]{
-                {1,1},
-                {1,1}
-        }));
+        DataSet dataSet = new DataSet(Nd4j.create(2, 2), Nd4j.create(new double[][] {{1, 1}, {1, 1}}));
 
         //assert
         CSVRecord csvRecord = CSVRecord.fromRow(dataSet.get(0));
-        assertEquals(4,csvRecord.getValues().length);
+        assertEquals(4, csvRecord.getValues().length);
 
     }
 

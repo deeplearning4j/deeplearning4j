@@ -28,8 +28,7 @@ import org.datavec.api.writable.Writable;
  */
 public class ParentPathLabelGenerator implements PathLabelGenerator {
 
-    public ParentPathLabelGenerator() {
-    }
+    public ParentPathLabelGenerator() {}
 
     @Override
     public Writable getLabelForPath(String path) {

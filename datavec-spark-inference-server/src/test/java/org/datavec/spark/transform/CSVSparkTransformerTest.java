@@ -27,15 +27,15 @@ public class CSVSparkTransformerTest {
         input.add(new DoubleWritable(1.0));
         input.add(new DoubleWritable(2.0));
 
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("1.0").addColumnDouble("2.0").build();
+        Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
         List<Writable> output = new ArrayList<>();
         output.add(new Text("1.0"));
         output.add(new Text("2.0"));
 
-        TransformProcess transformProcess = new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+        TransformProcess transformProcess =
+                        new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
         CSVSparkTransform csvSparkTransform = new CSVSparkTransform(transformProcess);
-        String[] values = new String[] {"1.0","2.0"};
+        String[] values = new String[] {"1.0", "2.0"};
         CSVRecord record = csvSparkTransform.transform(new CSVRecord(values));
         Base64NDArrayBody body = csvSparkTransform.toArray(new CSVRecord(values));
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
@@ -50,18 +50,18 @@ public class CSVSparkTransformerTest {
         input.add(new DoubleWritable(1.0));
         input.add(new DoubleWritable(2.0));
 
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("1.0").addColumnDouble("2.0").build();
+        Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
         List<Writable> output = new ArrayList<>();
         output.add(new Text("1.0"));
         output.add(new Text("2.0"));
 
-        TransformProcess transformProcess = new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+        TransformProcess transformProcess =
+                        new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
         CSVSparkTransform csvSparkTransform = new CSVSparkTransform(transformProcess);
-        String[] values = new String[] {"1.0","2.0"};
+        String[] values = new String[] {"1.0", "2.0"};
         CSVRecord record = csvSparkTransform.transform(new CSVRecord(values));
         BatchRecord batchRecord = new BatchRecord();
-        for(int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
             batchRecord.add(record);
         BatchRecord batchRecord1 = csvSparkTransform.transform(batchRecord);
         Base64NDArrayBody body = csvSparkTransform.toArray(batchRecord1);

@@ -28,7 +28,7 @@ import lombok.Data;
  */
 @AllArgsConstructor
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class BytesAnalysis implements ColumnAnalysis {
 
     private long countTotal;

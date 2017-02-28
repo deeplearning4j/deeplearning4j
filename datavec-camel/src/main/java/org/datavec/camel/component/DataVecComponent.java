@@ -27,7 +27,7 @@ import org.apache.camel.impl.UriEndpointComponent;
  * Represents the component that manages {@link DataVecEndpoint}.
  */
 public class DataVecComponent extends UriEndpointComponent {
-    
+
     public DataVecComponent() {
         super(DataVecEndpoint.class);
     }

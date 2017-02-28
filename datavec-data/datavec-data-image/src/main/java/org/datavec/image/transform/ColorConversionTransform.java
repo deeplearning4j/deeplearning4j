@@ -71,7 +71,7 @@ public class ColorConversionTransform extends BaseImageTransform {
 
         try {
             cvtColor(mat, result, conversionCode);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

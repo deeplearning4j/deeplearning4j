@@ -31,7 +31,8 @@ public class StandardizeNormalizer extends BaseDoubleTransform {
     protected final double mean;
     protected final double stdev;
 
-    public StandardizeNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("mean") double mean, @JsonProperty("stdev") double stdev) {
+    public StandardizeNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("mean") double mean,
+                    @JsonProperty("stdev") double stdev) {
         super(columnName);
         this.mean = mean;
         this.stdev = stdev;

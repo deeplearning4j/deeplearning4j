@@ -20,21 +20,21 @@ import static org.junit.Assert.assertEquals;
 public class TableRecordsTest {
     @Test
     public void testToTable() {
-        INDArray linspace = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray linspace = Nd4j.linspace(1, 8, 8).reshape(2, 4);
         List<List<Writable>> matrix = RecordConverter.toRecords(linspace);
         Schema.Builder schemaBuilder = new Schema.Builder();
-        for(int i = 0; i < linspace.columns(); i++)
+        for (int i = 0; i < linspace.columns(); i++)
             schemaBuilder.addColumnDouble(String.valueOf(i));
-        Table table = TableRecords.fromRecordsAndSchema(matrix,schemaBuilder.build());
-        assertEquals(4,table.columns().size());
-        assertEquals(2,table.rows().length);
-        for(int i = 0; i < table.rows().length; i++) {
-            for(int j = 0; j < table.columns().size(); j++) {
-                assertEquals(linspace.getDouble(i,j),Double.valueOf(table.get(j,i)),1e-1);
+        Table table = TableRecords.fromRecordsAndSchema(matrix, schemaBuilder.build());
+        assertEquals(4, table.columns().size());
+        assertEquals(2, table.rows().length);
+        for (int i = 0; i < table.rows().length; i++) {
+            for (int j = 0; j < table.columns().size(); j++) {
+                assertEquals(linspace.getDouble(i, j), Double.valueOf(table.get(j, i)), 1e-1);
             }
         }
 
-        assertEquals(linspace,TableRecords.arrayFromTable(table));
+        assertEquals(linspace, TableRecords.arrayFromTable(table));
         System.out.println(table.printHtml());
     }
 
@@ -44,19 +44,19 @@ public class TableRecordsTest {
         int columns = 2;
         List<List<Writable>> assertion = new ArrayList<>();
 
-        for(int i = 0; i < rows; i++) {
+        for (int i = 0; i < rows; i++) {
             assertion.add(new ArrayList<>());
-            for(int j = 0; j < columns; j++) {
+            for (int j = 0; j < columns; j++) {
                 assertion.get(i).add(new DoubleWritable(i));
             }
         }
 
         Schema.Builder schemaBuilder = new Schema.Builder();
-        for(int i = 0; i < columns; i++)
+        for (int i = 0; i < columns; i++)
             schemaBuilder.addColumnDouble(String.valueOf(i));
-        Table table = TableRecords.fromRecordsAndSchema(assertion,schemaBuilder.build());
+        Table table = TableRecords.fromRecordsAndSchema(assertion, schemaBuilder.build());
         List<List<Writable>> test = TableRecords.fromTable(table);
-        assertEquals(assertion,test);
+        assertEquals(assertion, test);
 
     }
 

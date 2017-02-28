@@ -32,20 +32,14 @@ import static org.junit.Assert.assertEquals;
 public class TestCustomTransformJsonYaml {
 
     @Test
-    public void testCustomTransform(){
+    public void testCustomTransform() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("firstCol")
-                .addColumnDouble("secondCol")
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("firstCol").addColumnDouble("secondCol").build();
 
-        TransformProcess tp = new TransformProcess.Builder(schema)
-                .integerMathOp("firstCol", MathOp.Add, 1)
-                .transform(new CustomTransform("secondCol", 3.14159))
-                .doubleMathOp("secondCol", MathOp.Multiply, 2.0)
-                .filter(new CustomFilter(123))
-                .filter(new CustomCondition("someArg"))
-                .build();
+        TransformProcess tp = new TransformProcess.Builder(schema).integerMathOp("firstCol", MathOp.Add, 1)
+                        .transform(new CustomTransform("secondCol", 3.14159))
+                        .doubleMathOp("secondCol", MathOp.Multiply, 2.0).filter(new CustomFilter(123))
+                        .filter(new CustomCondition("someArg")).build();
 
         String asJson = tp.toJson();
         String asYaml = tp.toYaml();

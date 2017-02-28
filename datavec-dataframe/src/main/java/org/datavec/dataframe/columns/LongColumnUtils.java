@@ -26,13 +26,15 @@ public interface LongColumnUtils extends Column, LongIterable {
 
     LongBiPredicate isGreaterThan = (valueToTest, valueToCompareAgainst) -> valueToTest > valueToCompareAgainst;
 
-    LongBiPredicate isGreaterThanOrEqualTo = (valueToTest, valueToCompareAgainst) -> valueToTest >= valueToCompareAgainst;
+    LongBiPredicate isGreaterThanOrEqualTo =
+                    (valueToTest, valueToCompareAgainst) -> valueToTest >= valueToCompareAgainst;
 
     LongBiPredicate isLessThan = (valueToTest, valueToCompareAgainst) -> valueToTest < valueToCompareAgainst;
 
     LongBiPredicate isLessThanOrEqualTo = (valueToTest, valueToCompareAgainst) -> valueToTest <= valueToCompareAgainst;
 
-    LongBiPredicate isNotEqualTo = (long valueToTest, long valueToCompareAgainst) -> valueToTest != valueToCompareAgainst;
+    LongBiPredicate isNotEqualTo =
+                    (long valueToTest, long valueToCompareAgainst) -> valueToTest != valueToCompareAgainst;
 
 
     LongBiPredicate isEqualTo = (long valueToTest, long valueToCompareAgainst) -> valueToTest == valueToCompareAgainst;

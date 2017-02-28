@@ -15,14 +15,14 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsEmpty extends ColumnFilter {
 
-  public TextIsEmpty(ColumnReference reference) {
-    super(reference);
-  }
+    public TextIsEmpty(ColumnReference reference) {
+        super(reference);
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.empty();
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.empty();
+    }
 }

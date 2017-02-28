@@ -7,6 +7,6 @@ import java.time.LocalTime;
  */
 public interface LocalTimePredicate {
 
-  boolean test(LocalTime i);
+    boolean test(LocalTime i);
 
 }

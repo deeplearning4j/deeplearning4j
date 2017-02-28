@@ -15,14 +15,14 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsAlphaNumeric extends ColumnFilter {
 
-  public TextIsAlphaNumeric(ColumnReference reference) {
-    super(reference);
-  }
+    public TextIsAlphaNumeric(ColumnReference reference) {
+        super(reference);
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isAlphaNumeric();
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isAlphaNumeric();
+    }
 }

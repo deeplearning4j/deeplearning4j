@@ -30,7 +30,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(exclude = {"schema", "columnIdx"})
 @JsonIgnoreProperties({"schema", "columnIdx"})
-public abstract class BaseColumnComparator implements SequenceComparator,ColumnOp {
+public abstract class BaseColumnComparator implements SequenceComparator, ColumnOp {
 
     protected Schema schema;
 

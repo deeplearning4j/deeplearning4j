@@ -15,14 +15,14 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsNumeric extends ColumnFilter {
 
-  public TextIsNumeric(ColumnReference reference) {
-    super(reference);
-  }
+    public TextIsNumeric(ColumnReference reference) {
+        super(reference);
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isNumeric();
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isNumeric();
+    }
 }

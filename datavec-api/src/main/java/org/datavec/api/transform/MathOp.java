@@ -32,13 +32,5 @@ package org.datavec.api.transform;
  * @author Alex Black
  */
 public enum MathOp {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-    Modulus,
-    ReverseSubtract,
-    ReverseDivide,
-    ScalarMin,
-    ScalarMax
+    Add, Subtract, Multiply, Divide, Modulus, ReverseSubtract, ReverseDivide, ScalarMin, ScalarMax
 }

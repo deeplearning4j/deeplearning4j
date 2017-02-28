@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Spark function for executing a transform process
  */
-public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>,List<Writable>> {
+public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
 
     public SparkTransformProcessFunction(TransformProcess transformProcess) {
         super(new SparkTransformProcessFunctionAdapter(transformProcess));

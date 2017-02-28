@@ -34,8 +34,8 @@ public class MapAllStringsExceptListTransform extends BaseStringTransform {
     private final Set<String> exceptions;
     private final String newValue;
 
-    public MapAllStringsExceptListTransform(@JsonProperty("columnName") String columnName, @JsonProperty("newValue")String newValue,
-                                            @JsonProperty("exceptions") List<String> exceptions) {
+    public MapAllStringsExceptListTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("newValue") String newValue, @JsonProperty("exceptions") List<String> exceptions) {
         super(columnName);
         this.newValue = newValue;
         this.exceptions = new HashSet<>(exceptions);
@@ -44,7 +44,7 @@ public class MapAllStringsExceptListTransform extends BaseStringTransform {
     @Override
     public Text map(Writable writable) {
         String str = writable.toString();
-        if(exceptions.contains(str)){
+        if (exceptions.contains(str)) {
             return new Text(str);
         } else {
             return new Text(newValue);
@@ -61,8 +61,8 @@ public class MapAllStringsExceptListTransform extends BaseStringTransform {
     @Override
     public Object map(Object input) {
         String str = input.toString();
-        if(exceptions.contains(str)){
-            return  str;
+        if (exceptions.contains(str)) {
+            return str;
         } else {
             return newValue;
         }

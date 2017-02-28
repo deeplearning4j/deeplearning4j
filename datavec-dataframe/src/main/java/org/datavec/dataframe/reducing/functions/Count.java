@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Count extends SummaryFunction {
 
-  public Count(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Count(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.n;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.n;
+    }
 }

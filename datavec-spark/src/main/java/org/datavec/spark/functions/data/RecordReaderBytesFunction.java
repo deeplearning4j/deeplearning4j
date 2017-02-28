@@ -36,7 +36,7 @@ public class RecordReaderBytesFunction implements Function<Tuple2<Text, BytesWri
 
     private final RecordReader recordReader;
 
-    public RecordReaderBytesFunction(RecordReader recordReader){
+    public RecordReaderBytesFunction(RecordReader recordReader) {
         this.recordReader = recordReader;
     }
 

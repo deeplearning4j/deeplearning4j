@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public interface ColumnReduction extends Serializable,ColumnOp {
+public interface ColumnReduction extends Serializable, ColumnOp {
 
     /**
      * Reduce a single column.

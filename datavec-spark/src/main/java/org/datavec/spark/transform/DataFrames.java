@@ -45,8 +45,7 @@ public class DataFrames {
     public static final String SEQUENCE_UUID_COLUMN = "__SEQ_UUID";
     public static final String SEQUENCE_INDEX_COLUMN = "__SEQ_IDX";
 
-    private DataFrames() {
-    }
+    private DataFrames() {}
 
     /**
      * Standard deviation for a column
@@ -127,7 +126,8 @@ public class DataFrames {
                     structFields[i] = new StructField(schema.getName(i), DataTypes.DoubleType, false, Metadata.empty());
                     break;
                 case Integer:
-                    structFields[i] = new StructField(schema.getName(i), DataTypes.IntegerType, false, Metadata.empty());
+                    structFields[i] =
+                                    new StructField(schema.getName(i), DataTypes.IntegerType, false, Metadata.empty());
                     break;
                 case Long:
                     structFields[i] = new StructField(schema.getName(i), DataTypes.LongType, false, Metadata.empty());
@@ -136,7 +136,8 @@ public class DataFrames {
                     structFields[i] = new StructField(schema.getName(i), DataTypes.FloatType, false, Metadata.empty());
                     break;
                 default:
-                    throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
+                    throw new IllegalStateException(
+                                    "This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
             }
         }
         return new StructType(structFields);
@@ -164,19 +165,24 @@ public class DataFrames {
         for (int i = 0; i < schema.numColumns(); i++) {
             switch (schema.getColumnTypes().get(i)) {
                 case Double:
-                    structFields[i + 2] = new StructField(schema.getName(i), DataTypes.DoubleType, false, Metadata.empty());
+                    structFields[i + 2] =
+                                    new StructField(schema.getName(i), DataTypes.DoubleType, false, Metadata.empty());
                     break;
                 case Integer:
-                    structFields[i + 2] = new StructField(schema.getName(i), DataTypes.IntegerType, false, Metadata.empty());
+                    structFields[i + 2] =
+                                    new StructField(schema.getName(i), DataTypes.IntegerType, false, Metadata.empty());
                     break;
                 case Long:
-                    structFields[i + 2] = new StructField(schema.getName(i), DataTypes.LongType, false, Metadata.empty());
+                    structFields[i + 2] =
+                                    new StructField(schema.getName(i), DataTypes.LongType, false, Metadata.empty());
                     break;
                 case Float:
-                    structFields[i + 2] = new StructField(schema.getName(i), DataTypes.FloatType, false, Metadata.empty());
+                    structFields[i + 2] =
+                                    new StructField(schema.getName(i), DataTypes.FloatType, false, Metadata.empty());
                     break;
                 default:
-                    throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
+                    throw new IllegalStateException(
+                                    "This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
             }
         }
         return new StructType(structFields);
@@ -261,11 +267,14 @@ public class DataFrames {
         Schema schema = fromStructType(dataFrame.get().schema());
 
         //Group by sequence UUID, and sort each row within the sequences using the time step index
-        Function<Iterable<Row>, List<List<Writable>>> createCombiner = new DataFrameToSequenceCreateCombiner(schema);   //Function to create the initial combiner
-        Function2<List<List<Writable>>, Iterable<Row>, List<List<Writable>>> mergeValue = new DataFrameToSequenceMergeValue(schema);    //Function to add a row
-        Function2<List<List<Writable>>, List<List<Writable>>, List<List<Writable>>> mergeCombiners = new DataFrameToSequenceMergeCombiner();    //Function to merge existing sequence writables
+        Function<Iterable<Row>, List<List<Writable>>> createCombiner = new DataFrameToSequenceCreateCombiner(schema); //Function to create the initial combiner
+        Function2<List<List<Writable>>, Iterable<Row>, List<List<Writable>>> mergeValue =
+                        new DataFrameToSequenceMergeValue(schema); //Function to add a row
+        Function2<List<List<Writable>>, List<List<Writable>>, List<List<Writable>>> mergeCombiners =
+                        new DataFrameToSequenceMergeCombiner(); //Function to merge existing sequence writables
 
-        JavaRDD<List<List<Writable>>> sequences = grouped.combineByKey(createCombiner, mergeValue, mergeCombiners).values();
+        JavaRDD<List<List<Writable>>> sequences =
+                        grouped.combineByKey(createCombiner, mergeValue, mergeCombiners).values();
 
         //We no longer want/need the sequence UUID and sequence time step columns - extract those out
         JavaRDD<List<List<Writable>>> out = sequences.map(new Function<List<List<Writable>>, List<List<Writable>>>() {
@@ -362,7 +371,7 @@ public class DataFrames {
      */
     public static List<String> toList(String[] input) {
         List<String> ret = new ArrayList<>();
-        for(int i = 0; i < input.length; i++)
+        for (int i = 0; i < input.length; i++)
             ret.add(input[i]);
         return ret;
     }
@@ -375,7 +384,7 @@ public class DataFrames {
      */
     public static String[] toArray(List<String> list) {
         String[] ret = new String[list.size()];
-        for(int i = 0; i < ret.length; i++)
+        for (int i = 0; i < ret.length; i++)
             ret[i] = list.get(i);
         return ret;
     }
@@ -386,10 +395,10 @@ public class DataFrames {
      * @return the converted matrix
      */
     public static INDArray toMatrix(List<Row> rows) {
-        INDArray ret = Nd4j.create(rows.size(),rows.get(0).size());
-        for(int i = 0; i < ret.rows(); i++) {
-            for(int j = 0; j < ret.columns(); j++) {
-                ret.putScalar(i,j,rows.get(i).getDouble(j));
+        INDArray ret = Nd4j.create(rows.size(), rows.get(0).size());
+        for (int i = 0; i < ret.rows(); i++) {
+            for (int j = 0; j < ret.columns(); j++) {
+                ret.putScalar(i, j, rows.get(i).getDouble(j));
             }
         }
         return ret;
@@ -404,19 +413,20 @@ public class DataFrames {
      */
     public static List<Column> toColumn(List<String> columns) {
         List<Column> ret = new ArrayList<>();
-        for(String s : columns)
+        for (String s : columns)
             ret.add(col(s));
         return ret;
     }
+
     /**
      * Convert an array of strings
      * to column names
      * @param columns the columns to convert
      * @return the converted columns
      */
-    public static Column[] toColumns(String...columns) {
+    public static Column[] toColumns(String... columns) {
         Column[] ret = new Column[columns.length];
-        for(int i = 0; i < columns.length; i++)
+        for (int i = 0; i < columns.length; i++)
             ret[i] = col(columns[i]);
         return ret;
     }

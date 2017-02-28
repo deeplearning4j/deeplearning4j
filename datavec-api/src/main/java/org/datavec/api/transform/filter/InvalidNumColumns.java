@@ -49,8 +49,8 @@ public class InvalidNumColumns implements Filter {
      */
     @Override
     public boolean removeSequence(List<List<Writable>> sequence) {
-        for(List<Writable> record : sequence)
-            if(record.size() != inputSchema.numColumns())
+        for (List<Writable> record : sequence)
+            if (record.size() != inputSchema.numColumns())
                 return true;
         return false;
     }

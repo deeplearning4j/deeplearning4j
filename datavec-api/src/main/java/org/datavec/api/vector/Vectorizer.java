@@ -68,7 +68,7 @@ public interface Vectorizer<VECTOR_TYPE> {
      * @param reader
      * @param callBack
      */
-    VECTOR_TYPE fitTransform(RecordReader reader,RecordCallBack callBack);
+    VECTOR_TYPE fitTransform(RecordReader reader, RecordCallBack callBack);
 
     /**
      * Transform a record in to a vector

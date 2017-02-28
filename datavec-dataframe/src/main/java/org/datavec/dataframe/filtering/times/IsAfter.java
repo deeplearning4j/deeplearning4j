@@ -13,15 +13,15 @@ import java.time.LocalTime;
  */
 public class IsAfter extends ColumnFilter {
 
-  private LocalTime value;
+    private LocalTime value;
 
-  public IsAfter(ColumnReference reference, LocalTime value) {
-    super(reference);
-    this.value = value;
-  }
+    public IsAfter(ColumnReference reference, LocalTime value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    TimeColumn timeColumn = (TimeColumn) relation.column(columnReference().getColumnName());
-    return timeColumn.isAfter(value);
-  }
+    public Selection apply(Table relation) {
+        TimeColumn timeColumn = (TimeColumn) relation.column(columnReference().getColumnName());
+        return timeColumn.isAfter(value);
+    }
 }

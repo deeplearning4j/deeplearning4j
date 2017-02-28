@@ -28,18 +28,18 @@ import java.util.List;
  */
 public class StopWords {
 
-	private static List<String> stopWords;
+    private static List<String> stopWords;
 
-	@SuppressWarnings("unchecked")
-	public static List<String> getStopWords() {
+    @SuppressWarnings("unchecked")
+    public static List<String> getStopWords() {
 
-		try {
-			if(stopWords == null)
-				stopWords =  IOUtils.readLines(StopWords.class.getResourceAsStream("/stopwords"));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return stopWords;
-	}
+        try {
+            if (stopWords == null)
+                stopWords = IOUtils.readLines(StopWords.class.getResourceAsStream("/stopwords"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return stopWords;
+    }
 
 }

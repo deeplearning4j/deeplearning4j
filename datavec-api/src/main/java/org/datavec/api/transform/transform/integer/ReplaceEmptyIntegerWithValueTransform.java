@@ -31,7 +31,8 @@ public class ReplaceEmptyIntegerWithValueTransform extends BaseIntegerTransform 
 
     private final int value;
 
-    public ReplaceEmptyIntegerWithValueTransform(@JsonProperty("columnName") String columnName, @JsonProperty("value") int value) {
+    public ReplaceEmptyIntegerWithValueTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("value") int value) {
         super(columnName);
         this.value = value;
     }
@@ -39,7 +40,8 @@ public class ReplaceEmptyIntegerWithValueTransform extends BaseIntegerTransform 
     @Override
     public Writable map(Writable writable) {
         String s = writable.toString();
-        if (s == null || s.isEmpty()) return new IntWritable(value);
+        if (s == null || s.isEmpty())
+            return new IntWritable(value);
         return writable;
     }
 

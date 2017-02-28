@@ -26,7 +26,8 @@ import java.util.List;
 /**
  * Simple helper class for executing joins
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class JoinValue implements Serializable {
 
     private final boolean left;

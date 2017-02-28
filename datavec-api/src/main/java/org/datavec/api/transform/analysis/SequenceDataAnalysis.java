@@ -33,13 +33,14 @@ public class SequenceDataAnalysis extends DataAnalysis {
 
     private final SequenceLengthAnalysis sequenceLengthAnalysis;
 
-    public SequenceDataAnalysis(Schema schema, List<ColumnAnalysis> columnAnalysis, SequenceLengthAnalysis sequenceAnalysis) {
+    public SequenceDataAnalysis(Schema schema, List<ColumnAnalysis> columnAnalysis,
+                    SequenceLengthAnalysis sequenceAnalysis) {
         super(schema, columnAnalysis);
         this.sequenceLengthAnalysis = sequenceAnalysis;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return sequenceLengthAnalysis + "\n" + super.toString();
     }
 }

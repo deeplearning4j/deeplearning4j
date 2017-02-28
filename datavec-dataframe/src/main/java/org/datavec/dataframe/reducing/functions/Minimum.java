@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Minimum extends SummaryFunction {
 
-  public Minimum(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Minimum(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.min;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.min;
+    }
 }

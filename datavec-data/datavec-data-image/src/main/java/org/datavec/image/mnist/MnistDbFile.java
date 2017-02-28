@@ -29,7 +29,7 @@ import java.io.RandomAccessFile;
  */
 public abstract class MnistDbFile extends RandomAccessFile {
     private int count;
-    
+
 
     /**
      * Creates new instance and reads the header information.
@@ -45,7 +45,8 @@ public abstract class MnistDbFile extends RandomAccessFile {
     public MnistDbFile(String name, String mode) throws IOException {
         super(name, mode);
         if (getMagicNumber() != readInt()) {
-            throw new RuntimeException("This MNIST DB file " + name + " should start with the number " + getMagicNumber() + ".");
+            throw new RuntimeException(
+                            "This MNIST DB file " + name + " should start with the number " + getMagicNumber() + ".");
         }
         count = readInt();
     }

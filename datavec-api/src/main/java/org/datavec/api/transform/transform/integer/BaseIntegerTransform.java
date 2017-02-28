@@ -29,7 +29,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public abstract class BaseIntegerTransform extends BaseColumnTransform {
 
-    public BaseIntegerTransform(String column){
+    public BaseIntegerTransform(String column) {
         super(column);
     }
 

@@ -16,6 +16,6 @@
 
 package org.datavec.audio.fingerprint;
 
-public abstract class QuickSort{
-	public abstract int[] getSortIndexes();
+public abstract class QuickSort {
+    public abstract int[] getSortIndexes();
 }

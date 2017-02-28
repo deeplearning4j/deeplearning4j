@@ -10,21 +10,21 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class ReverseLongComparator {
 
-  static final LongComparator reverseLongComparator = new LongComparator() {
+    static final LongComparator reverseLongComparator = new LongComparator() {
 
-    @Override
-    public int compare(Long o2, Long o1) {
-      return (o1 < o2 ? -1 : (o1.equals(o2) ? 0 : 1));
+        @Override
+        public int compare(Long o2, Long o1) {
+            return (o1 < o2 ? -1 : (o1.equals(o2) ? 0 : 1));
+        }
+
+        @Override
+        public int compare(long o2, long o1) {
+            return (o1 < o2 ? -1 : (o1 == o2 ? 0 : 1));
+        }
+    };
+
+    public static LongComparator instance() {
+        return reverseLongComparator;
     }
-
-    @Override
-    public int compare(long o2, long o1) {
-      return (o1 < o2 ? -1 : (o1 == o2 ? 0 : 1));
-    }
-  };
-
-  public static LongComparator instance() {
-    return reverseLongComparator;
-  }
 
 }

@@ -14,28 +14,28 @@ import org.datavec.dataframe.util.Selection;
  */
 public class IsInYear extends ColumnFilter {
 
-  private int year;
+    private int year;
 
-  public IsInYear(ColumnReference reference, int year) {
-    super(reference);
-    this.year = year;
-  }
-
-  @Override
-  public Selection apply(Table relation) {
-    String name = columnReference().getColumnName();
-    Column column = relation.column(name);
-    ColumnType type = column.type();
-    switch (type) {
-      case LOCAL_DATE:
-        DateColumn dateColumn = relation.dateColumn(name);
-        return dateColumn.isInYear(year);
-      case LOCAL_DATE_TIME:
-        DateTimeColumn dateTimeColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
-        return dateTimeColumn.isInYear(year);
-      default:
-        throw new UnsupportedOperationException("Columns of type " + type.name() + " do not support the operation "
-            + "isInYear(anInt) ");
+    public IsInYear(ColumnReference reference, int year) {
+        super(reference);
+        this.year = year;
     }
-  }
+
+    @Override
+    public Selection apply(Table relation) {
+        String name = columnReference().getColumnName();
+        Column column = relation.column(name);
+        ColumnType type = column.type();
+        switch (type) {
+            case LOCAL_DATE:
+                DateColumn dateColumn = relation.dateColumn(name);
+                return dateColumn.isInYear(year);
+            case LOCAL_DATE_TIME:
+                DateTimeColumn dateTimeColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
+                return dateTimeColumn.isInYear(year);
+            default:
+                throw new UnsupportedOperationException("Columns of type " + type.name()
+                                + " do not support the operation " + "isInYear(anInt) ");
+        }
+    }
 }

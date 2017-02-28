@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Median extends SummaryFunction {
 
-  public Median(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Median(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.median;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.median;
+    }
 }

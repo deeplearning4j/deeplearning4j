@@ -40,7 +40,8 @@ public class GeoIPFetcher {
     public static final String CITY_DB = "GeoIP2-City.mmdb";
     public static final String CITY_LITE_DB = "GeoLite2-City.mmdb";
 
-    public static final String CITY_LITE_URL = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz";
+    public static final String CITY_LITE_URL =
+                    "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz";
 
     public static synchronized File fetchCityDB() throws IOException {
         File cityFile = new File(GEOIP_DIR, CITY_DB);

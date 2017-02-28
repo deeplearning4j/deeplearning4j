@@ -17,58 +17,57 @@ import java.io.IOException;
 @Immutable
 final public class CsvWriter {
 
-  /**
-   * Private constructor to prevent instantiation
-   */
-  private CsvWriter() {
-  }
+    /**
+     * Private constructor to prevent instantiation
+     */
+    private CsvWriter() {}
 
-  /**
-   * Writes the given table to a file with the given filename
-   *
-   * @throws IOException
-   */
-  public static void write(String fileName, Table table) throws IOException {
-    write(fileName, table, null);
-  }
+    /**
+     * Writes the given table to a file with the given filename
+     *
+     * @throws IOException
+     */
+    public static void write(String fileName, Table table) throws IOException {
+        write(fileName, table, null);
+    }
 
-  /**
-   * Writes the given table to a file with the given filename, using the given string to represent missing data
-   *
-   * @throws IOException
-   */
-  public static void write(String fileName, Table table, String missing) throws IOException {
-    try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
-      String[] header = new String[table.columnCount()];
-      for (int c = 0; c < table.columnCount(); c++) {
-        header[c] = table.column(c).name();
-      }
-      writer.writeNext(header);
-      for (int r = 0; r < table.rowCount(); r++) {
-        String[] entries = new String[table.columnCount()];
-        for (int c = 0; c < table.columnCount(); c++) {
-          table.get(c, r);
-          entries[c] = table.get(c, r);
+    /**
+     * Writes the given table to a file with the given filename, using the given string to represent missing data
+     *
+     * @throws IOException
+     */
+    public static void write(String fileName, Table table, String missing) throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
+            String[] header = new String[table.columnCount()];
+            for (int c = 0; c < table.columnCount(); c++) {
+                header[c] = table.column(c).name();
+            }
+            writer.writeNext(header);
+            for (int r = 0; r < table.rowCount(); r++) {
+                String[] entries = new String[table.columnCount()];
+                for (int c = 0; c < table.columnCount(); c++) {
+                    table.get(c, r);
+                    entries[c] = table.get(c, r);
+                }
+                writer.writeNext(entries);
+            }
         }
-        writer.writeNext(entries);
-      }
     }
-  }
 
-  /**
-   * Writes the given column to a file with the given fileName as a single column CSV file
-   *
-   * @throws IOException
-   */
-  public static void write(String fileName, Column column) throws IOException {
-    try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
-      String[] header = {column.name()};
-      writer.writeNext(header);
+    /**
+     * Writes the given column to a file with the given fileName as a single column CSV file
+     *
+     * @throws IOException
+     */
+    public static void write(String fileName, Column column) throws IOException {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
+            String[] header = {column.name()};
+            writer.writeNext(header);
 
-      for (int r = 0; r < column.size(); r++) {
-        String[] entries = {column.getString(r)};
-        writer.writeNext(entries);
-      }
+            for (int r = 0; r < column.size(); r++) {
+                String[] entries = {column.getString(r)};
+                writer.writeNext(entries);
+            }
+        }
     }
-  }
 }

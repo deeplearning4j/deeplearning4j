@@ -34,7 +34,7 @@ import org.datavec.api.transform.transform.BaseColumnTransform;
 @NoArgsConstructor
 public abstract class BaseStringTransform extends BaseColumnTransform {
 
-    public BaseStringTransform(String column){
+    public BaseStringTransform(String column) {
         super(column);
     }
 
@@ -47,7 +47,7 @@ public abstract class BaseStringTransform extends BaseColumnTransform {
     public abstract Text map(Writable writable);
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(String newName,ColumnMetaData oldColumnType) {
+    public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
         return new StringMetaData(newName);
     }
 }

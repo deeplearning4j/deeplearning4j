@@ -27,13 +27,15 @@ import java.util.Comparator;
  * Simple comparator: Compare {@code Tuple2<T,Long>} by Long value
  */
 @AllArgsConstructor
-public class Tuple2Comparator<T> implements Comparator<Tuple2<T,Long>>, Serializable {
+public class Tuple2Comparator<T> implements Comparator<Tuple2<T, Long>>, Serializable {
 
     private final boolean ascending;
 
     @Override
     public int compare(Tuple2<T, Long> o1, Tuple2<T, Long> o2) {
-        if(ascending) return Long.compare(o1._2(), o2._2);
-        else return -Long.compare(o1._2(), o2._2);
+        if (ascending)
+            return Long.compare(o1._2(), o2._2);
+        else
+            return -Long.compare(o1._2(), o2._2);
     }
 }

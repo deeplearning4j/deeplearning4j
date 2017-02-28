@@ -32,11 +32,9 @@ import java.util.List;
  * Compare the time steps of a sequence
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value= {
-        @JsonSubTypes.Type(value = NumericalColumnComparator.class, name = "NumericalColumnComparator"),
-        @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator"),
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = NumericalColumnComparator.class, name = "NumericalColumnComparator"),
+                @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator"),})
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {
 
     /**

@@ -54,6 +54,6 @@ public class NullWritableColumnCondition extends BaseColumnCondition {
      */
     @Override
     public boolean condition(Object input) {
-       return input == null;
+        return input == null;
     }
 }

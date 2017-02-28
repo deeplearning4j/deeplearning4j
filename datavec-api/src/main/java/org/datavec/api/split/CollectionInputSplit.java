@@ -31,9 +31,9 @@ import java.util.Collection;
  */
 public class CollectionInputSplit extends BaseInputSplit {
 
-    public CollectionInputSplit(Collection<URI> list){
+    public CollectionInputSplit(Collection<URI> list) {
         uriStrings = new CompactHeapStringList();
-        for(URI uri : list){
+        for (URI uri : list) {
             uriStrings.add(uri.toString());
         }
     }

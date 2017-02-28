@@ -23,28 +23,32 @@ package org.datavec.api.writable;
 public abstract class ArrayWritable implements Writable {
 
     public abstract long length();
+
     public abstract double getDouble(long i);
+
     public abstract float getFloat(long i);
+
     public abstract int getInt(long i);
+
     public abstract long getLong(long i);
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 }

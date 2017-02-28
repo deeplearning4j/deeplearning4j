@@ -13,19 +13,16 @@ import org.datavec.dataframe.api.Table;
  */
 public class DataFrameOps {
 
-    public static void performTransform(Transform transform,Table table) {
-        if(transform instanceof AppendStringColumnTransform) {
+    public static void performTransform(Transform transform, Table table) {
+        if (transform instanceof AppendStringColumnTransform) {
             AppendStringColumnTransform appendStringColumnTransform = (AppendStringColumnTransform) transform;
             CategoryColumn categoryColumn = (CategoryColumn) table.column(appendStringColumnTransform.getColumnName());
             table.addColumn(categoryColumn);
-        }
-        else if(transform instanceof CategoricalToIntegerTransform) {
+        } else if (transform instanceof CategoricalToIntegerTransform) {
 
-        }
-        else if(transform instanceof CategoricalToOneHotTransform) {
+        } else if (transform instanceof CategoricalToOneHotTransform) {
 
-        }
-        else if(transform instanceof ConditionalCopyValueTransform) {
+        } else if (transform instanceof ConditionalCopyValueTransform) {
 
         }
 

@@ -10,12 +10,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class StandardDeviation extends SummaryFunction {
 
-  public StandardDeviation(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public StandardDeviation(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.stdDev;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.stdDev;
+    }
 }

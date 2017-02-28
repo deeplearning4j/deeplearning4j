@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Mean extends SummaryFunction {
 
-  public Mean(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Mean(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.mean;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.mean;
+    }
 }

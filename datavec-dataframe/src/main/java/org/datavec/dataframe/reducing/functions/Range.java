@@ -10,12 +10,12 @@ import static org.datavec.dataframe.reducing.NumericReduceUtils.range;
  */
 public class Range extends SummaryFunction {
 
-  public Range(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Range(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return range;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return range;
+    }
 }

@@ -36,7 +36,7 @@ public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, 
 
     private final SequenceRecordReader recordReader;
 
-    public SequenceRecordReaderBytesFunction(SequenceRecordReader recordReader){
+    public SequenceRecordReaderBytesFunction(SequenceRecordReader recordReader) {
         this.recordReader = recordReader;
     }
 

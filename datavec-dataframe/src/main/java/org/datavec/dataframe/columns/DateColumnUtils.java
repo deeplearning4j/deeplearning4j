@@ -11,9 +11,9 @@ import java.time.LocalDate;
  */
 public interface DateColumnUtils extends Column, Iterable<LocalDate> {
 
-  IntArrayList data();
+    IntArrayList data();
 
-  IntPredicate isMissing = i -> i == DateColumn.MISSING_VALUE;
+    IntPredicate isMissing = i -> i == DateColumn.MISSING_VALUE;
 
-  IntPredicate isNotMissing = i -> i != DateColumn.MISSING_VALUE;
+    IntPredicate isNotMissing = i -> i != DateColumn.MISSING_VALUE;
 }

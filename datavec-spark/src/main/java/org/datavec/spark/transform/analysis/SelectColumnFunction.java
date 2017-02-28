@@ -26,7 +26,7 @@ import java.util.List;
  * Select out the value from a single column
  */
 @AllArgsConstructor
-public class SelectColumnFunction implements Function<List<Writable>,Writable> {
+public class SelectColumnFunction implements Function<List<Writable>, Writable> {
 
     private final int column;
 

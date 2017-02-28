@@ -28,7 +28,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class IntegerAnalysis extends NumericalColumnAnalysis {
 
     private int min;

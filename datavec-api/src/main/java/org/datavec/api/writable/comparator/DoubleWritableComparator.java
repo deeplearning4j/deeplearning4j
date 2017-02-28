@@ -27,7 +27,7 @@ public class DoubleWritableComparator implements WritableComparator {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "DoubleWritableComparator()";
     }
 }

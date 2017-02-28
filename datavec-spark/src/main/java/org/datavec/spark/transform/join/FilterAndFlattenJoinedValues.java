@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class FilterAndFlattenJoinedValues extends BaseFlatMapFunctionAdaptee<JoinedValue,List<Writable>> {
+public class FilterAndFlattenJoinedValues extends BaseFlatMapFunctionAdaptee<JoinedValue, List<Writable>> {
 
     public FilterAndFlattenJoinedValues(Join.JoinType joinType) {
         super(new FilterAndFlattenJoinedValuesAdapter(joinType));

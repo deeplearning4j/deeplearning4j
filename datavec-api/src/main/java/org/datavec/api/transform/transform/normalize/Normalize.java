@@ -30,11 +30,6 @@ package org.datavec.api.transform.transform.normalize;
  * @author Alex Black
  */
 public enum Normalize {
-    MinMax,
-    MinMax2,
-    Standardize,
-    SubtractMean,
-    Log2Mean,
-    Log2MeanExcludingMin
+    MinMax, MinMax2, Standardize, SubtractMean, Log2Mean, Log2MeanExcludingMin
 
 }

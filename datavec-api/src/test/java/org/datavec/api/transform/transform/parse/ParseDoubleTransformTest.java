@@ -20,7 +20,7 @@ public class ParseDoubleTransformTest {
         List<Writable> record = new ArrayList<>();
         record.add(new Text("0.0"));
         List<Writable> transformed = Arrays.<Writable>asList(new DoubleWritable(0.0));
-        assertEquals(transformed,new ParseDoubleTransform().map(record));
+        assertEquals(transformed, new ParseDoubleTransform().map(record));
     }
 
 

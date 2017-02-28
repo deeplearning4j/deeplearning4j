@@ -33,7 +33,7 @@ public class LibSvmInputFormat extends BaseInputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
         RecordReader reader = new LibSvmRecordReader();
-        reader.initialize(conf,split);
+        reader.initialize(conf, split);
         return reader;
     }
 }

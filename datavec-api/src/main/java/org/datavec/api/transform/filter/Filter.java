@@ -33,13 +33,11 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value= {
-        @JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
-        @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues"),
-        @JsonSubTypes.Type(value = InvalidNumColumns.class, name = "InvalidNumCols")
-})
-public interface Filter extends Serializable,ColumnOp {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
+                @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues"),
+                @JsonSubTypes.Type(value = InvalidNumColumns.class, name = "InvalidNumCols")})
+public interface Filter extends Serializable, ColumnOp {
 
     /**
      * @param example Example

@@ -7,28 +7,28 @@ import org.datavec.dataframe.api.*;
  */
 public interface NumericReduceFunction {
 
-  String functionName();
+    String functionName();
 
-  double reduce(double[] data);
+    double reduce(double[] data);
 
-  default double reduce(DoubleColumn data) {
-    return this.reduce(data.toDoubleArray());
-  }
+    default double reduce(DoubleColumn data) {
+        return this.reduce(data.toDoubleArray());
+    }
 
 
-  default double reduce(FloatColumn data) {
-    return this.reduce(data.toDoubleArray());
-  }
+    default double reduce(FloatColumn data) {
+        return this.reduce(data.toDoubleArray());
+    }
 
-  default double reduce(IntColumn data) {
-    return this.reduce(data.toDoubleArray());
-  }
+    default double reduce(IntColumn data) {
+        return this.reduce(data.toDoubleArray());
+    }
 
-  default double reduce(ShortColumn data) {
-    return this.reduce(data.toDoubleArray());
-  }
+    default double reduce(ShortColumn data) {
+        return this.reduce(data.toDoubleArray());
+    }
 
-  default double reduce(LongColumn data) {
-    return this.reduce(data.toDoubleArray());
-  }
+    default double reduce(LongColumn data) {
+        return this.reduce(data.toDoubleArray());
+    }
 }

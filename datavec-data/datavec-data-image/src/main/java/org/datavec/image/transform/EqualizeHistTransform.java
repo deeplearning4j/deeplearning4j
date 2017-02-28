@@ -78,9 +78,9 @@ public class EqualizeHistTransform extends BaseImageTransform {
             } else {
                 split(mat, splitChannels);
                 equalizeHist(splitChannels.get(0), splitChannels.get(0)); //equalize histogram on the 1st channel (Y)
-                merge(splitChannels,result);
+                merge(splitChannels, result);
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

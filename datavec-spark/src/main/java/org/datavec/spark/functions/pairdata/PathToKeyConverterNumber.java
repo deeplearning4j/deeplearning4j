@@ -25,6 +25,6 @@ public class PathToKeyConverterNumber implements PathToKeyConverter {
     @Override
     public String getKey(String path) {
         String fileName = FilenameUtils.getBaseName(path);
-        return fileName.replaceAll("\\D+","");
+        return fileName.replaceAll("\\D+", "");
     }
 }

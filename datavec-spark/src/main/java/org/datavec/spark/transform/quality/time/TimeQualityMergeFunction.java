@@ -22,7 +22,7 @@ import org.datavec.api.transform.quality.columns.TimeQuality;
 /**
  * Created by Alex on 5/03/2016.
  */
-public class TimeQualityMergeFunction implements Function2<TimeQuality,TimeQuality,TimeQuality> {
+public class TimeQualityMergeFunction implements Function2<TimeQuality, TimeQuality, TimeQuality> {
     @Override
     public TimeQuality call(TimeQuality v1, TimeQuality v2) throws Exception {
         return v1.add(v2);

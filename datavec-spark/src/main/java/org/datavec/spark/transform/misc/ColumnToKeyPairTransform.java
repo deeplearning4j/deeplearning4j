@@ -32,11 +32,11 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ColumnToKeyPairTransform implements PairFunction<List<Writable>,Writable,Long> {
+public class ColumnToKeyPairTransform implements PairFunction<List<Writable>, Writable, Long> {
     private final int columnIndex;
 
     @Override
     public Tuple2<Writable, Long> call(List<Writable> list) throws Exception {
-        return new Tuple2<>(list.get(columnIndex),1L);
+        return new Tuple2<>(list.get(columnIndex), 1L);
     }
 }

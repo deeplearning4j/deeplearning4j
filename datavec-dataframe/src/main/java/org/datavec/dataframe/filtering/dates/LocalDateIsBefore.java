@@ -11,17 +11,17 @@ import org.datavec.dataframe.util.Selection;
  */
 public class LocalDateIsBefore extends ColumnFilter {
 
-  private int value;
+    private int value;
 
-  public LocalDateIsBefore(ColumnReference reference, int value) {
-    super(reference);
-    this.value = value;
-  }
+    public LocalDateIsBefore(ColumnReference reference, int value) {
+        super(reference);
+        this.value = value;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
+    @Override
+    public Selection apply(Table relation) {
 
-    DateColumn dateColumn = (DateColumn) relation.column(columnReference().getColumnName());
-    return dateColumn.isBefore(value);
-  }
+        DateColumn dateColumn = (DateColumn) relation.column(columnReference().getColumnName());
+        return dateColumn.isBefore(value);
+    }
 }

@@ -10,33 +10,33 @@ import org.datavec.dataframe.table.ViewGroup;
  */
 public abstract class SummaryFunction {
 
-  private final Table original;
-  private final String summarizedColumnName;
+    private final Table original;
+    private final String summarizedColumnName;
 
-  public SummaryFunction(Table original, String summarizedColumnName) {
-    this.original = original;
-    this.summarizedColumnName = summarizedColumnName;
-  }
+    public SummaryFunction(Table original, String summarizedColumnName) {
+        this.original = original;
+        this.summarizedColumnName = summarizedColumnName;
+    }
 
-  public String summarizedColumnName() {
-    return summarizedColumnName;
-  }
+    public String summarizedColumnName() {
+        return summarizedColumnName;
+    }
 
-  Table original() {
-    return original;
-  }
+    Table original() {
+        return original;
+    }
 
-  public NumericSummaryTable by(String... columnNames) {
-    ViewGroup group = ViewGroup.create(original(), columnNames);
-    return group.reduce(summarizedColumnName(), function());
-  }
+    public NumericSummaryTable by(String... columnNames) {
+        ViewGroup group = ViewGroup.create(original(), columnNames);
+        return group.reduce(summarizedColumnName(), function());
+    }
 
-  /**
-   * Returns the result of applying to the function to all the values in the appropriate column
-   */
-  public double get() {
-    return original.reduce(summarizedColumnName, function());
-  }
+    /**
+     * Returns the result of applying to the function to all the values in the appropriate column
+     */
+    public double get() {
+        return original.reduce(summarizedColumnName, function());
+    }
 
-  public abstract NumericReduceFunction function();
+    public abstract NumericReduceFunction function();
 }

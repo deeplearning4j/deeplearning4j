@@ -28,7 +28,7 @@ public class YamlSerializer extends BaseSerializer {
 
     private ObjectMapper om;
 
-    public YamlSerializer(){
+    public YamlSerializer() {
         this.om = getMapper();
     }
 
@@ -37,7 +37,7 @@ public class YamlSerializer extends BaseSerializer {
         return om;
     }
 
-    private ObjectMapper getMapper(){
+    private ObjectMapper getMapper() {
         return getObjectMapper(new YAMLFactory());
     }
 }

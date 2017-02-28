@@ -25,7 +25,7 @@ public class BatchRecord implements Serializable {
      * @param record
      */
     public void add(CSVRecord record) {
-        if(records == null)
+        if (records == null)
             records = new ArrayList<>();
         records.add(record);
     }
@@ -38,7 +38,7 @@ public class BatchRecord implements Serializable {
      */
     public static BatchRecord fromDataSet(DataSet dataSet) {
         BatchRecord batchRecord = new BatchRecord();
-        for(int i = 0; i < dataSet.numExamples(); i++) {
+        for (int i = 0; i < dataSet.numExamples(); i++) {
             batchRecord.add(CSVRecord.fromRow(dataSet.get(i)));
         }
 

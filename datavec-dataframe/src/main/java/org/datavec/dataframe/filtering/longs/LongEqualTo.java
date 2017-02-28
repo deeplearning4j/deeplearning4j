@@ -12,15 +12,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class LongEqualTo extends ColumnFilter {
 
-  private long value;
+    private long value;
 
-  public LongEqualTo(ColumnReference reference, long value) {
-    super(reference);
-    this.value = value;
-  }
+    public LongEqualTo(ColumnReference reference, long value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    LongColumn longColumn = (LongColumn) relation.column(getColumnReference().getColumnName());
-    return longColumn.isEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        LongColumn longColumn = (LongColumn) relation.column(getColumnReference().getColumnName());
+        return longColumn.isEqualTo(value);
+    }
 }

@@ -36,11 +36,10 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value= {
-        @JsonSubTypes.Type(value = TimeWindowFunction.class, name = "TimeWindowFunction"),
-        @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class, name = "OverlappingTimeWindowFunction")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = TimeWindowFunction.class, name = "TimeWindowFunction"),
+                @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class,
+                                name = "OverlappingTimeWindowFunction")})
 public interface WindowFunction extends Serializable {
 
     /**

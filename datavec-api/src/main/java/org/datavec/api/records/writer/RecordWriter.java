@@ -29,7 +29,7 @@ import java.util.Collection;
  *  Record writer
  *  @author Adam Gibson
  */
-public interface RecordWriter extends Closeable,Configurable {
+public interface RecordWriter extends Closeable, Configurable {
     String APPEND = "org.datavec.api.record.writer.append";
 
     /**

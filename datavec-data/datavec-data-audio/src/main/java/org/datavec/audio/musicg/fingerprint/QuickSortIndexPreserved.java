@@ -15,24 +15,25 @@
  */
 
 package org.datavec.audio.musicg.fingerprint;
+
 public class QuickSortIndexPreserved {
-	
-	private QuickSort quickSort;
-	
-	public QuickSortIndexPreserved(int[] array){
-		quickSort=new QuickSortInteger(array);
-	}
-	
-	public QuickSortIndexPreserved(double[] array){
-		quickSort=new QuickSortDouble(array);
-	}
-	
-	public QuickSortIndexPreserved(short[] array){
-		quickSort=new QuickSortShort(array);
-	}
-	
-	public int[] getSortIndexes(){
-		return quickSort.getSortIndexes();
-	}
+
+    private QuickSort quickSort;
+
+    public QuickSortIndexPreserved(int[] array) {
+        quickSort = new QuickSortInteger(array);
+    }
+
+    public QuickSortIndexPreserved(double[] array) {
+        quickSort = new QuickSortDouble(array);
+    }
+
+    public QuickSortIndexPreserved(short[] array) {
+        quickSort = new QuickSortShort(array);
+    }
+
+    public int[] getSortIndexes() {
+        return quickSort.getSortIndexes();
+    }
 
 }
