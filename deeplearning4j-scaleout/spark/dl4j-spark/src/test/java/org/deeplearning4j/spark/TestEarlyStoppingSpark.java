@@ -164,8 +164,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         long endTime = System.currentTimeMillis();
         int durationSeconds = (int)(endTime-startTime)/1000;
 
-        assertTrue(durationSeconds >= 3);
-        assertTrue(durationSeconds <= 9);
+        assertTrue("durationSeconds = " + durationSeconds, durationSeconds >= 3);
+        assertTrue("durationSeconds = " + durationSeconds, durationSeconds <= 9);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3,TimeUnit.SECONDS).toString();
@@ -270,7 +270,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         @Override
         public void onCompletion(EarlyStoppingResult esResult) {
-            log.info("EorlyStopping: onCompletion called (result: {})",esResult);
+            log.info("EarlyStopping: onCompletion called (result: {})",esResult);
             onCompletionCallCount++;
         }
     }

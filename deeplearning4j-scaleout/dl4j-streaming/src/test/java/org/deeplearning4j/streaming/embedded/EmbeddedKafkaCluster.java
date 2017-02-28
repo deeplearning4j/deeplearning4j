@@ -1,3 +1,5 @@
+package org.deeplearning4j.streaming.embedded;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,14 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.deeplearning4j.streaming.embedded;
 
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
+import kafka.metrics.KafkaMetricsReporter;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
-import org.I0Itec.zkclient.ZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import kafka.utils.ZkUtils;
+import scala.Option;
+import scala.collection.mutable.Buffer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,8 +34,6 @@ import java.util.List;
 import java.util.Properties;
 
 public class EmbeddedKafkaCluster {
-    private static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaCluster.class);
-
     private final List<Integer> ports;
     private final String zkConnection;
     private final Properties baseProperties;
@@ -60,21 +61,25 @@ public class EmbeddedKafkaCluster {
         this.brokerList = constructBrokerList(this.ports);
     }
 
-    public ZkClient getZkClient() {
+    public ZkUtils getZkUtils() {
         for (KafkaServer server : brokers) {
-            return server.zkClient();
+            return server.zkUtils();
         }
         return null;
     }
 
-    public void createTopics(String...topics) {
+    public void createTopic(String topic, int partitionCount) {
+        AdminUtils.createTopic(getZkUtils(), topic, partitionCount, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
+    }
+
+    public void createTopics(String... topics) {
         for (String topic : topics) {
-            AdminUtils.createTopic(getZkClient(), topic, 2, 1, new Properties());
+            AdminUtils.createTopic(getZkUtils(), topic, 2, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
         }
     }
 
     private List<Integer> resolvePorts(List<Integer> ports) {
-        List<Integer> resolvedPorts = new ArrayList<Integer>();
+        List<Integer> resolvedPorts = new ArrayList<Integer>(ports.size());
         for (Integer port : ports) {
             resolvedPorts.add(resolvePort(port));
         }
@@ -111,10 +116,10 @@ public class EmbeddedKafkaCluster {
             properties.setProperty("host.name", "localhost");
             properties.setProperty("port", Integer.toString(port));
             properties.setProperty("log.dir", logDir.getAbsolutePath());
-            properties.setProperty("num.partitions",  String.valueOf(1));
-            properties.setProperty("auto.create.topics.enable",  String.valueOf(Boolean.TRUE));
+            properties.setProperty("num.partitions", String.valueOf(1));
+            properties.setProperty("auto.create.topics.enable", String.valueOf(Boolean.TRUE));
+            System.out.println("EmbeddedKafkaCluster: local directory: " + logDir.getAbsolutePath());
             properties.setProperty("log.flush.interval.messages", String.valueOf(1));
-            LOG.info("EmbeddedKafkaCluster: local directory: " + logDir.getAbsolutePath());
 
             KafkaServer broker = startBroker(properties);
 
@@ -125,7 +130,9 @@ public class EmbeddedKafkaCluster {
 
 
     private KafkaServer startBroker(Properties props) {
-        KafkaServer server = new KafkaServer(new KafkaConfig(props), new SystemTime());
+        List<KafkaMetricsReporter> kmrList = new ArrayList<>();
+        Buffer<KafkaMetricsReporter> metricsList = scala.collection.JavaConversions.asScalaBuffer(kmrList);
+        KafkaServer server = new KafkaServer(new KafkaConfig(props), new SystemTime(), Option.<String>empty(), metricsList);
         server.startup();
         return server;
     }

@@ -2,6 +2,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  *
@@ -38,6 +40,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private InvertedIndex<T> index;
     private boolean enableScavenger = false;
     private T unk;
+    private boolean allowParallelBuilder = true;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -201,9 +204,7 @@ public class VocabConstructor<T extends SequenceElement> {
             int sequences = 0;
             long time3 = 0;
             while (iterator.hasMoreSequences()) {
-//                long time1 = System.nanoTime();
                 Sequence<T> document = iterator.nextSequence();
-//                long time2 = System.nanoTime();
 
                 seqCount.incrementAndGet();
                 parsedCount.addAndGet(document.size());
@@ -213,12 +214,18 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 executorService.execute(runnable);
 
+                // if we're not in parallel mode - wait till this runnable finishes
+                if (!allowParallelBuilder) {
+                    while (execCounter.get() != finCounter.get())
+                        LockSupport.parkNanos(1000);
+                }
+
                 // as we see in profiler, this lock isn't really happen too often
                 // we don't want too much left in tail
 
                 while (execCounter.get() - finCounter.get() > numProc) {
                     try {
-                        Thread.sleep(2);
+                        Thread.sleep(1);
                     } catch (Exception e) { }
                 }
 
@@ -380,6 +387,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private int limit;
         private boolean enableScavenger = false;
         private T unk;
+        private boolean allowParallelBuilder = true;
 
         public Builder() {
 
@@ -395,6 +403,12 @@ public class VocabConstructor<T extends SequenceElement> {
          */
         public Builder<T> setEntriesLimit(int limit) {
             this.limit = limit;
+            return this;
+        }
+
+
+        public Builder<T> allowParallelTokenization(boolean reallyAllow) {
+            this.allowParallelBuilder = reallyAllow;
             return this;
         }
 
@@ -491,6 +505,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.index = this.index;
             constructor.enableScavenger = this.enableScavenger;
             constructor.unk = this.unk;
+            constructor.allowParallelBuilder = this.allowParallelBuilder;
 
             return constructor;
         }
@@ -523,7 +538,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 if (fetchLabels && document.getSequenceLabels() != null) {
                     for (T labelWord: document.getSequenceLabels()) {
-                        if (targetVocab.hasToken(labelWord.getLabel())) {
+                        if (!targetVocab.hasToken(labelWord.getLabel())) {
                             labelWord.setSpecial(true);
                             labelWord.markAsLabel(true);
                             labelWord.setElementFrequency(1);
