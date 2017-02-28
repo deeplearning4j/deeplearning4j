@@ -64,7 +64,7 @@ public class KerasConvolution extends KerasLayer {
             .convolutionMode(getConvolutionModeFromConfig(layerConfig))
             .kernelSize(getKernelSizeFromConfig(layerConfig))
             .stride(getStrideFromConfig(layerConfig));
-        int[] padding = getPaddingFromConfig(layerConfig);
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();

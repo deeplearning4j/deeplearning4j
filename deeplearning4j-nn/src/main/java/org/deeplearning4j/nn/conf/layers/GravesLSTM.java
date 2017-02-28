@@ -77,7 +77,7 @@ public class GravesLSTM extends BaseRecurrentLayer {
             case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
                 return l1;
             case GravesLSTMParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -90,7 +90,7 @@ public class GravesLSTM extends BaseRecurrentLayer {
             case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
                 return l2;
             case GravesLSTMParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }

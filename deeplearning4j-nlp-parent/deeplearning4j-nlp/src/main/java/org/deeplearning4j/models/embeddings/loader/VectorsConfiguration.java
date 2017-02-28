@@ -53,6 +53,9 @@ public class VectorsConfiguration implements Serializable {
     private String tokenizerFactory;
     private String tokenPreProcessor;
 
+    // this is one-off configuration value specially for NGramTokenizerFactory
+    private int nGram;
+
     private String UNK = "UNK";
     private String STOP = "STOP";
 
@@ -63,6 +66,7 @@ public class VectorsConfiguration implements Serializable {
 
     // paravec-specific option
     private boolean trainElementsVectors = true;
+    private boolean trainSequenceVectors = true;
     private boolean allowParallelTokenization = false;
     private boolean preciseWeightInit = false;
 

@@ -71,6 +71,10 @@ function renderScoreVsIterChart(data) {
     var scoresIter = data["scoresIter"];
 
     var maxScore = Math.max.apply(Math, scoresArr);
+    var chartMin = Math.min.apply(Math, scoresArr);
+    if(chartMin > 0){
+        chartMin = 0.0;
+    }
 
     var scoreChart = $("#scoreiterchart");
     scoreChart.unbind(); // prevent over-subscribing
@@ -108,7 +112,7 @@ function renderScoreVsIterChart(data) {
                 tickColor: "#dddddd",
                 borderWidth: 0
             },
-            yaxis: {min: 0, max: maxScore},
+            yaxis: {min: chartMin, max: maxScore},
             colors: ["#FA5833","rgba(65,182,240,0.3)","#000000"],
             selection: {
                 mode: "x"
