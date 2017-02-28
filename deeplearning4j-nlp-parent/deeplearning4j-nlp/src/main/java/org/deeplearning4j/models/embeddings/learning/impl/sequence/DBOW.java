@@ -112,9 +112,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             for (T word:  sentence) {
                 if (word == null) continue;
 
-                if (isInference)
-                    log.info("Iteration: {} -> {}", word, lastWord);
-
                 skipGram.iterateSample(word, lastWord, nextRandom,alpha, isInference, inferenceVector);
             }
         }
