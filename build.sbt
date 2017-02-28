@@ -11,7 +11,7 @@ lazy val root = (project in file(".")).settings(
   libraryDependencies ++= Seq(
     "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
-    "org.nd4j" % "nd4j-native-platform" % nd4jVersion.value % Test,
+    "org.nd4j" % "nd4j-native" % nd4jVersion.value % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test,
