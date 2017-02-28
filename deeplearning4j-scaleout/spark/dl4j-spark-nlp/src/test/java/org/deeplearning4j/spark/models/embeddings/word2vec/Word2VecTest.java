@@ -43,8 +43,11 @@ import java.util.Collection;
 import static org.junit.Assert.*;
 
 /**
+ * This test is for LEGACY w2v implementation
+ *
  * @author jeffreytang
  */
+@Ignore
 public class Word2VecTest {
 
     @Test

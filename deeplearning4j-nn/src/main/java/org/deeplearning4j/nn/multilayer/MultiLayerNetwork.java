@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import lombok.Setter;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -34,8 +36,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -44,8 +45,6 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.MultiLayerUtil;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -57,9 +56,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,7 +234,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     /**
-     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}
+     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}.
+     * Pretraining each layer in a row on a single minibatch (as per this method) instead of N epochs per layer is not advisable.
      */
     @Deprecated
     public void pretrain(INDArray input) {
@@ -448,7 +446,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
-            initMask();
         }
 
         //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
@@ -782,7 +779,25 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
+        if (hasAFrozenLayer()) {
+            //correct layers to frozen layers
+            Layer[] clonedLayers = ret.getLayers();
+            for (int i=0; i<layers.length; i++)
+            {
+                if(layers[i] instanceof FrozenLayer) {
+                    clonedLayers[i] = new FrozenLayer<>(ret.getLayer(i));
+                }
+            }
+            ret.setLayers(clonedLayers);
+        }
         return ret;
+    }
+
+    private boolean hasAFrozenLayer() {
+        for( int i=0; i<layers.length-1; i++ ){
+            if(layers[i] instanceof FrozenLayer) return true;
+        }
+        return false;
     }
 
 
@@ -887,38 +902,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * Packs a set of matrices in to one vector,
-     * where the matrices in this case are the w,hbias at each layer
-     * and the output layer w,bias
-     *
-     * @return a singular matrix of all of the neuralNets packed in to one matrix
-     * @deprecated use
-     */
-    @Deprecated
-    public INDArray pack() {
-        return params();
-    }
-
-    /**
-     * Packs a set of matrices in to one vector
-     *
-     * @param layers the neuralNets to pack
-     * @return a singular matrix of all of the neuralNets packed in to one matrix
-     * @deprecated use {@link #params()}
-     */
-    @Deprecated
-    public INDArray pack(List<Pair<INDArray, INDArray>> layers) {
-        List<INDArray> list = new ArrayList<>();
-
-        for (Pair<INDArray, INDArray> layer : layers) {
-            list.add(layer.getFirst());
-            list.add(layer.getSecond());
-        }
-        return Nd4j.toFlattened(list);
-    }
-
-
-    /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels
      *
@@ -928,48 +911,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public double f1Score(org.nd4j.linalg.dataset.api.DataSet data) {
         return f1Score(data.getFeatures(), data.getLabels());
-    }
-
-
-    /**
-     * Unpacks a parameter matrix in to a
-     * transform of pairs(w,hbias)
-     * triples with layer wise
-     *
-     * @param param the param vector
-     * @return a segmented list of the param vector
-     * @deprecated use {@link #setParameters(INDArray)}
-     */
-    @Deprecated
-    public List<Pair<INDArray, INDArray>> unPack(INDArray param) {
-        //more sanity checks!
-        if (param.size(0) != 1)
-            param = param.reshape(1, param.length());
-        List<Pair<INDArray, INDArray>> ret = new ArrayList<>();
-        int curr = 0;
-        for (int i = 0; i < layers.length; i++) {
-            int layerLength = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length() + layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length();
-            INDArray subMatrix = param.get(NDArrayIndex.interval(curr, curr + layerLength));
-            INDArray weightPortion = subMatrix.get(NDArrayIndex.interval(0, layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length()));
-
-            int beginHBias = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length();
-            int endHbias = subMatrix.length();
-            INDArray hBiasPortion = subMatrix.get(NDArrayIndex.interval(beginHBias, endHbias));
-            int layerLengthSum = weightPortion.length() + hBiasPortion.length();
-            if (layerLengthSum != layerLength) {
-                if (hBiasPortion.length() != layers[i].getParam(DefaultParamInitializer.BIAS_KEY).length())
-                    throw new IllegalStateException("Hidden bias on layer " + i + " was off");
-                if (weightPortion.length() != layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
-                    throw new IllegalStateException("Weight portion on layer " + i + " was off");
-
-            }
-
-            ret.add(new Pair<>(weightPortion.reshape(layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).size(0), layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).columns()), hBiasPortion.reshape(layers[i].getParam(DefaultParamInitializer.BIAS_KEY).size(0), layers[i].getParam(DefaultParamInitializer.BIAS_KEY).columns())));
-            curr += layerLength;
-        }
-
-
-        return ret;
     }
 
     @Override
@@ -1112,6 +1053,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = layerFrom; j >= 0; j--) {
             currLayer = getLayer(j);
+            if (currLayer instanceof FrozenLayer) break;
             currPair = currLayer.backpropGradient(currPair.getSecond());
 
             LinkedList<Triple<String,INDArray,Character>> tempList = new LinkedList<>();
@@ -1318,9 +1260,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /**
      * Run SGD based on the given labels
-     *
      */
-    @Deprecated
     public void finetune() {
         if (!layerWiseConfigurations.isBackprop()) {
             log.warn("Warning: finetune is not applied.");
@@ -1868,26 +1808,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @param layer     the logistic regression to average in to this one
      * @param batchSize the batch size
+     * @deprecated Not supported and not used
      */
     @Override
+    @Deprecated
     public void merge(Layer layer, int batchSize) {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Merges this network with the other one.
-     * This is a weight averaging with the update of:
-     * a += b - a / n
-     * where a is a matrix on the network
-     * b is the incoming matrix and n
-     * is the batch size.
-     * This update is performed across the network neuralNets
-     * as well as hidden neuralNets and logistic neuralNets
+     * Deprecated: Merges this network with the other one.
      *
      * @param network   the network to merge with
      * @param batchSize the batch size (number of training examples)
      *                  to average by
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used; parameter averaging is performed via alternative means/methods
      */
+    @Deprecated
     public void merge(MultiLayerNetwork network, int batchSize) {
         if (network.layers.length != layers.length)
             throw new IllegalArgumentException("Unable to merge networks that are not of equal length");
@@ -1917,10 +1854,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(input.length() == 0) throw new IllegalArgumentException("Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) +")");
             setInputMiniBatchSize(input.size(0));
         }
-    }
-
-    private void initMask() {
-        setMask(Nd4j.ones(1, pack().length()));
     }
 
 
@@ -2525,4 +2458,55 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
     }
+
+    /**
+     * String detailing the architecture of the multilayernetwork.
+     * Columns are LayerIndex with layer type, nIn, nOut, Total number of parameters and the Shapes of the parameters
+     * Will also give information about frozen layers, if any.
+     * @return Summary as a string
+     */
+    public String summary() {
+        String ret = StringUtils.repeat("=", 140);
+        ret += "\n";
+        ret += String.format("%-40s%-15s%-15s%-30s\n","LayerName (LayerType)","nIn,nOut","TotalParams", "ParamsShape");
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        int frozenParams = 0;
+        for (Layer currentLayer : layers) {
+            String name = String.valueOf(currentLayer.getIndex());
+            String paramShape = "-";
+            String in = "-";
+            String out = "-";
+            String [] classNameArr = currentLayer.getClass().getName().split("\\.");
+            String className = classNameArr[classNameArr.length-1];
+            String paramCount = String.valueOf(currentLayer.numParams());
+            if (currentLayer.numParams() > 0) {
+                paramShape = "";
+                in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                for (String aP : paraNames) {
+                    String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
+                    paramShape += aP + ":" + paramS + ", ";
+                }
+                paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
+            }
+            if (currentLayer instanceof FrozenLayer) {
+                frozenParams+= currentLayer.numParams();
+                classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
+                className = "Frozen "+classNameArr[classNameArr.length-1];
+            }
+            ret += String.format("%-40s%-15s%-15s%-30s", name + " (" + className + ")", in + "," + out, paramCount, paramShape);
+            ret += "\n";
+        }
+        ret += StringUtils.repeat("-", 140);
+        ret += String.format("\n%30s %d","Total Parameters: ",params().length());
+        ret += String.format("\n%30s %d","Trainable Parameters: ",params().length()-frozenParams);
+        ret += String.format("\n%30s %d","Frozen Parameters: ",frozenParams);
+        ret += "\n";
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        return ret;
+    }
+
 }

@@ -38,19 +38,6 @@ public class WeightInitUtilTest {
     }
 
     @Test
-    public void testNormalize(){
-        INDArray params = Nd4j.create(shape,'f');
-        INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.NORMALIZED, dist, params);
-
-        // expected calculation
-        Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected =  Nd4j.rand('f',shape);
-        weightsExpected.subi(0.5).divi(shape[0]);
-
-        assertEquals(weightsExpected, weightsActual);
-    }
-
-    @Test
     public void testRelu(){
         INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.RELU, dist,params);

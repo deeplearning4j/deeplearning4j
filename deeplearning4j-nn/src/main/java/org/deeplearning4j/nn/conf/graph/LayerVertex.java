@@ -51,6 +51,10 @@ public class LayerVertex extends GraphVertex {
         this.preProcessor = preProcessor;
     }
 
+    public InputPreProcessor getPreProcessor() {
+        return this.preProcessor;
+    }
+
     @Override
     public GraphVertex clone() {
         return new LayerVertex(layerConf.clone(), (preProcessor != null ? preProcessor.clone() : null));
