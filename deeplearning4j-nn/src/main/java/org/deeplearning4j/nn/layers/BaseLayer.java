@@ -359,7 +359,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         //Input validation:
-        if(input.rank() != 2 || input.columns() != W.rows() ){
+        if(input.rank() != 2 || input.columns() != W.rows()) {
             if(input.rank() != 2){
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank " + input.rank()
                         + " array with shape " + Arrays.toString(input.shape()));
