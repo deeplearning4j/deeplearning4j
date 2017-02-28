@@ -40,7 +40,6 @@ public class TestRecordReaderFunction extends BaseSparkTest {
 
     @Test
     public void testRecordReaderFunction() throws Exception {
-        JavaSparkContext sc = getContext();
 
         ClassPathResource cpr = new ClassPathResource("/imagetest/0/a.bmp");
         List<String> labelsList = Arrays.asList("0", "1");   //Need this for Spark: can't infer without init call

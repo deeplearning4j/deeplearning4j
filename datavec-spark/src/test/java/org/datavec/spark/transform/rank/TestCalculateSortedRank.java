@@ -16,7 +16,7 @@
 
 package org.datavec.spark.transform.rank;
 
-import org.datavec.spark.transform.BaseSparkTest;
+import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.DoubleWritable;

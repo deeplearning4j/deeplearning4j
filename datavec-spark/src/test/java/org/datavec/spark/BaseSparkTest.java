@@ -24,7 +24,7 @@ import org.junit.Before;
 import java.io.Serializable;
 
 public abstract class BaseSparkTest  implements Serializable {
-    protected transient JavaSparkContext sc;
+    protected static JavaSparkContext sc;
 
     @Before
     public void before() {
@@ -32,17 +32,36 @@ public abstract class BaseSparkTest  implements Serializable {
     }
 
     @After
-    public void after() {
+    public synchronized void after() {
         sc.close();
+        //Wait until it's stopped, to avoid race conditions during tests
+        for( int i=0; i<100; i++ ){
+            if(!sc.sc().stopped().get()){
+                try{
+                    Thread.sleep(100L);
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
+            } else {
+                break;
+            }
+        }
+        if(!sc.sc().stopped().get()){
+            throw new RuntimeException("Spark context is not stopped after 10s");
+        }
+
+
         sc = null;
     }
 
-    public JavaSparkContext getContext() {
+    public static synchronized JavaSparkContext getContext() {
         if(sc != null)
             return sc;
-        // set to test mode
+
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[*]")
+                .set("spark.driverEnv.SPARK_LOCAL_IP","127.0.0.1")
+                .set("spark.executorEnv.SPARK_LOCAL_IP","127.0.0.1")
                 .setAppName("sparktest");
 
 

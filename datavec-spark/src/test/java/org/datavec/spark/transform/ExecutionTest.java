@@ -25,6 +25,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
 
 import java.util.*;

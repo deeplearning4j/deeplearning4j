@@ -21,7 +21,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.join.Join;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
-import org.datavec.spark.transform.BaseSparkTest;
+import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.SparkTransformExecutor;
 import org.junit.Test;
 
