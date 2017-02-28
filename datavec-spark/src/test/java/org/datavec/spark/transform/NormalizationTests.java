@@ -6,6 +6,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
+import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

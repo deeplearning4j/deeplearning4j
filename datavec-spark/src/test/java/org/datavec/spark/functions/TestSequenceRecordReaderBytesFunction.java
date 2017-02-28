@@ -48,7 +48,6 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
     @Test
     public void testRecordReaderBytesFunction() throws Exception {
-        JavaSparkContext sc = getContext();
 
         //Local file path
         ClassPathResource cpr = new ClassPathResource("/video/shapes_0.mp4");
