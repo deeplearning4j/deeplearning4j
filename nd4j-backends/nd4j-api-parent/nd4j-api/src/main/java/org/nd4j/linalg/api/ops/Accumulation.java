@@ -187,7 +187,7 @@ public interface Accumulation extends Op {
      */
     double calculateFinalResult(double accum, long n);
 
-    /** @see #calculateFinalResult(double, int) */
+    /** @see #calculateFinalResult(double, long)  */
     float calculateFinalResult(float accum, long n);
 
 

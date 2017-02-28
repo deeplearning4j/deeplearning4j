@@ -3486,21 +3486,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
-    @Override
-    public INDArray repeat(int... repeats) {
-        if (repeats.length == 1) {
-            INDArray ret = create(1, length() * repeats[0]);
-            int idx = 0;
-            for (int i = 0; i < length(); i++) {
-                for (int j = 0; j < repeats[0]; j++) {
-                    ret.putScalar(idx++, getDouble(i));
-                }
-            }
-            return ret;
-        }
-
-        throw new IllegalStateException("Illegal length");
-    }
 
     /**
      * Insert a row in to this array

@@ -18,15 +18,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class Clipboard {
-
-
     protected Map<RequestDescriptor, VoidAggregation> clipboard = new ConcurrentHashMap<>();
 
     protected Queue<VoidAggregation> completedQueue = new ConcurrentLinkedQueue<>();
 
     protected AtomicInteger trackingCounter = new AtomicInteger(0);
     protected AtomicInteger completedCounter = new AtomicInteger(0);
-    protected AtomicLong counter = new AtomicLong(0);
 
     /**
      * This method places incoming VoidAggregation into clipboard, for further tracking

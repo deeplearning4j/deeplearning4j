@@ -46,6 +46,8 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      */
     public MiniBatchFileDataSetIterator(DataSet baseData, int batchSize, boolean delete, File rootDir)
                     throws IOException {
+        if(baseData.numExamples() < batchSize)
+            throw new IllegalAccessError("Number of examples smaller than batch size");
         this.batchSize = batchSize;
         this.rootDir = new File(rootDir, UUID.randomUUID().toString());
         this.rootDir.mkdirs();

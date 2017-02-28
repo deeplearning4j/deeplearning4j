@@ -948,13 +948,6 @@ public interface INDArray extends Serializable {
      */
     INDArray repeat(int dimension, int... repeats);
 
-    /**
-     * Returns a flat array
-     * with the elements repeated k times along each given dimension
-     * @param repeats
-     * @return
-     */
-    INDArray repeat(int... repeats);
 
     /**
      * Insert a row in to this array
