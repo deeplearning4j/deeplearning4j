@@ -143,7 +143,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testRepmat() {
         INDArray rowVector = Nd4j.create(1, 4);
         INDArray repmat = rowVector.repmat(4, 4);
-        assertTrue(Arrays.equals(new int[] {4, 4}, repmat.shape()));
+        assertTrue(Arrays.equals(new int[] {4, 16}, repmat.shape()));
     }
 
     @Test

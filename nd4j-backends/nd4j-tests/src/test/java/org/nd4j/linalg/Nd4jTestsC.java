@@ -1923,6 +1923,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testDupDimension() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        assertEquals(arr.tensorAlongDimension(0,1),arr.tensorAlongDimension(0,1));
+    }
+
+
+    @Test
     public void testIterator() {
         INDArray x = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray repeated = x.repeat(1,new int[] {2});
@@ -1936,7 +1943,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testTile() {
         INDArray x = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray repeated = x.repeat(new int[] {2});
+        INDArray repeated = x.repeat(0,new int[] {2});
         assertEquals(8, repeated.length());
         INDArray repeatAlongDimension = x.repeat(1, new int[] {2});
         INDArray assertionRepeat = Nd4j.create(new double[][] {{1, 1, 2, 2}, {3, 3, 4, 4}});
