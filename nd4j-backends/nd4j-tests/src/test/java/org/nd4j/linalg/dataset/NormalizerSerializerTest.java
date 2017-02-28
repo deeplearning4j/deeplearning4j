@@ -233,7 +233,8 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     public static class MyNormalizer extends AbstractDataSetNormalizer<MinMaxStats> {
-        @Getter private final int foo;
+        @Getter
+        private final int foo;
 
         public MyNormalizer(int foo) {
             super(new MinMaxStrategy());

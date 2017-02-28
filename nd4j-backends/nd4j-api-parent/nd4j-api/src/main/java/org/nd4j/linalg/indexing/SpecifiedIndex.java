@@ -100,8 +100,8 @@ public class SpecifiedIndex implements INDArrayIndex {
      *                otherwise it will end up throwing an exception
      * @return the generator for iterating over all the combinations of the specified indexes.
      */
-    public static  Generator<List<List<Integer>>> iterate(INDArrayIndex...indexes) {
-        Generator<List<List<Integer>>> gen =  Itertools.product(new SpecifiedIndexesGenerator(indexes));
+    public static Generator<List<List<Integer>>> iterate(INDArrayIndex... indexes) {
+        Generator<List<List<Integer>>> gen = Itertools.product(new SpecifiedIndexesGenerator(indexes));
         return gen;
     }
 
@@ -126,7 +126,7 @@ public class SpecifiedIndex implements INDArrayIndex {
 
         @Override
         public Generator<List<Integer>> next() throws NoSuchElementException {
-            if(index >= indexes.length) {
+            if (index >= indexes.length) {
                 throw new NoSuchElementException("Done");
             }
 
@@ -138,14 +138,14 @@ public class SpecifiedIndex implements INDArrayIndex {
 
 
 
-    public  class SingleGenerator implements Generator<List<Integer>> {
+    public class SingleGenerator implements Generator<List<Integer>> {
         /**
          * @return the next item in the sequence.
          * @throws NoSuchElementException when sequence is exhausted.
          */
         @Override
         public List<Integer> next() throws NoSuchElementException {
-            if(!SpecifiedIndex.this.hasNext())
+            if (!SpecifiedIndex.this.hasNext())
                 throw new NoSuchElementException();
 
             return Ints.asList(SpecifiedIndex.this.next());

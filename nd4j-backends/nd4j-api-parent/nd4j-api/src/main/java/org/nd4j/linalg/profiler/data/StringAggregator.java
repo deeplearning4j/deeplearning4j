@@ -93,7 +93,7 @@ public class StringAggregator {
         for (String key : sortedTimes.keySet()) {
             long currentSum = getSum(key);
             float perc;
-            if(lSum == 0){
+            if (lSum == 0) {
                 perc = 0.0f;
             } else {
                 perc = currentSum * 100.0f / sum.get();

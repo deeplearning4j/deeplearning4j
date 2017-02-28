@@ -14,8 +14,7 @@ import java.io.*;
  */
 public class MinMaxSerializerStrategy implements NormalizerSerializerStrategy<NormalizerMinMaxScaler> {
     @Override
-    public void write(@NonNull NormalizerMinMaxScaler normalizer, @NonNull OutputStream stream)
-        throws IOException {
+    public void write(@NonNull NormalizerMinMaxScaler normalizer, @NonNull OutputStream stream) throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
             dos.writeDouble(normalizer.getTargetMin());

@@ -23,7 +23,7 @@ public class MultiMinMaxSerializerStrategy implements NormalizerSerializerStrate
      * @throws IOException
      */
     public void write(@NonNull MultiNormalizerMinMaxScaler normalizer, @NonNull OutputStream stream)
-        throws IOException {
+                    throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
             dos.writeInt(normalizer.numInputs());

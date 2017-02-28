@@ -13,8 +13,7 @@ import java.io.*;
  */
 public class StandardizeSerializerStrategy implements NormalizerSerializerStrategy<NormalizerStandardize> {
     @Override
-    public void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream)
-                    throws IOException {
+    public void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
 

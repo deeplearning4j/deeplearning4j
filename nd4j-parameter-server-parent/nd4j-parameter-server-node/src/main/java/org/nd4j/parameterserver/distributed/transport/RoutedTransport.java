@@ -172,7 +172,7 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-//        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
@@ -203,7 +203,7 @@ public class RoutedTransport extends BaseTransport {
                 return;
             }
 
-      //      log.info("Trying to send [{}] to {}", message.getClass().getSimpleName(), address);
+            //      log.info("Trying to send [{}] to {}", message.getClass().getSimpleName(), address);
             while (!delivered) {
                 synchronized (rc.locker) {
                     res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));

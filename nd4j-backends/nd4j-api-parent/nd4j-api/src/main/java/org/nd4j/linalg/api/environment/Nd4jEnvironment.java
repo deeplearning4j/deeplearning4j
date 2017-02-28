@@ -73,8 +73,8 @@ public class Nd4jEnvironment implements Serializable {
         Properties envInfo = Nd4j.getExecutioner().getEnvironmentInformation();
         Nd4jEnvironment ret = Nd4jEnvironment.builder()
                         .numCores(Integer.parseInt(envInfo.getProperty(CPU_CORES_KEY, "0")))
-                        .ram(Long.parseLong(envInfo.getProperty(HOST_TOTAL_MEMORY_KEY, "0"))).os(envInfo.getProperty(OS_KEY))
-                        .blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
+                        .ram(Long.parseLong(envInfo.getProperty(HOST_TOTAL_MEMORY_KEY, "0")))
+                        .os(envInfo.getProperty(OS_KEY)).blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
                         .blasThreads(Long.parseLong(envInfo.getProperty(BLAS_THREADS_KEY, "0")))
                         .ompThreads(Integer.parseInt(envInfo.getProperty(OMP_THREADS_KEY, "0")))
                         .numGpus(Integer.parseInt(envInfo.getProperty(CUDA_NUM_GPUS_KEY, "0"))).build();

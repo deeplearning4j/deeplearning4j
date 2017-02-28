@@ -37,27 +37,17 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSpecifiedIndexVector() {
-        INDArray rootMatrix =  Nd4j.linspace(1,16,16).reshape(4, 4);
-        INDArray threeD = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
-        INDArray get =  rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {1,3},
-                {5,7},
-                {9,11},
-                {13,15}
-        });
+        INDArray rootMatrix = Nd4j.linspace(1, 16, 16).reshape(4, 4);
+        INDArray threeD = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
+        INDArray get = rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2));
+        INDArray assertion = Nd4j.create(new double[][] {{1, 3}, {5, 7}, {9, 11}, {13, 15}});
 
-        assertEquals(assertion,get);
+        assertEquals(assertion, get);
 
-        INDArray assertion2 = Nd4j.create(new double[][]{
-                {1,3,4},
-                {5,7,8},
-                {9,11,12},
-                {13,15,16}
-        });
-        INDArray get2 =  rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2,3));
+        INDArray assertion2 = Nd4j.create(new double[][] {{1, 3, 4}, {5, 7, 8}, {9, 11, 12}, {13, 15, 16}});
+        INDArray get2 = rootMatrix.get(NDArrayIndex.all(), new SpecifiedIndex(0, 2, 3));
 
-        assertEquals(assertion2,get2);
+        assertEquals(assertion2, get2);
 
     }
 
