@@ -140,74 +140,9 @@ To synthesize restricted Boltzmann machines in one diagram, here is a symmetrica
 
 For those interested in studying the structure of RBMs in greater depth, they are one type of undirectional graphical model, also called [markov random field](https://en.wikipedia.org/wiki/Markov_random_field).
 
-### <a name="code">Code Sample: Initiating an RBM on Iris With DL4J</a>
+### <a name="code">Code Sample: Stacked RBMS</a>
+https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java
 
-Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguration`, a parameter fed into a more general class. Likewise, the RBM object is used to store properties like the transforms applied to the visible and hidden layers, Gaussian and Rectified Linear transforms, respectively.
-
-		public class RBMIrisExample {		
-
-     private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
-
-     public static void main(String[] args) throws IOException {		
-         // Customizing params		
-         Nd4j.MAX_SLICES_TO_PRINT = -1;		
-         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
-         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
-         final int numRows = 4;		
-         final int numColumns = 1;		
-         int outputNum = 10;		
-         int numSamples = 150;		
-         int batchSize = 150;		
-         int iterations = 100;		
-         int seed = 123;		
-         int listenerFreq = iterations/2;		
-
-         log.info("Load data....");		
-         DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-         // Loads data into generator and format consumable for NN		
-         DataSet iris = iter.next();		
-
-         iris.normalizeZeroMeanZeroUnitVariance();		
-
-         log.info("Build model....");		
-         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
-                 .miniBatch(true)		
-                 // Gaussian for visible; Rectified for hidden		
-                 // Set contrastive divergence to 1		
-                 .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
-                         .nIn(numRows * numColumns) // Input nodes		
-                         .nOut(outputNum) // Output nodes		
-                         .activation("relu") // Activation function type		
-                         .weightInit(WeightInit.RELU) // Weight initialization		
-                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
-                         .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
-                         .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
-                         .build())		
-                 .seed(seed) // Locks in weight initialization for tuning		
-                 .iterations(iterations)		
-                 .learningRate(1e-3) // Backprop step size		
-                 // Speed of modifying learning rate		
-                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
-                         // ^^ Calculates gradients		
-                 .build();		
-         Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
-         model.setListeners(new ScoreIterationListener(listenerFreq));		
-
-         log.info("Evaluate weights....");		
-         INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
-         log.info("Weights: " + w);		
-         log.info("Scaling the dataset");		
-         iris.scale();		
-         log.info("Train model....");		
-         for(int i = 0; i < 20; i++) {		
-             log.info("Epoch "+i+":");		
-             model.fit(iris.getFeatureMatrix());		
-         }		
-     }		
-     // A single layer learns features unsupervised.
-    }
-
-This is an example of an RBM processing the Iris flower dataset.
 
 ## <a name="params">Parameters & k</a>
 
