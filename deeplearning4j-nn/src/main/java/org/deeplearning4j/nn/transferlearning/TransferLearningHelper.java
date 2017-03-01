@@ -247,7 +247,7 @@ public class TransferLearningHelper {
                 if (input.getFeaturesMaskArray() != null) {
                     throw new IllegalArgumentException("Currently cannot support featurizing datasets with feature masks");
                 }
-                MultiDataSet inbW = new MultiDataSet(new INDArray[]{input.getFeatures()}, null, new INDArray[]{input.getFeaturesMaskArray()}, new INDArray[]{input.getLabelsMaskArray()});
+                MultiDataSet inbW = new MultiDataSet(new INDArray[]{input.getFeatures()}, new INDArray[] {input.getLabels()}, null, new INDArray[]{input.getLabelsMaskArray()});
                 MultiDataSet ret = featurize(inbW);
                 return new DataSet(ret.getFeatures()[0], input.getLabels(), ret.getLabelsMaskArrays()[0], input.getLabelsMaskArray());
             }
@@ -306,7 +306,7 @@ public class TransferLearningHelper {
     private void copyOrigParamsToSubsetGraph() {
         for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
             if (!aVertex.hasLayer()) continue;
-            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params().dup());
+            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params());
         }
     }
 
