@@ -50,7 +50,7 @@ public class GloveTest extends BaseSparkTest {
             public String call(String s) throws Exception {
                 return s.toLowerCase();
             }
-        }).cache();
+        });
 
 
         Pair<VocabCache<VocabWord>,GloveWeightLookupTable> table = glove.train(corpus);

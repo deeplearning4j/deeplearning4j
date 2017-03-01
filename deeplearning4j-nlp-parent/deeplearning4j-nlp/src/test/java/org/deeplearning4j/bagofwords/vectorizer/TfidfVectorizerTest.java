@@ -20,6 +20,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -57,6 +58,7 @@ public class TfidfVectorizerTest {
                 .setStopWords(new ArrayList<String>())
                 .setTokenizerFactory(tokenizerFactory)
                 .setIterator(iter)
+                .allowParallelTokenization(false)
 //                .labels(labels)
 //                .cleanup(true)
                 .build();
@@ -85,13 +87,13 @@ public class TfidfVectorizerTest {
         INDArray vector = vectorizer.transform("This is 3 file.");
         log.info("TF-IDF vector: " + Arrays.toString(vector.data().asDouble()));
 
-        assertEquals(0, vector.getDouble(0), 0.001);
-        assertEquals(.04402, vector.getDouble(1), 0.001);
-        assertEquals(.04402, vector.getDouble(2), 0.001);
-        assertEquals(0, vector.getDouble(3), 0.001);
-        assertEquals(0.119, vector.getDouble(4), 0.001);
-        assertEquals(0, vector.getDouble(5), 0.001);
-        assertEquals(0, vector.getDouble(6), 0.001);
+        VocabCache<VocabWord> vocabCache = vectorizer.getVocabCache();
+
+        assertEquals(.04402, vector.getDouble(vocabCache.tokenFor("This").getIndex()), 0.001);
+        assertEquals(.04402, vector.getDouble(vocabCache.tokenFor("is").getIndex()), 0.001);
+        assertEquals(0.119, vector.getDouble(vocabCache.tokenFor("3").getIndex()), 0.001);
+        assertEquals(0, vector.getDouble(vocabCache.tokenFor("file.").getIndex()), 0.001);
+
 
 
         DataSet dataSet = vectorizer.vectorize("This is 3 file.", "label3");

@@ -62,9 +62,19 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      * @return a normalized similarity (cosine similarity)
      */
     @Override
-    public double similarity( String label1, String label2) {
+    public double similarity(@NonNull String label1, @NonNull String label2) {
         if (label1 == null || label2 == null) {
             log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null": EXISTS)+ ";" + label2 +" vec2:" + (label2 == null ? "null": EXISTS));
+            return Double.NaN;
+        }
+
+        if (!vocabCache.hasToken(label1)) {
+            log.debug("Unknown token 1 requested: [{}]", label1);
+            return Double.NaN;
+        }
+
+        if (!vocabCache.hasToken(label2)) {
+            log.debug("Unknown token 2 requested: [{}]", label2);
             return Double.NaN;
         }
 
