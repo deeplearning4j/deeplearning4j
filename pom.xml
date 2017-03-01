@@ -624,6 +624,7 @@
                     <version>2.5.3</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
+                        <tagNameFormat>${project.name}-@{project.version}-intropro</tagNameFormat>
                         <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgdeeplearning4j-xxxx -->
                         <arguments>${arguments}</arguments>
                         <localCheckout>true</localCheckout>
