@@ -2293,7 +2293,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Summary as a string
      */
     public String summary() {
-        String ret = StringUtils.repeat("=", 140);
+        String ret = "\n";
+        ret += StringUtils.repeat("=", 140);
         ret += "\n";
         ret += String.format("%-40s%-15s%-15s%-30s %s\n","VertexName (VertexType)","nIn,nOut","TotalParams", "ParamsShape", "Vertex Inputs");
         ret += StringUtils.repeat("=", 140);
