@@ -10,7 +10,7 @@ redirect_from: /zh-restrictedboltzmannmachine
   <li><a href="#reconstruct">重构</a></li>
   <li><a href="#probability">概率分布</a></li>
   <li><a href="#multilayer">多层结构</a></li>
-  <li><a href="#code">代码示例：在DL4J中用受限玻尔兹曼机处理鸢尾花数据集</a></li>
+  <li><a href="#code">代码示例：堆叠式受限玻尔兹曼机</a></li>
   <li><a href="#params">参数与变量k</a></li>
   <li><a href="#CRBM">连续受限玻尔兹曼机</a></li>
   <li><a href="#next">后续内容</a></li>
@@ -87,72 +87,10 @@ redirect_from: /zh-restrictedboltzmannmachine
 <img class="img-responsive center-block" src="../img/sym_bipartite_graph_RBM.png" alt="deeplearning4j">
 <p>深度RBM是一种<a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph" target="_blank">有向无环图（DAG）</a>，如有兴趣可点击链接了解其结构。</p><br>
 
-<p><h2><a name="code">代码示例：在DL4J中用RBM处理鸢尾花数据集</a></h2></p>
-<p>注意，以下的示例中创建的RBM仅是<code>NeuralNetConfiguration</code>中的一个层，是送入通用类中的一个参数。同样，RBM对象则被用于存储可见层与隐藏层进行的变换等属性，两种层分别采用高斯和修正线性变换。</p>
-<pre class="line-numbers"><code class="language-java">
-public class RBMIrisExample {		
+<p>
+<h2><a name="code">代码示例：堆叠式受限玻尔兹曼机</a></h2></p>
+<p>请参考<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java" target="_blank">这里</a></p>
 
- private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
-
- public static void main(String[] args) throws IOException {		          // 自定义参数		
-     Nd4j.MAX_SLICES_TO_PRINT = -1;		
-     Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
-     Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
-     final int numRows = 4;		
-     final int numColumns = 1;		
-     int outputNum = 10;		
-     int numSamples = 150;		
-     int batchSize = 150;		
-     int iterations = 100;		
-     int seed = 123;		
-     int listenerFreq = iterations/2;		
-
-     log.info("Load data....");		
-     DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-     // 将数据加载至生成器中，变为神经网络可接受的格式		
-     DataSet iris = iter.next();		
-
-     iris.normalizeZeroMeanZeroUnitVariance();		
-
-     log.info("Build model....");		
-     NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
-             .miniBatch(true)		
-             // 可见层用高斯；隐藏层用修正		
-             // 将对比散度设为1		
-             .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
-                     .nIn(numRows * numColumns) // 输入节点		
-                     .nOut(outputNum) // 输出节点		
-                     .activation("relu") // 激活函数类型		
-                     .weightInit(WeightInit.RELU) // 权重初始化		
-                     .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
-                     .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
-                     .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
-                     .build())		
-             .seed(seed) // 锁定调试时的初始化权重		
-             .iterations(iterations)		
-             .learningRate(1e-3) // 反向传播步幅		
-             // 学习速率的调整速度		
-             .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
-                     // ^^ 计算梯度		
-             .build();		
-     Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
-     model.setListeners(new ScoreIterationListener(listenerFreq));		
-
-     log.info("Evaluate weights....");		
-     INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
-     log.info("Weights:" + w);		
-     log.info("Scaling the dataset");		
-     iris.scale();		
-     log.info("Train model....");		
-     for(int i = 0; i &lt; 20; i++) {		
-         log.info("Epoch "+i+":");		
-         model.fit(iris.getFeatureMatrix());		
-     }		
- }		
- // 单个层以无监督方式学习特征。
-}
-</code></pre>
-<p>以上是用RBM处理鸢尾花数据集的示例，可点击链接查看这个示例的专门教程。</p>
 <br>
 
 
