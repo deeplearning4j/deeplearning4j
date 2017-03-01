@@ -24,6 +24,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 ## Math
 
+* [Seeing Theory: A Visual Introduction to Probability and Statistics](http://students.brown.edu/seeing-theory/)
 * [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
 * [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
