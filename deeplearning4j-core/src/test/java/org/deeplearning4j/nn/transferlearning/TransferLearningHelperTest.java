@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by susaneraly on 2/24/17.
  */
+@Slf4j
 public class TransferLearningHelperTest {
 
     @Test
@@ -78,7 +80,7 @@ public class TransferLearningHelperTest {
 
         ComputationGraphConfiguration expectedConf
                 = overallConf.graphBuilder()
-                .addInputs("denseCentre1","denseCentre2", "inRight") //inputs are in sorted order
+                .addInputs("denseCentre1", "denseCentre2", "inRight") //inputs are in sorted order
                 .addLayer("denseCentre3", new DenseLayer.Builder().nIn(7).nOut(7).build(), "denseCentre2")
                 .addLayer("outCentre", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(7).nOut(4).build(), "denseCentre3")
                 .addVertex("subsetLeft", new SubsetVertex(0, 3), "denseCentre1")
@@ -93,7 +95,7 @@ public class TransferLearningHelperTest {
                 .build();
         ComputationGraph expectedModel = new ComputationGraph(expectedConf);
         expectedModel.init();
-        assertEquals(expectedConf.toJson(),modelSubset.getConfiguration().toJson());
+        assertEquals(expectedConf.toJson(), modelSubset.getConfiguration().toJson());
     }
 
     @Test
@@ -131,12 +133,12 @@ public class TransferLearningHelperTest {
         modelToTune.getVertex("denseCentre1").setLayerAsFrozen();
         modelToTune.getVertex("denseCentre2").setLayerAsFrozen();
 
-        INDArray inRight = Nd4j.rand(10,2);
-        INDArray inCentre = Nd4j.rand(10,10);
-        INDArray outLeft = Nd4j.rand(10,6);
-        INDArray outRight = Nd4j.rand(10,5);
-        INDArray outCentre = Nd4j.rand(10,4);
-        MultiDataSet origData = new MultiDataSet(new INDArray[] {inCentre,inRight},new INDArray[] {outLeft,outCentre,outRight});
+        INDArray inRight = Nd4j.rand(10, 2);
+        INDArray inCentre = Nd4j.rand(10, 10);
+        INDArray outLeft = Nd4j.rand(10, 6);
+        INDArray outRight = Nd4j.rand(10, 5);
+        INDArray outCentre = Nd4j.rand(10, 4);
+        MultiDataSet origData = new MultiDataSet(new INDArray[]{inCentre, inRight}, new INDArray[]{outLeft, outCentre, outRight});
         ComputationGraph modelIdentical = modelToTune.clone();
 
         TransferLearningHelper helper = new TransferLearningHelper(modelToTune);
@@ -145,20 +147,19 @@ public class TransferLearningHelperTest {
         modelIdentical.fit(origData);
         helper.fitFeaturized(featurizedDataSet);
 
-        assertEquals(modelIdentical.getLayer("denseCentre0").params(),modelToTune.getLayer("denseCentre0").params());
-        assertEquals(modelIdentical.getLayer("denseCentre1").params(),modelToTune.getLayer("denseCentre1").params());
-        assertEquals(modelIdentical.getLayer("denseCentre2").params(),modelToTune.getLayer("denseCentre2").params());
-        assertEquals(modelIdentical.getLayer("denseCentre3").params(),modelToTune.getLayer("denseCentre3").params());
-        assertEquals(modelIdentical.getLayer("outCentre").params(),modelToTune.getLayer("outCentre").params());
+        assertEquals(modelIdentical.getLayer("denseCentre0").params(), modelToTune.getLayer("denseCentre0").params());
+        assertEquals(modelIdentical.getLayer("denseCentre1").params(), modelToTune.getLayer("denseCentre1").params());
+        assertEquals(modelIdentical.getLayer("denseCentre2").params(), modelToTune.getLayer("denseCentre2").params());
+        assertEquals(modelIdentical.getLayer("denseCentre3").params(), modelToTune.getLayer("denseCentre3").params());
+        assertEquals(modelIdentical.getLayer("outCentre").params(), modelToTune.getLayer("outCentre").params());
         //assertEquals(modelIdentical.getLayer("denseRight0").params(),modelToTune.getLayer("denseRight0").params());
         //assertEquals(modelIdentical.getLayer("denseRight1").params(),modelToTune.getLayer("denseRight1").params());
         //assertEquals(modelIdentical.getLayer("outRight").params(),modelToTune.getLayer("outRight").params());
-        assertEquals(modelIdentical.getLayer("denseLeft0").params(),modelToTune.getLayer("denseLeft0").params());
-        assertEquals(modelIdentical.getLayer("outLeft").params(),modelToTune.getLayer("outLeft").params());
+        assertEquals(modelIdentical.getLayer("denseLeft0").params(), modelToTune.getLayer("denseLeft0").params());
+        assertEquals(modelIdentical.getLayer("outLeft").params(), modelToTune.getLayer("outLeft").params());
 
-        System.out.println(modelIdentical.summary());
-        System.out.println(helper.unfrozenGraph().summary());
-
+        log.info(modelIdentical.summary());
+        log.info(helper.unfrozenGraph().summary());
 
     }
 }
