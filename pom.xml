@@ -269,9 +269,9 @@
         <module>deeplearning4j-cuda/pom-cuda75.xml</module>
         <module>deeplearning4j-scaleout/dl4j-streaming/pom-scala-2_11.xml</module>
         <module>deeplearning4j-scaleout/spark/pom-scala-2_11.xml</module>
-        <module>deeplearning4j-scaleout/spark/dl4j-spark/pom-scala-2_11.xml</module>
-        <module>deeplearning4j-scaleout/spark/dl4j-spark-nlp/pom-scala-2_11.xml</module>
-        <module>deeplearning4j-scaleout/spark/dl4j-spark-parameterserver/pom-scala-2_11.xml</module>
+        <!--<module>deeplearning4j-scaleout/spark/dl4j-spark/pom-scala-2_11.xml</module>-->
+        <!--<module>deeplearning4j-scaleout/spark/dl4j-spark-nlp/pom-scala-2_11.xml</module>-->
+        <!--<module>deeplearning4j-scaleout/spark/dl4j-spark-parameterserver/pom-scala-2_11.xml</module>-->
 
 
         <module>deeplearning4j-ui-parent/deeplearning4j-play/pom-scala-2_11.xml</module>

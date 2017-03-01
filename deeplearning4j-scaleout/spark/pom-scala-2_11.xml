@@ -31,9 +31,9 @@
     <name>spark_2.11</name>
 
     <modules>
-        <!--<module>dl4j-spark/pom-scala-2_11.xml</module>-->
-        <!--<module>dl4j-spark-nlp</module>-->
-        <!--<module>dl4j-spark-parameterserver</module>-->
+        <module>dl4j-spark/pom-scala-2_11.xml</module>
+        <module>dl4j-spark-nlp/pom-scala-2_11.xml</module>
+        <module>dl4j-spark-parameterserver/pom-scala-2_11.xml</module>
     </modules>
 
     <properties>
