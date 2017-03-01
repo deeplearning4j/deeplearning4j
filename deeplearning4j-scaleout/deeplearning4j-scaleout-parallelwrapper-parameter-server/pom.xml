@@ -40,13 +40,13 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server-client</artifactId>
-            <version>${project.version}</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
