@@ -171,9 +171,7 @@ public class TransferLearningHelper extends TransferLearning {
     private void initHelperMLN() {
         for (int i = 0; i < origMLN.getnLayers(); i++) {
             if (origMLN.getLayer(i) instanceof FrozenLayer) {
-                continue;
-            } else {
-                frozenInputLayer = i - 1; //last frozen layer is expected to be the input to the subset MLN
+                frozenInputLayer = i;
             }
         }
         List<NeuralNetConfiguration> allConfs = new ArrayList<>();
