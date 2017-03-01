@@ -40,6 +40,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 If you do not know how to program yet, you can start with Java, but you might find other languages easier. Python and Ruby resources convey the basic ideas in a faster feedback loop. 
 
+* [Learn Java The Hard Way](https://learnjavathehardway.org/)
 * [Learn Python the Hard Way](http://learnpythonthehardway.org/)
 * [Pyret: A Python Learning Environment](https://www.pyret.org/)
 * [Scratch: A Visual Programming Environment From MIT](https://scratch.mit.edu/)
