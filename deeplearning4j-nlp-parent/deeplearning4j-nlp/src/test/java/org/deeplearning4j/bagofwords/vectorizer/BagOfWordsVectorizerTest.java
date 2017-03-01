@@ -21,6 +21,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -66,6 +67,7 @@ public class BagOfWordsVectorizerTest {
                 .setStopWords(new ArrayList<String>())
                 .setTokenizerFactory(tokenizerFactory)
                 .setIterator(iter)
+                .allowParallelTokenization(false)
 //                .labels(labels)
 //                .cleanup(true)
                 .build();
@@ -92,11 +94,14 @@ public class BagOfWordsVectorizerTest {
         log.info("Transformed array: " + array);
         assertEquals(5, array.columns());
 
-        assertEquals(2, array.getDouble(0), 0.1);
-        assertEquals(2, array.getDouble(1), 0.1);
-        assertEquals(2, array.getDouble(2), 0.1);
-        assertEquals(0, array.getDouble(3), 0.1);
-        assertEquals(1, array.getDouble(4), 0.1);
+
+        VocabCache<VocabWord> vocabCache = vectorizer.getVocabCache();
+
+        assertEquals(2, array.getDouble(vocabCache.tokenFor("This").getIndex()), 0.1);
+        assertEquals(2, array.getDouble(vocabCache.tokenFor("is").getIndex()), 0.1);
+        assertEquals(2, array.getDouble(vocabCache.tokenFor("file.").getIndex()), 0.1);
+        assertEquals(0, array.getDouble(vocabCache.tokenFor("1").getIndex()), 0.1);
+        assertEquals(1, array.getDouble(vocabCache.tokenFor("2").getIndex()), 0.1);
 
         DataSet dataSet = vectorizer.vectorize("This is 2 file.", "label2");
         assertEquals(array, dataSet.getFeatureMatrix());
@@ -111,11 +116,11 @@ public class BagOfWordsVectorizerTest {
 
         dataSet = vectorizer.vectorize("This is 1 file.", "label1");
 
-        assertEquals(2, dataSet.getFeatureMatrix().getDouble(0), 0.1);
-        assertEquals(2, dataSet.getFeatureMatrix().getDouble(1), 0.1);
-        assertEquals(2, dataSet.getFeatureMatrix().getDouble(2), 0.1);
-        assertEquals(1, dataSet.getFeatureMatrix().getDouble(3), 0.1);
-        assertEquals(0, dataSet.getFeatureMatrix().getDouble(4), 0.1);
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(vocabCache.tokenFor("This").getIndex()), 0.1);
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(vocabCache.tokenFor("is").getIndex()), 0.1);
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(vocabCache.tokenFor("file.").getIndex()), 0.1);
+        assertEquals(1, dataSet.getFeatureMatrix().getDouble(vocabCache.tokenFor("1").getIndex()), 0.1);
+        assertEquals(0, dataSet.getFeatureMatrix().getDouble(vocabCache.tokenFor("2").getIndex()), 0.1);
 
         int idx1 =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult();
 
