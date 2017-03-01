@@ -187,7 +187,7 @@ def check_dl4j_model(
             params_builder.type(modelType)
             params_builder.modelFilePath(model_file_path)
 
-            self._dl4j_model = gateway.sequential_to_multilayernetwork(params_builder.build())
+            self._dl4j_model = gateway.sequentialToMultilayerNetwork(params_builder.build())
             self._dl4j_type = modelType
 
         elif self.__class__.__name__ == 'Model':
@@ -197,7 +197,7 @@ def check_dl4j_model(
             params_builder.type(modelType)
             params_builder.modelFilePath(model_file_path)
 
-            self._dl4j_model = gateway.functional_to_computationgraph(params_builder.build())
+            self._dl4j_model = gateway.functionalToComputationGraph(params_builder.build())
             self._dl4j_type = modelType
         else:
             raise ValueError('DL4J Keras only works with Sequential and Functional models')

@@ -36,10 +36,10 @@ public class DeepLearning4jEntryPoint {
      *
      * @param modelRef Reference to sequential model serialized on disk.
      */
-    public MultiLayerNetwork sequential_to_multilayernetwork(KerasModelRef modelRef) throws Exception {
+    public MultiLayerNetwork sequentialToMultilayerNetwork(KerasModelRef modelRef) throws Exception {
         MultiLayerNetwork model;
         try {
-            if (KerasModelType.SEQUENTIAL.equals(modelRef.getType())) {
+            if (KerasModelType.SEQUENTIAL == modelRef.getType()) {
                 model = kerasModelSerializer.readSequential(modelRef.getModelFilePath(), modelRef.getType());
             }
             else {
@@ -61,10 +61,10 @@ public class DeepLearning4jEntryPoint {
      *
      * @param modelRef Reference to functional model serialized on disk.
      */
-    public ComputationGraph functional_to_computationgraph(KerasModelRef modelRef) throws Exception {
+    public ComputationGraph functionalToComputationGraph(KerasModelRef modelRef) throws Exception {
         ComputationGraph model;
         try {
-            if(KerasModelType.FUNCTIONAL.equals(modelRef.getType())) {
+            if(KerasModelType.FUNCTIONAL == modelRef.getType()) {
                 model = kerasModelSerializer.readFunctional(modelRef.getModelFilePath(), modelRef.getType());
             }
             else {
