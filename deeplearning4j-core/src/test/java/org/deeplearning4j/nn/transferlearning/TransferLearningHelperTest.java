@@ -10,12 +10,16 @@ import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -161,5 +165,61 @@ public class TransferLearningHelperTest {
         log.info(modelIdentical.summary());
         log.info(helper.unfrozenGraph().summary());
 
+    }
+
+    @Test
+    public void testMLN() {
+        DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
+
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.SGD)
+                .activation(Activation.IDENTITY);
+
+        MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.clone().list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(3)
+                        .build())
+                .layer(1, new DenseLayer.Builder()
+                        .nIn(3).nOut(2)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nIn(2).nOut(3)
+                        .build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(3)
+                        .build()).build());
+
+        modelToFineTune.init();
+        List<INDArray> ff = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false);
+        INDArray asFrozenFeatures = ff.get(2);
+
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
+                .setFeatureExtractor(1).build();
+        TransferLearningHelper helper = new TransferLearningHelper(modelNow);
+
+        INDArray paramsLastTwoLayers = Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params());
+        MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.clone().list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(2).nOut(3)
+                        .build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(3)
+                        .build()).build(), paramsLastTwoLayers);
+
+        assertEquals(asFrozenFeatures, helper.featurize(randomData).getFeatures());
+        assertEquals(randomData.getLabels(), helper.featurize(randomData).getLabels());
+
+        for (int i = 0; i < 5; i++) {
+            notFrozen.fit(new DataSet(asFrozenFeatures, randomData.getLabels()));
+            helper.fitFeaturized(helper.featurize(randomData));
+        }
+
+        INDArray expected = Nd4j.hstack(modelToFineTune.getLayer(0).params(), modelToFineTune.getLayer(1).params(), notFrozen.params());
+        INDArray act = modelNow.params();
+        assertEquals(expected, act);
     }
 }
