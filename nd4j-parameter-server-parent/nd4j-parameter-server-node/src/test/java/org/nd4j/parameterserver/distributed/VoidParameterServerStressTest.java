@@ -489,6 +489,7 @@ public class VoidParameterServerStressTest {
 
         final List<Long> times = new ArrayList<>();
 
+        log.info("Starting loop...");
         for (int i = 0; i < 200; i++) {
             Frame<CbowRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
             for (int f = 0; f < 128; f++) {
@@ -499,6 +500,9 @@ public class VoidParameterServerStressTest {
             long time2 = System.nanoTime();
 
             times.add(time2 - time1);
+
+            if (i % 50 == 0)
+                log.info("{} frames passed...", i);
         }
 
 
@@ -542,7 +546,7 @@ public class VoidParameterServerStressTest {
         }
 
         final List<Long> times = new CopyOnWriteArrayList<>();
-
+        log.info("Starting loop...");
         Thread[] threads = new Thread[clients.length];
         for (int t = 0; t < threads.length; t++) {
             final int c = t;
