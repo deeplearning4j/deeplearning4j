@@ -16,14 +16,13 @@
   ~  */
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <artifactId>deeplearning4j-modelimport</artifactId>
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.2</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>

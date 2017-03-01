@@ -1,39 +1,31 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>deeplearning4j-parent</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>0.7.2-SNAPSHOT</version>
+        <relativePath>../pom-scala-2_11.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nn</artifactId>
+    <artifactId>dl4j-spark-parameterserver_2.11</artifactId>
     <packaging>jar</packaging>
 
-    <name>deeplearning4j-nn</name>
+    <name>${project.artifactId}</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-        <!-- ND4J API -->
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${nd4j.version}</version>
+            <artifactId>nd4j-aeron</artifactId>
+            <version>${project.version}</version>
         </dependency>
-
-        <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>jackson</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>1.8</version>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-spark_2.11</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
