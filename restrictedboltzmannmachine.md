@@ -10,7 +10,7 @@ Contents
 * <a href="#define">Definition & Structure</a>
 * <a href="#reconstruct">Reconstructions</a>
 * <a href="#probability">Probability Distributions</a>
-* <a href="#code">Code Sample: Initiating an RBM on Iris With DL4J</a>
+* <a href="#code">Code Sample: Stacked RBMS</a>
 * <a href="#params">Parameters & k</a>
 * <a href="#CRBM">Continuous RBMs</a>
 * <a href="#next">Next Steps</a>
