@@ -55,7 +55,8 @@ public class Nd4jEnvironment implements Serializable {
     public final static String BLAS_VENDOR_KEY = "blas.vendor";
 
     public final static String OS_KEY = "os";
-    public final static String RAM_KEY = "memory.available";
+    public final static String HOST_FREE_MEMORY_KEY = "memory.free";
+    public final static String HOST_TOTAL_MEMORY_KEY = "memory.available";
     public final static String CPU_CORES_KEY = "cores";
 
     public final static String OMP_THREADS_KEY = "omp.threads";
@@ -72,7 +73,7 @@ public class Nd4jEnvironment implements Serializable {
         Properties envInfo = Nd4j.getExecutioner().getEnvironmentInformation();
         Nd4jEnvironment ret = Nd4jEnvironment.builder()
                         .numCores(Integer.parseInt(envInfo.getProperty(CPU_CORES_KEY, "0")))
-                        .ram(Long.parseLong(envInfo.getProperty(RAM_KEY, "0"))).os(envInfo.getProperty(OS_KEY))
+                        .ram(Long.parseLong(envInfo.getProperty(HOST_TOTAL_MEMORY_KEY, "0"))).os(envInfo.getProperty(OS_KEY))
                         .blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
                         .blasThreads(Long.parseLong(envInfo.getProperty(BLAS_THREADS_KEY, "0")))
                         .ompThreads(Integer.parseInt(envInfo.getProperty(OMP_THREADS_KEY, "0")))

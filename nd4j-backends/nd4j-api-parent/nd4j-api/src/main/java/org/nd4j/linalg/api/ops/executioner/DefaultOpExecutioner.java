@@ -596,7 +596,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public Properties getEnvironmentInformation() {
         Properties environment = new Properties();
         environment.put(Nd4jEnvironment.CPU_CORES_KEY, Runtime.getRuntime().availableProcessors());
-        environment.put(Nd4jEnvironment.RAM_KEY, Runtime.getRuntime().maxMemory());
+        environment.put(Nd4jEnvironment.HOST_TOTAL_MEMORY_KEY, Runtime.getRuntime().maxMemory());
         environment.put(Nd4jEnvironment.OS_KEY, System.getProperty("os.name"));
         return environment;
     }

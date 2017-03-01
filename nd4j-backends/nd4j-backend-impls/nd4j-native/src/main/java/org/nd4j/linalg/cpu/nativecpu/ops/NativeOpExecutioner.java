@@ -1016,6 +1016,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         properties.put(Nd4jEnvironment.OMP_THREADS_KEY, loop.ompGetMaxThreads());
         properties.put(Nd4jEnvironment.BLAS_THREADS_KEY, Nd4j.factory().blas().getMaxThreads());
         properties.put(Nd4jEnvironment.BLAS_VENDOR_KEY, ((Nd4jBlas) Nd4j.factory().blas()).getBlasVendor().toString());
+        properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
         return properties;
     }

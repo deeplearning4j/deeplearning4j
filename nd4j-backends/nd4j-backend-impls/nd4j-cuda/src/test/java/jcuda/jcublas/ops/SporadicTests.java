@@ -580,7 +580,17 @@ public class SporadicTests {
         }
     }
 
+    @Test
+    public void testPrintOut() throws Exception {
+        Nd4j.create(100);
 
+        Nd4j.getExecutioner().printEnvironmentInformation();
+
+        log.info("-------------------------------------");
+        Nd4j.create(500);
+
+        Nd4j.getExecutioner().printEnvironmentInformation();
+    }
 
     public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
         List<INDArray> inp = new ArrayList<>();
@@ -598,4 +608,7 @@ public class SporadicTests {
         DataSet ret =  new DataSet(Nd4j.vstack(inp.toArray(new INDArray[0])), Nd4j.vstack(lab.toArray(new INDArray[0])));
         return ret;
     }
+
+
+
 }

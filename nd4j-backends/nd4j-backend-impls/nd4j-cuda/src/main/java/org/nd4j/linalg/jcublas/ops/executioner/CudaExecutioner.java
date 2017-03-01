@@ -1927,9 +1927,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, nativeOps.getAvailableDevices());
             props.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
             props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, Nd4jBlas.Vendor.CUBLAS.toString());
+            props.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
 
             properties = props;
+        } else {
+
+            List<Map<String, Object>> devicesList = (List<Map<String, Object>>) properties.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
+
+            for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
+                Map<String, Object> dev = devicesList.get(i);
+                CudaPointer devPtr = new CudaPointer(i);
+
+                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
+                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
+            }
+
+            properties.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
+            properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
         }
         return properties;
     }
@@ -1946,10 +1961,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Properties env = getEnvironmentInformation();
 
-        List<Map<String, Object>> devicesList = (List<Map<String, Object>>) env.get("cuda.devicesInformation");
+        List<Map<String, Object>> devicesList = (List<Map<String, Object>>) env.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
         for (Map<String, Object> dev : devicesList) {
-            log.info("Device name: [{}]; CC: [{}.{}]; Total memory: [{}]", dev.get("cuda.deviceName"),
-                            dev.get("cuda.deviceMajor"), dev.get("cuda.deviceMinor"), dev.get("cuda.totalMemory"));
+            log.info("Device name: [{}]; CC: [{}.{}]; Total/free memory: [{}]", dev.get(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY),
+                            dev.get(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY));
         }
     }
 }
