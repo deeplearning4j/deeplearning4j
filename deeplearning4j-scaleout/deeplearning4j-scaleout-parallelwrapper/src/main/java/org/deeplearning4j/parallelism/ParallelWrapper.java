@@ -505,8 +505,11 @@ public class ParallelWrapper implements AutoCloseable {
 
         /**
          * This method enables/disable MagicQueue use
+         * If set to true, all datasets will be spread among all available devices at prefetch phase using AsyncDataSetIterator
          *
-         * Default: true for systems with more then 1 computational device. I.e. 2 or more GPUs
+         * PLEASE NOTE: This is experimental feature.
+         *
+         * Default: false
          * @param reallyUse
          * @return
          */
