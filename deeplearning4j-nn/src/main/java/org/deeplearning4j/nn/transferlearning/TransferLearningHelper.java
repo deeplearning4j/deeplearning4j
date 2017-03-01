@@ -31,7 +31,7 @@ import java.util.*;
  *
  * @author susaneraly
  */
-public class TransferLearningHelper extends TransferLearning {
+public class TransferLearningHelper {
 
     private boolean isGraph = true;
     private ComputationGraph origGraph;
@@ -244,7 +244,10 @@ public class TransferLearningHelper extends TransferLearning {
             if (origGraph.getNumInputArrays() > 1 || origGraph.getNumOutputArrays() > 1) {
                 throw new IllegalArgumentException("Input size to a computation graph is greater than one. Requires use of a multidataset.");
             } else {
-                MultiDataSet inbW = new MultiDataSet(new INDArray[]{input.getFeatures()}, new INDArray[]{input.getLabels()}, new INDArray[]{input.getFeaturesMaskArray()}, new INDArray[]{input.getLabelsMaskArray()});
+                if (input.getFeaturesMaskArray() != null) {
+                    throw new IllegalArgumentException("Currently cannot support featurizing datasets with feature masks");
+                }
+                MultiDataSet inbW = new MultiDataSet(new INDArray[]{input.getFeatures()}, null, new INDArray[]{input.getFeaturesMaskArray()}, new INDArray[]{input.getLabelsMaskArray()});
                 MultiDataSet ret = featurize(inbW);
                 return new DataSet(ret.getFeatures()[0], input.getLabels(), ret.getLabelsMaskArrays()[0], input.getLabelsMaskArray());
             }
