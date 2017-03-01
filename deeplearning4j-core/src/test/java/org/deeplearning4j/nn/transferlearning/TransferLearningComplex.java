@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -25,6 +26,7 @@ import static org.junit.Assert.*;
 /**
  * Created by susaneraly on 2/20/17.
  */
+@Slf4j
 public class TransferLearningComplex {
 
     @Test
@@ -170,7 +172,7 @@ public class TransferLearningComplex {
                 assertEquals(rightGraph.getLayer("denseRight1").conf().toJson(),modelNow.getLayer("denseRight1").conf().toJson());
                 assertEquals(rightGraph.getLayer("outRight").conf().toJson(),modelNow.getLayer("outRight").conf().toJson());
 
-                // will fail because params are different
+                // will fail because string param names are different but everything else is the same, so okay
                 // assertEquals(rightGraph.getConfiguration().getDefaultConfiguration().toJson(),modelNow.getConfiguration().getDefaultConfiguration().toJson());
             }
             leftGraph.fit(new DataSet(subsetLeft, labels[0]));
@@ -180,7 +182,7 @@ public class TransferLearningComplex {
             rightGraph.fit(rightDataSet);
             modelNow.fit(new MultiDataSet(features, labels));
             assertEquals(modelNow.getLayer("denseCentre2").params(),frozenGraph.getLayer("denseCentre2").params());
-            System.out.println("Fit after "+n);
+            log.info("Fit after "+n);
             for (int i = 0; i < listOfLayers.length; i++) {
                 String currentLayer = listOfLayers[i];
                 INDArray expectedParams;
@@ -194,8 +196,8 @@ public class TransferLearningComplex {
                     expectedParams = centreGraph.getLayer(currentLayer).params();
                 }
                 INDArray actualParams = modelNow.getLayer(currentLayer).params();
-                System.out.println("Checking layer " + currentLayer + "\nPrinting differences in percentage..");
-                System.out.println(expectedParams.sub(actualParams).mul(100).div(actualParams));
+                log.info("Checking layer " + currentLayer + "\nPrinting differences in percentage..");
+                log.info(expectedParams.sub(actualParams).mul(100).div(actualParams).toString());
                 assertEquals(expectedParams,actualParams);
                 //assertTrue(expectedParams.equalsWithEps(actualParams, 1e-3));
             }
@@ -236,7 +238,7 @@ public class TransferLearningComplex {
 
         for (int i = 0; i < topologicalOrder.length; i++) {
             org.deeplearning4j.nn.graph.vertex.GraphVertex v = vertices[topologicalOrder[i]];
-            System.out.println(i + "\t" + v.getVertexName());
+            log.info(i + "\t" + v.getVertexName());
         }
 
         ComputationGraph graph2 = new TransferLearning.GraphBuilder(graph)
@@ -250,7 +252,7 @@ public class TransferLearningComplex {
 
         for (Layer l : layers) {
             String name = l.conf().getLayer().getLayerName();
-            System.out.println(name + "\t frozen: " + (l instanceof FrozenLayer));
+            log.info(name + "\t frozen: " + (l instanceof FrozenLayer));
             if ("C".equals(l.conf().getLayer().getLayerName())) {
                 //Only C should be frozen in this config
                 cFound = true;
@@ -369,9 +371,7 @@ public class TransferLearningComplex {
         assertEquals(2,modelNow.getNumOutputArrays());
         MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,2)},new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,3)});
         modelNow.fit(rand);
-        System.out.println(modelNow.output(false,rand.getFeatures())[0]);
-        System.out.println(modelNow.output(false,rand.getFeatures())[1]);
-        System.out.println(modelNow.summary());
+        log.info(modelNow.summary());
 
     }
 }
