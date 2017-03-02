@@ -1,13 +1,11 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
-import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -90,53 +88,44 @@ public class TransferLearningHelper {
      */
     private void initHelperGraph() {
 
-        //parent vertices added in when seen
-        Set<String> seenAsParents = new HashSet<>();
         int[] backPropOrder = origGraph.topologicalSortOrder().clone();
         ArrayUtils.reverse(backPropOrder);
-
+        Set<String> allFrozen = new HashSet<>();
         for (int i = 0; i < backPropOrder.length; i++) {
-            GraphVertex currentVertex = origGraph.getVertices()[backPropOrder[i]];
-            String currentName = currentVertex.getVertexName();
-            if (!currentVertex.hasLayer()) {
-                //before skipping over a subset vertex check if it has a frozen parent
-                if (currentVertex instanceof SubsetVertex) {
-                    //if this is a subset vertex and has a parent that is a frozen layer that has not been seen
-                    //add to list of frozen inputs
-                    VertexIndices[] parentVertices = currentVertex.getInputVertices();
-                    for (int j = 0; j < parentVertices.length; j++) {
-                        int parentVertexIndex = parentVertices[j].getVertexIndex();
-                        GraphVertex parentVertex = origGraph.getVertices()[parentVertexIndex];
-                        if (parentVertex.hasLayer()) {
-                            String parentName = origGraph.getVertices()[parentVertexIndex].getVertexName();
-                            if (parentVertex.getLayer() instanceof FrozenLayer && !seenAsParents.contains(parentName)) {
-                                frozenInputVertices.add(parentName);
-                            }
+            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
+            if (gv.hasLayer()) {
+                if (gv.getLayer() instanceof FrozenLayer) {
+                    allFrozen.add(gv.getVertexName());
+                    //also need to add parents to list of allFrozen
+                    VertexIndices[] inputs = gv.getInputVertices();
+                    if (inputs != null && inputs.length > 0) {
+                        for (int j = 0; j < inputs.length; j++) {
+                            int inputVertexIdx = inputs[j].getVertexIndex();
+                            String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getVertexName();
+                            allFrozen.add(alsoFrozen);
                         }
                     }
                 }
             }
-            Layer currentLayer = currentVertex.getLayer();
-            if (currentLayer instanceof FrozenLayer) {
-                //a frozen layer is encountered - should be removed (along with it's inputs)
-                //The question is does it need to be an input to the new smaller unfrozen model or not?
-                if (!seenAsParents.contains(currentName)) {
-                    //not a parent of vertices already seen so needs to be added to the set of inputs
-                    frozenInputVertices.add(currentName);
-                }
-                seenAsParents.add(currentName);
-                VertexIndices[] parentVertices = currentVertex.getInputVertices();
-                //add parents of current frozen vertex to list of seen parents
-                for (int j = 0; j < parentVertices.length; j++) {
-                    int parentVertexIndex = parentVertices[j].getVertexIndex();
-                    String parentName = origGraph.getVertices()[parentVertexIndex].getVertexName();
-                    seenAsParents.add(parentName);
+        }
+        for (int i =0; i < backPropOrder.length; i++) {
+            org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
+            String gvName = gv.getVertexName();
+            //is it an unfrozen vertex that has an input vertex that is frozen?
+            if (!allFrozen.contains(gvName) && !gv.isInputVertex()) {
+                VertexIndices[] inputs = gv.getInputVertices();
+                for (int j = 0; j < inputs.length; j++) {
+                    int inputVertexIdx = inputs[j].getVertexIndex();
+                    String inputVertex = origGraph.getVertices()[inputVertexIdx].getVertexName();
+                    if (allFrozen.contains(inputVertex)) {
+                        frozenInputVertices.add(inputVertex);
+                    }
                 }
             }
         }
 
         TransferLearning.GraphBuilder builder = new TransferLearning.GraphBuilder(origGraph);
-        for (String toRemove : seenAsParents) {
+        for (String toRemove : allFrozen) {
             if (frozenInputVertices.contains(toRemove)) {
                 builder.removeVertexKeepConnections(toRemove);
             } else {
@@ -146,7 +135,7 @@ public class TransferLearningHelper {
 
         Set<String> frozenInputVerticesSorted = new HashSet<>();
         frozenInputVerticesSorted.addAll(origGraph.getConfiguration().getNetworkInputs());
-        frozenInputVerticesSorted.removeAll(seenAsParents);
+        frozenInputVerticesSorted.removeAll(allFrozen);
         //remove input vertices - just to add back in a predictable order
         for (String existingInput : frozenInputVerticesSorted) {
             builder.removeVertexKeepConnections(existingInput);
