@@ -4,9 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-
-import java.io.File;
-import java.io.IOException;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
 /**
  * Created by susaneraly on 6/23/16.
@@ -119,6 +117,11 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
+    public NormalizerType getType() {
+        return NormalizerType.IMAGE_MIN_MAX;
+    }
+
+    @Override
     public void revertFeatures(INDArray features) {
         if (minRange != 0) {
             features.subi(minRange);
@@ -155,28 +158,4 @@ public class ImagePreProcessingScaler implements DataNormalization {
     public boolean isFitLabel() {
         return false;
     }
-
-    /**
-     * Load the statistics
-     * for the data normalizer
-     *
-     * @param statistics the files to persist
-     * @throws IOException
-     */
-    @Override
-    public void load(File... statistics) throws IOException {
-
-    }
-
-    /**
-     * Save the accumulated statistics
-     *
-     * @param statistics the statistics to save
-     * @throws IOException
-     */
-    @Override
-    public void save(File... statistics) throws IOException {
-
-    }
-
 }

@@ -6,10 +6,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * This is a preprocessor specifically for VGG16.
@@ -90,6 +88,11 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     }
 
     @Override
+    public NormalizerType getType() {
+        return NormalizerType.IMAGE_VGG16;
+    }
+
+    @Override
     public void revertFeatures(INDArray features) {
         Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features.dup(), VGG_MEAN_OFFSET_BGR, features, 1));
     }
@@ -120,28 +123,4 @@ public class VGG16ImagePreProcessor implements DataNormalization {
     public boolean isFitLabel() {
         return false;
     }
-
-    /**
-     * Load the statistics
-     * for the data normalizer
-     *
-     * @param statistics the files to persist
-     * @throws IOException
-     */
-    @Override
-    public void load(File... statistics) throws IOException {
-
-    }
-
-    /**
-     * Save the accumulated statistics
-     *
-     * @param statistics the statistics to save
-     * @throws IOException
-     */
-    @Override
-    public void save(File... statistics) throws IOException {
-
-    }
-
 }
