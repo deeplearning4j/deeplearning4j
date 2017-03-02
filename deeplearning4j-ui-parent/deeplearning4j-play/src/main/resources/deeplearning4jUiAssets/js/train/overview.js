@@ -163,6 +163,8 @@ function renderScoreVsIterChart(data) {
 
         var previousPoint = null;
         scoreChart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#x").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#y").text(pos.y.toFixed(5));
@@ -293,6 +295,8 @@ function renderUpdatesRatio(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#xRatio").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogRatio").text(pos.y.toFixed(5));
@@ -395,6 +399,8 @@ function renderStdevChart(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#xStdev").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogStdev").text(pos.y.toFixed(5));
