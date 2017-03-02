@@ -77,7 +77,7 @@ public class ListStringRecordReader extends BaseRecordReader {
     /**
      * Get the next record
      *
-     * @return
+     * @return The list of next record
      */
     @Override
     public List<Writable> next() {
@@ -90,9 +90,9 @@ public class ListStringRecordReader extends BaseRecordReader {
     }
 
     /**
-     * Whether there are anymore records
+     * Check whether there are anymore records
      *
-     * @return
+     * @return Whether there are more records
      */
     @Override
     public boolean hasNext() {
@@ -112,7 +112,6 @@ public class ListStringRecordReader extends BaseRecordReader {
     /**
      * Reset record reader iterator
      *
-     * @return
      */
     @Override
     public void reset() {
