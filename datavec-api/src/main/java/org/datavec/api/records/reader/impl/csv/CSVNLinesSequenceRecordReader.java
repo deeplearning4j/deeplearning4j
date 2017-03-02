@@ -55,7 +55,7 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
     }
 
     /**
-     * @param nLinesPerSequence    Number of lines in each sequence
+     * @param nLinesPerSequence    Number of lines in each sequence, use default delemiter(,) between entries in the same line
      */
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence){
         this(nLinesPerSequence, 0, CSVRecordReader.DEFAULT_DELIMITER);
