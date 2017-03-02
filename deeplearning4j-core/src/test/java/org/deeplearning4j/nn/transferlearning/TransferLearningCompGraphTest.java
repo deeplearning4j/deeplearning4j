@@ -134,7 +134,7 @@ public class TransferLearningCompGraphTest {
                 .fineTuneConfiguration(fineTuneConfiguration)
                 .nOutReplace("layer3", 2, WeightInit.XAVIER)
                 .nOutReplace("layer0", 3, new NormalDistribution(1, 1e-1), WeightInit.XAVIER)
-                .setOutputs("layer3")
+                //.setOutputs("layer3")
                 .build();
 
         assertEquals(modelNow.getLayer("layer0").conf().getLayer().getWeightInit(), WeightInit.DISTRIBUTION);
@@ -222,7 +222,7 @@ public class TransferLearningCompGraphTest {
                         .nIn(5)
                         .nOut(3)
                         .activation(Activation.SOFTMAX).build(), "layer2")
-                .setOutputs("layer3")
+                //.setOutputs("layer3")
                 .build();
 
         ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder()
