@@ -2,9 +2,9 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang3.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -17,16 +17,13 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -83,39 +80,23 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater) throws IOException {
         ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
 
-        // save json first
+        // Save configuration as JSON
         String json = "";
         if (model instanceof MultiLayerNetwork) {
             json = ((MultiLayerNetwork) model).getLayerWiseConfigurations().toJson();
         } else if (model instanceof ComputationGraph) {
             json = ((ComputationGraph) model).getConfiguration().toJson();
         }
-
         ZipEntry config = new ZipEntry("configuration.json");
         zipfile.putNextEntry(config);
+        zipfile.write(json.getBytes());
 
-        writeEntry(new ByteArrayInputStream(json.getBytes()), zipfile);
-
+        // Save parameters as binary
         ZipEntry coefficients = new ZipEntry("coefficients.bin");
         zipfile.putNextEntry(coefficients);
-
-        File tempFile = File.createTempFile("model", "saver");
-        tempFile.deleteOnExit();
-
-        FileOutputStream fos = new FileOutputStream(tempFile);
-        BufferedOutputStream bos = new BufferedOutputStream(fos);
-        DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(model.params(), dos);
-        dos.flush();
-        dos.close();
-        bos.close();
-        fos.close();
-
-
-
-        InputStream inputStream = new BufferedInputStream(new FileInputStream(tempFile));
-        writeEntry(inputStream, zipfile);
-        inputStream.close();
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
+            Nd4j.write(model.params(), dos);
+        }
 
         if (saveUpdater) {
             INDArray updaterState = null;
@@ -129,32 +110,14 @@ public class ModelSerializer {
                 ZipEntry updater = new ZipEntry(UPDATER_BIN);
                 zipfile.putNextEntry(updater);
 
-                fos = new FileOutputStream(tempFile);
-                bos = new BufferedOutputStream(fos);
-                dos = new DataOutputStream(bos);
-                Nd4j.write(updaterState, dos);
-                dos.flush();
-                dos.close();
-                bos.close();
-                fos.close();
-
-                inputStream = new BufferedInputStream(new FileInputStream(tempFile));
-                writeEntry(inputStream, zipfile);
-                inputStream.close();
+                try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
+                    Nd4j.write(updaterState, dos);
+                }
             }
         }
 
         zipfile.flush();
         zipfile.close();
-    }
-
-
-    private static void writeEntry(InputStream inputStream, ZipOutputStream zipStream) throws IOException {
-        byte[] bytes = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(bytes)) != -1) {
-            zipStream.write(bytes, 0, bytesRead);
-        }
     }
 
     /**
@@ -289,8 +252,7 @@ public class ModelSerializer {
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "multiLayer");
         tmpFile.deleteOnExit();
-        //Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-        copyFile(is, tmpFile, true);
+        FileUtils.copyInputStreamToFile(is, tmpFile);
         return restoreMultiLayerNetwork(tmpFile, loadUpdater);
     }
 
@@ -354,8 +316,7 @@ public class ModelSerializer {
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "compGraph");
         tmpFile.deleteOnExit();
-        //Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-        copyFile(is, tmpFile, true);
+        FileUtils.copyInputStreamToFile(is, tmpFile);
         return restoreComputationGraph(tmpFile, loadUpdater);
     }
 
@@ -563,21 +524,17 @@ public class ModelSerializer {
      * @param f
      * @param normalizer
      */
-    public static void addNormalizerToModel(File f, DataNormalization normalizer) {
-            File tempFile = null;
-            ZipFile zipFile = null;
-            ZipOutputStream writeFile = null;
-            try {
-                // copy existing model to temporary file
-                tempFile = File.createTempFile("tempcopy", "temp");
-                tempFile.deleteOnExit();
-                //Files.copy(f.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                copyFile(f, tempFile, true);
+    public static void addNormalizerToModel(File f, Normalizer<?> normalizer) {
+        try {
+            // copy existing model to temporary file
+            File tempFile = File.createTempFile("tempcopy", "temp");
+            tempFile.deleteOnExit();
+            FileUtils.copyFile(f, tempFile);
 
-                zipFile = new ZipFile(tempFile);
-
-                writeFile = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-
+            try (
+                ZipFile zipFile = new ZipFile(tempFile);
+                ZipOutputStream writeFile = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
+            ) {
                 // roll over existing files within model, and copy them one by one
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
                 while (entries.hasMoreElements()) {
@@ -585,7 +542,7 @@ public class ModelSerializer {
 
                     // we're NOT copying existing normalizer, if any
                     if (entry.getName().equalsIgnoreCase(NORMALIZER_BIN))
-                        continue;;
+                        continue;
 
                     log.debug("Copying: {}", entry.getName());
 
@@ -594,35 +551,17 @@ public class ModelSerializer {
                     ZipEntry wEntry = new ZipEntry(entry.getName());
                     writeFile.putNextEntry(wEntry);
 
-                    writeEntry(is, writeFile);
+                    IOUtils.copy(is, writeFile);
                 }
-
                 // now, add our normalizer as additional entry
                 ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
                 writeFile.putNextEntry(nEntry);
 
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                org.apache.commons.lang3.SerializationUtils.serialize(normalizer, bos);
-
-                ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-                writeEntry(bis, writeFile);
-
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            } finally {
-                try {
-                    if (tempFile != null)
-                        tempFile.delete();
-
-                    if (zipFile != null)
-                        zipFile.close();
-
-                    if (writeFile != null)
-                        writeFile.close();
-                } catch (Exception es) {
-                    //
-                }
+                NormalizerSerializer.getDefault().write(normalizer, writeFile);
             }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
@@ -633,7 +572,35 @@ public class ModelSerializer {
      * @param file
      * @return
      */
-    public static DataNormalization restoreNormalizerFromFile(File file) {
+    public static <T extends Normalizer> T restoreNormalizerFromFile(File file) {
+        try (ZipFile zipFile = new ZipFile(file)) {
+            ZipEntry norm = zipFile.getEntry(NORMALIZER_BIN);
+
+            // checking for file existence
+            if (norm == null)
+                return null;
+
+            return NormalizerSerializer.getDefault().restore(zipFile.getInputStream(norm));
+        } catch (Exception e) {
+            log.warn("Error while restoring normalizer, trying to restore assuming deprecated format...");
+            DataNormalization restoredDeprecated = restoreNormalizerFromFileDeprecated(file);
+
+            log.warn("Recovered using deprecated method. Will now re-save the normalizer to fix this issue.");
+            addNormalizerToModel(file, restoredDeprecated);
+
+            return (T)restoredDeprecated;
+        }
+    }
+
+    /**
+     * @deprecated
+     *
+     * This method restores normalizer from a given persisted model file serialized with Java object serialization
+     *
+     * @param file
+     * @return
+     */
+    private static DataNormalization restoreNormalizerFromFileDeprecated(File file) {
         try (ZipFile zipFile = new ZipFile(file)) {
             ZipEntry norm = zipFile.getEntry(NORMALIZER_BIN);
 
@@ -652,42 +619,6 @@ public class ModelSerializer {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * This method is drop-in replacement to Files.copy method, added to address Android compatibility issues
-     *
-     * @param from
-     * @param to
-     */
-    public static void copyFile(File from, File to, boolean overwrite) throws IOException {
-        if (!from.exists())
-            throw new IOException("Source file ["+from.getAbsolutePath()+"] doesn't exist");
-
-        if (!from.isFile())
-            throw new IOException("Source file isn't a file");
-
-        try(FileInputStream fis = new FileInputStream(from)) {
-            copyFile(fis, to, overwrite);
-        }
-    }
-
-    public static void copyFile(InputStream is, File to, boolean overwrite) throws IOException {
-        if (!to.isFile())
-            throw new IOException("Target file isn't file");
-
-        if (!overwrite && to.exists() && to.length() > 0)
-            throw new IOException("File ["+ to.getAbsolutePath()+"] already exists");
-
-
-        try(FileOutputStream fos = new FileOutputStream(to); BufferedOutputStream bos = new BufferedOutputStream(fos); CloseShieldInputStream cis = new CloseShieldInputStream(is); BufferedInputStream bis = new BufferedInputStream(cis)) {
-            byte[] data = new byte[4096];
-            int read = 0;
-            while ((read = bis.read(data)) != -1) {
-                    if (read > 0)
-                        bos.write(data, 0, read);
-            }
         }
     }
 }
