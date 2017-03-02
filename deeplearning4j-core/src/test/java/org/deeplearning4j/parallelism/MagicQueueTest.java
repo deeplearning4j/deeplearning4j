@@ -84,7 +84,10 @@ public class MagicQueueTest {
 
         Thread.sleep(500);
 
-        assertEquals(8 / numDevices, queue.size());
+        if (numDevices == 1)
+            assertEquals(4, queue.size());
+        else
+            assertEquals(8 / numDevices, queue.size());
 
 
         int cnt = 0;
@@ -177,8 +180,13 @@ public class MagicQueueTest {
             log.info("Checking fourth device...");
             nextDev++;
         } else {
-            log.info("Checking second device...");
-            nextDev = 1;
+            if (numDevices > 1) {
+                log.info("Checking second device...");
+                nextDev = 1;
+            } else {
+                log.info("Checking first device...");
+                nextDev = 0;
+            }
         }
 
 
