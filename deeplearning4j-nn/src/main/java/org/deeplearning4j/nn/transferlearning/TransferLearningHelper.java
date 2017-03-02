@@ -179,13 +179,16 @@ public class TransferLearningHelper {
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
             allConfs.add(origMLN.getLayer(i).conf());
         }
+
+        MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
+
         unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder()
-                .backprop(origMLN.getLayerWiseConfigurations().isBackprop())
-                .inputPreProcessors(origMLN.getLayerWiseConfigurations().getInputPreProcessors())
-                .pretrain(origMLN.getLayerWiseConfigurations().isPretrain())
-                .backpropType(origMLN.getLayerWiseConfigurations().getBackpropType())
-                .tBPTTForwardLength(origMLN.getLayerWiseConfigurations().getTbpttFwdLength())
-                .tBPTTBackwardLength(origMLN.getLayerWiseConfigurations().getTbpttBackLength())
+                .backprop(c.isBackprop())
+                .inputPreProcessors(c.getInputPreProcessors())
+                .pretrain(c.isPretrain())
+                .backpropType(c.getBackpropType())
+                .tBPTTForwardLength(c.getTbpttFwdLength())
+                .tBPTTBackwardLength(c.getTbpttBackLength())
                 .confs(allConfs).build());
         unFrozenSubsetMLN.init();
         //copy over params
@@ -200,6 +203,7 @@ public class TransferLearningHelper {
      * The forward pass through these frozen layer/vertices can be done in advance and the dataset saved to disk to iterate
      * quickly on the smaller unfrozen part of the model
      * Currently does not support datasets with feature masks
+     *
      * @param input multidataset to feed into the computation graph with frozen layer vertices
      * @return a multidataset with input features that are the outputs of the frozen layer vertices and the original labels.
      */
@@ -237,6 +241,7 @@ public class TransferLearningHelper {
      * The forward pass through these frozen layer/vertices can be done in advance and the dataset saved to disk to iterate
      * quickly on the smaller unfrozen part of the model
      * Currently does not support datasets with feature masks
+     *
      * @param input multidataset to feed into the computation graph with frozen layer vertices
      * @return a multidataset with input features that are the outputs of the frozen layer vertices and the original labels.
      */
@@ -244,19 +249,22 @@ public class TransferLearningHelper {
         if (isGraph) {
             //trying to featurize for a computation graph
             if (origGraph.getNumInputArrays() > 1 || origGraph.getNumOutputArrays() > 1) {
-                throw new IllegalArgumentException("Input size to a computation graph is greater than one. Requires use of a multidataset.");
+                throw new IllegalArgumentException("Input or output size to a computation graph is greater than one. Requires use of a MultiDataSet.");
             } else {
                 if (input.getFeaturesMaskArray() != null) {
                     throw new IllegalArgumentException("Currently cannot support featurizing datasets with feature masks");
                 }
-                MultiDataSet inbW = new MultiDataSet(new INDArray[]{input.getFeatures()}, new INDArray[] {input.getLabels()}, null, new INDArray[]{input.getLabelsMaskArray()});
+                MultiDataSet inbW = new MultiDataSet(
+                        new INDArray[]{input.getFeatures()}, new INDArray[]{input.getLabels()},
+                        null, new INDArray[]{input.getLabelsMaskArray()});
                 MultiDataSet ret = featurize(inbW);
                 return new DataSet(ret.getFeatures()[0], input.getLabels(), ret.getLabelsMaskArrays()[0], input.getLabelsMaskArray());
             }
         } else {
             if (input.getFeaturesMaskArray() != null)
                 throw new UnsupportedOperationException("Feature masks not supported with featurizing currently");
-            return new DataSet(origMLN.feedForwardToLayer(frozenInputLayer + 1, input.getFeatures(), false).get(frozenInputLayer + 1), input.getLabels(), null, input.getLabelsMaskArray());
+            return new DataSet(origMLN.feedForwardToLayer(frozenInputLayer + 1, input.getFeatures(), false)
+                    .get(frozenInputLayer + 1), input.getLabels(), null, input.getLabelsMaskArray());
         }
     }
 
@@ -264,6 +272,7 @@ public class TransferLearningHelper {
      * Fit from a featurized dataset.
      * The fit is conducted on an internally instantiated subset model that is representative of the unfrozen part of the original model.
      * After each call on fit the parameters for the original model are updated
+     *
      * @param iter
      */
     public void fitFeaturized(MultiDataSetIterator iter) {
@@ -280,8 +289,7 @@ public class TransferLearningHelper {
         if (isGraph) {
             unFrozenSubsetGraph.fit(input);
             copyParamsFromSubsetGraphToOrig();
-        }
-        else {
+        } else {
             unFrozenSubsetMLN.fit(input);
             copyParamsFromSubsetMLNToOrig();
         }
@@ -291,8 +299,7 @@ public class TransferLearningHelper {
         if (isGraph) {
             unFrozenSubsetGraph.fit(iter);
             copyParamsFromSubsetGraphToOrig();
-        }
-        else {
+        } else {
             unFrozenSubsetMLN.fit(iter);
             copyParamsFromSubsetMLNToOrig();
         }
