@@ -140,7 +140,11 @@ public class NormalizerSerializer {
                 return strategy;
             }
         }
-        throw new RuntimeException("No serializer strategy found for normalizer of class " + normalizer.getClass());
+        throw new RuntimeException(String.format(
+            "No serializer strategy found for normalizer of class %s. If this is a custom normalizer, you probably " +
+                "forgot to register a corresponding custom serializer strategy with this serializer.",
+            normalizer.getClass()
+        ));
     }
 
     /**
