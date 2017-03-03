@@ -117,21 +117,11 @@ public class ClassPathResource {
                 This is actually request for file, that's packed into jar. Probably the current one, but that doesn't matters.
              */
             try {
-                url = extractActualUrl(url);
-
-                ZipFile zipFile = new ZipFile(url.getFile());
-                ZipEntry entry = zipFile.getEntry(this.resourceName);
-                if (entry == null) {
-                    if (this.resourceName.startsWith("/")) {
-                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/", ""));
-                        if (entry == null) {
-                            throw new FileNotFoundException("Resource " + this.resourceName + " not found");
-                        }
-                    } else
-                        throw new FileNotFoundException("Resource " + this.resourceName + " not found");
-                }
-
-                InputStream stream = zipFile.getInputStream(entry);
+                GetStreamFromZip getStreamFromZip = new GetStreamFromZip(url, resourceName).invoke();
+                ZipEntry entry = getStreamFromZip.getEntry();
+                InputStream stream = getStreamFromZip.getStream();
+                ZipFile zipFile = getStreamFromZip.getZipFile();
+                url = getStreamFromZip.getUrl();
 
                 if (entry.isDirectory() || stream == null) {
                     zipFile.close();
@@ -233,21 +223,9 @@ public class ClassPathResource {
         URL url = this.getUrl();
         if (isJarURL(url)) {
             try {
-                url = extractActualUrl(url);
-                ZipFile zipFile = new ZipFile(url.getFile());
-                ZipEntry entry = zipFile.getEntry(this.resourceName);
+                GetStreamFromZip getStreamFromZip = new GetStreamFromZip(url, resourceName).invoke();
+                InputStream stream = getStreamFromZip.getStream();
 
-                if (entry == null) {
-                    if (this.resourceName.startsWith("/")) {
-                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/", ""));
-                        if (entry == null) {
-                            throw new FileNotFoundException("Resource " + this.resourceName + " not found");
-                        }
-                    } else
-                        throw new FileNotFoundException("Resource " + this.resourceName + " not found");
-                }
-
-                InputStream stream = zipFile.getInputStream(entry);
                 return stream;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -255,6 +233,54 @@ public class ClassPathResource {
         } else {
             File srcFile = this.getFile();
             return new FileInputStream(srcFile);
+        }
+    }
+
+    private class GetStreamFromZip {
+        private URL url;
+        private ZipFile zipFile;
+        private ZipEntry entry;
+        private InputStream stream;
+        private String resourceName;
+
+        public GetStreamFromZip(URL url, String resourceName) {
+            this.url = url;
+            this.resourceName = resourceName;
+        }
+
+        public URL getUrl() {
+            return url;
+        }
+
+        public ZipFile getZipFile() {
+            return zipFile;
+        }
+
+        public ZipEntry getEntry() {
+            return entry;
+        }
+
+        public InputStream getStream() {
+            return stream;
+        }
+
+        public GetStreamFromZip invoke() throws IOException {
+            url = extractActualUrl(url);
+
+            zipFile = new ZipFile(url.getFile());
+            entry = zipFile.getEntry(this.resourceName);
+            if (entry == null) {
+                if (this.resourceName.startsWith("/")) {
+                    entry = zipFile.getEntry(this.resourceName.replaceFirst("/", ""));
+                    if (entry == null) {
+                        throw new FileNotFoundException("Resource " + this.resourceName + " not found");
+                    }
+                } else
+                    throw new FileNotFoundException("Resource " + this.resourceName + " not found");
+            }
+
+            stream = zipFile.getInputStream(entry);
+            return this;
         }
     }
 }
