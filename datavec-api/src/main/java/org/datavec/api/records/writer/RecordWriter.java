@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import java.util.Collection;
  *  Record writer
  *  @author Adam Gibson
  */
-public interface RecordWriter extends Closeable,Configurable {
+public interface RecordWriter extends Closeable, Configurable {
     String APPEND = "org.datavec.api.record.writer.append";
 
     /**

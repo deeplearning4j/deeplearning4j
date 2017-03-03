@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,8 +34,7 @@ import java.util.List;
  */
 public class SerializationFactory extends Configured {
 
-    private static final Logger LOG =
-            LoggerFactory.getLogger(SerializationFactory.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(SerializationFactory.class.getName());
 
     private List<Serialization<?>> serializations = new ArrayList<>();
 
@@ -49,7 +48,7 @@ public class SerializationFactory extends Configured {
     public SerializationFactory(Configuration conf) {
         super(conf);
         for (String serializerName : conf.getStrings("io.serializations",
-                new String[]{"org.apache.hadoop.io.serializer.WritableSerialization"})) {
+                        new String[] {"org.apache.hadoop.io.serializer.WritableSerialization"})) {
             add(conf, serializerName);
         }
     }
@@ -59,12 +58,10 @@ public class SerializationFactory extends Configured {
         try {
 
             Class<? extends Serialization> serializationClass =
-                    (Class<? extends Serialization>) conf.getClassByName(serializationName);
-            serializations.add(
-                    ReflectionUtils.newInstance(serializationClass, getConf()));
+                            (Class<? extends Serialization>) conf.getClassByName(serializationName);
+            serializations.add(ReflectionUtils.newInstance(serializationClass, getConf()));
         } catch (ClassNotFoundException e) {
-            LOG.warn("Serialization class not found: " +
-                    StringUtils.stringifyException(e));
+            LOG.warn("Serialization class not found: " + StringUtils.stringifyException(e));
         }
     }
 

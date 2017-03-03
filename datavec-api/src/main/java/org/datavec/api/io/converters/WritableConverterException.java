@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +22,7 @@ package org.datavec.api.io.converters;
  * @author Adam Gibson
  */
 public class WritableConverterException extends Exception {
-    public WritableConverterException() {
-    }
+    public WritableConverterException() {}
 
     public WritableConverterException(String message) {
         super(message);
@@ -37,7 +36,8 @@ public class WritableConverterException extends Exception {
         super(cause);
     }
 
-    public WritableConverterException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public WritableConverterException(String message, Throwable cause, boolean enableSuppression,
+                    boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

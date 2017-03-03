@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,12 +20,11 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = RenderableComponentLineChart.class, name = "RenderableComponentLineChart"),
-        @JsonSubTypes.Type(value = RenderableComponentTable.class, name = "RenderableComponentTable"),
-        @JsonSubTypes.Type(value = RenderableComponentHistogram.class, name = "RenderableComponentHistogram")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {
+                @JsonSubTypes.Type(value = RenderableComponentLineChart.class, name = "RenderableComponentLineChart"),
+                @JsonSubTypes.Type(value = RenderableComponentTable.class, name = "RenderableComponentTable"),
+                @JsonSubTypes.Type(value = RenderableComponentHistogram.class, name = "RenderableComponentHistogram")})
 @Data
 public abstract class RenderableComponent {
 
@@ -33,7 +32,7 @@ public abstract class RenderableComponent {
      * represented by the JSON representation of this object*/
     protected final String componentType;
 
-    public RenderableComponent(String componentType){
+    public RenderableComponent(String componentType) {
         this.componentType = componentType;
     }
 

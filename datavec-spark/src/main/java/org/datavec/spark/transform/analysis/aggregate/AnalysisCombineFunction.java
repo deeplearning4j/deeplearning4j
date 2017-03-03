@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,17 +27,21 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class AnalysisCombineFunction implements Function2<List<AnalysisCounter>,List<AnalysisCounter>,List<AnalysisCounter>> {
+public class AnalysisCombineFunction
+                implements Function2<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
     @Override
     public List<AnalysisCounter> call(List<AnalysisCounter> l1, List<AnalysisCounter> l2) throws Exception {
-        if(l1 == null) return l2;
-        if(l2 == null) return l1;
+        if (l1 == null)
+            return l2;
+        if (l2 == null)
+            return l1;
 
         int size = l1.size();
-        if(size != l2.size()) throw new IllegalStateException("List lengths differ");
+        if (size != l2.size())
+            throw new IllegalStateException("List lengths differ");
 
         List<AnalysisCounter> out = new ArrayList<>();
-        for( int i=0; i<size; i++ ){
+        for (int i = 0; i < size; i++) {
             out.add(l1.get(i).merge(l2.get(i)));
         }
         return out;

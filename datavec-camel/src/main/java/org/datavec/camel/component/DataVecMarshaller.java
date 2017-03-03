@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +31,6 @@ public interface DataVecMarshaller {
      * @param exchange
      * @return
      */
-     InputSplit getSplit(Exchange exchange);
+    InputSplit getSplit(Exchange exchange);
 
 }

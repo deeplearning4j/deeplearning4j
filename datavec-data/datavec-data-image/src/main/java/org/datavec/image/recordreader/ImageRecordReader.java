@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,8 @@ public class ImageRecordReader extends BaseImageRecordReader {
     }
 
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
-    public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator, ImageTransform imageTransform) {
+    public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+                    ImageTransform imageTransform) {
         super(height, width, channels, labelGenerator, imageTransform);
     }
 
@@ -65,9 +66,8 @@ public class ImageRecordReader extends BaseImageRecordReader {
 
     /** Loads images with given height, width, and channels = 1, appending no labels. */
     public ImageRecordReader(int height, int width) {
-        super(height, width,  1, null, null);
+        super(height, width, 1, null, null);
     }
-
 
 
 

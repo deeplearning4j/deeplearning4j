@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,24 +46,24 @@ public class TestLineRecordReaderFunction extends BaseSparkTest {
         JavaSparkContext sc = getContext();
         JavaRDD<String> linesRdd = sc.parallelize(lines);
 
-        CSVRecordReader rr = new CSVRecordReader(0,",");
+        CSVRecordReader rr = new CSVRecordReader(0, ",");
 
         JavaRDD<List<Writable>> out = linesRdd.map(new LineRecordReaderFunction(rr));
         List<List<Writable>> outList = out.collect();
 
 
-        CSVRecordReader rr2 = new CSVRecordReader(0,",");
+        CSVRecordReader rr2 = new CSVRecordReader(0, ",");
         rr2.initialize(new FileSplit(dataFile));
         Set<List<Writable>> expectedSet = new HashSet<>();
         int totalCount = 0;
-        while(rr2.hasNext()){
+        while (rr2.hasNext()) {
             expectedSet.add(rr2.next());
             totalCount++;
         }
 
         assertEquals(totalCount, outList.size());
 
-        for(List<Writable> line : outList){
+        for (List<Writable> line : outList) {
             assertTrue(expectedSet.contains(line));
         }
     }

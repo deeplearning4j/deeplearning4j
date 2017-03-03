@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -102,8 +102,7 @@ public class BooleanWritable implements WritableComparable {
             super(BooleanWritable.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             return compareBytes(b1, s1, l1, b2, s2, l2);
         }
     }
@@ -114,22 +113,22 @@ public class BooleanWritable implements WritableComparable {
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         return (value ? 1.0 : 0.0);
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         return (value ? 1.0f : 0.0f);
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         return (value ? 1 : 0);
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         return (value ? 1L : 0L);
     }
 }

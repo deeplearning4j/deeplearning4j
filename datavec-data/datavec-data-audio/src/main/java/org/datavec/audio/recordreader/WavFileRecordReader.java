@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,8 +51,7 @@ public class WavFileRecordReader extends BaseRecordReader {
     private Configuration conf;
     protected InputSplit inputSplit;
 
-    public WavFileRecordReader() {
-    }
+    public WavFileRecordReader() {}
 
     public WavFileRecordReader(boolean appendLabel, List<String> labels) {
         this.appendLabel = appendLabel;
@@ -70,16 +69,16 @@ public class WavFileRecordReader extends BaseRecordReader {
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         inputSplit = split;
-        if(split instanceof FileSplit) {
+        if (split instanceof FileSplit) {
             URI[] locations = split.locations();
-            if(locations != null && locations.length >= 1) {
-                if(locations.length > 1) {
+            if (locations != null && locations.length >= 1) {
+                if (locations.length > 1) {
                     List<File> allFiles = new ArrayList<>();
-                    for(URI location : locations) {
+                    for (URI location : locations) {
                         File iter = new File(location);
-                        if(iter.isDirectory()) {
+                        if (iter.isDirectory()) {
                             Iterator<File> allFiles2 = FileUtils.iterateFiles(iter, null, true);
-                            while(allFiles2.hasNext())
+                            while (allFiles2.hasNext())
                                 allFiles.add(allFiles2.next());
                         }
 
@@ -88,11 +87,10 @@ public class WavFileRecordReader extends BaseRecordReader {
                     }
 
                     iter = allFiles.iterator();
-                }
-                else {
+                } else {
                     File curr = new File(locations[0]);
-                    if(curr.isDirectory())
-                        iter = FileUtils.iterateFiles(curr,null,true);
+                    if (curr.isDirectory())
+                        iter = FileUtils.iterateFiles(curr, null, true);
                     else
                         iter = Collections.singletonList(curr).iterator();
                 }
@@ -100,12 +98,12 @@ public class WavFileRecordReader extends BaseRecordReader {
         }
 
 
-        else if(split instanceof InputStreamInputSplit) {
+        else if (split instanceof InputStreamInputSplit) {
             record = new ArrayList<>();
             InputStreamInputSplit split2 = (InputStreamInputSplit) split;
-            InputStream is =  split2.getIs();
+            InputStream is = split2.getIs();
             URI[] locations = split2.locations();
-            if(appendLabel) {
+            if (appendLabel) {
                 Path path = Paths.get(locations[0]);
                 String parent = path.getParent().toString();
                 record.add(new DoubleWritable(labels.indexOf(parent)));
@@ -119,20 +117,19 @@ public class WavFileRecordReader extends BaseRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.conf = conf;
-        this.appendLabel = conf.getBoolean(APPEND_LABEL,false);
+        this.appendLabel = conf.getBoolean(APPEND_LABEL, false);
         this.labels = new ArrayList<>(conf.getStringCollection(LABELS));
         initialize(split);
     }
 
     @Override
     public List<Writable> next() {
-        if(iter != null) {
+        if (iter != null) {
             File next = iter.next();
             invokeListeners(next);
             Wave wave = new Wave(next.getAbsolutePath());
             return RecordUtils.toRecord(wave.getNormalizedAmplitudes());
-        }
-        else if(record != null) {
+        } else if (record != null) {
             hitImage = true;
             return record;
         }
@@ -142,10 +139,9 @@ public class WavFileRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
-        if(iter != null) {
+        if (iter != null) {
             return iter.hasNext();
-        }
-        else if(record != null) {
+        } else if (record != null) {
             return !hitImage;
         }
         throw new IllegalStateException("Indeterminant state: record must not be null, or a file iterator must exist");
@@ -168,17 +164,19 @@ public class WavFileRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public List<String> getLabels(){
-        return null; }
+    public List<String> getLabels() {
+        return null;
+    }
 
 
     @Override
     public void reset() {
-        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
-        try{
+        if (inputSplit == null)
+            throw new UnsupportedOperationException("Cannot reset without first initializing");
+        try {
             initialize(inputSplit);
-        }catch(Exception e){
-            throw new RuntimeException("Error during LineRecordReader reset",e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error during LineRecordReader reset", e);
         }
 
     }

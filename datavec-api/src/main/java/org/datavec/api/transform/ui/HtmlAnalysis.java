@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,26 +73,26 @@ public class HtmlAnalysis {
         List<DivObject> divs = new ArrayList<>();
         List<String> histogramDivNames = new ArrayList<>();
 
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             ColumnAnalysis ca = caList.get(i);
-            String name = schema.getName(i);    //namesList.get(i);
+            String name = schema.getName(i); //namesList.get(i);
             ColumnType type = schema.getType(i);
 
             table[i][0] = name;
             table[i][1] = type.toString();
-            table[i][2] = ca.toString().replaceAll(",", ", ");  //Hacky work-around to improve display in HTML table
+            table[i][2] = ca.toString().replaceAll(",", ", "); //Hacky work-around to improve display in HTML table
 
             double[] buckets;
             long[] counts;
 
-            switch(type){
+            switch (type) {
                 case String:
-                    StringAnalysis sa = (StringAnalysis)ca;
+                    StringAnalysis sa = (StringAnalysis) ca;
                     buckets = sa.getHistogramBuckets();
                     counts = sa.getHistogramBucketCounts();
                     break;
                 case Integer:
-                    IntegerAnalysis ia = (IntegerAnalysis)ca;
+                    IntegerAnalysis ia = (IntegerAnalysis) ca;
                     buckets = ia.getHistogramBuckets();
                     counts = ia.getHistogramBucketCounts();
                     break;
@@ -102,7 +102,7 @@ public class HtmlAnalysis {
                     counts = la.getHistogramBucketCounts();
                     break;
                 case Double:
-                    DoubleAnalysis da = (DoubleAnalysis)ca;
+                    DoubleAnalysis da = (DoubleAnalysis) ca;
                     buckets = da.getHistogramBuckets();
                     counts = da.getHistogramBucketCounts();
                     break;
@@ -116,35 +116,30 @@ public class HtmlAnalysis {
                     throw new RuntimeException("Invalid/unknown column type: " + type);
             }
 
-            if(buckets != null){
+            if (buckets != null) {
                 RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
 
-                for( int j=0; j<counts.length; j++ ){
-                    histBuilder.addBin(buckets[j],buckets[j+1],counts[j]);
+                for (int j = 0; j < counts.length; j++) {
+                    histBuilder.addBin(buckets[j], buckets[j + 1], counts[j]);
                 }
 
-                histBuilder.margins(60,60,90,20);
+                histBuilder.margins(60, 60, 90, 20);
 
                 RenderableComponentHistogram hist = histBuilder.title(name).build();
 
-                String divName = "histdiv_" + name.replaceAll("\\W","");
+                String divName = "histdiv_" + name.replaceAll("\\W", "");
                 divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
                 histogramDivNames.add(divName);
             }
         }
 
         //Create the summary table
-        RenderableComponentTable rct = new RenderableComponentTable.Builder()
-                .table(table)
-                .header("Column Name", "Column Type", "Column Analysis")
-                .backgroundColor("#FFFFFF")
-                .headerColor("#CCCCCC")
-                .colWidthsPercent(20,10,70)
-                .border(1)
-                .padLeftPx(4).padRightPx(4)
-                .build();
+        RenderableComponentTable rct = new RenderableComponentTable.Builder().table(table)
+                        .header("Column Name", "Column Type", "Column Analysis").backgroundColor("#FFFFFF")
+                        .headerColor("#CCCCCC").colWidthsPercent(20, 10, 70).border(1).padLeftPx(4).padRightPx(4)
+                        .build();
 
-        divs.add(new DivObject("tablesource",ret.writeValueAsString(rct)));
+        divs.add(new DivObject("tablesource", ret.writeValueAsString(rct)));
 
         input.put("divs", divs);
         input.put("histogramIDs", histogramDivNames);
@@ -153,7 +148,7 @@ public class HtmlAnalysis {
         DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss zzz").withZone(DateTimeZone.UTC);
         long currTime = System.currentTimeMillis();
         String dateTime = formatter.print(currTime);
-        input.put("datetime",dateTime);
+        input.put("datetime", dateTime);
 
         Template template = cfg.getTemplate("analysis.ftl");
 
@@ -164,7 +159,7 @@ public class HtmlAnalysis {
         return stringWriter.toString();
     }
 
-    public static void createHtmlAnalysisFile(DataAnalysis dataAnalysis, File output ) throws Exception {
+    public static void createHtmlAnalysisFile(DataAnalysis dataAnalysis, File output) throws Exception {
 
         String str = createHtmlAnalysisString(dataAnalysis);
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,8 @@ public class StringRegexColumnCondition extends BaseColumnCondition {
 
     private final String regex;
 
-    public StringRegexColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("regex") String regex) {
+    public StringRegexColumnCondition(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("regex") String regex) {
         this(columnName, regex, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 

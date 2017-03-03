@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ import org.datavec.nlp.annotator.TokenizerAnnotator;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,32 +38,33 @@ import java.util.List;
  * @author Adam Gibson
  *
  */
-public class PosUimaTokenizer  implements Tokenizer {
+public class PosUimaTokenizer implements Tokenizer {
 
     private static AnalysisEngine engine;
     private List<String> tokens;
     private Collection<String> allowedPosTags;
     private int index;
     private static CAS cas;
-    public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags) {
-        if(engine == null)
+
+    public PosUimaTokenizer(String tokens, AnalysisEngine engine, Collection<String> allowedPosTags) {
+        if (engine == null)
             PosUimaTokenizer.engine = engine;
         this.allowedPosTags = allowedPosTags;
         this.tokens = new ArrayList<>();
         try {
-            if(cas == null)
+            if (cas == null)
                 cas = engine.newCAS();
 
             cas.reset();
             cas.setDocumentText(tokens);
             PosUimaTokenizer.engine.process(cas);
-            for(Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-                for(Token t : JCasUtil.selectCovered(Token.class,s)) {
+            for (Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                for (Token t : JCasUtil.selectCovered(Token.class, s)) {
                     //add NONE for each invalid token
-                    if(valid(t))
-                        if(t.getLemma() != null)
+                    if (valid(t))
+                        if (t.getLemma() != null)
                             this.tokens.add(t.getLemma());
-                        else if(t.getStem() != null)
+                        else if (t.getStem() != null)
                             this.tokens.add(t.getStem());
                         else
                             this.tokens.add(t.getCoveredText());
@@ -72,7 +72,6 @@ public class PosUimaTokenizer  implements Tokenizer {
                         this.tokens.add("NONE");
                 }
             }
-
 
 
 
@@ -84,9 +83,9 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     private boolean valid(Token token) {
         String check = token.getCoveredText();
-        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
+        if (check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
             return false;
-        else if(token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
+        else if (token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
             return false;
         return true;
     }
@@ -113,26 +112,27 @@ public class PosUimaTokenizer  implements Tokenizer {
     @Override
     public List<String> getTokens() {
         List<String> tokens = new ArrayList<String>();
-        while(hasMoreTokens()) {
+        while (hasMoreTokens()) {
             tokens.add(nextToken());
         }
         return tokens;
     }
 
-    public static AnalysisEngine defaultAnalysisEngine()  {
+    public static AnalysisEngine defaultAnalysisEngine() {
         try {
-            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), PoStagger.getDescription("en"), StemmerAnnotator.getDescription("English")));
-        }catch(Exception e) {
+            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
+                            SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(),
+                            PoStagger.getDescription("en"), StemmerAnnotator.getDescription("English")));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-	@Override
-	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+        // TODO Auto-generated method stub
 
+    }
 
 
 

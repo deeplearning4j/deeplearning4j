@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,31 +43,31 @@ public class NativeCodecRecordReader extends BaseCodecRecordReader {
     public void setConf(Configuration conf) {
         super.setConf(conf);
         converter = new OpenCVFrameConverter.ToMat();
-        imageLoader = new NativeImageLoader(rows,cols);
+        imageLoader = new NativeImageLoader(rows, cols);
     }
 
     @Override
-    protected List<List<Writable>> loadData( File file, InputStream inputStream ) throws IOException {
+    protected List<List<Writable>> loadData(File file, InputStream inputStream) throws IOException {
         List<List<Writable>> record = new ArrayList<>();
 
-        try (FFmpegFrameGrabber fg = inputStream != null
-                ? new FFmpegFrameGrabber(inputStream)
-                : new FFmpegFrameGrabber(file)) {
-            if(numFrames >= 1) {
+        try (FFmpegFrameGrabber fg =
+                        inputStream != null ? new FFmpegFrameGrabber(inputStream) : new FFmpegFrameGrabber(file)) {
+            if (numFrames >= 1) {
                 fg.start();
-                if(startFrame != 0) fg.setFrameNumber(startFrame);
+                if (startFrame != 0)
+                    fg.setFrameNumber(startFrame);
 
-                for(int i = startFrame; i < startFrame+numFrames; i++) {
+                for (int i = startFrame; i < startFrame + numFrames; i++) {
                     Frame grab = fg.grabImage();
                     record.add(RecordConverter.toRecord(imageLoader.asRowVector(converter.convert(grab))));
                 }
             } else {
-                if(framesPerSecond < 1)
+                if (framesPerSecond < 1)
                     throw new IllegalStateException("No frames or frame time intervals specified");
                 else {
                     fg.start();
 
-                    for(double i = 0; i < videoLength; i += framesPerSecond) {
+                    for (double i = 0; i < videoLength; i += framesPerSecond) {
                         fg.setTimestamp(Math.round(i * 1000000L));
                         Frame grab = fg.grabImage();
                         record.add(RecordConverter.toRecord(imageLoader.asRowVector(converter.convert(grab))));

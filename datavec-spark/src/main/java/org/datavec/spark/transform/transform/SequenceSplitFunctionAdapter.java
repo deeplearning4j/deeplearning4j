@@ -9,9 +9,11 @@ import java.util.List;
 /**
  * Created by Alex on 17/03/2016.
  */
-public class SequenceSplitFunctionAdapter implements FlatMapFunctionAdapter<List<List<Writable>>,List<List<Writable>>> {
+public class SequenceSplitFunctionAdapter
+                implements FlatMapFunctionAdapter<List<List<Writable>>, List<List<Writable>>> {
 
     private final SequenceSplit split;
+
     public SequenceSplitFunctionAdapter(SequenceSplit split) {
         this.split = split;
     }

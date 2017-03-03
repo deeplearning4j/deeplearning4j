@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,9 +23,9 @@ import scala.Tuple2;
 /**
  * Created by Alex on 4/03/2016.
  */
-public class CategoricalToPairFunction implements PairFunction<Writable,String,Integer> {
+public class CategoricalToPairFunction implements PairFunction<Writable, String, Integer> {
     @Override
     public Tuple2<String, Integer> call(Writable writable) throws Exception {
-        return new Tuple2<>(writable.toString(),1);
+        return new Tuple2<>(writable.toString(), 1);
     }
 }

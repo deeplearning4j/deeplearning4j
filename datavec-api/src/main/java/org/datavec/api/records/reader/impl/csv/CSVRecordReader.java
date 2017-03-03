@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,7 +56,7 @@ public class CSVRecordReader extends LineRecordReader {
      * @param skipNumLines the number of lines to skip
      */
     public CSVRecordReader(int skipNumLines) {
-        this(skipNumLines,DEFAULT_DELIMITER);
+        this(skipNumLines, DEFAULT_DELIMITER);
     }
 
     /**
@@ -64,8 +64,8 @@ public class CSVRecordReader extends LineRecordReader {
      * @param skipNumLines the number of lines to skip
      * @param delimiter the delimiter
      */
-    public CSVRecordReader(int skipNumLines,String delimiter) {
-        this(skipNumLines,delimiter,null);
+    public CSVRecordReader(int skipNumLines, String delimiter) {
+        this(skipNumLines, delimiter, null);
     }
 
     /**
@@ -74,44 +74,44 @@ public class CSVRecordReader extends LineRecordReader {
      * @param delimiter the delimiter
      * @param quote the quote to strip
      */
-    public CSVRecordReader(int skipNumLines,String delimiter,String quote) {
+    public CSVRecordReader(int skipNumLines, String delimiter, String quote) {
         this.skipNumLines = skipNumLines;
         this.delimiter = delimiter;
         this.quote = quote;
     }
 
     public CSVRecordReader() {
-        this(0,DEFAULT_DELIMITER);
+        this(0, DEFAULT_DELIMITER);
     }
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
-        this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
+        this.skipNumLines = conf.getInt(SKIP_NUM_LINES, this.skipNumLines);
         this.delimiter = conf.get(DELIMITER, DEFAULT_DELIMITER);
         this.quote = conf.get(QUOTE, null);
     }
 
     @Override
     public List<Writable> next() {
-        if(!skippedLines && skipNumLines > 0) {
-            for(int i = 0; i < skipNumLines; i++) {
-                if(!hasNext()) {
+        if (!skippedLines && skipNumLines > 0) {
+            for (int i = 0; i < skipNumLines; i++) {
+                if (!hasNext()) {
                     return new ArrayList<>();
                 }
                 super.next();
             }
             skippedLines = true;
         }
-        Text t =  (Text) super.next().iterator().next();
+        Text t = (Text) super.next().iterator().next();
         String val = t.toString();
         return parseLine(val);
     }
 
-    protected List<Writable> parseLine(String line){
+    protected List<Writable> parseLine(String line) {
         String[] split = line.split(delimiter, -1);
         List<Writable> ret = new ArrayList<>();
-        for(String s : split) {
+        for (String s : split) {
             if (quote != null && s.startsWith(quote) && s.endsWith(quote)) {
                 int n = quote.length();
                 s = s.substring(n, s.length() - n).replace(quote + quote, quote);
@@ -122,10 +122,10 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     @Override
-    public Record nextRecord(){
+    public Record nextRecord() {
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
-        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex - 1, uri, CSVRecordReader.class); //-1 as line number has been incremented already...
         return new org.datavec.api.records.impl.Record(next, meta);
     }
 
@@ -138,7 +138,7 @@ public class CSVRecordReader extends LineRecordReader {
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> list = super.loadFromMetaData(recordMetaDatas);
 
-        for(Record r : list ){
+        for (Record r : list) {
             String line = r.getRecord().get(0).toString();
             r.setRecord(parseLine(line));
         }

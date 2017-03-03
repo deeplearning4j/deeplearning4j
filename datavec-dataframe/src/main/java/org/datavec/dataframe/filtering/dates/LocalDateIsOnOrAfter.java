@@ -15,17 +15,17 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class LocalDateIsOnOrAfter extends ColumnFilter {
 
-  private int value;
+    private int value;
 
-  public LocalDateIsOnOrAfter(ColumnReference reference, int value) {
-    super(reference);
-    this.value = value;
-  }
+    public LocalDateIsOnOrAfter(ColumnReference reference, int value) {
+        super(reference);
+        this.value = value;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
+    @Override
+    public Selection apply(Table relation) {
 
-    DateColumn dateColumn = (DateColumn) relation.column(columnReference().getColumnName());
-    return dateColumn.isOnOrAfter(value);
-  }
+        DateColumn dateColumn = (DateColumn) relation.column(columnReference().getColumnName());
+        return dateColumn.isOnOrAfter(value);
+    }
 }

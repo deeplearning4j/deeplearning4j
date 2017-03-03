@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,11 +34,11 @@ import java.util.List;
  * transforms for a single column
  */
 @Data
-@JsonIgnoreProperties({"inputSchema","columnNumber"})
+@JsonIgnoreProperties({"inputSchema", "columnNumber"})
 @NoArgsConstructor
 public abstract class BaseColumnTransform extends BaseTransform implements ColumnOp {
 
-    protected  String columnName;
+    protected String columnName;
     protected int columnNumber = -1;
     private static final long serialVersionUID = 0L;
 
@@ -47,23 +47,24 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
     }
 
     @Override
-    public void setInputSchema(Schema inputSchema){
+    public void setInputSchema(Schema inputSchema) {
         this.inputSchema = inputSchema;
         columnNumber = inputSchema.getIndexOfColumn(columnName);
     }
 
     @Override
     public Schema transform(Schema schema) {
-        if(columnNumber == -1) throw new IllegalStateException("columnNumber == -1 -> setInputSchema not called?");
+        if (columnNumber == -1)
+            throw new IllegalStateException("columnNumber == -1 -> setInputSchema not called?");
         List<ColumnMetaData> oldMeta = schema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(oldMeta.size());
 
         Iterator<ColumnMetaData> typesIter = oldMeta.iterator();
 
         int i = 0;
-        while(typesIter.hasNext()) {
+        while (typesIter.hasNext()) {
             ColumnMetaData t = typesIter.next();
-            if(i++ == columnNumber) {
+            if (i++ == columnNumber) {
                 newMeta.add(getNewColumnMetaData(t.getName(), t));
             } else {
                 newMeta.add(t);
@@ -77,16 +78,17 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+        if (writables.size() != inputSchema.numColumns()) {
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         int n = writables.size();
         List<Writable> out = new ArrayList<>(n);
 
-        int i=0;
-        for(Writable w : writables){
-            if(i++ == columnNumber){
+        int i = 0;
+        for (Writable w : writables) {
+            if (i++ == columnNumber) {
                 Writable newW = map(w);
                 out.add(newW);
             } else {
@@ -150,8 +152,10 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         BaseColumnTransform o2 = (BaseColumnTransform) o;
 
@@ -168,7 +172,7 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
     public Object mapSequence(Object sequence) {
         List<?> list = (List<?>) sequence;
         List<Object> ret = new ArrayList<>();
-        for(Object o : list)
+        for (Object o : list)
             ret.add(map(o));
         return ret;
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,48 +55,45 @@ public class LibSvmRecordWriter extends LineRecordWriter {
         super(conf);
     }
 
-    public LibSvmRecordWriter() {
-    }
+    public LibSvmRecordWriter() {}
 
     @Override
     public void write(Collection<Writable> record) throws IOException {
-        List<Writable> asList = record instanceof  List ? (List<Writable>)  record : new ArrayList<>(record);
+        List<Writable> asList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
         double response = Double.valueOf(asList.get(asList.size() - 1).toString());
         StringBuilder write = new StringBuilder();
-        boolean classification = conf.getBoolean(CLASSIFICATION,true);
-        if(classification) {
+        boolean classification = conf.getBoolean(CLASSIFICATION, true);
+        if (classification) {
             write.append((int) response);
-        }
-        else
+        } else
             write.append(response);
         write.append(" ");
 
-        for(int i = 0; i < asList.size() - 1; i++) {
+        for (int i = 0; i < asList.size() - 1; i++) {
             //sparse format
             try {
                 double val = Double.valueOf(asList.get(i).toString());
-                if(val == 0.0)
+                if (val == 0.0)
                     continue;
                 try {
-                    write.append((i + 1)  + ":" + Integer.valueOf(asList.get(i).toString()));
-                }
-                catch(NumberFormatException e) {
-                    write.append((i + 1)  + ":" + Double.valueOf(asList.get(i).toString()));
+                    write.append((i + 1) + ":" + Integer.valueOf(asList.get(i).toString()));
+                } catch (NumberFormatException e) {
+                    write.append((i + 1) + ":" + Double.valueOf(asList.get(i).toString()));
 
                 }
-                if(i < asList.size() - 1)
+                if (i < asList.size() - 1)
                     write.append(" ");
-            } catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 // This isn't a scalar, so check if we got an array already
                 Writable w = asList.get(i);
                 if (w instanceof ArrayWritable) {
-                    ArrayWritable a = (ArrayWritable)w;
+                    ArrayWritable a = (ArrayWritable) w;
                     for (long j = 0; j < a.length(); j++) {
                         double val = a.getDouble(j);
-                        if(val == 0.0)
+                        if (val == 0.0)
                             continue;
-                        write.append((j + 1)  + ":" + a.getDouble(j));
-                        if(j < a.length() - 1)
+                        write.append((j + 1) + ":" + a.getDouble(j));
+                        if (j < a.length() - 1)
                             write.append(" ");
                     }
                 } else {

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,11 @@ import org.joda.time.format.DateTimeFormatter;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class TimeAnalysis extends NumericalColumnAnalysis {
 
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
+    private static final DateTimeFormatter formatter =
+                    DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
     private long min;
     private long max;
 
@@ -46,7 +47,8 @@ public class TimeAnalysis extends NumericalColumnAnalysis {
 
     @Override
     public String toString() {
-        return "TimeAnalysis(min=" + min + " (" + formatter.print(min) + "),max=" + max + " (" + formatter.print(max) + ")," + super.toString() + ")";
+        return "TimeAnalysis(min=" + min + " (" + formatter.print(min) + "),max=" + max + " (" + formatter.print(max)
+                        + ")," + super.toString() + ")";
     }
 
     @Override

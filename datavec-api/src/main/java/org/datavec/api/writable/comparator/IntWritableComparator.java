@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ public class IntWritableComparator implements WritableComparator {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "IntWritableComparator()";
     }
 }

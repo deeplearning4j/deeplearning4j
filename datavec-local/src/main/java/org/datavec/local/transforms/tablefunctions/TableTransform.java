@@ -19,6 +19,6 @@ public interface TableTransform {
      * @param transform the transformNonTimeSeries to run
      * @return the result table
      */
-    Table transform(Table input,Transform transform);
+    Table transform(Table input, Transform transform);
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,14 +27,14 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author saudet
  */
-public class IPAddressToCoordinatesTransform extends IPAddressToLocationTransform  {
+public class IPAddressToCoordinatesTransform extends IPAddressToLocationTransform {
 
     public IPAddressToCoordinatesTransform(@JsonProperty("columnName") String columnName) throws IOException {
         this(columnName, DEFAULT_DELIMITER);
     }
 
     public IPAddressToCoordinatesTransform(@JsonProperty("columnName") String columnName,
-            @JsonProperty("delimiter") String delimiter) throws IOException {
+                    @JsonProperty("delimiter") String delimiter) throws IOException {
         super(columnName, LocationType.COORDINATES, delimiter);
     }
 

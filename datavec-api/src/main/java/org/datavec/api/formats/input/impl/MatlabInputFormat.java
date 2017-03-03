@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.misc.MatlabRecordReader;
 import org.datavec.api.split.InputSplit;
-
 
 import java.io.IOException;
 

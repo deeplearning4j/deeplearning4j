@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ public class RegexLineRecordReader extends LineRecordReader {
     private int numLinesSkipped;
     private int currLine = 0;
 
-    public RegexLineRecordReader(String regex, int skipNumLines){
+    public RegexLineRecordReader(String regex, int skipNumLines) {
         this.regex = regex;
         this.skipNumLines = skipNumLines;
         this.pattern = Pattern.compile(regex);
@@ -63,50 +63,50 @@ public class RegexLineRecordReader extends LineRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
-        this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
+        this.skipNumLines = conf.getInt(SKIP_NUM_LINES, this.skipNumLines);
     }
 
     @Override
     public List<Writable> next() {
-        if(numLinesSkipped < skipNumLines) {
-            for(int i = numLinesSkipped; i < skipNumLines; i++, numLinesSkipped++) {
-                if(!hasNext()) {
+        if (numLinesSkipped < skipNumLines) {
+            for (int i = numLinesSkipped; i < skipNumLines; i++, numLinesSkipped++) {
+                if (!hasNext()) {
                     return new ArrayList<>();
                 }
                 super.next();
             }
         }
-        Text t =  (Text) super.next().iterator().next();
+        Text t = (Text) super.next().iterator().next();
         String val = t.toString();
         return parseLine(val);
     }
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        Writable w = super.record(uri,dataInputStream).get(0);
+        Writable w = super.record(uri, dataInputStream).get(0);
         return parseLine(w.toString());
     }
 
-    private List<Writable> parseLine(String line){
+    private List<Writable> parseLine(String line) {
         Matcher m = pattern.matcher(line);
 
         List<Writable> ret;
-        if(m.matches()){
+        if (m.matches()) {
             int count = m.groupCount();
             ret = new ArrayList<>(count);
-            for( int i=1; i<=count; i++){    //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
+            for (int i = 1; i <= count; i++) { //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
                 ret.add(new Text(m.group(i)));
             }
         } else {
-            throw new IllegalStateException("Invalid line: line does not match regex (line #" + currLine  +", regex=\""
-                    + regex + "\"; line=\"" + line + "\"");
+            throw new IllegalStateException("Invalid line: line does not match regex (line #" + currLine + ", regex=\""
+                            + regex + "\"; line=\"" + line + "\"");
         }
 
         return ret;
     }
 
     @Override
-    public void reset(){
+    public void reset() {
         super.reset();
         numLinesSkipped = 0;
     }
@@ -115,7 +115,7 @@ public class RegexLineRecordReader extends LineRecordReader {
     public Record nextRecord() {
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
-        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex -1, uri, RegexLineRecordReader.class); //-1 as line number has been incremented already...
+        RecordMetaData meta = new RecordMetaDataLine(this.lineIndex - 1, uri, RegexLineRecordReader.class); //-1 as line number has been incremented already...
         return new org.datavec.api.records.impl.Record(next, meta);
     }
 
@@ -128,7 +128,7 @@ public class RegexLineRecordReader extends LineRecordReader {
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> list = super.loadFromMetaData(recordMetaDatas);
 
-        for(Record r : list ){
+        for (Record r : list) {
             String line = r.getRecord().get(0).toString();
             r.setRecord(parseLine(line));
         }

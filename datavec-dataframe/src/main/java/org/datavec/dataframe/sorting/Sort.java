@@ -20,45 +20,45 @@ import java.util.Map;
  */
 public class Sort implements Iterable<Map.Entry<String, Sort.Order>> {
 
-  public enum Order {ASCEND, DESCEND}
+    public enum Order {
+        ASCEND, DESCEND
+    }
 
-  private final LinkedHashMap<String, Order> sortOrder = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Order> sortOrder = new LinkedHashMap<>();
 
-  public static Sort on(String columnName, Order order) {
-    return new Sort(columnName, order);
-  }
+    public static Sort on(String columnName, Order order) {
+        return new Sort(columnName, order);
+    }
 
-  public Sort(String columnName, Order order) {
-    next(columnName, order);
-  }
+    public Sort(String columnName, Order order) {
+        next(columnName, order);
+    }
 
-  public Sort next(String columnName, Order order) {
-    sortOrder.put(columnName, order);
-    return this;
-  }
+    public Sort next(String columnName, Order order) {
+        sortOrder.put(columnName, order);
+        return this;
+    }
 
-  public boolean isEmpty() {
-    return sortOrder.isEmpty();
-  }
+    public boolean isEmpty() {
+        return sortOrder.isEmpty();
+    }
 
-  public int size() {
-    return sortOrder.size();
-  }
+    public int size() {
+        return sortOrder.size();
+    }
 
-  /**
-   * Returns an iterator over elements of type {@code T}.
-   *
-   * @return an Iterator.
-   */
-  @Override
-  public Iterator<Map.Entry<String, Order>> iterator() {
-    return sortOrder.entrySet().iterator();
-  }
+    /**
+     * Returns an iterator over elements of type {@code T}.
+     *
+     * @return an Iterator.
+     */
+    @Override
+    public Iterator<Map.Entry<String, Order>> iterator() {
+        return sortOrder.entrySet().iterator();
+    }
 
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("order", sortOrder)
-        .toString();
-  }
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("order", sortOrder).toString();
+    }
 }

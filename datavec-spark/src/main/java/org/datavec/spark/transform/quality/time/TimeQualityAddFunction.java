@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,10 +37,13 @@ public class TimeQualityAddFunction implements Function2<TimeQuality, Writable, 
         long countMissing = v1.getCountMissing();
         long countTotal = v1.getCountTotal() + 1;
 
-        if (meta.isValid(writable)) valid++;
-        else if (writable instanceof NullWritable || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
+        if (meta.isValid(writable))
+            valid++;
+        else if (writable instanceof NullWritable
+                        || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
             countMissing++;
-        else invalid++;
+        else
+            invalid++;
 
         return new TimeQuality(valid, invalid, countMissing, countTotal);
     }

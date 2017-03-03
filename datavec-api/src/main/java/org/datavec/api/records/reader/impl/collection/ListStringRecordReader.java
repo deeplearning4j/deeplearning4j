@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,7 @@ public class ListStringRecordReader extends BaseRecordReader {
     private List<List<String>> delimitedData;
     private Iterator<List<String>> dataIter;
     private Configuration conf;
+
     /**
      * Called once at initialization.
      *
@@ -51,12 +52,11 @@ public class ListStringRecordReader extends BaseRecordReader {
      */
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-        if(split instanceof ListStringSplit) {
+        if (split instanceof ListStringSplit) {
             ListStringSplit listStringSplit = (ListStringSplit) split;
             delimitedData = listStringSplit.getData();
             dataIter = delimitedData.iterator();
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Illegal type of input split " + split.getClass().getName());
         }
     }
@@ -84,7 +84,7 @@ public class ListStringRecordReader extends BaseRecordReader {
         List<String> next = dataIter.next();
         invokeListeners(next);
         List<Writable> ret = new ArrayList<>();
-        for(String s : next)
+        for (String s : next)
             ret.add(new Text(s));
         return ret;
     }

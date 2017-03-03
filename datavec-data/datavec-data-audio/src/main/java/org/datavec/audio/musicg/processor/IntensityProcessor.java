@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,8 @@
 
 package org.datavec.audio.musicg.processor;
 
-public interface IntensityProcessor{
-	public void execute();
-	public double[][] getIntensities();
+public interface IntensityProcessor {
+    public void execute();
+
+    public double[][] getIntensities();
 }

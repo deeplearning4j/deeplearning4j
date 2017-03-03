@@ -21,45 +21,45 @@ package org.datavec.dataframe.util.collections;
 
 final class IntegerDomain {
 
-  private static final IntegerDomain INSTANCE = new IntegerDomain();
+    private static final IntegerDomain INSTANCE = new IntegerDomain();
 
-  /**
-   * Returns the discrete domain for values of type {@code Integer}.
-   *
-   * @since 14.0 (since 10.0 as {@code DiscreteDomains.integers()})
-   */
-  public static IntegerDomain integers() {
-    return INSTANCE;
-  }
+    /**
+     * Returns the discrete domain for values of type {@code Integer}.
+     *
+     * @since 14.0 (since 10.0 as {@code DiscreteDomains.integers()})
+     */
+    public static IntegerDomain integers() {
+        return INSTANCE;
+    }
 
-  public Integer next(Integer value) {
-    int i = value;
-    return (i == Integer.MAX_VALUE) ? null : i + 1;
-  }
+    public Integer next(Integer value) {
+        int i = value;
+        return (i == Integer.MAX_VALUE) ? null : i + 1;
+    }
 
-  public Integer previous(Integer value) {
-    int i = value;
-    return (i == Integer.MIN_VALUE) ? null : i - 1;
-  }
+    public Integer previous(Integer value) {
+        int i = value;
+        return (i == Integer.MIN_VALUE) ? null : i - 1;
+    }
 
-  public long distance(Integer start, Integer end) {
-    return (long) end - start;
-  }
+    public long distance(Integer start, Integer end) {
+        return (long) end - start;
+    }
 
-  public Integer minValue() {
-    return Integer.MIN_VALUE;
-  }
+    public Integer minValue() {
+        return Integer.MIN_VALUE;
+    }
 
-  public Integer maxValue() {
-    return Integer.MAX_VALUE;
-  }
+    public Integer maxValue() {
+        return Integer.MAX_VALUE;
+    }
 
-  private Object readResolve() {
-    return INSTANCE;
-  }
+    private Object readResolve() {
+        return INSTANCE;
+    }
 
-  @Override
-  public String toString() {
-    return "IntegerDomain.integers()";
-  }
+    @Override
+    public String toString() {
+        return "IntegerDomain.integers()";
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,19 +31,19 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Slf4j
-public class SparkTransformFunction implements Function<List<Writable>,List<Writable>> {
+public class SparkTransformFunction implements Function<List<Writable>, List<Writable>> {
 
     private final Transform transform;
 
     @Override
     public List<Writable> call(List<Writable> v1) throws Exception {
-        if(SparkTransformExecutor.isTryCatch()) {
-          try {
-              return transform.map(v1);
-          }catch (Exception e) {
-              log.warn("Error occurred " + e + " on record " + v1);
-              return new ArrayList<>();
-          }
+        if (SparkTransformExecutor.isTryCatch()) {
+            try {
+                return transform.map(v1);
+            } catch (Exception e) {
+                log.warn("Error occurred " + e + " on record " + v1);
+                return new ArrayList<>();
+            }
         }
         return transform.map(v1);
     }

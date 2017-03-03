@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,7 +66,9 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
      * SkipInvalid: Skip invalid lines (quietly, with no warning)<br>
      * SkipInvalidWithWarning: Skip invalid lines, but log a warning<br>
      */
-    public enum LineErrorHandling {FailOnInvalid, SkipInvalid, SkipInvalidWithWarning};
+    public enum LineErrorHandling {
+        FailOnInvalid, SkipInvalid, SkipInvalidWithWarning
+    };
 
     public static final Logger LOG = LoggerFactory.getLogger(RegexSequenceRecordReader.class);
 
@@ -76,11 +78,12 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     private Charset charset;
     private LineErrorHandling errorHandling;
 
-    public RegexSequenceRecordReader(String regex, int skipNumLines){
+    public RegexSequenceRecordReader(String regex, int skipNumLines) {
         this(regex, skipNumLines, DEFAULT_CHARSET, DEFAULT_ERROR_HANDLING);
     }
 
-    public RegexSequenceRecordReader(String regex, int skipNumLines, Charset encoding, LineErrorHandling errorHandling){
+    public RegexSequenceRecordReader(String regex, int skipNumLines, Charset encoding,
+                    LineErrorHandling errorHandling) {
         this.regex = regex;
         this.skipNumLines = skipNumLines;
         this.pattern = Pattern.compile(regex);
@@ -91,7 +94,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
-        this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
+        this.skipNumLines = conf.getInt(SKIP_NUM_LINES, this.skipNumLines);
     }
 
     public List<List<Writable>> sequenceRecord() {
@@ -99,43 +102,43 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     }
 
     @Override
-    public
-    List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        String fileContents = org.apache.commons.io.IOUtils.toString(dataInputStream,charset.name());
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+        String fileContents = org.apache.commons.io.IOUtils.toString(dataInputStream, charset.name());
         return loadSequence(fileContents, uri);
     }
 
-    private List<List<Writable>> loadSequence(String fileContents, URI uri){
-        String[] lines = fileContents.split("(\r\n)|\n");  //TODO this won't work if regex allows for a newline
+    private List<List<Writable>> loadSequence(String fileContents, URI uri) {
+        String[] lines = fileContents.split("(\r\n)|\n"); //TODO this won't work if regex allows for a newline
 
         int numLinesSkipped = 0;
         List<List<Writable>> out = new ArrayList<>();
         int lineCount = 0;
-        for(String line : lines){
+        for (String line : lines) {
             lineCount++;
-            if(numLinesSkipped < skipNumLines){
+            if (numLinesSkipped < skipNumLines) {
                 numLinesSkipped++;
                 continue;
             }
             //Split line using regex matcher
             Matcher m = pattern.matcher(line);
             List<Writable> timeStep;
-            if(m.matches()){
+            if (m.matches()) {
                 int count = m.groupCount();
                 timeStep = new ArrayList<>(count);
-                for( int i=1; i<=count; i++){    //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
+                for (int i = 1; i <= count; i++) { //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
                     timeStep.add(new Text(m.group(i)));
                 }
             } else {
-                switch(errorHandling){
+                switch (errorHandling) {
                     case FailOnInvalid:
-                        throw new IllegalStateException("Invalid line: line does not match regex (line #" + lineCount + ", uri=\"" +
-                                uri + "\"), " + "\", regex=" + regex + "\"; line=\"" + line + "\"");
+                        throw new IllegalStateException(
+                                        "Invalid line: line does not match regex (line #" + lineCount + ", uri=\"" + uri
+                                                        + "\"), " + "\", regex=" + regex + "\"; line=\"" + line + "\"");
                     case SkipInvalid:
                         continue;
                     case SkipInvalidWithWarning:
-                        String warnMsg = "Skipping invalid line: line does not match regex (line #" + lineCount + ", uri=\"" +
-                                uri + "\"), " + "\"; line=\"" + line + "\"";
+                        String warnMsg = "Skipping invalid line: line does not match regex (line #" + lineCount
+                                        + ", uri=\"" + uri + "\"), " + "\"; line=\"" + line + "\"";
                         LOG.warn(warnMsg);
                         continue;
                     default:
@@ -149,7 +152,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     }
 
     @Override
-    public void reset(){
+    public void reset() {
         super.reset();
     }
 
@@ -160,11 +163,12 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
         String fileContents;
         try {
             fileContents = FileUtils.readFileToString(next, charset.name());
-        } catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
         List<List<Writable>> sequence = loadSequence(fileContents, next.toURI());
-        return new org.datavec.api.records.impl.SequenceRecord(sequence, new RecordMetaDataURI(next.toURI(), RegexSequenceRecordReader.class));
+        return new org.datavec.api.records.impl.SequenceRecord(sequence,
+                        new RecordMetaDataURI(next.toURI(), RegexSequenceRecordReader.class));
     }
 
     @Override
@@ -175,7 +179,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
     @Override
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<SequenceRecord> out = new ArrayList<>();
-        for(RecordMetaData meta : recordMetaDatas){
+        for (RecordMetaData meta : recordMetaDatas) {
             File next = new File(meta.getURI());
             URI uri = next.toURI();
             String fileContents = FileUtils.readFileToString(next, charset.name());

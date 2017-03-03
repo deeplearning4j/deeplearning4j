@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,12 +28,12 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkFilterFunction implements Function<List<Writable>,Boolean> {
+public class SparkFilterFunction implements Function<List<Writable>, Boolean> {
 
     private final Filter filter;
 
     @Override
     public Boolean call(List<Writable> v1) throws Exception {
-        return !filter.removeExample(v1);   //Spark: return true to keep example (Filter: return true to remove)
+        return !filter.removeExample(v1); //Spark: return true to keep example (Filter: return true to remove)
     }
 }

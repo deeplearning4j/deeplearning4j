@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,18 +40,18 @@ public class ConvertFromSequence {
 
     private SequenceSchema inputSchema;
 
-    public ConvertFromSequence(){
+    public ConvertFromSequence() {
 
     }
 
-    public Schema transform(SequenceSchema schema){
+    public Schema transform(SequenceSchema schema) {
         List<ColumnMetaData> meta = new ArrayList<>(schema.getColumnMetaData());
 
         return new Schema(meta);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ConvertFromSequence()";
     }
 

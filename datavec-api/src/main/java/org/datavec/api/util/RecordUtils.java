@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,8 +32,8 @@ public class RecordUtils {
 
     public static List<Writable> toRecord(double[] record) {
         List<Writable> ret = new ArrayList<>(record.length);
-        for(int i = 0; i < record.length; i++)
-           ret.add(new DoubleWritable(record[i]));
+        for (int i = 0; i < record.length; i++)
+            ret.add(new DoubleWritable(record[i]));
 
         return ret;
     }
@@ -41,7 +41,7 @@ public class RecordUtils {
 
     public static List<Writable> toRecord(float[] record) {
         List<Writable> ret = new ArrayList<>(record.length);
-        for(int i = 0; i < record.length; i++)
+        for (int i = 0; i < record.length; i++)
             ret.add(new FloatWritable(record[i]));
 
         return ret;

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,10 +36,13 @@ import java.util.Random;
 public class SparkExport {
 
     //Quick and dirty CSV export (using Spark). Eventually, rework this to use DataVec record writers on Spark
-    public static void exportCSVSpark(String directory, String delimiter, int outputSplits, JavaRDD<List<Writable>> data) {
+    public static void exportCSVSpark(String directory, String delimiter, int outputSplits,
+                    JavaRDD<List<Writable>> data) {
         exportCSVSpark(directory, delimiter, null, outputSplits, data);
     }
-    public static void exportCSVSpark(String directory, String delimiter, String quote, int outputSplits, JavaRDD<List<Writable>> data) {
+
+    public static void exportCSVSpark(String directory, String delimiter, String quote, int outputSplits,
+                    JavaRDD<List<Writable>> data) {
 
         //NOTE: Order is probably not random here...
         JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
@@ -49,14 +52,18 @@ public class SparkExport {
     }
 
     //Another quick and dirty CSV export (local). Dumps all values into a single file
-    public static void exportCSVLocal(File outputFile, String delimiter, JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+    public static void exportCSVLocal(File outputFile, String delimiter, JavaRDD<List<Writable>> data, int rngSeed)
+                    throws Exception {
         exportCSVLocal(outputFile, delimiter, null, data, rngSeed);
     }
-    public static void exportCSVLocal(File outputFile, String delimiter, String quote, JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+
+    public static void exportCSVLocal(File outputFile, String delimiter, String quote, JavaRDD<List<Writable>> data,
+                    int rngSeed) throws Exception {
 
         JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
-        List<String> linesList = lines.collect();   //Requires all data in memory
-        if(!(linesList instanceof ArrayList)) linesList = new ArrayList<>(linesList);
+        List<String> linesList = lines.collect(); //Requires all data in memory
+        if (!(linesList instanceof ArrayList))
+            linesList = new ArrayList<>(linesList);
         Collections.shuffle(linesList, new Random(rngSeed));
 
         FileUtils.writeLines(outputFile, linesList);
@@ -64,15 +71,17 @@ public class SparkExport {
 
     //Another quick and dirty CSV export (local). Dumps all values into multiple files (specified number of files)
     public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
-                                      JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+                    JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
         exportCSVLocal(outputDir, baseFileName, numFiles, delimiter, null, data, rngSeed);
     }
-    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter, String quote,
-                                      JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+
+    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
+                    String quote, JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
 
         JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         double[] split = new double[numFiles];
-        for (int i = 0; i < split.length; i++) split[i] = 1.0 / numFiles;
+        for (int i = 0; i < split.length; i++)
+            split[i] = 1.0 / numFiles;
         JavaRDD<String>[] splitData = lines.randomSplit(split);
 
         int count = 0;
@@ -80,7 +89,8 @@ public class SparkExport {
         for (JavaRDD<String> subset : splitData) {
             String path = FilenameUtils.concat(outputDir, baseFileName + (count++) + ".csv");
             List<String> linesList = subset.collect();
-            if(!(linesList instanceof ArrayList)) linesList = new ArrayList<>(linesList);
+            if (!(linesList instanceof ArrayList))
+                linesList = new ArrayList<>(linesList);
             Collections.shuffle(linesList, r);
             FileUtils.writeLines(new File(path), linesList);
         }
@@ -88,28 +98,30 @@ public class SparkExport {
 
     // No shuffling
     public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
-                                      JavaRDD<List<Writable>> data) throws Exception {
+                    JavaRDD<List<Writable>> data) throws Exception {
         exportCSVLocal(outputDir, baseFileName, numFiles, delimiter, null, data);
     }
-    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter, String quote,
-                                      JavaRDD<List<Writable>> data) throws Exception {
+
+    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
+                    String quote, JavaRDD<List<Writable>> data) throws Exception {
 
         JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         double[] split = new double[numFiles];
-        for (int i = 0; i < split.length; i++) split[i] = 1.0 / numFiles;
+        for (int i = 0; i < split.length; i++)
+            split[i] = 1.0 / numFiles;
         JavaRDD<String>[] splitData = lines.randomSplit(split);
 
         int count = 0;
         for (JavaRDD<String> subset : splitData) {
             String path = FilenameUtils.concat(outputDir, baseFileName + (count++) + ".csv");
-//            subset.saveAsTextFile(path);
+            //            subset.saveAsTextFile(path);
             List<String> linesList = subset.collect();
             FileUtils.writeLines(new File(path), linesList);
         }
     }
 
     @AllArgsConstructor
-    private static class SequenceToStringFunction implements Function<List<List<Writable>>,String> {
+    private static class SequenceToStringFunction implements Function<List<List<Writable>>, String> {
 
         private final String delim;
 
@@ -118,11 +130,13 @@ public class SparkExport {
 
             StringBuilder sb = new StringBuilder();
             boolean firstTimeStep = true;
-            for(List<Writable> c : sequence ) {
-                if(!firstTimeStep) sb.append("\n");
+            for (List<Writable> c : sequence) {
+                if (!firstTimeStep)
+                    sb.append("\n");
                 boolean first = true;
                 for (Writable w : c) {
-                    if (!first) sb.append(delim);
+                    if (!first)
+                        sb.append(delim);
                     sb.append(w.toString());
                     first = false;
                 }
@@ -137,50 +151,58 @@ public class SparkExport {
 
     //Another quick and dirty CSV export (local). Dumps all values into a single file
     public static void exportStringLocal(File outputFile, JavaRDD<String> data, int rngSeed) throws Exception {
-        List<String> linesList = data.collect();   //Requires all data in memory
-        if(!(linesList instanceof ArrayList)) linesList = new ArrayList<>(linesList);
+        List<String> linesList = data.collect(); //Requires all data in memory
+        if (!(linesList instanceof ArrayList))
+            linesList = new ArrayList<>(linesList);
         Collections.shuffle(linesList, new Random(rngSeed));
 
         FileUtils.writeLines(outputFile, linesList);
     }
 
     //Quick and dirty CSV export: one file per sequence, with shuffling of the order of sequences
-    public static void exportCSVSequenceLocal(File baseDir, JavaRDD<List<List<Writable>>> sequences, long seed ) throws Exception {
+    public static void exportCSVSequenceLocal(File baseDir, JavaRDD<List<List<Writable>>> sequences, long seed)
+                    throws Exception {
         baseDir.mkdirs();
-        if(!baseDir.isDirectory()) throw new IllegalArgumentException("File is not a directory: " + baseDir.toString());
+        if (!baseDir.isDirectory())
+            throw new IllegalArgumentException("File is not a directory: " + baseDir.toString());
         String baseDirStr = baseDir.toString();
 
         List<String> fileContents = sequences.map(new SequenceToStringFunction(",")).collect();
-        if(!(fileContents instanceof ArrayList)) fileContents = new ArrayList<>(fileContents);
-        Collections.shuffle(fileContents,new Random(seed));
+        if (!(fileContents instanceof ArrayList))
+            fileContents = new ArrayList<>(fileContents);
+        Collections.shuffle(fileContents, new Random(seed));
 
-        int i=0;
-        for(String s : fileContents ){
-            String path = FilenameUtils.concat(baseDirStr,i + ".csv");
+        int i = 0;
+        for (String s : fileContents) {
+            String path = FilenameUtils.concat(baseDirStr, i + ".csv");
             File f = new File(path);
-            FileUtils.writeStringToFile(f,s);
+            FileUtils.writeStringToFile(f, s);
             i++;
         }
     }
 
     //Quick and dirty CSV export: one file per sequence, without shuffling
-    public static void exportCSVSequenceLocalNoShuffling(File baseDir, JavaRDD<List<List<Writable>>> sequences) throws Exception {
+    public static void exportCSVSequenceLocalNoShuffling(File baseDir, JavaRDD<List<List<Writable>>> sequences)
+                    throws Exception {
         exportCSVSequenceLocalNoShuffling(baseDir, sequences, "", ",", "csv");
     }
-    public static void exportCSVSequenceLocalNoShuffling(File baseDir, JavaRDD<List<List<Writable>>> sequences, String delimiter,
-                                                         String filePrefix, String fileExtension) throws Exception {
+
+    public static void exportCSVSequenceLocalNoShuffling(File baseDir, JavaRDD<List<List<Writable>>> sequences,
+                    String delimiter, String filePrefix, String fileExtension) throws Exception {
         baseDir.mkdirs();
-        if(!baseDir.isDirectory()) throw new IllegalArgumentException("File is not a directory: " + baseDir.toString());
+        if (!baseDir.isDirectory())
+            throw new IllegalArgumentException("File is not a directory: " + baseDir.toString());
         String baseDirStr = baseDir.toString();
 
         List<String> fileContents = sequences.map(new SequenceToStringFunction(delimiter)).collect();
-        if(!(fileContents instanceof ArrayList)) fileContents = new ArrayList<>(fileContents);
+        if (!(fileContents instanceof ArrayList))
+            fileContents = new ArrayList<>(fileContents);
 
-        int i=0;
-        for(String s : fileContents ){
+        int i = 0;
+        for (String s : fileContents) {
             String path = FilenameUtils.concat(baseDirStr, filePrefix + "_" + i + "." + fileExtension);
             File f = new File(path);
-            FileUtils.writeStringToFile(f,s);
+            FileUtils.writeStringToFile(f, s);
             i++;
         }
     }

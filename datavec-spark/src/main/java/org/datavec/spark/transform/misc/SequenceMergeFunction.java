@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,18 +39,19 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class SequenceMergeFunction <T> implements Function<Tuple2<T,Iterable<List<List<Writable>>>>,List<List<Writable>>> {
+public class SequenceMergeFunction<T>
+                implements Function<Tuple2<T, Iterable<List<List<Writable>>>>, List<List<Writable>>> {
 
     private SequenceMerge sequenceMerge;
 
-    public SequenceMergeFunction(SequenceMerge sequenceMerge){
+    public SequenceMergeFunction(SequenceMerge sequenceMerge) {
         this.sequenceMerge = sequenceMerge;
     }
 
     @Override
     public List<List<Writable>> call(Tuple2<T, Iterable<List<List<Writable>>>> t2) throws Exception {
         List<List<List<Writable>>> sequences = new ArrayList<>();
-        for(List<List<Writable>> l : t2._2()){
+        for (List<List<Writable>> l : t2._2()) {
             sequences.add(l);
         }
 

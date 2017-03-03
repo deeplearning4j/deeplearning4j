@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Skewness extends SummaryFunction {
 
-  public Skewness(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Skewness(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.skewness;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.skewness;
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,12 +54,12 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     @Override
     public void initialize(Configuration conf) {
         tokenizerFactory = createTokenizerFactory(conf);
-        minWordFrequency = conf.getInt(MIN_WORD_FREQUENCY,5);
+        minWordFrequency = conf.getInt(MIN_WORD_FREQUENCY, 5);
         stopWords = conf.getStringCollection(STOP_WORDS);
-        if(stopWords == null || stopWords.isEmpty())
+        if (stopWords == null || stopWords.isEmpty())
             stopWords = StopWords.getStopWords();
 
-        String clazz = conf.get(VOCAB_CACHE,DefaultVocabCache.class.getName());
+        String clazz = conf.get(VOCAB_CACHE, DefaultVocabCache.class.getName());
         try {
             Class<? extends VocabCache> tokenizerFactoryClazz = (Class<? extends VocabCache>) Class.forName(clazz);
             cache = tokenizerFactoryClazz.newInstance();
@@ -71,18 +71,18 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
 
     @Override
     public void fit(RecordReader reader) {
-        fit(reader,null);
+        fit(reader, null);
     }
 
     @Override
     public void fit(RecordReader reader, RecordCallBack callBack) {
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             Record record = reader.nextRecord();
             String s = toString(record.getRecord());
             Tokenizer tokenizer = tokenizerFactory.create(s);
             cache.incrementNumDocs(1);
             doWithTokens(tokenizer);
-            if(callBack != null)
+            if (callBack != null)
                 callBack.onRecord(record);
 
 
@@ -94,8 +94,8 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
         String s = toString(record);
         Tokenizer tokenizer = tokenizerFactory.create(s);
         Counter<String> ret = new Counter<>();
-        while(tokenizer.hasMoreTokens())
-            ret.incrementCount(tokenizer.nextToken(),1.0);
+        while (tokenizer.hasMoreTokens())
+            ret.incrementCount(tokenizer.nextToken(), 1.0);
         return ret;
     }
 
@@ -103,8 +103,8 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     protected String toString(Collection<Writable> record) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        for(Writable w : record) {
-            if(w instanceof Text){
+        for (Writable w : record) {
+            if (w instanceof Text) {
                 try {
                     w.write(dos);
                 } catch (IOException e) {

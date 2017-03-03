@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,8 +48,8 @@ public class DataVecConsumer extends ScheduledPollConsumer {
             marshallerClazz = (Class<? extends DataVecMarshaller>) Class.forName(endpoint.getInputMarshaller());
             marshaller = marshallerClazz.newInstance();
             configuration = new Configuration();
-            for(String prop : endpoint.getConsumerProperties().keySet())
-                configuration.set(prop,endpoint.getConsumerProperties().get(prop).toString());
+            for (String prop : endpoint.getConsumerProperties().keySet())
+                configuration.set(prop, endpoint.getConsumerProperties().get(prop).toString());
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -65,11 +65,11 @@ public class DataVecConsumer extends ScheduledPollConsumer {
     protected int poll() throws Exception {
         Exchange exchange = endpoint.createExchange();
         InputSplit split = inputFromExchange(exchange);
-        RecordReader reader = inputFormat.createReader(split,configuration);
+        RecordReader reader = inputFormat.createReader(split, configuration);
         int numMessagesPolled = 0;
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             // create a message body
-            while(reader.hasNext()) {
+            while (reader.hasNext()) {
                 exchange.getIn().setBody(reader.next());
 
                 try {
@@ -79,7 +79,8 @@ public class DataVecConsumer extends ScheduledPollConsumer {
                 } finally {
                     // log exception if an exception occurred and was not handled
                     if (exchange.getException() != null) {
-                        getExceptionHandler().handleException("Error processing exchange", exchange, exchange.getException());
+                        getExceptionHandler().handleException("Error processing exchange", exchange,
+                                        exchange.getException());
                     }
                 }
             }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,9 @@ public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Wri
     private String uriFirst;
     private String uriSecond;
 
-    public BytesPairWritable(){
-    }
+    public BytesPairWritable() {}
 
-    public BytesPairWritable(byte[] first, byte[] second, String uriFirst, String uriSecond){
+    public BytesPairWritable(byte[] first, byte[] second, String uriFirst, String uriSecond) {
         this.first = first;
         this.second = second;
         this.uriFirst = uriFirst;
@@ -53,10 +52,14 @@ public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Wri
         dataOutput.writeInt(length2);
         dataOutput.writeInt(s1Len);
         dataOutput.writeInt(s2Len);
-        if (first != null) dataOutput.write(first);
-        if (second != null) dataOutput.write(second);
-        if(s1Bytes != null) dataOutput.write(s1Bytes);
-        if(s2Bytes != null) dataOutput.write(s2Bytes);
+        if (first != null)
+            dataOutput.write(first);
+        if (second != null)
+            dataOutput.write(second);
+        if (s1Bytes != null)
+            dataOutput.write(s1Bytes);
+        if (s2Bytes != null)
+            dataOutput.write(s2Bytes);
     }
 
     @Override
@@ -73,47 +76,47 @@ public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Wri
             second = new byte[length2];
             dataInput.readFully(second);
         }
-        if(s1Len > 0){
+        if (s1Len > 0) {
             byte[] s1Bytes = new byte[s1Len];
             dataInput.readFully(s1Bytes);
-            uriFirst = new String(s1Bytes,Charset.forName("UTF-8"));
+            uriFirst = new String(s1Bytes, Charset.forName("UTF-8"));
         }
-        if(s2Len > 0){
+        if (s2Len > 0) {
             byte[] s2Bytes = new byte[s2Len];
             dataInput.readFully(s2Bytes);
             uriSecond = new String(s2Bytes, Charset.forName("UTF-8"));
         }
     }
 
-    public byte[] getFirst(){
+    public byte[] getFirst() {
         return first;
     }
 
-    public byte[] getSecond(){
+    public byte[] getSecond() {
         return second;
     }
 
-    public String getUriFirst(){
+    public String getUriFirst() {
         return uriFirst;
     }
 
-    public String getUriSecond(){
+    public String getUriSecond() {
         return uriSecond;
     }
 
-    public void setFirst(byte[] first){
+    public void setFirst(byte[] first) {
         this.first = first;
     }
 
-    public void setSecond(byte[] second){
+    public void setSecond(byte[] second) {
         this.second = second;
     }
 
-    public void setUriFirst(String uriFirst){
+    public void setUriFirst(String uriFirst) {
         this.uriFirst = uriFirst;
     }
 
-    public void setUriSecond(String uriSecond){
+    public void setUriSecond(String uriSecond) {
         this.uriSecond = uriSecond;
     }
 }

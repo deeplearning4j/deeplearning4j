@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ public class FloatMetaData extends BaseColumnMetaData {
      * @param maxAllowedValue Max allowed value. If null: no restiction on maxAllowedValue value in this column
      */
     public FloatMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Float minAllowedValue,
-                         @JsonProperty("maxAllowedValue")Float maxAllowedValue) {
+                    @JsonProperty("maxAllowedValue") Float maxAllowedValue) {
         this(name, minAllowedValue, maxAllowedValue, false, false);
     }
 
@@ -78,11 +78,15 @@ public class FloatMetaData extends BaseColumnMetaData {
             return false;
         }
 
-        if (allowNaN && Float.isNaN(d)) return true;
-        if (allowInfinite && Float.isInfinite(d)) return true;
+        if (allowNaN && Float.isNaN(d))
+            return true;
+        if (allowInfinite && Float.isInfinite(d))
+            return true;
 
-        if (minAllowedValue != null && d < minAllowedValue) return false;
-        if (maxAllowedValue != null && d > maxAllowedValue) return false;
+        if (minAllowedValue != null && d < minAllowedValue)
+            return false;
+        if (maxAllowedValue != null && d > maxAllowedValue)
+            return false;
 
         return true;
     }
@@ -105,11 +109,15 @@ public class FloatMetaData extends BaseColumnMetaData {
             return false;
         }
 
-        if (allowNaN && Float.isNaN(d)) return true;
-        if (allowInfinite && Float.isInfinite(d)) return true;
+        if (allowNaN && Float.isNaN(d))
+            return true;
+        if (allowInfinite && Float.isInfinite(d))
+            return true;
 
-        if (minAllowedValue != null && d < minAllowedValue) return false;
-        if (maxAllowedValue != null && d > maxAllowedValue) return false;
+        if (minAllowedValue != null && d < minAllowedValue)
+            return false;
+        if (maxAllowedValue != null && d > maxAllowedValue)
+            return false;
 
         return true;
     }
@@ -129,11 +137,13 @@ public class FloatMetaData extends BaseColumnMetaData {
             needComma = true;
         }
         if (maxAllowedValue != null) {
-            if (needComma) sb.append(",");
+            if (needComma)
+                sb.append(",");
             sb.append("maxAllowed=").append(maxAllowedValue);
             needComma = true;
         }
-        if (needComma) sb.append(",");
+        if (needComma)
+            sb.append(",");
         sb.append("allowNaN=").append(allowNaN).append(",allowInfinite=").append(allowInfinite).append(")");
         return sb.toString();
     }

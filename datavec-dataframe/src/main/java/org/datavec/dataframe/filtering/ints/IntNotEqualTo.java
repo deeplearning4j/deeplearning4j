@@ -12,15 +12,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class IntNotEqualTo extends ColumnFilter {
 
-  private int value;
+    private int value;
 
-  public IntNotEqualTo(ColumnReference reference, int value) {
-    super(reference);
-    this.value = value;
-  }
+    public IntNotEqualTo(ColumnReference reference, int value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    IntColumn longColumn = (IntColumn) relation.column(getColumnReference().getColumnName());
-    return longColumn.isNotEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        IntColumn longColumn = (IntColumn) relation.column(getColumnReference().getColumnName());
+        return longColumn.isNotEqualTo(value);
+    }
 }

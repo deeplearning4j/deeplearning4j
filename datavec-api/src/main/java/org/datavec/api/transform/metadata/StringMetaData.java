@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ public class StringMetaData extends BaseColumnMetaData {
     private final Integer minLength;
     private final Integer maxLength;
 
-    public StringMetaData(){
+    public StringMetaData() {
         super(null);
         regex = null;
         minLength = null;
@@ -54,8 +54,8 @@ public class StringMetaData extends BaseColumnMetaData {
      * @param minLength      Min allowable String length. If null: no restriction on min String length
      * @param maxLength      Max allowable String length. If null: no restriction on max String length
      */
-    public StringMetaData(@JsonProperty("name")String name, @JsonProperty("regex")String mustMatchRegex,
-                          @JsonProperty("minLength")Integer minLength, @JsonProperty("maxLength") Integer maxLength) {
+    public StringMetaData(@JsonProperty("name") String name, @JsonProperty("regex") String mustMatchRegex,
+                    @JsonProperty("minLength") Integer minLength, @JsonProperty("maxLength") Integer maxLength) {
         super(name);
         this.regex = mustMatchRegex;
         this.minLength = minLength;
@@ -72,8 +72,10 @@ public class StringMetaData extends BaseColumnMetaData {
     public boolean isValid(Writable writable) {
         String str = writable.toString();
         int len = str.length();
-        if (minLength != null && len < minLength) return false;
-        if (maxLength != null && len > maxLength) return false;
+        if (minLength != null && len < minLength)
+            return false;
+        if (maxLength != null && len > maxLength)
+            return false;
 
         return regex == null || str.matches(regex);
     }
@@ -91,8 +93,10 @@ public class StringMetaData extends BaseColumnMetaData {
     public boolean isValid(Object input) {
         String str = input.toString();
         int len = str.length();
-        if (minLength != null && len < minLength) return false;
-        if (maxLength != null && len > maxLength) return false;
+        if (minLength != null && len < minLength)
+            return false;
+        if (maxLength != null && len > maxLength)
+            return false;
 
         return regex == null || str.matches(regex);
     }
@@ -106,13 +110,16 @@ public class StringMetaData extends BaseColumnMetaData {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("StringMetaData(name=\"").append(name).append("\",");
-        if (minLength != null) sb.append("minLengthAllowed=").append(minLength);
+        if (minLength != null)
+            sb.append("minLengthAllowed=").append(minLength);
         if (maxLength != null) {
-            if (minLength != null) sb.append(",");
+            if (minLength != null)
+                sb.append(",");
             sb.append("maxLengthAllowed=").append(maxLength);
         }
         if (regex != null) {
-            if (minLength != null || maxLength != null) sb.append(",");
+            if (minLength != null || maxLength != null)
+                sb.append(",");
             sb.append("regex=").append(regex);
         }
         sb.append(")");

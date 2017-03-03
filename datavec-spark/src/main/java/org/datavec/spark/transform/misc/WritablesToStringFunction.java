@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class WritablesToStringFunction implements Function<List<Writable>,String> {
+public class WritablesToStringFunction implements Function<List<Writable>, String> {
 
     private final String delim;
     private final String quote;
@@ -43,8 +43,9 @@ public class WritablesToStringFunction implements Function<List<Writable>,String
 
         StringBuilder sb = new StringBuilder();
         boolean first = true;
-        for(Writable w : c){
-            if(!first) sb.append(delim);
+        for (Writable w : c) {
+            if (!first)
+                sb.append(delim);
             String s = w.toString();
             boolean needQuotes = s.contains(delim);
             if (needQuotes && quote != null) {

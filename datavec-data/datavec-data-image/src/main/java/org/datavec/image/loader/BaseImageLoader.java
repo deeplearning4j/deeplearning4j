@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,8 +53,11 @@ public abstract class BaseImageLoader implements Serializable {
     }
 
     public abstract INDArray asRowVector(File f) throws IOException;
+
     public abstract INDArray asRowVector(InputStream inputStream) throws IOException;
+
     public abstract INDArray asMatrix(File f) throws IOException;
+
     public abstract INDArray asMatrix(InputStream inputStream) throws IOException;
 
     public static void downloadAndUntar(Map urlMap, File fullDir) {
@@ -65,10 +68,11 @@ public abstract class BaseImageLoader implements Serializable {
             }
 
             String fileName = file.toString();
-            if (fileName.endsWith(".tgz") || fileName.endsWith(".tar.gz") || fileName.endsWith(".gz") || fileName.endsWith(".zip"))
+            if (fileName.endsWith(".tgz") || fileName.endsWith(".tar.gz") || fileName.endsWith(".gz")
+                            || fileName.endsWith(".zip"))
                 ArchiveUtils.unzipFileTo(file.getAbsolutePath(), fullDir.getAbsolutePath());
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to fetch images",e);
+            throw new IllegalStateException("Unable to fetch images", e);
         }
     }
 

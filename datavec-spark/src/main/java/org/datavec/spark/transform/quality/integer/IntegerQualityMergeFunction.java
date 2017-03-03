@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.datavec.api.transform.quality.columns.IntegerQuality;
 /**
  * Created by Alex on 5/03/2016.
  */
-public class IntegerQualityMergeFunction implements Function2<IntegerQuality,IntegerQuality,IntegerQuality> {
+public class IntegerQualityMergeFunction implements Function2<IntegerQuality, IntegerQuality, IntegerQuality> {
     @Override
     public IntegerQuality call(IntegerQuality v1, IntegerQuality v2) throws Exception {
         return v1.add(v2);

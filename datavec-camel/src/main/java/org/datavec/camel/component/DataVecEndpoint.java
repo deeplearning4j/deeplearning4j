@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,14 +30,17 @@ import org.apache.camel.spi.UriPath;
  * Represents a DataVec endpoint.
  * @author Adam Gibson
  */
-@UriEndpoint(scheme = "datavec", title = "datavec", syntax="datavec:inputFormat/?outputFormat=?&inputMarshaller=?", consumerClass = DataVecConsumer.class,label = "datavec")
+@UriEndpoint(scheme = "datavec", title = "datavec", syntax = "datavec:inputFormat/?outputFormat=?&inputMarshaller=?",
+                consumerClass = DataVecConsumer.class, label = "datavec")
 @Data
 public class DataVecEndpoint extends DefaultEndpoint {
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = "true")
     private String inputFormat;
     @UriParam(defaultValue = "")
     private String outputFormat;
-    @UriParam @Metadata(required = "true")
+    @UriParam
+    @Metadata(required = "true")
     private String inputMarshaller;
     @UriParam(defaultValue = "org.datavec.api.io.converters.SelfWritableConverter")
     private String writableConverter;

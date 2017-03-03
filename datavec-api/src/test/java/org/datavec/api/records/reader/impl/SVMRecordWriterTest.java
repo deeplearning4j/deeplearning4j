@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,10 +48,11 @@ public class SVMRecordWriterTest {
     @Test
     public void testWriter() throws Exception {
         String tempDir = System.getProperty("java.io.tmpdir");
-        InputStream is  = new ClassPathResource("iris.dat").getInputStream();
+        InputStream is = new ClassPathResource("iris.dat").getInputStream();
         assumeNotNull(is);
-        File tmp = new File(tempDir,"iris.txt");
-        if(tmp.exists()) tmp.delete();
+        File tmp = new File(tempDir, "iris.txt");
+        if (tmp.exists())
+            tmp.delete();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmp));
         IOUtils.copy(is, bos);
         bos.flush();
@@ -61,18 +62,19 @@ public class SVMRecordWriterTest {
         RecordReader reader = new CSVRecordReader();
         List<List<Writable>> records = new ArrayList<>();
         reader.initialize(split);
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             List<Writable> record = reader.next();
             assertEquals(5, record.size());
             records.add(record);
         }
 
-        assertEquals(150,records.size());
-        File out = new File(tempDir,"iris_out.txt");
-        if(out.exists()) out.delete();
+        assertEquals(150, records.size());
+        File out = new File(tempDir, "iris_out.txt");
+        if (out.exists())
+            out.delete();
         out.deleteOnExit();
-        RecordWriter writer = new SVMLightRecordWriter(out,true);
-        for(List<Writable> record : records)
+        RecordWriter writer = new SVMLightRecordWriter(out, true);
+        for (List<Writable> record : records)
             writer.write(record);
 
         writer.close();
@@ -82,23 +84,23 @@ public class SVMRecordWriterTest {
         InputSplit svmSplit = new FileSplit(out);
         svmReader.initialize(svmSplit);
         assertTrue(svmReader.hasNext());
-        while(svmReader.hasNext()) {
+        while (svmReader.hasNext()) {
             List<Writable> record = svmReader.next();
             assertEquals(5, record.size());
             records.add(record);
         }
-        assertEquals(150,records.size());
+        assertEquals(150, records.size());
     }
 
     @Test
     public void testSparseData() throws Exception {
         RecordReader svmLightRecordReader = new SVMLightRecordReader();
         Configuration conf = new Configuration();
-        conf.set(SVMLightRecordReader.NUM_ATTRIBUTES,"784");
+        conf.set(SVMLightRecordReader.NUM_ATTRIBUTES, "784");
         svmLightRecordReader.initialize(conf, new FileSplit(new ClassPathResource("mnist_svmlight.txt").getFile()));
         assertTrue(svmLightRecordReader.hasNext());
         List<Writable> record = svmLightRecordReader.next();
-        assertEquals(785,record.size());
+        assertEquals(785, record.size());
     }
 
 

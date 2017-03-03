@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@ public class ConditionFilter implements Filter {
 
     private final Condition condition;
 
-    public ConditionFilter(@JsonProperty("condition") Condition condition){
+    public ConditionFilter(@JsonProperty("condition") Condition condition) {
         this.condition = condition;
     }
 
@@ -91,7 +91,7 @@ public class ConditionFilter implements Filter {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ConditionFilter(" + condition + ")";
     }
 
@@ -114,7 +114,7 @@ public class ConditionFilter implements Filter {
      */
     @Override
     public String[] outputColumnNames() {
-       return condition.outputColumnNames();
+        return condition.outputColumnNames();
     }
 
     /**
@@ -125,7 +125,7 @@ public class ConditionFilter implements Filter {
      */
     @Override
     public String[] columnNames() {
-       return condition.columnNames();
+        return condition.columnNames();
     }
 
     /**
@@ -136,6 +136,6 @@ public class ConditionFilter implements Filter {
      */
     @Override
     public String columnName() {
-       return condition.columnName();
+        return condition.columnName();
     }
 }

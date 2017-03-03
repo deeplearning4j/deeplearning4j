@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, 
 
     private final SequenceRecordReader recordReader;
 
-    public SequenceRecordReaderBytesFunction(SequenceRecordReader recordReader){
+    public SequenceRecordReaderBytesFunction(SequenceRecordReader recordReader) {
         this.recordReader = recordReader;
     }
 

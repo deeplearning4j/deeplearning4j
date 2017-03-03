@@ -13,32 +13,32 @@ import java.util.List;
  */
 public class AnyOf extends CompositeFilter {
 
-  private List<Filter> filterList = new ArrayList<>();
+    private List<Filter> filterList = new ArrayList<>();
 
-  AnyOf(Collection<Filter> filters) {
+    AnyOf(Collection<Filter> filters) {
 
-    this.filterList.addAll(filters);
-  }
-
-  public static AnyOf anyOf(Filter... filters) {
-    List<Filter> filterList = new ArrayList<>();
-    Collections.addAll(filterList, filters);
-    return new AnyOf(filterList);
-  }
-
-  public static AnyOf anyOf(Collection<Filter> filters) {
-    return new AnyOf(filters);
-  }
-
-  public Selection apply(Table relation) {
-    Selection selection = null;
-    for (Filter filter : filterList) {
-      if (selection == null) {
-        selection = filter.apply(relation);
-      } else {
-        selection.or(filter.apply(relation));
-      }
+        this.filterList.addAll(filters);
     }
-    return selection;
-  }
+
+    public static AnyOf anyOf(Filter... filters) {
+        List<Filter> filterList = new ArrayList<>();
+        Collections.addAll(filterList, filters);
+        return new AnyOf(filterList);
+    }
+
+    public static AnyOf anyOf(Collection<Filter> filters) {
+        return new AnyOf(filters);
+    }
+
+    public Selection apply(Table relation) {
+        Selection selection = null;
+        for (Filter filter : filterList) {
+            if (selection == null) {
+                selection = filter.apply(relation);
+            } else {
+                selection.or(filter.apply(relation));
+            }
+        }
+        return selection;
+    }
 }

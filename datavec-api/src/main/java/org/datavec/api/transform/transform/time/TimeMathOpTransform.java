@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,14 +43,16 @@ public class TimeMathOpTransform extends BaseColumnTransform {
     private final TimeUnit timeUnit;
     private final long asMilliseconds;
 
-    public TimeMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("timeQuantity") long timeQuantity,
-                               @JsonProperty("timeUnit") TimeUnit timeUnit) {
+    public TimeMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp,
+                    @JsonProperty("timeQuantity") long timeQuantity, @JsonProperty("timeUnit") TimeUnit timeUnit) {
         super(columnName);
-        if (mathOp != MathOp.Add && mathOp != MathOp.Subtract && mathOp != MathOp.ScalarMin && mathOp != MathOp.ScalarMax) {
+        if (mathOp != MathOp.Add && mathOp != MathOp.Subtract && mathOp != MathOp.ScalarMin
+                        && mathOp != MathOp.ScalarMax) {
             throw new IllegalArgumentException("Invalid MathOp: only Add/Subtract/ScalarMin/ScalarMax supported");
         }
         if ((mathOp == MathOp.ScalarMin || mathOp == MathOp.ScalarMax) && timeUnit != TimeUnit.MILLISECONDS) {
-            throw new IllegalArgumentException("Only valid time unit for ScalarMin/Max is Milliseconds (i.e., timestamp format)");
+            throw new IllegalArgumentException(
+                            "Only valid time unit for ScalarMin/Max is Milliseconds (i.e., timestamp format)");
         }
 
         this.mathOp = mathOp;

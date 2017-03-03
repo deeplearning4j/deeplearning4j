@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
-@EqualsAndHashCode(exclude = {"inputSchema","insertAfterIdx","deriveFromIdx"})
+@EqualsAndHashCode(exclude = {"inputSchema", "insertAfterIdx", "deriveFromIdx"})
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;
@@ -72,8 +72,10 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         this.insertAfter = builder.insertAfter;
     }
 
-    public DeriveColumnsFromTimeTransform(@JsonProperty("columnName") String columnName, @JsonProperty("insertAfter") String insertAfter,
-                                          @JsonProperty("inputTimeZone") DateTimeZone inputTimeZone, @JsonProperty("derivedColumns") List<DerivedColumn> derivedColumns) {
+    public DeriveColumnsFromTimeTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("insertAfter") String insertAfter,
+                    @JsonProperty("inputTimeZone") DateTimeZone inputTimeZone,
+                    @JsonProperty("derivedColumns") List<DerivedColumn> derivedColumns) {
         this.columnName = columnName;
         this.insertAfter = insertAfter;
         this.inputTimeZone = inputTimeZone;
@@ -99,7 +101,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
                             newMeta.add(new StringMetaData(d.columnName));
                             break;
                         case Integer:
-                            newMeta.add(new IntegerMetaData(d.columnName));     //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
+                            newMeta.add(new IntegerMetaData(d.columnName)); //TODO: ranges... if it's a day, we know it must be 1 to 31, etc...
                             break;
                         default:
                             throw new IllegalStateException("Unexpected column type: " + d.columnType);
@@ -115,19 +117,22 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     public void setInputSchema(Schema inputSchema) {
         insertAfterIdx = inputSchema.getColumnNames().indexOf(insertAfter);
         if (insertAfterIdx == -1) {
-            throw new IllegalStateException("Invalid schema/insert after column: input schema does not contain column \"" + insertAfter + "\"");
+            throw new IllegalStateException(
+                            "Invalid schema/insert after column: input schema does not contain column \"" + insertAfter
+                                            + "\"");
         }
 
         deriveFromIdx = inputSchema.getColumnNames().indexOf(columnName);
         if (deriveFromIdx == -1) {
-            throw new IllegalStateException("Invalid source column: input schema does not contain column \"" + columnName + "\"");
+            throw new IllegalStateException(
+                            "Invalid source column: input schema does not contain column \"" + columnName + "\"");
         }
 
         this.inputSchema = inputSchema;
 
         if (!(inputSchema.getMetaData(columnName) instanceof TimeMetaData))
-            throw new IllegalStateException("Invalid state: input column \"" +
-                    columnName + "\" is not a time column. Is: " + inputSchema.getMetaData(columnName));
+            throw new IllegalStateException("Invalid state: input column \"" + columnName
+                            + "\" is not a time column. Is: " + inputSchema.getMetaData(columnName));
         TimeMetaData meta = (TimeMetaData) inputSchema.getMetaData(columnName);
         inputTimeZone = meta.getTimeZone();
     }
@@ -140,8 +145,9 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
 
         int i = 0;
@@ -214,7 +220,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     public Object mapSequence(Object sequence) {
         List<Long> longs = (List<Long>) sequence;
         List<List<Object>> ret = new ArrayList<>();
-        for(Long l : longs)
+        for (Long l : longs)
             ret.add((List<Object>) map(l));
         return ret;
     }
@@ -222,12 +228,13 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DeriveColumnsFromTimeTransform(timeColumn=\"").append(columnName)
-                .append("\",insertAfter=\"").append(insertAfter).append("\",derivedColumns=(");
+        sb.append("DeriveColumnsFromTimeTransform(timeColumn=\"").append(columnName).append("\",insertAfter=\"")
+                        .append(insertAfter).append("\",derivedColumns=(");
 
         boolean first = true;
         for (DerivedColumn d : derivedColumns) {
-            if (!first) sb.append(",");
+            if (!first)
+                sb.append(",");
             sb.append(d);
             first = false;
         }
@@ -257,7 +264,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     @Override
     public String[] outputColumnNames() {
         String[] ret = new String[derivedColumns.size()];
-        for(int i = 0; i < ret.length; i++)
+        for (int i = 0; i < ret.length; i++)
             ret[i] = derivedColumns.get(i).columnName;
         return ret;
     }
@@ -270,7 +277,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
      */
     @Override
     public String[] columnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**
@@ -354,20 +361,23 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         private transient DateTimeFormatter dateTimeFormatter;
 
         //        public DerivedColumn(String columnName, ColumnType columnType, String format, DateTimeZone dateTimeZone, DateTimeFieldType fieldType) {
-        public DerivedColumn(@JsonProperty("columnName") String columnName, @JsonProperty("columnType") ColumnType columnType,
-                             @JsonProperty("format") String format, @JsonProperty("dateTimeZone") DateTimeZone dateTimeZone,
-                             @JsonProperty("fieldType") DateTimeFieldType fieldType) {
+        public DerivedColumn(@JsonProperty("columnName") String columnName,
+                        @JsonProperty("columnType") ColumnType columnType, @JsonProperty("format") String format,
+                        @JsonProperty("dateTimeZone") DateTimeZone dateTimeZone,
+                        @JsonProperty("fieldType") DateTimeFieldType fieldType) {
             this.columnName = columnName;
             this.columnType = columnType;
             this.format = format;
             this.dateTimeZone = dateTimeZone;
             this.fieldType = fieldType;
-            if (format != null) dateTimeFormatter = DateTimeFormat.forPattern(this.format).withZone(dateTimeZone);
+            if (format != null)
+                dateTimeFormatter = DateTimeFormat.forPattern(this.format).withZone(dateTimeZone);
         }
 
         @Override
         public String toString() {
-            return "(name=" + columnName + ",type=" + columnType + ",derived=" + (format != null ? format : fieldType) + ")";
+            return "(name=" + columnName + ",type=" + columnType + ",derived=" + (format != null ? format : fieldType)
+                            + ")";
         }
 
         //Custom serialization methods, because Joda Time doesn't allow DateTimeFormatter objects to be serialized :(
@@ -377,7 +387,8 @@ public class DeriveColumnsFromTimeTransform implements Transform {
 
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             in.defaultReadObject();
-            if (format != null) dateTimeFormatter = DateTimeFormat.forPattern(format).withZone(dateTimeZone);
+            if (format != null)
+                dateTimeFormatter = DateTimeFormat.forPattern(format).withZone(dateTimeZone);
         }
     }
 }

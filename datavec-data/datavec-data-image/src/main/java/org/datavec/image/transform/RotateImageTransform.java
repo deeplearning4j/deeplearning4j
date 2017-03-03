@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,9 +36,15 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
     float centerx, centery, angle, scale;
-    @Getter @Setter int interMode = INTER_LINEAR;
-    @Getter @Setter int borderMode = BORDER_CONSTANT;
-    @Getter @Setter Scalar borderValue = Scalar.ZERO;
+    @Getter
+    @Setter
+    int interMode = INTER_LINEAR;
+    @Getter
+    @Setter
+    int borderMode = BORDER_CONSTANT;
+    @Getter
+    @Setter
+    Scalar borderValue = Scalar.ZERO;
 
     /** Calls {@code this(null, 0, 0, angle, 0)}. */
     public RotateImageTransform(float angle) {
@@ -77,8 +83,8 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         Mat mat = converter.convert(image.getFrame());
         float cy = mat.rows() / 2 + centery * (random != null ? 2 * random.nextFloat() - 1 : 1);
         float cx = mat.cols() / 2 + centerx * (random != null ? 2 * random.nextFloat() - 1 : 1);
-        float a  =     angle * (random != null ? 2 * random.nextFloat() - 1 : 1);
-        float s  = 1 + scale * (random != null ? 2 * random.nextFloat() - 1 : 1);
+        float a = angle * (random != null ? 2 * random.nextFloat() - 1 : 1);
+        float s = 1 + scale * (random != null ? 2 * random.nextFloat() - 1 : 1);
 
         Mat result = new Mat();
         Mat M = getRotationMatrix2D(new Point2f(cx, cy), angle, scale);

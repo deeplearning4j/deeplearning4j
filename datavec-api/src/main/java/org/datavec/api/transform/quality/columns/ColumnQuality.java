@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,8 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public abstract class ColumnQuality implements Serializable {
 
     protected final long countValid;
@@ -36,8 +37,8 @@ public abstract class ColumnQuality implements Serializable {
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "countValid=" + countValid + ", countInvalid=" + countInvalid + ", countMissing=" + countMissing
-                + ", countTotal=" + countTotal;
+                        + ", countTotal=" + countTotal;
     }
 }

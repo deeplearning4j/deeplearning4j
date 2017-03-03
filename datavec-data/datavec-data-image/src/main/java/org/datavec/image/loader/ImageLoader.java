@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,8 +50,8 @@ public class ImageLoader extends BaseImageLoader {
         registry.registerServiceProvider(new com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi());
         registry.registerServiceProvider(new com.twelvemonkeys.imageio.plugins.psd.PSDImageReaderSpi());
         registry.registerServiceProvider(Arrays.asList(new com.twelvemonkeys.imageio.plugins.bmp.BMPImageReaderSpi(),
-                new com.twelvemonkeys.imageio.plugins.bmp.CURImageReaderSpi(),
-                new com.twelvemonkeys.imageio.plugins.bmp.ICOImageReaderSpi()));
+                        new com.twelvemonkeys.imageio.plugins.bmp.CURImageReaderSpi(),
+                        new com.twelvemonkeys.imageio.plugins.bmp.ICOImageReaderSpi()));
     }
 
     public ImageLoader() {
@@ -63,9 +63,9 @@ public class ImageLoader extends BaseImageLoader {
      * height and width
      * @param height the height to load*
      * @param width  the width to load
-
+    
      */
-    public ImageLoader(int height,int width) {
+    public ImageLoader(int height, int width) {
         super();
         this.height = height;
         this.width = width;
@@ -108,15 +108,15 @@ public class ImageLoader extends BaseImageLoader {
      */
     public INDArray asRowVector(File f) throws IOException {
         return asRowVector(ImageIO.read(f));
-//        if(channels == 3) {
-//            return toRaveledTensor(f);
-//        }
-//        return NDArrayUtil.toNDArray(flattenedImageFromFile(f));
+        //        if(channels == 3) {
+        //            return toRaveledTensor(f);
+        //        }
+        //        return NDArrayUtil.toNDArray(flattenedImageFromFile(f));
     }
 
     public INDArray asRowVector(InputStream inputStream) throws IOException {
         return asRowVector(ImageIO.read(inputStream));
-//        return asMatrix(inputStream).ravel();
+        //        return asMatrix(inputStream).ravel();
     }
 
     /**
@@ -130,7 +130,7 @@ public class ImageLoader extends BaseImageLoader {
             image = centerCropIfNeeded(image);
         }
         image = scalingIfNeed(image, true);
-        if(channels == 3) {
+        if (channels == 3) {
             return toINDArrayBGR(image).ravel();
         }
         int[][] ret = toIntArrayArray(image);
@@ -153,6 +153,7 @@ public class ImageLoader extends BaseImageLoader {
             throw new RuntimeException(e);
         }
     }
+
     /**
      * Changes the input stream in to an
      * bgr based raveled(flattened) vector
@@ -217,7 +218,7 @@ public class ImageLoader extends BaseImageLoader {
      * @return the input stream to convert
      */
     public INDArray toBgr(BufferedImage image) {
-        if(image == null)
+        if (image == null)
             throw new IllegalStateException("Unable to load image");
         image = scalingIfNeed(image, false);
         return toINDArrayBGR(image);
@@ -240,13 +241,13 @@ public class ImageLoader extends BaseImageLoader {
      * @return the input stream to convert
      */
     public INDArray asMatrix(InputStream inputStream) throws IOException {
-       if(channels == 3)
-           return toBgr(inputStream);
+        if (channels == 3)
+            return toBgr(inputStream);
         try {
-            BufferedImage image  = ImageIO.read(inputStream);
+            BufferedImage image = ImageIO.read(inputStream);
             return asMatrix(image);
         } catch (IOException e) {
-            throw new IOException("Unable to load image",e);
+            throw new IOException("Unable to load image", e);
         }
     }
 
@@ -266,7 +267,7 @@ public class ImageLoader extends BaseImageLoader {
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    ret.putScalar(new int[]{i, j}, image.getRGB(j, i));
+                    ret.putScalar(new int[] {i, j}, image.getRGB(j, i));
                 }
             }
             return ret;
@@ -281,11 +282,11 @@ public class ImageLoader extends BaseImageLoader {
      * @param numRowsPerSlice the number of rows for each image
      * @return a tensor representing one image as a mini batch
      */
-    public INDArray asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
+    public INDArray asImageMiniBatches(File f, int numMiniBatches, int numRowsPerSlice) {
         try {
             INDArray d = asMatrix(f);
             return Nd4j.create(numMiniBatches, numRowsPerSlice, d.columns());
-        }catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -319,12 +320,12 @@ public class ImageLoader extends BaseImageLoader {
         int w = image.getWidth(), h = image.getHeight();
         int bands = image.getSampleModel().getNumBands();
         int[][][] ret = new int[channels][h][w];
-        byte[] pixels = ((DataBufferByte)image.getRaster().getDataBuffer()).getData();
+        byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 for (int k = 0; k < channels; k++) {
-                    if(k >= bands)
+                    if (k >= bands)
                         break;
                     ret[k][i][j] = pixels[channels * w * i + channels * j + k];
                 }
@@ -342,18 +343,18 @@ public class ImageLoader extends BaseImageLoader {
         BufferedImage img = new BufferedImage(matrix.rows(), matrix.columns(), BufferedImage.TYPE_INT_ARGB);
         WritableRaster r = img.getRaster();
         int[] equiv = new int[matrix.length()];
-        for(int i = 0; i < equiv.length; i++) {
+        for (int i = 0; i < equiv.length; i++) {
             equiv[i] = (int) matrix.getDouble(i);
         }
 
-        r.setDataElements(0,0,matrix.rows(),matrix.columns(),equiv);
+        r.setDataElements(0, 0, matrix.rows(), matrix.columns(), equiv);
         return img;
     }
 
 
     private static int[] rasterData(INDArray matrix) {
         int[] ret = new int[matrix.length()];
-        for(int i = 0; i < ret.length; i++)
+        for (int i = 0; i < ret.length; i++)
             ret[i] = (int) Math.round((double) matrix.getScalar(i).element());
         return ret;
     }
@@ -363,19 +364,19 @@ public class ImageLoader extends BaseImageLoader {
      * @param arr the array to use
      * @param image the image to set
      */
-    public void toBufferedImageRGB(INDArray arr,BufferedImage image) {
-        if(arr.rank() < 3)
+    public void toBufferedImageRGB(INDArray arr, BufferedImage image) {
+        if (arr.rank() < 3)
             throw new IllegalArgumentException("Arr must be 3d");
 
         image = scalingIfNeed(image, arr.size(-2), arr.size(-1), true);
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
-                int r = arr.slice(0).getInt(i,j);
-                int g = arr.slice(1).getInt(i,j);
-                int b = arr.slice(2).getInt(i,j);
+                int r = arr.slice(0).getInt(i, j);
+                int g = arr.slice(1).getInt(i, j);
+                int b = arr.slice(2).getInt(i, j);
                 int a = 1;
                 int col = (a << 24) | (r << 16) | (g << 8) | b;
-                image.setRGB(i,j,col);
+                image.setRGB(i, j, col);
             }
         }
     }
@@ -407,16 +408,16 @@ public class ImageLoader extends BaseImageLoader {
     protected int[][] toIntArrayArray(BufferedImage image) {
         int w = image.getWidth(), h = image.getHeight();
         int[][] ret = new int[h][w];
-        if(image.getRaster().getNumDataElements() == 1 ){
+        if (image.getRaster().getNumDataElements() == 1) {
             Raster raster = image.getRaster();
             for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++){
+                for (int j = 0; j < w; j++) {
                     ret[i][j] = raster.getSample(j, i, 0);
                 }
             }
         } else {
             for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++){
+                for (int j = 0; j < w; j++) {
                     ret[i][j] = image.getRGB(j, i);
                 }
             }
@@ -429,12 +430,12 @@ public class ImageLoader extends BaseImageLoader {
         int width = image.getWidth();
         int bands = image.getSampleModel().getNumBands();
 
-        byte[] pixels = ((DataBufferByte)image.getRaster().getDataBuffer()).getData();
-        int[] shape = new int[]{height, width, bands};
+        byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+        int[] shape = new int[] {height, width, bands};
 
         INDArray ret2 = Nd4j.create(1, pixels.length);
-        for(int i = 0; i < ret2.length(); i++) {
-            ret2.putScalar(i, ((int)pixels[i])& 0xFF);
+        for (int i = 0; i < ret2.length(); i++) {
+            ret2.putScalar(i, ((int) pixels[i]) & 0xFF);
         }
         return ret2.reshape(shape).permute(2, 0, 1);
     }
@@ -468,8 +469,10 @@ public class ImageLoader extends BaseImageLoader {
             if (needAlpha && image.getColorModel().hasAlpha() && channels == BufferedImage.TYPE_4BYTE_ABGR) {
                 return toBufferedImage(scaled, BufferedImage.TYPE_4BYTE_ABGR);
             } else {
-                if(channels == BufferedImage.TYPE_BYTE_GRAY) return toBufferedImage(scaled, BufferedImage.TYPE_BYTE_GRAY);
-                else return toBufferedImage(scaled, BufferedImage.TYPE_3BYTE_BGR);
+                if (channels == BufferedImage.TYPE_BYTE_GRAY)
+                    return toBufferedImage(scaled, BufferedImage.TYPE_BYTE_GRAY);
+                else
+                    return toBufferedImage(scaled, BufferedImage.TYPE_3BYTE_BGR);
             }
         } else {
             if (image.getType() == BufferedImage.TYPE_4BYTE_ABGR || image.getType() == BufferedImage.TYPE_3BYTE_BGR) {
@@ -477,8 +480,10 @@ public class ImageLoader extends BaseImageLoader {
             } else if (needAlpha && image.getColorModel().hasAlpha() && channels == BufferedImage.TYPE_4BYTE_ABGR) {
                 return toBufferedImage(image, BufferedImage.TYPE_4BYTE_ABGR);
             } else {
-                if(channels == BufferedImage.TYPE_BYTE_GRAY) return toBufferedImage(image, BufferedImage.TYPE_BYTE_GRAY);
-                else return toBufferedImage(image, BufferedImage.TYPE_3BYTE_BGR);
+                if (channels == BufferedImage.TYPE_BYTE_GRAY)
+                    return toBufferedImage(image, BufferedImage.TYPE_BYTE_GRAY);
+                else
+                    return toBufferedImage(image, BufferedImage.TYPE_3BYTE_BGR);
             }
         }
     }

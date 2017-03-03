@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,13 +33,14 @@ public class SequenceDataAnalysis extends DataAnalysis {
 
     private final SequenceLengthAnalysis sequenceLengthAnalysis;
 
-    public SequenceDataAnalysis(Schema schema, List<ColumnAnalysis> columnAnalysis, SequenceLengthAnalysis sequenceAnalysis) {
+    public SequenceDataAnalysis(Schema schema, List<ColumnAnalysis> columnAnalysis,
+                    SequenceLengthAnalysis sequenceAnalysis) {
         super(schema, columnAnalysis);
         this.sequenceLengthAnalysis = sequenceAnalysis;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return sequenceLengthAnalysis + "\n" + super.toString();
     }
 }

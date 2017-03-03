@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,13 +30,13 @@ import java.util.Map;
 public class RecordMetaDataComposableMap implements RecordMetaData {
 
     private Class<?> readerClass;
-    private Map<String,RecordMetaData> meta;
+    private Map<String, RecordMetaData> meta;
 
-    public RecordMetaDataComposableMap(Map<String,RecordMetaData> recordMetaDatas) {
+    public RecordMetaDataComposableMap(Map<String, RecordMetaData> recordMetaDatas) {
         this(null, recordMetaDatas);
     }
 
-    public RecordMetaDataComposableMap(Class<?> readerClass, Map<String,RecordMetaData> recordMetaDatas) {
+    public RecordMetaDataComposableMap(Class<?> readerClass, Map<String, RecordMetaData> recordMetaDatas) {
         this.readerClass = readerClass;
         this.meta = recordMetaDatas;
     }
@@ -46,8 +46,9 @@ public class RecordMetaDataComposableMap implements RecordMetaData {
         StringBuilder sb = new StringBuilder();
         sb.append("locations(");
         boolean first = true;
-        for (Map.Entry<String,RecordMetaData> rmd : meta.entrySet()) {
-            if (!first) sb.append(",");
+        for (Map.Entry<String, RecordMetaData> rmd : meta.entrySet()) {
+            if (!first)
+                sb.append(",");
             sb.append(rmd.getKey()).append("=");
             sb.append(rmd.getValue().getLocation());
             first = false;

@@ -12,10 +12,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
  */
 public interface CategoryColumnUtils extends Column, StringMapUtils, CategoryReduceUtils, Iterable<String> {
 
-  StringPredicate isMissing = i -> i.equals(CategoryColumn.MISSING_VALUE);
-  StringPredicate isNotMissing = i -> !i.equals(CategoryColumn.MISSING_VALUE);
+    StringPredicate isMissing = i -> i.equals(CategoryColumn.MISSING_VALUE);
+    StringPredicate isNotMissing = i -> !i.equals(CategoryColumn.MISSING_VALUE);
 
-  DictionaryMap dictionaryMap();
+    DictionaryMap dictionaryMap();
 
-  IntArrayList values();
+    IntArrayList values();
 }

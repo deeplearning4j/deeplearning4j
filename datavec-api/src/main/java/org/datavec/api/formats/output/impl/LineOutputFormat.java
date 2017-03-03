@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ import java.io.FileNotFoundException;
 public class LineOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {
-        String outputPath = conf.get(OutputFormat.OUTPUT_PATH,".");
+        String outputPath = conf.get(OutputFormat.OUTPUT_PATH, ".");
         try {
             return new LineRecordWriter(new File(outputPath));
         } catch (FileNotFoundException e) {

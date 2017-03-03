@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,8 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final double scalar;
 
-    public DoubleMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") double scalar) {
+    public DoubleMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp,
+                    @JsonProperty("scalar") double scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
@@ -53,8 +54,10 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
         DoubleMetaData meta = (DoubleMetaData) oldColumnType;
         Double minValue = meta.getMinAllowedValue();
         Double maxValue = meta.getMaxAllowedValue();
-        if (minValue != null) minValue = doOp(minValue);
-        if (maxValue != null) maxValue = doOp(maxValue);
+        if (minValue != null)
+            minValue = doOp(minValue);
+        if (maxValue != null)
+            maxValue = doOp(maxValue);
         if (minValue != null && maxValue != null && minValue > maxValue) {
             //Consider rsub 1, with original min/max of 0 and 1: (1-0) -> 1 and (1-1) -> 0
             //Or multiplication by -1: (0 to 1) -> (-1 to 0)
@@ -110,7 +113,7 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
      */
     @Override
     public Object map(Object input) {
-        if(input instanceof Number) {
+        if (input instanceof Number) {
             Number number = (Number) input;
             return doOp(number.doubleValue());
         }
@@ -126,7 +129,7 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
     public Object mapSequence(Object sequence) {
         List<?> list = (List<?>) sequence;
         List<Object> ret = new ArrayList<>();
-        for(Object o : list)
+        for (Object o : list)
             ret.add(map(o));
         return ret;
     }

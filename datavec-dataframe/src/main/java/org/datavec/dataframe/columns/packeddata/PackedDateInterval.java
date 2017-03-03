@@ -9,8 +9,10 @@ import com.google.common.annotations.Beta;
 @Beta
 public abstract class PackedDateInterval {
 
-  // boolean operations
-  abstract boolean equals(DateIntervalColumn interval);
-  abstract boolean before(DateIntervalColumn interval);
-  abstract boolean after(DateIntervalColumn interval);
+    // boolean operations
+    abstract boolean equals(DateIntervalColumn interval);
+
+    abstract boolean before(DateIntervalColumn interval);
+
+    abstract boolean after(DateIntervalColumn interval);
 }

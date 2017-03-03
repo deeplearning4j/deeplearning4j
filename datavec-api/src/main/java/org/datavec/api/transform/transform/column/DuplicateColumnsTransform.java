@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ import java.util.Set;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"columnsToDuplicateSet", "columnIndexesToDuplicateSet", "inputSchema"})
-public class DuplicateColumnsTransform implements Transform,ColumnOp {
+public class DuplicateColumnsTransform implements Transform, ColumnOp {
 
     private final List<String> columnsToDuplicate;
     private final List<String> newColumnNames;
@@ -50,11 +50,12 @@ public class DuplicateColumnsTransform implements Transform,ColumnOp {
      * @param newColumnNames     List of names for the new (duplicate) columns
      */
     public DuplicateColumnsTransform(@JsonProperty("columnsToDuplicate") List<String> columnsToDuplicate,
-                                     @JsonProperty("newColumnNames") List<String> newColumnNames) {
+                    @JsonProperty("newColumnNames") List<String> newColumnNames) {
         if (columnsToDuplicate == null || newColumnNames == null)
             throw new IllegalArgumentException("Columns/names cannot be null");
         if (columnsToDuplicate.size() != newColumnNames.size())
-            throw new IllegalArgumentException("Invalid input: columns to duplicate and the new names must have equal lengths");
+            throw new IllegalArgumentException(
+                            "Invalid input: columns to duplicate and the new names must have equal lengths");
         this.columnsToDuplicate = columnsToDuplicate;
         this.newColumnNames = newColumnNames;
         this.columnsToDuplicateSet = new HashSet<>(columnsToDuplicate);
@@ -95,7 +96,7 @@ public class DuplicateColumnsTransform implements Transform,ColumnOp {
             int idx = schemaColumnNames.indexOf(s);
             if (idx == -1)
                 throw new IllegalStateException("Invalid state: column to duplicate \"" + s + "\" does not appear "
-                        + "in input schema");
+                                + "in input schema");
             columnIndexesToDuplicateSet.add(idx);
         }
 
@@ -110,14 +111,16 @@ public class DuplicateColumnsTransform implements Transform,ColumnOp {
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         List<Writable> out = new ArrayList<>(writables.size() + columnsToDuplicate.size());
         int i = 0;
         for (Writable w : writables) {
             out.add(w);
-            if (columnIndexesToDuplicateSet.contains(i++)) out.add(w);   //TODO safter to copy here...
+            if (columnIndexesToDuplicateSet.contains(i++))
+                out.add(w); //TODO safter to copy here...
         }
         return out;
     }
@@ -160,12 +163,15 @@ public class DuplicateColumnsTransform implements Transform,ColumnOp {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         DuplicateColumnsTransform o2 = (DuplicateColumnsTransform) o;
 
-        if (!columnsToDuplicate.equals(o2.columnsToDuplicate)) return false;
+        if (!columnsToDuplicate.equals(o2.columnsToDuplicate))
+            return false;
         return newColumnNames.equals(o2.newColumnNames);
 
     }

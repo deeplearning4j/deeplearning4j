@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,8 +49,8 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-public class CalculateSortedRank implements Serializable,ColumnOp {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+public class CalculateSortedRank implements Serializable, ColumnOp {
 
     private final String newColumnName;
     private final String sortOnColumn;
@@ -76,8 +76,10 @@ public class CalculateSortedRank implements Serializable,ColumnOp {
      * @param comparator       Comparator used to sort examples
      * @param ascending        Whether examples should be ascending or descending, using the comparator
      */
-    public CalculateSortedRank(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("sortOnColumn") String sortOnColumn,
-                               @JsonProperty("comparator") WritableComparator comparator, @JsonProperty("ascending") boolean ascending) {
+    public CalculateSortedRank(@JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("sortOnColumn") String sortOnColumn,
+                    @JsonProperty("comparator") WritableComparator comparator,
+                    @JsonProperty("ascending") boolean ascending) {
         this.newColumnName = newColumnName;
         this.sortOnColumn = sortOnColumn;
         this.comparator = comparator;
@@ -86,23 +88,24 @@ public class CalculateSortedRank implements Serializable,ColumnOp {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if(inputSchema instanceof SequenceSchema) throw new IllegalStateException("Calculating sorted rank on sequences: not yet supported");
+        if (inputSchema instanceof SequenceSchema)
+            throw new IllegalStateException("Calculating sorted rank on sequences: not yet supported");
 
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(origMeta);
 
-        newMeta.add(new LongMetaData(newColumnName, 0L,null));
+        newMeta.add(new LongMetaData(newColumnName, 0L, null));
 
         return inputSchema.newSchema(newMeta);
     }
 
     @Override
-    public void setInputSchema(Schema schema){
+    public void setInputSchema(Schema schema) {
         this.inputSchema = schema;
     }
 
     @Override
-    public Schema getInputSchema(){
+    public Schema getInputSchema() {
         return inputSchema;
     }
 
@@ -153,7 +156,7 @@ public class CalculateSortedRank implements Serializable,ColumnOp {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "CalculateSortedRank(newColumnName=\"" + newColumnName + "\", comparator=" + comparator + ")";
     }
 }

@@ -14,25 +14,25 @@ import org.datavec.dataframe.util.Selection;
  */
 public class IsInSeptember extends ColumnFilter {
 
-  public IsInSeptember(ColumnReference reference) {
-    super(reference);
-  }
-
-  @Override
-  public Selection apply(Table relation) {
-    String name = columnReference().getColumnName();
-    Column column = relation.column(name);
-    ColumnType type = column.type();
-    switch (type) {
-      case LOCAL_DATE:
-        DateColumn dateColumn = relation.dateColumn(name);
-        return dateColumn.isInSeptember();
-      case LOCAL_DATE_TIME:
-        DateTimeColumn dateTimeColumn = relation.dateTimeColumn(name);
-        return dateTimeColumn.isInSeptember();
-      default:
-        throw new UnsupportedOperationException("Columns of type " + type.name() + " do not support the operation "
-            + "isInSeptember() ");
+    public IsInSeptember(ColumnReference reference) {
+        super(reference);
     }
-  }
+
+    @Override
+    public Selection apply(Table relation) {
+        String name = columnReference().getColumnName();
+        Column column = relation.column(name);
+        ColumnType type = column.type();
+        switch (type) {
+            case LOCAL_DATE:
+                DateColumn dateColumn = relation.dateColumn(name);
+                return dateColumn.isInSeptember();
+            case LOCAL_DATE_TIME:
+                DateTimeColumn dateTimeColumn = relation.dateTimeColumn(name);
+                return dateTimeColumn.isInSeptember();
+            default:
+                throw new UnsupportedOperationException("Columns of type " + type.name()
+                                + " do not support the operation " + "isInSeptember() ");
+        }
+    }
 }

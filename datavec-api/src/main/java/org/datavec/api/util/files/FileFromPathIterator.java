@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,12 +42,12 @@ public class FileFromPathIterator implements Iterator<File> {
 
     @Override
     public File next() {
-        if(!hasNext()){
+        if (!hasNext()) {
             throw new NoSuchElementException("No next element");
         }
-        try{
+        try {
             return new File(new URI(paths.next()));
-        }catch (URISyntaxException e){
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ public class CSVRecordWriterTest {
 
     @Test
     public void testWrite() throws Exception {
-        File tempFile = File.createTempFile("datavec","writer");
+        File tempFile = File.createTempFile("datavec", "writer");
         tempFile.deleteOnExit();
 
         CSVRecordWriter writer = new CSVRecordWriter(tempFile);

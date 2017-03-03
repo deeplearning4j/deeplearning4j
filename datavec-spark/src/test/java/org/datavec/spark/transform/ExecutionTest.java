@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,17 +38,12 @@ import static org.junit.Assert.assertEquals;
 public class ExecutionTest extends BaseSparkTest {
 
     @Test
-    public void testExecutionSimple(){
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("col0")
-                .addColumnCategorical("col1","state0","state1","state2")
-                .addColumnDouble("col2")
-                .build();
+    public void testExecutionSimple() {
+        Schema schema = new Schema.Builder().addColumnInteger("col0")
+                        .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
 
-        TransformProcess tp = new TransformProcess.Builder(schema)
-                .categoricalToInteger("col1")
-                .doubleMathOp("col2", MathOp.Add, 10.0)
-                .build();
+        TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1")
+                        .doubleMathOp("col2", MathOp.Add, 10.0).build();
 
         List<List<Writable>> inputData = new ArrayList<>();
         inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
@@ -75,18 +70,13 @@ public class ExecutionTest extends BaseSparkTest {
     }
 
     @Test
-    public void testExecutionSequence(){
+    public void testExecutionSequence() {
 
-        Schema schema = new SequenceSchema.Builder()
-                .addColumnInteger("col0")
-                .addColumnCategorical("col1","state0","state1","state2")
-                .addColumnDouble("col2")
-                .build();
+        Schema schema = new SequenceSchema.Builder().addColumnInteger("col0")
+                        .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
 
-        TransformProcess tp = new TransformProcess.Builder(schema)
-                .categoricalToInteger("col1")
-                .doubleMathOp("col2", MathOp.Add, 10.0)
-                .build();
+        TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1")
+                        .doubleMathOp("col2", MathOp.Add, 10.0).build();
 
         List<List<List<Writable>>> inputSequences = new ArrayList<>();
         List<List<Writable>> seq1 = new ArrayList<>();
@@ -102,7 +92,8 @@ public class ExecutionTest extends BaseSparkTest {
 
         JavaRDD<List<List<Writable>>> rdd = sc.parallelize(inputSequences);
 
-        List<List<List<Writable>>> out = new ArrayList<>(SparkTransformExecutor.executeSequenceToSequence(rdd, tp).collect());
+        List<List<List<Writable>>> out =
+                        new ArrayList<>(SparkTransformExecutor.executeSequenceToSequence(rdd, tp).collect());
 
         Collections.sort(out, new Comparator<List<List<Writable>>>() {
             @Override

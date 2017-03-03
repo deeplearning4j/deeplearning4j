@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,19 +52,19 @@ public class MnistManager {
      * @throws java.io.IOException
      */
     public static void writeImageToPpm(int[][] image, String ppmFileName) throws IOException {
-      try (BufferedWriter ppmOut = new BufferedWriter(new FileWriter(ppmFileName))) {
-        int rows = image.length;
-        int cols = image[0].length;
-        ppmOut.write("P3\n");
-        ppmOut.write("" + rows + " " + cols + " 255\n");
-        for (int[] anImage : image) {
-          StringBuilder s = new StringBuilder();
-          for (int j = 0; j < cols; j++) {
-            s.append(anImage[j] + " " + anImage[j] + " " + anImage[j] + "  ");
-          }
-          ppmOut.write(s.toString());
+        try (BufferedWriter ppmOut = new BufferedWriter(new FileWriter(ppmFileName))) {
+            int rows = image.length;
+            int cols = image[0].length;
+            ppmOut.write("P3\n");
+            ppmOut.write("" + rows + " " + cols + " 255\n");
+            for (int[] anImage : image) {
+                StringBuilder s = new StringBuilder();
+                for (int j = 0; j < cols; j++) {
+                    s.append(anImage[j] + " " + anImage[j] + " " + anImage[j] + "  ");
+                }
+                ppmOut.write(s.toString());
+            }
         }
-      }
 
     }
 

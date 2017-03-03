@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class Product extends SummaryFunction {
 
-  public Product(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public Product(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.product;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.product;
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@ import org.junit.Before;
 
 import java.io.Serializable;
 
-public abstract class BaseSparkTest  implements Serializable {
+public abstract class BaseSparkTest implements Serializable {
     protected static JavaSparkContext sc;
 
     @Before
@@ -35,18 +35,18 @@ public abstract class BaseSparkTest  implements Serializable {
     public synchronized void after() {
         sc.close();
         //Wait until it's stopped, to avoid race conditions during tests
-        for( int i=0; i<100; i++ ){
-            if(!sc.sc().stopped().get()){
-                try{
+        for (int i = 0; i < 100; i++) {
+            if (!sc.sc().stopped().get()) {
+                try {
                     Thread.sleep(100L);
-                }catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             } else {
                 break;
             }
         }
-        if(!sc.sc().stopped().get()){
+        if (!sc.sc().stopped().get()) {
             throw new RuntimeException("Spark context is not stopped after 10s");
         }
 
@@ -55,14 +55,11 @@ public abstract class BaseSparkTest  implements Serializable {
     }
 
     public static synchronized JavaSparkContext getContext() {
-        if(sc != null)
+        if (sc != null)
             return sc;
 
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .set("spark.driverEnv.SPARK_LOCAL_IP","127.0.0.1")
-                .set("spark.executorEnv.SPARK_LOCAL_IP","127.0.0.1")
-                .setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").set("spark.driverEnv.SPARK_LOCAL_IP", "127.0.0.1")
+                        .set("spark.executorEnv.SPARK_LOCAL_IP", "127.0.0.1").setAppName("sparktest");
 
 
         sc = new JavaSparkContext(sparkConf);

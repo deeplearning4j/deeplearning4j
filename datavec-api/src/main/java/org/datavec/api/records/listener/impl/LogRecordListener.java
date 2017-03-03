@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,14 @@ public class LogRecordListener implements RecordListener {
     private boolean invoked = false;
 
     @Override
-    public boolean invoked(){ return invoked; }
+    public boolean invoked() {
+        return invoked;
+    }
 
     @Override
-    public void invoke() { this.invoked = true; }
+    public void invoke() {
+        this.invoked = true;
+    }
 
     @Override
     public void recordRead(RecordReader reader, Object record) {

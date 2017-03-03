@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,6 @@
 
 package org.datavec.audio.fingerprint;
 
-public abstract class QuickSort{
-	public abstract int[] getSortIndexes();
+public abstract class QuickSort {
+    public abstract int[] getSortIndexes();
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,80 +28,61 @@ import static org.junit.Assert.assertEquals;
 public class TestJsonYaml {
 
     @Test
-    public void testToFromJsonYaml(){
+    public void testToFromJsonYaml() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnCategorical("Cat","State1","State2")
-                .addColumnDouble("Dbl")
-                .addColumnDouble("Dbl2",null,100.0,true,false)
-                .addColumnInteger("Int")
-                .addColumnInteger("Int2",0,10)
-                .addColumnLong("Long")
-                .addColumnLong("Long2",-100L,null)
-                .addColumnString("Str")
-                .addColumnString("Str2","someregexhere",1,null)
-                .addColumnTime("TimeCol", DateTimeZone.UTC)
-                .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L)
-                .build();
+        Schema schema = new Schema.Builder().addColumnCategorical("Cat", "State1", "State2").addColumnDouble("Dbl")
+                        .addColumnDouble("Dbl2", null, 100.0, true, false).addColumnInteger("Int")
+                        .addColumnInteger("Int2", 0, 10).addColumnLong("Long").addColumnLong("Long2", -100L, null)
+                        .addColumnString("Str").addColumnString("Str2", "someregexhere", 1, null)
+                        .addColumnTime("TimeCol", DateTimeZone.UTC)
+                        .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L).build();
 
         String asJson = schema.toJson();
-//        System.out.println(asJson);
+        //        System.out.println(asJson);
 
         Schema schema2 = Schema.fromJson(asJson);
 
         int count = schema.numColumns();
-        for( int i=0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c2 = schema2.getMetaData(i);
-            assertEquals(c1,c2);
+            assertEquals(c1, c2);
         }
         assertEquals(schema, schema2);
 
 
         String asYaml = schema.toYaml();
-//        System.out.println(asYaml);
+        //        System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
-        for( int i = 0; i < schema.numColumns(); i++ ){
+        for (int i = 0; i < schema.numColumns(); i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c3 = schema3.getMetaData(i);
-            assertEquals(c1,c3);
+            assertEquals(c1, c3);
         }
         assertEquals(schema, schema3);
     }
 
     @Test
-    public void testMissingPrimitives(){
+    public void testMissingPrimitives() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("Dbl2",null,100.0,false,false)
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("Dbl2", null, 100.0, false, false).build();
 
-        String strJson = "{\n" +
-                "  \"Schema\" : {\n" +
-                "    \"columns\" : [ {\n" +
-                "      \"Double\" : {\n" +
-                "        \"name\" : \"Dbl2\",\n" +
-                "        \"maxAllowedValue\" : 100.0\n" +
-                //"        \"allowNaN\" : false,\n" +           //Normally included: but exclude here to test
-                //"        \"allowInfinite\" : false\n" +       //Normally included: but exclude here to test
-                "      }\n" +
-                "    } ]\n" +
-                "  }\n" +
-                "}";
+        String strJson = "{\n" + "  \"Schema\" : {\n" + "    \"columns\" : [ {\n" + "      \"Double\" : {\n"
+                        + "        \"name\" : \"Dbl2\",\n" + "        \"maxAllowedValue\" : 100.0\n" +
+                        //"        \"allowNaN\" : false,\n" +           //Normally included: but exclude here to test
+                        //"        \"allowInfinite\" : false\n" +       //Normally included: but exclude here to test
+                        "      }\n" + "    } ]\n" + "  }\n" + "}";
 
         Schema schema2 = Schema.fromJson(strJson);
-        assertEquals(schema,schema2);
+        assertEquals(schema, schema2);
 
 
 
-        String strYaml = "--- !<Schema>\n" +
-                "columns:\n" +
-                "- !<Double>\n" +
-                "  name: \"Dbl2\"\n" +
-                "  maxAllowedValue: 100.0";
-                //"  allowNaN: false\n" +                       //Normally included: but exclude here to test
-                //"  allowInfinite: false";                     //Normally included: but exclude here to test
+        String strYaml = "--- !<Schema>\n" + "columns:\n" + "- !<Double>\n" + "  name: \"Dbl2\"\n"
+                        + "  maxAllowedValue: 100.0";
+        //"  allowNaN: false\n" +                       //Normally included: but exclude here to test
+        //"  allowInfinite: false";                     //Normally included: but exclude here to test
 
         Schema schema2a = Schema.fromYaml(strYaml);
         assertEquals(schema, schema2a);
@@ -110,42 +91,35 @@ public class TestJsonYaml {
     @Test
     public void testToFromJsonYamlSequence() {
 
-        Schema schema = new SequenceSchema.Builder()
-                .addColumnCategorical("Cat","State1","State2")
-                .addColumnDouble("Dbl")
-                .addColumnDouble("Dbl2",null,100.0,true,false)
-                .addColumnInteger("Int")
-                .addColumnInteger("Int2",0,10)
-                .addColumnLong("Long")
-                .addColumnLong("Long2",-100L,null)
-                .addColumnString("Str")
-                .addColumnString("Str2","someregexhere",1,null)
-                .addColumnTime("TimeCol", DateTimeZone.UTC)
-                .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L)
-                .build();
+        Schema schema = new SequenceSchema.Builder().addColumnCategorical("Cat", "State1", "State2")
+                        .addColumnDouble("Dbl").addColumnDouble("Dbl2", null, 100.0, true, false)
+                        .addColumnInteger("Int").addColumnInteger("Int2", 0, 10).addColumnLong("Long")
+                        .addColumnLong("Long2", -100L, null).addColumnString("Str")
+                        .addColumnString("Str2", "someregexhere", 1, null).addColumnTime("TimeCol", DateTimeZone.UTC)
+                        .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L).build();
 
         String asJson = schema.toJson();
-//        System.out.println(asJson);
+        //        System.out.println(asJson);
 
         Schema schema2 = Schema.fromJson(asJson);
 
         int count = schema.numColumns();
-        for( int i= 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c2 = schema2.getMetaData(i);
-            assertEquals(c1,c2);
+            assertEquals(c1, c2);
         }
         assertEquals(schema, schema2);
 
 
         String asYaml = schema.toYaml();
-//        System.out.println(asYaml);
+        //        System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
-        for( int i = 0; i < schema.numColumns(); i++) {
+        for (int i = 0; i < schema.numColumns(); i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c3 = schema3.getMetaData(i);
-            assertEquals(c1,c3);
+            assertEquals(c1, c3);
         }
         assertEquals(schema, schema3);
 

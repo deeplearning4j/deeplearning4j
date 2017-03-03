@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,10 +31,10 @@ import java.util.List;
  * NOTE: This is only useful for "one record per file" type situations (ImageRecordReader, etc)
  * @author Alex Black
  */
-public class RecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,List<Writable>> {
+public class RecordReaderFunction implements Function<Tuple2<String, PortableDataStream>, List<Writable>> {
     protected RecordReader recordReader;
 
-    public RecordReaderFunction(RecordReader recordReader){
+    public RecordReaderFunction(RecordReader recordReader) {
         this.recordReader = recordReader;
     }
 
@@ -42,8 +42,8 @@ public class RecordReaderFunction implements Function<Tuple2<String,PortableData
     public List<Writable> call(Tuple2<String, PortableDataStream> value) throws Exception {
         URI uri = new URI(value._1());
         PortableDataStream ds = value._2();
-        try( DataInputStream dis = ds.open() ){
-            return recordReader.record(uri,dis);
+        try (DataInputStream dis = ds.open()) {
+            return recordReader.record(uri, dis);
         }
     }
 }

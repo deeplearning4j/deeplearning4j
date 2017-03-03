@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,35 +36,55 @@ public class CustomFilter implements Filter {
     private long someFilterArg;
 
     @Override
-    public Schema transform(Schema inputSchema) { return null; }
+    public Schema transform(Schema inputSchema) {
+        return null;
+    }
 
     @Override
-    public String outputColumnName() { return null; }
+    public String outputColumnName() {
+        return null;
+    }
 
     @Override
-    public String[] outputColumnNames() { return new String[0]; }
+    public String[] outputColumnNames() {
+        return new String[0];
+    }
 
     @Override
-    public String[] columnNames() { return new String[0]; }
+    public String[] columnNames() {
+        return new String[0];
+    }
 
     @Override
-    public String columnName() { return null; }
+    public String columnName() {
+        return null;
+    }
 
     @Override
-    public boolean removeExample(Object example) { return false; }
+    public boolean removeExample(Object example) {
+        return false;
+    }
 
     @Override
-    public boolean removeSequence(Object sequence) { return false; }
+    public boolean removeSequence(Object sequence) {
+        return false;
+    }
 
     @Override
-    public boolean removeExample(List<Writable> writables) { return false; }
+    public boolean removeExample(List<Writable> writables) {
+        return false;
+    }
 
     @Override
-    public boolean removeSequence(List<List<Writable>> sequence) { return false; }
+    public boolean removeSequence(List<List<Writable>> sequence) {
+        return false;
+    }
 
     @Override
-    public void setInputSchema(Schema schema) { }
+    public void setInputSchema(Schema schema) {}
 
     @Override
-    public Schema getInputSchema() { return null; }
+    public Schema getInputSchema() {
+        return null;
+    }
 }

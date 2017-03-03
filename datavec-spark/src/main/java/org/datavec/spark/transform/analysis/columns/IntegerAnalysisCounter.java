@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,8 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCounter> {
 
     private long countZero;
@@ -39,10 +40,10 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     private long sum = 0;
     private long countTotal = 0;
 
-    private double mean;    //Running mean
-    private double m2;      //Running variance numerator (sum (x-mean)^2)
+    private double mean; //Running mean
+    private double m2; //Running variance numerator (sum (x-mean)^2)
 
-    public IntegerAnalysisCounter(){
+    public IntegerAnalysisCounter() {
 
     }
 
@@ -51,21 +52,24 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     public IntegerAnalysisCounter add(Writable writable) {
         int value = writable.toInt();
 
-        if(value == 0) countZero++;
-        else if(value < 0) countNegative++;
-        else countPositive++;
+        if (value == 0)
+            countZero++;
+        else if (value < 0)
+            countNegative++;
+        else
+            countPositive++;
 
-        if(value == minValueSeen){
+        if (value == minValueSeen) {
             countMinValue++;
-        } else if( value < minValueSeen ){
+        } else if (value < minValueSeen) {
             //New minimum value
             minValueSeen = value;
             countMinValue = 1;
         } //Don't need an else condition: if value > minValueSeen, no change to min value or count
 
-        if(value == maxValueSeen){
+        if (value == maxValueSeen) {
             countMaxValue++;
-        } else if(value > maxValueSeen){
+        } else if (value > maxValueSeen) {
             //new maximum value
             maxValueSeen = value;
             countMaxValue = 1;
@@ -81,36 +85,36 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
         return this;
     }
 
-    public IntegerAnalysisCounter merge(IntegerAnalysisCounter other){
-        if(minValueSeen == other.minValueSeen){
+    public IntegerAnalysisCounter merge(IntegerAnalysisCounter other) {
+        if (minValueSeen == other.minValueSeen) {
             countMinValue += other.countMinValue;
-        } else if(minValueSeen > other.minValueSeen) {
+        } else if (minValueSeen > other.minValueSeen) {
             //Keep other, take count from other
             minValueSeen = other.minValueSeen;
             countMinValue = other.countMinValue;
         } //else: Keep this min, no change to count
 
-        if(maxValueSeen == other.maxValueSeen){
+        if (maxValueSeen == other.maxValueSeen) {
             countMaxValue += other.countMaxValue;
-        } else if(maxValueSeen < other.maxValueSeen) {
+        } else if (maxValueSeen < other.maxValueSeen) {
             //Keep other, take count from other
             maxValueSeen = other.maxValueSeen;
             countMaxValue = other.countMaxValue;
         } //else: Keep this max, no change to count
 
-        if(countTotal == 0){
+        if (countTotal == 0) {
             mean = other.mean;
             m2 = other.m2;
-        } else if(other.countTotal != 0){
-            double delta  = other.mean - mean;
+        } else if (other.countTotal != 0) {
+            double delta = other.mean - mean;
             long tCount = countTotal + other.countTotal;
             //For numerical stability, as per Spark StatCounter
-            if(10 * other.countTotal < countTotal ){
+            if (10 * other.countTotal < countTotal) {
                 mean = mean + (delta * other.countTotal) / tCount;
-            } else if(10 * countTotal < other.countTotal ){
+            } else if (10 * countTotal < other.countTotal) {
                 mean = other.mean - (delta * countTotal) / tCount;
             } else {
-                mean = (mean * countTotal + other.mean*other.countTotal) / tCount;
+                mean = (mean * countTotal + other.mean * other.countTotal) / tCount;
             }
             m2 += other.m2 + (delta * delta * countTotal * other.countTotal) / tCount;
         }
@@ -124,12 +128,13 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
         return this;
     }
 
-    public double getSampleVariance(){
-        if(countTotal <= 1) return Double.NaN;
+    public double getSampleVariance() {
+        if (countTotal <= 1)
+            return Double.NaN;
         return m2 / (countTotal - 1);
     }
 
-    public double getSampleStdev(){
+    public double getSampleStdev() {
         return Math.sqrt(getSampleVariance());
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,7 +83,7 @@ public class TimeMetaData extends BaseColumnMetaData {
      * @param maxValidTime Maximum valid time, in milliseconds (timestamp format). If null: no restriction
      */
     public TimeMetaData(@JsonProperty("name") String name, @JsonProperty("timeZone") DateTimeZone timeZone,
-                        @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
+                    @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
         super(name);
         this.timeZone = timeZone;
         this.minValidTime = minValidTime;
@@ -108,7 +108,8 @@ public class TimeMetaData extends BaseColumnMetaData {
                 return false;
             }
         }
-        if (minValidTime != null && epochMillisec < minValidTime) return false;
+        if (minValidTime != null && epochMillisec < minValidTime)
+            return false;
         return !(maxValidTime != null && epochMillisec > maxValidTime);
     }
 
@@ -130,7 +131,8 @@ public class TimeMetaData extends BaseColumnMetaData {
             return false;
         }
 
-        if (minValidTime != null && epochMillisec < minValidTime) return false;
+        if (minValidTime != null && epochMillisec < minValidTime)
+            return false;
         return !(maxValidTime != null && epochMillisec > maxValidTime);
     }
 
@@ -144,9 +146,11 @@ public class TimeMetaData extends BaseColumnMetaData {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("TimeMetaData(name=\"").append(name).append("\",timeZone=").append(timeZone.getID());
-        if (minValidTime != null) sb.append("minValidTime=").append(minValidTime);
+        if (minValidTime != null)
+            sb.append("minValidTime=").append(minValidTime);
         if (maxValidTime != null) {
-            if (minValidTime != null) sb.append(",");
+            if (minValidTime != null)
+                sb.append(",");
             sb.append("maxValidTime=").append(maxValidTime);
         }
         sb.append(")");

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public interface ColumnReduction extends Serializable,ColumnOp {
+public interface ColumnReduction extends Serializable, ColumnOp {
 
     /**
      * Reduce a single column.

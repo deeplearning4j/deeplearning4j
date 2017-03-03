@@ -7,46 +7,46 @@ import org.datavec.dataframe.columns.Column;
  */
 public interface NumericColumn extends Column {
 
-  double[] toDoubleArray();
+    double[] toDoubleArray();
 
-  float getFloat(int index);
+    float getFloat(int index);
 
-  double max();
-  
-  double min();
+    double max();
 
-  double product();
+    double min();
 
-  double mean();
+    double product();
 
-  double median();
+    double mean();
 
-  double quartile1();
+    double median();
 
-  double quartile3();
+    double quartile1();
 
-  double percentile(double percentile);
+    double quartile3();
 
-  double range();
+    double percentile(double percentile);
 
-  double variance();
+    double range();
 
-  double populationVariance();
+    double variance();
 
-  double standardDeviation();
+    double populationVariance();
 
-  double sumOfLogs();
+    double standardDeviation();
 
-  double sumOfSquares();
+    double sumOfLogs();
 
-  double geometricMean();
+    double sumOfSquares();
 
-  /**
-   * Returns the quadraticMean, aka the root-mean-square, for all values in this column
-   */
-  double quadraticMean();
+    double geometricMean();
 
-  double kurtosis();
+    /**
+     * Returns the quadraticMean, aka the root-mean-square, for all values in this column
+     */
+    double quadraticMean();
 
-  double skewness() ;
+    double kurtosis();
+
+    double skewness();
 }

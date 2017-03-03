@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,9 @@ public class SequenceSchema extends Schema {
         this(columnMetaData, null, null);
     }
 
-    public SequenceSchema(@JsonProperty("columns") List<ColumnMetaData> columnMetaData, @JsonProperty("minSequenceLength") Integer minSequenceLength,
-                          @JsonProperty("maxSequenceLength") Integer maxSequenceLength) {
+    public SequenceSchema(@JsonProperty("columns") List<ColumnMetaData> columnMetaData,
+                    @JsonProperty("minSequenceLength") Integer minSequenceLength,
+                    @JsonProperty("maxSequenceLength") Integer maxSequenceLength) {
         super(columnMetaData);
         this.minSequenceLength = minSequenceLength;
         this.maxSequenceLength = maxSequenceLength;
@@ -71,25 +72,25 @@ public class SequenceSchema extends Schema {
         //Header:
         sb.append("SequenceSchema(");
 
-        if (minSequenceLength != null) sb.append("minSequenceLength=").append(minSequenceLength);
+        if (minSequenceLength != null)
+            sb.append("minSequenceLength=").append(minSequenceLength);
         if (maxSequenceLength != null) {
-            if (minSequenceLength != null) sb.append(",");
+            if (minSequenceLength != null)
+                sb.append(",");
             sb.append("maxSequenceLength=").append(maxSequenceLength);
         }
 
         sb.append(")\n");
         sb.append(String.format("%-6s", "idx")).append(String.format("%-" + (maxNameLength + 8) + "s", "name"))
-                .append(String.format("%-15s", "type")).append("meta data").append("\n");
+                        .append(String.format("%-15s", "type")).append("meta data").append("\n");
 
         for (int i = 0; i < nCol; i++) {
             String colName = getName(i);
             ColumnType type = getType(i);
             ColumnMetaData meta = getMetaData(i);
             String paddedName = String.format("%-" + (maxNameLength + 8) + "s", "\"" + colName + "\"");
-            sb.append(String.format("%-6d", i))
-                    .append(paddedName)
-                    .append(String.format("%-15s", type))
-                    .append(meta).append("\n");
+            sb.append(String.format("%-6d", i)).append(paddedName).append(String.format("%-15s", type)).append(meta)
+                            .append("\n");
         }
 
         return sb.toString();
@@ -131,19 +132,21 @@ public class SequenceSchema extends Schema {
         SequenceSchema.Builder builder = new SequenceSchema.Builder();
         int minSequenceLength = record.get(0).size();
         int maxSequenceLength = record.get(0).size();
-        for(int i= 0; i < record.size(); i++) {
-            if(record.get(i) instanceof DoubleWritable)
+        for (int i = 0; i < record.size(); i++) {
+            if (record.get(i) instanceof DoubleWritable)
                 builder.addColumnDouble(String.valueOf(i));
-            else if(record.get(i) instanceof IntWritable)
+            else if (record.get(i) instanceof IntWritable)
                 builder.addColumnInteger(String.valueOf(i));
-            else if(record.get(i) instanceof LongWritable)
+            else if (record.get(i) instanceof LongWritable)
                 builder.addColumnLong(String.valueOf(i));
-            else if(record.get(i) instanceof FloatWritable)
+            else if (record.get(i) instanceof FloatWritable)
                 builder.addColumnFloat(String.valueOf(i));
 
-            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString() + " with record " + record.get(0));
-            builder.minSequenceLength(Math.min(record.get(i).size(),minSequenceLength));
-            builder.maxSequenceLength(Math.max(record.get(i).size(),maxSequenceLength));
+            else
+                throw new IllegalStateException("Illegal writable for infering schema of type "
+                                + record.get(i).getClass().toString() + " with record " + record.get(0));
+            builder.minSequenceLength(Math.min(record.get(i).size(), minSequenceLength));
+            builder.maxSequenceLength(Math.max(record.get(i).size(), maxSequenceLength));
         }
 
 
@@ -159,17 +162,19 @@ public class SequenceSchema extends Schema {
      */
     public static SequenceSchema inferSequence(List<List<Writable>> record) {
         SequenceSchema.Builder builder = new SequenceSchema.Builder();
-        for(int i= 0; i < record.size(); i++) {
-            if(record.get(i) instanceof DoubleWritable)
+        for (int i = 0; i < record.size(); i++) {
+            if (record.get(i) instanceof DoubleWritable)
                 builder.addColumnDouble(String.valueOf(i));
-            else if(record.get(i) instanceof IntWritable)
+            else if (record.get(i) instanceof IntWritable)
                 builder.addColumnInteger(String.valueOf(i));
-            else if(record.get(i) instanceof LongWritable)
+            else if (record.get(i) instanceof LongWritable)
                 builder.addColumnLong(String.valueOf(i));
-            else if(record.get(i) instanceof FloatWritable)
+            else if (record.get(i) instanceof FloatWritable)
                 builder.addColumnFloat(String.valueOf(i));
 
-            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString());
+            else
+                throw new IllegalStateException(
+                                "Illegal writable for infering schema of type " + record.get(i).getClass().toString());
         }
 
         builder.minSequenceLength(record.size());

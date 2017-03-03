@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,40 +33,35 @@ import static org.junit.Assert.assertEquals;
 public class TestGeoReduction {
 
     @Test
-    public void testCustomReductions(){
+    public void testCustomReductions() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("1#5")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("2#6")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("3#7")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("4#8")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1#5")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2#6")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("3#7")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("4#8")));
 
-        List<Writable> expected = Arrays.asList((Writable)new Text("someKey"), new Text("10.0#26.0"));
+        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new Text("10.0#26.0"));
 
-        Schema schema = new Schema.Builder()
-                .addColumnString("key")
-                .addColumnString("coord")
-                .build();
+        Schema schema = new Schema.Builder().addColumnString("key").addColumnString("coord").build();
 
-        Reducer reducer = new Reducer.Builder(ReduceOp.Count)
-                .keyColumns("key")
-                .customReduction("coord",new CoordinatesReduction("coordSum", ReduceOp.Sum, "#"))
-                .build();
+        Reducer reducer = new Reducer.Builder(ReduceOp.Count).keyColumns("key")
+                        .customReduction("coord", new CoordinatesReduction("coordSum", ReduceOp.Sum, "#")).build();
 
         reducer.setInputSchema(schema);
 
         List<Writable> out = reducer.reduce(inputs);
 
-        assertEquals(2,out.size());
+        assertEquals(2, out.size());
         assertEquals(expected, out);
 
         //Check schema:
-        String[] expNames = new String[]{"key", "coordSum"};
-        ColumnType[] expTypes = new ColumnType[]{ColumnType.String, ColumnType.String};
+        String[] expNames = new String[] {"key", "coordSum"};
+        ColumnType[] expTypes = new ColumnType[] {ColumnType.String, ColumnType.String};
         Schema outSchema = reducer.transform(schema);
 
         assertEquals(2, outSchema.numColumns());
-        for( int i=0; i<2; i++ ){
+        for (int i = 0; i < 2; i++) {
             assertEquals(expNames[i], outSchema.getName(i));
             assertEquals(expTypes[i], outSchema.getType(i));
         }

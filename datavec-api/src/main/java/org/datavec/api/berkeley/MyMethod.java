@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,11 @@
  */
 
 package org.datavec.api.berkeley;
+
 /**
  * A function wrapping interface.
  * @author John DeNero
  */
 public interface MyMethod<I, O> {
-	public O call(I obj);
+    public O call(I obj);
 }

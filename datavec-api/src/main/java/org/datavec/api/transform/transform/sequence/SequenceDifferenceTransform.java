@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,9 @@ import java.util.List;
 public class SequenceDifferenceTransform implements Transform {
 
 
-    public enum FirstStepMode {Default, SpecifiedValue}
+    public enum FirstStepMode {
+        Default, SpecifiedValue
+    }
 
     ;
 
@@ -91,14 +93,15 @@ public class SequenceDifferenceTransform implements Transform {
      * @param firstStepMode          see {@link FirstStepMode}
      * @param specifiedValueWritable Must be null if using FirstStepMode.Default, or non-null if using FirstStepMode.SpecifiedValue
      */
-    public SequenceDifferenceTransform(String columnName, String newColumnName, int lookback, FirstStepMode firstStepMode,
-                                       Writable specifiedValueWritable) {
+    public SequenceDifferenceTransform(String columnName, String newColumnName, int lookback,
+                    FirstStepMode firstStepMode, Writable specifiedValueWritable) {
         if (firstStepMode != FirstStepMode.SpecifiedValue && specifiedValueWritable != null) {
             throw new IllegalArgumentException("Specified value writable provided (" + specifiedValueWritable + ") but "
-                    + "firstStepMode != FirstStepMode.SpecifiedValue");
+                            + "firstStepMode != FirstStepMode.SpecifiedValue");
         }
         if (firstStepMode == FirstStepMode.SpecifiedValue && specifiedValueWritable == null) {
-            throw new IllegalArgumentException("Specified value writable is null but firstStepMode != FirstStepMode.SpecifiedValue");
+            throw new IllegalArgumentException(
+                            "Specified value writable is null but firstStepMode != FirstStepMode.SpecifiedValue");
         }
         if (lookback <= 0) {
             throw new IllegalArgumentException("Lookback period must be > 0. Got: lookback period = " + lookback);
@@ -130,7 +133,7 @@ public class SequenceDifferenceTransform implements Transform {
      */
     @Override
     public String[] outputColumnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**
@@ -141,7 +144,7 @@ public class SequenceDifferenceTransform implements Transform {
      */
     @Override
     public String[] columnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**
@@ -159,10 +162,12 @@ public class SequenceDifferenceTransform implements Transform {
     @Override
     public Schema transform(Schema inputSchema) {
         if (!inputSchema.hasColumn(columnName)) {
-            throw new IllegalStateException("Invalid input schema: does not have column with name \"" + columnName + "\"\n. All schema names: " + inputSchema.getColumnNames());
+            throw new IllegalStateException("Invalid input schema: does not have column with name \"" + columnName
+                            + "\"\n. All schema names: " + inputSchema.getColumnNames());
         }
         if (!(inputSchema instanceof SequenceSchema)) {
-            throw new IllegalStateException("Invalid input schema: expected a SequenceSchema, got " + inputSchema.getClass());
+            throw new IllegalStateException(
+                            "Invalid input schema: expected a SequenceSchema, got " + inputSchema.getClass());
         }
 
         List<ColumnMetaData> newMeta = new ArrayList<>(inputSchema.numColumns());
@@ -182,14 +187,15 @@ public class SequenceDifferenceTransform implements Transform {
                         newMeta.add(new FloatMetaData(newColumnName));
                         break;
                     case Time:
-                        newMeta.add(new LongMetaData(newColumnName));       //not Time - time column isn't used for duration...
+                        newMeta.add(new LongMetaData(newColumnName)); //not Time - time column isn't used for duration...
                         break;
                     case Categorical:
                     case Bytes:
                     case String:
                     case Boolean:
                     default:
-                        throw new IllegalStateException("Cannot perform sequence difference on column of type " + m.getColumnType());
+                        throw new IllegalStateException(
+                                        "Cannot perform sequence difference on column of type " + m.getColumnType());
                 }
             } else {
                 newMeta.add(m);
@@ -202,7 +208,8 @@ public class SequenceDifferenceTransform implements Transform {
     @Override
     public void setInputSchema(Schema inputSchema) {
         if (!inputSchema.hasColumn(columnName)) {
-            throw new IllegalStateException("Invalid input schema: does not have column with name \"" + columnName + "\"\n. All schema names: " + inputSchema.getColumnNames());
+            throw new IllegalStateException("Invalid input schema: does not have column with name \"" + columnName
+                            + "\"\n. All schema names: " + inputSchema.getColumnNames());
         }
 
         this.columnType = inputSchema.getMetaData(columnName).getColumnType();
@@ -216,8 +223,9 @@ public class SequenceDifferenceTransform implements Transform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        throw new UnsupportedOperationException("Only sequence operations are supported for SequenceDifferenceTransform." +
-                " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
+        throw new UnsupportedOperationException(
+                        "Only sequence operations are supported for SequenceDifferenceTransform."
+                                        + " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
     }
 
     @Override
@@ -251,7 +259,8 @@ public class SequenceDifferenceTransform implements Transform {
                                 newTimeStep.add(new LongWritable(current.toLong() - past.toLong()));
                                 break;
                             default:
-                                throw new IllegalStateException("Cannot perform sequence difference on column of type " + columnType);
+                                throw new IllegalStateException(
+                                                "Cannot perform sequence difference on column of type " + columnType);
                         }
                     }
                 } else {
@@ -273,8 +282,9 @@ public class SequenceDifferenceTransform implements Transform {
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("Only sequence operations are supported for SequenceDifferenceTransform." +
-                " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
+        throw new UnsupportedOperationException(
+                        "Only sequence operations are supported for SequenceDifferenceTransform."
+                                        + " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
     }
 
     /**
@@ -284,7 +294,8 @@ public class SequenceDifferenceTransform implements Transform {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        throw new UnsupportedOperationException("Only sequence operations are supported for SequenceDifferenceTransform." +
-                " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
+        throw new UnsupportedOperationException(
+                        "Only sequence operations are supported for SequenceDifferenceTransform."
+                                        + " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
     }
 }

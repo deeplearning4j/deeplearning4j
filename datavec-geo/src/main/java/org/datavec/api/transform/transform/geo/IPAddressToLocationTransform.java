@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author saudet
  */
-public class IPAddressToLocationTransform extends BaseColumnTransform  {
+public class IPAddressToLocationTransform extends BaseColumnTransform {
 
     private static File database;
     private static DatabaseReader reader;
@@ -73,7 +73,8 @@ public class IPAddressToLocationTransform extends BaseColumnTransform  {
     }
 
     public IPAddressToLocationTransform(@JsonProperty("columnName") String columnName,
-            @JsonProperty("delimiter") LocationType locationType, @JsonProperty("delimiter") String delimiter) throws IOException {
+                    @JsonProperty("delimiter") LocationType locationType, @JsonProperty("delimiter") String delimiter)
+                    throws IOException {
         super(columnName);
         this.delimiter = delimiter;
         this.locationType = locationType;
@@ -133,7 +134,8 @@ public class IPAddressToLocationTransform extends BaseColumnTransform  {
                         text += s.getGeoNameId().toString();
                     }
                     break;
-                default: assert false;
+                default:
+                    assert false;
             }
             return new Text(text);
         } catch (GeoIp2Exception | IOException e) {

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,8 @@ public class CSVRegexRecordReader extends CSVRecordReader {
      * @param quote the quote to strip
      * @param regexs the regexs to parse columns with
      */
-    public CSVRegexRecordReader(int skipNumLines,String delimiter,String quote,String[] regexs) {
-        super(skipNumLines,delimiter,quote);
+    public CSVRegexRecordReader(int skipNumLines, String delimiter, String quote, String[] regexs) {
+        super(skipNumLines, delimiter, quote);
         this.regexs = regexs;
         if (regexs != null) {
             patterns = new Pattern[regexs.length];
@@ -53,7 +53,7 @@ public class CSVRegexRecordReader extends CSVRecordReader {
         }
     }
 
-    protected List<Writable> parseLine(String line){
+    protected List<Writable> parseLine(String line) {
         String[] split = line.split(delimiter, -1);
         List<Writable> ret = new ArrayList<>();
         for (int i = 0; i < split.length; i++) {
@@ -64,12 +64,13 @@ public class CSVRegexRecordReader extends CSVRecordReader {
             }
             if (regexs != null && regexs[i] != null) {
                 Matcher m = patterns[i].matcher(s);
-                if(m.matches()){
-                    for( int j=1; j<= m.groupCount(); j++){    //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
+                if (m.matches()) {
+                    for (int j = 1; j <= m.groupCount(); j++) { //Note: Matcher.group(0) is the entire sequence; we only care about groups 1 onward
                         ret.add(new Text(m.group(j)));
                     }
                 } else {
-                    throw new IllegalStateException("Invalid line: value does not match regex (regex=\"" + regexs[i] + "\"; value=\"" + s + "\"");
+                    throw new IllegalStateException("Invalid line: value does not match regex (regex=\"" + regexs[i]
+                                    + "\"; value=\"" + s + "\"");
                 }
             } else {
                 ret.add(new Text(s));

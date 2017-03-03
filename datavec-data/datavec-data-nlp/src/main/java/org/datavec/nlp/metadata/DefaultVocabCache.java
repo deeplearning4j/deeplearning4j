@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ public class DefaultVocabCache implements VocabCache {
     /*
      * Constructor for use with initialize()
      */
-    public DefaultVocabCache(){}
+    public DefaultVocabCache() {}
 
     @Override
     public void incrementNumDocs(double by) {
@@ -66,7 +66,7 @@ public class DefaultVocabCache implements VocabCache {
 
     @Override
     public void initialize(Configuration conf) {
-        minWordFrequency = conf.getInt(TextVectorizer.MIN_WORD_FREQUENCY,5);
+        minWordFrequency = conf.getInt(TextVectorizer.MIN_WORD_FREQUENCY, 5);
     }
 
     @Override
@@ -86,24 +86,24 @@ public class DefaultVocabCache implements VocabCache {
 
     @Override
     public void incrementDocCount(String word) {
-        incrementDocCount(word,1.0);
+        incrementDocCount(word, 1.0);
     }
 
     @Override
     public void incrementDocCount(String word, double by) {
-        docFrequencies.incrementCount(word,by);
+        docFrequencies.incrementCount(word, by);
 
     }
 
     @Override
     public void incrementCount(String word) {
-        incrementCount(word,1.0);
+        incrementCount(word, 1.0);
     }
 
     @Override
     public void incrementCount(String word, double by) {
-        wordFrequencies.incrementCount(word,by);
-        if(wordFrequencies.getCount(word) >= minWordFrequency && vocabWords.indexOf(word) < 0)
+        wordFrequencies.incrementCount(word, by);
+        if (wordFrequencies.getCount(word) >= minWordFrequency && vocabWords.indexOf(word) < 0)
             vocabWords.add(word);
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.datavec.api.transform.quality.columns.StringQuality;
 /**
  * Created by Alex on 5/03/2016.
  */
-public class StringQualityMergeFunction implements Function2<StringQuality,StringQuality,StringQuality> {
+public class StringQualityMergeFunction implements Function2<StringQuality, StringQuality, StringQuality> {
     @Override
     public StringQuality call(StringQuality v1, StringQuality v2) throws Exception {
         return v1.add(v2);

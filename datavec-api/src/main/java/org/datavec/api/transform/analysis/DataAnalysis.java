@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,8 @@ import java.util.*;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class DataAnalysis implements Serializable {
     private static final String COL_NAME = "columnName";
     private static final String COL_IDX = "columnIndex";
@@ -50,34 +51,32 @@ public class DataAnalysis implements Serializable {
     private List<ColumnAnalysis> columnAnalysis;
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         int nCol = schema.numColumns();
 
         int maxNameLength = 0;
-        for(String s :schema.getColumnNames()){
-            maxNameLength = Math.max(maxNameLength,s.length());
+        for (String s : schema.getColumnNames()) {
+            maxNameLength = Math.max(maxNameLength, s.length());
         }
 
         //Header:
-        sb.append(String.format("%-6s","idx")).append(String.format("%-"+(maxNameLength+8)+"s","name"))
-                .append(String.format("%-15s","type")).append("analysis").append("\n");
+        sb.append(String.format("%-6s", "idx")).append(String.format("%-" + (maxNameLength + 8) + "s", "name"))
+                        .append(String.format("%-15s", "type")).append("analysis").append("\n");
 
-        for( int i = 0; i < nCol; i++) {
+        for (int i = 0; i < nCol; i++) {
             String colName = schema.getName(i);
             ColumnType type = schema.getType(i);
             ColumnAnalysis analysis = columnAnalysis.get(i);
-            String paddedName = String.format("%-"+(maxNameLength+8)+"s","\"" + colName + "\"");
-            sb.append(String.format("%-6d",i))
-                    .append(paddedName)
-                    .append(String.format("%-15s",type))
-                    .append(analysis).append("\n");
+            String paddedName = String.format("%-" + (maxNameLength + 8) + "s", "\"" + colName + "\"");
+            sb.append(String.format("%-6d", i)).append(paddedName).append(String.format("%-15s", type)).append(analysis)
+                            .append("\n");
         }
 
         return sb.toString();
     }
 
-    public ColumnAnalysis getColumnAnalysis(String column){
+    public ColumnAnalysis getColumnAnalysis(String column) {
         return columnAnalysis.get(schema.getIndexOfColumn(column));
     }
 
@@ -93,7 +92,7 @@ public class DataAnalysis implements Serializable {
     /**
      * Convert the DataAnalysis object to YAML format
      */
-    public String toYaml(){
+    public String toYaml() {
         return toYaml(getJsonRepresentation());
     }
 
@@ -108,31 +107,31 @@ public class DataAnalysis implements Serializable {
     /**
      * Deserialize a YAML DataAnalysis String that was previously serialized with {@link #toYaml()}
      */
-    public static DataAnalysis fromYaml(String yaml){
+    public static DataAnalysis fromYaml(String yaml) {
         ObjectMapper om = new YamlSerializer().getObjectMapper();
         return fromMapper(om, yaml);
     }
 
-    private static DataAnalysis fromMapper(ObjectMapper om, String json){
+    private static DataAnalysis fromMapper(ObjectMapper om, String json) {
 
         List<ColumnMetaData> meta = new ArrayList<>();
         List<ColumnAnalysis> analysis = new ArrayList<>();
-        try{
+        try {
             JsonNode node = om.readTree(json);
             Iterator<String> fieldNames = node.fieldNames();
             boolean hasDataAnalysis = false;
-            while(fieldNames.hasNext()){
-                if("DataAnalysis".equals(fieldNames.next())){
+            while (fieldNames.hasNext()) {
+                if ("DataAnalysis".equals(fieldNames.next())) {
                     hasDataAnalysis = true;
                     break;
                 }
             }
-            if(!hasDataAnalysis){
+            if (!hasDataAnalysis) {
                 throw new RuntimeException();
             }
 
-            ArrayNode arrayNode = (ArrayNode)node.get("DataAnalysis");
-            for( int i=0; i<arrayNode.size(); i++ ){
+            ArrayNode arrayNode = (ArrayNode) node.get("DataAnalysis");
+            for (int i = 0; i < arrayNode.size(); i++) {
                 JsonNode analysisNode = arrayNode.get(i);
                 String name = analysisNode.get(COL_NAME).asText();
                 int idx = analysisNode.get(COL_IDX).asInt();
@@ -141,11 +140,11 @@ public class DataAnalysis implements Serializable {
                 JsonNode daNode = analysisNode.get(ANALYSIS);
                 ColumnAnalysis dataAnalysis = om.treeToValue(daNode, ColumnAnalysis.class);
 
-                if(type == ColumnType.Categorical){
-                    ArrayNode an = (ArrayNode)analysisNode.get(CATEGORICAL_STATE_NAMES);
+                if (type == ColumnType.Categorical) {
+                    ArrayNode an = (ArrayNode) analysisNode.get(CATEGORICAL_STATE_NAMES);
                     List<String> stateNames = new ArrayList<>(an.size());
                     Iterator<JsonNode> iter = an.elements();
-                    while(iter.hasNext()){
+                    while (iter.hasNext()) {
                         stateNames.add(iter.next().asText());
                     }
                     meta.add(new CategoricalMetaData(name, stateNames));
@@ -155,7 +154,7 @@ public class DataAnalysis implements Serializable {
 
                 analysis.add(dataAnalysis);
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -163,23 +162,24 @@ public class DataAnalysis implements Serializable {
         return new DataAnalysis(schema, analysis);
     }
 
-    private Map<String,List<Map<String,Object>>> getJsonRepresentation(){
-        Map<String,List<Map<String,Object>>> jsonRepresentation = new LinkedHashMap<>();
-        List<Map<String,Object>> list = new ArrayList<>();
+    private Map<String, List<Map<String, Object>>> getJsonRepresentation() {
+        Map<String, List<Map<String, Object>>> jsonRepresentation = new LinkedHashMap<>();
+        List<Map<String, Object>> list = new ArrayList<>();
         jsonRepresentation.put("DataAnalysis", list);
 
-        for(String colName : schema.getColumnNames()){
-            Map<String,Object> current = new LinkedHashMap<>();
+        for (String colName : schema.getColumnNames()) {
+            Map<String, Object> current = new LinkedHashMap<>();
             int idx = schema.getIndexOfColumn(colName);
             current.put(COL_NAME, colName);
             current.put(COL_IDX, idx);
             ColumnType columnType = schema.getMetaData(colName).getColumnType();
             current.put(COL_TYPE, columnType);
-            if(columnType == ColumnType.Categorical){
-                current.put(CATEGORICAL_STATE_NAMES, ((CategoricalMetaData)schema.getMetaData(colName)).getStateNames());
+            if (columnType == ColumnType.Categorical) {
+                current.put(CATEGORICAL_STATE_NAMES,
+                                ((CategoricalMetaData) schema.getMetaData(colName)).getStateNames());
             }
             current.put(ANALYSIS, Collections.singletonMap(columnAnalysis.get(idx).getClass().getSimpleName(),
-                    columnAnalysis.get(idx)));
+                            columnAnalysis.get(idx)));
 
             list.add(current);
         }
@@ -187,20 +187,20 @@ public class DataAnalysis implements Serializable {
         return jsonRepresentation;
     }
 
-    private String toJson(Map<String,List<Map<String,Object>>> jsonRepresentation){
+    private String toJson(Map<String, List<Map<String, Object>>> jsonRepresentation) {
         ObjectMapper om = new JsonSerializer().getObjectMapper();
-        try{
+        try {
             return om.writeValueAsString(jsonRepresentation);
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String toYaml(Map<String,List<Map<String,Object>>> jsonRepresentation){
+    private String toYaml(Map<String, List<Map<String, Object>>> jsonRepresentation) {
         ObjectMapper om = new YamlSerializer().getObjectMapper();
-        try{
+        try {
             return om.writeValueAsString(jsonRepresentation);
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

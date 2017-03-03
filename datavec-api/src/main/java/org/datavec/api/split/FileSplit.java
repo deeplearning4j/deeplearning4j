@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@ package org.datavec.api.split;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.RandomUtils;
 import org.nd4j.linalg.collection.CompactHeapStringList;
-
 
 import java.io.*;
 import java.util.*;
@@ -46,7 +45,8 @@ public class FileSplit extends BaseInputSplit {
             this.random = random;
             this.randomize = true;
         }
-        if (runMain) this.initialize();
+        if (runMain)
+            this.initialize();
     }
 
     public FileSplit(File rootDir) {
@@ -93,7 +93,7 @@ public class FileSplit extends BaseInputSplit {
             }
         } else {
             // Lists one file
-            String toString = rootDir.toURI().toString();   //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
+            String toString = rootDir.toURI().toString(); //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
             uriStrings = Collections.singletonList(toString);
             length += rootDir.length();
         }
@@ -127,7 +127,5 @@ public class FileSplit extends BaseInputSplit {
         return rootDir;
     }
 }
-
-
 
 

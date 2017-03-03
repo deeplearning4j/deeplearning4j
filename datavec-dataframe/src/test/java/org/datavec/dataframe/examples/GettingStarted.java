@@ -16,41 +16,40 @@ import static org.datavec.dataframe.api.ColumnType.LOCAL_DATE;
  */
 public class GettingStarted {
 
-  private ColumnType[] types = {
-      LOCAL_DATE,     // date of poll
-      INTEGER,        // approval rating (pct)
-      CATEGORY        // polling org
-  };
+    private ColumnType[] types = {LOCAL_DATE, // date of poll
+                    INTEGER, // approval rating (pct)
+                    CATEGORY // polling org
+    };
 
-  private Table table;
+    private Table table;
 
-  @Before
-  public void setUp() throws Exception {
-    table = CsvReader.read(types, "data/BushApproval.csv");
-  }
+    @Before
+    public void setUp() throws Exception {
+        table = CsvReader.read(types, "data/BushApproval.csv");
+    }
 
-  @Test
-  public void printStructure() throws Exception {
-    out(table.structure().print());
+    @Test
+    public void printStructure() throws Exception {
+        out(table.structure().print());
 
-    out(table.first(10).print());
+        out(table.first(10).print());
 
-    out(table.summary());
+        out(table.summary());
 
-    out(table.columnNames());
+        out(table.columnNames());
 
-    Column approval = table.column("approval");
-    out(approval.summary().print());
+        Column approval = table.column("approval");
+        out(approval.summary().print());
 
-    Column who = table.column("who");
-    out(who.summary().print());
+        Column who = table.column("who");
+        out(who.summary().print());
 
-    Column date = table.column("date");
-    out(date.summary().print());
-  }
+        Column date = table.column("date");
+        out(date.summary().print());
+    }
 
-  private synchronized void out(Object obj) {
-    System.out.println(String.valueOf(obj));
-  }
+    private synchronized void out(Object obj) {
+        System.out.println(String.valueOf(obj));
+    }
 
 }

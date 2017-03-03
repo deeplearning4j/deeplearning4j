@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,7 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
     private String[] columnsToRemove;
     private Set<Integer> indicesToRemove;
     private String[] leftOverColumns;
+
     public RemoveColumnsTransform(@JsonProperty("columnsToRemove") String... columnsToRemove) {
         this.columnsToRemove = columnsToRemove;
 
@@ -57,7 +58,8 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
         columnsToRemoveIdx = new int[columnsToRemove.length];
         for (String s : columnsToRemove) {
             int idx = schema.getIndexOfColumn(s);
-            if (idx < 0) throw new RuntimeException("Column \"" + s + "\" not found");
+            if (idx < 0)
+                throw new RuntimeException("Column \"" + s + "\" not found");
             columnsToRemoveIdx[i++] = idx;
             indicesToRemove.add(idx);
         }
@@ -66,8 +68,8 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
         int leftOverColumnsIdx = 0;
         List<String> columnTest = Arrays.asList(columnsToRemove);
         List<String> origColumnNames = schema.getColumnNames();
-        for(int remove = 0; remove < schema.numColumns(); remove++) {
-            if(!columnTest.contains(origColumnNames.get(remove)))
+        for (int remove = 0; remove < schema.numColumns(); remove++) {
+            if (!columnTest.contains(origColumnNames.get(remove)))
                 leftOverColumns[leftOverColumnsIdx++] = origColumnNames.get(remove);
         }
     }
@@ -77,8 +79,9 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
         int nToRemove = columnsToRemove.length;
         int newNumColumns = schema.numColumns() - nToRemove;
         if (newNumColumns <= 0)
-            throw new IllegalStateException("Number of columns after executing operation is " + newNumColumns + " (is <= 0). " +
-                    "origColumns = " + schema.getColumnNames() + ", toRemove = " + Arrays.toString(columnsToRemove));
+            throw new IllegalStateException("Number of columns after executing operation is " + newNumColumns
+                            + " (is <= 0). " + "origColumns = " + schema.getColumnNames() + ", toRemove = "
+                            + Arrays.toString(columnsToRemove));
 
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
@@ -107,18 +110,20 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
             List<String> list = new ArrayList<>();
-            for(Writable w : writables)
+            for (Writable w : writables)
                 list.add(w.toString());
-            String toString = StringUtils.join(",",list);
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString() + " and record " + toString);
+            String toString = StringUtils.join(",", list);
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString() + " and record " + toString);
         }
 
         List<Writable> outList = new ArrayList<>(writables.size() - columnsToRemove.length);
 
         int i = 0;
         for (Writable w : writables) {
-            if (indicesToRemove.contains(i++)) continue;
+            if (indicesToRemove.contains(i++))
+                continue;
             outList.add(w);
         }
         return outList;
@@ -133,7 +138,8 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
 
     }
 
@@ -144,7 +150,8 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     @Override
@@ -154,8 +161,10 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         RemoveColumnsTransform o2 = (RemoveColumnsTransform) o;
 

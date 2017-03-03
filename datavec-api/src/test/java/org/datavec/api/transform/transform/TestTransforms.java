@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,7 +93,7 @@ public class TestTransforms {
                 schema.addColumnCategorical("column", colNames);
                 break;
             case Time:
-                schema.addColumnTime("column",DateTimeZone.UTC);
+                schema.addColumnTime("column", DateTimeZone.UTC);
                 break;
             default:
                 throw new RuntimeException();
@@ -143,11 +143,11 @@ public class TestTransforms {
         }
 
         assertEquals(Arrays.asList(new IntWritable(1), new IntWritable(0), new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new Text("zero"))));
+                        transform.map(Collections.singletonList((Writable) new Text("zero"))));
         assertEquals(Arrays.asList(new IntWritable(0), new IntWritable(1), new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new Text("one"))));
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Arrays.asList(new IntWritable(0), new IntWritable(0), new IntWritable(1)),
-                transform.map(Collections.singletonList((Writable) new Text("two"))));
+                        transform.map(Collections.singletonList((Writable) new Text("two"))));
     }
 
     @Test
@@ -164,11 +164,11 @@ public class TestTransforms {
         assertEquals(Arrays.asList("zero", "one", "two"), meta.getStateNames());
 
         assertEquals(Collections.singletonList((Writable) new Text("zero")),
-                transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(0))));
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(1))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
-                transform.map(Collections.singletonList((Writable) new IntWritable(2))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(2))));
     }
 
     @Test
@@ -185,21 +185,17 @@ public class TestTransforms {
         assertEquals(Arrays.asList("zero", "one", "two"), meta.getStateNames());
 
         assertEquals(Collections.singletonList((Writable) new Text("zero")),
-                transform.map(Collections.singletonList((Writable) new Text("zero"))));
+                        transform.map(Collections.singletonList((Writable) new Text("zero"))));
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new Text("one"))));
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
-                transform.map(Collections.singletonList((Writable) new Text("two"))));
+                        transform.map(Collections.singletonList((Writable) new Text("two"))));
     }
 
     @Test
     public void testRemoveColumnsTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("first")
-                .addColumnString("second")
-                .addColumnInteger("third")
-                .addColumnLong("fourth")
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("first").addColumnString("second")
+                        .addColumnInteger("third").addColumnLong("fourth").build();
 
         Transform transform = new RemoveColumnsTransform("first", "fourth");
         transform.setInputSchema(schema);
@@ -211,17 +207,14 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.Integer, out.getMetaData(1).getColumnType());
 
         assertEquals(Arrays.asList(new Text("one"), new IntWritable(1)),
-                transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"), new IntWritable(1), new LongWritable(1L))));
+                        transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"),
+                                        new IntWritable(1), new LongWritable(1L))));
     }
 
     @Test
     public void testRemoveAllColumnsExceptForTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("first")
-                .addColumnString("second")
-                .addColumnInteger("third")
-                .addColumnLong("fourth")
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("first").addColumnString("second")
+                        .addColumnInteger("third").addColumnLong("fourth").build();
 
         Transform transform = new RemoveAllColumnsExceptForTransform("second", "third");
         transform.setInputSchema(schema);
@@ -233,7 +226,8 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.Integer, out.getMetaData(1).getColumnType());
 
         assertEquals(Arrays.asList(new Text("one"), new IntWritable(1)),
-                transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"), new IntWritable(1), new LongWritable(1L))));
+                        transform.map(Arrays.asList((Writable) new DoubleWritable(1.0), new Text("one"),
+                                        new IntWritable(1), new LongWritable(1L))));
 
     }
 
@@ -249,11 +243,11 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.Integer, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(0))));
         assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(1))));
         assertEquals(Collections.singletonList((Writable) new IntWritable(1000)),
-                transform.map(Collections.singletonList((Writable) new Text(""))));
+                        transform.map(Collections.singletonList((Writable) new Text(""))));
     }
 
     @Test
@@ -268,11 +262,11 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.Integer, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(0))));
         assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(1))));
         assertEquals(Collections.singletonList((Writable) new IntWritable(1000)),
-                transform.map(Collections.singletonList((Writable) new Text(""))));
+                        transform.map(Collections.singletonList((Writable) new Text(""))));
     }
 
     @Test
@@ -296,11 +290,15 @@ public class TestTransforms {
         assertNull(meta.getMaxAllowedValue());
 
         double loge2 = Math.log(2);
-        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(min))).get(0).toDouble(), 1e-6);
+        assertEquals(0.0,
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(min))).get(0).toDouble(),
+                        1e-6);
         double d = scale * Math.log((10 - min) / (mu - min) + 1) / loge2;
-        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(), 1e-6);
+        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(),
+                        1e-6);
         d = scale * Math.log((3 - min) / (mu - min) + 1) / loge2;
-        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(3))).get(0).toDouble(), 1e-6);
+        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(3))).get(0).toDouble(),
+                        1e-6);
     }
 
     @Test
@@ -325,13 +323,23 @@ public class TestTransforms {
         assertEquals(1, meta2.getMaxAllowedValue(), 1e-6);
 
 
-        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(0))).get(0).toDouble(), 1e-6);
-        assertEquals(1.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(100))).get(0).toDouble(), 1e-6);
-        assertEquals(0.5, transform.map(Collections.singletonList((Writable) new DoubleWritable(50))).get(0).toDouble(), 1e-6);
+        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(0))).get(0).toDouble(),
+                        1e-6);
+        assertEquals(1.0,
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(100))).get(0).toDouble(),
+                        1e-6);
+        assertEquals(0.5, transform.map(Collections.singletonList((Writable) new DoubleWritable(50))).get(0).toDouble(),
+                        1e-6);
 
-        assertEquals(-1.0, transform2.map(Collections.singletonList((Writable) new DoubleWritable(0))).get(0).toDouble(), 1e-6);
-        assertEquals(1.0, transform2.map(Collections.singletonList((Writable) new DoubleWritable(100))).get(0).toDouble(), 1e-6);
-        assertEquals(0.0, transform2.map(Collections.singletonList((Writable) new DoubleWritable(50))).get(0).toDouble(), 1e-6);
+        assertEquals(-1.0,
+                        transform2.map(Collections.singletonList((Writable) new DoubleWritable(0))).get(0).toDouble(),
+                        1e-6);
+        assertEquals(1.0,
+                        transform2.map(Collections.singletonList((Writable) new DoubleWritable(100))).get(0).toDouble(),
+                        1e-6);
+        assertEquals(0.0,
+                        transform2.map(Collections.singletonList((Writable) new DoubleWritable(50))).get(0).toDouble(),
+                        1e-6);
     }
 
     @Test
@@ -353,11 +361,14 @@ public class TestTransforms {
         assertNull(meta.getMaxAllowedValue());
 
 
-        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(), 1e-6);
+        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(),
+                        1e-6);
         double d = (10 - mu) / sigma;
-        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(), 1e-6);
+        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(),
+                        1e-6);
         d = (-2 - mu) / sigma;
-        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(-2))).get(0).toDouble(), 1e-6);
+        assertEquals(d, transform.map(Collections.singletonList((Writable) new DoubleWritable(-2))).get(0).toDouble(),
+                        1e-6);
     }
 
     @Test
@@ -378,15 +389,19 @@ public class TestTransforms {
         assertNull(meta.getMaxAllowedValue());
 
 
-        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(), 1e-6);
-        assertEquals(10 - mu, transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(), 1e-6);
+        assertEquals(0.0, transform.map(Collections.singletonList((Writable) new DoubleWritable(mu))).get(0).toDouble(),
+                        1e-6);
+        assertEquals(10 - mu,
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(10))).get(0).toDouble(),
+                        1e-6);
     }
 
     @Test
     public void testMapAllStringsExceptListTransform() {
         Schema schema = getSchema(ColumnType.String);
 
-        Transform transform = new MapAllStringsExceptListTransform("column", "replacement", Arrays.asList("one", "two", "three"));
+        Transform transform = new MapAllStringsExceptListTransform("column", "replacement",
+                        Arrays.asList("one", "two", "three"));
         transform.setInputSchema(schema);
         Schema out = transform.transform(schema);
 
@@ -394,11 +409,11 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new Text("one"))));
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
-                transform.map(Collections.singletonList((Writable) new Text("two"))));
+                        transform.map(Collections.singletonList((Writable) new Text("two"))));
         assertEquals(Collections.singletonList((Writable) new Text("replacement")),
-                transform.map(Collections.singletonList((Writable) new Text("this should be replaced"))));
+                        transform.map(Collections.singletonList((Writable) new Text("this should be replaced"))));
     }
 
     @Test
@@ -413,13 +428,13 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new Text("one "))));
+                        transform.map(Collections.singletonList((Writable) new Text("one "))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
-                transform.map(Collections.singletonList((Writable) new Text("two\t"))));
+                        transform.map(Collections.singletonList((Writable) new Text("two\t"))));
         assertEquals(Collections.singletonList((Writable) new Text("three")),
-                transform.map(Collections.singletonList((Writable) new Text("three\n"))));
+                        transform.map(Collections.singletonList((Writable) new Text("three\n"))));
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new Text(" o n e\t"))));
+                        transform.map(Collections.singletonList((Writable) new Text(" o n e\t"))));
     }
 
     @Test
@@ -434,11 +449,11 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("one")),
-                transform.map(Collections.singletonList((Writable) new Text("one"))));
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Collections.singletonList((Writable) new Text("newvalue")),
-                transform.map(Collections.singletonList((Writable) new Text(""))));
+                        transform.map(Collections.singletonList((Writable) new Text(""))));
         assertEquals(Collections.singletonList((Writable) new Text("three")),
-                transform.map(Collections.singletonList((Writable) new Text("three"))));
+                        transform.map(Collections.singletonList((Writable) new Text("three"))));
     }
 
     @Test
@@ -452,9 +467,12 @@ public class TestTransforms {
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
-        assertEquals(Collections.singletonList((Writable) new Text("one_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("one"))));
-        assertEquals(Collections.singletonList((Writable) new Text("two_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("two"))));
-        assertEquals(Collections.singletonList((Writable) new Text("three_AppendThis")), transform.map(Collections.singletonList((Writable) new Text("three"))));
+        assertEquals(Collections.singletonList((Writable) new Text("one_AppendThis")),
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
+        assertEquals(Collections.singletonList((Writable) new Text("two_AppendThis")),
+                        transform.map(Collections.singletonList((Writable) new Text("two"))));
+        assertEquals(Collections.singletonList((Writable) new Text("three_AppendThis")),
+                        transform.map(Collections.singletonList((Writable) new Text("three"))));
     }
 
     @Test
@@ -463,7 +481,8 @@ public class TestTransforms {
 
         Schema schema = getSchema(ColumnType.String);
 
-        Transform transform = new StringListToCategoricalSetTransform("column", Arrays.asList("a", "b", "c"), Arrays.asList("a", "b", "c"), ",");
+        Transform transform = new StringListToCategoricalSetTransform("column", Arrays.asList("a", "b", "c"),
+                        Arrays.asList("a", "b", "c"), ",");
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
@@ -474,12 +493,18 @@ public class TestTransforms {
             assertEquals(Arrays.asList("true", "false"), meta.getStateNames());
         }
 
-        assertEquals(Arrays.asList(new Text("false"), new Text("false"), new Text("false")), transform.map(Collections.singletonList((Writable) new Text(""))));
-        assertEquals(Arrays.asList(new Text("true"), new Text("false"), new Text("false")), transform.map(Collections.singletonList((Writable) new Text("a"))));
-        assertEquals(Arrays.asList(new Text("false"), new Text("true"), new Text("false")), transform.map(Collections.singletonList((Writable) new Text("b"))));
-        assertEquals(Arrays.asList(new Text("false"), new Text("false"), new Text("true")), transform.map(Collections.singletonList((Writable) new Text("c"))));
-        assertEquals(Arrays.asList(new Text("true"), new Text("false"), new Text("true")), transform.map(Collections.singletonList((Writable) new Text("a,c"))));
-        assertEquals(Arrays.asList(new Text("true"), new Text("true"), new Text("true")), transform.map(Collections.singletonList((Writable) new Text("a,b,c"))));
+        assertEquals(Arrays.asList(new Text("false"), new Text("false"), new Text("false")),
+                        transform.map(Collections.singletonList((Writable) new Text(""))));
+        assertEquals(Arrays.asList(new Text("true"), new Text("false"), new Text("false")),
+                        transform.map(Collections.singletonList((Writable) new Text("a"))));
+        assertEquals(Arrays.asList(new Text("false"), new Text("true"), new Text("false")),
+                        transform.map(Collections.singletonList((Writable) new Text("b"))));
+        assertEquals(Arrays.asList(new Text("false"), new Text("false"), new Text("true")),
+                        transform.map(Collections.singletonList((Writable) new Text("c"))));
+        assertEquals(Arrays.asList(new Text("true"), new Text("false"), new Text("true")),
+                        transform.map(Collections.singletonList((Writable) new Text("a,c"))));
+        assertEquals(Arrays.asList(new Text("true"), new Text("true"), new Text("true")),
+                        transform.map(Collections.singletonList((Writable) new Text("a,b,c"))));
     }
 
     @Test
@@ -497,11 +522,11 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("ONE")),
-                transform.map(Collections.singletonList((Writable) new Text("one"))));
+                        transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Collections.singletonList((Writable) new Text("TWO")),
-                transform.map(Collections.singletonList((Writable) new Text("two"))));
+                        transform.map(Collections.singletonList((Writable) new Text("two"))));
         assertEquals(Collections.singletonList((Writable) new Text("three")),
-                transform.map(Collections.singletonList((Writable) new Text("three"))));
+                        transform.map(Collections.singletonList((Writable) new Text("three"))));
     }
 
 
@@ -525,9 +550,9 @@ public class TestTransforms {
         long out2 = 1435708799000L;
 
         assertEquals(Collections.singletonList((Writable) new LongWritable(out1)),
-                transform.map(Collections.singletonList((Writable) new Text(in1))));
+                        transform.map(Collections.singletonList((Writable) new Text(in1))));
         assertEquals(Collections.singletonList((Writable) new LongWritable(out2)),
-                transform.map(Collections.singletonList((Writable) new Text(in2))));
+                        transform.map(Collections.singletonList((Writable) new Text(in2))));
 
         //Check serialization: things like DateTimeFormatter etc aren't serializable, hence we need custom serialization :/
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -541,25 +566,21 @@ public class TestTransforms {
 
         Transform deserialized = (Transform) ois.readObject();
         assertEquals(Collections.singletonList((Writable) new LongWritable(out1)),
-                deserialized.map(Collections.singletonList((Writable) new Text(in1))));
+                        deserialized.map(Collections.singletonList((Writable) new Text(in1))));
         assertEquals(Collections.singletonList((Writable) new LongWritable(out2)),
-                deserialized.map(Collections.singletonList((Writable) new Text(in2))));
+                        deserialized.map(Collections.singletonList((Writable) new Text(in2))));
     }
 
     @Test
     public void testDeriveColumnsFromTimeTransform() throws Exception {
-        Schema schema = new Schema.Builder()
-                .addColumnTime("column", DateTimeZone.forID("UTC"))
-                .addColumnString("otherColumn")
-                .build();
+        Schema schema = new Schema.Builder().addColumnTime("column", DateTimeZone.forID("UTC"))
+                        .addColumnString("otherColumn").build();
 
-        Transform transform = new DeriveColumnsFromTimeTransform.Builder("column")
-                .insertAfter("otherColumn")
-                .addIntegerDerivedColumn("hour", DateTimeFieldType.hourOfDay())
-                .addIntegerDerivedColumn("day", DateTimeFieldType.dayOfMonth())
-                .addIntegerDerivedColumn("second", DateTimeFieldType.secondOfMinute())
-                .addStringDerivedColumn("humanReadable","YYYY-MM-dd HH:mm:ss",DateTimeZone.UTC)
-                .build();
+        Transform transform = new DeriveColumnsFromTimeTransform.Builder("column").insertAfter("otherColumn")
+                        .addIntegerDerivedColumn("hour", DateTimeFieldType.hourOfDay())
+                        .addIntegerDerivedColumn("day", DateTimeFieldType.dayOfMonth())
+                        .addIntegerDerivedColumn("second", DateTimeFieldType.secondOfMinute())
+                        .addStringDerivedColumn("humanReadable", "YYYY-MM-dd HH:mm:ss", DateTimeZone.UTC).build();
 
         transform.setInputSchema(schema);
         Schema out = transform.transform(schema);
@@ -579,27 +600,29 @@ public class TestTransforms {
         assertEquals("second", out.getName(4));
         assertEquals("humanReadable", out.getName(5));
 
-        long in1 = 1451651445000L;      //"2016-01-01 12:30:45" GMT
+        long in1 = 1451651445000L; //"2016-01-01 12:30:45" GMT
 
         List<Writable> out1 = new ArrayList<>();
         out1.add(new LongWritable(in1));
         out1.add(new Text("otherColumnValue"));
-        out1.add(new IntWritable(12));  //hour
-        out1.add(new IntWritable(1));   //day
-        out1.add(new IntWritable(45));  //second
+        out1.add(new IntWritable(12)); //hour
+        out1.add(new IntWritable(1)); //day
+        out1.add(new IntWritable(45)); //second
         out1.add(new Text("2016-01-01 12:30:45"));
 
-        long in2 = 1435708799000L;      //"2015-06-30 23:59:59" GMT
+        long in2 = 1435708799000L; //"2015-06-30 23:59:59" GMT
         List<Writable> out2 = new ArrayList<>();
         out2.add(new LongWritable(in2));
         out2.add(new Text("otherColumnValue"));
-        out2.add(new IntWritable(23));  //hour
-        out2.add(new IntWritable(30));   //day
-        out2.add(new IntWritable(59));  //second
+        out2.add(new IntWritable(23)); //hour
+        out2.add(new IntWritable(30)); //day
+        out2.add(new IntWritable(59)); //second
         out2.add(new Text("2015-06-30 23:59:59"));
 
-        assertEquals(out1, transform.map(Arrays.asList((Writable) new LongWritable(in1), new Text("otherColumnValue"))));
-        assertEquals(out2, transform.map(Arrays.asList((Writable) new LongWritable(in2), new Text("otherColumnValue"))));
+        assertEquals(out1,
+                        transform.map(Arrays.asList((Writable) new LongWritable(in1), new Text("otherColumnValue"))));
+        assertEquals(out2,
+                        transform.map(Arrays.asList((Writable) new LongWritable(in2), new Text("otherColumnValue"))));
 
 
 
@@ -614,19 +637,18 @@ public class TestTransforms {
         ObjectInputStream ois = new ObjectInputStream(bais);
 
         Transform deserialized = (Transform) ois.readObject();
-        assertEquals(out1, deserialized.map(Arrays.asList((Writable) new LongWritable(in1), new Text("otherColumnValue"))));
-        assertEquals(out2, deserialized.map(Arrays.asList((Writable) new LongWritable(in2), new Text("otherColumnValue"))));
+        assertEquals(out1, deserialized
+                        .map(Arrays.asList((Writable) new LongWritable(in1), new Text("otherColumnValue"))));
+        assertEquals(out2, deserialized
+                        .map(Arrays.asList((Writable) new LongWritable(in2), new Text("otherColumnValue"))));
     }
 
 
     @Test
     public void testDuplicateColumnsTransform() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnString("stringCol")
-                .addColumnInteger("intCol")
-                .addColumnLong("longCol")
-                .build();
+        Schema schema = new Schema.Builder().addColumnString("stringCol").addColumnInteger("intCol")
+                        .addColumnLong("longCol").build();
 
         List<String> toDup = Arrays.asList("intCol", "longCol");
         List<String> newNames = Arrays.asList("dup_intCol", "dup_longCol");
@@ -638,23 +660,23 @@ public class TestTransforms {
         assertEquals(5, out.getColumnMetaData().size());
 
         List<String> expOutNames = Arrays.asList("stringCol", "intCol", "dup_intCol", "longCol", "dup_longCol");
-        List<ColumnType> expOutTypes = Arrays.asList(ColumnType.String, ColumnType.Integer, ColumnType.Integer, ColumnType.Long, ColumnType.Long);
+        List<ColumnType> expOutTypes = Arrays.asList(ColumnType.String, ColumnType.Integer, ColumnType.Integer,
+                        ColumnType.Long, ColumnType.Long);
         for (int i = 0; i < 5; i++) {
             assertEquals(expOutNames.get(i), out.getName(i));
             TestCase.assertEquals(expOutTypes.get(i), out.getType(i));
         }
 
         List<Writable> inList = Arrays.asList((Writable) new Text("one"), new IntWritable(2), new LongWritable(3L));
-        List<Writable> outList = Arrays.asList((Writable) new Text("one"), new IntWritable(2), new IntWritable(2), new LongWritable(3L), new LongWritable(3L));
+        List<Writable> outList = Arrays.asList((Writable) new Text("one"), new IntWritable(2), new IntWritable(2),
+                        new LongWritable(3L), new LongWritable(3L));
 
         assertEquals(outList, transform.map(inList));
     }
 
     @Test
     public void testIntegerMathOpTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("column", -1, 1)
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("column", -1, 1).build();
 
         Transform transform = new IntegerMathOpTransform("column", MathOp.Multiply, 5);
         transform.setInputSchema(schema);
@@ -666,39 +688,42 @@ public class TestTransforms {
         assertEquals(-5, (int) meta.getMinAllowedValue());
         assertEquals(5, (int) meta.getMaxAllowedValue());
 
-        assertEquals(Collections.singletonList((Writable) new IntWritable(-5)), transform.map(Collections.singletonList((Writable) new IntWritable(-1))));
-        assertEquals(Collections.singletonList((Writable) new IntWritable(0)), transform.map(Collections.singletonList((Writable) new IntWritable(0))));
-        assertEquals(Collections.singletonList((Writable) new IntWritable(5)), transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(-5)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(-1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(5)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(1))));
     }
 
     @Test
-    public void testIntegerColumnsMathOpTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("first")
-                .addColumnString("second")
-                .addColumnInteger("third")
-                .build();
+    public void testIntegerColumnsMathOpTransform() {
+        Schema schema = new Schema.Builder().addColumnInteger("first").addColumnString("second")
+                        .addColumnInteger("third").build();
 
-        Transform transform = new IntegerColumnsMathOpTransform("out",MathOp.Add,"first","third");
+        Transform transform = new IntegerColumnsMathOpTransform("out", MathOp.Add, "first", "third");
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
         assertEquals(4, out.numColumns());
-        assertEquals(Arrays.asList("first","second","third","out"), out.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.Integer, ColumnType.String, ColumnType.Integer, ColumnType.Integer), out.getColumnTypes());
+        assertEquals(Arrays.asList("first", "second", "third", "out"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.Integer, ColumnType.String, ColumnType.Integer, ColumnType.Integer),
+                        out.getColumnTypes());
 
 
-        assertEquals(Arrays.asList((Writable)new IntWritable(1),new Text("something"), new IntWritable(2), new IntWritable(3)),
-                transform.map(Arrays.asList((Writable)new IntWritable(1),new Text("something"), new IntWritable(2))));
-        assertEquals(Arrays.asList((Writable)new IntWritable(100),new Text("something2"), new IntWritable(21), new IntWritable(121)),
-                transform.map(Arrays.asList((Writable)new IntWritable(100),new Text("something2"), new IntWritable(21))));
+        assertEquals(Arrays.asList((Writable) new IntWritable(1), new Text("something"), new IntWritable(2),
+                        new IntWritable(3)),
+                        transform.map(Arrays.asList((Writable) new IntWritable(1), new Text("something"),
+                                        new IntWritable(2))));
+        assertEquals(Arrays.asList((Writable) new IntWritable(100), new Text("something2"), new IntWritable(21),
+                        new IntWritable(121)),
+                        transform.map(Arrays.asList((Writable) new IntWritable(100), new Text("something2"),
+                                        new IntWritable(21))));
     }
 
     @Test
     public void testLongMathOpTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnLong("column", -1L, 1L)
-                .build();
+        Schema schema = new Schema.Builder().addColumnLong("column", -1L, 1L).build();
 
         Transform transform = new LongMathOpTransform("column", MathOp.Multiply, 5);
         transform.setInputSchema(schema);
@@ -710,56 +735,59 @@ public class TestTransforms {
         assertEquals(-5, (long) meta.getMinAllowedValue());
         assertEquals(5, (long) meta.getMaxAllowedValue());
 
-        assertEquals(Collections.singletonList((Writable) new LongWritable(-5)), transform.map(Collections.singletonList((Writable) new LongWritable(-1))));
-        assertEquals(Collections.singletonList((Writable) new LongWritable(0)), transform.map(Collections.singletonList((Writable) new LongWritable(0))));
-        assertEquals(Collections.singletonList((Writable) new LongWritable(5)), transform.map(Collections.singletonList((Writable) new LongWritable(1))));
+        assertEquals(Collections.singletonList((Writable) new LongWritable(-5)),
+                        transform.map(Collections.singletonList((Writable) new LongWritable(-1))));
+        assertEquals(Collections.singletonList((Writable) new LongWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new LongWritable(0))));
+        assertEquals(Collections.singletonList((Writable) new LongWritable(5)),
+                        transform.map(Collections.singletonList((Writable) new LongWritable(1))));
     }
 
     @Test
-    public void testLongColumnsMathOpTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnLong("first")
-                .addColumnString("second")
-                .addColumnLong("third")
-                .build();
+    public void testLongColumnsMathOpTransform() {
+        Schema schema = new Schema.Builder().addColumnLong("first").addColumnString("second").addColumnLong("third")
+                        .build();
 
-        Transform transform = new LongColumnsMathOpTransform("out",MathOp.Add,"first","third");
+        Transform transform = new LongColumnsMathOpTransform("out", MathOp.Add, "first", "third");
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
         assertEquals(4, out.numColumns());
-        assertEquals(Arrays.asList("first","second","third","out"), out.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.Long, ColumnType.String, ColumnType.Long, ColumnType.Long), out.getColumnTypes());
+        assertEquals(Arrays.asList("first", "second", "third", "out"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.Long, ColumnType.String, ColumnType.Long, ColumnType.Long),
+                        out.getColumnTypes());
 
 
-        assertEquals(Arrays.asList((Writable)new LongWritable(1),new Text("something"), new LongWritable(2), new LongWritable(3)),
-                transform.map(Arrays.asList((Writable)new LongWritable(1),new Text("something"), new LongWritable(2))));
-        assertEquals(Arrays.asList((Writable)new LongWritable(100),new Text("something2"), new LongWritable(21), new LongWritable(121)),
-                transform.map(Arrays.asList((Writable)new LongWritable(100),new Text("something2"), new LongWritable(21))));
+        assertEquals(Arrays.asList((Writable) new LongWritable(1), new Text("something"), new LongWritable(2),
+                        new LongWritable(3)),
+                        transform.map(Arrays.asList((Writable) new LongWritable(1), new Text("something"),
+                                        new LongWritable(2))));
+        assertEquals(Arrays.asList((Writable) new LongWritable(100), new Text("something2"), new LongWritable(21),
+                        new LongWritable(121)),
+                        transform.map(Arrays.asList((Writable) new LongWritable(100), new Text("something2"),
+                                        new LongWritable(21))));
     }
 
     @Test
     public void testTimeMathOpTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnTime("column", DateTimeZone.UTC)
-                .build();
+        Schema schema = new Schema.Builder().addColumnTime("column", DateTimeZone.UTC).build();
 
-        Transform transform = new TimeMathOpTransform("column", MathOp.Add, 12, TimeUnit.HOURS);    //12 hours: 43200000 milliseconds
+        Transform transform = new TimeMathOpTransform("column", MathOp.Add, 12, TimeUnit.HOURS); //12 hours: 43200000 milliseconds
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
         assertEquals(1, out.getColumnMetaData().size());
         TestCase.assertEquals(ColumnType.Time, out.getType(0));
 
-        assertEquals(Collections.singletonList((Writable) new LongWritable(1000+43200000)), transform.map(Collections.singletonList((Writable) new LongWritable(1000))));
-        assertEquals(Collections.singletonList((Writable) new LongWritable(1452441600000L+43200000)), transform.map(Collections.singletonList((Writable) new LongWritable(1452441600000L))));
+        assertEquals(Collections.singletonList((Writable) new LongWritable(1000 + 43200000)),
+                        transform.map(Collections.singletonList((Writable) new LongWritable(1000))));
+        assertEquals(Collections.singletonList((Writable) new LongWritable(1452441600000L + 43200000)),
+                        transform.map(Collections.singletonList((Writable) new LongWritable(1452441600000L))));
     }
 
     @Test
     public void testDoubleMathOpTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("column", -1.0, 1.0)
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("column", -1.0, 1.0).build();
 
         Transform transform = new DoubleMathOpTransform("column", MathOp.Multiply, 5.0);
         transform.setInputSchema(schema);
@@ -771,17 +799,17 @@ public class TestTransforms {
         assertEquals(-5.0, meta.getMinAllowedValue(), 1e-6);
         assertEquals(5.0, meta.getMaxAllowedValue(), 1e-6);
 
-        assertEquals(Collections.singletonList((Writable) new DoubleWritable(-5)), transform.map(Collections.singletonList((Writable) new DoubleWritable(-1))));
-        assertEquals(Collections.singletonList((Writable) new DoubleWritable(0)), transform.map(Collections.singletonList((Writable) new DoubleWritable(0))));
-        assertEquals(Collections.singletonList((Writable) new DoubleWritable(5)), transform.map(Collections.singletonList((Writable) new DoubleWritable(1))));
+        assertEquals(Collections.singletonList((Writable) new DoubleWritable(-5)),
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(-1))));
+        assertEquals(Collections.singletonList((Writable) new DoubleWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(0))));
+        assertEquals(Collections.singletonList((Writable) new DoubleWritable(5)),
+                        transform.map(Collections.singletonList((Writable) new DoubleWritable(1))));
     }
 
     @Test
     public void testDoubleMathFunctionTransform() {
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("column")
-                .addColumnString("strCol")
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("column").addColumnString("strCol").build();
 
         Transform transform = new DoubleMathFunctionTransform("column", MathFunction.SIN);
         transform.setInputSchema(schema);
@@ -791,44 +819,47 @@ public class TestTransforms {
         assertEquals(ColumnType.Double, out.getType(0));
         assertEquals(ColumnType.String, out.getType(1));
 
-        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(1)), new Text("0")), transform.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("0"))));
-        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(2)), new Text("1")), transform.map(Arrays.<Writable>asList(new DoubleWritable(2), new Text("1"))));
-        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(3)), new Text("2")), transform.map(Arrays.<Writable>asList(new DoubleWritable(3), new Text("2"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(1)), new Text("0")),
+                        transform.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("0"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(2)), new Text("1")),
+                        transform.map(Arrays.<Writable>asList(new DoubleWritable(2), new Text("1"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(3)), new Text("2")),
+                        transform.map(Arrays.<Writable>asList(new DoubleWritable(3), new Text("2"))));
     }
 
     @Test
-    public void testDoubleColumnsMathOpTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnString("first")
-                .addColumnDouble("second")
-                .addColumnDouble("third")
-                .build();
+    public void testDoubleColumnsMathOpTransform() {
+        Schema schema = new Schema.Builder().addColumnString("first").addColumnDouble("second").addColumnDouble("third")
+                        .build();
 
-        Transform transform = new DoubleColumnsMathOpTransform("out",MathOp.Add,"second","third");
+        Transform transform = new DoubleColumnsMathOpTransform("out", MathOp.Add, "second", "third");
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
         assertEquals(4, out.numColumns());
-        assertEquals(Arrays.asList("first","second","third","out"), out.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Double, ColumnType.Double), out.getColumnTypes());
+        assertEquals(Arrays.asList("first", "second", "third", "out"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Double, ColumnType.Double),
+                        out.getColumnTypes());
 
 
-        assertEquals(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0), new DoubleWritable(2.1), new DoubleWritable(3.1)),
-                transform.map(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0), new DoubleWritable(2.1))));
-        assertEquals(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0), new DoubleWritable(21.1), new DoubleWritable(121.1)),
-                transform.map(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0), new DoubleWritable(21.1))));
+        assertEquals(Arrays.asList((Writable) new Text("something"), new DoubleWritable(1.0), new DoubleWritable(2.1),
+                        new DoubleWritable(3.1)),
+                        transform.map(Arrays.asList((Writable) new Text("something"), new DoubleWritable(1.0),
+                                        new DoubleWritable(2.1))));
+        assertEquals(Arrays.asList((Writable) new Text("something2"), new DoubleWritable(100.0),
+                        new DoubleWritable(21.1), new DoubleWritable(121.1)),
+                        transform.map(Arrays.asList((Writable) new Text("something2"), new DoubleWritable(100.0),
+                                        new DoubleWritable(21.1))));
     }
 
     @Test
     public void testRenameColumnsTransform() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("col1")
-                .addColumnString("col2")
-                .addColumnInteger("col3")
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("col1").addColumnString("col2").addColumnInteger("col3")
+                        .build();
 
-        Transform transform = new RenameColumnsTransform(Arrays.asList("col1", "col3"), Arrays.asList("column1", "column3"));
+        Transform transform =
+                        new RenameColumnsTransform(Arrays.asList("col1", "col3"), Arrays.asList("column1", "column3"));
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
@@ -844,27 +875,24 @@ public class TestTransforms {
     }
 
     @Test
-    public void testReorderColumnsTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("col1")
-                .addColumnString("col2")
-                .addColumnInteger("col3")
-                .build();
+    public void testReorderColumnsTransform() {
+        Schema schema = new Schema.Builder().addColumnDouble("col1").addColumnString("col2").addColumnInteger("col3")
+                        .build();
 
-        Transform transform = new ReorderColumnsTransform("col3","col2");
+        Transform transform = new ReorderColumnsTransform("col3", "col2");
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
 
         assertEquals(3, out.numColumns());
-        assertEquals(Arrays.asList("col3","col2","col1"), out.getColumnNames());
+        assertEquals(Arrays.asList("col3", "col2", "col1"), out.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.Integer, ColumnType.String, ColumnType.Double), out.getColumnTypes());
 
-        assertEquals(Arrays.asList((Writable)new IntWritable(1), new Text("one"), new DoubleWritable(1.1)),
-                transform.map(Arrays.asList((Writable)new DoubleWritable(1.1), new Text("one"), new IntWritable(1))));
+        assertEquals(Arrays.asList((Writable) new IntWritable(1), new Text("one"), new DoubleWritable(1.1)), transform
+                        .map(Arrays.asList((Writable) new DoubleWritable(1.1), new Text("one"), new IntWritable(1))));
 
-        assertEquals(Arrays.asList((Writable)new IntWritable(2), new Text("two"), new DoubleWritable(200.2)),
-                transform.map(Arrays.asList((Writable)new DoubleWritable(200.2), new Text("two"), new IntWritable(2))));
+        assertEquals(Arrays.asList((Writable) new IntWritable(2), new Text("two"), new DoubleWritable(200.2)), transform
+                        .map(Arrays.asList((Writable) new DoubleWritable(200.2), new Text("two"), new IntWritable(2))));
     }
 
     @Test
@@ -874,45 +902,41 @@ public class TestTransforms {
         Condition condition = new IntegerColumnCondition("column", ConditionOp.LessThan, 0);
         condition.setInputSchema(schema);
 
-        Transform transform = new ConditionalReplaceValueTransform("column",new IntWritable(0), condition);
+        Transform transform = new ConditionalReplaceValueTransform("column", new IntWritable(0), condition);
         transform.setInputSchema(schema);
 
-        assertEquals(Collections.singletonList((Writable)new IntWritable(10)),
-                transform.map(Collections.singletonList((Writable)new IntWritable(10))));
-        assertEquals(Collections.singletonList((Writable)new IntWritable(1)),
-                transform.map(Collections.singletonList((Writable)new IntWritable(1))));
-        assertEquals(Collections.singletonList((Writable)new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable)new IntWritable(0))));
-        assertEquals(Collections.singletonList((Writable)new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable)new IntWritable(-1))));
-        assertEquals(Collections.singletonList((Writable)new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable)new IntWritable(-10))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(10)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(10))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(-1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                        transform.map(Collections.singletonList((Writable) new IntWritable(-10))));
     }
 
     @Test
-    public void testConditionalCopyValueTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnsString("first","second","third")
-                .build();
+    public void testConditionalCopyValueTransform() {
+        Schema schema = new Schema.Builder().addColumnsString("first", "second", "third").build();
 
-        Condition condition = new StringColumnCondition("third",ConditionOp.Equal,"");
-        Transform transform = new ConditionalCopyValueTransform("third","second",condition);
+        Condition condition = new StringColumnCondition("third", ConditionOp.Equal, "");
+        Transform transform = new ConditionalCopyValueTransform("third", "second", condition);
         transform.setInputSchema(schema);
 
-        List<Writable> list = Arrays.asList((Writable)new Text("first"), new Text("second"), new Text("third"));
-        assertEquals(list,transform.map(list));
+        List<Writable> list = Arrays.asList((Writable) new Text("first"), new Text("second"), new Text("third"));
+        assertEquals(list, transform.map(list));
 
-        list = Arrays.asList((Writable)new Text("first"), new Text("second"), new Text(""));
-        List<Writable> exp = Arrays.asList((Writable)new Text("first"), new Text("second"), new Text("second"));
+        list = Arrays.asList((Writable) new Text("first"), new Text("second"), new Text(""));
+        List<Writable> exp = Arrays.asList((Writable) new Text("first"), new Text("second"), new Text("second"));
         assertEquals(exp, transform.map(list));
     }
 
     @Test
-    public void testSequenceDifferenceTransform(){
-        Schema schema = new SequenceSchema.Builder()
-                .addColumnString("firstCol")
-                .addColumnInteger("secondCol")
-                .addColumnDouble("thirdCol").build();
+    public void testSequenceDifferenceTransform() {
+        Schema schema = new SequenceSchema.Builder().addColumnString("firstCol").addColumnInteger("secondCol")
+                        .addColumnDouble("thirdCol").build();
 
         List<List<Writable>> sequence = new ArrayList<>();
         sequence.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(10), new DoubleWritable(10)));
@@ -927,16 +951,16 @@ public class TestTransforms {
 
         List<List<Writable>> expected = new ArrayList<>();
         expected.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(0), new DoubleWritable(10)));
-        expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15-10), new DoubleWritable(15)));
-        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25-15), new DoubleWritable(25)));
-        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40-25), new DoubleWritable(40)));
+        expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15 - 10), new DoubleWritable(15)));
+        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25 - 15), new DoubleWritable(25)));
+        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40 - 25), new DoubleWritable(40)));
 
         assertEquals(expected, out);
 
 
 
         t = new SequenceDifferenceTransform("thirdCol", "newThirdColName", 2,
-                SequenceDifferenceTransform.FirstStepMode.SpecifiedValue, NullWritable.INSTANCE);
+                        SequenceDifferenceTransform.FirstStepMode.SpecifiedValue, NullWritable.INSTANCE);
         Schema outputSchema = t.transform(schema);
         assertTrue(outputSchema instanceof SequenceSchema);
         assertEquals(outputSchema.getColumnNames(), Arrays.asList("firstCol", "secondCol", "newThirdColName"));
@@ -944,31 +968,28 @@ public class TestTransforms {
         expected = new ArrayList<>();
         expected.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(10), NullWritable.INSTANCE));
         expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
-        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
-        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
+        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25 - 10)));
+        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40 - 15)));
     }
 
 
     @Test
-    public void testAddConstantColumnTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnString("first")
-                .addColumnDouble("second")
-                .build();
+    public void testAddConstantColumnTransform() {
+        Schema schema = new Schema.Builder().addColumnString("first").addColumnDouble("second").build();
 
         Transform transform = new AddConstantColumnTransform("newCol", ColumnType.Integer, new IntWritable(10));
         transform.setInputSchema(schema);
 
         Schema out = transform.transform(schema);
         assertEquals(3, out.numColumns());
-        assertEquals(Arrays.asList("first","second","newCol"), out.getColumnNames());
+        assertEquals(Arrays.asList("first", "second", "newCol"), out.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Integer), out.getColumnTypes());
 
 
-        assertEquals(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0), new IntWritable(10)),
-                transform.map(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0))));
-        assertEquals(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0), new IntWritable(10)),
-                transform.map(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0))));
+        assertEquals(Arrays.asList((Writable) new Text("something"), new DoubleWritable(1.0), new IntWritable(10)),
+                        transform.map(Arrays.asList((Writable) new Text("something"), new DoubleWritable(1.0))));
+        assertEquals(Arrays.asList((Writable) new Text("something2"), new DoubleWritable(100.0), new IntWritable(10)),
+                        transform.map(Arrays.asList((Writable) new Text("something2"), new DoubleWritable(100.0))));
     }
 
 }

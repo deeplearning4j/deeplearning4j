@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,8 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkGroupToSequenceFunction implements Function<Tuple2<Writable,Iterable<List<Writable>>>,List<List<Writable>>> {
+public class SparkGroupToSequenceFunction
+                implements Function<Tuple2<Writable, Iterable<List<Writable>>>, List<List<Writable>>> {
 
     private final SequenceComparator comparator;
 
@@ -41,9 +42,10 @@ public class SparkGroupToSequenceFunction implements Function<Tuple2<Writable,It
     public List<List<Writable>> call(Tuple2<Writable, Iterable<List<Writable>>> tuple) throws Exception {
 
         List<List<Writable>> list = new ArrayList<>();
-        for (List<Writable> writables : tuple._2()) list.add(writables);
+        for (List<Writable> writables : tuple._2())
+            list.add(writables);
 
-        Collections.sort(list,comparator);
+        Collections.sort(list, comparator);
 
         return list;
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,17 +51,18 @@ public class LineReaderTest {
     @Test
     public void testLineReader() throws Exception {
         String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir,"tmpdir-testLineReader");
-        if(tmpdir.exists()) tmpdir.delete();
+        File tmpdir = new File(tempDir, "tmpdir-testLineReader");
+        if (tmpdir.exists())
+            tmpdir.delete();
         tmpdir.mkdir();
 
-        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp1.txt"));
-        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp2.txt"));
-        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp3.txt"));
+        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp1.txt"));
+        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp2.txt"));
+        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp3.txt"));
 
-        FileUtils.writeLines(tmp1, Arrays.asList("1","2","3"));
-        FileUtils.writeLines(tmp2, Arrays.asList("4","5","6"));
-        FileUtils.writeLines(tmp3, Arrays.asList("7","8","9"));
+        FileUtils.writeLines(tmp1, Arrays.asList("1", "2", "3"));
+        FileUtils.writeLines(tmp2, Arrays.asList("4", "5", "6"));
+        FileUtils.writeLines(tmp3, Arrays.asList("7", "8", "9"));
 
         InputSplit split = new FileSplit(tmpdir);
 
@@ -70,18 +71,18 @@ public class LineReaderTest {
 
         int count = 0;
         List<List<Writable>> list = new ArrayList<>();
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             List<Writable> l = reader.next();
-            assertEquals(1,l.size());
+            assertEquals(1, l.size());
             list.add(l);
             count++;
         }
 
         assertEquals(9, count);
 
-        try{
+        try {
             FileUtils.deleteDirectory(tmpdir);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -89,17 +90,18 @@ public class LineReaderTest {
     @Test
     public void testLineReaderMetaData() throws Exception {
         String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir,"tmpdir-testLineReader");
-        if(tmpdir.exists()) tmpdir.delete();
+        File tmpdir = new File(tempDir, "tmpdir-testLineReader");
+        if (tmpdir.exists())
+            tmpdir.delete();
         tmpdir.mkdir();
 
-        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp1.txt"));
-        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp2.txt"));
-        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(),"tmp3.txt"));
+        File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp1.txt"));
+        File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp2.txt"));
+        File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp3.txt"));
 
-        FileUtils.writeLines(tmp1, Arrays.asList("1","2","3"));
-        FileUtils.writeLines(tmp2, Arrays.asList("4","5","6"));
-        FileUtils.writeLines(tmp3, Arrays.asList("7","8","9"));
+        FileUtils.writeLines(tmp1, Arrays.asList("1", "2", "3"));
+        FileUtils.writeLines(tmp2, Arrays.asList("4", "5", "6"));
+        FileUtils.writeLines(tmp3, Arrays.asList("7", "8", "9"));
 
         InputSplit split = new FileSplit(tmpdir);
 
@@ -107,7 +109,7 @@ public class LineReaderTest {
         reader.initialize(split);
 
         List<List<Writable>> list = new ArrayList<>();
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             list.add(reader.next());
         }
         assertEquals(9, list.size());
@@ -118,7 +120,7 @@ public class LineReaderTest {
         List<RecordMetaData> meta = new ArrayList<>();
         reader.reset();
         int count = 0;
-        while(reader.hasNext()){
+        while (reader.hasNext()) {
             Record r = reader.nextRecord();
             out2.add(r.getRecord());
             out3.add(r);
@@ -144,9 +146,9 @@ public class LineReaderTest {
         assertEquals(out3.get(7), subset.get(1));
 
 
-        try{
+        try {
             FileUtils.deleteDirectory(tmpdir);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -154,13 +156,13 @@ public class LineReaderTest {
     @Test
     public void testLineReaderWithInputStreamInputSplit() throws Exception {
         String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir,"tmpdir");
+        File tmpdir = new File(tempDir, "tmpdir");
         tmpdir.mkdir();
 
         File tmp1 = new File(tmpdir, "tmp1.txt.gz");
 
         OutputStream os = new GZIPOutputStream(new FileOutputStream(tmp1, false));
-        IOUtils.writeLines(Arrays.asList("1","2","3","4","5","6","7","8","9"), null, os);
+        IOUtils.writeLines(Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9"), null, os);
         os.flush();
         os.close();
 
@@ -170,16 +172,16 @@ public class LineReaderTest {
         reader.initialize(split);
 
         int count = 0;
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             assertEquals(1, reader.next().size());
             count++;
         }
 
         assertEquals(9, count);
 
-        try{
+        try {
             FileUtils.deleteDirectory(tmpdir);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

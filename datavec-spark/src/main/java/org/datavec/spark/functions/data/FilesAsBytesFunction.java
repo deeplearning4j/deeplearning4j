@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ import scala.Tuple2;
  * in Text and BytesWritable respectively.
  * @author Alex Black
  */
-public class FilesAsBytesFunction implements PairFunction<Tuple2<String,PortableDataStream>, Text, BytesWritable> {
+public class FilesAsBytesFunction implements PairFunction<Tuple2<String, PortableDataStream>, Text, BytesWritable> {
     @Override
     public Tuple2<Text, BytesWritable> call(Tuple2<String, PortableDataStream> in) throws Exception {
         return new Tuple2<>(new Text(in._1()), new BytesWritable(in._2().toArray()));

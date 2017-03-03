@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,13 +20,6 @@ package org.datavec.api.transform.condition;
  * Created by Alex on 24/03/2016.
  */
 public enum ConditionOp {
-    LessThan,
-    LessOrEqual,
-    GreaterThan,
-    GreaterOrEqual,
-    Equal,
-    NotEqual,
-    InSet,
-    NotInSet
+    LessThan, LessOrEqual, GreaterThan, GreaterOrEqual, Equal, NotEqual, InSet, NotInSet
 
 }

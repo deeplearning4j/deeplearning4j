@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ExecuteJoinFunction implements Function<Tuple2<String,Iterable<JoinValue>>, JoinedValue> {
+public class ExecuteJoinFunction implements Function<Tuple2<String, Iterable<JoinValue>>, JoinedValue> {
 
     private Join join;
 
@@ -40,15 +40,17 @@ public class ExecuteJoinFunction implements Function<Tuple2<String,Iterable<Join
         //Extract values + check we don't have duplicates...
         JoinValue left = null;
         JoinValue right = null;
-        for(JoinValue jv : t2._2()){
-            if(jv.isLeft()){
-                if(left != null){
-                    throw new IllegalStateException("Invalid state: found multiple left values in join with key \"" + t2._1() + "\"");
+        for (JoinValue jv : t2._2()) {
+            if (jv.isLeft()) {
+                if (left != null) {
+                    throw new IllegalStateException(
+                                    "Invalid state: found multiple left values in join with key \"" + t2._1() + "\"");
                 }
                 left = jv;
             } else {
-                if(right != null){
-                    throw new IllegalStateException("Invalid state: found multiple right values in join with key \"" + t2._1() + "\"");
+                if (right != null) {
+                    throw new IllegalStateException(
+                                    "Invalid state: found multiple right values in join with key \"" + t2._1() + "\"");
                 }
                 right = jv;
             }

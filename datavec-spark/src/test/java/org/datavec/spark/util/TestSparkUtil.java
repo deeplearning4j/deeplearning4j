@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,15 +45,13 @@ public class TestSparkUtil extends BaseSparkTest {
         l.add(Arrays.<Writable>asList(new Text("abc"), new DoubleWritable(2.0), new IntWritable(-1)));
         l.add(Arrays.<Writable>asList(new Text("def"), new DoubleWritable(4.0), new IntWritable(-2)));
 
-        File f = File.createTempFile("testSparkUtil","txt");
+        File f = File.createTempFile("testSparkUtil", "txt");
         f.deleteOnExit();
 
         SparkUtils.writeWritablesToFile(f.getAbsolutePath(), ",", l, sc);
 
         List<String> lines = IOUtils.readLines(new FileInputStream(f));
-        List<String> expected = Arrays.asList(
-                "abc,2.0,-1",
-                "def,4.0,-2");
+        List<String> expected = Arrays.asList("abc,2.0,-1", "def,4.0,-2");
 
         assertEquals(expected, lines);
 

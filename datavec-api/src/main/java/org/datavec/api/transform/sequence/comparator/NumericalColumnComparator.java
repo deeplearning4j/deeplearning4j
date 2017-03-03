@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,27 +30,28 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"columnType","schema", "columnIdx"})
+@JsonIgnoreProperties({"columnType", "schema", "columnIdx"})
 @EqualsAndHashCode(callSuper = true, exclude = {"columnType"})
 public class NumericalColumnComparator extends BaseColumnComparator {
 
     private ColumnType columnType;
     private boolean ascending;
 
-    public NumericalColumnComparator(String columnName){
+    public NumericalColumnComparator(String columnName) {
         this(columnName, true);
     }
 
-    public NumericalColumnComparator(@JsonProperty("columnName") String columnName, @JsonProperty("ascending") boolean ascending){
+    public NumericalColumnComparator(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("ascending") boolean ascending) {
         super(columnName);
         this.ascending = ascending;
     }
 
     @Override
-    public void setSchema(Schema sequenceSchema){
+    public void setSchema(Schema sequenceSchema) {
         super.setSchema(sequenceSchema);
         this.columnType = sequenceSchema.getType(this.columnIdx);
-        switch(columnType){
+        switch (columnType) {
             case Integer:
             case Long:
             case Double:
@@ -61,14 +62,15 @@ public class NumericalColumnComparator extends BaseColumnComparator {
             case Bytes:
             case String:
             default:
-                throw new IllegalStateException("Cannot apply numerical column comparator on column of type " + columnType);
+                throw new IllegalStateException(
+                                "Cannot apply numerical column comparator on column of type " + columnType);
         }
     }
 
     @Override
     protected int compare(Writable w1, Writable w2) {
         int compare;
-        switch(columnType){
+        switch (columnType) {
             case Integer:
                 compare = Integer.compare(w1.toInt(), w2.toInt());
                 break;
@@ -84,12 +86,13 @@ public class NumericalColumnComparator extends BaseColumnComparator {
                 throw new RuntimeException("Cannot apply numerical column comparator on column of type " + columnType);
         }
 
-        if(ascending) return compare;
+        if (ascending)
+            return compare;
         return -compare;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "NumericalColumnComparator(columnName=\"" + columnName + "\",ascending=" + ascending + ")";
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,7 +74,7 @@ public interface VocabCache {
      * note that these are not all the possible tokens
      * @return the list of vocab words
      */
-   Index vocabWords();
+    Index vocabWords();
 
 
     /**
@@ -88,7 +88,7 @@ public interface VocabCache {
      * @param word the word to increment the count for
      * @param by the amount to increment by
      */
-    void incrementDocCount(String word,double by);
+    void incrementDocCount(String word, double by);
 
     /**
      * Increment a word count by 1
@@ -101,7 +101,7 @@ public interface VocabCache {
      * @param word the word to increment the count for
      * @param by the amount to increment by
      */
-    void incrementCount(String word,double by);
+    void incrementCount(String word, double by);
 
     /**
      * Number of documents word has occurred in
@@ -115,6 +115,6 @@ public interface VocabCache {
      * @param frequency the frequency
      * @return the tfidf for a word
      */
-    double tfidf(String word,double frequency);
+    double tfidf(String word, double frequency);
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,17 +26,17 @@ public abstract class BaseColumnMetaData implements ColumnMetaData {
 
     protected String name;
 
-    protected BaseColumnMetaData(String name){
+    protected BaseColumnMetaData(String name) {
         this.name = name;
     }
 
     @Override
-    public String getName(){
+    public String getName() {
         return name;
     }
 
     @Override
-    public void setName(String name){
+    public void setName(String name) {
         this.name = name;
     }
 

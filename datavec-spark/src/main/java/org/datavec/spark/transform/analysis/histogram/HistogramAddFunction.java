@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,21 +32,23 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class HistogramAddFunction implements Function2<List<HistogramCounter>,List<Writable>,List<HistogramCounter>> {
+public class HistogramAddFunction implements Function2<List<HistogramCounter>, List<Writable>, List<HistogramCounter>> {
     private final int nBins;
     private final Schema schema;
     private final double[][] minsMaxes;
 
     @Override
-    public List<HistogramCounter> call(List<HistogramCounter> histogramCounters, List<Writable> writables) throws Exception {
-        if(histogramCounters == null){
+    public List<HistogramCounter> call(List<HistogramCounter> histogramCounters, List<Writable> writables)
+                    throws Exception {
+        if (histogramCounters == null) {
             histogramCounters = new ArrayList<>();
             List<ColumnType> columnTypes = schema.getColumnTypes();
-            int i=0;
-            for(ColumnType ct : columnTypes){
-                switch (ct){
+            int i = 0;
+            for (ColumnType ct : columnTypes) {
+                switch (ct) {
                     case String:
-                        histogramCounters.add(new StringHistogramCounter((int)minsMaxes[i][0], (int)minsMaxes[i][1], nBins));
+                        histogramCounters.add(new StringHistogramCounter((int) minsMaxes[i][0], (int) minsMaxes[i][1],
+                                        nBins));
                         break;
                     case Integer:
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
@@ -58,14 +60,14 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>,Li
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Categorical:
-                        CategoricalMetaData meta = (CategoricalMetaData)schema.getMetaData(i);
+                        CategoricalMetaData meta = (CategoricalMetaData) schema.getMetaData(i);
                         histogramCounters.add(new CategoricalHistogramCounter(meta.getStateNames()));
                         break;
                     case Time:
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Bytes:
-                        histogramCounters.add(null);    //TODO
+                        histogramCounters.add(null); //TODO
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);
@@ -76,10 +78,13 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>,Li
         }
 
         int size = histogramCounters.size();
-        if(size != writables.size()) throw new IllegalStateException("Writables list and number of counters does not match (" + writables.size() + " vs " + size + ")");
-        for( int i=0; i<size; i++ ){
+        if (size != writables.size())
+            throw new IllegalStateException("Writables list and number of counters does not match (" + writables.size()
+                            + " vs " + size + ")");
+        for (int i = 0; i < size; i++) {
             HistogramCounter hc = histogramCounters.get(i);
-            if(hc != null) hc.add(writables.get(i));
+            if (hc != null)
+                hc.add(writables.get(i));
         }
 
         return histogramCounters;

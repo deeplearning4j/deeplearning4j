@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,14 +22,5 @@ package org.datavec.api.transform.geo;
  * @author saudet
  */
 public enum LocationType {
-    CITY,
-    CITY_ID,
-    CONTINENT,
-    CONTINENT_ID,
-    COUNTRY,
-    COUNTRY_ID,
-    COORDINATES,
-    POSTAL_CODE,
-    SUBDIVISIONS,
-    SUBDIVISIONS_ID
+    CITY, CITY_ID, CONTINENT, CONTINENT_ID, COUNTRY, COUNTRY_ID, COORDINATES, POSTAL_CODE, SUBDIVISIONS, SUBDIVISIONS_ID
 }

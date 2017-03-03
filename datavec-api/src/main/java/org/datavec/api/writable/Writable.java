@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,18 +60,16 @@ import java.io.Serializable;
  *     }
  * </pre></blockquote></p>
  */
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = ArrayWritable.class, name = "ArrayWritable"),
-        @JsonSubTypes.Type(value = BooleanWritable.class, name = "BooleanWritable"),
-        @JsonSubTypes.Type(value = ByteWritable.class, name = "ByteWritable"),
-        @JsonSubTypes.Type(value = DoubleWritable.class, name = "DoubleWritable"),
-        @JsonSubTypes.Type(value = FloatWritable.class, name = "FloatWritable"),
-        @JsonSubTypes.Type(value = IntWritable.class, name = "IntWritable"),
-        @JsonSubTypes.Type(value = LongWritable.class, name = "LongWritable"),
-        @JsonSubTypes.Type(value = NullWritable.class, name = "NullWritable"),
-        @JsonSubTypes.Type(value = Text.class, name = "Text"),
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = ArrayWritable.class, name = "ArrayWritable"),
+                @JsonSubTypes.Type(value = BooleanWritable.class, name = "BooleanWritable"),
+                @JsonSubTypes.Type(value = ByteWritable.class, name = "ByteWritable"),
+                @JsonSubTypes.Type(value = DoubleWritable.class, name = "DoubleWritable"),
+                @JsonSubTypes.Type(value = FloatWritable.class, name = "FloatWritable"),
+                @JsonSubTypes.Type(value = IntWritable.class, name = "IntWritable"),
+                @JsonSubTypes.Type(value = LongWritable.class, name = "LongWritable"),
+                @JsonSubTypes.Type(value = NullWritable.class, name = "NullWritable"),
+                @JsonSubTypes.Type(value = Text.class, name = "Text"),})
 public interface Writable extends Serializable {
     /**
      * Serialize the fields of this object to <code>out</code>.

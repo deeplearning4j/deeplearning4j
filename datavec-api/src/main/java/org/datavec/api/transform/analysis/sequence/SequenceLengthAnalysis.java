@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,9 @@ import lombok.Data;
 /**
  * Created by Alex on 12/03/2016.
  */
-@AllArgsConstructor @Data @Builder
+@AllArgsConstructor
+@Data
+@Builder
 public class SequenceLengthAnalysis {
 
     private final long totalNumSequences;
@@ -36,16 +38,12 @@ public class SequenceLengthAnalysis {
     private final long[] histogramBucketCounts;
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("SequenceLengthAnalysis(")
-                .append("totalNumSequences=").append(totalNumSequences)
-                .append(",minSeqLength=").append(minSeqLength)
-                .append(",maxSeqLength=").append(maxSeqLength)
-                .append(",countZeroLength=").append(countZeroLength)
-                .append(",countOneLength=").append(countOneLength)
-                .append(",meanLength=").append(meanLength)
-                .append(")");
+        sb.append("SequenceLengthAnalysis(").append("totalNumSequences=").append(totalNumSequences)
+                        .append(",minSeqLength=").append(minSeqLength).append(",maxSeqLength=").append(maxSeqLength)
+                        .append(",countZeroLength=").append(countZeroLength).append(",countOneLength=")
+                        .append(countOneLength).append(",meanLength=").append(meanLength).append(")");
         return sb.toString();
     }
 

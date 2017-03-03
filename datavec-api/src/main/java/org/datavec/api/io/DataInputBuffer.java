@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,14 +44,22 @@ public class DataInputBuffer extends DataInputStream {
 
         public void reset(byte[] input, int start, int length) {
             this.buf = input;
-            this.count = start+length;
+            this.count = start + length;
             this.mark = start;
             this.pos = start;
         }
 
-        public byte[] getData() { return buf; }
-        public int getPosition() { return pos; }
-        public int getLength() { return count; }
+        public byte[] getData() {
+            return buf;
+        }
+
+        public int getPosition() {
+            return pos;
+        }
+
+        public int getLength() {
+            return count;
+        }
     }
 
     private Buffer buffer;
@@ -81,9 +89,13 @@ public class DataInputBuffer extends DataInputStream {
     }
 
     /** Returns the current position in the input. */
-    public int getPosition() { return buffer.getPosition(); }
+    public int getPosition() {
+        return buffer.getPosition();
+    }
 
     /** Returns the length of the input. */
-    public int getLength() { return buffer.getLength(); }
+    public int getLength() {
+        return buffer.getLength();
+    }
 
 }

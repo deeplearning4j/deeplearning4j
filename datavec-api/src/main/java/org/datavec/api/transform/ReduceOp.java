@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,16 +40,8 @@ import org.datavec.api.transform.reduce.Reducer;
  * @author Alex Black
  */
 public enum ReduceOp {
-    Prod,
-    Min,
-    Max,
-    Range,  //Max - Min
-    Sum,
-    Mean,
-    Stdev,
-    Count,
-    CountUnique,
-    TakeFirst,   //First value
-    TakeLast     //Last value
+    Prod, Min, Max, Range, //Max - Min
+    Sum, Mean, Stdev, Count, CountUnique, TakeFirst, //First value
+    TakeLast //Last value
 
 }

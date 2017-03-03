@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.datavec.api.transform.quality.columns.DoubleQuality;
 /**
  * Created by Alex on 5/03/2016.
  */
-public class RealQualityMergeFunction implements Function2<DoubleQuality,DoubleQuality,DoubleQuality> {
+public class RealQualityMergeFunction implements Function2<DoubleQuality, DoubleQuality, DoubleQuality> {
     @Override
     public DoubleQuality call(DoubleQuality v1, DoubleQuality v2) throws Exception {
         return v1.add(v2);

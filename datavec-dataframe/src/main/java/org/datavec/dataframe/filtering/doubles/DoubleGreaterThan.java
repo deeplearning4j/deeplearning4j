@@ -11,15 +11,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class DoubleGreaterThan extends ColumnFilter {
 
-  private double value;
+    private double value;
 
-  public DoubleGreaterThan(ColumnReference reference, double value) {
-    super(reference);
-    this.value = value;
-  }
+    public DoubleGreaterThan(ColumnReference reference, double value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    DoubleColumn longColumn = (DoubleColumn) relation.column(getColumnReference().getColumnName());
-    return longColumn.select(DoubleColumnUtils.isGreaterThan, value);
-  }
+    public Selection apply(Table relation) {
+        DoubleColumn longColumn = (DoubleColumn) relation.column(getColumnReference().getColumnName());
+        return longColumn.select(DoubleColumnUtils.isGreaterThan, value);
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,5 +21,5 @@ package org.datavec.api.berkeley;
  * @author Dan Klein
  */
 public interface Filter<T> {
-  boolean accept(T t);
+    boolean accept(T t);
 }

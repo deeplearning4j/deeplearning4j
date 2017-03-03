@@ -31,13 +31,13 @@ public class NormalizationTests extends BaseSparkTest {
         List<List<Writable>> data = new ArrayList<>();
         Schema.Builder builder = new Schema.Builder();
         int numColumns = 6;
-        for(int i = 0; i < numColumns; i++)
+        for (int i = 0; i < numColumns; i++)
             builder.addColumnDouble(String.valueOf(i));
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             List<Writable> record = new ArrayList<>(numColumns);
             data.add(record);
-            for(int j = 0; j < numColumns; j++) {
+            for (int j = 0; j < numColumns; j++) {
                 record.add(new DoubleWritable(1.0));
             }
 
@@ -47,23 +47,23 @@ public class NormalizationTests extends BaseSparkTest {
 
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
-        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,rdd);
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema, rdd);
 
         //assert equivalent to the ndarray pre processing
         NormalizerStandardize standardScaler = new NormalizerStandardize();
-        standardScaler.fit(new DataSet(arr.dup(),arr.dup()));
+        standardScaler.fit(new DataSet(arr.dup(), arr.dup()));
         INDArray standardScalered = arr.dup();
-        standardScaler.transform(new DataSet(standardScalered,standardScalered));
+        standardScaler.transform(new DataSet(standardScalered, standardScalered));
         DataNormalization zeroToOne = new NormalizerMinMaxScaler();
-        zeroToOne.fit(new DataSet(arr.dup(),arr.dup()));
+        zeroToOne.fit(new DataSet(arr.dup(), arr.dup()));
         INDArray zeroToOnes = arr.dup();
-        zeroToOne.transform(new DataSet(zeroToOnes,zeroToOnes));
-        List<Row> rows = Normalization.stdDevMeanColumns(dataFrame,dataFrame.get().columns());
+        zeroToOne.transform(new DataSet(zeroToOnes, zeroToOnes));
+        List<Row> rows = Normalization.stdDevMeanColumns(dataFrame, dataFrame.get().columns());
         INDArray assertion = DataFrames.toMatrix(rows);
         //compare standard deviation
-        assertTrue(standardScaler.getStd().equalsWithEps(assertion.getRow(0),1e-1));
+        assertTrue(standardScaler.getStd().equalsWithEps(assertion.getRow(0), 1e-1));
         //compare mean
-        assertTrue(standardScaler.getMean().equalsWithEps(assertion.getRow(1),1e-1));
+        assertTrue(standardScaler.getMean().equalsWithEps(assertion.getRow(1), 1e-1));
 
     }
 
@@ -74,13 +74,13 @@ public class NormalizationTests extends BaseSparkTest {
         List<List<Writable>> data = new ArrayList<>();
         Schema.Builder builder = new Schema.Builder();
         int numColumns = 6;
-        for(int i = 0; i < numColumns; i++)
+        for (int i = 0; i < numColumns; i++)
             builder.addColumnDouble(String.valueOf(i));
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             List<Writable> record = new ArrayList<>(numColumns);
             data.add(record);
-            for(int j = 0; j < numColumns; j++) {
+            for (int j = 0; j < numColumns; j++) {
                 record.add(new DoubleWritable(1.0));
             }
 
@@ -90,28 +90,30 @@ public class NormalizationTests extends BaseSparkTest {
 
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
-        assertEquals(schema,DataFrames.fromStructType(DataFrames.fromSchema(schema)));
-        assertEquals(rdd.collect(),DataFrames.toRecords(DataFrames.toDataFrame(schema,rdd)).getSecond().collect());
+        assertEquals(schema, DataFrames.fromStructType(DataFrames.fromSchema(schema)));
+        assertEquals(rdd.collect(), DataFrames.toRecords(DataFrames.toDataFrame(schema, rdd)).getSecond().collect());
 
-        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,rdd);
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema, rdd);
         dataFrame.get().show();
         Normalization.zeromeanUnitVariance(dataFrame).get().show();
         Normalization.normalize(dataFrame).get().show();
 
         //assert equivalent to the ndarray pre processing
         NormalizerStandardize standardScaler = new NormalizerStandardize();
-        standardScaler.fit(new DataSet(arr.dup(),arr.dup()));
+        standardScaler.fit(new DataSet(arr.dup(), arr.dup()));
         INDArray standardScalered = arr.dup();
-        standardScaler.transform(new DataSet(standardScalered,standardScalered));
+        standardScaler.transform(new DataSet(standardScalered, standardScalered));
         DataNormalization zeroToOne = new NormalizerMinMaxScaler();
-        zeroToOne.fit(new DataSet(arr.dup(),arr.dup()));
+        zeroToOne.fit(new DataSet(arr.dup(), arr.dup()));
         INDArray zeroToOnes = arr.dup();
-        zeroToOne.transform(new DataSet(zeroToOnes,zeroToOnes));
+        zeroToOne.transform(new DataSet(zeroToOnes, zeroToOnes));
 
-        INDArray zeroMeanUnitVarianceDataFrame = RecordConverter.toMatrix(Normalization.zeromeanUnitVariance(schema,rdd).collect());
-        INDArray zeroMeanUnitVarianceDataFrameZeroToOne = RecordConverter.toMatrix(Normalization.normalize(schema,rdd).collect());
-        assertEquals(standardScalered,zeroMeanUnitVarianceDataFrame);
-        assertTrue(zeroToOnes.equalsWithEps(zeroMeanUnitVarianceDataFrameZeroToOne,1e-1));
+        INDArray zeroMeanUnitVarianceDataFrame =
+                        RecordConverter.toMatrix(Normalization.zeromeanUnitVariance(schema, rdd).collect());
+        INDArray zeroMeanUnitVarianceDataFrameZeroToOne =
+                        RecordConverter.toMatrix(Normalization.normalize(schema, rdd).collect());
+        assertEquals(standardScalered, zeroMeanUnitVarianceDataFrame);
+        assertTrue(zeroToOnes.equalsWithEps(zeroMeanUnitVarianceDataFrameZeroToOne, 1e-1));
 
     }
 

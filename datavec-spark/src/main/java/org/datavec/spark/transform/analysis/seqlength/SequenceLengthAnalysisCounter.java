@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,8 @@ import org.datavec.api.writable.Writable;
 /**
  * Created by Alex on 7/03/2016.
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLengthAnalysisCounter> {
 
     private long countZeroLength;
@@ -37,7 +38,7 @@ public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLe
     private double mean;
 
 
-    public SequenceLengthAnalysisCounter(){
+    public SequenceLengthAnalysisCounter() {
 
     }
 
@@ -46,14 +47,14 @@ public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLe
         return this;
     }
 
-    public SequenceLengthAnalysisCounter merge(SequenceLengthAnalysisCounter other){
+    public SequenceLengthAnalysisCounter merge(SequenceLengthAnalysisCounter other) {
         int otherMin = other.getMinLengthSeen();
         int newMinLengthSeen;
         long newCountMinValue;
-        if(minLengthSeen == otherMin){
+        if (minLengthSeen == otherMin) {
             newMinLengthSeen = minLengthSeen;
             newCountMinValue = countMinLength + other.countMinLength;
-        } else if(minLengthSeen > otherMin) {
+        } else if (minLengthSeen > otherMin) {
             //Keep other, take count from other
             newMinLengthSeen = otherMin;
             newCountMinValue = other.countMinLength;
@@ -66,10 +67,10 @@ public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLe
         int otherMax = other.getMaxLengthSeen();
         int newMaxLengthSeen;
         long newCountMaxValue;
-        if(maxLengthSeen == otherMax){
+        if (maxLengthSeen == otherMax) {
             newMaxLengthSeen = maxLengthSeen;
             newCountMaxValue = countMaxLength + other.countMaxLength;
-        } else if(maxLengthSeen < otherMax) {
+        } else if (maxLengthSeen < otherMax) {
             //Keep other, take count from other
             newMaxLengthSeen = otherMax;
             newCountMaxValue = other.countMaxLength;
@@ -81,18 +82,13 @@ public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLe
 
         //Calculate the new mean, in an online fashion:
         long newCountTotal = countTotal + other.countTotal;
-        double sum = countTotal*mean + other.countTotal*other.mean;
+        double sum = countTotal * mean + other.countTotal * other.mean;
         double newMean = sum / newCountTotal;
 
 
-        return new SequenceLengthAnalysisCounter(countZeroLength+other.countZeroLength,
-                countOneLength + other.countOneLength,
-                newCountMinValue,
-                newMinLengthSeen,
-                newCountMaxValue,
-                newMaxLengthSeen,
-                newCountTotal,
-                newMean);
+        return new SequenceLengthAnalysisCounter(countZeroLength + other.countZeroLength,
+                        countOneLength + other.countOneLength, newCountMinValue, newMinLengthSeen, newCountMaxValue,
+                        newMaxLengthSeen, newCountTotal, newMean);
     }
 
 }

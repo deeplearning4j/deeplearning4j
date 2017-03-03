@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ public class BooleanCondition implements Condition {
      */
     @Override
     public String[] outputColumnNames() {
-        return  conditions[0].outputColumnNames();
+        return conditions[0].outputColumnNames();
     }
 
     /**
@@ -79,14 +79,17 @@ public class BooleanCondition implements Condition {
         return conditions[0].columnName();
     }
 
-    public enum Type {AND, OR, NOT, XOR}
+    public enum Type {
+        AND, OR, NOT, XOR
+    }
 
     private final Type type;
     private final Condition[] conditions;
 
     public BooleanCondition(@JsonProperty("type") Type type, @JsonProperty("conditions") Condition... conditions) {
         if (conditions == null || conditions.length < 1)
-            throw new IllegalArgumentException("Invalid input: conditions must be non-null and have at least 1 element");
+            throw new IllegalArgumentException(
+                            "Invalid input: conditions must be non-null and have at least 1 element");
         switch (type) {
             case NOT:
                 if (conditions.length != 1)
@@ -107,13 +110,15 @@ public class BooleanCondition implements Condition {
             case AND:
                 for (Condition c : conditions) {
                     boolean thisCond = c.condition(list);
-                    if (!thisCond) return false; //Any false -> AND is false
+                    if (!thisCond)
+                        return false; //Any false -> AND is false
                 }
                 return true;
             case OR:
                 for (Condition c : conditions) {
                     boolean thisCond = c.condition(list);
-                    if (thisCond) return true;   //Any true -> OR is true
+                    if (thisCond)
+                        return true; //Any true -> OR is true
                 }
                 return false;
             case NOT:
@@ -139,13 +144,15 @@ public class BooleanCondition implements Condition {
             case AND:
                 for (Condition c : conditions) {
                     boolean thisCond = c.condition(input);
-                    if (!thisCond) return false; //Any false -> AND is false
+                    if (!thisCond)
+                        return false; //Any false -> AND is false
                 }
                 return true;
             case OR:
                 for (Condition c : conditions) {
                     boolean thisCond = c.condition(input);
-                    if (thisCond) return true;   //Any true -> OR is true
+                    if (thisCond)
+                        return true; //Any true -> OR is true
                 }
                 return false;
             case NOT:
@@ -163,13 +170,15 @@ public class BooleanCondition implements Condition {
             case AND:
                 for (Condition c : conditions) {
                     boolean thisCond = c.conditionSequence(sequence);
-                    if (!thisCond) return false; //Any false -> AND is false
+                    if (!thisCond)
+                        return false; //Any false -> AND is false
                 }
                 return true;
             case OR:
                 for (Condition c : conditions) {
                     boolean thisCond = c.conditionSequence(sequence);
-                    if (thisCond) return true;   //Any true -> OR is true
+                    if (thisCond)
+                        return true; //Any true -> OR is true
                 }
                 return false;
             case NOT:
@@ -195,13 +204,15 @@ public class BooleanCondition implements Condition {
             case AND:
                 for (Condition c : conditions) {
                     boolean thisCond = c.conditionSequence(seq);
-                    if (!thisCond) return false; //Any false -> AND is false
+                    if (!thisCond)
+                        return false; //Any false -> AND is false
                 }
                 return true;
             case OR:
                 for (Condition c : conditions) {
                     boolean thisCond = c.conditionSequence(seq);
-                    if (thisCond) return true;   //Any true -> OR is true
+                    if (thisCond)
+                        return true; //Any true -> OR is true
                 }
                 return false;
             case NOT:
@@ -255,6 +266,7 @@ public class BooleanCondition implements Condition {
     public static Condition AND(Condition... conditions) {
         return new BooleanCondition(Type.AND, conditions);
     }
+
     /**
      * Or of all the given conditions
      * @param conditions the conditions to or
@@ -263,6 +275,7 @@ public class BooleanCondition implements Condition {
     public static Condition OR(Condition... conditions) {
         return new BooleanCondition(Type.OR, conditions);
     }
+
     /**
      * Not of  the given condition
      * @param condition the conditions to and
@@ -271,6 +284,7 @@ public class BooleanCondition implements Condition {
     public static Condition NOT(Condition condition) {
         return new BooleanCondition(Type.NOT, condition);
     }
+
     /**
      * And of all the given conditions
      * @param first the first condition

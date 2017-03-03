@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,35 +36,55 @@ public class CustomCondition implements Condition {
     private String someArg;
 
     @Override
-    public Schema transform(Schema inputSchema) { return inputSchema; }
+    public Schema transform(Schema inputSchema) {
+        return inputSchema;
+    }
 
     @Override
-    public String outputColumnName() { return null; }
+    public String outputColumnName() {
+        return null;
+    }
 
     @Override
-    public String[] outputColumnNames() { return new String[0]; }
+    public String[] outputColumnNames() {
+        return new String[0];
+    }
 
     @Override
-    public String[] columnNames() { return new String[0]; }
+    public String[] columnNames() {
+        return new String[0];
+    }
 
     @Override
-    public String columnName() { return null; }
+    public String columnName() {
+        return null;
+    }
 
     @Override
-    public boolean condition(List<Writable> list) { return false; }
+    public boolean condition(List<Writable> list) {
+        return false;
+    }
 
     @Override
-    public boolean condition(Object input) { return false; }
+    public boolean condition(Object input) {
+        return false;
+    }
 
     @Override
-    public boolean conditionSequence(List<List<Writable>> sequence) { return false; }
+    public boolean conditionSequence(List<List<Writable>> sequence) {
+        return false;
+    }
 
     @Override
-    public boolean conditionSequence(Object sequence) { return false; }
+    public boolean conditionSequence(Object sequence) {
+        return false;
+    }
 
     @Override
-    public void setInputSchema(Schema schema) { }
+    public void setInputSchema(Schema schema) {}
 
     @Override
-    public Schema getInputSchema() { return null; }
+    public Schema getInputSchema() {
+        return null;
+    }
 }

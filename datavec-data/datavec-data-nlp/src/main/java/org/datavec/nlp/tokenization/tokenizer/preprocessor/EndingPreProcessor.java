@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,16 +28,16 @@ import org.datavec.nlp.tokenization.tokenizer.TokenPreProcess;
 public class EndingPreProcessor implements TokenPreProcess {
     @Override
     public String preProcess(String token) {
-        if(token.endsWith("s") && !token.endsWith("ss"))
-            token = token.substring(0,token.length() - 1);
-        if(token.endsWith("."))
-            token = token.substring(0,token.length() - 1);
-        if(token.endsWith("ed"))
-            token = token.substring(0,token.length() - 2);
-         if(token.endsWith("ing"))
-            token = token.substring(0,token.length() - 3);
-         if(token.endsWith("ly"))
-            token = token.substring(0,token.length() - 2);
-         return token;
+        if (token.endsWith("s") && !token.endsWith("ss"))
+            token = token.substring(0, token.length() - 1);
+        if (token.endsWith("."))
+            token = token.substring(0, token.length() - 1);
+        if (token.endsWith("ed"))
+            token = token.substring(0, token.length() - 2);
+        if (token.endsWith("ing"))
+            token = token.substring(0, token.length() - 3);
+        if (token.endsWith("ly"))
+            token = token.substring(0, token.length() - 2);
+        return token;
     }
 }

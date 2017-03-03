@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,8 @@ public class LibSvmTest {
         Configuration conf = new Configuration();
         conf.set(FileRecordReader.APPEND_LABEL, "true");
         File out = new File("iris.libsvm.out");
-        if(out.exists()) out.delete();
+        if (out.exists())
+            out.delete();
         conf.set(FileRecordWriter.PATH, out.getAbsolutePath());
         RecordReader libSvmRecordReader = new LibSvmRecordReader();
         libSvmRecordReader.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
@@ -73,7 +74,7 @@ public class LibSvmTest {
     public void testReadMissing() throws Exception {
         RecordReader rr = new LibSvmRecordReader();
         Configuration conf = new Configuration();
-        conf.set(LineRecordReader.APPEND_LABEL,"true");
+        conf.set(LineRecordReader.APPEND_LABEL, "true");
         conf.set(LibSvmRecordReader.NUM_FEATURES, "4");
         rr.initialize(conf, new FileSplit(new ClassPathResource("libsvm_with_multiple_missing.libsvm").getFile()));
 
@@ -94,11 +95,11 @@ public class LibSvmTest {
         int count = 0;
         while (rr.hasNext()) {
             List<Writable> record = new ArrayList<>(rr.next());
-//            System.out.println(record);
+            //            System.out.println(record);
             assertEquals(record.size(), 5);
             List<Double> exp = expected.get(count++);
-            for( int j=0; j<exp.size(); j++ ){
-                assertEquals(exp.get(j),record.get(j).toDouble(),0.0);
+            for (int j = 0; j < exp.size(); j++) {
+                assertEquals(exp.get(j), record.get(j).toDouble(), 0.0);
             }
         }
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,11 +47,11 @@ public class CSVNLinesSequenceRecordReaderTest {
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         int count = 0;
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
 
             List<List<Writable>> expected = new ArrayList<>();
-            for( int i=0; i<nLinesPerSequence; i++ ){
+            for (int i = 0; i < nLinesPerSequence; i++) {
                 expected.add(rr.next());
             }
 
@@ -61,7 +61,7 @@ public class CSVNLinesSequenceRecordReaderTest {
             count++;
         }
 
-        assertEquals(150/nLinesPerSequence, count);
+        assertEquals(150 / nLinesPerSequence, count);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class CSVNLinesSequenceRecordReaderTest {
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         List<List<List<Writable>>> out = new ArrayList<>();
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             List<List<Writable>> next = seqRR.sequenceRecord();
             out.add(next);
         }
@@ -84,7 +84,7 @@ public class CSVNLinesSequenceRecordReaderTest {
         List<List<List<Writable>>> out2 = new ArrayList<>();
         List<SequenceRecord> out3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             SequenceRecord seq = seqRR.nextSequence();
             out2.add(seq.getSequenceRecord());
             meta.add(seq.getMetaData());

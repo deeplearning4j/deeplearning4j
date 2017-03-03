@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class MapToJoinValuesFunction implements PairFunction<List<Writable>,List<Writable>,JoinValue> {
+public class MapToJoinValuesFunction implements PairFunction<List<Writable>, List<Writable>, JoinValue> {
 
     private boolean left;
     private Join join;
@@ -44,7 +44,7 @@ public class MapToJoinValuesFunction implements PairFunction<List<Writable>,List
         Schema schema;
         String[] keyColumns;
 
-        if(left){
+        if (left) {
             schema = join.getLeftSchema();
             keyColumns = join.getJoinColumnsLeft();
 
@@ -55,17 +55,17 @@ public class MapToJoinValuesFunction implements PairFunction<List<Writable>,List
 
 
         List<Writable> keyValues;
-        if(keyColumns.length == 1){
+        if (keyColumns.length == 1) {
             keyValues = Collections.singletonList(writables.get(schema.getIndexOfColumn(keyColumns[0])));
         } else {
             keyValues = new ArrayList<>(keyColumns.length);
-            for(String s : keyColumns){
+            for (String s : keyColumns) {
                 keyValues.add(writables.get(schema.getIndexOfColumn(s)));
             }
         }
 
 
 
-        return new Tuple2<>(keyValues, new JoinValue(left,writables));
+        return new Tuple2<>(keyValues, new JoinValue(left, writables));
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Created by Alex on 17/03/2016.
  */
-public class SequenceSplitFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>,List<List<Writable>>> {
+public class SequenceSplitFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>, List<List<Writable>>> {
 
     public SequenceSplitFunction(SequenceSplit split) {
         super(new SequenceSplitFunctionAdapter(split));

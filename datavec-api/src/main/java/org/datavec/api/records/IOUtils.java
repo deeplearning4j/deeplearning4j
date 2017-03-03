@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,12 +29,11 @@ import java.io.IOException;
 public class IOUtils {
 
     /** Cannot create a new instance of IOUtils */
-    private IOUtils() {
-    }
+    private IOUtils() {}
 
-    public static final char[] hexchars = { '0', '1', '2', '3', '4', '5',
-            '6', '7', '8', '9', 'A', 'B',
-            'C', 'D', 'E', 'F' };
+    public static final char[] hexchars =
+                    {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
     /**
      *
      * @param s
@@ -50,9 +49,7 @@ public class IOUtils {
                 sb.append("&amp;");
             } else if (ch == '%') {
                 sb.append("%0025");
-            } else if (ch < 0x20 ||
-                    (ch > 0xD7FF && ch < 0xE000) ||
-                    (ch > 0xFFFD)) {
+            } else if (ch < 0x20 || (ch > 0xD7FF && ch < 0xE000) || (ch > 0xFFFD)) {
                 sb.append("%");
                 sb.append(hexchars[(ch & 0xF000) >> 12]);
                 sb.append(hexchars[(ch & 0x0F00) >> 8]);
@@ -90,7 +87,7 @@ public class IOUtils {
                 int ch2 = h2c(s.charAt(idx++)) << 8;
                 int ch3 = h2c(s.charAt(idx++)) << 4;
                 int ch4 = h2c(s.charAt(idx++));
-                char res = (char)(ch1 | ch2 | ch3 | ch4);
+                char res = (char) (ch1 | ch2 | ch3 | ch4);
                 sb.append(res);
             } else {
                 sb.append(ch);
@@ -110,7 +107,7 @@ public class IOUtils {
         int len = s.length();
         for (int i = 0; i < len; i++) {
             char c = s.charAt(i);
-            switch(c) {
+            switch (c) {
                 case '\0':
                     sb.append("%00");
                     break;
@@ -147,12 +144,12 @@ public class IOUtils {
             throw new IOException("Error deserializing string.");
         }
         int len = s.length();
-        StringBuilder sb = new StringBuilder(len-1);
+        StringBuilder sb = new StringBuilder(len - 1);
         for (int i = 1; i < len; i++) {
             char c = s.charAt(i);
             if (c == '%') {
-                char ch1 = s.charAt(i+1);
-                char ch2 = s.charAt(i+2);
+                char ch1 = s.charAt(i + 1);
+                char ch2 = s.charAt(i + 2);
                 i += 2;
                 if (ch1 == '0' && ch2 == '0') {
                     sb.append('\0');
@@ -191,15 +188,16 @@ public class IOUtils {
      * @throws java.io.IOException
      * @return
      */
-    static Buffer fromXMLBuffer(String s)
-            throws IOException {
-        if (s.length() == 0) { return new Buffer(); }
-        int blen = s.length()/2;
+    static Buffer fromXMLBuffer(String s) throws IOException {
+        if (s.length() == 0) {
+            return new Buffer();
+        }
+        int blen = s.length() / 2;
         byte[] barr = new byte[blen];
         for (int idx = 0; idx < blen; idx++) {
-            char c1 = s.charAt(2*idx);
-            char c2 = s.charAt(2*idx+1);
-            barr[idx] = (byte)Integer.parseInt(""+c1+c2, 16);
+            char c1 = s.charAt(2 * idx);
+            char c2 = s.charAt(2 * idx + 1);
+            barr[idx] = (byte) Integer.parseInt("" + c1 + c2, 16);
         }
         return new Buffer(barr);
     }
@@ -222,91 +220,86 @@ public class IOUtils {
      * @throws java.io.IOException
      * @return Deserialized Buffer
      */
-    static Buffer fromCSVBuffer(String s)
-            throws IOException {
+    static Buffer fromCSVBuffer(String s) throws IOException {
         if (s.charAt(0) != '#') {
             throw new IOException("Error deserializing buffer.");
         }
-        if (s.length() == 1) { return new Buffer(); }
-        int blen = (s.length()-1)/2;
+        if (s.length() == 1) {
+            return new Buffer();
+        }
+        int blen = (s.length() - 1) / 2;
         byte[] barr = new byte[blen];
         for (int idx = 0; idx < blen; idx++) {
-            char c1 = s.charAt(2*idx+1);
-            char c2 = s.charAt(2*idx+2);
-            barr[idx] = (byte)Integer.parseInt(""+c1+c2, 16);
+            char c1 = s.charAt(2 * idx + 1);
+            char c2 = s.charAt(2 * idx + 2);
+            barr[idx] = (byte) Integer.parseInt("" + c1 + c2, 16);
         }
         return new Buffer(barr);
     }
 
     private static int utf8LenForCodePoint(final int cpt) throws IOException {
-        if (cpt >=0 && cpt <= 0x7F) {
+        if (cpt >= 0 && cpt <= 0x7F) {
             return 1;
         }
         if (cpt >= 0x80 && cpt <= 0x07FF) {
             return 2;
         }
-        if ((cpt >= 0x0800 && cpt < 0xD800) ||
-                (cpt > 0xDFFF && cpt <= 0xFFFD)) {
+        if ((cpt >= 0x0800 && cpt < 0xD800) || (cpt > 0xDFFF && cpt <= 0xFFFD)) {
             return 3;
         }
         if (cpt >= 0x10000 && cpt <= 0x10FFFF) {
             return 4;
         }
-        throw new IOException("Illegal Unicode Codepoint "+
-                Integer.toHexString(cpt)+" in string.");
+        throw new IOException("Illegal Unicode Codepoint " + Integer.toHexString(cpt) + " in string.");
     }
 
-    private static final int B10 =    Integer.parseInt("10000000", 2);
-    private static final int B110 =   Integer.parseInt("11000000", 2);
-    private static final int B1110 =  Integer.parseInt("11100000", 2);
+    private static final int B10 = Integer.parseInt("10000000", 2);
+    private static final int B110 = Integer.parseInt("11000000", 2);
+    private static final int B1110 = Integer.parseInt("11100000", 2);
     private static final int B11110 = Integer.parseInt("11110000", 2);
-    private static final int B11 =    Integer.parseInt("11000000", 2);
-    private static final int B111 =   Integer.parseInt("11100000", 2);
-    private static final int B1111 =  Integer.parseInt("11110000", 2);
+    private static final int B11 = Integer.parseInt("11000000", 2);
+    private static final int B111 = Integer.parseInt("11100000", 2);
+    private static final int B1111 = Integer.parseInt("11110000", 2);
     private static final int B11111 = Integer.parseInt("11111000", 2);
 
-    private static int writeUtf8(int cpt, final byte[] bytes, final int offset)
-            throws IOException {
-        if (cpt >=0 && cpt <= 0x7F) {
+    private static int writeUtf8(int cpt, final byte[] bytes, final int offset) throws IOException {
+        if (cpt >= 0 && cpt <= 0x7F) {
             bytes[offset] = (byte) cpt;
             return 1;
         }
         if (cpt >= 0x80 && cpt <= 0x07FF) {
-            bytes[offset+1] = (byte) (B10 | (cpt & 0x3F));
+            bytes[offset + 1] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
             bytes[offset] = (byte) (B110 | (cpt & 0x1F));
             return 2;
         }
-        if ((cpt >= 0x0800 && cpt < 0xD800) ||
-                (cpt > 0xDFFF && cpt <= 0xFFFD)) {
-            bytes[offset+2] = (byte) (B10 | (cpt & 0x3F));
+        if ((cpt >= 0x0800 && cpt < 0xD800) || (cpt > 0xDFFF && cpt <= 0xFFFD)) {
+            bytes[offset + 2] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
-            bytes[offset+1] = (byte) (B10 | (cpt & 0x3F));
+            bytes[offset + 1] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
             bytes[offset] = (byte) (B1110 | (cpt & 0x0F));
             return 3;
         }
         if (cpt >= 0x10000 && cpt <= 0x10FFFF) {
-            bytes[offset+3] = (byte) (B10 | (cpt & 0x3F));
+            bytes[offset + 3] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
-            bytes[offset+2] = (byte) (B10 | (cpt & 0x3F));
+            bytes[offset + 2] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
-            bytes[offset+1] = (byte) (B10 | (cpt & 0x3F));
+            bytes[offset + 1] = (byte) (B10 | (cpt & 0x3F));
             cpt = cpt >> 6;
             bytes[offset] = (byte) (B11110 | (cpt & 0x07));
             return 4;
         }
-        throw new IOException("Illegal Unicode Codepoint "+
-                Integer.toHexString(cpt)+" in string.");
+        throw new IOException("Illegal Unicode Codepoint " + Integer.toHexString(cpt) + " in string.");
     }
 
-    static void toBinaryString(final DataOutput out, final String str)
-            throws IOException {
+    static void toBinaryString(final DataOutput out, final String str) throws IOException {
         final int strlen = str.length();
-        byte[] bytes = new byte[strlen*4]; // Codepoints expand to 4 bytes max
+        byte[] bytes = new byte[strlen * 4]; // Codepoints expand to 4 bytes max
         int utf8Len = 0;
         int idx = 0;
-        while(idx < strlen) {
+        while (idx < strlen) {
             final int cpt = str.codePointAt(idx);
             idx += Character.isSupplementaryCodePoint(cpt) ? 2 : 1;
             utf8Len += writeUtf8(cpt, bytes, utf8Len);
@@ -316,17 +309,12 @@ public class IOUtils {
     }
 
     static boolean isValidCodePoint(int cpt) {
-        return !((cpt > 0x10FFFF) ||
-                (cpt >= 0xD800 && cpt <= 0xDFFF) ||
-                (cpt >= 0xFFFE && cpt <=0xFFFF));
+        return !((cpt > 0x10FFFF) || (cpt >= 0xD800 && cpt <= 0xDFFF) || (cpt >= 0xFFFE && cpt <= 0xFFFF));
     }
 
     private static int utf8ToCodePoint(int b1, int b2, int b3, int b4) {
         int cpt;
-        cpt = (((b1 & ~B11111) << 18) |
-                ((b2 & ~B11) << 12) |
-                ((b3 & ~B11) << 6) |
-                (b4 & ~B11));
+        cpt = (((b1 & ~B11111) << 18) | ((b2 & ~B11) << 12) | ((b3 & ~B11) << 6) | (b4 & ~B11));
         return cpt;
     }
 
@@ -355,7 +343,7 @@ public class IOUtils {
         int len = 0;
         // For the most commmon case, i.e. ascii, numChars = utf8Len
         StringBuilder sb = new StringBuilder(utf8Len);
-        while(len < utf8Len) {
+        while (len < utf8Len) {
             int cpt;
             final int b1 = bytes[len++] & 0xFF;
             if (b1 <= 0x7F) {
@@ -379,12 +367,11 @@ public class IOUtils {
                 checkB10(b2);
                 cpt = utf8ToCodePoint(b1, b2);
             } else {
-                throw new IOException("Invalid UTF-8 byte "+Integer.toHexString(b1)+
-                        " at offset "+(len-1)+" in length of "+utf8Len);
+                throw new IOException("Invalid UTF-8 byte " + Integer.toHexString(b1) + " at offset " + (len - 1)
+                                + " in length of " + utf8Len);
             }
             if (!isValidCodePoint(cpt)) {
-                throw new IOException("Illegal Unicode Codepoint "+
-                        Integer.toHexString(cpt)+" in stream.");
+                throw new IOException("Illegal Unicode Codepoint " + Integer.toHexString(cpt) + " in stream.");
             }
             sb.appendCodePoint(cpt);
         }
@@ -482,8 +469,7 @@ public class IOUtils {
     }
 
     /** Lexicographic order of binary data. */
-    public static int compareBytes(byte[] b1, int s1, int l1,
-                                   byte[] b2, int s2, int l2) {
+    public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
         return WritableComparator.compareBytes(b1, s1, l1, b2, s2, l2);
     }
 }

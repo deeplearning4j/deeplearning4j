@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,8 +44,8 @@ import java.util.List;
  * @see ConditionalReplaceValueTransform to do a conditional replacement with a fixed value (instead of a value from another column)
  */
 @JsonIgnoreProperties({"columnToReplaceIdx", "sourceColumnIdx"})
-@EqualsAndHashCode(exclude = {"columnToReplaceIdx","sourceColumnIdx"})
-public class ConditionalCopyValueTransform implements Transform,ColumnOp {
+@EqualsAndHashCode(exclude = {"columnToReplaceIdx", "sourceColumnIdx"})
+public class ConditionalCopyValueTransform implements Transform, ColumnOp {
 
     private final String columnToReplace;
     private final String sourceColumn;
@@ -58,8 +58,8 @@ public class ConditionalCopyValueTransform implements Transform,ColumnOp {
      * @param sourceColumn    Name of the column to get the new value from
      * @param condition       Condition
      */
-    public ConditionalCopyValueTransform(@JsonProperty("columnToReplace") String columnToReplace, @JsonProperty("sourceColumn") String sourceColumn,
-                                         @JsonProperty("condition") Condition condition) {
+    public ConditionalCopyValueTransform(@JsonProperty("columnToReplace") String columnToReplace,
+                    @JsonProperty("sourceColumn") String sourceColumn, @JsonProperty("condition") Condition condition) {
         this.columnToReplace = columnToReplace;
         this.sourceColumn = sourceColumn;
         this.condition = condition;
@@ -138,7 +138,8 @@ public class ConditionalCopyValueTransform implements Transform,ColumnOp {
 
     @Override
     public String toString() {
-        return "ConditionalCopyValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn + ",condition=" + condition + ")";
+        return "ConditionalCopyValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn
+                        + ",condition=" + condition + ")";
     }
 
     /**

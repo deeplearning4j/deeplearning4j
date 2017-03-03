@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class UnzipForCalculateSortedRankFunction implements Function<Tuple2<Tuple2<Writable,List<Writable>>,Long>,List<Writable>> {
+public class UnzipForCalculateSortedRankFunction
+                implements Function<Tuple2<Tuple2<Writable, List<Writable>>, Long>, List<Writable>> {
     @Override
     public List<Writable> call(Tuple2<Tuple2<Writable, List<Writable>>, Long> v1) throws Exception {
         List<Writable> inputWritables = new ArrayList<>(v1._1()._2());

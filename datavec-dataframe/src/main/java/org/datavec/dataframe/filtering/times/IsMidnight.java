@@ -14,26 +14,26 @@ import org.datavec.dataframe.util.Selection;
  */
 public class IsMidnight extends ColumnFilter {
 
-  public IsMidnight(ColumnReference reference) {
-    super(reference);
-  }
-
-  @Override
-  public Selection apply(Table relation) {
-
-    String name = columnReference().getColumnName();
-    Column column = relation.column(name);
-    ColumnType type = column.type();
-    switch (type) {
-      case LOCAL_TIME:
-        TimeColumn timeColumn = relation.timeColumn(name);
-        return timeColumn.isMidnight();
-      case LOCAL_DATE_TIME:
-        DateTimeColumn dateTimeColumn = relation.dateTimeColumn(name);
-        return dateTimeColumn.isMidnight();
-      default:
-        throw new UnsupportedOperationException("Columns of type " + type.name() + " do not support the operation "
-            + "isMidnight() ");
+    public IsMidnight(ColumnReference reference) {
+        super(reference);
     }
-  }
+
+    @Override
+    public Selection apply(Table relation) {
+
+        String name = columnReference().getColumnName();
+        Column column = relation.column(name);
+        ColumnType type = column.type();
+        switch (type) {
+            case LOCAL_TIME:
+                TimeColumn timeColumn = relation.timeColumn(name);
+                return timeColumn.isMidnight();
+            case LOCAL_DATE_TIME:
+                DateTimeColumn dateTimeColumn = relation.dateTimeColumn(name);
+                return dateTimeColumn.isMidnight();
+            default:
+                throw new UnsupportedOperationException(
+                                "Columns of type " + type.name() + " do not support the operation " + "isMidnight() ");
+        }
+    }
 }

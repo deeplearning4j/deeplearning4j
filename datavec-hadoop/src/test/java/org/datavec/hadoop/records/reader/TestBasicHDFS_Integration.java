@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@
 package org.datavec.hadoop.records.reader;
 
 import java.io.IOException;
-
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -53,120 +52,121 @@ import org.junit.Test;
  */
 public class TestBasicHDFS_Integration {
 
-	private static JobConf defaultConf = new JobConf();
-	private static FileSystem localFs = null;
-	static {
-		try {
-			defaultConf.set("fs.defaultFS", "file:///");
-			localFs = FileSystem.getLocal(defaultConf);
-		} catch (IOException e) {
-			throw new RuntimeException("init failure", e);
-		}
-	}
+    private static JobConf defaultConf = new JobConf();
+    private static FileSystem localFs = null;
+    static {
+        try {
+            defaultConf.set("fs.defaultFS", "file:///");
+            localFs = FileSystem.getLocal(defaultConf);
+        } catch (IOException e) {
+            throw new RuntimeException("init failure", e);
+        }
+    }
 
 
-	/**
-	 * generate splits for this run
-	 * 
-	 * @param input_path
-	 * @param job
-	 * @return
-	 */
-	private InputSplit[] generateDebugSplits(Path input_path, JobConf job) {
+    /**
+     * generate splits for this run
+     * 
+     * @param input_path
+     * @param job
+     * @return
+     */
+    private InputSplit[] generateDebugSplits(Path input_path, JobConf job) {
 
-		long block_size = localFs.getDefaultBlockSize();
+        long block_size = localFs.getDefaultBlockSize();
 
-		System.out.println("default block size: " + (block_size / 1024 / 1024) + "MB");
+        System.out.println("default block size: " + (block_size / 1024 / 1024) + "MB");
 
-		// ---- set where we'll read the input files from -------------
-		FileInputFormat.setInputPaths(job, input_path);
+        // ---- set where we'll read the input files from -------------
+        FileInputFormat.setInputPaths(job, input_path);
 
-		// try splitting the file in a variety of sizes
-		TextInputFormat format = new TextInputFormat();
-		format.configure(job);
+        // try splitting the file in a variety of sizes
+        TextInputFormat format = new TextInputFormat();
+        format.configure(job);
 
-		int numSplits = 1;
+        int numSplits = 1;
 
-		InputSplit[] splits = null;
+        InputSplit[] splits = null;
 
-		try {
-			splits = format.getSplits(job, numSplits);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        try {
+            splits = format.getSplits(job, numSplits);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-		return splits;
+        return splits;
 
-	}	
-	
-	
-	/**
-	 * Things we'd need:
-	 * 		1. JobConf
-	 *		2. some way to get input splits
-	 * 
-	 * @throws IOException
-	 */
-	@Test
-	public void testParametersInputSplitSetup() throws IOException {
-		
-//		InputSplit genericSplit = null;
-        
-//		TaskAttemptContext context = null;
-		
-		// ---- this all needs to be done in
-		JobConf job = new JobConf(defaultConf);
-		
-		// app.input.path
+    }
 
-		String split_filename = "src/test/resources/records/reader/SVMLightRecordReaderInput/record_reader_input_test.txt";
 
-		Path splitPath = new Path( split_filename );
-		
-		
-		
-		InputSplit[] splits = generateDebugSplits(splitPath, job);
+    /**
+     * Things we'd need:
+     * 		1. JobConf
+     *		2. some way to get input splits
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testParametersInputSplitSetup() throws IOException {
 
-		System.out.println("split count: " + splits.length);
-		
-		//RecordReader<LongWritable, Text> rr = new LineRecordReader(job, (FileSplit) splits[0]);
-		
-		TextInputFormat format = new TextInputFormat();
-		format.configure(job);
-		
-		//Reporter reporter = new DummyReporter();
-		
-		RecordReader<LongWritable, Text> reader = null;
-		  LongWritable key = new LongWritable();
-		  Text value = new Text();
-		  
-		  final Reporter voidReporter = Reporter.NULL;		
-		
-		reader = format.getRecordReader(splits[0], job, voidReporter);
+        //		InputSplit genericSplit = null;
 
-		//while (rr.)
-		
-		while (reader.getProgress() < 1.0) {
-			
-			boolean hasMore = reader.next(key, value);
-			
-			System.out.println( "line: "+ value.toString() );
-			
-		}
-		
-		reader.close();
-		
-	}
-	
-	@Test 
-	public void testParameters_Alt() {
-		
-	//	TaskAttemptContext context = new TaskAttemptContext();
-		
-		//return new LineRecordReader(job, (FileSplit) genericSplit);
-		
-		
-	}
-	
+        //		TaskAttemptContext context = null;
+
+        // ---- this all needs to be done in
+        JobConf job = new JobConf(defaultConf);
+
+        // app.input.path
+
+        String split_filename =
+                        "src/test/resources/records/reader/SVMLightRecordReaderInput/record_reader_input_test.txt";
+
+        Path splitPath = new Path(split_filename);
+
+
+
+        InputSplit[] splits = generateDebugSplits(splitPath, job);
+
+        System.out.println("split count: " + splits.length);
+
+        //RecordReader<LongWritable, Text> rr = new LineRecordReader(job, (FileSplit) splits[0]);
+
+        TextInputFormat format = new TextInputFormat();
+        format.configure(job);
+
+        //Reporter reporter = new DummyReporter();
+
+        RecordReader<LongWritable, Text> reader = null;
+        LongWritable key = new LongWritable();
+        Text value = new Text();
+
+        final Reporter voidReporter = Reporter.NULL;
+
+        reader = format.getRecordReader(splits[0], job, voidReporter);
+
+        //while (rr.)
+
+        while (reader.getProgress() < 1.0) {
+
+            boolean hasMore = reader.next(key, value);
+
+            System.out.println("line: " + value.toString());
+
+        }
+
+        reader.close();
+
+    }
+
+    @Test
+    public void testParameters_Alt() {
+
+        //	TaskAttemptContext context = new TaskAttemptContext();
+
+        //return new LineRecordReader(job, (FileSplit) genericSplit);
+
+
+    }
+
 }

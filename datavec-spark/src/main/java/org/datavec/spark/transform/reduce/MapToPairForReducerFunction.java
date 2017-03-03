@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ import java.util.List;
 
 
 @AllArgsConstructor
-public class MapToPairForReducerFunction implements PairFunction<List<Writable>,String,List<Writable>> {
+public class MapToPairForReducerFunction implements PairFunction<List<Writable>, String, List<Writable>> {
 
     private final IReducer reducer;
 
@@ -36,16 +36,18 @@ public class MapToPairForReducerFunction implements PairFunction<List<Writable>,
         List<String> keyColumns = reducer.getKeyColumns();
         Schema schema = reducer.getInputSchema();
         String key;
-        if(keyColumns.size() == 1) key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();
+        if (keyColumns.size() == 1)
+            key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();
         else {
             StringBuilder sb = new StringBuilder();
-            for( int i = 0; i<keyColumns.size(); i++) {
-                if(i > 0) sb.append("_");
+            for (int i = 0; i < keyColumns.size(); i++) {
+                if (i > 0)
+                    sb.append("_");
                 sb.append(writables.get(schema.getIndexOfColumn(keyColumns.get(i))).toString());
             }
             key = sb.toString();
         }
 
-        return new Tuple2<>(key,writables);
+        return new Tuple2<>(key, writables);
     }
 }

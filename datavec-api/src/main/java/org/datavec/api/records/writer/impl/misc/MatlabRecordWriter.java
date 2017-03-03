@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,8 +32,7 @@ import java.util.Collection;
  * @author Adam Gibson
  */
 public class MatlabRecordWriter extends FileRecordWriter {
-    public MatlabRecordWriter() {
-    }
+    public MatlabRecordWriter() {}
 
     public MatlabRecordWriter(File path) throws FileNotFoundException {
         super(path);
@@ -52,11 +51,11 @@ public class MatlabRecordWriter extends FileRecordWriter {
         StringBuilder result = new StringBuilder();
 
         int count = 0;
-        for(Writable w : record) {
+        for (Writable w : record) {
             // attributes
             if (count > 0) {
-              boolean tabs = false;
-              result.append((tabs ? "\t" : " "));
+                boolean tabs = false;
+                result.append((tabs ? "\t" : " "));
             }
             result.append(w.toString());
             count++;

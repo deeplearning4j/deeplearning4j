@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,10 +41,13 @@ public class LongQualityAddFunction implements Function2<LongQuality, Writable, 
         long countTotal = v1.getCountTotal() + 1;
         long nonLong = v1.getCountNonLong();
 
-        if (meta.isValid(writable)) valid++;
-        else if (writable instanceof NullWritable || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
+        if (meta.isValid(writable))
+            valid++;
+        else if (writable instanceof NullWritable
+                        || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
             countMissing++;
-        else invalid++;
+        else
+            invalid++;
 
         String str = writable.toString();
         try {

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ import java.util.Set;
 public class CategoricalMetaData extends BaseColumnMetaData {
 
     private final List<String> stateNames;
-    private final Set<String> stateNamesSet;  //For fast lookup
+    private final Set<String> stateNamesSet; //For fast lookup
 
     public CategoricalMetaData(String name, String... stateNames) {
         this(name, Arrays.asList(stateNames));
@@ -73,7 +73,7 @@ public class CategoricalMetaData extends BaseColumnMetaData {
 
     @Override
     public CategoricalMetaData clone() {
-        return new CategoricalMetaData(name,stateNames);
+        return new CategoricalMetaData(name, stateNames);
     }
 
     public List<String> getStateNames() {
@@ -86,7 +86,8 @@ public class CategoricalMetaData extends BaseColumnMetaData {
         sb.append("CategoricalMetaData(name=\"").append(name).append("\",stateNames=[");
         boolean first = true;
         for (String s : stateNamesSet) {
-            if (!first) sb.append(",");
+            if (!first)
+                sb.append(",");
             sb.append("\"").append(s).append("\"");
             first = false;
         }

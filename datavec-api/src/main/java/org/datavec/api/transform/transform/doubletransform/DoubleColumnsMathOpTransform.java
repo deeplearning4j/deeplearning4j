@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,8 @@ import java.util.List;
  */
 public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
-    public DoubleColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") List<String> columns) {
+    public DoubleColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") List<String> columns) {
         this(newColumnName, mathOp, columns.toArray(new String[columns.size()]));
     }
 
@@ -57,13 +58,15 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 double sum = 0;
-                for (Writable w : input) sum += w.toDouble();
+                for (Writable w : input)
+                    sum += w.toDouble();
                 return new DoubleWritable(sum);
             case Subtract:
                 return new DoubleWritable(input[0].toDouble() - input[1].toDouble());
             case Multiply:
                 double product = 1.0;
-                for (Writable w : input) product *= w.toDouble();
+                for (Writable w : input)
+                    product *= w.toDouble();
                 return new DoubleWritable(product);
             case Divide:
                 return new DoubleWritable(input[0].toDouble() / input[1].toDouble());
@@ -74,13 +77,14 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
     @Override
-    public String toString(){
-        return "DoubleColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
+    public String toString() {
+        return "DoubleColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns="
+                        + Arrays.toString(columns) + ")";
     }
 
     /**
@@ -96,13 +100,15 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 double sum = 0;
-                for (Double w : row) sum += w;
+                for (Double w : row)
+                    sum += w;
                 return sum;
             case Subtract:
                 return row.get(0) - row.get(1);
             case Multiply:
                 double product = 1.0;
-                for (Double w : row) product *= w;
+                for (Double w : row)
+                    product *= w;
                 return product;
             case Divide:
                 return row.get(0) / row.get(1);
@@ -113,7 +119,7 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
@@ -126,7 +132,7 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     public Object mapSequence(Object sequence) {
         List<List<Double>> seq = (List<List<Double>>) sequence;
         List<Double> ret = new ArrayList<>();
-        for(List<Double> step : seq)
+        for (List<Double> step : seq)
             ret.add((Double) map(step));
         return ret;
     }

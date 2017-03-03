@@ -8,51 +8,51 @@ import org.datavec.dataframe.columns.Column;
  */
 public interface BooleanMapUtils extends Column {
 
-  /*
-   * TODO(lwhite): Replace this implementation with a roaring bitmap version
-   */
-  default BooleanColumn and(BooleanColumn... columns) {
-    BooleanColumn newColumn = BooleanColumn.create("");
-    BooleanColumn thisColumn = (BooleanColumn) this;
-    for (int i = 0; i < this.size(); i++) {
-      boolean booleanValue = thisColumn.get(i);
-      if (!booleanValue) {
-        newColumn.set(i, false);
-      } else {
-        boolean result = true;
-        for (BooleanColumn booleanColumn : columns) {
-          result = booleanColumn.get(i);
-          if (!result) {
-            newColumn.set(i, false);
-            break;
-          }
+    /*
+     * TODO(lwhite): Replace this implementation with a roaring bitmap version
+     */
+    default BooleanColumn and(BooleanColumn... columns) {
+        BooleanColumn newColumn = BooleanColumn.create("");
+        BooleanColumn thisColumn = (BooleanColumn) this;
+        for (int i = 0; i < this.size(); i++) {
+            boolean booleanValue = thisColumn.get(i);
+            if (!booleanValue) {
+                newColumn.set(i, false);
+            } else {
+                boolean result = true;
+                for (BooleanColumn booleanColumn : columns) {
+                    result = booleanColumn.get(i);
+                    if (!result) {
+                        newColumn.set(i, false);
+                        break;
+                    }
+                }
+                newColumn.set(i, result);
+            }
         }
-        newColumn.set(i, result);
-      }
+        return newColumn;
     }
-    return newColumn;
-  }
 
-  default BooleanColumn or(BooleanColumn... columns) {
-    BooleanColumn newColumn = BooleanColumn.create("");
-    BooleanColumn thisColumn = (BooleanColumn) this;
+    default BooleanColumn or(BooleanColumn... columns) {
+        BooleanColumn newColumn = BooleanColumn.create("");
+        BooleanColumn thisColumn = (BooleanColumn) this;
 
-    for (int i = 0; i < this.size(); i++) {
-      boolean booleanValue = thisColumn.get(i);
-      if (booleanValue) {
-        newColumn.set(i, true);
-      } else {
-        boolean result = false;
-        for (BooleanColumn booleanColumn : columns) {
-          result = booleanColumn.get(i);
-          if (result) {
-            newColumn.set(i, true);
-            break;
-          }
+        for (int i = 0; i < this.size(); i++) {
+            boolean booleanValue = thisColumn.get(i);
+            if (booleanValue) {
+                newColumn.set(i, true);
+            } else {
+                boolean result = false;
+                for (BooleanColumn booleanColumn : columns) {
+                    result = booleanColumn.get(i);
+                    if (result) {
+                        newColumn.set(i, true);
+                        break;
+                    }
+                }
+                newColumn.set(i, result);
+            }
         }
-        newColumn.set(i, result);
-      }
+        return newColumn;
     }
-    return newColumn;
-  }
 }

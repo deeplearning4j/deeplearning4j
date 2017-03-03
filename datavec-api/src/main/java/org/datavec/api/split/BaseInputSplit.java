@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,18 +34,18 @@ import org.datavec.api.util.files.UriFromPathIterator;
  */
 public abstract class BaseInputSplit implements InputSplit {
 
-    protected List<String> uriStrings;  //URIs, as a String, via toString() method (which includes file:/ etc)
+    protected List<String> uriStrings; //URIs, as a String, via toString() method (which includes file:/ etc)
     protected int[] iterationOrder;
     protected long length = 0;
 
     @Override
     public URI[] locations() {
         URI[] uris = new URI[uriStrings.size()];
-        int i=0;
-        for(String s : uriStrings){
-            try{
+        int i = 0;
+        for (String s : uriStrings) {
+            try {
                 uris[i++] = new URI(s);
-            }catch (URISyntaxException e){
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -53,13 +53,13 @@ public abstract class BaseInputSplit implements InputSplit {
     }
 
     @Override
-    public Iterator<URI> locationsIterator(){
+    public Iterator<URI> locationsIterator() {
         return new UriFromPathIterator(locationsPathIterator());
     }
 
     @Override
-    public Iterator<String> locationsPathIterator(){
-        if(iterationOrder == null){
+    public Iterator<String> locationsPathIterator() {
+        if (iterationOrder == null) {
             return uriStrings.iterator();
         }
         return new ShuffledListIterator<>(uriStrings, iterationOrder);
@@ -71,22 +71,22 @@ public abstract class BaseInputSplit implements InputSplit {
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 
@@ -112,7 +112,7 @@ public abstract class BaseInputSplit implements InputSplit {
             double cumulWeight = 0;
             int[] partitions = new int[weights.length + 1];
             for (int i = 0; i < weights.length; i++) {
-                partitions[i] = (int)Math.round(cumulWeight * paths.length / totalWeight);
+                partitions[i] = (int) Math.round(cumulWeight * paths.length / totalWeight);
                 cumulWeight += weights[i];
             }
             partitions[weights.length] = paths.length;
@@ -126,7 +126,7 @@ public abstract class BaseInputSplit implements InputSplit {
             }
             return splits;
         } else {
-            return new InputSplit[] { new CollectionInputSplit(Arrays.asList(paths)) };
+            return new InputSplit[] {new CollectionInputSplit(Arrays.asList(paths))};
         }
     }
 }

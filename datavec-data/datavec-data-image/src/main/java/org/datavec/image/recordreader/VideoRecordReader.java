@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,32 +57,31 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     private Iterator<File> iter;
     private int height = 28, width = 28;
     private BaseImageLoader imageLoader;
-    private List<String> labels  = new ArrayList<>();
+    private List<String> labels = new ArrayList<>();
     private boolean appendLabel = false;
     private List<Writable> record;
     private boolean hitImage = false;
-    private final List<String> allowedFormats = Arrays.asList("tif","jpg","png","jpeg");
+    private final List<String> allowedFormats = Arrays.asList("tif", "jpg", "png", "jpeg");
     private Configuration conf;
     public final static String HEIGHT = NAME_SPACE + ".video.height";
     public final static String WIDTH = NAME_SPACE + ".video.width";
     public final static String IMAGE_LOADER = NAME_SPACE + ".imageloader";
     protected InputSplit inputSplit;
 
-    public VideoRecordReader() {
-    }
+    public VideoRecordReader() {}
 
     /**
      * Load the record reader with the given height and width
      * @param height the height to load
      * @param width the width load
      */
-    public VideoRecordReader( int height, int width, List<String> labels) {
+    public VideoRecordReader(int height, int width, List<String> labels) {
         this(height, width, false);
         this.labels = labels;
 
     }
 
-    public VideoRecordReader( int height, int width, boolean appendLabel,List<String> labels) {
+    public VideoRecordReader(int height, int width, boolean appendLabel, List<String> labels) {
         this.appendLabel = appendLabel;
         this.height = height;
         this.width = width;
@@ -95,13 +94,13 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
      * @param height the height to load
      * @param width the width load
      */
-    public VideoRecordReader( int height, int width) {
+    public VideoRecordReader(int height, int width) {
         this(height, width, false);
 
 
     }
 
-    public VideoRecordReader( int height, int width, boolean appendLabel) {
+    public VideoRecordReader(int height, int width, boolean appendLabel) {
         this.appendLabel = appendLabel;
         this.height = height;
         this.width = width;
@@ -113,14 +112,14 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width);
         }
-        if(split instanceof FileSplit) {
+        if (split instanceof FileSplit) {
             URI[] locations = split.locations();
-            if(locations != null && locations.length >= 1) {
-                if(locations.length > 1) {
+            if (locations != null && locations.length >= 1) {
+                if (locations.length > 1) {
                     List<File> allFiles = new ArrayList<>();
-                    for(URI location : locations) {
+                    for (URI location : locations) {
                         File iter = new File(location);
-                        if(iter.isDirectory()) {
+                        if (iter.isDirectory()) {
                             allFiles.add(iter);
                             if (appendLabel) {
                                 File parentDir = iter.getParentFile();
@@ -133,7 +132,7 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
                         else {
                             File parent = iter.getParentFile();
-                            if(!allFiles.contains(parent) && containsFormat(iter.getAbsolutePath())) {
+                            if (!allFiles.contains(parent) && containsFormat(iter.getAbsolutePath())) {
                                 allFiles.add(parent);
                                 if (appendLabel) {
                                     File parentDir = iter.getParentFile();
@@ -150,12 +149,11 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
 
                     iter = allFiles.iterator();
-                }
-                else {
+                } else {
                     File curr = new File(locations[0]);
-                    if(!curr.exists())
+                    if (!curr.exists())
                         throw new IllegalArgumentException("Path " + curr.getAbsolutePath() + " does not exist!");
-                    if(curr.isDirectory())
+                    if (curr.isDirectory())
                         iter = FileUtils.iterateFiles(curr, null, true);
                     else
                         iter = Collections.singletonList(curr).iterator();
@@ -164,13 +162,13 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
         }
 
 
-        else if(split instanceof InputStreamInputSplit) {
+        else if (split instanceof InputStreamInputSplit) {
             InputStreamInputSplit split2 = (InputStreamInputSplit) split;
-            InputStream is =  split2.getIs();
+            InputStream is = split2.getIs();
             URI[] locations = split2.locations();
             INDArray load = imageLoader.asMatrix(is);
             record = RecordConverter.toRecord(load);
-            if(appendLabel) {
+            if (appendLabel) {
                 Path path = Paths.get(locations[0]);
                 String parent = path.getParent().toString();
                 record.add(new DoubleWritable(labels.indexOf(parent)));
@@ -181,15 +179,14 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
 
 
-
     }
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.conf = conf;
-        this.appendLabel = conf.getBoolean(APPEND_LABEL,false);
-        this.height = conf.getInt(HEIGHT,height);
-        this.width = conf.getInt(WIDTH,width);
+        this.appendLabel = conf.getBoolean(APPEND_LABEL, false);
+        this.height = conf.getInt(HEIGHT, height);
+        this.width = conf.getInt(WIDTH, width);
         if ("imageio".equals(conf.get(IMAGE_LOADER))) {
             this.imageLoader = new ImageLoader(height, width);
         } else {
@@ -200,34 +197,33 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     private boolean containsFormat(String format) {
-        for(String format2 : allowedFormats)
-            if(format.endsWith("." + format2))
+        for (String format2 : allowedFormats)
+            if (format.endsWith("." + format2))
                 return true;
         return false;
     }
 
     @Override
     public List<Writable> next() {
-        if(iter != null) {
+        if (iter != null) {
             List<Writable> ret = new ArrayList<>();
             File image = iter.next();
-            if(image.isDirectory() || !containsFormat(image.getAbsolutePath()))
+            if (image.isDirectory() || !containsFormat(image.getAbsolutePath()))
                 return next();
             try {
                 invokeListeners(image);
                 INDArray row = imageLoader.asRowVector(image);
-                for(int i = 0; i < row.length(); i++)
+                for (int i = 0; i < row.length(); i++)
                     ret.add(new DoubleWritable(row.getDouble(i)));
-                if(appendLabel)
+                if (appendLabel)
                     ret.add(new DoubleWritable(labels.indexOf(image.getParentFile().getName())));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(iter.hasNext()) {
+            if (iter.hasNext()) {
                 return ret;
-            }
-            else {
-                if(iter.hasNext()) {
+            } else {
+                if (iter.hasNext()) {
                     try {
                         ret.add(new Text(FileUtils.readFileToString(iter.next())));
                     } catch (IOException e) {
@@ -240,7 +236,7 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
             return ret;
         }
 
-        else if(record != null) {
+        else if (record != null) {
             hitImage = true;
             invokeListeners(record);
             return record;
@@ -253,10 +249,9 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
     @Override
     public boolean hasNext() {
-        if(iter != null) {
+        if (iter != null) {
             return iter.hasNext();
-        }
-        else if(record != null) {
+        } else if (record != null) {
             return !hitImage;
         }
         throw new IllegalStateException("Indeterminant state: record must not be null, or a file iterator must exist");
@@ -271,15 +266,15 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
         invokeListeners(next);
-        if(!next.isDirectory())
+        if (!next.isDirectory())
             return Collections.emptyList();
         File[] list = next.listFiles();
         List<List<Writable>> ret = new ArrayList<>();
-        for(File f : list) {
+        for (File f : list) {
             try {
                 List<Writable> record = RecordConverter.toRecord(imageLoader.asRowVector(f));
                 ret.add(record);
-                if(appendLabel)
+                if (appendLabel)
                     record.add(new DoubleWritable(labels.indexOf(next.getName())));
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -300,23 +295,26 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     }
 
     @Override
-    public List<String> getLabels(){
-        return null; }
+    public List<String> getLabels() {
+        return null;
+    }
 
 
     @Override
     public void reset() {
-        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
-        try{
+        if (inputSplit == null)
+            throw new UnsupportedOperationException("Cannot reset without first initializing");
+        try {
             initialize(inputSplit);
-        }catch(Exception e){
-            throw new RuntimeException("Error during VideoRecordReader reset",e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error during VideoRecordReader reset", e);
         }
     }
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
+        throw new UnsupportedOperationException(
+                        "Loading video data via VideoRecordReader + DataInputStream not supported.");
     }
 
     @Override
@@ -336,7 +334,8 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
+        throw new UnsupportedOperationException(
+                        "Loading video data via VideoRecordReader + DataInputStream not supported.");
     }
 
     @Override

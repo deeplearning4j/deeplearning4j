@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,8 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCounter> {
 
     private long countZeroLength;
@@ -37,7 +38,7 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
     private long sumLength = 0;
     private long countTotal = 0;
 
-    public StringAnalysisCounter(){
+    public StringAnalysisCounter() {
 
     }
 
@@ -46,16 +47,19 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
     public StringAnalysisCounter add(Writable writable) {
         int length = writable.toString().length();
 
-        if(length == 0) countZeroLength++;
+        if (length == 0)
+            countZeroLength++;
 
-        if(length == minLengthSeen) countMinLength++;
-        else if(length < minLengthSeen){
+        if (length == minLengthSeen)
+            countMinLength++;
+        else if (length < minLengthSeen) {
             minLengthSeen = length;
             countMinLength = 1;
         }
 
-        if(length == maxLengthSeen) countMaxLength++;
-        else if(length > maxLengthSeen){
+        if (length == maxLengthSeen)
+            countMaxLength++;
+        else if (length > maxLengthSeen) {
             maxLengthSeen = length;
             countMaxLength = 1;
         }
@@ -66,14 +70,14 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
         return this;
     }
 
-    public StringAnalysisCounter merge(StringAnalysisCounter other){
+    public StringAnalysisCounter merge(StringAnalysisCounter other) {
         int otherMin = other.getMinLengthSeen();
         int newMinLengthSeen;
         long newCountMinLength;
-        if(minLengthSeen == otherMin){
+        if (minLengthSeen == otherMin) {
             newMinLengthSeen = minLengthSeen;
             newCountMinLength = countMinLength + other.countMinLength;
-        } else if(minLengthSeen > otherMin) {
+        } else if (minLengthSeen > otherMin) {
             //Keep other, take count from other
             newMinLengthSeen = otherMin;
             newCountMinLength = other.countMinLength;
@@ -86,10 +90,10 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
         int otherMax = other.getMaxLengthSeen();
         int newMaxLengthSeen;
         long newCountMaxLength;
-        if(maxLengthSeen == otherMax){
+        if (maxLengthSeen == otherMax) {
             newMaxLengthSeen = maxLengthSeen;
             newCountMaxLength = countMaxLength + other.countMaxLength;
-        } else if(maxLengthSeen < otherMax) {
+        } else if (maxLengthSeen < otherMax) {
             //Keep other, take count from other
             newMaxLengthSeen = otherMax;
             newCountMaxLength = other.countMaxLength;
@@ -100,13 +104,9 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
         }
 
 
-        return new StringAnalysisCounter(countZeroLength+other.countZeroLength,
-                newCountMinLength,
-                newMinLengthSeen,
-                newCountMaxLength,
-                newMaxLengthSeen,
-                sumLength + other.sumLength,
-                countTotal + other.countTotal);
+        return new StringAnalysisCounter(countZeroLength + other.countZeroLength, newCountMinLength, newMinLengthSeen,
+                        newCountMaxLength, newMaxLengthSeen, sumLength + other.sumLength,
+                        countTotal + other.countTotal);
     }
 
 }

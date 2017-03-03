@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,43 +42,39 @@ import static org.junit.Assert.fail;
 public class TestReduce {
 
     @Test
-    public void testReducerDouble(){
+    public void testReducerDouble() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new DoubleWritable(0)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new DoubleWritable(1)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new DoubleWritable(2)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new DoubleWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(0)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(1)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(2)));
 
-        Map<ReduceOp,Double> exp = new LinkedHashMap<>();
-        exp.put(ReduceOp.Min,0.0);
-        exp.put(ReduceOp.Max,2.0);
-        exp.put(ReduceOp.Range,2.0);
-        exp.put(ReduceOp.Sum,5.0);
-        exp.put(ReduceOp.Mean,1.25);
-        exp.put(ReduceOp.Stdev,0.957427108);
-        exp.put(ReduceOp.Count,4.0);
-        exp.put(ReduceOp.CountUnique,3.0);
-        exp.put(ReduceOp.TakeFirst,0.0);
-        exp.put(ReduceOp.TakeLast,2.0);
+        Map<ReduceOp, Double> exp = new LinkedHashMap<>();
+        exp.put(ReduceOp.Min, 0.0);
+        exp.put(ReduceOp.Max, 2.0);
+        exp.put(ReduceOp.Range, 2.0);
+        exp.put(ReduceOp.Sum, 5.0);
+        exp.put(ReduceOp.Mean, 1.25);
+        exp.put(ReduceOp.Stdev, 0.957427108);
+        exp.put(ReduceOp.Count, 4.0);
+        exp.put(ReduceOp.CountUnique, 3.0);
+        exp.put(ReduceOp.TakeFirst, 0.0);
+        exp.put(ReduceOp.TakeLast, 2.0);
 
-        for(ReduceOp op : exp.keySet()){
+        for (ReduceOp op : exp.keySet()) {
 
-            Schema schema = new Schema.Builder()
-                    .addColumnString("key")
-                    .addColumnDouble("column").build();
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnDouble("column").build();
 
-            Reducer reducer = new Reducer.Builder(op)
-                    .keyColumns("key")
-                    .build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
 
             List<Writable> out = reducer.reduce(inputs);
 
-            assertEquals(2,out.size());
+            assertEquals(2, out.size());
 
-            assertEquals(out.get(0),new Text("someKey"));
+            assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
             assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
@@ -86,43 +82,39 @@ public class TestReduce {
     }
 
     @Test
-    public void testReducerInteger(){
+    public void testReducerInteger() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(0)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(1)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(0)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(1)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(2)));
 
-        Map<ReduceOp,Double> exp = new LinkedHashMap<>();
-        exp.put(ReduceOp.Min,0.0);
-        exp.put(ReduceOp.Max,2.0);
-        exp.put(ReduceOp.Range,2.0);
-        exp.put(ReduceOp.Sum,5.0);
-        exp.put(ReduceOp.Mean,1.25);
-        exp.put(ReduceOp.Stdev,0.957427108);
-        exp.put(ReduceOp.Count,4.0);
-        exp.put(ReduceOp.CountUnique,3.0);
-        exp.put(ReduceOp.TakeFirst,0.0);
-        exp.put(ReduceOp.TakeLast,2.0);
+        Map<ReduceOp, Double> exp = new LinkedHashMap<>();
+        exp.put(ReduceOp.Min, 0.0);
+        exp.put(ReduceOp.Max, 2.0);
+        exp.put(ReduceOp.Range, 2.0);
+        exp.put(ReduceOp.Sum, 5.0);
+        exp.put(ReduceOp.Mean, 1.25);
+        exp.put(ReduceOp.Stdev, 0.957427108);
+        exp.put(ReduceOp.Count, 4.0);
+        exp.put(ReduceOp.CountUnique, 3.0);
+        exp.put(ReduceOp.TakeFirst, 0.0);
+        exp.put(ReduceOp.TakeLast, 2.0);
 
-        for(ReduceOp op : exp.keySet()){
+        for (ReduceOp op : exp.keySet()) {
 
-            Schema schema = new Schema.Builder()
-                    .addColumnString("key")
-                    .addColumnInteger("column").build();
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            Reducer reducer = new Reducer.Builder(op)
-                    .keyColumns("key")
-                    .build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
 
             List<Writable> out = reducer.reduce(inputs);
 
-            assertEquals(2,out.size());
+            assertEquals(2, out.size());
 
-            assertEquals(out.get(0),new Text("someKey"));
+            assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
             assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
@@ -130,67 +122,59 @@ public class TestReduce {
     }
 
     @Test
-    public void testReduceIntegerIgnoreInvalidValues(){
+    public void testReduceIntegerIgnoreInvalidValues() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("0")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("1")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("ignore me")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("also ignore me")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new Text("2")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("0")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("ignore me")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("also ignore me")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2")));
 
 
-        Map<ReduceOp,Double> exp = new LinkedHashMap<>();
-        exp.put(ReduceOp.Min,0.0);
-        exp.put(ReduceOp.Max,2.0);
-        exp.put(ReduceOp.Range,2.0);
-        exp.put(ReduceOp.Sum,5.0);
-        exp.put(ReduceOp.Mean,1.25);
-        exp.put(ReduceOp.Stdev,0.957427108);
-        exp.put(ReduceOp.Count,4.0);
-        exp.put(ReduceOp.CountUnique,3.0);
-        exp.put(ReduceOp.TakeFirst,0.0);
-        exp.put(ReduceOp.TakeLast,2.0);
+        Map<ReduceOp, Double> exp = new LinkedHashMap<>();
+        exp.put(ReduceOp.Min, 0.0);
+        exp.put(ReduceOp.Max, 2.0);
+        exp.put(ReduceOp.Range, 2.0);
+        exp.put(ReduceOp.Sum, 5.0);
+        exp.put(ReduceOp.Mean, 1.25);
+        exp.put(ReduceOp.Stdev, 0.957427108);
+        exp.put(ReduceOp.Count, 4.0);
+        exp.put(ReduceOp.CountUnique, 3.0);
+        exp.put(ReduceOp.TakeFirst, 0.0);
+        exp.put(ReduceOp.TakeLast, 2.0);
 
-        for(ReduceOp op : exp.keySet()){
-            Schema schema = new Schema.Builder()
-                    .addColumnString("key")
-                    .addColumnInteger("column").build();
+        for (ReduceOp op : exp.keySet()) {
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            Reducer reducer = new Reducer.Builder(op)
-                    .keyColumns("key")
-                    .setIgnoreInvalid("column")
-                    .build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").setIgnoreInvalid("column").build();
 
             reducer.setInputSchema(schema);
 
             List<Writable> out = reducer.reduce(inputs);
 
-            assertEquals(2,out.size());
+            assertEquals(2, out.size());
 
-            assertEquals(out.get(0),new Text("someKey"));
+            assertEquals(out.get(0), new Text("someKey"));
 
             String msg = op.toString();
             assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
         }
 
-        for(ReduceOp op : Arrays.asList(ReduceOp.Min, ReduceOp.Max, ReduceOp.Range, ReduceOp.Sum, ReduceOp.Mean, ReduceOp.Stdev)){
+        for (ReduceOp op : Arrays.asList(ReduceOp.Min, ReduceOp.Max, ReduceOp.Range, ReduceOp.Sum, ReduceOp.Mean,
+                        ReduceOp.Stdev)) {
             //Try the same thing WITHOUT setIgnoreInvalid -> expect exception
 
-            Schema schema = new Schema.Builder()
-                    .addColumnString("key")
-                    .addColumnInteger("column").build();
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            Reducer reducer = new Reducer.Builder(op)
-                    .keyColumns("key")
-                    .build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
             reducer.setInputSchema(schema);
 
-            try{
+            try {
                 reducer.reduce(inputs);
                 fail("No exception thrown for invalid input: op=" + op);
-            }catch(NumberFormatException e){
+            } catch (NumberFormatException e) {
                 //ok
             }
         }
@@ -198,44 +182,44 @@ public class TestReduce {
 
 
     @Test
-    public void testCustomReductions(){
+    public void testCustomReductions() {
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(1), new Text("zero"), new DoubleWritable(0)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2), new Text("one"), new DoubleWritable(1)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(3), new Text("two"), new DoubleWritable(2)));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(4), new Text("three"), new DoubleWritable(3)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(1), new Text("zero"),
+                        new DoubleWritable(0)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(2), new Text("one"),
+                        new DoubleWritable(1)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(3), new Text("two"),
+                        new DoubleWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(4), new Text("three"),
+                        new DoubleWritable(3)));
 
-        List<Writable> expected = Arrays.asList((Writable)new Text("someKey"), new LongWritable(10), new Text("one"), new DoubleWritable(1));
+        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new LongWritable(10), new Text("one"),
+                        new DoubleWritable(1));
 
 
-        Schema schema = new Schema.Builder()
-                .addColumnString("key")
-                .addColumnInteger("intCol")
-                .addColumnString("textCol")
-                .addColumnString("doubleCol")
-                .build();
+        Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("intCol")
+                        .addColumnString("textCol").addColumnString("doubleCol").build();
 
-        Reducer reducer = new Reducer.Builder(ReduceOp.Sum)
-                .keyColumns("key")
-                .customReduction("textCol",new CustomReduceTakeSecond())
-                .customReduction("doubleCol",new CustomReduceTakeSecond())
-                .build();
+        Reducer reducer = new Reducer.Builder(ReduceOp.Sum).keyColumns("key")
+                        .customReduction("textCol", new CustomReduceTakeSecond())
+                        .customReduction("doubleCol", new CustomReduceTakeSecond()).build();
 
         reducer.setInputSchema(schema);
 
         List<Writable> out = reducer.reduce(inputs);
 
-        assertEquals(4,out.size());
+        assertEquals(4, out.size());
         assertEquals(expected, out);
 
         //Check schema:
-        String[] expNames = new String[]{"key", "sum(intCol)", "myCustomReduce(textCol)", "myCustomReduce(doubleCol)"};
-        ColumnType[] expTypes = new ColumnType[]{ColumnType.String, ColumnType.Long, ColumnType.String, ColumnType.String};
+        String[] expNames = new String[] {"key", "sum(intCol)", "myCustomReduce(textCol)", "myCustomReduce(doubleCol)"};
+        ColumnType[] expTypes =
+                        new ColumnType[] {ColumnType.String, ColumnType.Long, ColumnType.String, ColumnType.String};
         Schema outSchema = reducer.transform(schema);
 
         assertEquals(4, outSchema.numColumns());
-        for( int i=0; i<4; i++ ){
+        for (int i = 0; i < 4; i++) {
             assertEquals(expNames[i], outSchema.getName(i));
             assertEquals(expTypes[i], outSchema.getType(i));
         }
@@ -339,12 +323,8 @@ public class TestReduce {
     @Test
     public void testConditionalReduction() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnString("key")
-                .addColumnInteger("intCol")
-                .addColumnString("filterCol")
-                .addColumnString("textCol")
-                .build();
+        Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("intCol")
+                        .addColumnString("filterCol").addColumnString("textCol").build();
 
         List<List<Writable>> inputs = new ArrayList<>();
         inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1), new Text("a"), new Text("zero")));
@@ -356,23 +336,24 @@ public class TestReduce {
 
         Condition condition = new StringColumnCondition("filterCol", ConditionOp.Equal, "a");
 
-        Reducer reducer = new Reducer.Builder(ReduceOp.Stdev)
-                .keyColumns("key")
-                .conditionalReduction("intCol","sumOfAs",ReduceOp.Sum, condition)   //Sum, only where 'filterCol' == "a"
-                .countUniqueColumns("filterCol","textCol")
-                .build();
+        Reducer reducer = new Reducer.Builder(ReduceOp.Stdev).keyColumns("key")
+                        .conditionalReduction("intCol", "sumOfAs", ReduceOp.Sum, condition) //Sum, only where 'filterCol' == "a"
+                        .countUniqueColumns("filterCol", "textCol").build();
 
         reducer.setInputSchema(schema);
 
         List<Writable> out = reducer.reduce(inputs);
-        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new LongWritable(1 + 3 + 5), new IntWritable(2), new IntWritable(4));
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new LongWritable(1 + 3 + 5),
+                        new IntWritable(2), new IntWritable(4));
 
-        assertEquals(4,out.size());
+        assertEquals(4, out.size());
         assertEquals(expected, out);
 
         Schema outSchema = reducer.transform(schema);
         assertEquals(4, outSchema.numColumns());
-        assertEquals(Arrays.asList("key","sumOfAs","countUnique(filterCol)", "countUnique(textCol)"), outSchema.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Long, ColumnType.Integer, ColumnType.Integer), outSchema.getColumnTypes());
+        assertEquals(Arrays.asList("key", "sumOfAs", "countUnique(filterCol)", "countUnique(textCol)"),
+                        outSchema.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Long, ColumnType.Integer, ColumnType.Integer),
+                        outSchema.getColumnTypes());
     }
 }

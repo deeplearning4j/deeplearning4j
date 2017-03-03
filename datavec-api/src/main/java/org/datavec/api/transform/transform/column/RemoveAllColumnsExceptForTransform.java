@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,8 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform implements
         columnsToKeepIdx = new int[columnsToKeep.length];
         for (String s : columnsToKeep) {
             int idx = schema.getIndexOfColumn(s);
-            if (idx < 0) throw new RuntimeException("Column \"" + s + "\" not found");
+            if (idx < 0)
+                throw new RuntimeException("Column \"" + s + "\" not found");
             columnsToKeepIdx[i++] = idx;
             indicesToKeep.add(idx);
         }
@@ -89,15 +90,17 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform implements
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
 
         List<Writable> outList = new ArrayList<>(columnsToKeep.length);
 
         int i = 0;
         for (Writable w : writables) {
-            if (!indicesToKeep.contains(i++)) continue;
+            if (!indicesToKeep.contains(i++))
+                continue;
             outList.add(w);
         }
         return outList;
@@ -112,7 +115,8 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform implements
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     /**
@@ -122,7 +126,8 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform implements
      */
     @Override
     public Object mapSequence(Object sequence) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     @Override
@@ -132,8 +137,10 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform implements
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         RemoveAllColumnsExceptForTransform o2 = (RemoveAllColumnsExceptForTransform) o;
 

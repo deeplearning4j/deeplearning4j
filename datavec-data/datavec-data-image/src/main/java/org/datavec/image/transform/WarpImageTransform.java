@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,9 +36,15 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
     float[] deltas;
-    @Getter @Setter int interMode = INTER_LINEAR;
-    @Getter @Setter int borderMode = BORDER_CONSTANT;
-    @Getter @Setter Scalar borderValue = Scalar.ZERO;
+    @Getter
+    @Setter
+    int interMode = INTER_LINEAR;
+    @Getter
+    @Setter
+    int borderMode = BORDER_CONSTANT;
+    @Getter
+    @Setter
+    Scalar borderValue = Scalar.ZERO;
 
     /** Calls {@code this(null, delta, delta, delta, delta, delta, delta, delta, delta)}. */
     public WarpImageTransform(float delta) {
@@ -51,8 +57,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4)}. */
-    public WarpImageTransform(float dx1, float dy1, float dx2, float dy2,
-                              float dx3, float dy3, float dx4, float dy4) {
+    public WarpImageTransform(float dx1, float dy1, float dx2, float dy2, float dx3, float dy3, float dx4, float dy4) {
         this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4);
     }
 
@@ -69,14 +74,18 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
      * @param dx4    maximum warping in x for the bottom-left corner (pixels)
      * @param dy4    maximum warping in y for the bottom-left corner (pixels)
      */
-    public WarpImageTransform(Random random, float dx1, float dy1, float dx2, float dy2,
-                                             float dx3, float dy3, float dx4, float dy4) {
+    public WarpImageTransform(Random random, float dx1, float dy1, float dx2, float dy2, float dx3, float dy3,
+                    float dx4, float dy4) {
         super(random);
         deltas = new float[8];
-        deltas[0] = dx1; deltas[1] = dy1;
-        deltas[2] = dx2; deltas[3] = dy2;
-        deltas[4] = dx3; deltas[5] = dy3;
-        deltas[6] = dx4; deltas[7] = dy4;
+        deltas[0] = dx1;
+        deltas[1] = dy1;
+        deltas[2] = dx2;
+        deltas[3] = dy2;
+        deltas[4] = dx3;
+        deltas[5] = dy3;
+        deltas[6] = dx4;
+        deltas[7] = dy4;
 
         converter = new OpenCVFrameConverter.ToMat();
     }
@@ -97,10 +106,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         Mat mat = converter.convert(image.getFrame());
         Point2f src = new Point2f(4);
         Point2f dst = new Point2f(4);
-        src.put(0,          0,
-                mat.cols(), 0,
-                mat.cols(), mat.rows(),
-                0,          mat.rows());
+        src.put(0, 0, mat.cols(), 0, mat.cols(), mat.rows(), 0, mat.rows());
 
         for (int i = 0; i < 8; i++) {
             dst.put(i, src.get(i) + deltas[i] * (random != null ? 2 * random.nextFloat() - 1 : 1));

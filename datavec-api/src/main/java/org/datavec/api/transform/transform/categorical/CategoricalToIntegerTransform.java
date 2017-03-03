@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,8 +51,10 @@ public class CategoricalToIntegerTransform extends BaseTransform {
 
         columnIdx = inputSchema.getIndexOfColumn(columnName);
         ColumnMetaData meta = inputSchema.getMetaData(columnName);
-        if (!(meta instanceof CategoricalMetaData)) throw new IllegalStateException("Cannot convert column \"" +
-                columnName + "\" from categorical to one-hot: column is not categorical (is: " + meta.getColumnType() + ")");
+        if (!(meta instanceof CategoricalMetaData))
+            throw new IllegalStateException("Cannot convert column \"" + columnName
+                            + "\" from categorical to one-hot: column is not categorical (is: " + meta.getColumnType()
+                            + ")");
         this.stateNames = ((CategoricalMetaData) meta).getStateNames();
 
         this.statesMap = new HashMap<>(stateNames.size());
@@ -91,8 +93,9 @@ public class CategoricalToIntegerTransform extends BaseTransform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         int idx = getColumnIdx();
 
@@ -105,7 +108,8 @@ public class CategoricalToIntegerTransform extends BaseTransform {
                 //Do conversion
                 String str = w.toString();
                 Integer classIdx = statesMap.get(str);
-                if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+                if (classIdx == null)
+                    throw new RuntimeException("Unknown state (index not found): " + str);
                 out.add(new IntWritable(classIdx));
             } else {
                 //No change to this column
@@ -127,7 +131,8 @@ public class CategoricalToIntegerTransform extends BaseTransform {
         String value = input.toString();
         //Do conversion
         Integer classIdx = statesMap.get(value);
-        if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + value);
+        if (classIdx == null)
+            throw new RuntimeException("Unknown state (index not found): " + value);
         return classIdx;
     }
 
@@ -142,12 +147,14 @@ public class CategoricalToIntegerTransform extends BaseTransform {
     }
 
     public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof CategoricalToIntegerTransform)) return false;
+        if (o == this)
+            return true;
+        if (!(o instanceof CategoricalToIntegerTransform))
+            return false;
 
-        CategoricalToIntegerTransform o2 = (CategoricalToIntegerTransform)o;
+        CategoricalToIntegerTransform o2 = (CategoricalToIntegerTransform) o;
 
-        if(columnName == null){
+        if (columnName == null) {
             return o2.columnName == null;
         } else {
             return columnName.equals(o2.columnName);
@@ -181,7 +188,7 @@ public class CategoricalToIntegerTransform extends BaseTransform {
      */
     @Override
     public String[] outputColumnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**
@@ -192,7 +199,7 @@ public class CategoricalToIntegerTransform extends BaseTransform {
      */
     @Override
     public String[] columnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**

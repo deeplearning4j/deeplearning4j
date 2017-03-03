@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class IntegerAnalysis extends NumericalColumnAnalysis {
 
     private int min;

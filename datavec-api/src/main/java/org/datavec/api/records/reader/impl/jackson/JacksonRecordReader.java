@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +59,7 @@ import java.util.*;
  */
 public class JacksonRecordReader extends BaseRecordReader {
 
-    private static final TypeReference<Map<String,Object>> typeRef = new TypeReference<Map<String, Object>>(){};
+    private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {};
 
     private FieldSelection selection;
     private ObjectMapper mapper;
@@ -73,37 +73,39 @@ public class JacksonRecordReader extends BaseRecordReader {
     private URI[] uris;
     private int cursor = 0;
 
-    public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper){
+    public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper) {
         this(selection, mapper, false);
     }
 
-    public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper, boolean shuffle){
+    public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper, boolean shuffle) {
         this(selection, mapper, shuffle, System.currentTimeMillis(), null);
     }
 
     public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper, boolean shuffle, long rngSeed,
-                               PathLabelGenerator labelGenerator) {
+                    PathLabelGenerator labelGenerator) {
         this(selection, mapper, shuffle, rngSeed, labelGenerator, -1);
     }
 
     public JacksonRecordReader(FieldSelection selection, ObjectMapper mapper, boolean shuffle, long rngSeed,
-                               PathLabelGenerator labelGenerator, int labelPosition){
+                    PathLabelGenerator labelGenerator, int labelPosition) {
         this.selection = selection;
         this.mapper = mapper;
         this.shuffle = shuffle;
         this.rngSeed = rngSeed;
-        if(shuffle) r = new Random(rngSeed);
+        if (shuffle)
+            r = new Random(rngSeed);
         this.labelGenerator = labelGenerator;
         this.labelPosition = labelPosition;
     }
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-        if(split instanceof FileSplit) throw new UnsupportedOperationException("Cannot use JacksonRecordReader with FileSplit");
+        if (split instanceof FileSplit)
+            throw new UnsupportedOperationException("Cannot use JacksonRecordReader with FileSplit");
         this.uris = split.locations();
-        if(shuffle){
+        if (shuffle) {
             List<URI> list = Arrays.asList(uris);
-            Collections.shuffle(list,r);
+            Collections.shuffle(list, r);
             uris = list.toArray(new URI[uris.length]);
         }
     }
@@ -115,16 +117,18 @@ public class JacksonRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
-        if(uris == null) throw new IllegalStateException("URIs are null. Not initialized?");
-        if(!hasNext()) throw new NoSuchElementException("No next element");
+        if (uris == null)
+            throw new IllegalStateException("URIs are null. Not initialized?");
+        if (!hasNext())
+            throw new NoSuchElementException("No next element");
 
         URI uri = uris[cursor++];
         invokeListeners(uri);
         String fileAsString;
-        try{
+        try {
             fileAsString = FileUtils.readFileToString(new File(uri.toURL().getFile()));
-        } catch(IOException e){
-            throw new RuntimeException("Error reading URI file",e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading URI file", e);
         }
 
         return readValues(uri, fileAsString);
@@ -144,9 +148,9 @@ public class JacksonRecordReader extends BaseRecordReader {
     @Override
     public void reset() {
         cursor = 0;
-        if(shuffle){
+        if (shuffle) {
             List<URI> list = Arrays.asList(uris);
-            Collections.shuffle(list,r);
+            Collections.shuffle(list, r);
             uris = list.toArray(new URI[uris.length]);
         }
     }
@@ -156,11 +160,11 @@ public class JacksonRecordReader extends BaseRecordReader {
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
         StringBuilder sb = new StringBuilder();
         String line;
-        while( (line = br.readLine()) != null){
+        while ((line = br.readLine()) != null) {
             sb.append(line).append("\n");
         }
 
-        return readValues(uri,sb.toString());
+        return readValues(uri, sb.toString());
     }
 
     @Override
@@ -179,45 +183,46 @@ public class JacksonRecordReader extends BaseRecordReader {
     }
 
 
-    private List<Writable> readValues(URI uri, String fileContents){
+    private List<Writable> readValues(URI uri, String fileContents) {
         List<Writable> out = new ArrayList<>();
         List<String[]> paths = selection.getFieldPaths();
         List<Writable> valueIfMissing = selection.getValueIfMissing();
 
-        Map<String,Object> map;
-        try{
+        Map<String, Object> map;
+        try {
             map = mapper.readValue(fileContents, typeRef);
-        } catch(IOException e){
-            throw new RuntimeException("Error parsing file",e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error parsing file", e);
         }
 
         //Now, extract out values...
-        for(int i=0; i<paths.size(); i++ ){
+        for (int i = 0; i < paths.size(); i++) {
             //First: check if we should insert the label here...
-            if(i == labelPosition && labelGenerator != null){
+            if (i == labelPosition && labelGenerator != null) {
                 out.add(labelGenerator.getLabelForPath(uri));
             }
 
             String[] currPath = paths.get(i);
             String value = null;
-            Map<String,Object> currMap = map;
-            for( int j=0; j<currPath.length; j++ ){
-                if(currMap.containsKey(currPath[j])) {
+            Map<String, Object> currMap = map;
+            for (int j = 0; j < currPath.length; j++) {
+                if (currMap.containsKey(currPath[j])) {
                     Object o = currMap.get(currPath[j]);
-                    if(j == currPath.length -1){
+                    if (j == currPath.length - 1) {
                         //Expect to get the final value
-                        if(o instanceof String) {
+                        if (o instanceof String) {
                             value = (String) o;
-                        } else if(o instanceof Number){
+                        } else if (o instanceof Number) {
                             value = o.toString();
                         } else {
-                            throw new IllegalStateException("Expected to find String on path " + Arrays.toString(currPath)
-                                    + ", found " + o.getClass() + " with value " + o);
+                            throw new IllegalStateException(
+                                            "Expected to find String on path " + Arrays.toString(currPath) + ", found "
+                                                            + o.getClass() + " with value " + o);
                         }
                     } else {
                         //Expect to get a map...
-                        if(o instanceof Map){
-                            currMap = (Map<String,Object>)o;
+                        if (o instanceof Map) {
+                            currMap = (Map<String, Object>) o;
                         }
                     }
                 } else {
@@ -228,7 +233,7 @@ public class JacksonRecordReader extends BaseRecordReader {
             }
 
             Writable outputWritable;
-            if(value == null){
+            if (value == null) {
                 outputWritable = valueIfMissing.get(i);
             } else {
                 outputWritable = new Text(value);
@@ -237,7 +242,7 @@ public class JacksonRecordReader extends BaseRecordReader {
         }
 
         //Edge case: might want label as the last value
-        if((labelPosition >= paths.size() || labelPosition == -1) && labelGenerator != null ){
+        if ((labelPosition >= paths.size() || labelPosition == -1) && labelGenerator != null) {
             out.add(labelGenerator.getLabelForPath(uri));
         }
 
@@ -248,7 +253,7 @@ public class JacksonRecordReader extends BaseRecordReader {
     public Record nextRecord() {
         URI currentURI = uris[cursor];
         List<Writable> writables = next();
-        RecordMetaData meta = new RecordMetaDataURI(currentURI,JacksonRecordReader.class);
+        RecordMetaData meta = new RecordMetaDataURI(currentURI, JacksonRecordReader.class);
         return new org.datavec.api.records.impl.Record(writables, meta);
     }
 
@@ -261,18 +266,18 @@ public class JacksonRecordReader extends BaseRecordReader {
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
 
         List<Record> out = new ArrayList<>();
-        for(RecordMetaData metaData : recordMetaDatas){
+        for (RecordMetaData metaData : recordMetaDatas) {
             URI uri = metaData.getURI();
 
             String fileAsString;
-            try{
+            try {
                 fileAsString = FileUtils.readFileToString(new File(uri.toURL().getFile()));
-            } catch(IOException e){
-                throw new RuntimeException("Error reading URI file",e);
+            } catch (IOException e) {
+                throw new RuntimeException("Error reading URI file", e);
             }
 
             List<Writable> writables = readValues(uri, fileAsString);
-            out.add(new org.datavec.api.records.impl.Record(writables,metaData));
+            out.add(new org.datavec.api.records.impl.Record(writables, metaData));
         }
 
         return out;

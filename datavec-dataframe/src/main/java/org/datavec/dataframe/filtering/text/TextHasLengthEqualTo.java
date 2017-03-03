@@ -16,17 +16,17 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextHasLengthEqualTo extends ColumnFilter {
 
-  private int length;
+    private int length;
 
-  public TextHasLengthEqualTo(ColumnReference reference, int length) {
-    super(reference);
-    this.length = length;
-  }
+    public TextHasLengthEqualTo(ColumnReference reference, int length) {
+        super(reference);
+        this.length = length;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.hasLengthEqualTo(length);
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.hasLengthEqualTo(length);
+    }
 }

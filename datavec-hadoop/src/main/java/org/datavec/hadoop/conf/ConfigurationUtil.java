@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,24 +35,24 @@ import org.apache.hadoop.fs.Path;
  *
  */
 public class ConfigurationUtil {
-	
-	public static Configuration generateConfig(String baseConfPath) {
-		
-		String baseConfPathTrimmed = baseConfPath.trim();
-		
-		if (false == "/".equals(baseConfPathTrimmed.endsWith("/")) ) {
 
-			baseConfPathTrimmed += "/";
-			
-		}
-		
-		Configuration conf = new Configuration();
-		conf.addResource(new Path( baseConfPathTrimmed + "core-site.xml"));
-		conf.addResource(new Path( baseConfPathTrimmed + "hdfs-site.xml"));
-		conf.addResource(new Path( baseConfPathTrimmed + "mapred-site.xml"));
-		
-		return conf;
-		
-	}
+    public static Configuration generateConfig(String baseConfPath) {
+
+        String baseConfPathTrimmed = baseConfPath.trim();
+
+        if (false == "/".equals(baseConfPathTrimmed.endsWith("/"))) {
+
+            baseConfPathTrimmed += "/";
+
+        }
+
+        Configuration conf = new Configuration();
+        conf.addResource(new Path(baseConfPathTrimmed + "core-site.xml"));
+        conf.addResource(new Path(baseConfPathTrimmed + "hdfs-site.xml"));
+        conf.addResource(new Path(baseConfPathTrimmed + "mapred-site.xml"));
+
+        return conf;
+
+    }
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,9 +51,12 @@ public class RegexRecordReaderTest {
         RecordReader rr = new RegexLineRecordReader(regex, 1);
         rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
 
-        List<Writable> exp0 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"), new Text("DEBUG"), new Text("First entry message!"));
-        List<Writable> exp1 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.002"), new Text("2"), new Text("INFO"), new Text("Second entry message!"));
-        List<Writable> exp2 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.003"), new Text("3"), new Text("WARN"), new Text("Third entry message!"));
+        List<Writable> exp0 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"),
+                        new Text("DEBUG"), new Text("First entry message!"));
+        List<Writable> exp1 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.002"), new Text("2"),
+                        new Text("INFO"), new Text("Second entry message!"));
+        List<Writable> exp2 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.003"), new Text("3"),
+                        new Text("WARN"), new Text("Third entry message!"));
         assertEquals(exp0, rr.next());
         assertEquals(exp1, rr.next());
         assertEquals(exp2, rr.next());
@@ -75,7 +78,7 @@ public class RegexRecordReaderTest {
         rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
 
         List<List<Writable>> list = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             list.add(rr.next());
         }
         assertEquals(3, list.size());
@@ -84,14 +87,14 @@ public class RegexRecordReaderTest {
         List<List<Writable>> list3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         rr.reset();
-        int count = 1;  //Start by skipping 1 line
-        while(rr.hasNext()){
+        int count = 1; //Start by skipping 1 line
+        while (rr.hasNext()) {
             Record r = rr.nextRecord();
             list2.add(r);
             list3.add(r.getRecord());
             meta.add(r.getMetaData());
 
-            assertEquals(count++, ((RecordMetaDataLine)r.getMetaData()).getLineNumber());
+            assertEquals(count++, ((RecordMetaDataLine) r.getMetaData()).getLineNumber());
         }
 
         List<Record> fromMeta = rr.loadFromMetaData(meta);
@@ -105,32 +108,38 @@ public class RegexRecordReaderTest {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
         String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().getAbsolutePath();
-        path = path.replace("0","%d");
+        path = path.replace("0", "%d");
 
-        InputSplit is = new NumberedFileInputSplit(path,0,1);
+        InputSplit is = new NumberedFileInputSplit(path, 0, 1);
 
-        SequenceRecordReader rr = new RegexSequenceRecordReader(regex,1);
+        SequenceRecordReader rr = new RegexSequenceRecordReader(regex, 1);
         rr.initialize(is);
 
         List<List<Writable>> exp0 = new ArrayList<>();
-        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"), new Text("DEBUG"), new Text("First entry message!")));
-        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.002"), new Text("2"), new Text("INFO"), new Text("Second entry message!")));
-        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.003"), new Text("3"), new Text("WARN"), new Text("Third entry message!")));
+        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"), new Text("DEBUG"),
+                        new Text("First entry message!")));
+        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.002"), new Text("2"), new Text("INFO"),
+                        new Text("Second entry message!")));
+        exp0.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.003"), new Text("3"), new Text("WARN"),
+                        new Text("Third entry message!")));
 
 
         List<List<Writable>> exp1 = new ArrayList<>();
-        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.011"), new Text("11"), new Text("DEBUG"), new Text("First entry message!")));
-        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.012"), new Text("12"), new Text("INFO"), new Text("Second entry message!")));
-        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.013"), new Text("13"), new Text("WARN"), new Text("Third entry message!")));
+        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.011"), new Text("11"), new Text("DEBUG"),
+                        new Text("First entry message!")));
+        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.012"), new Text("12"), new Text("INFO"),
+                        new Text("Second entry message!")));
+        exp1.add(Arrays.asList((Writable) new Text("2016-01-01 23:59:59.013"), new Text("13"), new Text("WARN"),
+                        new Text("Third entry message!")));
 
-        assertEquals(exp0,rr.sequenceRecord());
-        assertEquals(exp1,rr.sequenceRecord());
+        assertEquals(exp0, rr.sequenceRecord());
+        assertEquals(exp1, rr.sequenceRecord());
         assertFalse(rr.hasNext());
 
         //Test resetting:
         rr.reset();
-        assertEquals(exp0,rr.sequenceRecord());
-        assertEquals(exp1,rr.sequenceRecord());
+        assertEquals(exp0, rr.sequenceRecord());
+        assertEquals(exp1, rr.sequenceRecord());
         assertFalse(rr.hasNext());
     }
 
@@ -139,15 +148,15 @@ public class RegexRecordReaderTest {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
         String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().getAbsolutePath();
-        path = path.replace("0","%d");
+        path = path.replace("0", "%d");
 
-        InputSplit is = new NumberedFileInputSplit(path,0,1);
+        InputSplit is = new NumberedFileInputSplit(path, 0, 1);
 
-        SequenceRecordReader rr = new RegexSequenceRecordReader(regex,1);
+        SequenceRecordReader rr = new RegexSequenceRecordReader(regex, 1);
         rr.initialize(is);
 
         List<List<List<Writable>>> out = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             out.add(rr.sequenceRecord());
         }
 
@@ -156,7 +165,7 @@ public class RegexRecordReaderTest {
         List<SequenceRecord> out3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         rr.reset();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             SequenceRecord seqr = rr.nextSequence();
             out2.add(seqr.getSequenceRecord());
             out3.add(seqr);

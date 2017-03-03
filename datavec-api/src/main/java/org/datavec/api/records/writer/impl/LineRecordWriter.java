@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,8 +32,7 @@ import java.util.Collection;
  * @author Adam Gibson
  */
 public class LineRecordWriter extends FileRecordWriter {
-    public LineRecordWriter() {
-    }
+    public LineRecordWriter() {}
 
     public LineRecordWriter(File path) throws FileNotFoundException {
         super(path);
@@ -49,11 +48,11 @@ public class LineRecordWriter extends FileRecordWriter {
 
     @Override
     public void write(Collection<Writable> record) throws IOException {
-         if(!record.isEmpty()) {
-             Text t = (Text) record.iterator().next();
-             t.write(out);
-             out.write(NEW_LINE.getBytes());
-         }
+        if (!record.isEmpty()) {
+            Text t = (Text) record.iterator().next();
+            t.write(out);
+            out.write(NEW_LINE.getBytes());
+        }
 
 
     }

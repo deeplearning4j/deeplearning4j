@@ -15,17 +15,17 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsIn extends ColumnFilter {
 
-  private String[] strings;
+    private String[] strings;
 
-  public TextIsIn(ColumnReference reference, String ... strings) {
-    super(reference);
-    this.strings = strings;
-  }
+    public TextIsIn(ColumnReference reference, String... strings) {
+        super(reference);
+        this.strings = strings;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isIn(strings);
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isIn(strings);
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,20 +36,19 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = "CategoricalColumnCondition"),
-        @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = "DoubleColumnCondition"),
-        @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = "IntegerColumnCondition"),
-        @JsonSubTypes.Type(value = LongColumnCondition.class, name = "LongColumnCondition"),
-        @JsonSubTypes.Type(value = NullWritableColumnCondition.class, name = "NullWritableColumnCondition"),
-        @JsonSubTypes.Type(value = StringColumnCondition.class, name = "StringColumnCondition"),
-        @JsonSubTypes.Type(value = TimeColumnCondition.class, name = "TimeColumnCondition"),
-        @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
-        @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition")
-})
-public interface Condition extends Serializable,ColumnOp {
+@JsonSubTypes(value = {
+                @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = "CategoricalColumnCondition"),
+                @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = "DoubleColumnCondition"),
+                @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = "IntegerColumnCondition"),
+                @JsonSubTypes.Type(value = LongColumnCondition.class, name = "LongColumnCondition"),
+                @JsonSubTypes.Type(value = NullWritableColumnCondition.class, name = "NullWritableColumnCondition"),
+                @JsonSubTypes.Type(value = StringColumnCondition.class, name = "StringColumnCondition"),
+                @JsonSubTypes.Type(value = TimeColumnCondition.class, name = "TimeColumnCondition"),
+                @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
+                @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition")})
+public interface Condition extends Serializable, ColumnOp {
 
     /**
      * Is the condition satisfied for the current input/example?<br>

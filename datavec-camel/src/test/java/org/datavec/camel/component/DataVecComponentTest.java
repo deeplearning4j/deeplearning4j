@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,7 @@ public class DataVecComponentTest extends CamelTestSupport {
         RecordReader reader = new CSVRecordReader();
         reader.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
         Collection<Collection<Writable>> recordAssertion = new ArrayList<>();
-        while(reader.hasNext())
+        while (reader.hasNext())
             recordAssertion.add(reader.next());
         mock.expectedBodiesReceived(recordAssertion);
         assertMockEndpointsSatisfied();
@@ -50,10 +50,9 @@ public class DataVecComponentTest extends CamelTestSupport {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from("file:src/test/resources/?fileName=iris.dat&noop=true")
-                        .unmarshal().csv()
-                        .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.datavec.camel.component.ListStringInputMarshaller&writableConverter=org.datavec.api.io.converters.SelfWritableConverter")
-                        .to("mock:result");
+                from("file:src/test/resources/?fileName=iris.dat&noop=true").unmarshal().csv()
+                                .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.datavec.camel.component.ListStringInputMarshaller&writableConverter=org.datavec.api.io.converters.SelfWritableConverter")
+                                .to("mock:result");
             }
         };
     }

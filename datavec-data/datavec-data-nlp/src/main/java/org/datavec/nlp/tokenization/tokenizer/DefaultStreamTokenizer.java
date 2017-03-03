@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
 
     @Override
     public boolean hasMoreTokens() {
-        if(streamTokenizer.ttype != StreamTokenizer.TT_EOF) {
+        if (streamTokenizer.ttype != StreamTokenizer.TT_EOF) {
             try {
                 streamTokenizer.nextToken();
             } catch (IOException e1) {
@@ -60,13 +60,13 @@ public class DefaultStreamTokenizer implements Tokenizer {
         StringBuilder sb = new StringBuilder();
 
 
-        if(streamTokenizer.ttype == StreamTokenizer.TT_WORD) {
+        if (streamTokenizer.ttype == StreamTokenizer.TT_WORD) {
             sb.append(streamTokenizer.sval);
-        } else if(streamTokenizer.ttype == StreamTokenizer.TT_NUMBER) {
+        } else if (streamTokenizer.ttype == StreamTokenizer.TT_NUMBER) {
             sb.append(streamTokenizer.nval);
-        } else if(streamTokenizer.ttype == StreamTokenizer.TT_EOL) {
+        } else if (streamTokenizer.ttype == StreamTokenizer.TT_EOL) {
             try {
-                while(streamTokenizer.ttype == StreamTokenizer.TT_EOL)
+                while (streamTokenizer.ttype == StreamTokenizer.TT_EOL)
                     streamTokenizer.nextToken();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -74,13 +74,13 @@ public class DefaultStreamTokenizer implements Tokenizer {
             }
         }
 
-        else if(hasMoreTokens())
+        else if (hasMoreTokens())
             return nextToken();
 
 
-        String ret =  sb.toString();
+        String ret = sb.toString();
 
-        if(tokenPreProcess != null)
+        if (tokenPreProcess != null)
             ret = tokenPreProcess.preProcess(ret);
         return ret;
 
@@ -89,7 +89,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
     @Override
     public List<String> getTokens() {
         List<String> tokens = new ArrayList<>();
-        while(hasMoreTokens()) {
+        while (hasMoreTokens()) {
             tokens.add(nextToken());
         }
         return tokens;

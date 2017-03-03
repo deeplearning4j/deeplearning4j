@@ -28,18 +28,19 @@ import java.util.UUID;
 public class CSVSparkTransformServerTest {
 
     private static CSVSparkTransformServer server;
-    private static Schema schema = new Schema.Builder()
-            .addColumnDouble("1.0").addColumnDouble("2.0").build();
-    private static TransformProcess transformProcess = new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+    private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
+    private static TransformProcess transformProcess =
+                    new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
     private static File fileSave = new File(UUID.randomUUID().toString() + ".json");
+
     @BeforeClass
     public static void before() throws Exception {
         server = new CSVSparkTransformServer();
-        FileUtils.write(fileSave,transformProcess.toJson());
+        FileUtils.write(fileSave, transformProcess.toJson());
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
-                    = new com.fasterxml.jackson.databind.ObjectMapper();
+            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
+                            new com.fasterxml.jackson.databind.ObjectMapper();
 
             public <T> T readValue(String value, Class<T> valueType) {
                 try {
@@ -57,7 +58,7 @@ public class CSVSparkTransformServerTest {
                 }
             }
         });
-        server.runMain(new String[]{"--jsonPath",fileSave.getAbsolutePath(),"-dp","9050"});
+        server.runMain(new String[] {"--jsonPath", fileSave.getAbsolutePath(), "-dp", "9050"});
     }
 
     @AfterClass
@@ -69,29 +70,27 @@ public class CSVSparkTransformServerTest {
 
     @Test
     public void testServer() throws Exception {
-        String[] values = new String[] {"1.0","2.0"};
+        String[] values = new String[] {"1.0", "2.0"};
         CSVRecord record = new CSVRecord(values);
-        JsonNode jsonNode = Unirest.post("http://localhost:9050/transform")
-                .header("accept", "application/json")
-                .header("Content-Type","application/json").body(record).asJson().getBody();
-        CSVRecord csvRecord = Unirest.post("http://localhost:9050/transform")
-                .header("accept", "application/json")
-                .header("Content-Type","application/json").body(record).asObject(CSVRecord.class).getBody();
+        JsonNode jsonNode = Unirest.post("http://localhost:9050/transform").header("accept", "application/json")
+                        .header("Content-Type", "application/json").body(record).asJson().getBody();
+        CSVRecord csvRecord = Unirest.post("http://localhost:9050/transform").header("accept", "application/json")
+                        .header("Content-Type", "application/json").body(record).asObject(CSVRecord.class).getBody();
 
         BatchRecord batchRecord = new BatchRecord();
-        for(int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
             batchRecord.add(csvRecord);
         BatchRecord batchRecord1 = Unirest.post("http://localhost:9050/transformbatch")
-                .header("accept", "application/json")
-                .header("Content-Type","application/json").body(batchRecord).asObject(BatchRecord.class).getBody();
+                        .header("accept", "application/json").header("Content-Type", "application/json")
+                        .body(batchRecord).asObject(BatchRecord.class).getBody();
 
         Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformedarray")
-                .header("accept", "application/json")
-                .header("Content-Type","application/json").body(record).asObject(Base64NDArrayBody.class).getBody();
+                        .header("accept", "application/json").header("Content-Type", "application/json").body(record)
+                        .asObject(Base64NDArrayBody.class).getBody();
 
         Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformedbatcharray")
-                .header("accept", "application/json")
-                .header("Content-Type","application/json").body(batchRecord).asObject(Base64NDArrayBody.class).getBody();
+                        .header("accept", "application/json").header("Content-Type", "application/json")
+                        .body(batchRecord).asObject(Base64NDArrayBody.class).getBody();
 
 
 

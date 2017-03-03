@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,7 @@ public class ComposableRecordReader extends BaseRecordReader {
 
     private RecordReader[] readers;
 
-    public ComposableRecordReader(RecordReader...readers) {
+    public ComposableRecordReader(RecordReader... readers) {
         this.readers = readers;
     }
 
@@ -61,7 +61,7 @@ public class ComposableRecordReader extends BaseRecordReader {
     public List<Writable> next() {
         List<Writable> ret = new ArrayList<>();
         if (this.hasNext()) {
-            for (RecordReader reader: readers) {
+            for (RecordReader reader : readers) {
                 ret.addAll(reader.next());
             }
         }
@@ -72,7 +72,7 @@ public class ComposableRecordReader extends BaseRecordReader {
     @Override
     public boolean hasNext() {
         Boolean readersHasNext = true;
-        for (RecordReader reader: readers) {
+        for (RecordReader reader : readers) {
             readersHasNext = readersHasNext && reader.hasNext();
         }
         return readersHasNext;
@@ -85,20 +85,20 @@ public class ComposableRecordReader extends BaseRecordReader {
 
     @Override
     public void close() throws IOException {
-       for(RecordReader reader : readers)
-           reader.close();
+        for (RecordReader reader : readers)
+            reader.close();
     }
 
     @Override
     public void setConf(Configuration conf) {
-        for (RecordReader reader: readers) {
+        for (RecordReader reader : readers) {
             reader.setConf(conf);
         }
     }
 
     @Override
     public Configuration getConf() {
-        for (RecordReader reader: readers) {
+        for (RecordReader reader : readers) {
             return reader.getConf();
         }
         return null;
@@ -106,14 +106,15 @@ public class ComposableRecordReader extends BaseRecordReader {
 
     @Override
     public void reset() {
-        for(RecordReader reader : readers)
+        for (RecordReader reader : readers)
             reader.reset();
 
     }
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Generating records from DataInputStream not supported for ComposableRecordReader");
+        throw new UnsupportedOperationException(
+                        "Generating records from DataInputStream not supported for ComposableRecordReader");
     }
 
     @Override

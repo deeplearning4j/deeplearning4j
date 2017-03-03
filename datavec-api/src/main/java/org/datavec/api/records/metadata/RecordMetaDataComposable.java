@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,8 @@ public class RecordMetaDataComposable implements RecordMetaData {
         sb.append("locations(");
         boolean first = true;
         for (RecordMetaData rmd : meta) {
-            if (!first) sb.append(",");
+            if (!first)
+                sb.append(",");
             sb.append(rmd.getLocation());
             first = false;
         }

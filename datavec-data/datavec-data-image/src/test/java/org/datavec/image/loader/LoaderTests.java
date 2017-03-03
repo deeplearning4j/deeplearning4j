@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,7 @@ public class LoaderTests {
         rr.initialize(inputSplit[0]);
         List<String> exptedLabel = rr.getLabels();
 
-        RecordReader rr2 = new LFWLoader(new int[]{250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
+        RecordReader rr2 = new LFWLoader(new int[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
 
         assertEquals(exptedLabel.get(0), rr2.getLabels().get(0));
     }
@@ -136,9 +136,9 @@ public class LoaderTests {
         int row = 28;
         int col = 28;
         int channels = 3;
-        CifarLoader loader = new CifarLoader(row,col,channels, null, false, false, false);
+        CifarLoader loader = new CifarLoader(row, col, channels, null, false, false, false);
         DataSet data;
-        for (int i =0; i < loader.NUM_TEST_IMAGES/numExamples; i++) {
+        for (int i = 0; i < loader.NUM_TEST_IMAGES / numExamples; i++) {
             loader.next(numExamples);
         }
         data = loader.next(numExamples);
@@ -156,11 +156,11 @@ public class LoaderTests {
         int col = 32;
         int channels = 3;
         File dir1 = new File(CifarLoader.trainFilesSerialized + "1.ser");
-//        File dir5 = new File(CifarLoader.trainFilesSerialized + "5.ser");
-        CifarLoader cifar = new CifarLoader(row,col,channels, null, true, true, false);
+        //        File dir5 = new File(CifarLoader.trainFilesSerialized + "5.ser");
+        CifarLoader cifar = new CifarLoader(row, col, channels, null, true, true, false);
         assertTrue(dir1.exists());
         DataSet result = cifar.next(1);
-        assertEquals(result.getFeatureMatrix().length(), 32*32*3, 0.0);
+        assertEquals(result.getFeatureMatrix().length(), 32 * 32 * 3, 0.0);
 
     }
 

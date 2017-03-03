@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-
 
 import java.io.*;
 import java.net.URI;
@@ -58,25 +57,25 @@ public class FileRecordReader extends BaseRecordReader {
     protected void doInitialize(InputSplit split) {
         URI[] locations = split.locations();
 
-        if(locations != null && locations.length >= 1) {
-            if(locations.length > 1) {
+        if (locations != null && locations.length >= 1) {
+            if (locations.length > 1) {
                 List<File> allFiles = new ArrayList<>();
-                for(URI location : locations) {
+                for (URI location : locations) {
                     File iter = new File(location);
-                    if(labels == null && appendLabel) {
+                    if (labels == null && appendLabel) {
                         //root dir relative to example where the label is the parent directory and the root directory is
                         //recursively the parent of that
                         File parent = iter.getParentFile().getParentFile();
                         //calculate the labels relative to the parent file
                         labels = new ArrayList<>();
 
-                        for(File labelDir : parent.listFiles())
+                        for (File labelDir : parent.listFiles())
                             labels.add(labelDir.getName());
                     }
 
-                    if(iter.isDirectory()) {
-                        Iterator<File> allFiles2 = FileUtils.iterateFiles(iter,null,true);
-                        while(allFiles2.hasNext())
+                    if (iter.isDirectory()) {
+                        Iterator<File> allFiles2 = FileUtils.iterateFiles(iter, null, true);
+                        while (allFiles2.hasNext())
                             allFiles.add(allFiles2.next());
                     }
 
@@ -85,11 +84,10 @@ public class FileRecordReader extends BaseRecordReader {
                 }
 
                 iter = allFiles.listIterator();
-            }
-            else {
+            } else {
                 File curr = new File(locations[0]);
-                if(curr.isDirectory())
-                    iter = FileUtils.iterateFiles(curr,null,true);
+                if (curr.isDirectory())
+                    iter = FileUtils.iterateFiles(curr, null, true);
                 else
                     iter = Collections.singletonList(curr).iterator();
             }
@@ -99,7 +97,7 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-        appendLabel = conf.getBoolean(APPEND_LABEL,true);
+        appendLabel = conf.getBoolean(APPEND_LABEL, true);
         doInitialize(split);
         this.inputSplit = split;
         this.conf = conf;
@@ -110,11 +108,11 @@ public class FileRecordReader extends BaseRecordReader {
         return nextRecord().getRecord();
     }
 
-    private List<Writable> loadFromFile(File next){
+    private List<Writable> loadFromFile(File next) {
         List<Writable> ret = new ArrayList<>();
         try {
             ret.add(new Text(FileUtils.readFileToString(next)));
-            if(appendLabel)
+            if (appendLabel)
                 ret.add(new IntWritable(labels.indexOf(next.getParentFile().getName())));
         } catch (IOException e) {
             e.printStackTrace();
@@ -162,11 +160,12 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public void reset() {
-        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
-        try{
+        if (inputSplit == null)
+            throw new UnsupportedOperationException("Cannot reset without first initializing");
+        try {
             doInitialize(inputSplit);
-        }catch(Exception e){
-            throw new RuntimeException("Error during LineRecordReader reset",e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error during LineRecordReader reset", e);
         }
     }
 
@@ -177,10 +176,10 @@ public class FileRecordReader extends BaseRecordReader {
         BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
         StringBuilder sb = new StringBuilder();
         String line;
-        while((line = br.readLine()) != null){
+        while ((line = br.readLine()) != null) {
             sb.append(line).append("\n");
         }
-        return Collections.singletonList((Writable)new Text(sb.toString()));
+        return Collections.singletonList((Writable) new Text(sb.toString()));
     }
 
     @Override
@@ -190,7 +189,8 @@ public class FileRecordReader extends BaseRecordReader {
         invokeListeners(next);
         List<Writable> ret = loadFromFile(next);
 
-        return new org.datavec.api.records.impl.Record(ret, new RecordMetaDataURI(next.toURI(),FileRecordReader.class));
+        return new org.datavec.api.records.impl.Record(ret,
+                        new RecordMetaDataURI(next.toURI(), FileRecordReader.class));
     }
 
     @Override
@@ -202,7 +202,7 @@ public class FileRecordReader extends BaseRecordReader {
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> out = new ArrayList<>();
 
-        for(RecordMetaData meta : recordMetaDatas ){
+        for (RecordMetaData meta : recordMetaDatas) {
             URI uri = meta.getURI();
 
             File f = new File(uri);

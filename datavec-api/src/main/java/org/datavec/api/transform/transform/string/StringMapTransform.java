@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,14 +37,15 @@ import java.util.Map;
 @Data
 public class StringMapTransform extends BaseStringTransform {
 
-    private final Map<String,String> map;
+    private final Map<String, String> map;
 
     /**
      *
      * @param columnName Name of the column
      * @param map Key: From. Value: To
      */
-    public StringMapTransform(@JsonProperty("columnName") String columnName, @JsonProperty("map") Map<String, String> map) {
+    public StringMapTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("map") Map<String, String> map) {
         super(columnName);
         this.map = map;
     }
@@ -52,12 +53,14 @@ public class StringMapTransform extends BaseStringTransform {
     @Override
     public Text map(Writable writable) {
         String orig = writable.toString();
-        if(map.containsKey(orig)){
+        if (map.containsKey(orig)) {
             return new Text(map.get(orig));
         }
 
-        if(writable instanceof Text) return (Text)writable;
-        else return new Text(writable.toString());
+        if (writable instanceof Text)
+            return (Text) writable;
+        else
+            return new Text(writable.toString());
     }
 
     /**
@@ -70,11 +73,13 @@ public class StringMapTransform extends BaseStringTransform {
     @Override
     public Object map(Object input) {
         String orig = input.toString();
-        if(map.containsKey(orig)) {
+        if (map.containsKey(orig)) {
             return map.get(orig);
         }
 
-        if(input instanceof String) return input;
-        else return orig;
+        if (input instanceof String)
+            return input;
+        else
+            return orig;
     }
 }

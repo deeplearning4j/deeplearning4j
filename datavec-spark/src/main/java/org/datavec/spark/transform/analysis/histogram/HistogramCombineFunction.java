@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,24 +26,28 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class HistogramCombineFunction implements Function2<List<HistogramCounter>,List<HistogramCounter>,List<HistogramCounter>> {
+public class HistogramCombineFunction
+                implements Function2<List<HistogramCounter>, List<HistogramCounter>, List<HistogramCounter>> {
     @Override
     public List<HistogramCounter> call(List<HistogramCounter> l1, List<HistogramCounter> l2) throws Exception {
-        if(l1 == null) return l2;
-        if(l2 == null) return l1;
+        if (l1 == null)
+            return l2;
+        if (l2 == null)
+            return l1;
 
         int size = l1.size();
-        if(size != l2.size()) throw new IllegalStateException("List lengths differ");
+        if (size != l2.size())
+            throw new IllegalStateException("List lengths differ");
 
         List<HistogramCounter> out = new ArrayList<>();
-        for( int i=0; i<size; i++ ){
+        for (int i = 0; i < size; i++) {
             HistogramCounter c1 = l1.get(i);
             HistogramCounter c2 = l2.get(i);
 
             //Normally shouldn't get null values here - but maybe for Bytes column, etc.
-            if(c1 == null){
+            if (c1 == null) {
                 out.add(c2);
-            } else if(c2 == null){
+            } else if (c2 == null) {
                 out.add(c1);
             } else {
                 out.add(c1.merge(c2));

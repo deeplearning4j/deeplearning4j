@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,8 @@ import java.util.List;
 /**
  * Simple helper class for executing joins
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class JoinValue implements Serializable {
 
     private final boolean left;

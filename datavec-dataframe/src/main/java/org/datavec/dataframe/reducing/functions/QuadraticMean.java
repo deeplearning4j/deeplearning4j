@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class QuadraticMean extends SummaryFunction {
 
-  public QuadraticMean(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public QuadraticMean(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.quadraticMean;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.quadraticMean;
+    }
 }

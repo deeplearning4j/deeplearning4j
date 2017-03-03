@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,20 +25,22 @@ import scala.Tuple3;
  * to a Tuple3<String,Integer,PortableDataStream> where the first value is a key (using a {@link PathToKeyConverter}),
  * second is an index, and third is the original data stream
  */
-public class PathToKeyFunction implements PairFunction<Tuple2<String, PortableDataStream>, String, Tuple3<String, Integer, PortableDataStream>> {
+public class PathToKeyFunction implements
+                PairFunction<Tuple2<String, PortableDataStream>, String, Tuple3<String, Integer, PortableDataStream>> {
 
     private PathToKeyConverter converter;
     private int index;
 
-    public PathToKeyFunction(int index, PathToKeyConverter converter){
+    public PathToKeyFunction(int index, PathToKeyConverter converter) {
         this.index = index;
         this.converter = converter;
     }
 
     @Override
-    public Tuple2<String, Tuple3<String, Integer, PortableDataStream>> call(Tuple2<String, PortableDataStream> in) throws Exception {
-        Tuple3<String,Integer,PortableDataStream> out = new Tuple3<>(in._1(),index,in._2());
+    public Tuple2<String, Tuple3<String, Integer, PortableDataStream>> call(Tuple2<String, PortableDataStream> in)
+                    throws Exception {
+        Tuple3<String, Integer, PortableDataStream> out = new Tuple3<>(in._1(), index, in._2());
         String newKey = converter.getKey(in._1());
-        return new Tuple2<>(newKey,out);
+        return new Tuple2<>(newKey, out);
     }
 }

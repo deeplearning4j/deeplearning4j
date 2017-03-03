@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,12 +31,12 @@ import static org.junit.Assert.*;
  */
 public class ClassPathResourceTest {
 
-    private boolean isWindows = false;      //File sizes are reported slightly different on Linux vs. Windows
+    private boolean isWindows = false; //File sizes are reported slightly different on Linux vs. Windows
 
     @Before
     public void setUp() throws Exception {
         String osname = System.getProperty("os.name");
-        if(osname != null && osname.toLowerCase().contains("win")){
+        if (osname != null && osname.toLowerCase().contains("win")) {
             isWindows = true;
         }
     }
@@ -46,7 +46,7 @@ public class ClassPathResourceTest {
         File intFile = new ClassPathResource("iris.dat").getFile();
 
         assertTrue(intFile.exists());
-        if(isWindows){
+        if (isWindows) {
             assertEquals(2850, intFile.length());
         } else {
             assertEquals(2700, intFile.length());
@@ -58,7 +58,7 @@ public class ClassPathResourceTest {
         File intFile = new ClassPathResource("/iris.dat").getFile();
 
         assertTrue(intFile.exists());
-        if(isWindows){
+        if (isWindows) {
             assertEquals(2850, intFile.length());
         } else {
             assertEquals(2700, intFile.length());
@@ -71,7 +71,7 @@ public class ClassPathResourceTest {
 
         assertTrue(intFile.exists());
 
-        if(isWindows){
+        if (isWindows) {
             assertEquals(64, intFile.length());
         } else {
             assertEquals(60, intFile.length());
@@ -83,7 +83,7 @@ public class ClassPathResourceTest {
         ClassPathResource resource = new ClassPathResource("csvsequence_1.txt");
         File intFile = resource.getFile();
 
-        if(isWindows){
+        if (isWindows) {
             assertEquals(64, intFile.length());
         } else {
             assertEquals(60, intFile.length());
@@ -105,7 +105,7 @@ public class ClassPathResourceTest {
         ClassPathResource resource = new ClassPathResource("/csvsequence_1.txt");
         File intFile = resource.getFile();
 
-        if(isWindows){
+        if (isWindows) {
             assertEquals(64, intFile.length());
         } else {
             assertEquals(60, intFile.length());

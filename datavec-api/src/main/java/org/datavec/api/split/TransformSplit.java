@@ -28,10 +28,8 @@ public class TransformSplit extends BaseInputSplit {
      * @param transform transform operation that returns a new URI based on an input URI
      * @throws URISyntaxException thrown if the transformed URI is malformed
      */
-    public TransformSplit(
-        @NonNull BaseInputSplit sourceSplit,
-        @NonNull URITransform transform
-    ) throws URISyntaxException {
+    public TransformSplit(@NonNull BaseInputSplit sourceSplit, @NonNull URITransform transform)
+                    throws URISyntaxException {
         this.sourceSplit = sourceSplit;
         this.transform = transform;
         initialize();
@@ -45,11 +43,8 @@ public class TransformSplit extends BaseInputSplit {
      * @param replace the string to replace with
      * @throws URISyntaxException thrown if the transformed URI is malformed
      */
-    public static TransformSplit ofSearchReplace(
-        @NonNull BaseInputSplit sourceSplit,
-        @NonNull final String search,
-        @NonNull final String replace
-    ) throws URISyntaxException {
+    public static TransformSplit ofSearchReplace(@NonNull BaseInputSplit sourceSplit, @NonNull final String search,
+                    @NonNull final String replace) throws URISyntaxException {
         return new TransformSplit(sourceSplit, new URITransform() {
             @Override
             public URI apply(URI uri) throws URISyntaxException {
@@ -62,7 +57,7 @@ public class TransformSplit extends BaseInputSplit {
         length = sourceSplit.length();
         uriStrings = new CompactHeapStringList();
         Iterator<URI> iter = sourceSplit.locationsIterator();
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             URI uri = iter.next();
             uri = transform.apply(uri);
             uriStrings.add(uri.toString());

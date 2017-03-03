@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,13 +30,19 @@ public class LongWritable implements WritableComparable {
 
     public LongWritable() {}
 
-    public LongWritable(@JsonProperty("value") long value) { set(value); }
+    public LongWritable(@JsonProperty("value") long value) {
+        set(value);
+    }
 
     /** Set the value of this LongWritable. */
-    public void set(long value) { this.value = value; }
+    public void set(long value) {
+        this.value = value;
+    }
 
     /** Return the value of this LongWritable. */
-    public long get() { return value; }
+    public long get() {
+        return value;
+    }
 
     public void readFields(DataInput in) throws IOException {
         value = in.readLong();
@@ -50,19 +56,19 @@ public class LongWritable implements WritableComparable {
     public boolean equals(Object o) {
         if (!(o instanceof LongWritable))
             return false;
-        LongWritable other = (LongWritable)o;
+        LongWritable other = (LongWritable) o;
         return this.value == other.value;
     }
 
     public int hashCode() {
-        return (int)value;
+        return (int) value;
     }
 
     /** Compares two LongWritables. */
     public int compareTo(Object o) {
         long thisValue = this.value;
-        long thatValue = ((LongWritable)o).value;
-        return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+        long thatValue = ((LongWritable) o).value;
+        return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
     }
 
     public String toString() {
@@ -75,11 +81,10 @@ public class LongWritable implements WritableComparable {
             super(LongWritable.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             long thisValue = readLong(b1, s1);
             long thatValue = readLong(b2, s2);
-            return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+            return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
         }
     }
 
@@ -88,32 +93,33 @@ public class LongWritable implements WritableComparable {
         public int compare(WritableComparable a, WritableComparable b) {
             return -super.compare(a, b);
         }
+
         public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             return -super.compare(b1, s1, l1, b2, s2, l2);
         }
     }
 
-    static {                                       // register default comparator
+    static { // register default comparator
         WritableComparator.define(LongWritable.class, new Comparator());
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         return value;
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         return value;
     }
 
     @Override
-    public int toInt(){
-        return (int)value;
+    public int toInt() {
+        return (int) value;
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         return value;
     }
 }

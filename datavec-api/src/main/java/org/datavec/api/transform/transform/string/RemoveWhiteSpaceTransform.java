@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ public class RemoveWhiteSpaceTransform extends BaseStringTransform {
 
     @Override
     public Text map(Writable writable) {
-        String value = writable.toString().replaceAll("\\s","");
+        String value = writable.toString().replaceAll("\\s", "");
         return new Text(value);
     }
 
@@ -49,7 +49,7 @@ public class RemoveWhiteSpaceTransform extends BaseStringTransform {
      */
     @Override
     public Object map(Object input) {
-        String value = input.toString().replaceAll("\\s","");
+        String value = input.toString().replaceAll("\\s", "");
         return value;
     }
 }

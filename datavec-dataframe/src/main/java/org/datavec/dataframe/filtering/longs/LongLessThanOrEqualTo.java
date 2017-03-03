@@ -11,15 +11,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class LongLessThanOrEqualTo extends ColumnFilter {
 
-  private long value;
+    private long value;
 
-  public LongLessThanOrEqualTo(ColumnReference reference, long value) {
-    super(reference);
-    this.value = value;
-  }
+    public LongLessThanOrEqualTo(ColumnReference reference, long value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    LongColumn longColumn = (LongColumn) relation.column(getColumnReference().getColumnName());
-    return longColumn.isLessThanOrEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        LongColumn longColumn = (LongColumn) relation.column(getColumnReference().getColumnName());
+        return longColumn.isLessThanOrEqualTo(value);
+    }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,11 +58,12 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      * @param op                    Operation (== or != only)
      * @param value                 Value to use in the condition
      */
-    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode,
-                                      ConditionOp op, String value) {
+    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    String value) {
         super(columnName, sequenceConditionMode);
         if (op != ConditionOp.Equal && op != ConditionOp.NotEqual) {
-            throw new IllegalArgumentException("Invalid condition op: can only use this constructor with Equal or NotEqual conditions");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: can only use this constructor with Equal or NotEqual conditions");
         }
         this.op = op;
         this.value = value;
@@ -78,14 +79,14 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      * @param op         Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
      * @param set        Set to use in the condition
      */
-    public CategoricalColumnCondition(String columnName, ConditionOp op,
-                                      Set<String> set) {
+    public CategoricalColumnCondition(String columnName, ConditionOp op, Set<String> set) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE, op, set);
     }
 
     //Private constructor for Jackson deserialization only
-    private CategoricalColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
-                                       @JsonProperty("value") String value, @JsonProperty("set") Set<String> set) {
+    private CategoricalColumnCondition(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("op") ConditionOp op, @JsonProperty("value") String value,
+                    @JsonProperty("set") Set<String> set) {
         super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
         this.op = op;
         this.value = value;
@@ -100,11 +101,12 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      * @param op                    Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
      * @param set                   Set to use in the condition
      */
-    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode,
-                                      ConditionOp op, Set<String> set) {
+    public CategoricalColumnCondition(String columnName, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    Set<String> set) {
         super(columnName, sequenceConditionMode);
         if (op != ConditionOp.InSet && op != ConditionOp.NotInSet) {
-            throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
         this.value = null;
@@ -135,8 +137,8 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
 
     @Override
     public String toString() {
-        return "CategoricalColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
-                (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+        return "CategoricalColumnCondition(columnName=\"" + columnName + "\"," + op + ","
+                        + (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
 
     /**

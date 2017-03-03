@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.datavec.api.writable.Writable;
 /**
  * Created by Alex on 4/03/2016.
  */
-public class WritableToStringFunction implements Function<Writable,String> {
+public class WritableToStringFunction implements Function<Writable, String> {
     @Override
     public String call(Writable writable) throws Exception {
         return writable.toString();

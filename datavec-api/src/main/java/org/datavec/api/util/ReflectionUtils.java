@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,15 +37,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ReflectionUtils {
 
-    private static final Class<?>[] EMPTY_ARRAY = new Class[]{};
+    private static final Class<?>[] EMPTY_ARRAY = new Class[] {};
     private static SerializationFactory serialFactory = null;
 
     /**
      * Cache of constructors for each class. Pins the classes so they
      * can't be garbage collected until ReflectionUtils can be collected.
      */
-    private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
-            new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<>();
 
     /**
      * Check and set 'configuration' if necessary.
@@ -74,14 +73,11 @@ public class ReflectionUtils {
         //conf is of type JobConf then
         //invoke configure on theObject
         try {
-            Class<?> jobConfClass =
-                    conf.getClassByName("org.apache.hadoop.mapred.JobConf");
-            Class<?> jobConfigurableClass =
-                    conf.getClassByName("org.apache.hadoop.mapred.JobConfigurable");
-            if (jobConfClass.isAssignableFrom(conf.getClass()) &&
-                    jobConfigurableClass.isAssignableFrom(theObject.getClass())) {
-                Method configureMethod =
-                        jobConfigurableClass.getMethod("configure", jobConfClass);
+            Class<?> jobConfClass = conf.getClassByName("org.apache.hadoop.mapred.JobConf");
+            Class<?> jobConfigurableClass = conf.getClassByName("org.apache.hadoop.mapred.JobConfigurable");
+            if (jobConfClass.isAssignableFrom(conf.getClass())
+                            && jobConfigurableClass.isAssignableFrom(theObject.getClass())) {
+                Method configureMethod = jobConfigurableClass.getMethod("configure", jobConfClass);
                 configureMethod.invoke(theObject, conf);
             }
         } catch (ClassNotFoundException e) {
@@ -115,8 +111,7 @@ public class ReflectionUtils {
         return result;
     }
 
-    static private ThreadMXBean threadBean =
-            ManagementFactory.getThreadMXBean();
+    static private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
     public static void setContentionTracing(boolean val) {
         threadBean.setThreadContentionMonitoringEnabled(val);
@@ -135,22 +130,19 @@ public class ReflectionUtils {
      * @param stream the stream to
      * @param title a string title for the stack trace
      */
-    public static void printThreadInfo(PrintWriter stream,
-                                       String title) {
+    public static void printThreadInfo(PrintWriter stream, String title) {
         final int STACK_DEPTH = 20;
         boolean contention = threadBean.isThreadContentionMonitoringEnabled();
         long[] threadIds = threadBean.getAllThreadIds();
         stream.println("Process Thread Dump: " + title);
         stream.println(threadIds.length + " active threads");
-        for (long tid: threadIds) {
+        for (long tid : threadIds) {
             ThreadInfo info = threadBean.getThreadInfo(tid, STACK_DEPTH);
             if (info == null) {
                 stream.println("  Inactive");
                 continue;
             }
-            stream.println("Thread " +
-                    getTaskName(info.getThreadId(),
-                            info.getThreadName()) + ":");
+            stream.println("Thread " + getTaskName(info.getThreadId(), info.getThreadName()) + ":");
             Thread.State state = info.getThreadState();
             stream.println("  State: " + state);
             stream.println("  Blocked count: " + info.getBlockedCount());
@@ -161,14 +153,12 @@ public class ReflectionUtils {
             }
             if (state == Thread.State.WAITING) {
                 stream.println("  Waiting on " + info.getLockName());
-            } else  if (state == Thread.State.BLOCKED) {
+            } else if (state == Thread.State.BLOCKED) {
                 stream.println("  Blocked on " + info.getLockName());
-                stream.println("  Blocked by " +
-                        getTaskName(info.getLockOwnerId(),
-                                info.getLockOwnerName()));
+                stream.println("  Blocked by " + getTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
             }
             stream.println("  Stack:");
-            for (StackTraceElement frame: info.getStackTrace()) {
+            for (StackTraceElement frame : info.getStackTrace()) {
                 stream.println("    " + frame.toString());
             }
         }
@@ -186,7 +176,7 @@ public class ReflectionUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> Class<T> getClass(T o) {
-        return (Class<T>)o.getClass();
+        return (Class<T>) o.getClass();
     }
 
     // methods to support testing
@@ -197,12 +187,14 @@ public class ReflectionUtils {
     static int getCacheSize() {
         return CONSTRUCTOR_CACHE.size();
     }
+
     /**
      * A pair of input/output buffers that we use to clone writables.
      */
     private static class CopyInCopyOutBuffer {
         DataOutputBuffer outBuffer = new DataOutputBuffer();
         DataInputBuffer inBuffer = new DataInputBuffer();
+
         /**
          * Move the data from the output buffer to the input buffer.
          */
@@ -214,8 +206,7 @@ public class ReflectionUtils {
     /**
      * Allocate a buffer for each thread that tries to clone objects.
      */
-    private static ThreadLocal<CopyInCopyOutBuffer> cloneBuffers
-            = new ThreadLocal<CopyInCopyOutBuffer>() {
+    private static ThreadLocal<CopyInCopyOutBuffer> cloneBuffers = new ThreadLocal<CopyInCopyOutBuffer>() {
         protected synchronized CopyInCopyOutBuffer initialValue() {
             return new CopyInCopyOutBuffer();
         }
@@ -235,8 +226,7 @@ public class ReflectionUtils {
      * @throws IOException
      */
     @SuppressWarnings("unchecked")
-    public static <T> T copy(Configuration conf,
-                             T src, T dst) throws IOException {
+    public static <T> T copy(Configuration conf, T src, T dst) throws IOException {
         CopyInCopyOutBuffer buffer = cloneBuffers.get();
         buffer.outBuffer.reset();
         SerializationFactory factory = getFactory(conf);

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,11 +37,12 @@ import java.util.List;
  */
 public class ListWrappers {
 
-    private ListWrappers(){ }
+    private ListWrappers() {}
 
     @Getter
     public static class TransformList {
         private List<Transform> list;
+
         public TransformList(@JsonProperty("list") List<Transform> list) {
             this.list = list;
         }
@@ -50,6 +51,7 @@ public class ListWrappers {
     @Getter
     public static class FilterList {
         private List<Filter> list;
+
         public FilterList(@JsonProperty("list") List<Filter> list) {
             this.list = list;
         }
@@ -58,6 +60,7 @@ public class ListWrappers {
     @Getter
     public static class ConditionList {
         private List<Condition> list;
+
         public ConditionList(@JsonProperty("list") List<Condition> list) {
             this.list = list;
         }
@@ -66,6 +69,7 @@ public class ListWrappers {
     @Getter
     public static class ReducerList {
         private List<IReducer> list;
+
         public ReducerList(@JsonProperty("list") List<IReducer> list) {
             this.list = list;
         }
@@ -74,6 +78,7 @@ public class ListWrappers {
     @Getter
     public static class SequenceComparatorList {
         private List<SequenceComparator> list;
+
         public SequenceComparatorList(@JsonProperty("list") List<SequenceComparator> list) {
             this.list = list;
         }
@@ -82,6 +87,7 @@ public class ListWrappers {
     @Getter
     public static class DataActionList {
         private List<DataAction> list;
+
         public DataActionList(@JsonProperty("list") List<DataAction> list) {
             this.list = list;
         }

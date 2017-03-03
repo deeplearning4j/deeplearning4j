@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,14 +32,14 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ReducerFunction implements Function<Tuple2<String,Iterable<List<Writable>>>,List<Writable>> {
+public class ReducerFunction implements Function<Tuple2<String, Iterable<List<Writable>>>, List<Writable>> {
 
     private final IReducer reducer;
 
     @Override
     public List<Writable> call(Tuple2<String, Iterable<List<Writable>>> t2) throws Exception {
         List<List<Writable>> list = new ArrayList<>();
-        for(List<Writable> c : t2._2()) {
+        for (List<Writable> c : t2._2()) {
             list.add(c);
         }
         return reducer.reduce(list);

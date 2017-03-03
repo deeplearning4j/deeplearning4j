@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,8 +50,7 @@ public class FilterImageTransform extends BaseImageTransform {
     public FilterImageTransform(String filters, int width, int height, int channels) {
         super(null);
         int pixelFormat = channels == 1 ? AV_PIX_FMT_GRAY8
-                : channels == 3 ? AV_PIX_FMT_BGR24
-                : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
+                        : channels == 3 ? AV_PIX_FMT_BGR24 : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
         if (pixelFormat == AV_PIX_FMT_NONE) {
             throw new IllegalArgumentException("Unsupported number of channels: " + channels);
         }

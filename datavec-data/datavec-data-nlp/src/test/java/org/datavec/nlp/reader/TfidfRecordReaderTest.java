@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,7 @@ public class TfidfRecordReaderTest {
         reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
         int count = 0;
         int[] labelAssertions = new int[3];
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             Collection<Writable> record = reader.next();
             Iterator<Writable> recordIter = record.iterator();
             NDArrayWritable writable = (NDArrayWritable) recordIter.next();
@@ -57,9 +57,9 @@ public class TfidfRecordReaderTest {
             count++;
         }
 
-        assertArrayEquals(new int[]{0,1,2},labelAssertions);
-        assertEquals(3,reader.getLabels().size());
-        assertEquals(3,count);
+        assertArrayEquals(new int[] {0, 1, 2}, labelAssertions);
+        assertEquals(3, reader.getLabels().size());
+        assertEquals(3, count);
     }
 
     @Test
@@ -72,7 +72,7 @@ public class TfidfRecordReaderTest {
         TfidfRecordReader reader = new TfidfRecordReader();
         reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
 
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             Record record = reader.nextRecord();
             assertNotNull(record.getMetaData().getURI());
             assertEquals(record.getMetaData().getReaderClass(), TfidfRecordReader.class);

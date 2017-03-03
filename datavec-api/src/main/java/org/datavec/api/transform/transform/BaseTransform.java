@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,15 +43,15 @@ public abstract class BaseTransform implements Transform {
     }
 
     @Override
-    public Schema getInputSchema(){
+    public Schema getInputSchema() {
         return inputSchema;
     }
 
     @Override
-    public List<List<Writable>> mapSequence(List<List<Writable>> sequence){
+    public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
 
         List<List<Writable>> out = new ArrayList<>(sequence.size());
-        for(List<Writable> c : sequence){
+        for (List<Writable> c : sequence) {
             out.add(map(c));
         }
         return out;

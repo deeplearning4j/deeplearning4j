@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class TransformUtils {
 
-    public static String timeUnitToString(long time, TimeUnit unit){
+    public static String timeUnitToString(long time, TimeUnit unit) {
         String str = String.valueOf(time);
-        switch (unit){
+        switch (unit) {
             case MILLISECONDS:
                 str += "Millisecond";
                 break;
@@ -44,12 +44,13 @@ public class TransformUtils {
             default:
                 throw new RuntimeException();
         }
-        if(time == 1) return str;
+        if (time == 1)
+            return str;
         return str + "s";
     }
 
-    public static TimeUnit stringToTimeUnit(String str){
-        switch(str.toLowerCase()){
+    public static TimeUnit stringToTimeUnit(String str) {
+        switch (str.toLowerCase()) {
             case "ms":
             case "millisecond":
             case "milliseconds":

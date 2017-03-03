@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,10 +60,10 @@ public class TestImageLoader {
         INDArray arr = loader.toINDArrayBGR(img);
 
         int[] shape = arr.shape();
-        assertEquals(3,  shape.length);
+        assertEquals(3, shape.length);
         assertEquals(ch, shape[0]);
-        assertEquals(h,  shape[1]);
-        assertEquals(w,  shape[2]);
+        assertEquals(h, shape[1]);
+        assertEquals(w, shape[2]);
 
         for (int i = 0; i < h; ++i) {
             for (int j = 0; j < w; ++j) {
@@ -87,43 +87,43 @@ public class TestImageLoader {
         ImageLoader loader1 = new ImageLoader(h1, w1, ch1);
 
         BufferedImage scaled1 = loader1.scalingIfNeed(img1, true);
-        assertEquals(w1,                            scaled1.getWidth());
-        assertEquals(h1,                            scaled1.getHeight());
+        assertEquals(w1, scaled1.getWidth());
+        assertEquals(h1, scaled1.getHeight());
         assertEquals(BufferedImage.TYPE_4BYTE_ABGR, scaled1.getType());
-        assertEquals(4,                             scaled1.getSampleModel().getNumBands());
+        assertEquals(4, scaled1.getSampleModel().getNumBands());
 
         BufferedImage scaled2 = loader1.scalingIfNeed(img1, false);
-        assertEquals(w1,                           scaled2.getWidth());
-        assertEquals(h1,                           scaled2.getHeight());
+        assertEquals(w1, scaled2.getWidth());
+        assertEquals(h1, scaled2.getHeight());
         assertEquals(BufferedImage.TYPE_3BYTE_BGR, scaled2.getType());
-        assertEquals(3,                            scaled2.getSampleModel().getNumBands());
+        assertEquals(3, scaled2.getSampleModel().getNumBands());
 
         BufferedImage scaled3 = loader1.scalingIfNeed(img2, true);
-        assertEquals(w1,                           scaled3.getWidth());
-        assertEquals(h1,                           scaled3.getHeight());
+        assertEquals(w1, scaled3.getWidth());
+        assertEquals(h1, scaled3.getHeight());
         assertEquals(BufferedImage.TYPE_3BYTE_BGR, scaled3.getType());
-        assertEquals(3,                            scaled3.getSampleModel().getNumBands());
+        assertEquals(3, scaled3.getSampleModel().getNumBands());
 
         BufferedImage scaled4 = loader1.scalingIfNeed(img2, false);
-        assertEquals(w1,                           scaled4.getWidth());
-        assertEquals(h1,                           scaled4.getHeight());
+        assertEquals(w1, scaled4.getWidth());
+        assertEquals(h1, scaled4.getHeight());
         assertEquals(BufferedImage.TYPE_3BYTE_BGR, scaled4.getType());
-        assertEquals(3,                            scaled4.getSampleModel().getNumBands());
+        assertEquals(3, scaled4.getSampleModel().getNumBands());
 
         int w2 = 70, h2 = 120, ch2 = 6;
         ImageLoader loader2 = new ImageLoader(h2, w2, ch2);
 
         BufferedImage scaled5 = loader2.scalingIfNeed(img1, true);
-        assertEquals(w2,                            scaled5.getWidth());
-        assertEquals(h2,                            scaled5.getHeight(), h2);
+        assertEquals(w2, scaled5.getWidth());
+        assertEquals(h2, scaled5.getHeight(), h2);
         assertEquals(BufferedImage.TYPE_4BYTE_ABGR, scaled5.getType());
-        assertEquals(4,                             scaled5.getSampleModel().getNumBands());
+        assertEquals(4, scaled5.getSampleModel().getNumBands());
 
         BufferedImage scaled6 = loader2.scalingIfNeed(img1, false);
-        assertEquals(w2,                           scaled6.getWidth());
-        assertEquals(h2,                           scaled6.getHeight());
+        assertEquals(w2, scaled6.getWidth());
+        assertEquals(h2, scaled6.getHeight());
         assertEquals(BufferedImage.TYPE_3BYTE_BGR, scaled6.getType());
-        assertEquals(3,                            scaled6.getSampleModel().getNumBands());
+        assertEquals(3, scaled6.getSampleModel().getNumBands());
 
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,8 +52,10 @@ public class CategoricalToOneHotTransform extends BaseTransform {
 
         columnIdx = inputSchema.getIndexOfColumn(columnName);
         ColumnMetaData meta = inputSchema.getMetaData(columnName);
-        if (!(meta instanceof CategoricalMetaData)) throw new IllegalStateException("Cannot convert column \"" +
-                columnName + "\" from categorical to one-hot: column is not categorical (is: " + meta.getColumnType() + ")");
+        if (!(meta instanceof CategoricalMetaData))
+            throw new IllegalStateException("Cannot convert column \"" + columnName
+                            + "\" from categorical to one-hot: column is not categorical (is: " + meta.getColumnType()
+                            + ")");
         this.stateNames = ((CategoricalMetaData) meta).getStateNames();
 
         this.statesMap = new HashMap<>(stateNames.size());
@@ -65,8 +67,10 @@ public class CategoricalToOneHotTransform extends BaseTransform {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         CategoricalToOneHotTransform o2 = (CategoricalToOneHotTransform) o;
 
@@ -116,8 +120,9 @@ public class CategoricalToOneHotTransform extends BaseTransform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         int idx = getColumnIdx();
 
@@ -131,10 +136,13 @@ public class CategoricalToOneHotTransform extends BaseTransform {
                 //Do conversion
                 String str = w.toString();
                 Integer classIdx = statesMap.get(str);
-                if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+                if (classIdx == null)
+                    throw new RuntimeException("Unknown state (index not found): " + str);
                 for (int j = 0; j < n; j++) {
-                    if (j == classIdx) out.add(new IntWritable(1));
-                    else out.add(new IntWritable(0));
+                    if (j == classIdx)
+                        out.add(new IntWritable(1));
+                    else
+                        out.add(new IntWritable(0));
                 }
             } else {
                 //No change to this column
@@ -157,10 +165,13 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         List<Integer> oneHot = new ArrayList<>();
         int n = stateNames.size();
         Integer classIdx = statesMap.get(str);
-        if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+        if (classIdx == null)
+            throw new RuntimeException("Unknown state (index not found): " + str);
         for (int j = 0; j < n; j++) {
-            if (j == classIdx) oneHot.add(1);
-            else oneHot.add(0);
+            if (j == classIdx)
+                oneHot.add(1);
+            else
+                oneHot.add(0);
         }
         return oneHot;
     }
@@ -174,7 +185,7 @@ public class CategoricalToOneHotTransform extends BaseTransform {
     public Object mapSequence(Object sequence) {
         List<?> values = (List<?>) sequence;
         List<List<Integer>> ret = new ArrayList<>();
-        for(Object obj : values) {
+        for (Object obj : values) {
             ret.add((List<Integer>) map(obj));
         }
         return ret;

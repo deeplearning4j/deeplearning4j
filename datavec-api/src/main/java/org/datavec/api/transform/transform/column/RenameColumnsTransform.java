@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema"})
-public class RenameColumnsTransform implements Transform,ColumnOp {
+public class RenameColumnsTransform implements Transform, ColumnOp {
 
     private final List<String> oldNames;
     private final List<String> newNames;
@@ -44,7 +44,8 @@ public class RenameColumnsTransform implements Transform,ColumnOp {
         this(Collections.singletonList(oldName), Collections.singletonList(newName));
     }
 
-    public RenameColumnsTransform(@JsonProperty("oldNames") List<String> oldNames, @JsonProperty("newNames") List<String> newNames) {
+    public RenameColumnsTransform(@JsonProperty("oldNames") List<String> oldNames,
+                    @JsonProperty("newNames") List<String> newNames) {
         if (oldNames.size() != newNames.size())
             throw new IllegalArgumentException("Invalid input: old/new names lists differ in length");
         this.oldNames = oldNames;
@@ -53,12 +54,15 @@ public class RenameColumnsTransform implements Transform,ColumnOp {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         RenameColumnsTransform o2 = (RenameColumnsTransform) o;
 
-        if (!oldNames.equals(o2.oldNames)) return false;
+        if (!oldNames.equals(o2.oldNames))
+            return false;
         return newNames.equals(o2.newNames);
 
     }
@@ -121,7 +125,8 @@ public class RenameColumnsTransform implements Transform,ColumnOp {
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
 
     }
 
@@ -132,7 +137,8 @@ public class RenameColumnsTransform implements Transform,ColumnOp {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     @Override

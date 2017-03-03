@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -52,8 +51,8 @@ public class LibSvmRecordReader extends LineRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
-        appendLabel = conf.getBoolean(APPEND_LABEL,false);
-        classification = conf.getBoolean(CLASSIFICATION,true);
+        appendLabel = conf.getBoolean(APPEND_LABEL, false);
+        classification = conf.getBoolean(CLASSIFICATION, true);
         numFeatures = conf.getInt(NUM_FEATURES, 0);
     }
 
@@ -89,25 +88,25 @@ public class LibSvmRecordReader extends LineRecordReader {
             }
 
             int j = Integer.valueOf(pair[0]) - 1;
-            while(j != read){
+            while (j != read) {
                 record.add(new DoubleWritable(0.0));
                 read++;
             }
             try {
                 int x = Integer.valueOf(pair[1]);
                 record.add(new IntWritable(x));
-            }catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 double x = Double.valueOf(pair[1]);
                 record.add(new DoubleWritable(x));
             }
             read++;
         }
-        while( read < numFeatures ){
+        while (read < numFeatures) {
             record.add(new DoubleWritable(0.0));
             read++;
         }
 
-        if(classification && appendLabel || !classification) {
+        if (classification && appendLabel || !classification) {
             record.add(new DoubleWritable(response));
         }
 

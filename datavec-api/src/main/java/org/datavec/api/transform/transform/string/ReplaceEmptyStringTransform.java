@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,8 @@ public class ReplaceEmptyStringTransform extends BaseStringTransform {
 
     private String value;
 
-    public ReplaceEmptyStringTransform(@JsonProperty("columnName") String columnName, @JsonProperty("value") String value) {
+    public ReplaceEmptyStringTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("value") String value) {
         super(columnName);
         this.value = value;
     }
@@ -39,9 +40,12 @@ public class ReplaceEmptyStringTransform extends BaseStringTransform {
     @Override
     public Text map(Writable writable) {
         String s = writable.toString();
-        if(s == null || s.isEmpty()) return new Text(value);
-        else if(writable instanceof Text) return (Text)writable;
-        else return new Text(writable.toString());
+        if (s == null || s.isEmpty())
+            return new Text(value);
+        else if (writable instanceof Text)
+            return (Text) writable;
+        else
+            return new Text(writable.toString());
     }
 
     /**
@@ -54,8 +58,11 @@ public class ReplaceEmptyStringTransform extends BaseStringTransform {
     @Override
     public Object map(Object input) {
         String s = input.toString();
-        if(s == null || s.isEmpty()) return value;
-        else if(s instanceof String) return s;
-        else return s;
+        if (s == null || s.isEmpty())
+            return value;
+        else if (s instanceof String)
+            return s;
+        else
+            return s;
     }
 }

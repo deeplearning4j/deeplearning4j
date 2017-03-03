@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,12 +24,12 @@ package org.datavec.nlp.tokenization.tokenizer;
  */
 public interface TokenPreProcess {
 
-	/**
-	 * Pre process a token
-	 * @param token the token to pre process
-	 * @return the preprocessed token
-	 */
-	String preProcess(String token);
-	
-	
+    /**
+     * Pre process a token
+     * @param token the token to pre process
+     * @return the preprocessed token
+     */
+    String preProcess(String token);
+
+
 }

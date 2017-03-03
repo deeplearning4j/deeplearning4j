@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,25 +27,21 @@ import org.cleartk.token.type.Token;
 
 public class StemmerAnnotator extends SnowballStemmer<Token> {
 
-    public static AnalysisEngineDescription getDescription()
-            throws ResourceInitializationException {
+    public static AnalysisEngineDescription getDescription() throws ResourceInitializationException {
         return getDescription("English");
     }
 
 
-    public static AnalysisEngineDescription getDescription(String language)
-            throws ResourceInitializationException {
-        return AnalysisEngineFactory.createEngineDescription(
-                StemmerAnnotator.class,
-                SnowballStemmer.PARAM_STEMMER_NAME,
-                language);
+    public static AnalysisEngineDescription getDescription(String language) throws ResourceInitializationException {
+        return AnalysisEngineFactory.createEngineDescription(StemmerAnnotator.class, SnowballStemmer.PARAM_STEMMER_NAME,
+                        language);
     }
 
 
     @SuppressWarnings("unchecked")
     @Override
     public synchronized void process(JCas jCas) throws AnalysisEngineProcessException {
-         super.process(jCas);
+        super.process(jCas);
     }
 
 

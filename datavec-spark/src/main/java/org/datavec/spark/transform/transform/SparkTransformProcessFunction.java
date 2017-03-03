@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Spark function for executing a transform process
  */
-public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>,List<Writable>> {
+public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
 
     public SparkTransformProcessFunction(TransformProcess transformProcess) {
         super(new SparkTransformProcessFunctionAdapter(transformProcess));

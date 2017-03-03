@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,19 +63,19 @@ public class RenderableComponentHistogram extends RenderableComponent {
         private int marginLeft = 60;
         private int marginRight = 20;
 
-        public Builder title(String title){
+        public Builder title(String title) {
             this.title = title;
             return this;
         }
 
-        public Builder addBin(double lower, double upper, double yValue){
+        public Builder addBin(double lower, double upper, double yValue) {
             lowerBounds.add(lower);
             upperBounds.add(upper);
             yValues.add(yValue);
             return this;
         }
 
-        public Builder margins(int top, int bottom, int left, int right){
+        public Builder margins(int top, int bottom, int left, int right) {
             this.marginTop = top;
             this.marginBottom = bottom;
             this.marginLeft = left;
@@ -83,7 +83,7 @@ public class RenderableComponentHistogram extends RenderableComponent {
             return this;
         }
 
-        public RenderableComponentHistogram build(){
+        public RenderableComponentHistogram build() {
             return new RenderableComponentHistogram(this);
         }
     }

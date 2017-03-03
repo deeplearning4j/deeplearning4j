@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,45 +24,45 @@ import org.datavec.audio.musicg.Wave;
  *
  * @author Jacquet Wong
  */
-public class NormalizedSampleAmplitudes{
+public class NormalizedSampleAmplitudes {
 
-	private Wave wave;
-	private double[] normalizedAmplitudes; // normalizedAmplitudes[sampleNumber]=normalizedAmplitudeInTheFrame
+    private Wave wave;
+    private double[] normalizedAmplitudes; // normalizedAmplitudes[sampleNumber]=normalizedAmplitudeInTheFrame
 
-	public NormalizedSampleAmplitudes(Wave wave){
-		this.wave=wave;
-	}
-	
-	/**
-	 * 
-	 * Get normalized amplitude of each frame
-	 * 
-	 * @return	array of normalized amplitudes(signed 16 bit): normalizedAmplitudes[frame]=amplitude
-	 */
-	public double[] getNormalizedAmplitudes() {
+    public NormalizedSampleAmplitudes(Wave wave) {
+        this.wave = wave;
+    }
 
-		if (normalizedAmplitudes == null) {
+    /**
+     * 
+     * Get normalized amplitude of each frame
+     * 
+     * @return	array of normalized amplitudes(signed 16 bit): normalizedAmplitudes[frame]=amplitude
+     */
+    public double[] getNormalizedAmplitudes() {
 
-			boolean signed=true;
-			
-			// usually 8bit is unsigned
-			if (wave.getWaveHeader().getBitsPerSample()==8){
-				signed=false;
-			}
-			
-			short[] amplitudes=wave.getSampleAmplitudes();
-			int numSamples = amplitudes.length;
-			int maxAmplitude = 1 << (wave.getWaveHeader().getBitsPerSample() - 1);
-			
-			if (!signed){	// one more bit for unsigned value
-				maxAmplitude<<=1;
-			}
-			
-			normalizedAmplitudes = new double[numSamples];
-			for (int i = 0; i < numSamples; i++) {
-				normalizedAmplitudes[i] = (double) amplitudes[i] / maxAmplitude;
-			}
-		}
-		return normalizedAmplitudes;
-	}
+        if (normalizedAmplitudes == null) {
+
+            boolean signed = true;
+
+            // usually 8bit is unsigned
+            if (wave.getWaveHeader().getBitsPerSample() == 8) {
+                signed = false;
+            }
+
+            short[] amplitudes = wave.getSampleAmplitudes();
+            int numSamples = amplitudes.length;
+            int maxAmplitude = 1 << (wave.getWaveHeader().getBitsPerSample() - 1);
+
+            if (!signed) { // one more bit for unsigned value
+                maxAmplitude <<= 1;
+            }
+
+            normalizedAmplitudes = new double[numSamples];
+            for (int i = 0; i < numSamples; i++) {
+                normalizedAmplitudes[i] = (double) amplitudes[i] / maxAmplitude;
+            }
+        }
+        return normalizedAmplitudes;
+    }
 }

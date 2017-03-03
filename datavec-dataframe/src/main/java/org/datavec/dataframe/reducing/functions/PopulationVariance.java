@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class PopulationVariance extends SummaryFunction {
 
-  public PopulationVariance(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public PopulationVariance(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.populationVariance;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.populationVariance;
+    }
 }

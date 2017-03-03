@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,11 +36,12 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "outputOrder"})
-public class ReorderColumnsTransform implements Transform,ColumnOp {
+public class ReorderColumnsTransform implements Transform, ColumnOp {
 
     private final List<String> newOrder;
     private Schema inputSchema;
-    private int[] outputOrder;  //Mapping from in to out. so output[i] = input.get(outputOrder[i])
+    private int[] outputOrder; //Mapping from in to out. so output[i] = input.get(outputOrder[i])
+
     /**
      * @param newOrder A partial or complete order of the columns in the output
      */
@@ -63,8 +64,8 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
             }
         }
         if (inputSchema.numColumns() < newOrder.size())
-            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
-                    " column but newOrder has " + newOrder.size() + " columns");
+            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() + " column but newOrder has "
+                            + newOrder.size() + " columns");
 
         List<String> origNames = inputSchema.getColumnNames();
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
@@ -78,7 +79,8 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
         }
 
         for (int i = 0; i < taken.length; i++) {
-            if (taken[i]) continue;
+            if (taken[i])
+                continue;
             outMeta.add(origMeta.get(i));
         }
 
@@ -93,8 +95,8 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
             }
         }
         if (inputSchema.numColumns() < newOrder.size())
-            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() +
-                    " columns but newOrder has " + newOrder.size() + " columns");
+            throw new IllegalArgumentException("Schema has " + inputSchema.numColumns() + " columns but newOrder has "
+                            + newOrder.size() + " columns");
 
         List<String> origNames = inputSchema.getColumnNames();
         outputOrder = new int[origNames.size()];
@@ -108,7 +110,8 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
         }
 
         for (int i = 0; i < taken.length; i++) {
-            if (taken[i]) continue;
+            if (taken[i])
+                continue;
             outputOrder[j++] = i;
         }
     }
@@ -145,7 +148,8 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
 
     }
 
@@ -156,17 +160,21 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        throw new UnsupportedOperationException("Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+        throw new UnsupportedOperationException(
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ReorderColumnsTransform o2 = (ReorderColumnsTransform) o;
 
-        if (!newOrder.equals(o2.newOrder)) return false;
+        if (!newOrder.equals(o2.newOrder))
+            return false;
         return Arrays.equals(outputOrder, o2.outputOrder);
 
     }
@@ -179,7 +187,7 @@ public class ReorderColumnsTransform implements Transform,ColumnOp {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ReorderColumnsTransform(newOrder=" + newOrder + ")";
 
     }

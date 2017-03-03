@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.loader.ImageLoader;
-
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -64,9 +63,9 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     public List<List<Writable>> sequenceRecord() {
         File next = iter.next();
 
-        try{
+        try {
             return loadData(next, null);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -76,7 +75,7 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
         return loadData(null, dataInputStream);
     }
 
-    protected abstract List<List<Writable>> loadData( File file, InputStream inputStream  ) throws IOException;
+    protected abstract List<List<Writable>> loadData(File file, InputStream inputStream) throws IOException;
 
 
     @Override
@@ -86,7 +85,7 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     }
 
     @Override
-    public List<Writable> next(){
+    public List<Writable> next() {
         throw new UnsupportedOperationException("next() not supported for CodecRecordReader (use: sequenceRecord)");
     }
 
@@ -103,12 +102,12 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
-        startFrame = conf.getInt(START_FRAME,0);
-        numFrames = conf.getInt(TOTAL_FRAMES,-1);
-        rows = conf.getInt(ROWS,28);
-        cols = conf.getInt(COLUMNS,28);
-        framesPerSecond = conf.getFloat(TIME_SLICE,-1);
-        videoLength = conf.getFloat(VIDEO_DURATION,-1);
+        startFrame = conf.getInt(START_FRAME, 0);
+        numFrames = conf.getInt(TOTAL_FRAMES, -1);
+        rows = conf.getInt(ROWS, 28);
+        cols = conf.getInt(COLUMNS, 28);
+        framesPerSecond = conf.getFloat(TIME_SLICE, -1);
+        videoLength = conf.getFloat(VIDEO_DURATION, -1);
         ravel = conf.getBoolean(RAVEL, false);
         totalFrames = conf.getInt(TOTAL_FRAMES, -1);
     }
@@ -123,12 +122,13 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
         File next = iter.next();
 
         List<List<Writable>> list;
-        try{
+        try {
             list = loadData(next, null);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return new org.datavec.api.records.impl.SequenceRecord(list, new RecordMetaDataURI(next.toURI(), CodecRecordReader.class));
+        return new org.datavec.api.records.impl.SequenceRecord(list,
+                        new RecordMetaDataURI(next.toURI(), CodecRecordReader.class));
     }
 
     @Override
@@ -139,7 +139,7 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     @Override
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<SequenceRecord> out = new ArrayList<>();
-        for(RecordMetaData meta : recordMetaDatas){
+        for (RecordMetaData meta : recordMetaDatas) {
             File f = new File(meta.getURI());
 
             List<List<Writable>> list = loadData(f, null);

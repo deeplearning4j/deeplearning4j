@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,15 +39,15 @@ import java.util.*;
  */
 public class SparkUtils {
 
-    public static <T> List<JavaRDD<T>> splitData(SplitStrategy splitStrategy, JavaRDD<T> data, long seed){
+    public static <T> List<JavaRDD<T>> splitData(SplitStrategy splitStrategy, JavaRDD<T> data, long seed) {
 
-        if(splitStrategy instanceof RandomSplit){
+        if (splitStrategy instanceof RandomSplit) {
 
-            RandomSplit rs = (RandomSplit)splitStrategy;
+            RandomSplit rs = (RandomSplit) splitStrategy;
 
             double fractionTrain = rs.getFractionTrain();
 
-            double[] splits = new double[]{fractionTrain,1.0-fractionTrain};
+            double[] splits = new double[] {fractionTrain, 1.0 - fractionTrain};
 
             JavaRDD<T>[] split = data.randomSplit(splits, seed);
             List<JavaRDD<T>> list = new ArrayList<>(2);
@@ -80,7 +80,7 @@ public class SparkUtils {
      */
     public static void writeStringToFile(String path, String toWrite, SparkContext sc) throws IOException {
         FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
-        try(BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))){
+        try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
             bos.write(toWrite.getBytes("UTF-8"));
         }
     }
@@ -103,9 +103,9 @@ public class SparkUtils {
      */
     public static String readStringFromFile(String path, SparkContext sc) throws IOException {
         FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
-        try(BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))){
+        try (BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))) {
             byte[] asBytes = IOUtils.toByteArray(bis);
-            return new String(asBytes,"UTF-8");
+            return new String(asBytes, "UTF-8");
         }
     }
 
@@ -129,7 +129,7 @@ public class SparkUtils {
      */
     public static void writeObjectToFile(String path, Object toWrite, SparkContext sc) throws IOException {
         FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
-        try(BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))){
+        try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(toWrite);
         }
@@ -157,15 +157,15 @@ public class SparkUtils {
      */
     public static <T> T readObjectFromFile(String path, Class<T> type, SparkContext sc) throws IOException {
         FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
-        try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(fileSystem.open(new Path(path))))){
+        try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(fileSystem.open(new Path(path))))) {
             Object o;
             try {
                 o = ois.readObject();
-            } catch( ClassNotFoundException e ){
+            } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
 
-            return (T)o;
+            return (T) o;
         }
     }
 
@@ -187,12 +187,12 @@ public class SparkUtils {
      * @param dataAnalysis    Analysis to generate HTML file for
      * @param sc              Spark context
      */
-    public static void writeAnalysisHTMLToFile(String outputPath, DataAnalysis dataAnalysis, JavaSparkContext sc){
+    public static void writeAnalysisHTMLToFile(String outputPath, DataAnalysis dataAnalysis, JavaSparkContext sc) {
         try {
             String analysisAsHtml = HtmlAnalysis.createHtmlAnalysisString(dataAnalysis);
             writeStringToFile(outputPath, analysisAsHtml, sc);
-        }catch(Exception e){
-            throw new RuntimeException("Error generating or writing HTML analysis file (normalized data)",e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating or writing HTML analysis file (normalized data)", e);
         }
     }
 
@@ -204,12 +204,14 @@ public class SparkUtils {
      * @param writables     data to write
      * @param sc            Spark context
      */
-    public static void writeWritablesToFile(String outputPath, String delim, List<List<Writable>> writables, JavaSparkContext sc) throws IOException {
+    public static void writeWritablesToFile(String outputPath, String delim, List<List<Writable>> writables,
+                    JavaSparkContext sc) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for(List<Writable> list : writables){
+        for (List<Writable> list : writables) {
             boolean first = true;
-            for(Writable w : list){
-                if(!first) sb.append(delim);
+            for (Writable w : list) {
+                if (!first)
+                    sb.append(delim);
                 sb.append(w.toString());
                 first = false;
             }
@@ -222,27 +224,24 @@ public class SparkUtils {
      * Register the DataVec writable classes for Kryo
      */
     public static void registerKryoClasses(SparkConf conf) {
-        List<Class<?>> classes = Arrays.<Class<?>>asList(
-                BooleanWritable.class,
-                ByteWritable.class,
-                DoubleWritable.class,
-                FloatWritable.class,
-                IntWritable.class,
-                LongWritable.class,
-                NullWritable.class,
-                Text.class);
+        List<Class<?>> classes = Arrays.<Class<?>>asList(BooleanWritable.class, ByteWritable.class,
+                        DoubleWritable.class, FloatWritable.class, IntWritable.class, LongWritable.class,
+                        NullWritable.class, Text.class);
 
-        conf.registerKryoClasses((Class<?>[])classes.toArray());
+        conf.registerKryoClasses((Class<?>[]) classes.toArray());
     }
 
-    public static Class<? extends CompressionCodec> getCompressionCodeClass(String compressionCodecClass){
+    public static Class<? extends CompressionCodec> getCompressionCodeClass(String compressionCodecClass) {
         Class<?> tempClass;
         try {
             tempClass = Class.forName(compressionCodecClass);
-        } catch (ClassNotFoundException e){
-            throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass + " (not found)", e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass + " (not found)",
+                            e);
         }
-        if(!(CompressionCodec.class.isAssignableFrom(tempClass))) throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass + " (not a CompressionCodec)");
-        return (Class<? extends CompressionCodec>)tempClass;
+        if (!(CompressionCodec.class.isAssignableFrom(tempClass)))
+            throw new RuntimeException("Invalid class for compression codec: " + compressionCodecClass
+                            + " (not a CompressionCodec)");
+        return (Class<? extends CompressionCodec>) tempClass;
     }
 }

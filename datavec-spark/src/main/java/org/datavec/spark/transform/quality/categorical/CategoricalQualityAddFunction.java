@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import org.datavec.api.transform.metadata.CategoricalMetaData;
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class CategoricalQualityAddFunction implements Function2<CategoricalQuality,Writable,CategoricalQuality> {
+public class CategoricalQualityAddFunction implements Function2<CategoricalQuality, Writable, CategoricalQuality> {
 
     private final CategoricalMetaData meta;
 
@@ -40,10 +40,14 @@ public class CategoricalQualityAddFunction implements Function2<CategoricalQuali
         long countMissing = v1.getCountMissing();
         long countTotal = v1.getCountTotal() + 1;
 
-        if(meta.isValid(writable)) valid++;
-        else if(writable instanceof NullWritable || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty())) countMissing++;
-        else invalid++;
+        if (meta.isValid(writable))
+            valid++;
+        else if (writable instanceof NullWritable
+                        || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
+            countMissing++;
+        else
+            invalid++;
 
-        return new CategoricalQuality(valid,invalid,countMissing,countTotal);
+        return new CategoricalQuality(valid, invalid, countMissing, countTotal);
     }
 }

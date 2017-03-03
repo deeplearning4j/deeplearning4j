@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class DoubleAnalysis extends NumericalColumnAnalysis {
 
     private double min;
@@ -79,7 +79,7 @@ public class DoubleAnalysis extends NumericalColumnAnalysis {
             return this;
         }
 
-        public Builder countNaN(long countNaN){
+        public Builder countNaN(long countNaN) {
             this.countNaN = countNaN;
             return this;
         }

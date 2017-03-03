@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,44 +20,38 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SetUtils
-{
-	private SetUtils() {}
+public class SetUtils {
+    private SetUtils() {}
 
-	// Set specific operations
+    // Set specific operations
 
-	public static <T> Set<T> intersection(Collection<T> parentCollection, Collection<T> removeFromCollection)
-	{
-		Set<T> results = new HashSet<T>(parentCollection) ;
-		results.retainAll(removeFromCollection) ;
-		return results ;
-	}
+    public static <T> Set<T> intersection(Collection<T> parentCollection, Collection<T> removeFromCollection) {
+        Set<T> results = new HashSet<T>(parentCollection);
+        results.retainAll(removeFromCollection);
+        return results;
+    }
 
-	public static <T> boolean intersectionP(Set<? extends T> s1, Set<? extends T> s2)
-	{
-		for( T elt : s1 )
-		{
-			if ( s2.contains(elt) ) 
-				return true ;
-		}
-		return false ;
-	}
+    public static <T> boolean intersectionP(Set<? extends T> s1, Set<? extends T> s2) {
+        for (T elt : s1) {
+            if (s2.contains(elt))
+                return true;
+        }
+        return false;
+    }
 
-	public static <T> Set<T> union(Set<? extends T> s1, Set<? extends T> s2)
-	{
-		Set<T> s3 = new HashSet<T>(s1) ;
-		s3.addAll(s2) ;
-		return s3 ;
-	}
+    public static <T> Set<T> union(Set<? extends T> s1, Set<? extends T> s2) {
+        Set<T> s3 = new HashSet<T>(s1);
+        s3.addAll(s2);
+        return s3;
+    }
 
-	/** Return is s1 \ s2 */
+    /** Return is s1 \ s2 */
 
-	public static <T> Set<T> difference(Collection<? extends T> s1, Collection<? extends T> s2)
-	{
-		Set<T> s3 = new HashSet<T>(s1) ;
-		s3.removeAll(s2) ;
-		return s3 ;
-	}
+    public static <T> Set<T> difference(Collection<? extends T> s1, Collection<? extends T> s2) {
+        Set<T> s3 = new HashSet<T>(s1);
+        s3.removeAll(s2);
+        return s3;
+    }
 }
 
 

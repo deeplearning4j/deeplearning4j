@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,8 @@ public class IntegerMetaData extends BaseColumnMetaData {
      * @param min Min allowed value. If null: no restriction on min value value in this column
      * @param max Max allowed value. If null: no restiction on max value in this column
      */
-    public IntegerMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Integer min, @JsonProperty("maxAllowedValue") Integer max) {
+    public IntegerMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Integer min,
+                    @JsonProperty("maxAllowedValue") Integer max) {
         super(name);
         this.minAllowedValue = min;
         this.maxAllowedValue = max;
@@ -63,8 +64,10 @@ public class IntegerMetaData extends BaseColumnMetaData {
             return false;
         }
 
-        if (minAllowedValue != null && value < minAllowedValue) return false;
-        if (maxAllowedValue != null && value > maxAllowedValue) return false;
+        if (minAllowedValue != null && value < minAllowedValue)
+            return false;
+        if (maxAllowedValue != null && value > maxAllowedValue)
+            return false;
         return true;
     }
 
@@ -86,8 +89,10 @@ public class IntegerMetaData extends BaseColumnMetaData {
             return false;
         }
 
-        if (minAllowedValue != null && value < minAllowedValue) return false;
-        if (maxAllowedValue != null && value > maxAllowedValue) return false;
+        if (minAllowedValue != null && value < minAllowedValue)
+            return false;
+        if (maxAllowedValue != null && value > maxAllowedValue)
+            return false;
         return true;
     }
 
@@ -100,9 +105,11 @@ public class IntegerMetaData extends BaseColumnMetaData {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("IntegerMetaData(name=\"").append(name).append("\",");
-        if (minAllowedValue != null) sb.append("minAllowed=").append(minAllowedValue);
+        if (minAllowedValue != null)
+            sb.append("minAllowed=").append(minAllowedValue);
         if (maxAllowedValue != null) {
-            if (minAllowedValue != null) sb.append(",");
+            if (minAllowedValue != null)
+                sb.append(",");
             sb.append("maxAllowed=").append(maxAllowedValue);
         }
         sb.append(")");

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,13 +29,19 @@ public class ByteWritable implements WritableComparable {
 
     public ByteWritable() {}
 
-    public ByteWritable(@JsonProperty("value") byte value) { set(value); }
+    public ByteWritable(@JsonProperty("value") byte value) {
+        set(value);
+    }
 
     /** Set the value of this ByteWritable. */
-    public void set(byte value) { this.value = value; }
+    public void set(byte value) {
+        this.value = value;
+    }
 
     /** Return the value of this ByteWritable. */
-    public byte get() { return value; }
+    public byte get() {
+        return value;
+    }
 
     public void readFields(DataInput in) throws IOException {
         value = in.readByte();
@@ -50,18 +56,18 @@ public class ByteWritable implements WritableComparable {
         if (!(o instanceof ByteWritable)) {
             return false;
         }
-        ByteWritable other = (ByteWritable)o;
+        ByteWritable other = (ByteWritable) o;
         return this.value == other.value;
     }
 
     public int hashCode() {
-        return (int)value;
+        return (int) value;
     }
 
     /** Compares two ByteWritables. */
     public int compareTo(Object o) {
         int thisValue = this.value;
-        int thatValue = ((ByteWritable)o).value;
+        int thatValue = ((ByteWritable) o).value;
         return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
     }
 
@@ -75,35 +81,34 @@ public class ByteWritable implements WritableComparable {
             super(ByteWritable.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             byte thisValue = b1[s1];
             byte thatValue = b2[s2];
             return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
         }
     }
 
-    static {                                        // register this comparator
+    static { // register this comparator
         WritableComparator.define(ByteWritable.class, new Comparator());
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         return value;
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         return value;
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         return value;
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         return value;
     }
 }

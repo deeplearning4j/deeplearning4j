@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ public class YamlSerializer extends BaseSerializer {
 
     private ObjectMapper om;
 
-    public YamlSerializer(){
+    public YamlSerializer() {
         this.om = getMapper();
     }
 
@@ -37,7 +37,7 @@ public class YamlSerializer extends BaseSerializer {
         return om;
     }
 
-    private ObjectMapper getMapper(){
+    private ObjectMapper getMapper() {
         return getObjectMapper(new YAMLFactory());
     }
 }

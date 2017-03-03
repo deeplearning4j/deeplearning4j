@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,23 +30,21 @@ public class IntegerQuality extends ColumnQuality {
 
     private final long countNonInteger;
 
-    public IntegerQuality(long countValid, long countInvalid, long countMissing, long countTotal, long countNonInteger){
-        super(countValid,countInvalid,countMissing,countTotal);
+    public IntegerQuality(long countValid, long countInvalid, long countMissing, long countTotal,
+                    long countNonInteger) {
+        super(countValid, countInvalid, countMissing, countTotal);
         this.countNonInteger = countNonInteger;
     }
 
 
-    public IntegerQuality add(IntegerQuality other){
-        return new IntegerQuality(
-                countValid + other.countValid,
-                countInvalid + other.countInvalid,
-                countMissing + other.countMissing,
-                countTotal + other.countTotal,
-                countNonInteger + other.countNonInteger);
+    public IntegerQuality add(IntegerQuality other) {
+        return new IntegerQuality(countValid + other.countValid, countInvalid + other.countInvalid,
+                        countMissing + other.countMissing, countTotal + other.countTotal,
+                        countNonInteger + other.countNonInteger);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "IntegerQuality(" + super.toString() + ", countNonInteger=" + countNonInteger + ")";
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,10 +35,11 @@ import org.datavec.api.transform.schema.SequenceSchema;
 public class ConvertToSequence {
 
     private final String keyColumn;
-    private final SequenceComparator comparator;    //For sorting values within collected (unsorted) sequence
+    private final SequenceComparator comparator; //For sorting values within collected (unsorted) sequence
     private Schema inputSchema;
 
-    public ConvertToSequence(@JsonProperty("keyColumn") String keyColumn, @JsonProperty("comparator") SequenceComparator comparator) {
+    public ConvertToSequence(@JsonProperty("keyColumn") String keyColumn,
+                    @JsonProperty("comparator") SequenceComparator comparator) {
         this.keyColumn = keyColumn;
         this.comparator = comparator;
     }

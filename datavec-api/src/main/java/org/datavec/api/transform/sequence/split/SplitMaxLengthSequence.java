@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,14 +45,16 @@ public class SplitMaxLengthSequence implements SequenceSplit {
      * @param equalSplits       if true: split larger sequences into equal sized subsequences. If false: split into
      *                          n maxSequenceLength sequences, and (if necessary) 1 with 1 <= length < maxSequenceLength
      */
-    public SplitMaxLengthSequence(@JsonProperty("maxSequenceLength") int maxSequenceLength, @JsonProperty("equalSplits") boolean equalSplits) {
+    public SplitMaxLengthSequence(@JsonProperty("maxSequenceLength") int maxSequenceLength,
+                    @JsonProperty("equalSplits") boolean equalSplits) {
         this.maxSequenceLength = maxSequenceLength;
         this.equalSplits = equalSplits;
     }
 
     public List<List<List<Writable>>> split(List<List<Writable>> sequence) {
         int n = sequence.size();
-        if (n <= maxSequenceLength) return Collections.singletonList(sequence);
+        if (n <= maxSequenceLength)
+            return Collections.singletonList(sequence);
         int splitSize;
         if (equalSplits) {
             if (n % maxSequenceLength == 0) {
@@ -89,7 +91,7 @@ public class SplitMaxLengthSequence implements SequenceSplit {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "SplitMaxLengthSequence(maxSequenceLength=" + maxSequenceLength + ",equalSplits=" + equalSplits + ")";
     }
 }

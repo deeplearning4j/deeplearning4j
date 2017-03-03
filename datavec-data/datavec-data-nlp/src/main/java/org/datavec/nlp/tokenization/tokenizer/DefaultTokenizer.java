@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,47 +26,46 @@ import java.util.StringTokenizer;
  */
 public class DefaultTokenizer implements Tokenizer {
 
-	public DefaultTokenizer(String tokens) {
-		tokenizer = new StringTokenizer(tokens);
-	}
-	
-	private StringTokenizer tokenizer;
-	private TokenPreProcess tokenPreProcess;
-	
-	@Override
-	public boolean hasMoreTokens() {
-		return tokenizer.hasMoreTokens();
-	}
+    public DefaultTokenizer(String tokens) {
+        tokenizer = new StringTokenizer(tokens);
+    }
 
-	@Override
-	public int countTokens() {
-		return tokenizer.countTokens();
-	}
+    private StringTokenizer tokenizer;
+    private TokenPreProcess tokenPreProcess;
 
-	@Override
-	public String nextToken() {
-		String base =  tokenizer.nextToken();
-        if(tokenPreProcess != null)
+    @Override
+    public boolean hasMoreTokens() {
+        return tokenizer.hasMoreTokens();
+    }
+
+    @Override
+    public int countTokens() {
+        return tokenizer.countTokens();
+    }
+
+    @Override
+    public String nextToken() {
+        String base = tokenizer.nextToken();
+        if (tokenPreProcess != null)
             base = tokenPreProcess.preProcess(base);
         return base;
-	}
+    }
 
-	@Override
-	public List<String> getTokens() {
-		List<String> tokens = new ArrayList<>();
-		while(hasMoreTokens()) {
-			tokens.add(nextToken());
-		}
-		return tokens;
-	}
+    @Override
+    public List<String> getTokens() {
+        List<String> tokens = new ArrayList<>();
+        while (hasMoreTokens()) {
+            tokens.add(nextToken());
+        }
+        return tokens;
+    }
 
-	@Override
-	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-		this.tokenPreProcess = tokenPreProcessor;
-		
-	}
-	
-	
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+        this.tokenPreProcess = tokenPreProcessor;
 
-	
+    }
+
+
+
 }

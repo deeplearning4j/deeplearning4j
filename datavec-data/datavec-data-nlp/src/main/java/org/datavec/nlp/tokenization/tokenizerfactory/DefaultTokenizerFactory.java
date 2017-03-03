@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,6 @@
  */
 
 package org.datavec.nlp.tokenization.tokenizerfactory;
-
-
 
 
 
@@ -37,14 +35,14 @@ public class DefaultTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        DefaultTokenizer t =  new DefaultTokenizer(toTokenize);
+        DefaultTokenizer t = new DefaultTokenizer(toTokenize);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t =  new DefaultStreamTokenizer(toTokenize);
+        Tokenizer t = new DefaultStreamTokenizer(toTokenize);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }

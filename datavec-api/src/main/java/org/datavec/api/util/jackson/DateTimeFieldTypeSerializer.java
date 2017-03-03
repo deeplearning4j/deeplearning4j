@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,9 +31,10 @@ import java.io.IOException;
  */
 public class DateTimeFieldTypeSerializer extends JsonSerializer<DateTimeFieldType> {
     @Override
-    public void serialize(DateTimeFieldType dateTimeFieldType, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
+    public void serialize(DateTimeFieldType dateTimeFieldType, JsonGenerator jsonGenerator,
+                    SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("fieldType",dateTimeFieldType.getName());
+        jsonGenerator.writeStringField("fieldType", dateTimeFieldType.getName());
         jsonGenerator.writeEndObject();
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,9 +72,9 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param minValidTime Min valid time (epoch millisecond format). If null: no restriction in min valid time
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
      */
-    public StringToTimeTransform(@JsonProperty("columnName") String columnName, @JsonProperty("timeFormat") String timeFormat,
-                                 @JsonProperty("timeZone") TimeZone timeZone, @JsonProperty("minValidTime") Long minValidTime,
-                                 @JsonProperty("maxValidTime") Long maxValidTime) {
+    public StringToTimeTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("timeFormat") String timeFormat, @JsonProperty("timeZone") TimeZone timeZone,
+                    @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
         this(columnName, timeFormat, DateTimeZone.forTimeZone(timeZone), minValidTime, maxValidTime);
     }
 
@@ -85,7 +85,8 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param minValidTime Min valid time (epoch millisecond format). If null: no restriction in min valid time
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
      */
-    public StringToTimeTransform(String columnName, String timeFormat, DateTimeZone timeZone, Long minValidTime, Long maxValidTime) {
+    public StringToTimeTransform(String columnName, String timeFormat, DateTimeZone timeZone, Long minValidTime,
+                    Long maxValidTime) {
         super(columnName);
         this.timeFormat = timeFormat;
         this.timeZone = timeZone;
@@ -112,9 +113,11 @@ public class StringToTimeTransform extends BaseColumnTransform {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("StringToTimeTransform(timeZone=").append(timeZone);
-        if (minValidTime != null) sb.append(",minValidTime=").append(minValidTime);
+        if (minValidTime != null)
+            sb.append(",minValidTime=").append(minValidTime);
         if (maxValidTime != null) {
-            if (minValidTime != null) sb.append(",");
+            if (minValidTime != null)
+                sb.append(",");
             sb.append("maxValidTime=").append(maxValidTime);
         }
         sb.append(")");

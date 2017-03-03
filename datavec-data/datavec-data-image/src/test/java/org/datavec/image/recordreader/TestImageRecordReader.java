@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,14 +46,14 @@ public class TestImageRecordReader {
 
         ClassPathResource cpr = new ClassPathResource("/testimages/class0/0.jpg");
         File parentDir = cpr.getFile().getParentFile().getParentFile();
-//        System.out.println(f.getAbsolutePath());
-//        System.out.println(f.getParentFile().getParentFile().getAbsolutePath());
+        //        System.out.println(f.getAbsolutePath());
+        //        System.out.println(f.getParentFile().getParentFile().getAbsolutePath());
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-        ImageRecordReader rr = new ImageRecordReader(32,32,3, labelMaker);
+        ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
         rr.initialize(new FileSplit(parentDir));
 
         List<List<Writable>> out = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             List<Writable> l = rr.next();
             out.add(l);
             assertEquals(2, l.size());
@@ -66,12 +66,12 @@ public class TestImageRecordReader {
         List<Record> out3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
 
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             Record r = rr.nextRecord();
             out2.add(r.getRecord());
             out3.add(r);
             meta.add(r.getMetaData());
-//            System.out.println(r.getMetaData() + "\t" + r.getRecord().get(1));
+            //            System.out.println(r.getMetaData() + "\t" + r.getRecord().get(1));
         }
 
         assertEquals(out, out2);
@@ -92,18 +92,18 @@ public class TestImageRecordReader {
         List<URI> order1 = Arrays.asList(f1.toURI(), f0.toURI());
 
         ParentPathLabelGenerator labelMaker0 = new ParentPathLabelGenerator();
-        ImageRecordReader rr0 = new ImageRecordReader(32,32,3, labelMaker0);
+        ImageRecordReader rr0 = new ImageRecordReader(32, 32, 3, labelMaker0);
         rr0.initialize(new CollectionInputSplit(order0));
 
         ParentPathLabelGenerator labelMaker1 = new ParentPathLabelGenerator();
-        ImageRecordReader rr1 = new ImageRecordReader(32,32,3, labelMaker1);
+        ImageRecordReader rr1 = new ImageRecordReader(32, 32, 3, labelMaker1);
         rr1.initialize(new CollectionInputSplit(order1));
 
         List<String> labels0 = rr0.getLabels();
         List<String> labels1 = rr1.getLabels();
 
-//        System.out.println(labels0);
-//        System.out.println(labels1);
+        //        System.out.println(labels0);
+        //        System.out.println(labels1);
 
         assertEquals(labels0, labels1);
     }
@@ -119,12 +119,12 @@ public class TestImageRecordReader {
         FileSplit fs = new FileSplit(f0, new Random(12345));
 
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-        ImageRecordReader rr = new ImageRecordReader(32,32,3, labelMaker);
+        ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
         rr.initialize(fs);
 
         List<List<Writable>> out1 = new ArrayList<>();
         List<File> order1 = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             out1.add(rr.next());
             order1.add(rr.getCurrentFile());
         }
@@ -134,7 +134,7 @@ public class TestImageRecordReader {
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
         List<File> order2 = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             out2.add(rr.next());
             order2.add(rr.getCurrentFile());
         }
@@ -148,11 +148,11 @@ public class TestImageRecordReader {
         FileSplit fs2 = new FileSplit(f0, new Random(999999999));
 
         ParentPathLabelGenerator labelMaker2 = new ParentPathLabelGenerator();
-        ImageRecordReader rr2 = new ImageRecordReader(32,32,3, labelMaker2);
+        ImageRecordReader rr2 = new ImageRecordReader(32, 32, 3, labelMaker2);
         rr2.initialize(fs2);
 
         List<File> order3 = new ArrayList<>();
-        while(rr2.hasNext()){
+        while (rr2.hasNext()) {
             rr2.next();
             order3.add(rr2.getCurrentFile());
         }

@@ -20,44 +20,44 @@ import org.roaringbitmap.RoaringBitmap;
  */
 public class IntegerBenchmarks {
 
-  public static void main(String[] args) {
+    public static void main(String[] args) {
 
-    MemoryMeter meter = new MemoryMeter();
+        MemoryMeter meter = new MemoryMeter();
 
-    // test sets of ints ranging in size from 0 to CYCLES
-    int CYCLES = 5000;
-    int POPULATION_SIZE = 50_000_000;
+        // test sets of ints ranging in size from 0 to CYCLES
+        int CYCLES = 5000;
+        int POPULATION_SIZE = 50_000_000;
 
-    IntArrayList list = new IntArrayList();
-    IntArrayList list2 = new IntArrayList();
-    RoaringBitmap bitmap = new RoaringBitmap();
+        IntArrayList list = new IntArrayList();
+        IntArrayList list2 = new IntArrayList();
+        RoaringBitmap bitmap = new RoaringBitmap();
 
-    // In this step we sort the ints
-    IntRBTreeSet testData = new IntRBTreeSet();
-    for (int i = 0; i < CYCLES; i++) {
-      int x = RandomUtils.nextInt(0, POPULATION_SIZE);
-      testData.add(x);
+        // In this step we sort the ints
+        IntRBTreeSet testData = new IntRBTreeSet();
+        for (int i = 0; i < CYCLES; i++) {
+            int x = RandomUtils.nextInt(0, POPULATION_SIZE);
+            testData.add(x);
+        }
+
+        IntegratedIntCompressor iic = new IntegratedIntCompressor();
+        int[] compressed;
+        int count = 1;
+        for (int i : testData) {
+            list.add(i);
+            list2.add(i);
+            list2.trim();
+            bitmap.add(i);
+
+            compressed = iic.compress(list.elements());
+            System.out.println();
+            System.out.println(count);
+            System.out.println("IntArrayList:         " + meter.measureDeep(list));
+            System.out.println("Trimmed IntArrayList: " + meter.measureDeep(list2));
+            System.out.println("Trimmed int[]:        " + meter.measureDeep(list2.elements()));
+            System.out.println("Array:                " + meter.measureDeep(list2.elements()));
+            System.out.println("Bitmap:               " + meter.measureDeep(bitmap));
+            System.out.println("FastPfor:             " + meter.measureDeep(compressed));
+            count++;
+        }
     }
-
-    IntegratedIntCompressor iic = new IntegratedIntCompressor();
-    int[] compressed;
-    int count = 1;
-    for (int i : testData) {
-      list.add(i);
-      list2.add(i);
-      list2.trim();
-      bitmap.add(i);
-
-      compressed = iic.compress(list.elements());
-      System.out.println();
-      System.out.println(count);
-      System.out.println("IntArrayList:         " + meter.measureDeep(list));
-      System.out.println("Trimmed IntArrayList: " + meter.measureDeep(list2));
-      System.out.println("Trimmed int[]:        " + meter.measureDeep(list2.elements()));
-      System.out.println("Array:                " + meter.measureDeep(list2.elements()));
-      System.out.println("Bitmap:               " + meter.measureDeep(bitmap));
-      System.out.println("FastPfor:             " + meter.measureDeep(compressed));
-      count++;
-    }
-  }
 }

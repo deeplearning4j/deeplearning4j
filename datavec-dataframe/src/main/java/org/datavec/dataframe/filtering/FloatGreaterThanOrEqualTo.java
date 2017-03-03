@@ -9,15 +9,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class FloatGreaterThanOrEqualTo extends ColumnFilter {
 
-  private float value;
+    private float value;
 
-  public FloatGreaterThanOrEqualTo(ColumnReference reference, float value) {
-    super(reference);
-    this.value = value;
-  }
+    public FloatGreaterThanOrEqualTo(ColumnReference reference, float value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
-    return floatColumn.isGreaterThanOrEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
+        return floatColumn.isGreaterThanOrEqualTo(value);
+    }
 }

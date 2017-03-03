@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ import java.util.List;
  * Convert a record to a row
  * @author Adam Gibson
  */
-public class SequenceToRows extends BaseFlatMapFunctionAdaptee<List<List<Writable>>,Row> {
+public class SequenceToRows extends BaseFlatMapFunctionAdaptee<List<List<Writable>>, Row> {
 
     public SequenceToRows(Schema schema) {
         super(new SequenceToRowsAdapter(schema));

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,21 +30,19 @@ public class SentenceAnnotator extends org.cleartk.opennlp.tools.SentenceAnnotat
         //UIMA logging
         Util.disableLogging();
     }
-	public static AnalysisEngineDescription getDescription() throws ResourceInitializationException {
-	    return AnalysisEngineFactory.createEngineDescription(
-                SentenceAnnotator.class,
-                PARAM_SENTENCE_MODEL_PATH,
-                ParamUtil.getParameterValue(PARAM_SENTENCE_MODEL_PATH, "/models/en-sent.bin"),
-                PARAM_WINDOW_CLASS_NAMES,
-                ParamUtil.getParameterValue(PARAM_WINDOW_CLASS_NAMES, null));
-	  }
 
-	
-	@Override
-	public synchronized void process(JCas jCas) throws AnalysisEngineProcessException {
-		super.process(jCas);
-	}
+    public static AnalysisEngineDescription getDescription() throws ResourceInitializationException {
+        return AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.class, PARAM_SENTENCE_MODEL_PATH,
+                        ParamUtil.getParameterValue(PARAM_SENTENCE_MODEL_PATH, "/models/en-sent.bin"),
+                        PARAM_WINDOW_CLASS_NAMES, ParamUtil.getParameterValue(PARAM_WINDOW_CLASS_NAMES, null));
+    }
 
-	
+
+    @Override
+    public synchronized void process(JCas jCas) throws AnalysisEngineProcessException {
+        super.process(jCas);
+    }
+
+
 
 }

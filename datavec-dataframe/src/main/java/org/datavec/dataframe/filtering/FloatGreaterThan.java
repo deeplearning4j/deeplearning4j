@@ -10,15 +10,15 @@ import org.datavec.dataframe.columns.FloatColumnUtils;
  */
 public class FloatGreaterThan extends ColumnFilter {
 
-  private float value;
+    private float value;
 
-  public FloatGreaterThan(ColumnReference reference, float value) {
-    super(reference);
-    this.value = value;
-  }
+    public FloatGreaterThan(ColumnReference reference, float value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
-    return floatColumn.select(FloatColumnUtils.isGreaterThan, value);
-  }
+    public Selection apply(Table relation) {
+        FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
+        return floatColumn.select(FloatColumnUtils.isGreaterThan, value);
+    }
 }

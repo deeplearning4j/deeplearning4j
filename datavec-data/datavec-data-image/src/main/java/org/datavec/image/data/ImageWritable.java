@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,22 +58,22 @@ public class ImageWritable implements Writable {
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 

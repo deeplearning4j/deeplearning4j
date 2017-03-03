@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,7 @@ package org.datavec.api.exceptions;
  * @author sonali
  */
 public class UnknownFormatException extends Exception {
-    public UnknownFormatException() {
-    }
+    public UnknownFormatException() {}
 
     public UnknownFormatException(String message) {
         super(message);
@@ -35,7 +34,8 @@ public class UnknownFormatException extends Exception {
         super(cause);
     }
 
-    public UnknownFormatException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public UnknownFormatException(String message, Throwable cause, boolean enableSuppression,
+                    boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

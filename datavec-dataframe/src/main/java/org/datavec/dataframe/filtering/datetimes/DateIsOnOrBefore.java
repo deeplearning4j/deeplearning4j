@@ -15,17 +15,17 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class DateIsOnOrBefore extends ColumnFilter {
 
-  private int value;
+    private int value;
 
-  public DateIsOnOrBefore(ColumnReference reference, int value) {
-    super(reference);
-    this.value = value;
-  }
+    public DateIsOnOrBefore(ColumnReference reference, int value) {
+        super(reference);
+        this.value = value;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
+    @Override
+    public Selection apply(Table relation) {
 
-    DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
-    return dateColumn.isOnOrBefore(value);
-  }
+        DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference().getColumnName());
+        return dateColumn.isOnOrBefore(value);
+    }
 }

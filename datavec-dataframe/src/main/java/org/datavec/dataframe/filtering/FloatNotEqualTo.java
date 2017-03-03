@@ -10,15 +10,15 @@ import org.datavec.dataframe.util.Selection;
  */
 public class FloatNotEqualTo extends ColumnFilter {
 
-  private float value;
+    private float value;
 
-  public FloatNotEqualTo(ColumnReference reference, float value) {
-    super(reference);
-    this.value = value;
-  }
+    public FloatNotEqualTo(ColumnReference reference, float value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
-    return floatColumn.isNotEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        FloatColumn floatColumn = (FloatColumn) relation.column(columnReference.getColumnName());
+        return floatColumn.isNotEqualTo(value);
+    }
 }

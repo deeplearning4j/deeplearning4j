@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,8 +38,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"separationMilliseconds","timeColumnIdx","schema"})
-@EqualsAndHashCode(exclude = {"separationMilliseconds","timeColumnIdx","schema"})
+@JsonIgnoreProperties({"separationMilliseconds", "timeColumnIdx", "schema"})
+@EqualsAndHashCode(exclude = {"separationMilliseconds", "timeColumnIdx", "schema"})
 public class SequenceSplitTimeSeparation implements SequenceSplit {
 
     private final String timeColumn;
@@ -54,13 +54,13 @@ public class SequenceSplitTimeSeparation implements SequenceSplit {
      * @param timeQuantity    Value/amount (of the specified TimeUnit)
      * @param timeUnit        The unit of time
      */
-    public SequenceSplitTimeSeparation(@JsonProperty("timeColumn") String timeColumn, @JsonProperty("timeQuantity") long timeQuantity,
-                                       @JsonProperty("timeUnit") TimeUnit timeUnit){
+    public SequenceSplitTimeSeparation(@JsonProperty("timeColumn") String timeColumn,
+                    @JsonProperty("timeQuantity") long timeQuantity, @JsonProperty("timeUnit") TimeUnit timeUnit) {
         this.timeColumn = timeColumn;
         this.timeQuantity = timeQuantity;
         this.timeUnit = timeUnit;
 
-        this.separationMilliseconds = TimeUnit.MILLISECONDS.convert(timeQuantity,timeUnit);
+        this.separationMilliseconds = TimeUnit.MILLISECONDS.convert(timeQuantity, timeUnit);
     }
 
     @Override
@@ -71,11 +71,12 @@ public class SequenceSplitTimeSeparation implements SequenceSplit {
         long lastTimeStepTime = Long.MIN_VALUE;
         List<List<Writable>> currentSplit = null;
 
-        for(List<Writable> timeStep : sequence){
+        for (List<Writable> timeStep : sequence) {
             long currStepTime = timeStep.get(timeColumnIdx).toLong();
-            if(lastTimeStepTime == Long.MIN_VALUE || (currStepTime-lastTimeStepTime) > separationMilliseconds){
+            if (lastTimeStepTime == Long.MIN_VALUE || (currStepTime - lastTimeStepTime) > separationMilliseconds) {
                 //New split
-                if(currentSplit != null) out.add(currentSplit);
+                if (currentSplit != null)
+                    out.add(currentSplit);
                 currentSplit = new ArrayList<>();
             }
             currentSplit.add(timeStep);
@@ -90,11 +91,13 @@ public class SequenceSplitTimeSeparation implements SequenceSplit {
 
     @Override
     public void setInputSchema(Schema inputSchema) {
-        if(!inputSchema.hasColumn(timeColumn)) throw new IllegalStateException("Invalid state: schema does not have column "
-            + "with name \"" + timeColumn + "\"");
-        if(inputSchema.getMetaData(timeColumn).getColumnType() != ColumnType.Time){
-            throw new IllegalStateException("Invalid input schema: schema column \"" + timeColumn + "\" is not a time column." +
-                " (Is type: " + inputSchema.getMetaData(timeColumn).getColumnType() + ")");
+        if (!inputSchema.hasColumn(timeColumn))
+            throw new IllegalStateException(
+                            "Invalid state: schema does not have column " + "with name \"" + timeColumn + "\"");
+        if (inputSchema.getMetaData(timeColumn).getColumnType() != ColumnType.Time) {
+            throw new IllegalStateException("Invalid input schema: schema column \"" + timeColumn
+                            + "\" is not a time column." + " (Is type: "
+                            + inputSchema.getMetaData(timeColumn).getColumnType() + ")");
         }
 
         this.timeColumnIdx = inputSchema.getIndexOfColumn(timeColumn);
@@ -107,7 +110,8 @@ public class SequenceSplitTimeSeparation implements SequenceSplit {
     }
 
     @Override
-    public String toString(){
-        return "SequenceSplitTimeSeparation(timeColumn=\"" + timeColumn + "\",timeQuantity=" + timeQuantity + ",timeUnit=" + timeUnit + ")";
+    public String toString() {
+        return "SequenceSplitTimeSeparation(timeColumn=\"" + timeColumn + "\",timeQuantity=" + timeQuantity
+                        + ",timeUnit=" + timeUnit + ")";
     }
 }

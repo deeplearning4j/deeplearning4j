@@ -15,18 +15,18 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextMatchesRegex extends ColumnFilter {
 
-  private String string;
+    private String string;
 
-  public TextMatchesRegex(ColumnReference reference, String string) {
-    super(reference);
-    this.string = string;
-  }
+    public TextMatchesRegex(ColumnReference reference, String string) {
+        super(reference);
+        this.string = string;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
+    @Override
+    public Selection apply(Table relation) {
 
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.matchesRegex(string);
-  }
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.matchesRegex(string);
+    }
 }

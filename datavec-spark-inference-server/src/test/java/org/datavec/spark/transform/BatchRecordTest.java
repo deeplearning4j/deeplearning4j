@@ -14,13 +14,10 @@ public class BatchRecordTest {
 
     @Test
     public void testBatchRecordCreationFromDataSet() {
-        DataSet dataSet = new DataSet(Nd4j.create(2,2), Nd4j.create(new double[][]{
-                {1,1},
-                {1,1}
-        }));
+        DataSet dataSet = new DataSet(Nd4j.create(2, 2), Nd4j.create(new double[][] {{1, 1}, {1, 1}}));
 
         BatchRecord batchRecord = BatchRecord.fromDataSet(dataSet);
-        assertEquals(2,batchRecord.getRecords().size());
+        assertEquals(2, batchRecord.getRecords().size());
     }
 
 }

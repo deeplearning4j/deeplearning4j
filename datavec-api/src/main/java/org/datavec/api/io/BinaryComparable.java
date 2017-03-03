@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,16 +39,14 @@ public abstract class BinaryComparable implements Comparable<BinaryComparable> {
     public int compareTo(BinaryComparable other) {
         if (this == other)
             return 0;
-        return WritableComparator.compareBytes(getBytes(), 0, getLength(),
-                other.getBytes(), 0, other.getLength());
+        return WritableComparator.compareBytes(getBytes(), 0, getLength(), other.getBytes(), 0, other.getLength());
     }
 
     /**
      * Compare bytes from {#getBytes()} to those provided.
      */
     public int compareTo(byte[] other, int off, int len) {
-        return WritableComparator.compareBytes(getBytes(), 0, getLength(),
-                other, off, len);
+        return WritableComparator.compareBytes(getBytes(), 0, getLength(), other, off, len);
     }
 
     /**
@@ -57,7 +55,7 @@ public abstract class BinaryComparable implements Comparable<BinaryComparable> {
     public boolean equals(Object other) {
         if (!(other instanceof BinaryComparable))
             return false;
-        BinaryComparable that = (BinaryComparable)other;
+        BinaryComparable that = (BinaryComparable) other;
         if (this.getLength() != that.getLength())
             return false;
         return this.compareTo(that) == 0;

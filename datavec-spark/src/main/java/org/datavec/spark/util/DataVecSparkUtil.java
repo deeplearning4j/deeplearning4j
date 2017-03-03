@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,8 +34,9 @@ public class DataVecSparkUtil {
     /**Same as {@link #combineFilesForSequenceFile(JavaSparkContext, String, String, PathToKeyConverter, PathToKeyConverter)}
      * but with the PathToKeyConverter used for both file sources
      */
-    public static JavaPairRDD<Text,BytesPairWritable> combineFilesForSequenceFile(JavaSparkContext sc, String path1, String path2, PathToKeyConverter converter){
-        return combineFilesForSequenceFile(sc,path1,path2,converter,converter);
+    public static JavaPairRDD<Text, BytesPairWritable> combineFilesForSequenceFile(JavaSparkContext sc, String path1,
+                    String path2, PathToKeyConverter converter) {
+        return combineFilesForSequenceFile(sc, path1, path2, converter, converter);
     }
 
     /**This is a convenience method to combine data from separate files together (intended to write to a sequence file, using
@@ -72,18 +73,21 @@ public class DataVecSparkUtil {
      * @param converter2 As above, for second directory
      * @return
      */
-    public static JavaPairRDD<Text,BytesPairWritable> combineFilesForSequenceFile(JavaSparkContext sc, String path1, String path2, PathToKeyConverter converter1,
-                                                                           PathToKeyConverter converter2){
-        JavaPairRDD<String,PortableDataStream> first = sc.binaryFiles(path1);
-        JavaPairRDD<String,PortableDataStream> second = sc.binaryFiles(path2);
+    public static JavaPairRDD<Text, BytesPairWritable> combineFilesForSequenceFile(JavaSparkContext sc, String path1,
+                    String path2, PathToKeyConverter converter1, PathToKeyConverter converter2) {
+        JavaPairRDD<String, PortableDataStream> first = sc.binaryFiles(path1);
+        JavaPairRDD<String, PortableDataStream> second = sc.binaryFiles(path2);
 
         //Now: process keys (paths) so that they can be merged
-        JavaPairRDD<String, Tuple3<String,Integer,PortableDataStream>> first2 = first.mapToPair(new PathToKeyFunction(0,converter1));
-        JavaPairRDD<String, Tuple3<String,Integer,PortableDataStream>> second2 = second.mapToPair(new PathToKeyFunction(1,converter2));
-        JavaPairRDD<String, Tuple3<String,Integer,PortableDataStream>> merged = first2.union(second2);
+        JavaPairRDD<String, Tuple3<String, Integer, PortableDataStream>> first2 =
+                        first.mapToPair(new PathToKeyFunction(0, converter1));
+        JavaPairRDD<String, Tuple3<String, Integer, PortableDataStream>> second2 =
+                        second.mapToPair(new PathToKeyFunction(1, converter2));
+        JavaPairRDD<String, Tuple3<String, Integer, PortableDataStream>> merged = first2.union(second2);
 
         //Combine into pairs, and prepare for writing
-        JavaPairRDD<Text,BytesPairWritable> toWrite = merged.groupByKey().mapToPair(new MapToBytesPairWritableFunction());
+        JavaPairRDD<Text, BytesPairWritable> toWrite =
+                        merged.groupByKey().mapToPair(new MapToBytesPairWritableFunction());
         return toWrite;
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,32 +76,33 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
         invokeListeners(next);
 
         List<List<Writable>> out;
-        try{
+        try {
             out = loadAndClose(new FileInputStream(next));
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataURI(next.toURI()));
     }
 
-    private List<List<Writable>> loadAndClose(InputStream inputStream){
+    private List<List<Writable>> loadAndClose(InputStream inputStream) {
         LineIterator lineIter = null;
         try {
             lineIter = IOUtils.lineIterator(new InputStreamReader(inputStream));
             return load(lineIter);
         } finally {
-            if(lineIter != null){
+            if (lineIter != null) {
                 lineIter.close();
             }
             IOUtils.closeQuietly(inputStream);
         }
     }
 
-    private List<List<Writable>> load(Iterator<String> lineIter){
+    private List<List<Writable>> load(Iterator<String> lineIter) {
         if (skipNumLines > 0) {
             int count = 0;
-            while (count++ < skipNumLines && lineIter.hasNext()) lineIter.next();
+            while (count++ < skipNumLines && lineIter.hasNext())
+                lineIter.next();
         }
 
         List<List<Writable>> out = new ArrayList<>();
@@ -109,7 +110,8 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
             String line = lineIter.next();
             String[] split = line.split(delimiter);
             ArrayList<Writable> list = new ArrayList<>();
-            for (String s : split) list.add(new Text(s));
+            for (String s : split)
+                list.add(new Text(s));
             out.add(list);
         }
         return out;
@@ -123,7 +125,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
     @Override
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<SequenceRecord> out = new ArrayList<>();
-        for(RecordMetaData meta : recordMetaDatas){
+        for (RecordMetaData meta : recordMetaDatas) {
             File next = new File(meta.getURI());
             List<List<Writable>> sequence = loadAndClose(new FileInputStream(next));
             out.add(new org.datavec.api.records.impl.SequenceRecord(sequence, meta));

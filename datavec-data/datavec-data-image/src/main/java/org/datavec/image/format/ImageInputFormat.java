@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ public class ImageInputFormat extends BaseInputFormat {
 
     @Override
     public RecordReader createReader(InputSplit split) throws IOException, InterruptedException {
-        return createReader(split,new Configuration());
+        return createReader(split, new Configuration());
     }
 
 }

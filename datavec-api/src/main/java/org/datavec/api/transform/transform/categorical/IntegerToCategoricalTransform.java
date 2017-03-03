@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,8 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
 
     private final Map<Integer, String> map;
 
-    public IntegerToCategoricalTransform(@JsonProperty("columnName") String columnName, @JsonProperty("map") Map<Integer, String> map) {
+    public IntegerToCategoricalTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("map") Map<Integer, String> map) {
         super(columnName);
         this.map = map;
     }
@@ -45,7 +46,8 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
         super(columnName);
         this.map = new LinkedHashMap<>();
         int i = 0;
-        for (String s : list) map.put(i++, s);
+        for (String s : list)
+            map.put(i++, s);
     }
 
     @Override
@@ -66,7 +68,8 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
         Collections.sort(list);
         boolean first = true;
         for (Integer i : list) {
-            if (!first) sb.append(",");
+            if (!first)
+                sb.append(",");
             sb.append(i).append("=\"").append(map.get(i)).append("\"");
             first = false;
         }
@@ -76,9 +79,12 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
 
         IntegerToCategoricalTransform o2 = (IntegerToCategoricalTransform) o;
 
@@ -114,7 +120,7 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
     public Object mapSequence(Object sequence) {
         List<?> values = (List<?>) sequence;
         List<List<Integer>> ret = new ArrayList<>();
-        for(Object obj : values) {
+        for (Object obj : values) {
             ret.add((List<Integer>) map(obj));
         }
         return ret;

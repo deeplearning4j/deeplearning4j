@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,26 +27,23 @@ import static org.junit.Assert.assertEquals;
 public class TestSchemaMethods {
 
     @Test
-    public void testNumberedColumnAdding(){
+    public void testNumberedColumnAdding() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnsDouble("doubleCol_%d",0,2)
-                .addColumnsLong("longCol_%d",3,5)
-                .addColumnsString("stringCol_%d",6,8)
-                .build();
+        Schema schema = new Schema.Builder().addColumnsDouble("doubleCol_%d", 0, 2).addColumnsLong("longCol_%d", 3, 5)
+                        .addColumnsString("stringCol_%d", 6, 8).build();
 
         assertEquals(9, schema.numColumns());
 
-        for( int i=0; i<9; i++ ){
-            if( i <= 2 ){
-                assertEquals("doubleCol_"+i, schema.getName(i));
-                assertEquals(ColumnType.Double,schema.getType(i));
-            } else if( i<= 5){
-                assertEquals("longCol_"+i, schema.getName(i));
-                assertEquals(ColumnType.Long,schema.getType(i));
+        for (int i = 0; i < 9; i++) {
+            if (i <= 2) {
+                assertEquals("doubleCol_" + i, schema.getName(i));
+                assertEquals(ColumnType.Double, schema.getType(i));
+            } else if (i <= 5) {
+                assertEquals("longCol_" + i, schema.getName(i));
+                assertEquals(ColumnType.Long, schema.getType(i));
             } else {
-                assertEquals("stringCol_"+i, schema.getName(i));
-                assertEquals(ColumnType.String,schema.getType(i));
+                assertEquals("stringCol_" + i, schema.getName(i));
+                assertEquals(ColumnType.String, schema.getType(i));
             }
         }
 

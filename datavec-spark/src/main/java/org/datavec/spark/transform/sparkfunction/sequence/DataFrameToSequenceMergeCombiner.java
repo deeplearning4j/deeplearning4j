@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class DataFrameToSequenceMergeCombiner implements Function2<List<List<Writable>>, List<List<Writable>>, List<List<Writable>>> {
+public class DataFrameToSequenceMergeCombiner
+                implements Function2<List<List<Writable>>, List<List<Writable>>, List<List<Writable>>> {
 
     @Override
     public List<List<Writable>> call(List<List<Writable>> v1, List<List<Writable>> v2) throws Exception {

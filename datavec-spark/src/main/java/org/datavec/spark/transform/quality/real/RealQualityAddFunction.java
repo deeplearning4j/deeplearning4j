@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,17 +43,22 @@ public class RealQualityAddFunction implements Function2<DoubleQuality, Writable
         long nan = v1.getCountNaN();
         long infinite = v1.getCountInfinite();
 
-        if (meta.isValid(writable)) valid++;
-        else if (writable instanceof NullWritable || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
+        if (meta.isValid(writable))
+            valid++;
+        else if (writable instanceof NullWritable
+                        || writable instanceof Text && (writable.toString() == null || writable.toString().isEmpty()))
             countMissing++;
-        else invalid++;
+        else
+            invalid++;
 
         String str = writable.toString();
         double d;
         try {
             d = Double.parseDouble(str);
-            if (Double.isNaN(d)) nan++;
-            if (Double.isInfinite(d)) infinite++;
+            if (Double.isNaN(d))
+                nan++;
+            if (Double.isInfinite(d))
+                infinite++;
         } catch (NumberFormatException e) {
             nonReal++;
         }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,7 @@ public class AnalyzeSpark {
     public static final int DEFAULT_HISTOGRAM_BUCKETS = 30;
 
     public static SequenceDataAnalysis analyzeSequence(Schema schema, JavaRDD<List<List<Writable>>> data) {
-        return analyzeSequence(schema,data,DEFAULT_HISTOGRAM_BUCKETS);
+        return analyzeSequence(schema, data, DEFAULT_HISTOGRAM_BUCKETS);
     }
 
     /**
@@ -100,7 +100,8 @@ public class AnalyzeSpark {
      * @param maxHistogramBuckets
      * @return
      */
-    public static SequenceDataAnalysis analyzeSequence(Schema schema, JavaRDD<List<List<Writable>>> data, int maxHistogramBuckets) {
+    public static SequenceDataAnalysis analyzeSequence(Schema schema, JavaRDD<List<List<Writable>>> data,
+                    int maxHistogramBuckets) {
         data.cache();
         JavaRDD<List<Writable>> fmSeq = data.flatMap(new SequenceFlatMapFunction());
         DataAnalysis da = analyze(schema, fmSeq);
@@ -108,17 +109,18 @@ public class AnalyzeSpark {
         JavaRDD<Integer> seqLengths = data.map(new SequenceLengthFunction());
         seqLengths.cache();
         SequenceLengthAnalysisCounter counter = new SequenceLengthAnalysisCounter();
-        counter = seqLengths.aggregate(counter,new SequenceLengthAnalysisAddFunction(), new SequenceLengthAnalysisMergeFunction());
+        counter = seqLengths.aggregate(counter, new SequenceLengthAnalysisAddFunction(),
+                        new SequenceLengthAnalysisMergeFunction());
 
         int max = counter.getMaxLengthSeen();
         int min = counter.getMinLengthSeen();
         int nBuckets = counter.getMaxLengthSeen() - counter.getMinLengthSeen();
 
-        Tuple2<double[],long[]> hist;
-        if(max == min){
+        Tuple2<double[], long[]> hist;
+        if (max == min) {
             //Edge case that spark doesn't like
-            hist = new Tuple2<>(new double[]{min},new long[]{counter.getCountTotal()});
-        } else if(nBuckets < maxHistogramBuckets){
+            hist = new Tuple2<>(new double[] {min}, new long[] {counter.getCountTotal()});
+        } else if (nBuckets < maxHistogramBuckets) {
             JavaDoubleRDD drdd = seqLengths.mapToDouble(new IntToDoubleFunction());
             hist = drdd.histogram(nBuckets);
         } else {
@@ -129,22 +131,17 @@ public class AnalyzeSpark {
 
 
         SequenceLengthAnalysis lengthAnalysis = SequenceLengthAnalysis.builder()
-                .totalNumSequences(counter.getCountTotal())
-                .minSeqLength(counter.getMinLengthSeen())
-                .maxSeqLength(counter.getMaxLengthSeen())
-                .countZeroLength(counter.getCountZeroLength())
-                .countOneLength(counter.getCountOneLength())
-                .meanLength(counter.getMean())
-                .histogramBuckets(hist._1())
-                .histogramBucketCounts(hist._2())
-                .build();
+                        .totalNumSequences(counter.getCountTotal()).minSeqLength(counter.getMinLengthSeen())
+                        .maxSeqLength(counter.getMaxLengthSeen()).countZeroLength(counter.getCountZeroLength())
+                        .countOneLength(counter.getCountOneLength()).meanLength(counter.getMean())
+                        .histogramBuckets(hist._1()).histogramBucketCounts(hist._2()).build();
 
-        return new SequenceDataAnalysis(schema,da.getColumnAnalysis(),lengthAnalysis);
+        return new SequenceDataAnalysis(schema, da.getColumnAnalysis(), lengthAnalysis);
     }
 
 
     public static DataAnalysis analyze(Schema schema, JavaRDD<List<Writable>> data) {
-        return analyze(schema,data,DEFAULT_HISTOGRAM_BUCKETS);
+        return analyze(schema, data, DEFAULT_HISTOGRAM_BUCKETS);
     }
 
     public static DataAnalysis analyze(Schema schema, JavaRDD<List<Writable>> data, int maxHistogramBuckets) {
@@ -154,27 +151,27 @@ public class AnalyzeSpark {
         //This is inefficient, but it's easy to implement. Good enough for now!
         List<ColumnAnalysis> list = new ArrayList<>(nColumns);
         for( int i=0; i<nColumns; i++ ){
-
+        
             String columnName = schema.getName(i);
             ColumnType type = schema.getType(i);
-
+        
             JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(i));
             ithColumn.cache();
-
+        
             switch(type){
                 case String:
-
+        
                     ithColumn.cache();
                     long countUnique = ithColumn.distinct().count();
-
+        
                     JavaDoubleRDD stringLength = ithColumn.mapToDouble(new StringLengthFunction());
                     StatCounter stringLengthStats = stringLength.stats();
-
+        
                     long min = (int)stringLengthStats.min();
                     long max = (int)stringLengthStats.max();
-
+        
                     long nBuckets = max-min+1;
-
+        
                     Tuple2<double[],long[]> hist;
                     if(max == min){
                         //Edge case that spark doesn't like
@@ -184,7 +181,7 @@ public class AnalyzeSpark {
                     } else {
                         hist = stringLength.histogram(maxHistogramBuckets);
                     }
-
+        
                     list.add(new StringAnalysis.Builder()
                             .countTotal(stringLengthStats.count())
                             .countUnique(countUnique)
@@ -196,22 +193,22 @@ public class AnalyzeSpark {
                             .histogramBuckets(hist._1())
                             .histogramBucketCounts(hist._2())
                             .build());
-
+        
                     break;
                 case Integer:
                     JavaDoubleRDD doubleRDD1 = ithColumn.mapToDouble(new WritableToDoubleFunction());
                     StatCounter stats1 = doubleRDD1.stats();
-
+        
                     //Now: count number of 0, >0, <0
-
+        
                     IntegerAnalysisCounter counter = new IntegerAnalysisCounter();
                     counter = ithColumn.aggregate(counter,new IntegerAnalysisAddFunction(),new IntegerAnalysisMergeFunction());
-
+        
                     long min1 = (int)stats1.min();
                     long max1 = (int)stats1.max();
-
+        
                     long nBuckets1 = max1-min1+1;
-
+        
                     Tuple2<double[],long[]> hist1;
                     if(max1 == min1){
                         //Edge case that spark doesn't like
@@ -221,7 +218,7 @@ public class AnalyzeSpark {
                     } else {
                         hist1 = doubleRDD1.histogram(maxHistogramBuckets);
                     }
-
+        
                     IntegerAnalysis ia = new IntegerAnalysis.Builder()
                             .min((int)stats1.min())
                             .max((int)stats1.max())
@@ -236,21 +233,21 @@ public class AnalyzeSpark {
                             .countTotal(stats1.count())
                             .histogramBuckets(hist1._1())
                             .histogramBucketCounts(hist1._2()).build();
-
+        
                     list.add(ia);
                     break;
                 case Long:
                     JavaDoubleRDD doubleRDDLong = ithColumn.mapToDouble(new WritableToDoubleFunction());
                     StatCounter statsLong = doubleRDDLong.stats();
-
+        
                     LongAnalysisCounter counterL = new LongAnalysisCounter();
                     counterL = ithColumn.aggregate(counterL,new LongAnalysisAddFunction(),new LongAnalysisMergeFunction());
-
+        
                     long minLong = (long)statsLong.min();
                     long maxLong = (long)statsLong.max();
-
+        
                     long nBucketsLong = maxLong-minLong+1;
-
+        
                     Tuple2<double[],long[]> histLong;
                     if(maxLong == minLong){
                         //Edge case that spark doesn't like
@@ -260,7 +257,7 @@ public class AnalyzeSpark {
                     } else {
                         histLong = doubleRDDLong.histogram(maxHistogramBuckets);
                     }
-
+        
                     LongAnalysis la = new LongAnalysis.Builder()
                             .min((long)statsLong.min())
                             .max((long)statsLong.max())
@@ -275,20 +272,20 @@ public class AnalyzeSpark {
                             .countTotal(statsLong.count())
                             .histogramBuckets(histLong._1())
                             .histogramBucketCounts(histLong._2()).build();
-
+        
                     list.add(la);
-
+        
                     break;
                 case Double:
                     JavaDoubleRDD doubleRDD = ithColumn.mapToDouble(new WritableToDoubleFunction());
                     StatCounter stats = doubleRDD.stats();
-
+        
                     DoubleAnalysisCounter counterR = new DoubleAnalysisCounter();
                     counterR = ithColumn.aggregate(counterR,new DoubleAnalysisAddFunction(),new DoubleAnalysisMergeFunction());
-
+        
                     long min2 = (int)stats.min();
                     long max2 = (int)stats.max();
-
+        
                     Tuple2<double[],long[]> hist2;
                     if(max2 == min2){
                         //Edge case that spark doesn't like
@@ -296,7 +293,7 @@ public class AnalyzeSpark {
                     } else {
                         hist2 = doubleRDD.histogram(maxHistogramBuckets);
                     }
-
+        
                     DoubleAnalysis ra = new DoubleAnalysis.Builder()
                             .min(stats.min())
                             .max(stats.max())
@@ -311,40 +308,40 @@ public class AnalyzeSpark {
                             .countTotal(stats.count())
                             .histogramBuckets(hist2._1())
                             .histogramBucketCounts(hist2._2()).build();
-
+        
                     list.add(ra);
-
-//                    list.merge(new DoubleAnalysis(stats.min(),stats.max(),stats.mean(),stats.sampleStdev(),stats.sampleVariance(),
-//                            counterR.getCountZero(),counterR.getCountNegative(),counterR.getCountPositive(),stats.count(),
-//                            hist2._1(),hist2._2()));
+        
+        //                    list.merge(new DoubleAnalysis(stats.min(),stats.max(),stats.mean(),stats.sampleStdev(),stats.sampleVariance(),
+        //                            counterR.getCountZero(),counterR.getCountNegative(),counterR.getCountPositive(),stats.count(),
+        //                            hist2._1(),hist2._2()));
                     break;
                 case Categorical:
-
+        
                     JavaRDD<String> rdd = ithColumn.map(new WritableToStringFunction());
                     Map<String,Long> map = rdd.countByValue();
-
+        
                     list.add(new CategoricalAnalysis(map));
-
-
+        
+        
                     break;
                 case Bytes:
                     list.add(new BytesAnalysis.Builder().build());  //TODO
                     break;
-
+        
                 case Time:
-
-
+        
+        
                     JavaDoubleRDD doubleRDDLong2 = ithColumn.mapToDouble(new WritableToDoubleFunction());
                     StatCounter statsLong2 = doubleRDDLong2.stats();
-
+        
                     LongAnalysisCounter counterL2 = new LongAnalysisCounter();
                     counterL2 = ithColumn.aggregate(counterL2,new LongAnalysisAddFunction(),new LongAnalysisMergeFunction());
-
+        
                     long minLong2 = (long)statsLong2.min();
                     long maxLong2 = (long)statsLong2.max();
-
+        
                     long nBucketsLong2 = maxLong2-minLong2+1;
-
+        
                     Tuple2<double[],long[]> histLong2;
                     if(maxLong2 == minLong2){
                         //Edge case that spark doesn't like
@@ -354,7 +351,7 @@ public class AnalyzeSpark {
                     } else {
                         histLong2 = doubleRDDLong2.histogram(maxHistogramBuckets);
                     }
-
+        
                     TimeAnalysis la2 = new TimeAnalysis.Builder()
                             .min((long)statsLong2.min())
                             .max((long)statsLong2.max())
@@ -369,61 +366,50 @@ public class AnalyzeSpark {
                             .countTotal(statsLong2.count())
                             .histogramBuckets(histLong2._1())
                             .histogramBucketCounts(histLong2._2()).build();
-
+        
                     list.add(la2);
-
+        
                     break;
                 default:
                     throw new IllegalStateException("Unknown/not implemented column type for analysis: " + type);
             }
-
+        
             ithColumn.unpersist();
         }
         */
 
         List<ColumnType> columnTypes = schema.getColumnTypes();
-        List<AnalysisCounter> counters = data.aggregate(
-                null,
-                new AnalysisAddFunction(schema),
-                new AnalysisCombineFunction());
+        List<AnalysisCounter> counters =
+                        data.aggregate(null, new AnalysisAddFunction(schema), new AnalysisCombineFunction());
 
         double[][] minsMaxes = new double[counters.size()][2];
 
         int nColumns = schema.numColumns();
         List<ColumnAnalysis> list = new ArrayList<>(nColumns);
 
-        for( int i = 0; i<nColumns; i++ ){
+        for (int i = 0; i < nColumns; i++) {
             ColumnType ct = columnTypes.get(i);
 
-            switch(ct){
+            switch (ct) {
                 case String:
-                    StringAnalysisCounter sac = (StringAnalysisCounter)counters.get(i);
-                    list.add(new StringAnalysis.Builder()
-                            .countTotal(sac.getCountTotal())
-                            .minLength(sac.getMinLengthSeen())
-                            .maxLength(sac.getMaxLengthSeen())
-                            .meanLength(((double)sac.getSumLength()) / sac.getCountTotal())
-//                            .sampleStdevLength(stringLengthStats.sampleStdev())
-//                            .sampleVarianceLength(stringLengthStats.sampleVariance())
-                            .build());
+                    StringAnalysisCounter sac = (StringAnalysisCounter) counters.get(i);
+                    list.add(new StringAnalysis.Builder().countTotal(sac.getCountTotal())
+                                    .minLength(sac.getMinLengthSeen()).maxLength(sac.getMaxLengthSeen())
+                                    .meanLength(((double) sac.getSumLength()) / sac.getCountTotal())
+                                    //                            .sampleStdevLength(stringLengthStats.sampleStdev())
+                                    //                            .sampleVarianceLength(stringLengthStats.sampleVariance())
+                                    .build());
                     minsMaxes[i][0] = sac.getMinLengthSeen();
                     minsMaxes[i][1] = sac.getMaxLengthSeen();
                     break;
                 case Integer:
-                    IntegerAnalysisCounter iac = (IntegerAnalysisCounter)counters.get(i);
-                    IntegerAnalysis ia = new IntegerAnalysis.Builder()
-                            .min(iac.getMinValueSeen())
-                            .max(iac.getMaxValueSeen())
-                            .mean(((double)iac.getSum()) / iac.getCountTotal())
-                            .sampleStdev(iac.getSampleStdev())
-                            .sampleVariance(iac.getSampleVariance())
-                            .countZero(iac.getCountZero())
-                            .countNegative(iac.getCountNegative())
-                            .countPositive(iac.getCountPositive())
-                            .countMinValue(iac.getCountMinValue())
-                            .countMaxValue(iac.getCountMaxValue())
-                            .countTotal(iac.getCountTotal())
-                            .build();
+                    IntegerAnalysisCounter iac = (IntegerAnalysisCounter) counters.get(i);
+                    IntegerAnalysis ia = new IntegerAnalysis.Builder().min(iac.getMinValueSeen())
+                                    .max(iac.getMaxValueSeen()).mean(((double) iac.getSum()) / iac.getCountTotal())
+                                    .sampleStdev(iac.getSampleStdev()).sampleVariance(iac.getSampleVariance())
+                                    .countZero(iac.getCountZero()).countNegative(iac.getCountNegative())
+                                    .countPositive(iac.getCountPositive()).countMinValue(iac.getCountMinValue())
+                                    .countMaxValue(iac.getCountMaxValue()).countTotal(iac.getCountTotal()).build();
                     list.add(ia);
 
                     minsMaxes[i][0] = iac.getMinValueSeen();
@@ -431,21 +417,14 @@ public class AnalyzeSpark {
 
                     break;
                 case Long:
-                    LongAnalysisCounter lac = (LongAnalysisCounter)counters.get(i);
+                    LongAnalysisCounter lac = (LongAnalysisCounter) counters.get(i);
 
-                    LongAnalysis la = new LongAnalysis.Builder()
-                            .min(lac.getMinValueSeen())
-                            .max(lac.getMaxValueSeen())
-                            .mean(lac.getSum().doubleValue() / lac.getCountTotal())
-                            .sampleStdev(lac.getSampleStdev())
-                            .sampleVariance(lac.getSampleVariance())
-                            .countZero(lac.getCountZero())
-                            .countNegative(lac.getCountNegative())
-                            .countPositive(lac.getCountPositive())
-                            .countMinValue(lac.getCountMinValue())
-                            .countMaxValue(lac.getCountMaxValue())
-                            .countTotal(lac.getCountTotal())
-                            .build();
+                    LongAnalysis la = new LongAnalysis.Builder().min(lac.getMinValueSeen()).max(lac.getMaxValueSeen())
+                                    .mean(lac.getSum().doubleValue() / lac.getCountTotal())
+                                    .sampleStdev(lac.getSampleStdev()).sampleVariance(lac.getSampleVariance())
+                                    .countZero(lac.getCountZero()).countNegative(lac.getCountNegative())
+                                    .countPositive(lac.getCountPositive()).countMinValue(lac.getCountMinValue())
+                                    .countMaxValue(lac.getCountMaxValue()).countTotal(lac.getCountTotal()).build();
 
                     list.add(la);
 
@@ -454,21 +433,14 @@ public class AnalyzeSpark {
 
                     break;
                 case Double:
-                    DoubleAnalysisCounter dac = (DoubleAnalysisCounter)counters.get(i);
-                    DoubleAnalysis da = new DoubleAnalysis.Builder()
-                            .min(dac.getMinValueSeen())
-                            .max(dac.getMaxValueSeen())
-                            .mean(dac.getSum() / dac.getCountTotal())
-                            .sampleStdev(dac.getSampleStdev())
-                            .sampleVariance(dac.getSampleVariance())
-                            .countZero(dac.getCountZero())
-                            .countNegative(dac.getCountNegative())
-                            .countPositive(dac.getCountPositive())
-                            .countMinValue(dac.getCountMinValue())
-                            .countMaxValue(dac.getCountMaxValue())
-                            .countNaN(dac.getCountNaN())
-                            .countTotal(dac.getCountTotal())
-                            .build();
+                    DoubleAnalysisCounter dac = (DoubleAnalysisCounter) counters.get(i);
+                    DoubleAnalysis da = new DoubleAnalysis.Builder().min(dac.getMinValueSeen())
+                                    .max(dac.getMaxValueSeen()).mean(dac.getSum() / dac.getCountTotal())
+                                    .sampleStdev(dac.getSampleStdev()).sampleVariance(dac.getSampleVariance())
+                                    .countZero(dac.getCountZero()).countNegative(dac.getCountNegative())
+                                    .countPositive(dac.getCountPositive()).countMinValue(dac.getCountMinValue())
+                                    .countMaxValue(dac.getCountMaxValue()).countNaN(dac.getCountNaN())
+                                    .countTotal(dac.getCountTotal()).build();
                     list.add(da);
 
                     minsMaxes[i][0] = dac.getMinValueSeen();
@@ -476,7 +448,7 @@ public class AnalyzeSpark {
 
                     break;
                 case Categorical:
-                    CategoricalAnalysisCounter cac = (CategoricalAnalysisCounter)counters.get(i);
+                    CategoricalAnalysisCounter cac = (CategoricalAnalysisCounter) counters.get(i);
                     CategoricalAnalysis ca = new CategoricalAnalysis(cac.getCounts());
                     list.add(ca);
 
@@ -484,19 +456,13 @@ public class AnalyzeSpark {
                 case Time:
                     LongAnalysisCounter lac2 = (LongAnalysisCounter) counters.get(i);
 
-                    TimeAnalysis la2 = new TimeAnalysis.Builder()
-                            .min(lac2.getMinValueSeen())
-                            .max(lac2.getMaxValueSeen())
-                            .mean(lac2.getSum().doubleValue() / lac2.getCountTotal())
-                            .sampleStdev(lac2.getSampleStdev())
-                            .sampleVariance(lac2.getSampleVariance())
-                            .countZero(lac2.getCountZero())
-                            .countNegative(lac2.getCountNegative())
-                            .countPositive(lac2.getCountPositive())
-                            .countMinValue(lac2.getCountMinValue())
-                            .countMaxValue(lac2.getCountMaxValue())
-                            .countTotal(lac2.getCountTotal())
-                            .build();
+                    TimeAnalysis la2 = new TimeAnalysis.Builder().min(lac2.getMinValueSeen())
+                                    .max(lac2.getMaxValueSeen())
+                                    .mean(lac2.getSum().doubleValue() / lac2.getCountTotal())
+                                    .sampleStdev(lac2.getSampleStdev()).sampleVariance(lac2.getSampleVariance())
+                                    .countZero(lac2.getCountZero()).countNegative(lac2.getCountNegative())
+                                    .countPositive(lac2.getCountPositive()).countMinValue(lac2.getCountMinValue())
+                                    .countMaxValue(lac2.getCountMaxValue()).countTotal(lac2.getCountTotal()).build();
 
                     list.add(la2);
 
@@ -506,44 +472,41 @@ public class AnalyzeSpark {
                     break;
                 case Bytes:
                     BytesAnalysisCounter bac = (BytesAnalysisCounter) counters.get(i);
-                    list.add(new BytesAnalysis.Builder()
-                            .countTotal(bac.getCountTotal())
-                            .build());
+                    list.add(new BytesAnalysis.Builder().countTotal(bac.getCountTotal()).build());
                     break;
                 default:
                     throw new IllegalStateException("Unknown column type: " + ct);
             }
         }
 
-        List<HistogramCounter> histogramCounters = data.aggregate(
-                null,
-                new HistogramAddFunction(maxHistogramBuckets,schema,minsMaxes),
-                new HistogramCombineFunction());
+        List<HistogramCounter> histogramCounters =
+                        data.aggregate(null, new HistogramAddFunction(maxHistogramBuckets, schema, minsMaxes),
+                                        new HistogramCombineFunction());
 
         //Merge analysis values and histogram values
-        for( int i=0; i<list.size(); i++ ){
+        for (int i = 0; i < list.size(); i++) {
             HistogramCounter hc = histogramCounters.get(i);
             ColumnAnalysis ca = list.get(i);
-            if(ca instanceof IntegerAnalysis){
+            if (ca instanceof IntegerAnalysis) {
                 ((IntegerAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((IntegerAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
-            } else if(ca instanceof DoubleAnalysis){
+            } else if (ca instanceof DoubleAnalysis) {
                 ((DoubleAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((DoubleAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
-            } else if(ca instanceof LongAnalysis){
+            } else if (ca instanceof LongAnalysis) {
                 ((LongAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((LongAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
-            } else if(ca instanceof TimeAnalysis){
+            } else if (ca instanceof TimeAnalysis) {
                 ((TimeAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((TimeAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
-            } else if(ca instanceof StringAnalysis){
+            } else if (ca instanceof StringAnalysis) {
                 ((StringAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((StringAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
             }
         }
 
 
-        return new DataAnalysis(schema,list);
+        return new DataAnalysis(schema, list);
     }
 
     /**
@@ -555,11 +518,12 @@ public class AnalyzeSpark {
      * @param data          Data to sample from
      * @return              A list of random samples
      */
-    public static List<Writable> sampleFromColumn(int count, String columnName, Schema schema, JavaRDD<List<Writable>> data){
+    public static List<Writable> sampleFromColumn(int count, String columnName, Schema schema,
+                    JavaRDD<List<Writable>> data) {
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
 
-        return ithColumn.takeSample(false,count);
+        return ithColumn.takeSample(false, count);
     }
 
     /**
@@ -572,7 +536,8 @@ public class AnalyzeSpark {
      * @param sequenceData  Data to sample from
      * @return              A list of random samples
      */
-    public static List<Writable> sampleFromColumnSequence(int count, String columnName, Schema schema, JavaRDD<List<List<Writable>>> sequenceData){
+    public static List<Writable> sampleFromColumnSequence(int count, String columnName, Schema schema,
+                    JavaRDD<List<List<Writable>>> sequenceData) {
         JavaRDD<List<Writable>> flattenedSequence = sequenceData.flatMap(new SequenceFlatMapFunction());
         return sampleFromColumn(count, columnName, schema, flattenedSequence);
     }
@@ -586,7 +551,7 @@ public class AnalyzeSpark {
      * @param data          Data to get unique values from
      * @return              List of unique values
      */
-    public static List<Writable> getUnique(String columnName, Schema schema, JavaRDD<List<Writable>> data){
+    public static List<Writable> getUnique(String columnName, Schema schema, JavaRDD<List<Writable>> data) {
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
         return ithColumn.distinct().collect();
@@ -600,7 +565,8 @@ public class AnalyzeSpark {
      * @param sequenceData    Sequence data to get unique values from
      * @return
      */
-    public static List<Writable> getUniqueSequence(String columnName, Schema schema, JavaRDD<List<List<Writable>>> sequenceData){
+    public static List<Writable> getUniqueSequence(String columnName, Schema schema,
+                    JavaRDD<List<List<Writable>>> sequenceData) {
         JavaRDD<List<Writable>> flattenedSequence = sequenceData.flatMap(new SequenceFlatMapFunction());
         return getUnique(columnName, schema, flattenedSequence);
     }
@@ -612,8 +578,8 @@ public class AnalyzeSpark {
      * @param data     Data to sample from
      * @return         Samples
      */
-    public static List<List<Writable>> sample(int count, JavaRDD<List<Writable>> data){
-        return data.takeSample(false,count);
+    public static List<List<Writable>> sample(int count, JavaRDD<List<Writable>> data) {
+        return data.takeSample(false, count);
     }
 
     /**
@@ -622,38 +588,44 @@ public class AnalyzeSpark {
      * @param data     Data to sample from
      * @return         Sequence samples
      */
-    public static List<List<List<Writable>>> sampleSequence(int count, JavaRDD<List<List<Writable>>> data ){
-        return data.takeSample(false,count);
+    public static List<List<List<Writable>>> sampleSequence(int count, JavaRDD<List<List<Writable>>> data) {
+        return data.takeSample(false, count);
     }
 
 
 
     private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn) {
-        switch(meta.getColumnType()) {
+        switch (meta.getColumnType()) {
             case String:
                 ithColumn.cache();
                 long countUnique = ithColumn.distinct().count();
 
                 StringQuality initialString = new StringQuality();
-                StringQuality stringQuality = ithColumn.aggregate(initialString,new StringQualityAddFunction((StringMetaData)meta),new StringQualityMergeFunction());
-                return stringQuality.add(new StringQuality(0,0,0,0,0,0,0,0,0,countUnique));
+                StringQuality stringQuality = ithColumn.aggregate(initialString,
+                                new StringQualityAddFunction((StringMetaData) meta), new StringQualityMergeFunction());
+                return stringQuality.add(new StringQuality(0, 0, 0, 0, 0, 0, 0, 0, 0, countUnique));
             case Integer:
-                IntegerQuality initialInt = new IntegerQuality(0,0,0,0,0);
-                return ithColumn.aggregate(initialInt,new IntegerQualityAddFunction((IntegerMetaData)meta),new IntegerQualityMergeFunction());
+                IntegerQuality initialInt = new IntegerQuality(0, 0, 0, 0, 0);
+                return ithColumn.aggregate(initialInt, new IntegerQualityAddFunction((IntegerMetaData) meta),
+                                new IntegerQualityMergeFunction());
             case Long:
                 LongQuality initialLong = new LongQuality();
-                return ithColumn.aggregate(initialLong,new LongQualityAddFunction((LongMetaData)meta),new LongQualityMergeFunction());
+                return ithColumn.aggregate(initialLong, new LongQualityAddFunction((LongMetaData) meta),
+                                new LongQualityMergeFunction());
             case Double:
                 DoubleQuality initialReal = new DoubleQuality();
-                return ithColumn.aggregate(initialReal,new RealQualityAddFunction((DoubleMetaData)meta), new RealQualityMergeFunction());
+                return ithColumn.aggregate(initialReal, new RealQualityAddFunction((DoubleMetaData) meta),
+                                new RealQualityMergeFunction());
             case Categorical:
                 CategoricalQuality initialCat = new CategoricalQuality();
-                return ithColumn.aggregate(initialCat,new CategoricalQualityAddFunction((CategoricalMetaData)meta),new CategoricalQualityMergeFunction());
+                return ithColumn.aggregate(initialCat, new CategoricalQualityAddFunction((CategoricalMetaData) meta),
+                                new CategoricalQualityMergeFunction());
             case Time:
                 TimeQuality initTimeQuality = new TimeQuality();
-                return ithColumn.aggregate(initTimeQuality, new TimeQualityAddFunction((TimeMetaData)meta), new TimeQualityMergeFunction());
+                return ithColumn.aggregate(initTimeQuality, new TimeQualityAddFunction((TimeMetaData) meta),
+                                new TimeQualityMergeFunction());
             case Bytes:
-                return new BytesQuality();    //TODO
+                return new BytesQuality(); //TODO
             default:
                 throw new RuntimeException("Unknown or not implemented column type: " + meta.getColumnType());
         }
@@ -666,7 +638,7 @@ public class AnalyzeSpark {
      * @param data
      * @return
      */
-    public static DataQualityAnalysis analyzeQualitySequence(Schema schema, JavaRDD<List<List<Writable>>> data){
+    public static DataQualityAnalysis analyzeQualitySequence(Schema schema, JavaRDD<List<List<Writable>>> data) {
         JavaRDD<List<Writable>> fmSeq = data.flatMap(new SequenceFlatMapFunction());
         return analyzeQuality(schema, fmSeq);
     }
@@ -685,13 +657,13 @@ public class AnalyzeSpark {
         //This is inefficient, but it's easy to implement. Good enough for now!
         List<ColumnQuality> list = new ArrayList<>(nColumns);
 
-        for( int i = 0; i < nColumns; i++) {
+        for (int i = 0; i < nColumns; i++) {
             ColumnMetaData meta = schema.getMetaData(i);
             JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(i));
             list.add(analyze(meta, ithColumn));
         }
 
-        return new DataQualityAnalysis(schema,list);
+        return new DataQualityAnalysis(schema, list);
 
     }
 
@@ -705,7 +677,8 @@ public class AnalyzeSpark {
      * @param data           Data
      * @return               List of invalid examples
      */
-    public static List<Writable> sampleInvalidFromColumn(int numToSample, String columnName, Schema schema, JavaRDD<List<Writable>> data) {
+    public static List<Writable> sampleInvalidFromColumn(int numToSample, String columnName, Schema schema,
+                    JavaRDD<List<Writable>> data) {
         return sampleInvalidFromColumn(numToSample, columnName, schema, data, false);
     }
 
@@ -720,16 +693,17 @@ public class AnalyzeSpark {
      * @param ignoreMissing  If true: ignore missing values (NullWritable or empty/null string) when sampling. If false: include missing values in sampling
      * @return               List of invalid examples
      */
-    public static List<Writable> sampleInvalidFromColumn(int numToSample, String columnName, Schema schema, JavaRDD<List<Writable>> data, boolean ignoreMissing){
+    public static List<Writable> sampleInvalidFromColumn(int numToSample, String columnName, Schema schema,
+                    JavaRDD<List<Writable>> data, boolean ignoreMissing) {
         //First: filter out all valid entries, to leave only invalid entries
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
 
         ColumnMetaData meta = schema.getMetaData(columnName);
 
-        JavaRDD<Writable> invalid = ithColumn.filter(new FilterWritablesBySchemaFunction(meta,false,ignoreMissing));
+        JavaRDD<Writable> invalid = ithColumn.filter(new FilterWritablesBySchemaFunction(meta, false, ignoreMissing));
 
-        return invalid.takeSample(false,numToSample);
+        return invalid.takeSample(false, numToSample);
     }
 
     /**
@@ -742,7 +716,8 @@ public class AnalyzeSpark {
      * @param data           Data
      * @return               List of invalid examples
      */
-    public static List<Writable> sampleInvalidFromColumnSequence(int numToSample, String columnName, Schema schema, JavaRDD<List<List<Writable>>> data){
+    public static List<Writable> sampleInvalidFromColumnSequence(int numToSample, String columnName, Schema schema,
+                    JavaRDD<List<List<Writable>>> data) {
         JavaRDD<List<Writable>> flattened = data.flatMap(new SequenceFlatMapFunction());
         return sampleInvalidFromColumn(numToSample, columnName, schema, flattened);
     }
@@ -756,19 +731,21 @@ public class AnalyzeSpark {
      * @param data             RDD containing the data
      * @return                 List of the most frequently occurring Writable objects in that column, along with their counts
      */
-    public static Map<Writable,Long> sampleMostFrequentFromColumn(int nMostFrequent, String columnName, Schema schema, JavaRDD<List<Writable>> data){
+    public static Map<Writable, Long> sampleMostFrequentFromColumn(int nMostFrequent, String columnName, Schema schema,
+                    JavaRDD<List<Writable>> data) {
         int columnIdx = schema.getIndexOfColumn(columnName);
 
-        JavaPairRDD<Writable,Long> keyedByWritable = data.mapToPair(new ColumnToKeyPairTransform(columnIdx));
-        JavaPairRDD<Writable,Long> reducedByWritable = keyedByWritable.reduceByKey(new SumLongsFunction2());
+        JavaPairRDD<Writable, Long> keyedByWritable = data.mapToPair(new ColumnToKeyPairTransform(columnIdx));
+        JavaPairRDD<Writable, Long> reducedByWritable = keyedByWritable.reduceByKey(new SumLongsFunction2());
 
-        List<Tuple2<Writable,Long>> list = reducedByWritable.takeOrdered(nMostFrequent, new Tuple2Comparator<Writable>(false));
+        List<Tuple2<Writable, Long>> list =
+                        reducedByWritable.takeOrdered(nMostFrequent, new Tuple2Comparator<Writable>(false));
 
-        List<Tuple2<Writable,Long>> sorted = new ArrayList<>(list);
+        List<Tuple2<Writable, Long>> sorted = new ArrayList<>(list);
         Collections.sort(sorted, new Tuple2Comparator<Writable>(false));
 
-        Map<Writable,Long> map = new LinkedHashMap<>();
-        for(Tuple2<Writable,Long> t2 : sorted){
+        Map<Writable, Long> map = new LinkedHashMap<>();
+        for (Tuple2<Writable, Long> t2 : sorted) {
             map.put(t2._1(), t2._2());
         }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,15 +47,13 @@ import java.util.*;
 @EqualsAndHashCode
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {
-        @JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),
-})
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),})
 public class Schema implements Serializable {
 
     private List<String> columnNames;
     @JsonProperty("columns")
     private List<ColumnMetaData> columnMetaData;
-    private Map<String, Integer> columnNamesIndex;   //For efficient lookup
+    private Map<String, Integer> columnNamesIndex; //For efficient lookup
 
     private Schema() {
         //No-arg constructor for Jackson
@@ -64,7 +62,8 @@ public class Schema implements Serializable {
     protected Schema(Builder builder) {
         this.columnMetaData = builder.columnMetaData;
         this.columnNames = new ArrayList<>();
-        for (ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
+        for (ColumnMetaData meta : this.columnMetaData)
+            this.columnNames.add(meta.getName());
         columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
@@ -82,7 +81,8 @@ public class Schema implements Serializable {
             throw new IllegalArgumentException("Column meta data must be non-empty");
         this.columnMetaData = columnMetaData;
         this.columnNames = new ArrayList<>();
-        for (ColumnMetaData meta : this.columnMetaData) this.columnNames.add(meta.getName());
+        for (ColumnMetaData meta : this.columnMetaData)
+            this.columnNames.add(meta.getName());
         this.columnNamesIndex = new HashMap<>();
         for (int i = 0; i < columnNames.size(); i++) {
             columnNamesIndex.put(columnNames.get(i), i);
@@ -98,10 +98,10 @@ public class Schema implements Serializable {
      * at every index as this one,false otherwise
      */
     public boolean sameTypes(Schema schema) {
-        if(schema.numColumns() != numColumns())
+        if (schema.numColumns() != numColumns())
             return false;
-        for(int i = 0; i < schema.numColumns(); i++) {
-            if(getType(i) != schema.getType(i))
+        for (int i = 0; i < schema.numColumns(); i++) {
+            if (getType(i) != schema.getType(i))
                 return false;
         }
 
@@ -120,8 +120,8 @@ public class Schema implements Serializable {
      */
     public List<ColumnMetaData> differences(Schema schema) {
         List<ColumnMetaData> ret = new ArrayList<>();
-        for(int i = 0; i < schema.numColumns(); i++) {
-            if(!columnMetaData.contains(schema.getMetaData(i)))
+        for (int i = 0; i < schema.numColumns(); i++) {
+            if (!columnMetaData.contains(schema.getMetaData(i)))
                 ret.add(schema.getMetaData(i));
         }
 
@@ -165,8 +165,9 @@ public class Schema implements Serializable {
      * @return the type of the column to at the specified inde
      */
     public ColumnType getType(int column) {
-        if(column < 0 || column >= columnMetaData.size())
-            throw new IllegalArgumentException("Invalid column number. " + column + "only " + columnMetaData.size() + "present.");
+        if (column < 0 || column >= columnMetaData.size())
+            throw new IllegalArgumentException(
+                            "Invalid column number. " + column + "only " + columnMetaData.size() + "present.");
         return columnMetaData.get(column).getColumnType();
     }
 
@@ -208,7 +209,8 @@ public class Schema implements Serializable {
      */
     public List<ColumnType> getColumnTypes() {
         List<ColumnType> list = new ArrayList<>(columnMetaData.size());
-        for (ColumnMetaData md : columnMetaData) list.add(md.getColumnType());
+        for (ColumnMetaData md : columnMetaData)
+            list.add(md.getColumnType());
         return list;
     }
 
@@ -231,7 +233,8 @@ public class Schema implements Serializable {
      */
     public int getIndexOfColumn(String columnName) {
         Integer idx = columnNamesIndex.get(columnName);
-        if (idx == null) throw new NoSuchElementException("Unknown column: \"" + columnName + "\"");
+        if (idx == null)
+            throw new NoSuchElementException("Unknown column: \"" + columnName + "\"");
         return idx;
     }
 
@@ -259,17 +262,15 @@ public class Schema implements Serializable {
         //Header:
         sb.append("Schema():\n");
         sb.append(String.format("%-6s", "idx")).append(String.format("%-" + (maxNameLength + 8) + "s", "name"))
-                .append(String.format("%-15s", "type")).append("meta data").append("\n");
+                        .append(String.format("%-15s", "type")).append("meta data").append("\n");
 
         for (int i = 0; i < nCol; i++) {
             String colName = getName(i);
             ColumnType type = getType(i);
             ColumnMetaData meta = getMetaData(i);
             String paddedName = String.format("%-" + (maxNameLength + 8) + "s", "\"" + colName + "\"");
-            sb.append(String.format("%-6d", i))
-                    .append(paddedName)
-                    .append(String.format("%-15s", type))
-                    .append(meta).append("\n");
+            sb.append(String.format("%-6d", i)).append(paddedName).append(String.format("%-15s", type)).append(meta)
+                            .append("\n");
         }
 
         return sb.toString();
@@ -385,8 +386,8 @@ public class Schema implements Serializable {
          * @param allowNaN        If false: don't allow NaN values. If true: allow.
          * @param allowInfinite   If false: don't allow infinite values. If true: allow
          */
-        public Builder addColumnDouble(String name, Double minAllowedValue, Double maxAllowedValue,
-                                       boolean allowNaN, boolean allowInfinite) {
+        public Builder addColumnDouble(String name, Double minAllowedValue, Double maxAllowedValue, boolean allowNaN,
+                        boolean allowInfinite) {
             return addColumn(new DoubleMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite));
         }
 
@@ -396,7 +397,8 @@ public class Schema implements Serializable {
          * @param columnNames Names of the columns to add
          */
         public Builder addColumnsDouble(String... columnNames) {
-            for (String s : columnNames) addColumnDouble(s);
+            for (String s : columnNames)
+                addColumnDouble(s);
             return this;
         }
 
@@ -426,8 +428,8 @@ public class Schema implements Serializable {
          * @param allowNaN        If false: don't allow NaN values. If true: allow.
          * @param allowInfinite   If false: don't allow infinite values. If true: allow
          */
-        public Builder addColumnsDouble(String pattern, int minIdxInclusive, int maxIdxInclusive, Double minAllowedValue, Double maxAllowedValue,
-                                        boolean allowNaN, boolean allowInfinite) {
+        public Builder addColumnsDouble(String pattern, int minIdxInclusive, int maxIdxInclusive,
+                        Double minAllowedValue, Double maxAllowedValue, boolean allowNaN, boolean allowInfinite) {
             for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
                 addColumnDouble(String.format(pattern, i), minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);
             }
@@ -460,7 +462,8 @@ public class Schema implements Serializable {
          * @param names Names of the integer columns to add
          */
         public Builder addColumnsInteger(String... names) {
-            for (String s : names) addColumnInteger(s);
+            for (String s : names)
+                addColumnInteger(s);
             return this;
         }
 
@@ -488,7 +491,8 @@ public class Schema implements Serializable {
          * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
          * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
          */
-        public Builder addColumnsInteger(String pattern, int minIdxInclusive, int maxIdxInclusive, Integer minAllowedValue, Integer maxAllowedValue) {
+        public Builder addColumnsInteger(String pattern, int minIdxInclusive, int maxIdxInclusive,
+                        Integer minAllowedValue, Integer maxAllowedValue) {
             for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
                 addColumnInteger(String.format(pattern, i), minAllowedValue, maxAllowedValue);
             }
@@ -541,7 +545,8 @@ public class Schema implements Serializable {
          * @param names Names of the Long columns to add
          */
         public Builder addColumnsLong(String... names) {
-            for (String s : names) addColumnLong(s);
+            for (String s : names)
+                addColumnLong(s);
             return this;
         }
 
@@ -569,7 +574,8 @@ public class Schema implements Serializable {
          * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
          * @param maxAllowedValue Maximum allowed value (inclusive). If null: no restriction
          */
-        public Builder addColumnsLong(String pattern, int minIdxInclusive, int maxIdxInclusive, Long minAllowedValue, Long maxAllowedValue) {
+        public Builder addColumnsLong(String pattern, int minIdxInclusive, int maxIdxInclusive, Long minAllowedValue,
+                        Long maxAllowedValue) {
             for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
                 addColumnLong(String.format(pattern, i), minAllowedValue, maxAllowedValue);
             }
@@ -602,7 +608,8 @@ public class Schema implements Serializable {
          * @param columnNames Names of the String columns to add
          */
         public Builder addColumnsString(String... columnNames) {
-            for (String s : columnNames) addColumnString(s);
+            for (String s : columnNames)
+                addColumnString(s);
             return this;
         }
 
@@ -614,7 +621,8 @@ public class Schema implements Serializable {
          * @param minAllowableLength Minimum allowable length for the String to be considered valid
          * @param maxAllowableLength Maximum allowable length for the String to be considered valid
          */
-        public Builder addColumnString(String name, String regex, Integer minAllowableLength, Integer maxAllowableLength) {
+        public Builder addColumnString(String name, String regex, Integer minAllowableLength,
+                        Integer maxAllowableLength) {
             return addColumn(new StringMetaData(name, regex, minAllowableLength, maxAllowableLength));
         }
 
@@ -643,7 +651,8 @@ public class Schema implements Serializable {
          * @param minAllowedLength Minimum allowed length of strings (inclusive). If null: no restriction
          * @param maxAllowedLength Maximum allowed length of strings (inclusive). If null: no restriction
          */
-        public Builder addColumnsString(String pattern, int minIdxInclusive, int maxIdxInclusive, String regex, Integer minAllowedLength, Integer maxAllowedLength) {
+        public Builder addColumnsString(String pattern, int minIdxInclusive, int maxIdxInclusive, String regex,
+                        Integer minAllowedLength, Integer maxAllowedLength) {
             for (int i = minIdxInclusive; i <= maxIdxInclusive; i++) {
                 addColumnString(String.format(pattern, i), regex, minAllowedLength, maxAllowedLength);
             }
@@ -715,17 +724,19 @@ public class Schema implements Serializable {
      */
     public static Schema infer(List<Writable> record) {
         Schema.Builder builder = new Schema.Builder();
-        for(int i= 0; i < record.size(); i++) {
-            if(record.get(i) instanceof DoubleWritable)
+        for (int i = 0; i < record.size(); i++) {
+            if (record.get(i) instanceof DoubleWritable)
                 builder.addColumnDouble(String.valueOf(i));
-            else if(record.get(i) instanceof IntWritable)
+            else if (record.get(i) instanceof IntWritable)
                 builder.addColumnInteger(String.valueOf(i));
-            else if(record.get(i) instanceof LongWritable)
+            else if (record.get(i) instanceof LongWritable)
                 builder.addColumnLong(String.valueOf(i));
-            else if(record.get(i) instanceof FloatWritable)
+            else if (record.get(i) instanceof FloatWritable)
                 builder.addColumnFloat(String.valueOf(i));
 
-            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString() + " with record " + record);
+            else
+                throw new IllegalStateException("Illegal writable for infering schema of type "
+                                + record.get(i).getClass().toString() + " with record " + record);
         }
 
         return builder.build();

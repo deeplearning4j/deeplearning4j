@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,28 +98,27 @@ public class JacksonRecordReaderTest {
     }
 
 
-    private static FieldSelection getFieldSelection(){
-        return new FieldSelection.Builder()
-                .addField("a")
-                .addField(new Text("MISSING_B"), "b")
-                .addField(new Text("MISSING_CX"), "c", "x")
-                .build();
+    private static FieldSelection getFieldSelection() {
+        return new FieldSelection.Builder().addField("a").addField(new Text("MISSING_B"), "b")
+                        .addField(new Text("MISSING_CX"), "c", "x").build();
     }
 
 
 
-    private static void testJacksonRecordReader(RecordReader rr ){
+    private static void testJacksonRecordReader(RecordReader rr) {
 
         List<Writable> json0 = rr.next();
-        List<Writable> exp0 = Arrays.asList((Writable)new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"));
+        List<Writable> exp0 = Arrays.asList((Writable) new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"));
         assertEquals(exp0, json0);
 
         List<Writable> json1 = rr.next();
-        List<Writable> exp1 = Arrays.asList((Writable)new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"));
+        List<Writable> exp1 =
+                        Arrays.asList((Writable) new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"));
         assertEquals(exp1, json1);
 
         List<Writable> json2 = rr.next();
-        List<Writable> exp2 = Arrays.asList((Writable)new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"));
+        List<Writable> exp2 =
+                        Arrays.asList((Writable) new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"));
         assertEquals(exp2, json2);
 
         assertFalse(rr.hasNext());
@@ -140,31 +139,37 @@ public class JacksonRecordReaderTest {
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
         //Insert at the end:
-        RecordReader rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()),
-                false, -1, new LabelGen());
+        RecordReader rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1,
+                        new LabelGen());
         rr.initialize(is);
 
-        List<Writable> exp0 = Arrays.asList((Writable)new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"), new IntWritable(0));
+        List<Writable> exp0 = Arrays.asList((Writable) new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"),
+                        new IntWritable(0));
         assertEquals(exp0, rr.next());
 
-        List<Writable> exp1 = Arrays.asList((Writable)new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"), new IntWritable(1));
+        List<Writable> exp1 = Arrays.asList((Writable) new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"),
+                        new IntWritable(1));
         assertEquals(exp1, rr.next());
 
-        List<Writable> exp2 = Arrays.asList((Writable)new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"), new IntWritable(2));
+        List<Writable> exp2 = Arrays.asList((Writable) new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"),
+                        new IntWritable(2));
         assertEquals(exp2, rr.next());
 
         //Insert at position 0:
-        rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()),
-                false, -1, new LabelGen(), 0);
+        rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1,
+                        new LabelGen(), 0);
         rr.initialize(is);
 
-        exp0 = Arrays.asList((Writable)new IntWritable(0), new Text("aValue0"), new Text("bValue0"), new Text("cxValue0"));
+        exp0 = Arrays.asList((Writable) new IntWritable(0), new Text("aValue0"), new Text("bValue0"),
+                        new Text("cxValue0"));
         assertEquals(exp0, rr.next());
 
-        exp1 = Arrays.asList((Writable)new IntWritable(1), new Text("aValue1"), new Text("MISSING_B"), new Text("cxValue1"));
+        exp1 = Arrays.asList((Writable) new IntWritable(1), new Text("aValue1"), new Text("MISSING_B"),
+                        new Text("cxValue1"));
         assertEquals(exp1, rr.next());
 
-        exp2 = Arrays.asList((Writable)new IntWritable(2), new Text("aValue2"), new Text("bValue2"), new Text("MISSING_CX"));
+        exp2 = Arrays.asList((Writable) new IntWritable(2), new Text("aValue2"), new Text("bValue2"),
+                        new Text("MISSING_CX"));
         assertEquals(exp2, rr.next());
     }
 
@@ -176,11 +181,12 @@ public class JacksonRecordReaderTest {
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
         //Insert at the end:
-        RecordReader rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1, new LabelGen());
+        RecordReader rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1,
+                        new LabelGen());
         rr.initialize(is);
 
         List<List<Writable>> out = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             out.add(rr.next());
         }
         assertEquals(3, out.size());
@@ -190,7 +196,7 @@ public class JacksonRecordReaderTest {
         List<List<Writable>> out2 = new ArrayList<>();
         List<Record> outRecord = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             Record r = rr.nextRecord();
             out2.add(r.getRecord());
             outRecord.add(r);
@@ -208,9 +214,12 @@ public class JacksonRecordReaderTest {
 
         @Override
         public Writable getLabelForPath(String path) {
-            if(path.endsWith("0.txt")) return new IntWritable(0);
-            else if(path.endsWith("1.txt")) return new IntWritable(1);
-            else return new IntWritable(2);
+            if (path.endsWith("0.txt"))
+                return new IntWritable(0);
+            else if (path.endsWith("1.txt"))
+                return new IntWritable(1);
+            else
+                return new IntWritable(2);
         }
 
         @Override

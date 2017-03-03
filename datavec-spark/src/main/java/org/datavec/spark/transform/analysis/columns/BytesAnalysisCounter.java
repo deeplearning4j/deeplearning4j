@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,13 +26,14 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class BytesAnalysisCounter implements AnalysisCounter<BytesAnalysisCounter> {
     private long countTotal = 0;
 
 
 
-    public BytesAnalysisCounter(){
+    public BytesAnalysisCounter() {
 
     }
 
@@ -44,7 +45,7 @@ public class BytesAnalysisCounter implements AnalysisCounter<BytesAnalysisCounte
         return this;
     }
 
-    public BytesAnalysisCounter merge(BytesAnalysisCounter other){
+    public BytesAnalysisCounter merge(BytesAnalysisCounter other) {
 
         return new BytesAnalysisCounter(countTotal + other.countTotal);
     }

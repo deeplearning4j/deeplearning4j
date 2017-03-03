@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,6 @@ public class PathToKeyConverterNumber implements PathToKeyConverter {
     @Override
     public String getKey(String path) {
         String fileName = FilenameUtils.getBaseName(path);
-        return fileName.replaceAll("\\D+","");
+        return fileName.replaceAll("\\D+", "");
     }
 }

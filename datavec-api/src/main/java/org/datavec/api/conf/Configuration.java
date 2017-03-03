@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -137,10 +137,8 @@ import org.xml.sax.SAXException;
  * <tt>${<i>user.name</i>}</tt> would then ordinarily be resolved to the value
  * of the System property with that name.
  */
-public class Configuration implements Iterable<Map.Entry<String,String>>,
-        Writable, Serializable {
-    private static final Logger LOG =
-            LoggerFactory.getLogger(Configuration.class);
+public class Configuration implements Iterable<Map.Entry<String, String>>, Writable, Serializable {
+    private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
 
     private boolean quietmode = true;
 
@@ -159,18 +157,15 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     /**
      * Configuration objects
      */
-    private static final WeakHashMap<Configuration,Object> REGISTRY =
-            new WeakHashMap<>();
+    private static final WeakHashMap<Configuration, Object> REGISTRY = new WeakHashMap<>();
 
     /**
      * List of default Resources. Resources are loaded in the order of the list
      * entries
      */
-    private static final CopyOnWriteArrayList<String> defaultResources =
-            new CopyOnWriteArrayList<>();
+    private static final CopyOnWriteArrayList<String> defaultResources = new CopyOnWriteArrayList<>();
 
-    private static final ConcurrentMap<ClassLoader, Map<String, Class<?>>>
-            CACHE_CLASSES = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<ClassLoader, Map<String, Class<?>>> CACHE_CLASSES = new ConcurrentHashMap<>();
 
     /**
      * Flag to indicate if the storage of resource which updates a key needs
@@ -184,18 +179,17 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     private HashMap<String, String> updatingResource;
 
-    static{
+    static {
         //print deprecation warning if hadoop-site.xml is found in classpath
         ClassLoader cL = Thread.currentThread().getContextClassLoader();
         if (cL == null) {
             cL = Configuration.class.getClassLoader();
         }
-        if(cL.getResource("hadoop-site.xml")!=null) {
-            LOG.warn("DEPRECATED: hadoop-site.xml found in the classpath. " +
-                    "Usage of hadoop-site.xml is deprecated. Instead use core-site.xml, "
-                    + "mapred-site.xml and hdfs-site.xml to override properties of " +
-                    "core-default.xml, mapred-default.xml and hdfs-default.xml " +
-                    "respectively");
+        if (cL.getResource("hadoop-site.xml") != null) {
+            LOG.warn("DEPRECATED: hadoop-site.xml found in the classpath. "
+                            + "Usage of hadoop-site.xml is deprecated. Instead use core-site.xml, "
+                            + "mapred-site.xml and hdfs-site.xml to override properties of "
+                            + "core-default.xml, mapred-default.xml and hdfs-default.xml " + "respectively");
         }
         addDefaultResource("core-default.xml");
         addDefaultResource("core-site.xml");
@@ -213,7 +207,6 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
 
 
 
-
     /** A new configuration. */
     public Configuration() {
         this(true);
@@ -228,7 +221,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     public Configuration(boolean loadDefaults) {
         this.loadDefaults = loadDefaults;
-        synchronized(Configuration.class) {
+        synchronized (Configuration.class) {
             REGISTRY.put(this, null);
         }
         this.storeResource = false;
@@ -258,19 +251,19 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     @SuppressWarnings("unchecked")
     public Configuration(Configuration other) {
-        this.resources = (ArrayList)other.resources.clone();
-        synchronized(other) {
+        this.resources = (ArrayList) other.resources.clone();
+        synchronized (other) {
             if (other.properties != null) {
-                this.properties = (Properties)other.properties.clone();
+                this.properties = (Properties) other.properties.clone();
             }
 
-            if (other.overlay!=null) {
-                this.overlay = (Properties)other.overlay.clone();
+            if (other.overlay != null) {
+                this.overlay = (Properties) other.overlay.clone();
             }
         }
 
         this.finalParameters = new HashSet<>(other.finalParameters);
-        synchronized(Configuration.class) {
+        synchronized (Configuration.class) {
             REGISTRY.put(this, null);
         }
     }
@@ -288,7 +281,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         // if that conf is attempting to lock the Class
         ArrayList<Configuration> toReload;
         synchronized (Configuration.class) {
-            if(defaultResources.contains(name)) {
+            if (defaultResources.contains(name)) {
                 return;
             }
             defaultResources.add(name);
@@ -296,8 +289,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
             toReload = new ArrayList<>(REGISTRY.size());
             toReload.addAll(REGISTRY.keySet());
         }
-        for(Configuration conf : toReload) {
-            if(conf.loadDefaults) {
+        for (Configuration conf : toReload) {
+            if (conf.loadDefaults) {
                 conf.reloadConfiguration();
             }
         }
@@ -353,35 +346,35 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * via set methods will overlay values read from the resources.
      */
     public synchronized void reloadConfiguration() {
-        properties = null;                            // trigger reload
-        finalParameters.clear();                      // clear site-limits
+        properties = null; // trigger reload
+        finalParameters.clear(); // clear site-limits
     }
 
     private synchronized void addResourceObject(Object resource) {
-        resources.add(resource);                      // add to resources
+        resources.add(resource); // add to resources
         reloadConfiguration();
     }
 
     private static Pattern varPat = Pattern.compile("\\$\\{[^\\}\\$\u0020]+\\}");
 
-  private String substituteVars(String expr) {
+    private String substituteVars(String expr) {
         if (expr == null) {
             return null;
         }
         Matcher match = varPat.matcher("");
         String eval = expr;
         int MAX_SUBST = 20;
-        for(int s=0; s< MAX_SUBST; s++) {
+        for (int s = 0; s < MAX_SUBST; s++) {
             match.reset(eval);
             if (!match.find()) {
                 return eval;
             }
             String var = match.group();
-            var = var.substring(2, var.length()-1); // remove ${ .. }
+            var = var.substring(2, var.length() - 1); // remove ${ .. }
             String val = null;
             try {
                 val = System.getProperty(var);
-            } catch(SecurityException se) {
+            } catch (SecurityException se) {
                 LOG.warn("Unexpected SecurityException in Configuration", se);
             }
             if (val == null) {
@@ -391,10 +384,9 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                 return eval; // return literal ${var}: var is unbound
             }
             // substitute
-            eval = eval.substring(0, match.start())+val+eval.substring(match.end());
+            eval = eval.substring(0, match.start()) + val + eval.substring(match.end());
         }
-        throw new IllegalStateException("Variable substitution depth too large: "
-                + MAX_SUBST + " " + expr);
+        throw new IllegalStateException("Variable substitution depth too large: " + MAX_SUBST + " " + expr);
     }
 
     /**
@@ -447,8 +439,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     }
 
     private synchronized Properties getOverlay() {
-        if (overlay==null){
-            overlay=new Properties();
+        if (overlay == null) {
+            overlay = new Properties();
         }
         return overlay;
     }
@@ -576,6 +568,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
             return defaultValue;
         }
     }
+
     /**
      * Set the value of the <code>name</code> property to a <code>float</code>.
      *
@@ -583,7 +576,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * @param value property value.
      */
     public void setFloat(String name, float value) {
-        set(name,Float.toString(value));
+        set(name, Float.toString(value));
     }
 
     /**
@@ -597,9 +590,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      *         or <code>defaultValue</code>.
      */
     public boolean getBoolean(String name, boolean defaultValue) {
-      String valueString = get(name);
-      return "true".equals(valueString) ||
-          !"false".equals(valueString) && defaultValue;
+        String valueString = get(name);
+        return "true".equals(valueString) || !"false".equals(valueString) && defaultValue;
     }
 
     /**
@@ -638,8 +630,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         try {
             return Pattern.compile(valString);
         } catch (PatternSyntaxException pse) {
-            LOG.warn("Regular expression '" + valString + "' for property '" +
-                    name + "' not valid. Using default", pse);
+            LOG.warn("Regular expression '" + valString + "' for property '" + name + "' not valid. Using default",
+                            pse);
             return defaultValue;
         }
     }
@@ -685,8 +677,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
 
         List<Range> ranges = new ArrayList<Range>();
 
-        public IntegerRanges() {
-        }
+        public IntegerRanges() {}
 
         public IntegerRanges(String newValue) {
             StringTokenizer itr = new StringTokenizer(newValue, ",");
@@ -694,8 +685,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                 String rng = itr.nextToken().trim();
                 String[] parts = rng.split("-", 3);
                 if (parts.length < 1 || parts.length > 2) {
-                    throw new IllegalArgumentException("integer range badly formed: " +
-                            rng);
+                    throw new IllegalArgumentException("integer range badly formed: " + rng);
                 }
                 Range r = new Range();
                 r.start = convertToInt(parts[0], 0);
@@ -705,8 +695,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                     r.end = r.start;
                 }
                 if (r.start > r.end) {
-                    throw new IllegalArgumentException("IntegerRange from " + r.start +
-                            " to " + r.end + " is invalid");
+                    throw new IllegalArgumentException("IntegerRange from " + r.start + " to " + r.end + " is invalid");
                 }
                 ranges.add(r);
             }
@@ -732,7 +721,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
          * @return is the value in the ranges?
          */
         public boolean isIncluded(int value) {
-            for(Range r: ranges) {
+            for (Range r : ranges) {
                 if (r.start <= value && value <= r.end) {
                     return true;
                 }
@@ -744,7 +733,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         public String toString() {
             StringBuilder result = new StringBuilder();
             boolean first = true;
-            for(Range r: ranges) {
+            for (Range r : ranges) {
                 if (first) {
                     first = false;
                 } else {
@@ -827,7 +816,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     public Collection<String> getTrimmedStringCollection(String name) {
         String valueString = get(name);
         if (null == valueString) {
-          return Collections.emptyList();
+            return Collections.emptyList();
         }
         return StringUtils.getTrimmedStringCollection(valueString);
     }
@@ -916,13 +905,13 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * @return property value as a <code>Class[]</code>,
      *         or <code>defaultValue</code>.
      */
-    public Class<?>[] getClasses(String name, Class<?> ... defaultValue) {
+    public Class<?>[] getClasses(String name, Class<?>... defaultValue) {
         String[] classnames = getStrings(name);
         if (classnames == null)
             return defaultValue;
         try {
             Class<?>[] classes = new Class<?>[classnames.length];
-            for(int i = 0; i < classnames.length; i++) {
+            for (int i = 0; i < classnames.length; i++) {
                 classes[i] = getClassByName(classnames[i]);
             }
             return classes;
@@ -968,13 +957,11 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * @return property value as a <code>Class</code>,
      *         or <code>defaultValue</code>.
      */
-    public <U> Class<? extends U> getClass(String name,
-                                           Class<? extends U> defaultValue,
-                                           Class<U> xface) {
+    public <U> Class<? extends U> getClass(String name, Class<? extends U> defaultValue, Class<U> xface) {
         try {
             Class<?> theClass = getClass(name, defaultValue);
             if (theClass != null && !xface.isAssignableFrom(theClass))
-                throw new RuntimeException(theClass+" not "+xface.getName());
+                throw new RuntimeException(theClass + " not " + xface.getName());
             else if (theClass != null)
                 return theClass.asSubclass(xface);
             else
@@ -1000,7 +987,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     public <U> List<U> getInstances(String name, Class<U> xface) {
         List<U> ret = new ArrayList<>();
         Class<?>[] classes = getClasses(name);
-        for (Class<?> cl: classes) {
+        for (Class<?> cl : classes) {
             if (!xface.isAssignableFrom(cl)) {
                 throw new RuntimeException(cl + " does not implement " + xface);
             }
@@ -1022,7 +1009,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     public void setClass(String name, Class<?> theClass, Class<?> xface) {
         if (!xface.isAssignableFrom(theClass))
-            throw new RuntimeException(theClass+" not "+xface.getName());
+            throw new RuntimeException(theClass + " not " + xface.getName());
         set(name, theClass.getName());
     }
 
@@ -1038,19 +1025,18 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * @param path file-path.
      * @return local file under the directory with the given path.
      */
-    public File getFile(String dirsProp, String path)
-            throws IOException {
+    public File getFile(String dirsProp, String path) throws IOException {
         String[] dirs = getStrings(dirsProp);
         int hashCode = path.hashCode();
-        for (int i = 0; i < dirs.length; i++) {  // try each local dir
-            int index = (hashCode+i & Integer.MAX_VALUE) % dirs.length;
+        for (int i = 0; i < dirs.length; i++) { // try each local dir
+            int index = (hashCode + i & Integer.MAX_VALUE) % dirs.length;
             File file = new File(dirs[index], path);
             File dir = file.getParentFile();
             if (dir.exists() || dir.mkdirs()) {
                 return file;
             }
         }
-        throw new IOException("No valid local directories in property: "+dirsProp);
+        throw new IOException("No valid local directories in property: " + dirsProp);
     }
 
     /**
@@ -1072,7 +1058,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     public InputStream getConfResourceAsInputStream(String name) {
         try {
-            URL url= getResource(name);
+            URL url = getResource(name);
 
             if (url == null) {
                 LOG.info(name + " not found");
@@ -1096,7 +1082,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      */
     public Reader getConfResourceAsReader(String name) {
         try {
-            URL url= getResource(name);
+            URL url = getResource(name);
 
             if (url == null) {
                 LOG.info(name + " not found");
@@ -1115,10 +1101,10 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         if (properties == null) {
             properties = new Properties();
             loadResources(properties, resources, quietmode);
-            if (overlay!= null) {
+            if (overlay != null) {
                 properties.putAll(overlay);
                 if (storeResource) {
-                    for (Map.Entry<Object,Object> item: overlay.entrySet()) {
+                    for (Map.Entry<Object, Object> item : overlay.entrySet()) {
                         updatingResource.put((String) item.getKey(), "Unknown");
                     }
                 }
@@ -1155,20 +1141,17 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         // methods that allow non-strings to be put into configurations are removed,
         // we could replace properties with a Map<String,String> and get rid of this
         // code.
-        Map<String,String> result = new HashMap<>();
-        for(Map.Entry<Object,Object> item: getProps().entrySet()) {
-            if (item.getKey() instanceof String &&
-                    item.getValue() instanceof String) {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<Object, Object> item : getProps().entrySet()) {
+            if (item.getKey() instanceof String && item.getValue() instanceof String) {
                 result.put((String) item.getKey(), (String) item.getValue());
             }
         }
         return result.entrySet().iterator();
     }
 
-    private void loadResources(Properties properties,
-                               ArrayList resources,
-                               boolean quiet) {
-        if(loadDefaults) {
+    private void loadResources(Properties properties, ArrayList resources, boolean quiet) {
+        if (loadDefaults) {
             // To avoid addResource causing a ConcurrentModificationException
             ArrayList<String> toLoad;
             synchronized (Configuration.class) {
@@ -1179,7 +1162,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
             }
 
             //support the hadoop-site.xml as a deprecated case
-            if(getResource("hadoop-site.xml")!=null) {
+            if (getResource("hadoop-site.xml") != null) {
                 loadResource(properties, "hadoop-site.xml", quiet);
             }
         }
@@ -1191,8 +1174,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
 
     private void loadResource(Properties properties, Object name, boolean quiet) {
         try {
-            DocumentBuilderFactory docBuilderFactory
-                    = DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
             //ignore all comments inside the xml file
             docBuilderFactory.setIgnoringComments(true);
 
@@ -1201,39 +1183,36 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
             try {
                 docBuilderFactory.setXIncludeAware(true);
             } catch (UnsupportedOperationException e) {
-                LOG.error("Failed to set setXIncludeAware(true) for parser "
-                                + docBuilderFactory
-                                + ":" + e,
-                        e);
+                LOG.error("Failed to set setXIncludeAware(true) for parser " + docBuilderFactory + ":" + e, e);
             }
             DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
             Document doc = null;
             Element root = null;
 
-            if (name instanceof URL) {                  // an URL resource
-                URL url = (URL)name;
+            if (name instanceof URL) { // an URL resource
+                URL url = (URL) name;
                 if (url != null) {
                     if (!quiet) {
                         LOG.info("parsing " + url);
                     }
                     doc = builder.parse(url.toString());
                 }
-            } else if (name instanceof String) {        // a CLASSPATH resource
-                URL url = getResource((String)name);
+            } else if (name instanceof String) { // a CLASSPATH resource
+                URL url = getResource((String) name);
                 if (url != null) {
                     if (!quiet) {
                         LOG.info("parsing " + url);
                     }
                     doc = builder.parse(url.toString());
                 }
-            }  else if (name instanceof InputStream) {
+            } else if (name instanceof InputStream) {
                 try {
-                    doc = builder.parse((InputStream)name);
+                    doc = builder.parse((InputStream) name);
                 } finally {
-                    ((InputStream)name).close();
+                    ((InputStream) name).close();
                 }
             } else if (name instanceof Element) {
-                root = (Element)name;
+                root = (Element) name;
             }
 
             if (doc == null && root == null) {
@@ -1252,7 +1231,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                 Node propNode = props.item(i);
                 if (!(propNode instanceof Element))
                     continue;
-                Element prop = (Element)propNode;
+                Element prop = (Element) propNode;
                 if ("configuration".equals(prop.getTagName())) {
                     loadResource(properties, prop, quiet);
                     continue;
@@ -1267,13 +1246,13 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                     Node fieldNode = fields.item(j);
                     if (!(fieldNode instanceof Element))
                         continue;
-                    Element field = (Element)fieldNode;
+                    Element field = (Element) fieldNode;
                     if ("name".equals(field.getTagName()) && field.hasChildNodes())
-                        attr = ((Text)field.getFirstChild()).getData().trim();
+                        attr = ((Text) field.getFirstChild()).getData().trim();
                     if ("value".equals(field.getTagName()) && field.hasChildNodes())
-                        value = ((Text)field.getFirstChild()).getData();
+                        value = ((Text) field.getFirstChild()).getData();
                     if ("final".equals(field.getTagName()) && field.hasChildNodes())
-                        finalParameter = "true".equals(((Text)field.getFirstChild()).getData());
+                        finalParameter = "true".equals(((Text) field.getFirstChild()).getData());
                 }
 
                 // Ignore this parameter if it has already been marked as 'final'
@@ -1286,8 +1265,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
                         if (finalParameter)
                             finalParameters.add(attr);
                     } else {
-                        LOG.warn(name+":a attempt to override final parameter: "+attr
-                                +";  Ignoring.");
+                        LOG.warn(name + ":a attempt to override final parameter: " + attr + ";  Ignoring.");
                     }
                 }
             }
@@ -1307,18 +1285,17 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     public void writeXml(OutputStream out) throws IOException {
         Properties properties = getProps();
         try {
-            Document doc =
-                    DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
             Element conf = doc.createElement("configuration");
             doc.appendChild(conf);
             conf.appendChild(doc.createTextNode("\n"));
             for (Enumeration e = properties.keys(); e.hasMoreElements();) {
-                String name = (String)e.nextElement();
+                String name = (String) e.nextElement();
                 Object object = properties.get(name);
                 String value;
                 if (object instanceof String) {
                     value = (String) object;
-                }else {
+                } else {
                     continue;
                 }
                 Element propNode = doc.createElement("property");
@@ -1356,9 +1333,8 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
      * @param out the Writer to write to
      * @throws IOException
      */
-    public static void dumpConfiguration(Configuration conf,
-                                         Writer out) throws IOException {
-        Configuration config = new Configuration(conf,true);
+    public static void dumpConfiguration(Configuration conf, Writer out) throws IOException {
+        Configuration config = new Configuration(conf, true);
         config.reloadConfiguration();
         JsonFactory dumpFactory = new JsonFactory();
         JsonGenerator dumpGenerator = dumpFactory.createGenerator(out);
@@ -1366,15 +1342,12 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
         dumpGenerator.writeFieldName("properties");
         dumpGenerator.writeStartArray();
         dumpGenerator.flush();
-        for (Map.Entry<Object,Object> item: config.getProps().entrySet()) {
+        for (Map.Entry<Object, Object> item : config.getProps().entrySet()) {
             dumpGenerator.writeStartObject();
             dumpGenerator.writeStringField("key", (String) item.getKey());
-            dumpGenerator.writeStringField("value",
-                    config.get((String) item.getKey()));
-            dumpGenerator.writeBooleanField("isFinal",
-                    config.finalParameters.contains(item.getKey()));
-            dumpGenerator.writeStringField("resource",
-                    config.updatingResource.get(item.getKey()));
+            dumpGenerator.writeStringField("value", config.get((String) item.getKey()));
+            dumpGenerator.writeBooleanField("isFinal", config.finalParameters.contains(item.getKey()));
+            dumpGenerator.writeStringField("resource", config.updatingResource.get(item.getKey()));
             dumpGenerator.writeEndObject();
         }
         dumpGenerator.writeEndArray();
@@ -1404,11 +1377,11 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Configuration: ");
-        if(loadDefaults) {
+        if (loadDefaults) {
             synchronized (Configuration.class) {
                 toString(defaultResources, sb);
             }
-            if(resources.size()>0) {
+            if (resources.size() > 0) {
                 sb.append(", ");
             }
         }
@@ -1445,22 +1418,22 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
 
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 }

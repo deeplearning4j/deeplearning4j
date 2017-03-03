@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,8 +42,8 @@ import java.util.List;
  */
 public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
-    public LongColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp,
-                                      @JsonProperty("columns") String... columns) {
+    public LongColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
@@ -57,13 +57,15 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 long sum = 0;
-                for (Writable w : input) sum += w.toLong();
+                for (Writable w : input)
+                    sum += w.toLong();
                 return new LongWritable(sum);
             case Subtract:
                 return new LongWritable(input[0].toLong() - input[1].toLong());
             case Multiply:
                 long product = 1;
-                for (Writable w : input) product *= w.toLong();
+                for (Writable w : input)
+                    product *= w.toLong();
                 return new LongWritable(product);
             case Divide:
                 return new LongWritable(input[0].toLong() / input[1].toLong());
@@ -74,13 +76,14 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
     @Override
-    public String toString(){
-        return "LongColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
+    public String toString() {
+        return "LongColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns="
+                        + Arrays.toString(columns) + ")";
     }
 
     /**
@@ -96,13 +99,15 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 long sum = 0;
-                for (Long w : list) sum += w;
+                for (Long w : list)
+                    sum += w;
                 return new LongWritable(sum);
             case Subtract:
                 return list.get(0) - list.get(1);
             case Multiply:
                 long product = 1;
-                for (Long w : list) product *= w;
+                for (Long w : list)
+                    product *= w;
                 return product;
             case Divide:
                 return list.get(0) / list.get(1);
@@ -113,7 +118,7 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
@@ -126,7 +131,7 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     public Object mapSequence(Object sequence) {
         List<List<Long>> seq = (List<List<Long>>) sequence;
         List<Long> ret = new ArrayList<>();
-        for(List<Long> l : seq)
+        for (List<Long> l : seq)
             ret.add((Long) map(l));
         return ret;
     }

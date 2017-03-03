@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,15 +52,16 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
         this.histogramBucketCounts = builder.histogramBucketCounts;
     }
 
-    protected NumericalColumnAnalysis(){
+    protected NumericalColumnAnalysis() {
         //No arg for Jackson
     }
 
     @Override
     public String toString() {
-        return "mean=" + mean + ",sampleStDev=" + sampleStdev + ",sampleVariance=" + sampleVariance + ",countZero=" + countZero
-                + ",countNegative=" + countNegative + ",countPositive=" + countPositive + ",countMinValue=" + countMinValue
-                + ",countMaxValue=" + countMaxValue + ",count=" + countTotal;
+        return "mean=" + mean + ",sampleStDev=" + sampleStdev + ",sampleVariance=" + sampleVariance + ",countZero="
+                        + countZero + ",countNegative=" + countNegative + ",countPositive=" + countPositive
+                        + ",countMinValue=" + countMinValue + ",countMaxValue=" + countMaxValue + ",count="
+                        + countTotal;
     }
 
     public abstract double getMinDouble();

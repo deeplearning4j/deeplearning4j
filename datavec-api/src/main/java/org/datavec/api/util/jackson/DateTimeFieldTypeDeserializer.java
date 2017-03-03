@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,7 +66,8 @@ public class DateTimeFieldTypeDeserializer extends JsonDeserializer<DateTimeFiel
     }
 
     @Override
-    public DateTimeFieldType deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public DateTimeFieldType deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+                    throws IOException, JsonProcessingException {
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
         String value = node.get("fieldType").textValue();
         return map.get(value);

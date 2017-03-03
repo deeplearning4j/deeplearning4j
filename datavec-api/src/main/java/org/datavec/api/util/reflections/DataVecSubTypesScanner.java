@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,14 +41,14 @@ public class DataVecSubTypesScanner implements Scanner {
     private Configuration configuration;
     private Multimap<String, String> store;
 
-    public DataVecSubTypesScanner(List<Class<?>> interfaces, List<Class<?>> classes){
+    public DataVecSubTypesScanner(List<Class<?>> interfaces, List<Class<?>> classes) {
         interfaceNames = new ArrayList<>(interfaces.size());
-        for(Class<?> c : interfaces){
+        for (Class<?> c : interfaces) {
             interfaceNames.add(c.getName());
         }
 
         classNames = new ArrayList<>(classes.size());
-        for(Class<?> c : interfaces){
+        for (Class<?> c : interfaces) {
             classNames.add(c.getName());
         }
     }
@@ -59,12 +59,12 @@ public class DataVecSubTypesScanner implements Scanner {
 
         //Unfortunately: can't simply check if superclass is one of the classes we want
         // as this doesn't take into account the class heirarchy properly
-        if(!"java.lang.Object".equals(superclass) ){
+        if (!"java.lang.Object".equals(superclass)) {
             getStore().put(superclass, className);
         }
 
         for (String interfaceName : (List<String>) configuration.getMetadataAdapter().getInterfacesNames(cls)) {
-            if(interfaceNames.contains(interfaceName)){
+            if (interfaceNames.contains(interfaceName)) {
                 getStore().put(interfaceName, className);
             }
         }

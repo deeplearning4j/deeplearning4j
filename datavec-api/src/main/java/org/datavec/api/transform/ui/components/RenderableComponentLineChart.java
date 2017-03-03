@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@ public class RenderableComponentLineChart extends RenderableComponent {
     private int marginRight;
     private boolean legend;
 
-    private RenderableComponentLineChart(Builder builder){
+    private RenderableComponentLineChart(Builder builder) {
         super(COMPONENT_TYPE);
         title = builder.title;
         x = builder.x;
@@ -51,7 +51,7 @@ public class RenderableComponentLineChart extends RenderableComponent {
         this.marginRight = builder.marginRight;
     }
 
-    public RenderableComponentLineChart(){
+    public RenderableComponentLineChart() {
         super(COMPONENT_TYPE);
         //no-arg constructor for Jackson
     }
@@ -72,24 +72,24 @@ public class RenderableComponentLineChart extends RenderableComponent {
         private int marginLeft = 60;
         private int marginRight = 20;
 
-        public Builder title(String title){
+        public Builder title(String title) {
             this.title = title;
             return this;
         }
 
-        public Builder addSeries(String seriesName, double[] xValues, double[] yValues){
+        public Builder addSeries(String seriesName, double[] xValues, double[] yValues) {
             x.add(xValues);
             y.add(yValues);
             seriesNames.add(seriesName);
             return this;
         }
 
-        public Builder setRemoveAxisHorizontal(boolean removeAxisHorizontal){
+        public Builder setRemoveAxisHorizontal(boolean removeAxisHorizontal) {
             this.removeAxisHorizontal = removeAxisHorizontal;
             return this;
         }
 
-        public Builder margins(int top, int bottom, int left, int right){
+        public Builder margins(int top, int bottom, int left, int right) {
             this.marginTop = top;
             this.marginBottom = bottom;
             this.marginLeft = left;
@@ -97,12 +97,12 @@ public class RenderableComponentLineChart extends RenderableComponent {
             return this;
         }
 
-        public Builder legend(boolean legend){
+        public Builder legend(boolean legend) {
             this.legend = legend;
             return this;
         }
 
-        public RenderableComponentLineChart build(){
+        public RenderableComponentLineChart build() {
             return new RenderableComponentLineChart(this);
         }
 

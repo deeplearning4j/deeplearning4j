@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,25 +40,25 @@ public class CSVSequenceRecordReaderTest {
     @Test
     public void test() throws Exception {
 
-        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1,",");
+        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1, ",");
         seqReader.initialize(new TestInputSplit());
 
         int sequenceCount = 0;
-        while(seqReader.hasNext()){
+        while (seqReader.hasNext()) {
             List<List<Writable>> sequence = seqReader.sequenceRecord();
-            assertEquals(4,sequence.size());    //4 lines, plus 1 header line
+            assertEquals(4, sequence.size()); //4 lines, plus 1 header line
 
             Iterator<List<Writable>> timeStepIter = sequence.iterator();
             int lineCount = 0;
-            while(timeStepIter.hasNext()){
+            while (timeStepIter.hasNext()) {
                 List<Writable> timeStep = timeStepIter.next();
-                assertEquals(3,timeStep.size());
+                assertEquals(3, timeStep.size());
                 Iterator<Writable> lineIter = timeStep.iterator();
                 int countInLine = 0;
-                while(lineIter.hasNext()){
+                while (lineIter.hasNext()) {
                     Writable entry = lineIter.next();
-                    int expValue = 100*sequenceCount + 10*lineCount + countInLine;
-                    assertEquals(String.valueOf(expValue),entry.toString());
+                    int expValue = 100 * sequenceCount + 10 * lineCount + countInLine;
+                    assertEquals(String.valueOf(expValue), entry.toString());
                     countInLine++;
                 }
                 lineCount++;
@@ -69,17 +69,17 @@ public class CSVSequenceRecordReaderTest {
 
     @Test
     public void testReset() throws Exception {
-        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1,",");
+        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1, ",");
         seqReader.initialize(new TestInputSplit());
 
         int nTests = 5;
-        for( int i=0; i<nTests; i++ ) {
+        for (int i = 0; i < nTests; i++) {
             seqReader.reset();
 
             int sequenceCount = 0;
             while (seqReader.hasNext()) {
                 List<List<Writable>> sequence = seqReader.sequenceRecord();
-                assertEquals(4, sequence.size());    //4 lines, plus 1 header line
+                assertEquals(4, sequence.size()); //4 lines, plus 1 header line
 
                 Iterator<List<Writable>> timeStepIter = sequence.iterator();
                 int lineCount = 0;
@@ -88,21 +88,21 @@ public class CSVSequenceRecordReaderTest {
                     lineCount++;
                 }
                 sequenceCount++;
-                assertEquals(4,lineCount);
+                assertEquals(4, lineCount);
             }
-            assertEquals(3,sequenceCount);
+            assertEquals(3, sequenceCount);
         }
     }
 
     @Test
     public void testMetaData() throws Exception {
-        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1,",");
+        CSVSequenceRecordReader seqReader = new CSVSequenceRecordReader(1, ",");
         seqReader.initialize(new TestInputSplit());
 
         List<List<List<Writable>>> l = new ArrayList<>();
         while (seqReader.hasNext()) {
             List<List<Writable>> sequence = seqReader.sequenceRecord();
-            assertEquals(4, sequence.size());    //4 lines, plus 1 header line
+            assertEquals(4, sequence.size()); //4 lines, plus 1 header line
 
             Iterator<List<Writable>> timeStepIter = sequence.iterator();
             int lineCount = 0;
@@ -110,7 +110,7 @@ public class CSVSequenceRecordReaderTest {
                 timeStepIter.next();
                 lineCount++;
             }
-            assertEquals(4,lineCount);
+            assertEquals(4, lineCount);
 
             l.add(sequence);
         }
@@ -118,7 +118,7 @@ public class CSVSequenceRecordReaderTest {
         List<SequenceRecord> l2 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         seqReader.reset();
-        while(seqReader.hasNext()){
+        while (seqReader.hasNext()) {
             SequenceRecord sr = seqReader.nextSequence();
             l2.add(sr);
             meta.add(sr.getMetaData());
@@ -126,7 +126,7 @@ public class CSVSequenceRecordReaderTest {
         assertEquals(3, l2.size());
 
         List<SequenceRecord> fromMeta = seqReader.loadSequenceFromMetaData(meta);
-        for( int i=0; i<3; i++ ){
+        for (int i = 0; i < 3; i++) {
             assertEquals(l.get(i), l2.get(i).getSequenceRecord());
             assertEquals(l.get(i), fromMeta.get(i).getSequenceRecord());
         }
@@ -146,7 +146,7 @@ public class CSVSequenceRecordReaderTest {
                 arr[0] = new ClassPathResource("csvsequence_0.txt").getFile().toURI();
                 arr[1] = new ClassPathResource("csvsequence_1.txt").getFile().toURI();
                 arr[2] = new ClassPathResource("csvsequence_2.txt").getFile().toURI();
-            } catch(Exception e ){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             return arr;
@@ -161,7 +161,7 @@ public class CSVSequenceRecordReaderTest {
         public Iterator<String> locationsPathIterator() {
             URI[] loc = locations();
             String[] arr = new String[loc.length];
-            for(int i=0; i<loc.length; i++ ){
+            for (int i = 0; i < loc.length; i++) {
                 arr[i] = loc[i].getPath();
             }
             return Arrays.asList(arr).iterator();
@@ -183,22 +183,22 @@ public class CSVSequenceRecordReaderTest {
         }
 
         @Override
-        public double toDouble(){
+        public double toDouble() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public float toFloat(){
+        public float toFloat() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int toInt(){
+        public int toInt() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long toLong(){
+        public long toLong() {
             throw new UnsupportedOperationException();
         }
     }

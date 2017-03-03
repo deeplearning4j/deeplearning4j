@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,8 +29,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"columnIdx","schema","sequenceMode"})
-@EqualsAndHashCode(exclude = {"columnIdx","schema","sequenceMode"})
+@JsonIgnoreProperties({"columnIdx", "schema", "sequenceMode"})
+@EqualsAndHashCode(exclude = {"columnIdx", "schema", "sequenceMode"})
 public abstract class BaseColumnCondition implements ColumnCondition {
 
     protected final String columnName;
@@ -60,12 +60,12 @@ public abstract class BaseColumnCondition implements ColumnCondition {
      */
     @Override
     public Schema transform(Schema inputSchema) {
-       return inputSchema;
+        return inputSchema;
     }
 
 
     @Override
-    public Schema getInputSchema(){
+    public Schema getInputSchema() {
         return schema;
     }
 
@@ -79,16 +79,19 @@ public abstract class BaseColumnCondition implements ColumnCondition {
         switch (sequenceMode) {
             case And:
                 for (List<Writable> l : list) {
-                    if (!condition(l)) return false;
+                    if (!condition(l))
+                        return false;
                 }
                 return true;
             case Or:
                 for (List<Writable> l : list) {
-                    if (condition(l)) return true;
+                    if (condition(l))
+                        return true;
                 }
                 return false;
             case NoSequenceMode:
-                throw new IllegalStateException("Column condition " + toString() + " does not support sequence execution");
+                throw new IllegalStateException(
+                                "Column condition " + toString() + " does not support sequence execution");
             default:
                 throw new RuntimeException("Unknown/not implemented sequence mode: " + sequenceMode);
         }
@@ -100,16 +103,19 @@ public abstract class BaseColumnCondition implements ColumnCondition {
         switch (sequenceMode) {
             case And:
                 for (Object l : objects) {
-                    if (!condition(l)) return false;
+                    if (!condition(l))
+                        return false;
                 }
                 return true;
             case Or:
                 for (Object l : objects) {
-                    if (condition(l)) return true;
+                    if (condition(l))
+                        return true;
                 }
                 return false;
             case NoSequenceMode:
-                throw new IllegalStateException("Column condition " + toString() + " does not support sequence execution");
+                throw new IllegalStateException(
+                                "Column condition " + toString() + " does not support sequence execution");
             default:
                 throw new RuntimeException("Unknown/not implemented sequence mode: " + sequenceMode);
         }

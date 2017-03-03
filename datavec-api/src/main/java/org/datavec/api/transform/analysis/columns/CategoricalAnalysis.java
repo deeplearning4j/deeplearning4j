@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import java.util.*;
  */
 @AllArgsConstructor
 @Data
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class CategoricalAnalysis implements ColumnAnalysis {
 
     private Map<String, Long> mapOfCounts;
@@ -40,18 +40,19 @@ public class CategoricalAnalysis implements ColumnAnalysis {
     public String toString() {
         //Returning the counts from highest to lowest here, which seems like a useful default
         List<String> keys = new ArrayList<>(mapOfCounts.keySet());
-        Collections.sort(keys, new Comparator<String>(){
+        Collections.sort(keys, new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
-                return -Long.compare(mapOfCounts.get(o1), mapOfCounts.get(o2));     //Highest to lowest
+                return -Long.compare(mapOfCounts.get(o1), mapOfCounts.get(o2)); //Highest to lowest
             }
         });
 
         StringBuilder sb = new StringBuilder();
         sb.append("CategoricalAnalysis(CategoryCounts={");
         boolean first = true;
-        for(String s : keys){
-            if(!first) sb.append(", ");
+        for (String s : keys) {
+            if (!first)
+                sb.append(", ");
             first = false;
 
             sb.append(s).append("=").append(mapOfCounts.get(s));
@@ -65,7 +66,8 @@ public class CategoricalAnalysis implements ColumnAnalysis {
     public long getCountTotal() {
         Collection<Long> counts = mapOfCounts.values();
         long sum = 0;
-        for (Long l : counts) sum += l;
+        for (Long l : counts)
+            sum += l;
         return sum;
     }
 

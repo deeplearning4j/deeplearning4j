@@ -29,23 +29,22 @@ public class ParseDoubleTransform extends BaseTransform {
      */
     @Override
     public Schema transform(Schema inputSchema) {
-       Schema.Builder newSchema = new Schema.Builder();
-       for(int i = 0; i < inputSchema.numColumns(); i++) {
-           if(inputSchema.getType(i) == ColumnType.String) {
-               newSchema.addColumnDouble(inputSchema.getMetaData(i).getName());
-           }
-           else
-               newSchema.addColumn(inputSchema.getMetaData(i));
+        Schema.Builder newSchema = new Schema.Builder();
+        for (int i = 0; i < inputSchema.numColumns(); i++) {
+            if (inputSchema.getType(i) == ColumnType.String) {
+                newSchema.addColumnDouble(inputSchema.getMetaData(i).getName());
+            } else
+                newSchema.addColumn(inputSchema.getMetaData(i));
 
-       }
+        }
         return newSchema.build();
     }
 
     @Override
     public List<Writable> map(List<Writable> writables) {
         List<Writable> transform = new ArrayList<>();
-        for(Writable w : writables) {
-            if(w instanceof Text){
+        for (Writable w : writables) {
+            if (w instanceof Text) {
                 transform.add(new DoubleWritable(w.toDouble()));
             } else {
                 transform.add(w);
@@ -75,7 +74,7 @@ public class ParseDoubleTransform extends BaseTransform {
     public Object mapSequence(Object sequence) {
         List<?> list = (List<?>) sequence;
         List<Object> ret = new ArrayList<>();
-        for(Object o : list)
+        for (Object o : list)
             ret.add(map(o));
         return ret;
     }

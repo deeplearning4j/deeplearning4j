@@ -10,12 +10,12 @@ import org.datavec.dataframe.util.Selection;
  */
 public class BooleanIsTrue extends ColumnFilter {
 
-  public BooleanIsTrue(ColumnReference reference) {
-    super(reference);
-  }
+    public BooleanIsTrue(ColumnReference reference) {
+        super(reference);
+    }
 
-  public Selection apply(Table relation) {
-    BooleanColumn booleanColumn = (BooleanColumn) relation.column(columnReference.getColumnName());
-    return booleanColumn.isTrue();
-  }
+    public Selection apply(Table relation) {
+        BooleanColumn booleanColumn = (BooleanColumn) relation.column(columnReference.getColumnName());
+        return booleanColumn.isTrue();
+    }
 }

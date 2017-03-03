@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ public class JsonSerializer extends BaseSerializer {
 
     private ObjectMapper om;
 
-    public JsonSerializer(){
+    public JsonSerializer() {
         this.om = getMapper();
     }
 
@@ -37,7 +37,7 @@ public class JsonSerializer extends BaseSerializer {
         return om;
     }
 
-    private ObjectMapper getMapper(){
+    private ObjectMapper getMapper() {
         return getObjectMapper(new JsonFactory());
     }
 }

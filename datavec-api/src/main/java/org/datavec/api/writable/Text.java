@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,29 +49,24 @@ import java.text.StringCharacterIterator;
  * byte array contains valid UTF8 code, calculating the length of an encoded
  * string.
  */
-public class Text extends BinaryComparable
-        implements WritableComparable<BinaryComparable> {
+public class Text extends BinaryComparable implements WritableComparable<BinaryComparable> {
     private static final Logger LOG = LoggerFactory.getLogger(Text.class);
 
-    private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY =
-            new ThreadLocal<CharsetEncoder>() {
-                protected CharsetEncoder initialValue() {
-                    return Charset.forName("UTF-8").newEncoder().
-                            onMalformedInput(CodingErrorAction.REPORT).
-                            onUnmappableCharacter(CodingErrorAction.REPORT);
-                }
-            };
+    private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {
+        protected CharsetEncoder initialValue() {
+            return Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction.REPORT)
+                            .onUnmappableCharacter(CodingErrorAction.REPORT);
+        }
+    };
 
-    private static ThreadLocal<CharsetDecoder> DECODER_FACTORY =
-            new ThreadLocal<CharsetDecoder>() {
-                protected CharsetDecoder initialValue() {
-                    return Charset.forName("UTF-8").newDecoder().
-                            onMalformedInput(CodingErrorAction.REPORT).
-                            onUnmappableCharacter(CodingErrorAction.REPORT);
-                }
-            };
+    private static ThreadLocal<CharsetDecoder> DECODER_FACTORY = new ThreadLocal<CharsetDecoder>() {
+        protected CharsetDecoder initialValue() {
+            return Charset.forName("UTF-8").newDecoder().onMalformedInput(CodingErrorAction.REPORT)
+                            .onUnmappableCharacter(CodingErrorAction.REPORT);
+        }
+    };
 
-    private static final byte [] EMPTY_BYTES = new byte[0];
+    private static final byte[] EMPTY_BYTES = new byte[0];
 
     private byte[] bytes;
     private int length;
@@ -93,7 +88,7 @@ public class Text extends BinaryComparable
 
     /** Construct from a byte array.
      */
-    public Text(byte[] utf8)  {
+    public Text(byte[] utf8) {
         set(utf8);
     }
 
@@ -119,10 +114,12 @@ public class Text extends BinaryComparable
      *          trailing byte
      */
     public int charAt(int position) {
-        if (position > this.length) return -1; // too long
-        if (position < 0) return -1; // duh.
+        if (position > this.length)
+            return -1; // too long
+        if (position < 0)
+            return -1; // duh.
 
-        ByteBuffer bb = (ByteBuffer)ByteBuffer.wrap(bytes).position(position);
+        ByteBuffer bb = (ByteBuffer) ByteBuffer.wrap(bytes).position(position);
         return bytesToCodePoint(bb.slice());
     }
 
@@ -141,7 +138,7 @@ public class Text extends BinaryComparable
      */
     public int find(String what, int start) {
         try {
-            ByteBuffer src = ByteBuffer.wrap(this.bytes,0,this.length);
+            ByteBuffer src = ByteBuffer.wrap(this.bytes, 0, this.length);
             ByteBuffer tgt = encode(what);
             byte b = tgt.get();
             src.position(start);
@@ -151,7 +148,7 @@ public class Text extends BinaryComparable
                     src.mark(); // save position in loop
                     tgt.mark(); // save position in target
                     boolean found = true;
-                    int pos = src.position()-1;
+                    int pos = src.position() - 1;
                     while (tgt.hasRemaining()) {
                         if (!src.hasRemaining()) { // src expired first
                             tgt.reset();
@@ -166,7 +163,8 @@ public class Text extends BinaryComparable
                             break; // no match
                         }
                     }
-                    if (found) return pos;
+                    if (found)
+                        return pos;
                 }
             }
             return -1; // not found
@@ -176,6 +174,7 @@ public class Text extends BinaryComparable
             return -1;
         }
     }
+
     /** Set to contain the contents of a string.
      */
     public void set(String string) {
@@ -183,7 +182,7 @@ public class Text extends BinaryComparable
             ByteBuffer bb = encode(string, true);
             bytes = bb.array();
             length = bb.limit();
-        }catch(CharacterCodingException e) {
+        } catch (CharacterCodingException e) {
             throw new RuntimeException("Should not have happened " + e.toString());
         }
     }
@@ -289,7 +288,7 @@ public class Text extends BinaryComparable
 
     /** Returns true iff <code>o</code> is a Text with the same contents.  */
     public boolean equals(Object o) {
-      return o instanceof Text && super.equals(o);
+        return o instanceof Text && super.equals(o);
     }
 
     public int hashCode() {
@@ -302,11 +301,10 @@ public class Text extends BinaryComparable
             super(Text.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             int n1 = WritableUtils.decodeVIntSize(b1[s1]);
             int n2 = WritableUtils.decodeVIntSize(b2[s2]);
-            return compareBytes(b1, s1+n1, l1-n1, b2, s2+n2, l2-n2);
+            return compareBytes(b1, s1 + n1, l1 - n1, b2, s2 + n2, l2 - n2);
         }
     }
 
@@ -325,8 +323,7 @@ public class Text extends BinaryComparable
         return decode(ByteBuffer.wrap(utf8), true);
     }
 
-    public static String decode(byte[] utf8, int start, int length)
-            throws CharacterCodingException {
+    public static String decode(byte[] utf8, int start, int length) throws CharacterCodingException {
         return decode(ByteBuffer.wrap(utf8, start, length), true);
     }
 
@@ -337,17 +334,14 @@ public class Text extends BinaryComparable
      * substitution character, which is U+FFFD. Otherwise the
      * method throws a MalformedInputException.
      */
-    public static String decode(byte[] utf8, int start, int length, boolean replace)
-            throws CharacterCodingException {
+    public static String decode(byte[] utf8, int start, int length, boolean replace) throws CharacterCodingException {
         return decode(ByteBuffer.wrap(utf8, start, length), replace);
     }
 
-    private static String decode(ByteBuffer utf8, boolean replace)
-            throws CharacterCodingException {
+    private static String decode(ByteBuffer utf8, boolean replace) throws CharacterCodingException {
         CharsetDecoder decoder = DECODER_FACTORY.get();
         if (replace) {
-            decoder.onMalformedInput(
-                    java.nio.charset.CodingErrorAction.REPLACE);
+            decoder.onMalformedInput(java.nio.charset.CodingErrorAction.REPLACE);
             decoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
         }
         String str = decoder.decode(utf8).toString();
@@ -367,8 +361,7 @@ public class Text extends BinaryComparable
      *                     and length is ByteBuffer.limit()
      */
 
-    public static ByteBuffer encode(String string)
-            throws CharacterCodingException {
+    public static ByteBuffer encode(String string) throws CharacterCodingException {
         return encode(string, true);
     }
 
@@ -381,15 +374,13 @@ public class Text extends BinaryComparable
      * @return ByteBuffer: bytes stores at ByteBuffer.array()
      *                     and length is ByteBuffer.limit()
      */
-    public static ByteBuffer encode(String string, boolean replace)
-            throws CharacterCodingException {
+    public static ByteBuffer encode(String string, boolean replace) throws CharacterCodingException {
         CharsetEncoder encoder = ENCODER_FACTORY.get();
         if (replace) {
             encoder.onMalformedInput(CodingErrorAction.REPLACE);
             encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
         }
-        ByteBuffer bytes =
-                encoder.encode(CharBuffer.wrap(string.toCharArray()));
+        ByteBuffer bytes = encoder.encode(CharBuffer.wrap(string.toCharArray()));
         if (replace) {
             encoder.onMalformedInput(CodingErrorAction.REPORT);
             encoder.onUnmappableCharacter(CodingErrorAction.REPORT);
@@ -401,7 +392,7 @@ public class Text extends BinaryComparable
      */
     public static String readString(DataInput in) throws IOException {
         int length = WritableUtils.readVInt(in);
-        byte [] bytes = new byte[length];
+        byte[] bytes = new byte[length];
         in.readFully(bytes, 0, length);
         return decode(bytes);
     }
@@ -440,13 +431,12 @@ public class Text extends BinaryComparable
      * @param len the length of the byte sequence
      * @throws MalformedInputException if the byte array contains invalid bytes
      */
-    public static void validateUTF8(byte[] utf8, int start, int len)
-            throws MalformedInputException {
+    public static void validateUTF8(byte[] utf8, int start, int len) throws MalformedInputException {
         int count = start;
         int leadByte = 0;
         int length = 0;
         int state = LEAD_BYTE;
-        while (count < start+len) {
+        while (count < start + len) {
             int aByte = ((int) utf8[count] & 0xFF);
 
             switch (state) {
@@ -512,22 +502,17 @@ public class Text extends BinaryComparable
      * this table, even though valid UTF-8 cannot include the
      * five and six byte sequences.
      */
-    static final int[] bytesFromUTF8 =
-            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0,
+    static final int[] bytesFromUTF8 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0,
                     // trail bytes
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1,
-                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                    1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-                    3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 };
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                    3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
 
     /**
      * Returns the next code point at the current position in
@@ -539,16 +524,28 @@ public class Text extends BinaryComparable
         byte b = bytes.get();
         bytes.reset();
         int extraBytesToRead = bytesFromUTF8[(b & 0xFF)];
-        if (extraBytesToRead < 0) return -1; // trailing byte!
+        if (extraBytesToRead < 0)
+            return -1; // trailing byte!
         int ch = 0;
 
         switch (extraBytesToRead) {
-            case 5: ch += (bytes.get() & 0xFF); ch <<= 6; /* remember, illegal UTF-8 */
-            case 4: ch += (bytes.get() & 0xFF); ch <<= 6; /* remember, illegal UTF-8 */
-            case 3: ch += (bytes.get() & 0xFF); ch <<= 6;
-            case 2: ch += (bytes.get() & 0xFF); ch <<= 6;
-            case 1: ch += (bytes.get() & 0xFF); ch <<= 6;
-            case 0: ch += (bytes.get() & 0xFF);
+            case 5:
+                ch += (bytes.get() & 0xFF);
+                ch <<= 6; /* remember, illegal UTF-8 */
+            case 4:
+                ch += (bytes.get() & 0xFF);
+                ch <<= 6; /* remember, illegal UTF-8 */
+            case 3:
+                ch += (bytes.get() & 0xFF);
+                ch <<= 6;
+            case 2:
+                ch += (bytes.get() & 0xFF);
+                ch <<= 6;
+            case 1:
+                ch += (bytes.get() & 0xFF);
+                ch <<= 6;
+            case 0:
+                ch += (bytes.get() & 0xFF);
         }
         ch -= offsetsFromUTF8[extraBytesToRead];
 
@@ -556,9 +553,7 @@ public class Text extends BinaryComparable
     }
 
 
-    static final int offsetsFromUTF8[] =
-            { 0x00000000, 0x00003080,
-                    0x000E2080, 0x03C82080, 0xFA082080, 0x82082080 };
+    static final int offsetsFromUTF8[] = {0x00000000, 0x00003080, 0x000E2080, 0x03C82080, 0xFA082080, 0x82082080};
 
     /**
      * For the given string, returns the number of UTF-8 bytes
@@ -597,22 +592,22 @@ public class Text extends BinaryComparable
 
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         return Double.parseDouble(toString());
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         return Float.parseFloat(toString());
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         return Integer.parseInt(toString());
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         return Long.parseLong(toString());
     }
 }

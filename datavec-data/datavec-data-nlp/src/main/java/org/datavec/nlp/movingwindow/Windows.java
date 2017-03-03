@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ import org.datavec.nlp.tokenization.tokenizer.DefaultStreamTokenizer;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +41,12 @@ public class Windows {
      * @param windowSize the window size to generate
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(InputStream words,int windowSize) {
+    public static List<Window> windows(InputStream words, int windowSize) {
         Tokenizer tokenizer = new DefaultStreamTokenizer(words);
         List<String> list = new ArrayList<>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
-        return windows(list,windowSize);
+        return windows(list, windowSize);
     }
 
     /**
@@ -61,13 +60,13 @@ public class Windows {
     public static List<Window> windows(InputStream words, TokenizerFactory tokenizerFactory, int windowSize) {
         Tokenizer tokenizer = tokenizerFactory.create(words);
         List<String> list = new ArrayList<>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
 
-        if(list.isEmpty())
+        if (list.isEmpty())
             throw new IllegalStateException("No tokens found for windows");
 
-        return windows(list,windowSize);
+        return windows(list, windowSize);
     }
 
 
@@ -78,12 +77,12 @@ public class Windows {
      * @param windowSize the window size to generate
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(String words,int windowSize) {
+    public static List<Window> windows(String words, int windowSize) {
         StringTokenizer tokenizer = new StringTokenizer(words);
         List<String> list = new ArrayList<String>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
-        return windows(list,windowSize);
+        return windows(list, windowSize);
     }
 
     /**
@@ -94,16 +93,16 @@ public class Windows {
      * @param windowSize the window size to generate
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(String words,TokenizerFactory tokenizerFactory,int windowSize) {
+    public static List<Window> windows(String words, TokenizerFactory tokenizerFactory, int windowSize) {
         Tokenizer tokenizer = tokenizerFactory.create(words);
         List<String> list = new ArrayList<>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
 
-        if(list.isEmpty())
+        if (list.isEmpty())
             throw new IllegalStateException("No tokens found for windows");
 
-        return windows(list,windowSize);
+        return windows(list, windowSize);
     }
 
 
@@ -116,9 +115,9 @@ public class Windows {
     public static List<Window> windows(String words) {
         StringTokenizer tokenizer = new StringTokenizer(words);
         List<String> list = new ArrayList<String>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
-        return windows(list,5);
+        return windows(list, 5);
     }
 
     /**
@@ -128,12 +127,12 @@ public class Windows {
      * @param tokenizerFactory tokenizer factory to use
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(String words,TokenizerFactory tokenizerFactory) {
+    public static List<Window> windows(String words, TokenizerFactory tokenizerFactory) {
         Tokenizer tokenizer = tokenizerFactory.create(words);
         List<String> list = new ArrayList<>();
-        while(tokenizer.hasMoreTokens())
+        while (tokenizer.hasMoreTokens())
             list.add(tokenizer.nextToken());
-        return windows(list,5);
+        return windows(list, 5);
     }
 
 
@@ -144,17 +143,17 @@ public class Windows {
      * @param sentence the sentence to createComplex a window for
      * @return a window based on the given sentence
      */
-    public static Window windowForWordInPosition(int windowSize,int wordPos,List<String> sentence) {
+    public static Window windowForWordInPosition(int windowSize, int wordPos, List<String> sentence) {
         List<String> window = new ArrayList<>();
         List<String> onlyTokens = new ArrayList<>();
-        int contextSize = (int) Math.floor((windowSize - 1 ) / 2);
+        int contextSize = (int) Math.floor((windowSize - 1) / 2);
 
-        for (int i =  wordPos - contextSize; i <= wordPos + contextSize;i++){
-            if(i < 0)
+        for (int i = wordPos - contextSize; i <= wordPos + contextSize; i++) {
+            if (i < 0)
                 window.add("<s>");
-            else if(i >= sentence.size())
+            else if (i >= sentence.size())
                 window.add("</s>");
-            else  {
+            else {
                 onlyTokens.add(sentence.get(i));
                 window.add(sentence.get(i));
 
@@ -164,8 +163,8 @@ public class Windows {
         String wholeSentence = StringUtils.join(sentence);
         String window2 = StringUtils.join(onlyTokens);
         int begin = wholeSentence.indexOf(window2);
-        int end =   begin + window2.length();
-        return new Window(window,begin,end);
+        int end = begin + window2.length();
+        return new Window(window, begin, end);
 
     }
 
@@ -175,12 +174,12 @@ public class Windows {
      * @param words the words to  construct windows from
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(List<String> words,int windowSize) {
+    public static List<Window> windows(List<String> words, int windowSize) {
 
         List<Window> ret = new ArrayList<>();
 
-        for(int i = 0; i < words.size(); i++)
-            ret.add(windowForWordInPosition(windowSize,i,words));
+        for (int i = 0; i < words.size(); i++)
+            ret.add(windowForWordInPosition(windowSize, i, words));
 
 
         return ret;

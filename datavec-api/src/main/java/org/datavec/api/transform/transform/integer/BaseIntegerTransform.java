@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public abstract class BaseIntegerTransform extends BaseColumnTransform {
 
-    public BaseIntegerTransform(String column){
+    public BaseIntegerTransform(String column) {
         super(column);
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
-@NoArgsConstructor  //For Jackson deserialization
+@NoArgsConstructor //For Jackson deserialization
 public class StringAnalysis implements ColumnAnalysis {
     private int minLength;
     private int maxLength;
@@ -52,8 +52,9 @@ public class StringAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString() {
-        return "StringAnalysis(minLen=" + minLength + ",maxLen=" + maxLength + ",meanLen=" + meanLength +
-                ",sampleStDevLen=" + sampleStdevLength + ",sampleVarianceLen=" + sampleVarianceLength + ",count=" + countTotal + ")";
+        return "StringAnalysis(minLen=" + minLength + ",maxLen=" + maxLength + ",meanLen=" + meanLength
+                        + ",sampleStDevLen=" + sampleStdevLength + ",sampleVarianceLen=" + sampleVarianceLength
+                        + ",count=" + countTotal + ")";
     }
 
     @Override

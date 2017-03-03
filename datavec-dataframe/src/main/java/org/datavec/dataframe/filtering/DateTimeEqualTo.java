@@ -11,15 +11,15 @@ import java.time.LocalDateTime;
  */
 public class DateTimeEqualTo extends ColumnFilter {
 
-  LocalDateTime value;
+    LocalDateTime value;
 
-  public DateTimeEqualTo(ColumnReference reference, LocalDateTime value) {
-    super(reference);
-    this.value = value;
-  }
+    public DateTimeEqualTo(ColumnReference reference, LocalDateTime value) {
+        super(reference);
+        this.value = value;
+    }
 
-  public Selection apply(Table relation) {
-    DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference.getColumnName());
-    return dateColumn.isEqualTo(value);
-  }
+    public Selection apply(Table relation) {
+        DateTimeColumn dateColumn = (DateTimeColumn) relation.column(columnReference.getColumnName());
+        return dateColumn.isEqualTo(value);
+    }
 }

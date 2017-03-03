@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,8 @@ public class StringToCategoricalTransform extends BaseColumnTransform {
 
     private final List<String> stateNames;
 
-    public StringToCategoricalTransform(@JsonProperty("columnName") String columnName, @JsonProperty("stateNames") List<String> stateNames) {
+    public StringToCategoricalTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("stateNames") List<String> stateNames) {
         super(columnName);
         this.stateNames = stateNames;
     }

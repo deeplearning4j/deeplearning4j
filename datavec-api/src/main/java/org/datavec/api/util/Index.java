@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,22 +28,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Adam Gibson
  *
  */
-@SuppressWarnings({"rawtypes","unchecked"})
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class Index implements Serializable {
 
     /**
      *
      */
     private static final long serialVersionUID = 1160629777026141078L;
-    Map<Integer,Object> objects = new ConcurrentHashMap<>();
+    Map<Integer, Object> objects = new ConcurrentHashMap<>();
 
-    Map<Object,Integer> indexes = new ConcurrentHashMap<>();
+    Map<Object, Integer> indexes = new ConcurrentHashMap<>();
 
-    public synchronized boolean add(Object o,int idx) {
+    public synchronized boolean add(Object o, int idx) {
         Integer index = indexes.get(o);
         if (index == null) {
             index = idx;
-            objects.put(idx,o);
+            objects.put(idx, o);
             indexes.put(o, index);
             return true;
         }
@@ -54,7 +54,7 @@ public class Index implements Serializable {
         Integer index = indexes.get(o);
         if (index == null) {
             index = objects.size();
-            objects.put(index,o);
+            objects.put(index, o);
             indexes.put(o, index);
             return true;
         }
@@ -63,8 +63,11 @@ public class Index implements Serializable {
 
     public synchronized int indexOf(Object o) {
         Integer index = indexes.get(o);
-        if (index == null) { return -1; }
-        else { return index; }
+        if (index == null) {
+            return -1;
+        } else {
+            return index;
+        }
     }
 
     public synchronized Object get(int i) {
@@ -82,7 +85,8 @@ public class Index implements Serializable {
         for (i = 0; i < sz; i++) {
             Object e = objects.get(i);
             buff.append(e);
-            if (i < (sz-1)) buff.append(",");
+            if (i < (sz - 1))
+                buff.append(",");
         }
         buff.append("]");
         return buff.toString();

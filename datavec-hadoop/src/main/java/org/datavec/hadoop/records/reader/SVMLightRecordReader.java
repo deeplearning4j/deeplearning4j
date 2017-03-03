@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,18 +26,17 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.split.InputSplit;
-//import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
+// import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SVMLightRecordReader extends LineRecordReader {
-	
+
     private static Logger log = LoggerFactory.getLogger(SVMLightRecordReader.class);
 
-    public SVMLightRecordReader() {
-    }
-    
+    public SVMLightRecordReader() {}
+
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         initialize(split);
@@ -45,34 +44,34 @@ public class SVMLightRecordReader extends LineRecordReader {
 
     @Override
     public boolean hasNext() {
-    //    return iter != null && iter.hasNext();
-    	return false;
-    }    
+        //    return iter != null && iter.hasNext();
+        return false;
+    }
 
-   
+
     /**
      * next() method for getting another K/V pair off disk from the SVMLight text file
      * 
      */
     @Override
     public List<Writable> next() {
-    	
-        Text t =  (Text) super.next().iterator().next();
-        
-        
+
+        Text t = (Text) super.next().iterator().next();
+
+
         String val = new String(t.getBytes());
         List<Writable> ret = new ArrayList<>();
         StringTokenizer tok;
-        int	index,max;
-        String	col;
-        double	value;
+        int index, max;
+        String col;
+        double value;
 
         // actual data
         try {
             // determine max index
             max = 0;
             tok = new StringTokenizer(val, " \t");
-            tok.nextToken();  // skip class
+            tok.nextToken(); // skip class
             while (tok.hasMoreTokens()) {
                 col = tok.nextToken();
                 // finished?
@@ -88,14 +87,14 @@ public class SVMLightRecordReader extends LineRecordReader {
             }
 
             // read values into array
-            tok    = new StringTokenizer(val, " \t");
+            tok = new StringTokenizer(val, " \t");
 
             // 1. class
             double classVal = Double.parseDouble(tok.nextToken());
 
             // 2. attributes
             while (tok.hasMoreTokens()) {
-                col  = tok.nextToken();
+                col = tok.nextToken();
                 // finished?
                 if (col.startsWith("#"))
                     break;
@@ -109,9 +108,8 @@ public class SVMLightRecordReader extends LineRecordReader {
             }
 
             ret.add(new DoubleWritable(classVal));
-        }
-        catch (Exception e) {
-            log.error("Error parsing line '" + val + "': ",e);
+        } catch (Exception e) {
+            log.error("Error parsing line '" + val + "': ", e);
         }
 
         return ret;

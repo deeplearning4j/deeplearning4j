@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,7 @@ public abstract class BaseColumnFilter implements Filter {
     protected final String column;
     protected int columnIdx;
 
-    protected BaseColumnFilter(String column){
+    protected BaseColumnFilter(String column) {
         this.column = column;
     }
 
@@ -42,8 +42,9 @@ public abstract class BaseColumnFilter implements Filter {
 
     @Override
     public boolean removeSequence(List<List<Writable>> sequence) {
-        for(List<Writable> c : sequence){
-            if(removeExample(c)) return true;
+        for (List<Writable> c : sequence) {
+            if (removeExample(c))
+                return true;
         }
         return false;
     }

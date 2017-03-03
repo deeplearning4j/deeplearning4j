@@ -11,21 +11,21 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class ReverseIntComparator {
 
-  static final IntComparator reverseIntComparator = new IntComparator() {
+    static final IntComparator reverseIntComparator = new IntComparator() {
 
-    @Override
-    public int compare(int o2, int o1) {
-      return (o1 < o2 ? -1 : (o1 == o2) ? 0 : 1);
+        @Override
+        public int compare(int o2, int o1) {
+            return (o1 < o2 ? -1 : (o1 == o2) ? 0 : 1);
+        }
+
+        @Override
+        public int compare(Integer o2, Integer o1) {
+            return (o1 < o2 ? -1 : (o1.equals(o2) ? 0 : 1));
+        }
+    };
+
+    public static IntComparator instance() {
+        return reverseIntComparator;
     }
-
-    @Override
-    public int compare(Integer o2, Integer o1) {
-      return (o1 < o2 ? -1 : (o1.equals(o2) ? 0 : 1));
-    }
-  };
-
-  public static IntComparator instance() {
-    return reverseIntComparator;
-  }
 
 }

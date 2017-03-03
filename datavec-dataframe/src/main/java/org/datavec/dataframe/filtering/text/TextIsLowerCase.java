@@ -15,14 +15,14 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsLowerCase extends ColumnFilter {
 
-  public TextIsLowerCase(ColumnReference reference) {
-    super(reference);
-  }
+    public TextIsLowerCase(ColumnReference reference) {
+        super(reference);
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isLowerCase();
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isLowerCase();
+    }
 }

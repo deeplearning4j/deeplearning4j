@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,9 +45,8 @@ public class TestImageTransform {
     public void testCropImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 1);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new CropImageTransform(rng,
-                frame.imageHeight / 2, frame.imageWidth / 2,
-                frame.imageHeight / 2, frame.imageWidth / 2);
+        ImageTransform transform = new CropImageTransform(rng, frame.imageHeight / 2, frame.imageWidth / 2,
+                        frame.imageHeight / 2, frame.imageWidth / 2);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -79,8 +78,7 @@ public class TestImageTransform {
     public void testScaleImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new ScaleImageTransform(rng,
-                frame.imageWidth / 2, frame.imageHeight / 2);
+        ImageTransform transform = new ScaleImageTransform(rng, frame.imageWidth / 2, frame.imageHeight / 2);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -98,8 +96,8 @@ public class TestImageTransform {
     public void testRotateImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 1);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new RotateImageTransform(rng, 180)
-                .interMode(INTER_NEAREST).borderMode(BORDER_REFLECT);
+        ImageTransform transform =
+                        new RotateImageTransform(rng, 180).interMode(INTER_NEAREST).borderMode(BORDER_REFLECT);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -115,8 +113,8 @@ public class TestImageTransform {
     public void testWarpImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 1);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new WarpImageTransform(rng, frame.imageWidth / 10)
-                .interMode(INTER_CUBIC).borderMode(BORDER_REPLICATE);
+        ImageTransform transform = new WarpImageTransform(rng, frame.imageWidth / 10).interMode(INTER_CUBIC)
+                        .borderMode(BORDER_REPLICATE);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -132,9 +130,8 @@ public class TestImageTransform {
     public void testMultiImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new MultiImageTransform(rng,
-                new CropImageTransform(10), new FlipImageTransform(),
-                new ScaleImageTransform(10), new WarpImageTransform(10));
+        ImageTransform transform = new MultiImageTransform(rng, new CropImageTransform(10), new FlipImageTransform(),
+                        new ScaleImageTransform(10), new WarpImageTransform(10));
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -148,12 +145,13 @@ public class TestImageTransform {
         assertEquals(null, transform.transform(null));
     }
 
-    @Ignore @Test
+    @Ignore
+    @Test
     public void testFilterImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new FilterImageTransform("noise=alls=20:allf=t+u,format=rgba",
-                frame.imageWidth, frame.imageHeight, frame.imageChannels);
+        ImageTransform transform = new FilterImageTransform("noise=alls=20:allf=t+u,format=rgba", frame.imageWidth,
+                        frame.imageHeight, frame.imageChannels);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -180,20 +178,20 @@ public class TestImageTransform {
 
     @Test
     public void testConvertColorTransform() throws Exception {
-//        Mat origImage = new Mat();
-//        Mat transImage = new Mat();
-//        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+        //        Mat origImage = new Mat();
+        //        Mat transImage = new Mat();
+        //        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
         ImageWritable writable = makeRandomImage(32, 32, 3);
         Frame frame = writable.getFrame();
         ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
         showOrig.transform(writable);
-//        origImage = converter.convert(writable.getFrame());
+        //        origImage = converter.convert(writable.getFrame());
 
         ImageTransform transform = new ColorConversionTransform(new Random(42), COLOR_BGR2YCrCb);
         ImageWritable w = transform.transform(writable);
         ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
         showTrans.transform(writable);
-//        transImage = converter.convert(writable.getFrame());
+        //        transImage = converter.convert(writable.getFrame());
 
         Frame newframe = w.getFrame();
         assertNotEquals(frame, newframe);

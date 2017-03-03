@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,8 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class DataFrameToSequenceMergeValue implements Function2<List<List<Writable>>, Iterable<Row>, List<List<Writable>>> {
+public class DataFrameToSequenceMergeValue
+                implements Function2<List<List<Writable>>, Iterable<Row>, List<List<Writable>>> {
 
     private final Schema schema;
 

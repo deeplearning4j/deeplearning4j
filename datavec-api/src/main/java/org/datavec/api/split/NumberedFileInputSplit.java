@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,8 +44,8 @@ public class NumberedFileInputSplit implements InputSplit {
      * @param minIdxInclusive Minimum index/number (starting number in sequence of files, inclusive)
      * @param maxIdxInclusive Maximum index/number (last number in sequence of files, inclusive)
      */
-    public NumberedFileInputSplit(String baseString, int minIdxInclusive, int maxIdxInclusive){
-        if(baseString == null || !baseString.contains("%d")){
+    public NumberedFileInputSplit(String baseString, int minIdxInclusive, int maxIdxInclusive) {
+        if (baseString == null || !baseString.contains("%d")) {
             throw new IllegalArgumentException("Base String must contain  character sequence %d");
         }
         this.baseString = baseString;
@@ -55,14 +55,14 @@ public class NumberedFileInputSplit implements InputSplit {
 
     @Override
     public long length() {
-        return maxIdx-minIdx+1;
+        return maxIdx - minIdx + 1;
     }
 
     @Override
     public URI[] locations() {
-        URI[] uris = new URI[(int)length()];
-        int x=0;
-        for( int i=minIdx; i<=maxIdx; i++ ){
+        URI[] uris = new URI[(int) length()];
+        int x = 0;
+        for (int i = minIdx; i <= maxIdx; i++) {
             uris[x++] = Paths.get(String.format(baseString, i)).toUri();
         }
         return uris;
@@ -94,22 +94,22 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 
@@ -117,7 +117,7 @@ public class NumberedFileInputSplit implements InputSplit {
 
         private int currIdx;
 
-        private NumberedFileIterator(){
+        private NumberedFileIterator() {
             currIdx = minIdx;
         }
 
@@ -128,7 +128,7 @@ public class NumberedFileInputSplit implements InputSplit {
 
         @Override
         public String next() {
-            if(!hasNext()){
+            if (!hasNext()) {
                 throw new NoSuchElementException();
             }
             return String.format(baseString, currIdx++);

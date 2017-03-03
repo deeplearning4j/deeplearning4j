@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,15 +39,17 @@ public class CoordinatesDistanceTransform extends BaseColumnsMathOpTransform {
     public final static String DEFAULT_DELIMITER = ":";
     protected String delimiter = DEFAULT_DELIMITER;
 
-    public CoordinatesDistanceTransform(String newColumnName, String firstColumn, String secondColumn, String stdevColumn) {
+    public CoordinatesDistanceTransform(String newColumnName, String firstColumn, String secondColumn,
+                    String stdevColumn) {
         this(newColumnName, firstColumn, secondColumn, stdevColumn, DEFAULT_DELIMITER);
     }
 
-    public CoordinatesDistanceTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("firstColumn") String firstColumn,
-            @JsonProperty("secondColumn") String secondColumn, @JsonProperty("stdevColumn") String stdevColumn, @JsonProperty("delimiter") String delimiter) {
-        super(newColumnName, MathOp.Add /* dummy op */, stdevColumn != null
-                ? new String[] {firstColumn, secondColumn, stdevColumn}
-                : new String[] {firstColumn, secondColumn});
+    public CoordinatesDistanceTransform(@JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("firstColumn") String firstColumn, @JsonProperty("secondColumn") String secondColumn,
+                    @JsonProperty("stdevColumn") String stdevColumn, @JsonProperty("delimiter") String delimiter) {
+        super(newColumnName, MathOp.Add /* dummy op */,
+                        stdevColumn != null ? new String[] {firstColumn, secondColumn, stdevColumn}
+                                        : new String[] {firstColumn, secondColumn});
         this.delimiter = delimiter;
     }
 
@@ -72,8 +74,9 @@ public class CoordinatesDistanceTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    public String toString(){
-        return "CoordinatesDistanceTransform(newColumnName=\"" + newColumnName + "\",columns=" + Arrays.toString(columns) + ",delimiter=" + delimiter + ")";
+    public String toString() {
+        return "CoordinatesDistanceTransform(newColumnName=\"" + newColumnName + "\",columns="
+                        + Arrays.toString(columns) + ",delimiter=" + delimiter + ")";
     }
 
     /**
@@ -108,7 +111,7 @@ public class CoordinatesDistanceTransform extends BaseColumnsMathOpTransform {
     public Object mapSequence(Object sequence) {
         List<List> seq = (List<List>) sequence;
         List<Double> ret = new ArrayList<>();
-        for(Object step : seq)
+        for (Object step : seq)
             ret.add((Double) map(step));
         return ret;
     }

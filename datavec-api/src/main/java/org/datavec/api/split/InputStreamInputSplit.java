@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,25 +33,16 @@ import java.util.Iterator;
 public class InputStreamInputSplit implements InputSplit {
     private InputStream is;
     private URI[] location;
+
     /**
      * Instantiate with the given
      * file as a uri
      * @param is the input stream to use
      * @param path the path to use
      */
-    public InputStreamInputSplit(InputStream is,String path) {
+    public InputStreamInputSplit(InputStream is, String path) {
         this.is = is;
-        this.location = new URI[]{URI.create(path)};
-    }
-    /**
-     * Instantiate with the given
-     * file as a uri
-     * @param is the input stream to use
-     * @param path the path to use
-     */
-    public InputStreamInputSplit(InputStream is,File path) {
-        this.is = is;
-        this.location = new URI[]{path.toURI()};
+        this.location = new URI[] {URI.create(path)};
     }
 
     /**
@@ -60,7 +51,18 @@ public class InputStreamInputSplit implements InputSplit {
      * @param is the input stream to use
      * @param path the path to use
      */
-    public InputStreamInputSplit(InputStream is,URI path) {
+    public InputStreamInputSplit(InputStream is, File path) {
+        this.is = is;
+        this.location = new URI[] {path.toURI()};
+    }
+
+    /**
+     * Instantiate with the given
+     * file as a uri
+     * @param is the input stream to use
+     * @param path the path to use
+     */
+    public InputStreamInputSplit(InputStream is, URI path) {
         this.is = is;
         this.location = new URI[] {path};
     }
@@ -114,22 +116,22 @@ public class InputStreamInputSplit implements InputSplit {
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         throw new UnsupportedOperationException();
     }
 }

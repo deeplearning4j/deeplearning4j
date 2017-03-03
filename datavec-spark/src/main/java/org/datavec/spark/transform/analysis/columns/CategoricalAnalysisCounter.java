@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,15 +31,16 @@ import java.util.Set;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class CategoricalAnalysisCounter implements AnalysisCounter<CategoricalAnalysisCounter> {
 
-    private Map<String,Long> counts = new HashMap<>();
+    private Map<String, Long> counts = new HashMap<>();
     private long countTotal = 0;
 
 
 
-    public CategoricalAnalysisCounter(){
+    public CategoricalAnalysisCounter() {
 
     }
 
@@ -49,7 +50,7 @@ public class CategoricalAnalysisCounter implements AnalysisCounter<CategoricalAn
         String value = writable.toString();
 
         long newCount = 0;
-        if(counts.containsKey(value)){
+        if (counts.containsKey(value)) {
             newCount = counts.get(value);
         }
         newCount++;
@@ -60,15 +61,17 @@ public class CategoricalAnalysisCounter implements AnalysisCounter<CategoricalAn
         return this;
     }
 
-    public CategoricalAnalysisCounter merge(CategoricalAnalysisCounter other){
+    public CategoricalAnalysisCounter merge(CategoricalAnalysisCounter other) {
         Set<String> combinedKeySet = new HashSet<>(counts.keySet());
         combinedKeySet.addAll(other.counts.keySet());
 
-        for(String s : combinedKeySet){
+        for (String s : combinedKeySet) {
             long count = 0;
-            if(counts.containsKey(s)) count += counts.get(s);
-            if(other.counts.containsKey(s)) count += other.counts.get(s);
-            counts.put(s,count);
+            if (counts.containsKey(s))
+                count += counts.get(s);
+            if (other.counts.containsKey(s))
+                count += other.counts.get(s);
+            counts.put(s, count);
         }
 
         countTotal += other.countTotal;

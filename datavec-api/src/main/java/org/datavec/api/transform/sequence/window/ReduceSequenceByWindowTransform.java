@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,7 +44,8 @@ public class ReduceSequenceByWindowTransform implements Transform {
     private WindowFunction windowFunction;
     private Schema inputSchema;
 
-    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer, @JsonProperty("windowFunction") WindowFunction windowFunction) {
+    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer,
+                    @JsonProperty("windowFunction") WindowFunction windowFunction) {
         this.reducer = reducer;
         this.windowFunction = windowFunction;
     }
@@ -52,7 +53,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if(inputSchema != null && !(inputSchema instanceof SequenceSchema)) {
+        if (inputSchema != null && !(inputSchema instanceof SequenceSchema)) {
             throw new IllegalArgumentException("Invalid input: input schema must be a SequenceSchema");
         }
 
@@ -90,7 +91,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
         List<List<Writable>> out = new ArrayList<>();
 
-        for(List<List<Writable>> window : sequenceAsWindows ){
+        for (List<List<Writable>> window : sequenceAsWindows) {
             List<Writable> reduced = reducer.reduce(window);
             out.add(reduced);
         }
@@ -121,7 +122,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ReduceSequencbyWindowTransform(reducer=" + reducer + ",windowFunction=" + windowFunction + ")";
     }
 

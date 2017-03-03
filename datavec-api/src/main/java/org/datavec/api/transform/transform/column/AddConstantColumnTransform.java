@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,7 @@ public class AddConstantColumnTransform implements Transform {
     private Schema inputSchema;
 
 
-    public AddConstantColumnTransform(String newColumnName, ColumnType newColumnType, Writable fixedValue){
+    public AddConstantColumnTransform(String newColumnName, ColumnType newColumnType, Writable fixedValue) {
         this.newColumnName = newColumnName;
         this.newColumnType = newColumnType;
         this.fixedValue = fixedValue;
@@ -73,7 +73,7 @@ public class AddConstantColumnTransform implements Transform {
 
     @Override
     public String[] outputColumnNames() {
-        return new String[]{outputColumnName()};
+        return new String[] {outputColumnName()};
     }
 
     @Override
@@ -88,7 +88,7 @@ public class AddConstantColumnTransform implements Transform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        List<Writable> out = new ArrayList<>(writables.size()+1);
+        List<Writable> out = new ArrayList<>(writables.size() + 1);
         out.addAll(writables);
         out.add(fixedValue);
         return out;
@@ -97,7 +97,7 @@ public class AddConstantColumnTransform implements Transform {
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
         List<List<Writable>> outSeq = new ArrayList<>(sequence.size());
-        for(List<Writable> l : sequence){
+        for (List<Writable> l : sequence) {
             outSeq.add(map(l));
         }
         return outSeq;

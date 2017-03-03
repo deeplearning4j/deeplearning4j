@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,38 +27,38 @@ import java.util.List;
  */
 public interface Tokenizer {
 
-	/**
-	 * An iterator for tracking whether
-	 * more tokens are left in the iterator not
-	 * @return whether there is anymore tokens
-	 * to iterate over
-	 */
-	boolean hasMoreTokens();
-	/**
-	 * The number of tokens in the tokenizer
-	 * @return the number of tokens
-	 */
-	int countTokens();
-	/**
-	 * The next token (word usually) in the string
-	 * @return the next token in the string if any
-	 */
-	String nextToken();
-	
-	/**
-	 * Returns a list of all the tokens
-	 * @return a list of all the tokens
-	 */
-	List<String> getTokens();
-	
-	/**
-	 * Set the token pre process
-	 * @param tokenPreProcessor the token pre processor to set
-	 */
-	void setTokenPreProcessor(TokenPreProcess tokenPreProcessor);
-	
-	
-	
-	
-	
+    /**
+     * An iterator for tracking whether
+     * more tokens are left in the iterator not
+     * @return whether there is anymore tokens
+     * to iterate over
+     */
+    boolean hasMoreTokens();
+
+    /**
+     * The number of tokens in the tokenizer
+     * @return the number of tokens
+     */
+    int countTokens();
+
+    /**
+     * The next token (word usually) in the string
+     * @return the next token in the string if any
+     */
+    String nextToken();
+
+    /**
+     * Returns a list of all the tokens
+     * @return a list of all the tokens
+     */
+    List<String> getTokens();
+
+    /**
+     * Set the token pre process
+     * @param tokenPreProcessor the token pre processor to set
+     */
+    void setTokenPreProcessor(TokenPreProcess tokenPreProcessor);
+
+
+
 }

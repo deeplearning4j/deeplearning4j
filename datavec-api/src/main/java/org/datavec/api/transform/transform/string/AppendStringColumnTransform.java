@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,7 @@ public class AppendStringColumnTransform extends BaseColumnTransform {
 
     private String toAppend;
 
-    public AppendStringColumnTransform(String columnName, String toAppend){
+    public AppendStringColumnTransform(String columnName, String toAppend) {
         super(columnName);
         this.toAppend = toAppend;
     }

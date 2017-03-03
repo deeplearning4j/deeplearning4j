@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,13 @@ import java.io.*;
 public class DataOutputBuffer extends DataOutputStream {
 
     private static class Buffer extends ByteArrayOutputStream {
-        public byte[] getData() { return buf; }
-        public int getLength() { return count; }
+        public byte[] getData() {
+            return buf;
+        }
+
+        public int getLength() {
+            return count;
+        }
 
         public Buffer() {
             super();
@@ -82,10 +87,14 @@ public class DataOutputBuffer extends DataOutputStream {
     /** Returns the current contents of the buffer.
      *  Data is only valid to {@link #getLength()}.
      */
-    public byte[] getData() { return buffer.getData(); }
+    public byte[] getData() {
+        return buffer.getData();
+    }
 
     /** Returns the length of the valid data currently in the buffer. */
-    public int getLength() { return buffer.getLength(); }
+    public int getLength() {
+        return buffer.getLength();
+    }
 
     /** Resets the buffer to empty. */
     public DataOutputBuffer reset() {

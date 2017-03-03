@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,8 +56,10 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
      *                       as the newColumnNames list
      * @param delimiter      The delimiter for the Strings to convert
      */
-    public StringListToCategoricalSetTransform(@JsonProperty("columnName") String columnName, @JsonProperty("newColumnNames") List<String> newColumnNames,
-                                               @JsonProperty("categoryTokens") List<String> categoryTokens, @JsonProperty("delimiter") String delimiter) {
+    public StringListToCategoricalSetTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("newColumnNames") List<String> newColumnNames,
+                    @JsonProperty("categoryTokens") List<String> categoryTokens,
+                    @JsonProperty("delimiter") String delimiter) {
         if (newColumnNames.size() != categoryTokens.size())
             throw new IllegalArgumentException("Names/tokens sizes cannot differ");
         this.columnName = columnName;
@@ -113,15 +115,16 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
 
     @Override
     public String toString() {
-        return "StringListToCategoricalSetTransform(columnName=" + columnName + ",newColumnNames=" + newColumnNames + ",categoryTokens="
-                + categoryTokens + ",delimiter=\"" + delimiter + "\")";
+        return "StringListToCategoricalSetTransform(columnName=" + columnName + ",newColumnNames=" + newColumnNames
+                        + ",categoryTokens=" + categoryTokens + ",delimiter=\"" + delimiter + "\")";
     }
 
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
-            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+            throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         int n = writables.size();
         List<Writable> out = new ArrayList<>(n);
@@ -135,7 +138,8 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
                     String[] split = str.split(delimiter);
                     for (String s : split) {
                         Integer idx = map.get(s);
-                        if (idx == null) throw new IllegalStateException("Encountered unknown String: \"" + s + "\"");
+                        if (idx == null)
+                            throw new IllegalStateException("Encountered unknown String: \"" + s + "\"");
                         present[idx] = true;
                     }
                 }
@@ -181,7 +185,7 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
      */
     @Override
     public String outputColumnName() {
-       throw new UnsupportedOperationException("New column names is always more than 1 in length");
+        throw new UnsupportedOperationException("New column names is always more than 1 in length");
     }
 
     /**
@@ -203,7 +207,7 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
      */
     @Override
     public String[] columnNames() {
-        return new String[]{columnName()};
+        return new String[] {columnName()};
     }
 
     /**

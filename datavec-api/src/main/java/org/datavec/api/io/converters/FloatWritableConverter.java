@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,8 @@ import org.datavec.api.writable.Writable;
 public class FloatWritableConverter implements WritableConverter {
     @Override
     public Writable convert(Writable writable) throws WritableConverterException {
-        if(writable instanceof Text || writable instanceof DoubleWritable || writable instanceof IntWritable || writable instanceof FloatWritable) {
+        if (writable instanceof Text || writable instanceof DoubleWritable || writable instanceof IntWritable
+                        || writable instanceof FloatWritable) {
             return new FloatWritable(writable.toFloat());
         }
 

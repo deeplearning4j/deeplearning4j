@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,8 @@ public class LongMathOpTransform extends BaseColumnTransform {
     private final MathOp mathOp;
     private final long scalar;
 
-    public LongMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") long scalar) {
+    public LongMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp,
+                    @JsonProperty("scalar") long scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
@@ -49,9 +50,11 @@ public class LongMathOpTransform extends BaseColumnTransform {
         LongMetaData meta = (LongMetaData) oldColumnType;
         Long minValue = meta.getMinAllowedValue();
         Long maxValue = meta.getMaxAllowedValue();
-        if (minValue != null) minValue = doOp(minValue);
-        if (maxValue != null) maxValue = doOp(maxValue);
-        if(minValue != null && maxValue != null && minValue > maxValue ){
+        if (minValue != null)
+            minValue = doOp(minValue);
+        if (maxValue != null)
+            maxValue = doOp(maxValue);
+        if (minValue != null && maxValue != null && minValue > maxValue) {
             //Consider rsub 1, with original min/max of 0 and 1: (1-0) -> 1 and (1-1) -> 0
             //Or multiplication by -1: (0 to 1) -> (-1 to 0)
             //Need to swap min/max here...

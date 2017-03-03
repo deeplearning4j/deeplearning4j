@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,25 +46,25 @@ public class SVMLightRecordReader extends LineRecordReader {
     private static Logger log = LoggerFactory.getLogger(SVMLightRecordReader.class);
     private int numAttributes = -1;
     public final static String NUM_ATTRIBUTES = SVMLightRecordReader.class.getName() + ".numattributes";
-    public SVMLightRecordReader() {
-    }
+
+    public SVMLightRecordReader() {}
 
     @Override
     public List<Writable> next() {
-        Text t =  (Text) super.next().iterator().next();
+        Text t = (Text) super.next().iterator().next();
         String val = new String(t.getBytes());
         List<Writable> ret = new ArrayList<>();
         StringTokenizer tok;
-        int	index,max;
-        String	col;
-        double	value;
+        int index, max;
+        String col;
+        double value;
 
         // actual data
         try {
             // determine max index
             max = 0;
             tok = new StringTokenizer(val, " \t");
-            tok.nextToken();  // skip class
+            tok.nextToken(); // skip class
             while (tok.hasMoreTokens()) {
                 col = tok.nextToken();
                 // finished?
@@ -80,14 +80,14 @@ public class SVMLightRecordReader extends LineRecordReader {
             }
 
             // read values into array
-            tok    = new StringTokenizer(val, " \t");
+            tok = new StringTokenizer(val, " \t");
 
             // 1. class
             double classVal = Double.parseDouble(tok.nextToken());
             int numAttributesAdded = 0;
             // 2. attributes
             while (tok.hasMoreTokens()) {
-                col  = tok.nextToken();
+                col = tok.nextToken();
                 // finished?
                 if (col.startsWith("#"))
                     break;
@@ -96,9 +96,9 @@ public class SVMLightRecordReader extends LineRecordReader {
                     continue;
                 // actual value
                 index = Integer.parseInt(col.substring(0, col.indexOf(":"))) - 1;
-                if(index > numAttributesAdded) {
+                if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);
-                    for(int i = numAttributesAdded; i < index; i++) {
+                    for (int i = numAttributesAdded; i < index; i++) {
                         ret.add(new DoubleWritable(0.0));
 
                     }
@@ -109,18 +109,17 @@ public class SVMLightRecordReader extends LineRecordReader {
                 numAttributesAdded++;
             }
 
-            if(numAttributes >= 1 && ret.size() < numAttributes) {
+            if (numAttributes >= 1 && ret.size() < numAttributes) {
                 int totalDiff = Math.abs(ret.size() - numAttributes);
-                for(int i = 0; i < totalDiff; i++) {
+                for (int i = 0; i < totalDiff; i++) {
                     ret.add(new DoubleWritable(0.0));
 
                 }
             }
 
             ret.add(new DoubleWritable(classVal));
-        }
-        catch (Exception e) {
-            log.error("Error parsing line '" + val + "': ",e);
+        } catch (Exception e) {
+            log.error("Error parsing line '" + val + "': ", e);
         }
 
         return ret;
@@ -129,21 +128,22 @@ public class SVMLightRecordReader extends LineRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
-        if(conf.get(NUM_ATTRIBUTES) != null)
-            numAttributes = conf.getInt(NUM_ATTRIBUTES,-1);
+        if (conf.get(NUM_ATTRIBUTES) != null)
+            numAttributes = conf.getInt(NUM_ATTRIBUTES, -1);
 
     }
 
     @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
-        if(conf.get(NUM_ATTRIBUTES) != null)
-            numAttributes = conf.getInt(NUM_ATTRIBUTES,-1);
+        if (conf.get(NUM_ATTRIBUTES) != null)
+            numAttributes = conf.getInt(NUM_ATTRIBUTES, -1);
     }
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         //Here: we are reading a single line from the DataInputStream. How to handle headers?
-        throw new UnsupportedOperationException("Reading SVMLightRecordReader data from DataInputStream not yet implemented");
+        throw new UnsupportedOperationException(
+                        "Reading SVMLightRecordReader data from DataInputStream not yet implemented");
     }
 }

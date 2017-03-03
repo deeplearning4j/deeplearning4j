@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,34 +30,30 @@ public class DoubleQuality extends ColumnQuality {
     private final long countNaN;
     private final long countInfinite;
 
-    public DoubleQuality(){
-        this(0,0,0,0,0,0,0);
+    public DoubleQuality() {
+        this(0, 0, 0, 0, 0, 0, 0);
     }
 
     public DoubleQuality(long countValid, long countInvalid, long countMissing, long countTotal, long countNonReal,
-                         long countNaN, long countInfinite){
-        super(countValid,countInvalid,countMissing,countTotal);
+                    long countNaN, long countInfinite) {
+        super(countValid, countInvalid, countMissing, countTotal);
         this.countNonReal = countNonReal;
         this.countNaN = countNaN;
         this.countInfinite = countInfinite;
     }
 
 
-    public DoubleQuality add(DoubleQuality other){
-        return new DoubleQuality(
-                countValid + other.countValid,
-                countInvalid + other.countInvalid,
-                countMissing + other.countMissing,
-                countTotal + other.countTotal,
-                countNonReal + other.countNonReal,
-                countNaN + other.countNaN,
-                countInfinite + other.countInfinite);
+    public DoubleQuality add(DoubleQuality other) {
+        return new DoubleQuality(countValid + other.countValid, countInvalid + other.countInvalid,
+                        countMissing + other.countMissing, countTotal + other.countTotal,
+                        countNonReal + other.countNonReal, countNaN + other.countNaN,
+                        countInfinite + other.countInfinite);
     }
 
     @Override
-    public String toString(){
-        return "DoubleQuality(" + super.toString() + ", countNonReal=" + countNonReal + ", countNaN="
-                + countNaN + ", countInfinite=" + countInfinite + ")";
+    public String toString() {
+        return "DoubleQuality(" + super.toString() + ", countNonReal=" + countNonReal + ", countNaN=" + countNaN
+                        + ", countInfinite=" + countInfinite + ")";
     }
 
 }

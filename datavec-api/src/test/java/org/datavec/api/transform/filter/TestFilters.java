@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,19 +43,18 @@ public class TestFilters {
     @Test
     public void testFilterNumColumns() {
         List<List<Writable>> list = new ArrayList<>();
-        list.add(Collections.singletonList((Writable)new IntWritable(-1)));
-        list.add(Collections.singletonList((Writable)new IntWritable(0)));
-        list.add(Collections.singletonList((Writable)new IntWritable(2)));
+        list.add(Collections.singletonList((Writable) new IntWritable(-1)));
+        list.add(Collections.singletonList((Writable) new IntWritable(0)));
+        list.add(Collections.singletonList((Writable) new IntWritable(2)));
 
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("intCol",0,10)        //Only values in the range 0 to 10 are ok
-                .addColumnDouble("doubleCol",-100.0,100.0)  //-100 to 100 only; no NaN or infinite
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("intCol", 0, 10) //Only values in the range 0 to 10 are ok
+                        .addColumnDouble("doubleCol", -100.0, 100.0) //-100 to 100 only; no NaN or infinite
+                        .build();
         Filter numColumns = new InvalidNumColumns(schema);
-        for(int i = 0; i < list.size(); i++)
+        for (int i = 0; i < list.size(); i++)
             assertTrue(numColumns.removeExample(list.get(i)));
 
-        List<Writable> correct = Arrays.<Writable>asList(new IntWritable(0),new DoubleWritable(2));
+        List<Writable> correct = Arrays.<Writable>asList(new IntWritable(0), new DoubleWritable(2));
         assertFalse(numColumns.removeExample(correct));
 
     }
@@ -64,47 +63,44 @@ public class TestFilters {
     public void testFilterInvalidValues() {
 
         List<List<Writable>> list = new ArrayList<>();
-        list.add(Collections.singletonList((Writable)new IntWritable(-1)));
-        list.add(Collections.singletonList((Writable)new IntWritable(0)));
-        list.add(Collections.singletonList((Writable)new IntWritable(2)));
+        list.add(Collections.singletonList((Writable) new IntWritable(-1)));
+        list.add(Collections.singletonList((Writable) new IntWritable(0)));
+        list.add(Collections.singletonList((Writable) new IntWritable(2)));
 
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("intCol",0,10)        //Only values in the range 0 to 10 are ok
-                .addColumnDouble("doubleCol",-100.0,100.0)  //-100 to 100 only; no NaN or infinite
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("intCol", 0, 10) //Only values in the range 0 to 10 are ok
+                        .addColumnDouble("doubleCol", -100.0, 100.0) //-100 to 100 only; no NaN or infinite
+                        .build();
 
-        Filter filter = new FilterInvalidValues("intCol","doubleCol");
+        Filter filter = new FilterInvalidValues("intCol", "doubleCol");
         filter.setInputSchema(schema);
 
         //Test valid examples:
-        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(0))));
-        assertFalse(filter.removeExample(asList((Writable)new IntWritable(10),new DoubleWritable(0))));
-        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(-100))));
-        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(100))));
+        assertFalse(filter.removeExample(asList((Writable) new IntWritable(0), new DoubleWritable(0))));
+        assertFalse(filter.removeExample(asList((Writable) new IntWritable(10), new DoubleWritable(0))));
+        assertFalse(filter.removeExample(asList((Writable) new IntWritable(0), new DoubleWritable(-100))));
+        assertFalse(filter.removeExample(asList((Writable) new IntWritable(0), new DoubleWritable(100))));
 
         //Test invalid:
-        assertTrue(filter.removeExample(asList((Writable)new IntWritable(-1),new DoubleWritable(0))));
-        assertTrue(filter.removeExample(asList((Writable)new IntWritable(11),new DoubleWritable(0))));
-        assertTrue(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(-101))));
-        assertTrue(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(101))));
+        assertTrue(filter.removeExample(asList((Writable) new IntWritable(-1), new DoubleWritable(0))));
+        assertTrue(filter.removeExample(asList((Writable) new IntWritable(11), new DoubleWritable(0))));
+        assertTrue(filter.removeExample(asList((Writable) new IntWritable(0), new DoubleWritable(-101))));
+        assertTrue(filter.removeExample(asList((Writable) new IntWritable(0), new DoubleWritable(101))));
     }
 
     @Test
-    public void testConditionFilter(){
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("column")
-                .build();
+    public void testConditionFilter() {
+        Schema schema = new Schema.Builder().addColumnInteger("column").build();
 
-        Condition condition = new IntegerColumnCondition("column", ConditionOp.LessThan,0);
+        Condition condition = new IntegerColumnCondition("column", ConditionOp.LessThan, 0);
         condition.setInputSchema(schema);
 
         Filter filter = new ConditionFilter(condition);
 
-        assertFalse(filter.removeExample(Collections.singletonList((Writable)new IntWritable(10))));
-        assertFalse(filter.removeExample(Collections.singletonList((Writable)new IntWritable(1))));
-        assertFalse(filter.removeExample(Collections.singletonList((Writable)new IntWritable(0))));
-        assertTrue(filter.removeExample(Collections.singletonList((Writable)new IntWritable(-1))));
-        assertTrue(filter.removeExample(Collections.singletonList((Writable)new IntWritable(-10))));
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(10))));
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(1))));
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(0))));
+        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-1))));
+        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-10))));
     }
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ import org.datavec.api.transform.metadata.StringMetaData;
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class StringQualityAddFunction implements Function2<StringQuality,Writable,StringQuality> {
+public class StringQualityAddFunction implements Function2<StringQuality, Writable, StringQuality> {
 
     private final StringMetaData meta;
 
@@ -45,19 +45,27 @@ public class StringQualityAddFunction implements Function2<StringQuality,Writabl
 
         String str = writable.toString();
 
-        if(writable instanceof NullWritable) countMissing++;
-        else if(meta.isValid(writable)) valid++;
-        else invalid++;
+        if (writable instanceof NullWritable)
+            countMissing++;
+        else if (meta.isValid(writable))
+            valid++;
+        else
+            invalid++;
 
-        if(str == null || str.isEmpty()){
+        if (str == null || str.isEmpty()) {
             empty++;
         } else {
-            if(str.matches("[a-zA-Z]")) alphabetic++;
-            if(str.matches("\\d+")) numerical++;
-            if(str.matches("\\w+")) word++;
-            if(str.matches("\\s+")) whitespaceOnly++;
+            if (str.matches("[a-zA-Z]"))
+                alphabetic++;
+            if (str.matches("\\d+"))
+                numerical++;
+            if (str.matches("\\w+"))
+                word++;
+            if (str.matches("\\s+"))
+                whitespaceOnly++;
         }
 
-        return new StringQuality(valid,invalid,countMissing,countTotal,empty,alphabetic,numerical,word,whitespaceOnly,0);
+        return new StringQuality(valid, invalid, countMissing, countTotal, empty, alphabetic, numerical, word,
+                        whitespaceOnly, 0);
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@ import org.jcodec.api.JCodecException;
 import org.jcodec.common.ByteBufferSeekableByteChannel;
 import org.jcodec.common.NIOUtils;
 import org.jcodec.common.SeekableByteChannel;
-
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -61,11 +60,11 @@ public class CodecRecordReader extends BaseCodecRecordReader {
     @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
-        imageLoader = new ImageLoader(rows,cols);
+        imageLoader = new ImageLoader(rows, cols);
     }
 
     @Override
-    protected List<List<Writable>> loadData( File file, InputStream inputStream  ) throws IOException {
+    protected List<List<Writable>> loadData(File file, InputStream inputStream) throws IOException {
         SeekableByteChannel seekableByteChannel;
         if (inputStream != null) {
             //Reading video from DataInputStream: Need data from this stream in a SeekableByteChannel
@@ -79,19 +78,20 @@ public class CodecRecordReader extends BaseCodecRecordReader {
 
         List<List<Writable>> record = new ArrayList<>();
 
-        if(numFrames >= 1) {
+        if (numFrames >= 1) {
             FrameGrab fg;
-            try{
+            try {
                 fg = new FrameGrab(seekableByteChannel);
-                if(startFrame != 0) fg.seekToFramePrecise(startFrame);
-            } catch(JCodecException e){
+                if (startFrame != 0)
+                    fg.seekToFramePrecise(startFrame);
+            } catch (JCodecException e) {
                 throw new RuntimeException(e);
             }
 
-            for(int i = startFrame; i < startFrame+numFrames; i++) {
+            for (int i = startFrame; i < startFrame + numFrames; i++) {
                 try {
                     BufferedImage grab = fg.getFrame();
-                    if(ravel)
+                    if (ravel)
                         record.add(RecordConverter.toRecord(imageLoader.toRaveledTensor(grab)));
                     else
                         record.add(RecordConverter.toRecord(imageLoader.asRowVector(grab)));
@@ -101,15 +101,15 @@ public class CodecRecordReader extends BaseCodecRecordReader {
                 }
             }
         } else {
-            if(framesPerSecond < 1)
+            if (framesPerSecond < 1)
                 throw new IllegalStateException("No frames or frame time intervals specified");
 
 
             else {
-                for(double i = 0; i < videoLength; i += framesPerSecond) {
+                for (double i = 0; i < videoLength; i += framesPerSecond) {
                     try {
                         BufferedImage grab = FrameGrab.getFrame(seekableByteChannel, i);
-                        if(ravel)
+                        if (ravel)
                             record.add(RecordConverter.toRecord(imageLoader.toRaveledTensor(grab)));
                         else
                             record.add(RecordConverter.toRecord(imageLoader.asRowVector(grab)));
@@ -127,13 +127,14 @@ public class CodecRecordReader extends BaseCodecRecordReader {
     /** Ugly workaround to a bug in JCodec: https://github.com/jcodec/jcodec/issues/24 */
     private static class FixedByteBufferSeekableByteChannel extends ByteBufferSeekableByteChannel {
         private ByteBuffer backing;
+
         public FixedByteBufferSeekableByteChannel(ByteBuffer backing) {
             super(backing);
-            try{
+            try {
                 Field f = this.getClass().getSuperclass().getDeclaredField("maxPos");
                 f.setAccessible(true);
-                f.set(this,backing.limit());
-            }catch(Exception e){
+                f.set(this, backing.limit());
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
             this.backing = backing;
@@ -141,7 +142,8 @@ public class CodecRecordReader extends BaseCodecRecordReader {
 
         @Override
         public int read(ByteBuffer dst) throws IOException {
-            if(!backing.hasRemaining()) return -1;
+            if (!backing.hasRemaining())
+                return -1;
             return super.read(dst);
         }
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,8 +80,8 @@ public class TimeWindowFunction implements WindowFunction {
      * @param addWindowStartTimeColumn If true: add a time column (name: "windowEndTime") that contains the end time
      *                                 of the window
      */
-    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, boolean addWindowStartTimeColumn,
-                              boolean addWindowEndTimeColumn) {
+    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit,
+                    boolean addWindowStartTimeColumn, boolean addWindowEndTimeColumn) {
         this(timeColumn, windowSize, windowSizeUnit, 0, null, addWindowStartTimeColumn, addWindowEndTimeColumn, false);
     }
 
@@ -94,7 +94,8 @@ public class TimeWindowFunction implements WindowFunction {
      * @param offset         Optional offset amount, to shift start/end of the time window forward or back
      * @param offsetUnit     Optional offset unit for the offset amount.
      */
-    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long offset, TimeUnit offsetUnit) {
+    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long offset,
+                    TimeUnit offsetUnit) {
         this(timeColumn, windowSize, windowSizeUnit, offset, offsetUnit, false, false, false);
     }
 
@@ -110,8 +111,9 @@ public class TimeWindowFunction implements WindowFunction {
      * @param addWindowEndTimeColumn   If true: add a column (at the end) with the window end time
      * @param excludeEmptyWindows      If true: exclude any windows that don't have any values in them
      */
-    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long offset, TimeUnit offsetUnit,
-                              boolean addWindowStartTimeColumn, boolean addWindowEndTimeColumn, boolean excludeEmptyWindows) {
+    public TimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long offset,
+                    TimeUnit offsetUnit, boolean addWindowStartTimeColumn, boolean addWindowEndTimeColumn,
+                    boolean excludeEmptyWindows) {
         this.timeColumn = timeColumn;
         this.windowSize = windowSize;
         this.windowSizeUnit = windowSizeUnit;
@@ -121,7 +123,8 @@ public class TimeWindowFunction implements WindowFunction {
         this.addWindowEndTimeColumn = addWindowEndTimeColumn;
         this.excludeEmptyWindows = excludeEmptyWindows;
 
-        if (offsetAmount == 0 || offsetUnit == null) this.offsetAmountMilliseconds = 0;
+        if (offsetAmount == 0 || offsetUnit == null)
+            this.offsetAmountMilliseconds = 0;
         else {
             this.offsetAmountMilliseconds = TimeUnit.MILLISECONDS.convert(offset, offsetUnit);
         }
@@ -131,21 +134,20 @@ public class TimeWindowFunction implements WindowFunction {
 
     private TimeWindowFunction(Builder builder) {
         this(builder.timeColumn, builder.windowSize, builder.windowSizeUnit, builder.offsetAmount, builder.offsetUnit,
-                builder.addWindowStartTimeColumn, builder.addWindowEndTimeColumn, builder.excludeEmptyWindows);
+                        builder.addWindowStartTimeColumn, builder.addWindowEndTimeColumn, builder.excludeEmptyWindows);
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         if (!(schema instanceof SequenceSchema))
-            throw new IllegalArgumentException("Invalid schema: TimeWindowFunction can "
-                    + "only operate on SequenceSchema");
+            throw new IllegalArgumentException(
+                            "Invalid schema: TimeWindowFunction can " + "only operate on SequenceSchema");
         if (!schema.hasColumn(timeColumn))
-            throw new IllegalStateException("Input schema does not have a column with name \""
-                    + timeColumn + "\"");
+            throw new IllegalStateException("Input schema does not have a column with name \"" + timeColumn + "\"");
 
-        if (schema.getMetaData(timeColumn).getColumnType() != ColumnType.Time) throw new IllegalStateException(
-                "Invalid column: column \"" + timeColumn + "\" is not of type " + ColumnType.Time + "; is " +
-                        schema.getMetaData(timeColumn).getColumnType());
+        if (schema.getMetaData(timeColumn).getColumnType() != ColumnType.Time)
+            throw new IllegalStateException("Invalid column: column \"" + timeColumn + "\" is not of type "
+                            + ColumnType.Time + "; is " + schema.getMetaData(timeColumn).getColumnType());
 
         this.inputSchema = schema;
 
@@ -159,7 +161,8 @@ public class TimeWindowFunction implements WindowFunction {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if (!addWindowStartTimeColumn && !addWindowEndTimeColumn) return inputSchema;
+        if (!addWindowStartTimeColumn && !addWindowEndTimeColumn)
+            return inputSchema;
         List<ColumnMetaData> newMeta = new ArrayList<>();
 
         newMeta.addAll(inputSchema.getColumnMetaData());
@@ -178,9 +181,10 @@ public class TimeWindowFunction implements WindowFunction {
     @Override
     public String toString() {
         return "TimeWindowFunction(column=\"" + timeColumn + "\",windowSize=" + windowSize + windowSizeUnit + ",offset="
-                + offsetAmount + (offsetAmount != 0 && offsetUnit != null ? offsetUnit : "") +
-                (addWindowStartTimeColumn ? ",addWindowStartTimeColumn=true" : "") + (addWindowEndTimeColumn ? ",addWindowEndTimeColumn=true" : "")
-                + (excludeEmptyWindows ? ",excludeEmptyWindows=true" : "") + ")";
+                        + offsetAmount + (offsetAmount != 0 && offsetUnit != null ? offsetUnit : "")
+                        + (addWindowStartTimeColumn ? ",addWindowStartTimeColumn=true" : "")
+                        + (addWindowEndTimeColumn ? ",addWindowEndTimeColumn=true" : "")
+                        + (excludeEmptyWindows ? ",excludeEmptyWindows=true" : "") + ")";
     }
 
 
@@ -209,7 +213,8 @@ public class TimeWindowFunction implements WindowFunction {
                 //New window. But: complication. We might have a bunch of empty windows...
                 while (currentWindowStartTime < windowStartTimeOfThisTimeStep) {
                     if (currentWindow != null) {
-                        if (!(excludeEmptyWindows && currentWindow.size() == 0)) out.add(currentWindow);
+                        if (!(excludeEmptyWindows && currentWindow.size() == 0))
+                            out.add(currentWindow);
                     }
                     currentWindow = new ArrayList<>();
                     currentWindowStartTime += windowSizeMilliseconds;
@@ -217,7 +222,8 @@ public class TimeWindowFunction implements WindowFunction {
             }
             if (addWindowStartTimeColumn || addWindowEndTimeColumn) {
                 List<Writable> timeStep2 = new ArrayList<>(timeStep);
-                if (addWindowStartTimeColumn) timeStep2.add(new LongWritable(currentWindowStartTime));
+                if (addWindowStartTimeColumn)
+                    timeStep2.add(new LongWritable(currentWindowStartTime));
                 if (addWindowEndTimeColumn)
                     timeStep2.add(new LongWritable(currentWindowStartTime + windowSizeMilliseconds));
                 currentWindow.add(timeStep2);
@@ -227,7 +233,8 @@ public class TimeWindowFunction implements WindowFunction {
         }
 
         //Add the final window to the output data...
-        if (!(excludeEmptyWindows && currentWindow.size() == 0) && currentWindow != null) out.add(currentWindow);
+        if (!(excludeEmptyWindows && currentWindow.size() == 0) && currentWindow != null)
+            out.add(currentWindow);
 
         return out;
     }
@@ -307,8 +314,10 @@ public class TimeWindowFunction implements WindowFunction {
         }
 
         public TimeWindowFunction build() {
-            if (timeColumn == null) throw new IllegalStateException("Time column is null (not specified)");
-            if (windowSize == -1 || windowSizeUnit == null) throw new IllegalStateException("Window size/unit not set");
+            if (timeColumn == null)
+                throw new IllegalStateException("Time column is null (not specified)");
+            if (windowSize == -1 || windowSizeUnit == null)
+                throw new IllegalStateException("Window size/unit not set");
             return new TimeWindowFunction(this);
         }
     }

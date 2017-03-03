@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,27 +30,24 @@ public class LongQuality extends ColumnQuality {
 
     private final long countNonLong;
 
-    public LongQuality(){
-        this(0,0,0,0,0);
+    public LongQuality() {
+        this(0, 0, 0, 0, 0);
     }
 
-    public LongQuality(long countValid, long countInvalid, long countMissing, long countTotal, long countNonLong){
-        super(countValid,countInvalid,countMissing,countTotal);
+    public LongQuality(long countValid, long countInvalid, long countMissing, long countTotal, long countNonLong) {
+        super(countValid, countInvalid, countMissing, countTotal);
         this.countNonLong = countNonLong;
     }
 
 
-    public LongQuality add(LongQuality other){
-        return new LongQuality(
-                countValid + other.countValid,
-                countInvalid + other.countInvalid,
-                countMissing + other.countMissing,
-                countTotal + other.countTotal,
-                countNonLong + other.countNonLong);
+    public LongQuality add(LongQuality other) {
+        return new LongQuality(countValid + other.countValid, countInvalid + other.countInvalid,
+                        countMissing + other.countMissing, countTotal + other.countTotal,
+                        countNonLong + other.countNonLong);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LongQuality(" + super.toString() + ", countNonLong=" + countNonLong + ")";
     }
 

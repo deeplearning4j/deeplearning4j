@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkSequenceTransformFunction implements Function<List<List<Writable>>,List<List<Writable>>> {
+public class SparkSequenceTransformFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 
     private final Transform transform;
 

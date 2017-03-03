@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,9 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
 
     public NDArrayWritable() {}
 
-    public NDArrayWritable(INDArray array) { set(array); }
+    public NDArrayWritable(INDArray array) {
+        set(array);
+    }
 
     /** Deserialize into a row vector of default type. */
     public void readFields(DataInput in) throws IOException {
@@ -53,7 +55,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             if (length >= Integer.MAX_VALUE) {
                 throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
             }
-            array = Nd4j.zeros((int)length);
+            array = Nd4j.zeros((int) length);
         }
         if (type == DataBuffer.Type.DOUBLE.ordinal()) {
             for (int i = 0; i < length; i++) {
@@ -108,9 +110,13 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         throw new UnsupportedOperationException("Unsupported data type: " + type);
     }
 
-    public void set(INDArray array) { this.array = array; }
+    public void set(INDArray array) {
+        this.array = array;
+    }
 
-    public INDArray get() { return array; }
+    public INDArray get() {
+        return array;
+    }
 
     /**
      * Returns true iff <code>o</code> is a ArrayWritable with the same value.
@@ -119,7 +125,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         if (!(o instanceof NDArrayWritable)) {
             return false;
         }
-        NDArrayWritable other = (NDArrayWritable)o;
+        NDArrayWritable other = (NDArrayWritable) o;
         DataBuffer thisData = this.array.data();
         DataBuffer otherData = other.array.data();
         DataBuffer.Type thisType = thisData.dataType();
@@ -128,9 +134,12 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             throw new IllegalArgumentException("Data types must be the same.");
         }
         switch (thisType) {
-            case DOUBLE: return thisData.asNioDouble().equals(otherData.asNioDouble());
-            case FLOAT: return thisData.asNioFloat().equals(otherData.asNioFloat());
-            case INT: return thisData.asNioInt().equals(otherData.asNioInt());
+            case DOUBLE:
+                return thisData.asNioDouble().equals(otherData.asNioDouble());
+            case FLOAT:
+                return thisData.asNioFloat().equals(otherData.asNioFloat());
+            case INT:
+                return thisData.asNioInt().equals(otherData.asNioInt());
         }
         throw new UnsupportedOperationException("Unsupported data type: " + thisType);
     }
@@ -139,15 +148,18 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         DataBuffer data = array.data();
         DataBuffer.Type type = data.dataType();
         switch (type) {
-            case DOUBLE: return data.asNioDouble().hashCode();
-            case FLOAT: return data.asNioFloat().hashCode();
-            case INT: return data.asNioInt().hashCode();
+            case DOUBLE:
+                return data.asNioDouble().hashCode();
+            case FLOAT:
+                return data.asNioFloat().hashCode();
+            case INT:
+                return data.asNioInt().hashCode();
         }
         throw new UnsupportedOperationException("Unsupported data type: " + type);
     }
 
     public int compareTo(Object o) {
-        NDArrayWritable other = (NDArrayWritable)o;
+        NDArrayWritable other = (NDArrayWritable) o;
         DataBuffer thisData = this.array.data();
         DataBuffer otherData = other.array.data();
         DataBuffer.Type thisType = thisData.dataType();
@@ -156,9 +168,12 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             throw new IllegalArgumentException("Data types must be the same.");
         }
         switch (thisType) {
-            case DOUBLE: return thisData.asNioDouble().compareTo(otherData.asNioDouble());
-            case FLOAT: return thisData.asNioFloat().compareTo(otherData.asNioFloat());
-            case INT: return thisData.asNioInt().compareTo(otherData.asNioInt());
+            case DOUBLE:
+                return thisData.asNioDouble().compareTo(otherData.asNioDouble());
+            case FLOAT:
+                return thisData.asNioFloat().compareTo(otherData.asNioFloat());
+            case INT:
+                return thisData.asNioInt().compareTo(otherData.asNioInt());
         }
         throw new UnsupportedOperationException("Unsupported data type: " + thisType);
     }
@@ -173,8 +188,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             super(NDArrayWritable.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             ByteBuffer buffer1 = ByteBuffer.wrap(b1, s1, l1);
             ByteBuffer buffer2 = ByteBuffer.wrap(b2, s2, l2);
             long length1 = buffer1.getLong();
@@ -182,9 +196,9 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             if (length1 == 0 && length2 == 0) {
                 return 0;
             } else if (length1 == 0) {
-                return (int)Math.max(-length2, Integer.MIN_VALUE);
+                return (int) Math.max(-length2, Integer.MIN_VALUE);
             } else if (length2 == 0) {
-                return (int)Math.min(length1, Integer.MAX_VALUE);
+                return (int) Math.min(length1, Integer.MAX_VALUE);
             }
             int type1 = buffer1.getInt();
             int type2 = buffer2.getInt();
@@ -203,32 +217,32 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         }
     }
 
-    static {                                        // register this comparator
+    static { // register this comparator
         WritableComparator.define(NDArrayWritable.class, new Comparator());
     }
 
     @Override
-    public long length(){
+    public long length() {
         return array.data().length();
     }
 
     @Override
-    public double getDouble(long i){
+    public double getDouble(long i) {
         return array.data().getDouble(i);
     }
 
     @Override
-    public float getFloat(long i){
+    public float getFloat(long i) {
         return array.data().getFloat(i);
     }
 
     @Override
-    public int getInt(long i){
+    public int getInt(long i) {
         return array.data().getInt(i);
     }
 
     @Override
-    public long getLong(long i){
-        return (long)array.data().getDouble(i);
+    public long getLong(long i) {
+        return (long) array.data().getDouble(i);
     }
 }

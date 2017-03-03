@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import org.datavec.api.transform.quality.columns.LongQuality;
 /**
  * Created by Alex on 5/03/2016.
  */
-public class LongQualityMergeFunction implements Function2<LongQuality,LongQuality,LongQuality> {
+public class LongQualityMergeFunction implements Function2<LongQuality, LongQuality, LongQuality> {
     @Override
     public LongQuality call(LongQuality v1, LongQuality v2) throws Exception {
         return v1.add(v2);

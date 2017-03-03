@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -91,7 +91,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
-@Data @Slf4j
+@Data
+@Slf4j
 public class TransformProcess implements Serializable {
 
     private final Schema initialSchema;
@@ -101,7 +102,8 @@ public class TransformProcess implements Serializable {
     private static ObjectMapper jsonMapper = initMapperJson();
     private static ObjectMapper yamlMapper = initMapperYaml();
 
-    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList) {
+    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema,
+                    @JsonProperty("actionList") List<DataAction> actionList) {
         this.initialSchema = initialSchema;
         this.actionList = actionList;
 
@@ -117,7 +119,8 @@ public class TransformProcess implements Serializable {
                 d.getFilter().setInputSchema(currInputSchema);
             } else if (d.getConvertToSequence() != null) {
                 if (currInputSchema instanceof SequenceSchema) {
-                    throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: " + currInputSchema);
+                    throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: "
+                                    + currInputSchema);
                 }
                 ConvertToSequence cts = d.getConvertToSequence();
                 cts.setInputSchema(currInputSchema);
@@ -125,13 +128,14 @@ public class TransformProcess implements Serializable {
             } else if (d.getConvertFromSequence() != null) {
                 ConvertFromSequence cfs = d.getConvertFromSequence();
                 if (!(currInputSchema instanceof SequenceSchema)) {
-                    throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: " + currInputSchema);
+                    throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: "
+                                    + currInputSchema);
                 }
                 cfs.setInputSchema((SequenceSchema) currInputSchema);
                 currInputSchema = cfs.transform((SequenceSchema) currInputSchema);
             } else if (d.getSequenceSplit() != null) {
                 d.getSequenceSplit().setInputSchema(currInputSchema);
-                continue;   //no change to sequence schema
+                continue; //no change to sequence schema
             } else if (d.getReducer() != null) {
                 IReducer reducer = d.getReducer();
                 reducer.setInputSchema(currInputSchema);
@@ -182,18 +186,20 @@ public class TransformProcess implements Serializable {
                 continue; //Filter -> doesn't change schema
             } else if (d.getConvertToSequence() != null) {
                 if (currInputSchema instanceof SequenceSchema) {
-                    throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: " + currInputSchema);
+                    throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: "
+                                    + currInputSchema);
                 }
                 ConvertToSequence cts = d.getConvertToSequence();
                 currInputSchema = cts.transform(currInputSchema);
             } else if (d.getConvertFromSequence() != null) {
                 ConvertFromSequence cfs = d.getConvertFromSequence();
                 if (!(currInputSchema instanceof SequenceSchema)) {
-                    throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: " + currInputSchema);
+                    throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: "
+                                    + currInputSchema);
                 }
                 currInputSchema = cfs.transform((SequenceSchema) currInputSchema);
             } else if (d.getSequenceSplit() != null) {
-                continue;   //Sequence split -> no change to schema
+                continue; //Sequence split -> no change to schema
             } else if (d.getReducer() != null) {
                 IReducer reducer = d.getReducer();
                 currInputSchema = reducer.transform(currInputSchema);
@@ -203,7 +209,8 @@ public class TransformProcess implements Serializable {
             } else {
                 throw new RuntimeException("Unknown action: " + d);
             }
-            if (i++ == step) return currInputSchema;
+            if (i++ == step)
+                return currInputSchema;
         }
         return currInputSchema;
     }
@@ -227,13 +234,17 @@ public class TransformProcess implements Serializable {
 
             } else if (d.getFilter() != null) {
                 Filter f = d.getFilter();
-                if (f.removeExample(currValues)) return null;
+                if (f.removeExample(currValues))
+                    return null;
             } else if (d.getConvertToSequence() != null) {
-                throw new RuntimeException("Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
+                throw new RuntimeException(
+                                "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
             } else if (d.getConvertFromSequence() != null) {
-                throw new RuntimeException("Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
+                throw new RuntimeException(
+                                "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
             } else if (d.getSequenceSplit() != null) {
-                throw new RuntimeException("Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
+                throw new RuntimeException(
+                                "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
                 throw new RuntimeException("Unknown action: " + d);
             }
@@ -256,15 +267,18 @@ public class TransformProcess implements Serializable {
                 currValues = t.mapSequence(currValues);
 
             } else if (d.getFilter() != null) {
-//                Filter f = d.getFilter();
-//                if (f.removeExample(currValues)) return null;
+                //                Filter f = d.getFilter();
+                //                if (f.removeExample(currValues)) return null;
                 throw new RuntimeException("Sequence filtering not yet implemnted here");
             } else if (d.getConvertToSequence() != null) {
-                throw new RuntimeException("Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
+                throw new RuntimeException(
+                                "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
             } else if (d.getConvertFromSequence() != null) {
-                throw new RuntimeException("Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
+                throw new RuntimeException(
+                                "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
             } else if (d.getSequenceSplit() != null) {
-                throw new RuntimeException("Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
+                throw new RuntimeException(
+                                "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
                 throw new RuntimeException("Unknown action: " + d);
             }
@@ -290,7 +304,7 @@ public class TransformProcess implements Serializable {
     public String toJson() {
         try {
             return jsonMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
@@ -298,7 +312,7 @@ public class TransformProcess implements Serializable {
 
         try {
             return jsonMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -311,7 +325,7 @@ public class TransformProcess implements Serializable {
     public String toYaml() {
         try {
             return yamlMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
@@ -319,7 +333,7 @@ public class TransformProcess implements Serializable {
 
         try {
             return yamlMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -330,9 +344,9 @@ public class TransformProcess implements Serializable {
      * @return TransformProcess, from JSON
      */
     public static TransformProcess fromJson(String json) {
-        try{
+        try {
             return jsonMapper.readValue(json, TransformProcess.class);
-        }catch ( IOException e){
+        } catch (IOException e) {
             //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
@@ -340,7 +354,7 @@ public class TransformProcess implements Serializable {
 
         try {
             return jsonMapper.readValue(json, TransformProcess.class);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -351,9 +365,9 @@ public class TransformProcess implements Serializable {
      * @return TransformProcess, from JSON
      */
     public static TransformProcess fromYaml(String yaml) {
-        try{
+        try {
             return yamlMapper.readValue(yaml, TransformProcess.class);
-        }catch ( IOException e){
+        } catch (IOException e) {
             //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
@@ -361,52 +375,47 @@ public class TransformProcess implements Serializable {
 
         try {
             return yamlMapper.readValue(yaml, TransformProcess.class);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper){
+    private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+        List<Class<?>> classes =
+                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
         List<String> classNames = new ArrayList<>(6);
-        for(Class<?> c : classes) classNames.add(c.getName());
+        for (Class<?> c : classes)
+            classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
 
-        if(subtypesClassCache == null) {
-            List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+        if (subtypesClassCache == null) {
+            List<Class<?>> interfaces =
+                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
             List<URL> scanUrls = new ArrayList<>();
             for (URL u : urls) {
                 String path = u.getPath();
-                if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
+                if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
                     scanUrls.add(u);
                 }
             }
 
-            Reflections reflections = new Reflections(new ConfigurationBuilder()
-                    .filterInputsBy(new FilterBuilder()
-                            .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                            //Exclude the following: the assumption here is that no custom functionality will ever be present
-                            // under these package name prefixes.
-                            .exclude("^org.nd4j.*")
-                            .exclude("^org.bytedeco.*") //JavaCPP
-                            .exclude("^com.fasterxml.*")//Jackson
-                            .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
-                            .exclude("^org.projectlombok.*")
-                            .exclude("^com.twelvemonkeys.*")
-                            .exclude("^org.joda.*")
-                            .exclude("^org.slf4j.*")
-                            .exclude("^com.google.*")
-                            .exclude("^org.reflections.*")
-                            .exclude("^ch.qos.*")       //Logback
-                    )
-                    .addUrls(scanUrls)
-                    .setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
+            Reflections reflections = new Reflections(
+                            new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                                            // under these package name prefixes.
+                                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
+                                            .exclude("^com.fasterxml.*")//Jackson
+                                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
+                                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
+                                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
+                            ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
             org.reflections.Store store = reflections.getStore();
 
             Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
@@ -425,8 +434,11 @@ public class TransformProcess implements Serializable {
         //Second: get all currently registered subtypes for this mapper
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
-            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-            Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
+                            null);
+            Collection<NamedType> types =
+                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -436,7 +448,7 @@ public class TransformProcess implements Serializable {
         List<NamedType> toRegister = new ArrayList<>();
         for (Class<?> c : subtypesClassCache) {
             //Check if it's concrete or abstract...
-            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
+            if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
                 //log.info("Skipping abstract/interface: {}",c);
                 continue;
             }
@@ -450,10 +462,11 @@ public class TransformProcess implements Serializable {
                     name = c.getSimpleName();
                 }
                 toRegister.add(new NamedType(c, name));
-                if(log.isDebugEnabled()){
-                    for(Class<?> baseClass : classes){
-                        if(baseClass.isAssignableFrom(c)){
-                            log.debug("Registering class for JSON serialization: {} as subtype of {}",c.getName(),baseClass.getName());
+                if (log.isDebugEnabled()) {
+                    for (Class<?> baseClass : classes) {
+                        if (baseClass.isAssignableFrom(c)) {
+                            log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
+                                            baseClass.getName());
                             break;
                         }
                     }
@@ -471,11 +484,11 @@ public class TransformProcess implements Serializable {
         return initMapper(new JsonFactory());
     }
 
-    private static ObjectMapper initMapperYaml(){
+    private static ObjectMapper initMapperYaml() {
         return initMapper(new YAMLFactory());
     }
 
-    private static ObjectMapper initMapper(JsonFactory factory){
+    private static ObjectMapper initMapper(JsonFactory factory) {
         ObjectMapper om = new ObjectMapper(factory);
         om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -494,23 +507,38 @@ public class TransformProcess implements Serializable {
      * @param values the values to convert
      * @return the transformed values based on the schema
      */
-    public List<Writable> transformRawStringsToInput(String...values) {
+    public List<Writable> transformRawStringsToInput(String... values) {
         List<Writable> ret = new ArrayList<>();
-        if(values.length != initialSchema.numColumns())
-            throw new IllegalArgumentException(String.format("Number of values %d does not match the number of input columns %d for schema",values.length,initialSchema.numColumns()));
-        for(int i = 0; i < values.length; i++) {
-             switch(initialSchema.getType(i)) {
-                 case String: ret.add(new Text(values[i])); break;
-                 case Integer:ret.add(new IntWritable(Integer.parseInt(values[i]))); break;
-                 case Double: ret.add(new DoubleWritable(Double.parseDouble(values[i]))); break;
-                 case Float: ret.add(new FloatWritable(Float.parseFloat(values[i]))); break;
-                 case Categorical: ret.add(new Text(values[i])); break;
-                 case Boolean: ret.add(new BooleanWritable(Boolean.parseBoolean(values[i]))); break;
-                 case Time:
+        if (values.length != initialSchema.numColumns())
+            throw new IllegalArgumentException(
+                            String.format("Number of values %d does not match the number of input columns %d for schema",
+                                            values.length, initialSchema.numColumns()));
+        for (int i = 0; i < values.length; i++) {
+            switch (initialSchema.getType(i)) {
+                case String:
+                    ret.add(new Text(values[i]));
+                    break;
+                case Integer:
+                    ret.add(new IntWritable(Integer.parseInt(values[i])));
+                    break;
+                case Double:
+                    ret.add(new DoubleWritable(Double.parseDouble(values[i])));
+                    break;
+                case Float:
+                    ret.add(new FloatWritable(Float.parseFloat(values[i])));
+                    break;
+                case Categorical:
+                    ret.add(new Text(values[i]));
+                    break;
+                case Boolean:
+                    ret.add(new BooleanWritable(Boolean.parseBoolean(values[i])));
+                    break;
+                case Time:
 
-                     break;
-                 case Long: ret.add(new LongWritable(Long.parseLong(values[i])));
-             }
+                    break;
+                case Long:
+                    ret.add(new LongWritable(Long.parseLong(values[i])));
+            }
         }
         return ret;
     }
@@ -555,8 +583,8 @@ public class TransformProcess implements Serializable {
          *
          * @param condition Condition to filter on
          */
-        public Builder filter(Condition condition){
-            return filter( new ConditionFilter(condition));
+        public Builder filter(Condition condition) {
+            return filter(new ConditionFilter(condition));
         }
 
         /**
@@ -581,7 +609,7 @@ public class TransformProcess implements Serializable {
          * Remove all columns, except for those that are specified here
          * @param columnNames    Names of the columns to keep
          */
-        public Builder removeAllColumnsExceptFor(String... columnNames){
+        public Builder removeAllColumnsExceptFor(String... columnNames) {
             return transform(new RemoveAllColumnsExceptForTransform(columnNames));
         }
 
@@ -589,7 +617,7 @@ public class TransformProcess implements Serializable {
          * Remove all columns, except for those that are specified here
          * @param columnNames    Names of the columns to keep
          */
-        public Builder removeAllColumnsExceptFor(Collection<String> columnNames){
+        public Builder removeAllColumnsExceptFor(Collection<String> columnNames) {
             return removeAllColumnsExceptFor(columnNames.toArray(new String[columnNames.size()]));
         }
 
@@ -631,7 +659,8 @@ public class TransformProcess implements Serializable {
          * @param newName    Name of the new (duplicate) column
          */
         public Builder duplicateColumn(String column, String newName) {
-            return transform(new DuplicateColumnsTransform(Collections.singletonList(column), Collections.singletonList(newName)));
+            return transform(new DuplicateColumnsTransform(Collections.singletonList(column),
+                            Collections.singletonList(newName)));
         }
 
 
@@ -720,7 +749,7 @@ public class TransformProcess implements Serializable {
          * @param columnName   Column name to operate on
          * @param mathFunction MathFunction to apply to the column
          */
-        public Builder doubleMathFunction(String columnName, MathFunction mathFunction){
+        public Builder doubleMathFunction(String columnName, MathFunction mathFunction) {
             return transform(new DoubleMathFunctionTransform(columnName, mathFunction));
         }
 
@@ -793,7 +822,7 @@ public class TransformProcess implements Serializable {
          * @param newColumnType Type of the new column
          * @param fixedValue    Value in the new column for all records
          */
-        public Builder addConstantColumn(String newColumnName, ColumnType newColumnType, Writable fixedValue){
+        public Builder addConstantColumn(String newColumnName, ColumnType newColumnType, Writable fixedValue) {
             return transform(new AddConstantColumnTransform(newColumnName, newColumnType, fixedValue));
         }
 
@@ -803,7 +832,7 @@ public class TransformProcess implements Serializable {
          * @param newColumnName Name of the new column
          * @param value         Value in the new column for all records
          */
-        public Builder addConstantDoubleColumn(String newColumnName, double value){
+        public Builder addConstantDoubleColumn(String newColumnName, double value) {
             return addConstantColumn(newColumnName, ColumnType.Double, new DoubleWritable(value));
         }
 
@@ -813,7 +842,7 @@ public class TransformProcess implements Serializable {
          * @param newColumnName Name of the new column
          * @param value         Value of the new column for all records
          */
-        public Builder addConstantIntegerColumn(String newColumnName, int value){
+        public Builder addConstantIntegerColumn(String newColumnName, int value) {
             return addConstantColumn(newColumnName, ColumnType.Integer, new IntWritable(value));
         }
 
@@ -823,7 +852,7 @@ public class TransformProcess implements Serializable {
          * @param newColumnName Name of the new column
          * @param value         Value in the new column for all records
          */
-        public Builder addConstantLongColumn(String newColumnName, long value){
+        public Builder addConstantLongColumn(String newColumnName, long value) {
             return addConstantColumn(newColumnName, ColumnType.Long, new LongWritable(value));
         }
 
@@ -848,8 +877,8 @@ public class TransformProcess implements Serializable {
 
             ColumnAnalysis ca = da.getColumnAnalysis(column);
             if (!(ca instanceof NumericalColumnAnalysis))
-                throw new IllegalStateException("Column \"" + column + "\" analysis is not numerical. "
-                        + "Column is not numerical?");
+                throw new IllegalStateException(
+                                "Column \"" + column + "\" analysis is not numerical. " + "Column is not numerical?");
 
             NumericalColumnAnalysis nca = (NumericalColumnAnalysis) ca;
             double min = nca.getMinDouble();
@@ -874,8 +903,8 @@ public class TransformProcess implements Serializable {
                     //mean including min value: (sum/totalCount)
                     //mean excluding min value: (sum - countMin*min)/(totalCount - countMin)
                     double meanExMin;
-                    if(ca.getCountTotal() - countMin == 0) {
-                        if(ca.getCountTotal() == 0){
+                    if (ca.getCountTotal() - countMin == 0) {
+                        if (ca.getCountTotal() == 0) {
                             log.warn("Normalizing with Log2MeanExcludingMin but 0 records present in analysis");
                         } else {
                             log.warn("Normalizing with Log2MeanExcludingMin but all records are the same value");
@@ -979,7 +1008,8 @@ public class TransformProcess implements Serializable {
          * @param comparator    Comparator used to sort examples
          * @param ascending     If true: sort ascending. False: descending
          */
-        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator, boolean ascending) {
+        public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator,
+                        boolean ascending) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator, ascending)));
             return this;
         }
@@ -1034,7 +1064,7 @@ public class TransformProcess implements Serializable {
          * @param column      Column to append the value to
          * @param toAppend    String to append to the end of each writable
          */
-        public Builder appendStringColumnTransform(String column, String toAppend){
+        public Builder appendStringColumnTransform(String column, String toAppend) {
             return transform(new AppendStringColumnTransform(column, toAppend));
         }
 

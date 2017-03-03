@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,13 +98,15 @@ public class CollectionRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Generating records from DataInputStream not supported for CollectionRecordReader");
+        throw new UnsupportedOperationException(
+                        "Generating records from DataInputStream not supported for CollectionRecordReader");
     }
 
 
     @Override
     public Record nextRecord() {
-        return new org.datavec.api.records.impl.Record(next(), new RecordMetaDataIndex(count - 1, null, CollectionRecordReader.class));
+        return new org.datavec.api.records.impl.Record(next(),
+                        new RecordMetaDataIndex(count - 1, null, CollectionRecordReader.class));
     }
 
     @Override
@@ -121,7 +123,8 @@ public class CollectionRecordReader extends BaseRecordReader {
             }
             long idx = ((RecordMetaDataIndex) recordMetaData).getIndex();
             if (idx >= original.size()) {
-                throw new IllegalStateException("Cannot get index " + idx + " from collection: contains " + original + " elements");
+                throw new IllegalStateException(
+                                "Cannot get index " + idx + " from collection: contains " + original + " elements");
             }
             toLoad.add((int) idx);
         }
@@ -131,7 +134,8 @@ public class CollectionRecordReader extends BaseRecordReader {
             List<Collection<Writable>> asList = (List<Collection<Writable>>) original;
             for (Integer i : toLoad) {
                 List<Writable> l = new ArrayList<>(asList.get(i));
-                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i, null, CollectionRecordReader.class));
+                Record r = new org.datavec.api.records.impl.Record(l,
+                                new RecordMetaDataIndex(i, null, CollectionRecordReader.class));
                 out.add(r);
             }
         } else {
@@ -143,7 +147,8 @@ public class CollectionRecordReader extends BaseRecordReader {
                     continue;
                 }
                 List<Writable> l = (c instanceof List ? ((List<Writable>) c) : new ArrayList<>(c));
-                Record r = new org.datavec.api.records.impl.Record(l, new RecordMetaDataIndex(i - 1, null, CollectionRecordReader.class));
+                Record r = new org.datavec.api.records.impl.Record(l,
+                                new RecordMetaDataIndex(i - 1, null, CollectionRecordReader.class));
                 out.add(r);
             }
         }

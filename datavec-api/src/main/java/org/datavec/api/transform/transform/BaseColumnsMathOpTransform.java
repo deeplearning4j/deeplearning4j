@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,10 +53,10 @@ import java.util.List;
  * with a scalar + single column, instea
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties({"columnIdxs","inputSchema"})
-@EqualsAndHashCode(exclude = {"columnIdxs","inputSchema"})
+@JsonIgnoreProperties({"columnIdxs", "inputSchema"})
+@EqualsAndHashCode(exclude = {"columnIdxs", "inputSchema"})
 @Data
-public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
+public abstract class BaseColumnsMathOpTransform implements Transform, ColumnOp {
 
     protected final String newColumnName;
     protected final MathOp mathOp;
@@ -65,7 +65,8 @@ public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
     private Schema inputSchema;
 
     public BaseColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
-        if (columns == null || columns.length == 0) throw new IllegalArgumentException("Invalid input: cannot have null/0 columns");
+        if (columns == null || columns.length == 0)
+            throw new IllegalArgumentException("Invalid input: cannot have null/0 columns");
         this.newColumnName = newColumnName;
         this.mathOp = mathOp;
         this.columns = columns;
@@ -73,29 +74,35 @@ public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
         switch (mathOp) {
             case Add:
                 if (columns.length < 2)
-                    throw new IllegalArgumentException("Need 2 or more columns for Add op. Got: " + Arrays.toString(columns));
+                    throw new IllegalArgumentException(
+                                    "Need 2 or more columns for Add op. Got: " + Arrays.toString(columns));
                 break;
             case Subtract:
                 if (columns.length != 2)
-                    throw new IllegalArgumentException("Need exactly 2 columns for Subtract op. Got: " + Arrays.toString(columns));
+                    throw new IllegalArgumentException(
+                                    "Need exactly 2 columns for Subtract op. Got: " + Arrays.toString(columns));
                 break;
             case Multiply:
                 if (columns.length < 2)
-                    throw new IllegalArgumentException("Need 2 or more columns for Multiply op. Got: " + Arrays.toString(columns));
+                    throw new IllegalArgumentException(
+                                    "Need 2 or more columns for Multiply op. Got: " + Arrays.toString(columns));
                 break;
             case Divide:
                 if (columns.length != 2)
-                    throw new IllegalArgumentException("Need exactly 2 columns for Divide op. Got: " + Arrays.toString(columns));
+                    throw new IllegalArgumentException(
+                                    "Need exactly 2 columns for Divide op. Got: " + Arrays.toString(columns));
                 break;
             case Modulus:
                 if (columns.length != 2)
-                    throw new IllegalArgumentException("Need exactly 2 columns for Modulus op. Got: " + Arrays.toString(columns));
+                    throw new IllegalArgumentException(
+                                    "Need exactly 2 columns for Modulus op. Got: " + Arrays.toString(columns));
                 break;
             case ReverseSubtract:
             case ReverseDivide:
             case ScalarMin:
             case ScalarMax:
-                throw new IllegalArgumentException("Invalid MathOp: cannot use " + mathOp + " with ...ColumnsMathOpTransform");
+                throw new IllegalArgumentException(
+                                "Invalid MathOp: cannot use " + mathOp + " with ...ColumnsMathOpTransform");
             default:
                 throw new RuntimeException("Unknown MathOp: " + mathOp);
         }
@@ -135,11 +142,13 @@ public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if (inputSchema == null) throw new IllegalStateException("Input schema has not been set");
+        if (inputSchema == null)
+            throw new IllegalStateException("Input schema has not been set");
         List<Writable> out = new ArrayList<>(writables);
 
         Writable[] temp = new Writable[columns.length];
-        for( int i=0; i<columnIdxs.length; i++ ) temp[i] = out.get(columnIdxs[i]);
+        for (int i = 0; i < columnIdxs.length; i++)
+            temp[i] = out.get(columnIdxs[i]);
 
         out.add(doOp(temp));
         return out;
@@ -173,7 +182,7 @@ public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
      */
     @Override
     public String[] outputColumnNames() {
-        return new String[]{newColumnName};
+        return new String[] {newColumnName};
     }
 
     /**

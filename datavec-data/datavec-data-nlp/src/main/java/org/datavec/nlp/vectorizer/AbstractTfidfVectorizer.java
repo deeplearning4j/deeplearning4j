@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,9 +35,9 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
     @Override
     public void doWithTokens(Tokenizer tokenizer) {
         Set<String> seen = new HashSet<>();
-        while(tokenizer.hasMoreTokens()) {
+        while (tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken();
-            if(!stopWords.contains(token)) {
+            if (!stopWords.contains(token)) {
                 cache.incrementCount(token);
                 if (!seen.contains(token)) {
                     cache.incrementDocCount(token);
@@ -49,12 +49,13 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
 
     @Override
     public TokenizerFactory createTokenizerFactory(Configuration conf) {
-        String clazz = conf.get(TOKENIZER,DefaultTokenizerFactory.class.getName());
+        String clazz = conf.get(TOKENIZER, DefaultTokenizerFactory.class.getName());
         try {
-            Class<? extends TokenizerFactory> tokenizerFactoryClazz = (Class<? extends TokenizerFactory>) Class.forName(clazz);
+            Class<? extends TokenizerFactory> tokenizerFactoryClazz =
+                            (Class<? extends TokenizerFactory>) Class.forName(clazz);
             return tokenizerFactoryClazz.newInstance();
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 

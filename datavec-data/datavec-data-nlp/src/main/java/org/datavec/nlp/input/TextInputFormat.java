@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,7 @@ public class TextInputFormat extends BaseInputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
         RecordReader reader = new TfidfRecordReader();
-        reader.initialize(conf,split);
+        reader.initialize(conf, split);
         return reader;
     }
 }

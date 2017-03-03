@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,7 +65,8 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
 
     @Override
     public List<Writable> next() {
-        throw new UnsupportedOperationException("next() not supported for CollectionSequencRecordReader; use sequenceRecord()");
+        throw new UnsupportedOperationException(
+                        "next() not supported for CollectionSequencRecordReader; use sequenceRecord()");
     }
 
     @Override
@@ -89,7 +90,7 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     }
 
     @Override
-    public List<String> getLabels(){
+    public List<String> getLabels() {
         return null;
     }
 
@@ -101,7 +102,8 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
+        throw new UnsupportedOperationException(
+                        "Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
     }
 
     @Override
@@ -131,12 +133,14 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
 
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
+        throw new UnsupportedOperationException(
+                        "Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
     }
 
     @Override
     public SequenceRecord nextSequence() {
-        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), new RecordMetaDataIndex(count-1, null, CollectionSequenceRecordReader.class));
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(),
+                        new RecordMetaDataIndex(count - 1, null, CollectionSequenceRecordReader.class));
     }
 
     @Override
@@ -153,17 +157,20 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
             }
             long idx = ((RecordMetaDataIndex) recordMetaData).getIndex();
             if (idx >= original.size()) {
-                throw new IllegalStateException("Cannot get index " + idx + " from collection: contains " + original + " elements");
+                throw new IllegalStateException(
+                                "Cannot get index " + idx + " from collection: contains " + original + " elements");
             }
             toLoad.add((int) idx);
         }
 
         List<SequenceRecord> out = new ArrayList<>();
         if (original instanceof List) {
-            List<Collection<? extends Collection<Writable>>> asList = (List<Collection<? extends Collection<Writable>>>) original;
+            List<Collection<? extends Collection<Writable>>> asList =
+                            (List<Collection<? extends Collection<Writable>>>) original;
             for (Integer i : toLoad) {
                 List<List<Writable>> l = toList(asList.get(i));
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l, new RecordMetaDataIndex(i, null, CollectionSequenceRecordReader.class));
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l,
+                                new RecordMetaDataIndex(i, null, CollectionSequenceRecordReader.class));
                 out.add(r);
             }
         } else {
@@ -175,16 +182,17 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
                     continue;
                 }
                 List<List<Writable>> record = toList(c);
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record, new RecordMetaDataIndex(i - 1, null, CollectionSequenceRecordReader.class));
+                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record,
+                                new RecordMetaDataIndex(i - 1, null, CollectionSequenceRecordReader.class));
                 out.add(r);
             }
         }
         return out;
     }
 
-    private static List<List<Writable>> toList(Collection<? extends Collection<Writable>> next){
+    private static List<List<Writable>> toList(Collection<? extends Collection<Writable>> next) {
         List<List<Writable>> record = new ArrayList<>();
-        for(Collection<Writable> c : next){
+        for (Collection<Writable> c : next) {
             record.add(new ArrayList<>(c));
         }
         return record;

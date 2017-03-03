@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,14 +36,14 @@ import java.util.List;
  *
  */
 public class SVMLightRecordWriter extends FileRecordWriter {
-    public SVMLightRecordWriter() {
-    }
+    public SVMLightRecordWriter() {}
 
     public SVMLightRecordWriter(File path) throws FileNotFoundException {
         super(path);
     }
-    public SVMLightRecordWriter(File path,boolean append) throws FileNotFoundException {
-        super(path,append);
+
+    public SVMLightRecordWriter(File path, boolean append) throws FileNotFoundException {
+        super(path, append);
     }
 
     public SVMLightRecordWriter(Configuration conf) throws FileNotFoundException {
@@ -52,7 +52,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
 
     @Override
     public void write(Collection<Writable> record) throws IOException {
-        if(!record.isEmpty()) {
+        if (!record.isEmpty()) {
             List<Writable> recordList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
             StringBuilder result = new StringBuilder();
 
@@ -61,25 +61,24 @@ public class SVMLightRecordWriter extends FileRecordWriter {
 
             // get only the non-zero entries
             Double value = 0.0;
-            
+
             for (int i = 0; i < recordList.size() - 1; i++) {
 
                 try {
                     value = Double.valueOf(recordList.get(i).toString());
 
-                    if ( value > 0.0 ) {
-                            result.append(" " + (i + 1) + ":"
-                            + Double.valueOf(recordList.get(i).toString()));
+                    if (value > 0.0) {
+                        result.append(" " + (i + 1) + ":" + Double.valueOf(recordList.get(i).toString()));
                     }
 
-                } catch(NumberFormatException e) {
+                } catch (NumberFormatException e) {
                     // This isn't a scalar, so check if we got an array already
                     Writable w = recordList.get(i);
                     if (w instanceof ArrayWritable) {
-                        ArrayWritable a = (ArrayWritable)w;
+                        ArrayWritable a = (ArrayWritable) w;
                         for (long j = 0; j < a.length(); j++) {
                             value = a.getDouble(j);
-                            if ( value > 0.0 ) {
+                            if (value > 0.0) {
                                 result.append(" " + (j + 1) + ":" + value);
                             }
                         }

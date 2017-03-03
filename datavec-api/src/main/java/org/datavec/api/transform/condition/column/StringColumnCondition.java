@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,11 +56,12 @@ public class StringColumnCondition extends BaseColumnCondition {
      * @param op                    Operation (== or != only)
      * @param value                 Value to use in the condition
      */
-    public StringColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
-                                 ConditionOp op, String value) {
+    public StringColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    String value) {
         super(column, sequenceConditionMode);
         if (op != ConditionOp.Equal && op != ConditionOp.NotEqual) {
-            throw new IllegalArgumentException("Invalid condition op: can only use this constructor with Equal or NotEqual conditions");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: can only use this constructor with Equal or NotEqual conditions");
         }
         this.op = op;
         this.value = value;
@@ -87,11 +88,12 @@ public class StringColumnCondition extends BaseColumnCondition {
      * @param op                    Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
      * @param set                   Set to use in the condition
      */
-    public StringColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
-                                 ConditionOp op, Set<String> set) {
+    public StringColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    Set<String> set) {
         super(column, sequenceConditionMode);
         if (op != ConditionOp.InSet && op != ConditionOp.NotInSet) {
-            throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
         this.value = null;
@@ -100,7 +102,7 @@ public class StringColumnCondition extends BaseColumnCondition {
 
     //Private constructor for Jackson deserialization only
     private StringColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
-                                  @JsonProperty("value") String value, @JsonProperty("set") Set<String> set) {
+                    @JsonProperty("value") String value, @JsonProperty("set") Set<String> set) {
         super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
         this.op = op;
         this.value = value;
@@ -131,8 +133,8 @@ public class StringColumnCondition extends BaseColumnCondition {
 
     @Override
     public String toString() {
-        return "StringColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
-                (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+        return "StringColumnCondition(columnName=\"" + columnName + "\"," + op + ","
+                        + (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
 
     /**

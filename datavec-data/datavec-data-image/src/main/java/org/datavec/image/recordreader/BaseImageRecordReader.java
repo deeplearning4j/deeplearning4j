@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,20 +70,20 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     public final static String CROP_IMAGE = NAME_SPACE + ".cropimage";
     public final static String IMAGE_LOADER = NAME_SPACE + ".imageloader";
 
-    public BaseImageRecordReader() {
-    }
+    public BaseImageRecordReader() {}
 
     public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
-        this(height, width, channels,labelGenerator, null);
+        this(height, width, channels, labelGenerator, null);
     }
 
-    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator, ImageTransform imageTransform) {
+    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+                    ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
         this.channels = channels;
         this.labelGenerator = labelGenerator;
         this.imageTransform = imageTransform;
-        this.appendLabel = labelGenerator !=null? true: false;
+        this.appendLabel = labelGenerator != null ? true : false;
     }
 
     protected boolean containsFormat(String format) {
@@ -131,7 +131,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 if (curr.isDirectory()) {
                     Collection<File> temp = FileUtils.listFiles(curr, null, true);
                     allPaths = new CompactHeapStringList();
-                    for(File f : temp){
+                    for (File f : temp) {
                         allPaths.add(f.getPath());
                     }
                 } else {
@@ -139,7 +139,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 }
 
             }
-            iter = new FileFromPathIterator(inputSplit.locationsPathIterator());    //This handles randomization internally if necessary
+            iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
         }
         if (split instanceof FileSplit) {
             //remove the root directory
@@ -192,7 +192,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
      * @throws java.io.IOException
      * @throws InterruptedException
      */
-    public void initialize(Configuration conf, InputSplit split, ImageTransform imageTransform) throws IOException, InterruptedException {
+    public void initialize(Configuration conf, InputSplit split, ImageTransform imageTransform)
+                    throws IOException, InterruptedException {
         this.imageLoader = null;
         this.imageTransform = imageTransform;
         initialize(conf, split);
@@ -203,7 +204,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     public List<Writable> next() {
         if (iter != null) {
             List<Writable> ret;
-            File image =  iter.next();
+            File image = iter.next();
             currentFile = image;
 
             if (image.isDirectory())
@@ -272,7 +273,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         if (labelGenerator != null) {
             return labelGenerator.getLabelForPath(path).toString();
         }
-        if (fileNameMap != null && fileNameMap.containsKey(path)) return fileNameMap.get(path);
+        if (fileNameMap != null && fileNameMap.containsKey(path))
+            return fileNameMap.get(path);
         return (new File(path)).getParentFile().getName();
     }
 
@@ -312,7 +314,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public void reset() {
-        if (inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
+        if (inputSplit == null)
+            throw new UnsupportedOperationException("Cannot reset without first initializing");
         inputSplit.reset();
         if (iter != null) {
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator());
@@ -336,7 +339,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         }
         INDArray row = imageLoader.asMatrix(dataInputStream);
         List<Writable> ret = RecordConverter.toRecord(row);
-        if (appendLabel) ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
+        if (appendLabel)
+            ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
         return ret;
     }
 
@@ -355,12 +359,12 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> out = new ArrayList<>();
-        for(RecordMetaData meta : recordMetaDatas){
+        for (RecordMetaData meta : recordMetaDatas) {
             URI uri = meta.getURI();
             File f = new File(uri);
 
             List<Writable> next;
-            try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))){
+            try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))) {
                 next = record(uri, dis);
             }
             out.add(new org.datavec.api.records.impl.Record(next, meta));

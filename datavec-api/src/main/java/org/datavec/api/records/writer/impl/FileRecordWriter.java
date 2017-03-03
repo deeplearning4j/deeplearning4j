@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public  class FileRecordWriter implements RecordWriter {
+public class FileRecordWriter implements RecordWriter {
 
     public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
@@ -51,23 +51,22 @@ public  class FileRecordWriter implements RecordWriter {
 
     protected Configuration conf;
 
-    public FileRecordWriter() {
-    }
+    public FileRecordWriter() {}
 
     public FileRecordWriter(File path) throws FileNotFoundException {
-        this(path,false,DEFAULT_CHARSET);
+        this(path, false, DEFAULT_CHARSET);
     }
 
 
-    public FileRecordWriter(File path,boolean append) throws FileNotFoundException {
-        this(path,append,DEFAULT_CHARSET);
+    public FileRecordWriter(File path, boolean append) throws FileNotFoundException {
+        this(path, append, DEFAULT_CHARSET);
     }
 
-    public FileRecordWriter(File path, boolean append, Charset encoding) throws FileNotFoundException{
+    public FileRecordWriter(File path, boolean append, Charset encoding) throws FileNotFoundException {
         this.writeTo = path;
         this.append = append;
         this.encoding = encoding;
-        out = new DataOutputStream(new FileOutputStream(writeTo,append));
+        out = new DataOutputStream(new FileOutputStream(writeTo, append));
     }
 
 
@@ -84,7 +83,7 @@ public  class FileRecordWriter implements RecordWriter {
 
     @Override
     public void write(Collection<Writable> record) throws IOException {
-        if(!record.isEmpty()) {
+        if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);
         }
@@ -92,7 +91,7 @@ public  class FileRecordWriter implements RecordWriter {
 
     @Override
     public void close() {
-        if(out != null) {
+        if (out != null) {
             try {
                 out.flush();
                 out.close();
@@ -106,10 +105,10 @@ public  class FileRecordWriter implements RecordWriter {
     @Override
     public void setConf(Configuration conf) {
         this.conf = conf;
-        this.writeTo = new File(conf.get(PATH,"input.txt"));
-        append = conf.getBoolean(APPEND,true);
+        this.writeTo = new File(conf.get(PATH, "input.txt"));
+        append = conf.getBoolean(APPEND, true);
         try {
-            out = new DataOutputStream(new FileOutputStream(writeTo,append));
+            out = new DataOutputStream(new FileOutputStream(writeTo, append));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }

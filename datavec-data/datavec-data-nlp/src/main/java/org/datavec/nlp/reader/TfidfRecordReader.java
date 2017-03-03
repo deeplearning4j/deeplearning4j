@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class TfidfRecordReader extends FileRecordReader  {
+public class TfidfRecordReader extends FileRecordReader {
     private TfidfVectorizer tfidfVectorizer;
     private List<Record> records = new ArrayList<>();
     private Iterator<Record> recordIter;
@@ -47,14 +47,14 @@ public class TfidfRecordReader extends FileRecordReader  {
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-        initialize(new Configuration(),split);
+        initialize(new Configuration(), split);
     }
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-        super.initialize(conf,split);
+        super.initialize(conf, split);
         //train  a new one since it hasn't been specified
-        if(tfidfVectorizer == null) {
+        if (tfidfVectorizer == null) {
             tfidfVectorizer = new TfidfVectorizer();
             tfidfVectorizer.initialize(conf);
 
@@ -71,22 +71,21 @@ public class TfidfRecordReader extends FileRecordReader  {
             //cache the number of features used for each document
             numFeatures = ret.columns();
             recordIter = records.iterator();
-        }
-        else {
+        } else {
             records = new ArrayList<>();
 
             //the record reader has 2 phases, we are skipping the
             //document frequency phase and just using the super() to get the file contents
             //and pass it to the already existing vectorizer.
-            while(super.hasNext()) {
+            while (super.hasNext()) {
                 Record fileContents = super.nextRecord();
                 INDArray transform = tfidfVectorizer.transform(fileContents);
 
                 org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
-                        new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
-                        new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
+                                new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
+                                new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
 
-                if(appendLabel)
+                if (appendLabel)
                     record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
 
                 records.add(record);
@@ -100,13 +99,14 @@ public class TfidfRecordReader extends FileRecordReader  {
 
     @Override
     public void reset() {
-        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
+        if (inputSplit == null)
+            throw new UnsupportedOperationException("Cannot reset without first initializing");
         recordIter = records.iterator();
     }
 
     @Override
-    public Record nextRecord(){
-        if(recordIter == null)
+    public Record nextRecord() {
+        if (recordIter == null)
             return super.nextRecord();
         return recordIter.next();
     }
@@ -119,7 +119,7 @@ public class TfidfRecordReader extends FileRecordReader  {
     @Override
     public boolean hasNext() {
         //we aren't done vectorizing yet
-        if(recordIter == null)
+        if (recordIter == null)
             return super.hasNext();
         return recordIter.hasNext();
     }
@@ -144,8 +144,9 @@ public class TfidfRecordReader extends FileRecordReader  {
     }
 
     public void setTfidfVectorizer(TfidfVectorizer tfidfVectorizer) {
-        if(initialized){
-            throw new IllegalArgumentException("Setting TfidfVectorizer after TfidfRecordReader initialization doesn't have an effect");
+        if (initialized) {
+            throw new IllegalArgumentException(
+                            "Setting TfidfVectorizer after TfidfRecordReader initialization doesn't have an effect");
         }
         this.tfidfVectorizer = tfidfVectorizer;
     }
@@ -154,11 +155,11 @@ public class TfidfRecordReader extends FileRecordReader  {
         return numFeatures;
     }
 
-    public void shuffle(){
+    public void shuffle() {
         this.shuffle(new Random());
     }
 
-    public void shuffle(Random random){
+    public void shuffle(Random random) {
         Collections.shuffle(this.records, random);
         this.reset();
     }
@@ -176,10 +177,10 @@ public class TfidfRecordReader extends FileRecordReader  {
             INDArray transform = tfidfVectorizer.transform(fileContents);
 
             org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
-                    new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
-                    new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
+                            new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
+                            new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
 
-            if(appendLabel)
+            if (appendLabel)
                 record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
             out.add(record);
         }

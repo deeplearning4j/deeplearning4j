@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +27,11 @@ import scala.Tuple3;
 /** A function to read files (assuming exactly 2 per input) from a PortableDataStream and combine the contents into a BytesPairWritable
  * @see DataVecSparkUtil#combineFilesForSequenceFile(JavaSparkContext, String, String, PathToKeyConverter, PathToKeyConverter)
  */
-public class MapToBytesPairWritableFunction implements PairFunction<Tuple2<String, Iterable<Tuple3<String, Integer, PortableDataStream>>>, Text, BytesPairWritable> {
+public class MapToBytesPairWritableFunction implements
+                PairFunction<Tuple2<String, Iterable<Tuple3<String, Integer, PortableDataStream>>>, Text, BytesPairWritable> {
     @Override
-    public Tuple2<Text, BytesPairWritable> call(Tuple2<String, Iterable<Tuple3<String, Integer, PortableDataStream>>> in) throws Exception {
+    public Tuple2<Text, BytesPairWritable> call(
+                    Tuple2<String, Iterable<Tuple3<String, Integer, PortableDataStream>>> in) throws Exception {
         byte[] first = null;
         byte[] second = null;
         String firstOrigPath = null;

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,10 +41,8 @@ public class TestGeoTransforms {
 
     @Test
     public void testCoordinatesDistanceTransform() throws Exception {
-        Schema schema = new Schema.Builder()
-                .addColumnString("point")
-                .addColumnString("mean")
-                .addColumnString("stddev").build();
+        Schema schema = new Schema.Builder().addColumnString("point").addColumnString("mean").addColumnString("stddev")
+                        .build();
 
         Transform transform = new CoordinatesDistanceTransform("dist", "point", "mean", "stddev", "\\|");
         transform.setInputSchema(schema);
@@ -52,12 +50,15 @@ public class TestGeoTransforms {
         Schema out = transform.transform(schema);
         assertEquals(4, out.numColumns());
         assertEquals(Arrays.asList("point", "mean", "stddev", "dist"), out.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.String, ColumnType.String, ColumnType.Double), out.getColumnTypes());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.String, ColumnType.String, ColumnType.Double),
+                        out.getColumnTypes());
 
-        assertEquals(Arrays.asList((Writable)new Text("-30"), new Text("20"), new Text("10"), new DoubleWritable(5.0)),
-                transform.map(Arrays.asList((Writable)new Text("-30"), new Text("20"), new Text("10"))));
-        assertEquals(Arrays.asList((Writable)new Text("50|40"), new Text("10|-20"), new Text("10|5"), new DoubleWritable(Math.sqrt(160))),
-                transform.map(Arrays.asList((Writable)new Text("50|40"), new Text("10|-20"), new Text("10|5"))));
+        assertEquals(Arrays.asList((Writable) new Text("-30"), new Text("20"), new Text("10"), new DoubleWritable(5.0)),
+                        transform.map(Arrays.asList((Writable) new Text("-30"), new Text("20"), new Text("10"))));
+        assertEquals(Arrays.asList((Writable) new Text("50|40"), new Text("10|-20"), new Text("10|5"),
+                        new DoubleWritable(Math.sqrt(160))),
+                        transform.map(Arrays.asList((Writable) new Text("50|40"), new Text("10|-20"),
+                                        new Text("10|5"))));
     }
 
     @Test
@@ -108,8 +109,8 @@ public class TestGeoTransforms {
         Schema schema = new Schema.Builder().addColumnString("column").build();
         LocationType[] locationTypes = LocationType.values();
         String in = "128.101.101.101";
-        String[] locations = { "Minneapolis", "5037649", "North America", "6255149",
-            "United States", "6252001",  "44.9733:-93.2323", "55414", "Minnesota", "5037779" };
+        String[] locations = {"Minneapolis", "5037649", "North America", "6255149", "United States", "6252001",
+                        "44.9733:-93.2323", "55414", "Minnesota", "5037779"};
 
         for (int i = 0; i < locationTypes.length; i++) {
             LocationType locationType = locationTypes[i];

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,7 @@ import java.util.List;
  *
  */
 @AllArgsConstructor
-public class StringToWritablesFunction implements Function<String,List<Writable>> {
+public class StringToWritablesFunction implements Function<String, List<Writable>> {
 
     private RecordReader recordReader;
 
@@ -39,7 +39,8 @@ public class StringToWritablesFunction implements Function<String,List<Writable>
     public List<Writable> call(String s) throws Exception {
         recordReader.initialize(new StringSplit(s));
         Collection<Writable> next = recordReader.next();
-        if(next instanceof List ) return (List<Writable>)next;
+        if (next instanceof List)
+            return (List<Writable>) next;
         return new ArrayList<>(next);
     }
 }

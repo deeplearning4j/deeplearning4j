@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,13 +29,19 @@ public class IntWritable implements WritableComparable {
 
     public IntWritable() {}
 
-    public IntWritable(@JsonProperty("value") int value) { set(value); }
+    public IntWritable(@JsonProperty("value") int value) {
+        set(value);
+    }
 
     /** Set the value of this IntWritable. */
-    public void set(int value) { this.value = value; }
+    public void set(int value) {
+        this.value = value;
+    }
 
     /** Return the value of this IntWritable. */
-    public int get() { return value; }
+    public int get() {
+        return value;
+    }
 
     public void readFields(DataInput in) throws IOException {
         value = in.readInt();
@@ -49,7 +55,7 @@ public class IntWritable implements WritableComparable {
     public boolean equals(Object o) {
         if (!(o instanceof IntWritable))
             return false;
-        IntWritable other = (IntWritable)o;
+        IntWritable other = (IntWritable) o;
         return this.value == other.value;
     }
 
@@ -60,8 +66,8 @@ public class IntWritable implements WritableComparable {
     /** Compares two IntWritables. */
     public int compareTo(Object o) {
         int thisValue = this.value;
-        int thatValue = ((IntWritable)o).value;
-        return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+        int thatValue = ((IntWritable) o).value;
+        return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
     }
 
     public String toString() {
@@ -74,35 +80,34 @@ public class IntWritable implements WritableComparable {
             super(IntWritable.class);
         }
 
-        public int compare(byte[] b1, int s1, int l1,
-                           byte[] b2, int s2, int l2) {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
             int thisValue = readInt(b1, s1);
             int thatValue = readInt(b2, s2);
-            return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
+            return (thisValue < thatValue ? -1 : (thisValue == thatValue ? 0 : 1));
         }
     }
 
-    static {                                        // register this comparator
+    static { // register this comparator
         WritableComparator.define(IntWritable.class, new Comparator());
     }
 
     @Override
-    public double toDouble(){
+    public double toDouble() {
         return value;
     }
 
     @Override
-    public float toFloat(){
+    public float toFloat() {
         return value;
     }
 
     @Override
-    public int toInt(){
+    public int toInt() {
         return value;
     }
 
     @Override
-    public long toLong(){
+    public long toLong() {
         return value;
     }
 }

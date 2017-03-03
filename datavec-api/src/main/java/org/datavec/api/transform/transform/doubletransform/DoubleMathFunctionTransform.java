@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,14 +31,14 @@ public class DoubleMathFunctionTransform extends BaseDoubleTransform {
 
     private final MathFunction mathFunction;
 
-    public DoubleMathFunctionTransform(@JsonProperty("columnName") String columnName, MathFunction mathFunction){
+    public DoubleMathFunctionTransform(@JsonProperty("columnName") String columnName, MathFunction mathFunction) {
         super(columnName);
         this.mathFunction = mathFunction;
     }
 
     @Override
     public Writable map(Writable w) {
-        switch (mathFunction){
+        switch (mathFunction) {
             case ABS:
                 return new DoubleWritable(Math.abs(w.toDouble()));
             case ACOS:
@@ -80,8 +80,8 @@ public class DoubleMathFunctionTransform extends BaseDoubleTransform {
 
     @Override
     public Object map(Object input) {
-        double d = ((Number)input).doubleValue();
-        switch (mathFunction){
+        double d = ((Number) input).doubleValue();
+        switch (mathFunction) {
             case ABS:
                 return Math.abs(d);
             case ACOS:

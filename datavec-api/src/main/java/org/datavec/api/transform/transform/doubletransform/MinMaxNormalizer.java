@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,8 +43,9 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
         this(columnName, min, max, 0, 1);
     }
 
-    public MinMaxNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("min") double min, @JsonProperty("max") double max,
-                            @JsonProperty("newMin") double newMin, @JsonProperty("newMax") double newMax) {
+    public MinMaxNormalizer(@JsonProperty("columnName") String columnName, @JsonProperty("min") double min,
+                    @JsonProperty("max") double max, @JsonProperty("newMin") double newMin,
+                    @JsonProperty("newMax") double newMax) {
         super(columnName);
         this.min = min;
         this.max = max;
@@ -56,7 +57,8 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
     @Override
     public Writable map(Writable writable) {
         double val = writable.toDouble();
-        if (Double.isNaN(val)) return new DoubleWritable(0);
+        if (Double.isNaN(val))
+            return new DoubleWritable(0);
         return new DoubleWritable(ratio * (val - min) + newMin);
     }
 
@@ -81,7 +83,8 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
     public Object map(Object input) {
         Number n = (Number) input;
         double val = n.doubleValue();
-        if (Double.isNaN(val)) return new DoubleWritable(0);
+        if (Double.isNaN(val))
+            return new DoubleWritable(0);
         return ratio * (val - min) + newMin;
     }
 }

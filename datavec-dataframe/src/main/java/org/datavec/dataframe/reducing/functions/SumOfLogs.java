@@ -10,12 +10,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class SumOfLogs extends SummaryFunction {
 
-  public SumOfLogs(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public SumOfLogs(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.sumOfLogs;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.sumOfLogs;
+    }
 }

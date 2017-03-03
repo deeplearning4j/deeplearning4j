@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ import java.io.IOException;
 public class WavInputFormat extends BaseInputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {
-       return createReader(split);
+        return createReader(split);
     }
 
     @Override

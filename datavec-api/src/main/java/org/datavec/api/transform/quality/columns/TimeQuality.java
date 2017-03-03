@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,20 +28,17 @@ public class TimeQuality extends ColumnQuality {
         super(countValid, countInvalid, countMissing, countTotal);
     }
 
-    public TimeQuality(){
-        this(0,0,0,0);
+    public TimeQuality() {
+        this(0, 0, 0, 0);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "TimeQuality(" + super.toString() + ")";
     }
 
-    public TimeQuality add(TimeQuality other){
-        return new TimeQuality(
-                countValid + other.countValid,
-                countInvalid + other.countInvalid,
-                countMissing + other.countMissing,
-                countTotal + other.countTotal);
+    public TimeQuality add(TimeQuality other) {
+        return new TimeQuality(countValid + other.countValid, countInvalid + other.countInvalid,
+                        countMissing + other.countMissing, countTotal + other.countTotal);
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,8 +38,7 @@ public class WritableComparator implements RawComparator {
     private static HashMap<Class, WritableComparator> comparators = new HashMap<>(); // registry
 
     /** Get a comparator for a {@link WritableComparable} implementation. */
-    public static synchronized
-    WritableComparator get(Class<? extends WritableComparable> c) {
+    public static synchronized WritableComparator get(Class<? extends WritableComparable> c) {
         WritableComparator comparator = comparators.get(c);
         if (comparator == null) {
             // force the static initializers to run
@@ -72,8 +71,7 @@ public class WritableComparator implements RawComparator {
 
     /** Register an optimized comparator for a {@link WritableComparable}
      * implementation. */
-    public static synchronized void define(Class c,
-                                           WritableComparator comparator) {
+    public static synchronized void define(Class c, WritableComparator comparator) {
         comparators.put(c, comparator);
     }
 
@@ -88,8 +86,7 @@ public class WritableComparator implements RawComparator {
         this(keyClass, false);
     }
 
-    protected WritableComparator(Class<? extends WritableComparable> keyClass,
-                                 boolean createInstances) {
+    protected WritableComparator(Class<? extends WritableComparable> keyClass, boolean createInstances) {
         this.keyClass = keyClass;
         if (createInstances) {
             key1 = newKey();
@@ -102,7 +99,9 @@ public class WritableComparator implements RawComparator {
     }
 
     /** Returns the WritableComparable implementation class. */
-    public Class<? extends WritableComparable> getKeyClass() { return keyClass; }
+    public Class<? extends WritableComparable> getKeyClass() {
+        return keyClass;
+    }
 
     /** Construct a new {@link WritableComparable} instance. */
     public WritableComparable newKey() {
@@ -118,17 +117,17 @@ public class WritableComparator implements RawComparator {
      */
     public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
         try {
-            buffer.reset(b1, s1, l1);                   // parse key1
+            buffer.reset(b1, s1, l1); // parse key1
             key1.readFields(buffer);
 
-            buffer.reset(b2, s2, l2);                   // parse key2
+            buffer.reset(b2, s2, l2); // parse key2
             key2.readFields(buffer);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        return compare(key1, key2);                   // compare them
+        return compare(key1, key2); // compare them
     }
 
     /** Compare two WritableComparables.
@@ -141,12 +140,11 @@ public class WritableComparator implements RawComparator {
     }
 
     public int compare(Object a, Object b) {
-        return compare((WritableComparable)a, (WritableComparable)b);
+        return compare((WritableComparable) a, (WritableComparable) b);
     }
 
     /** Lexicographic order of binary data. */
-    public static int compareBytes(byte[] b1, int s1, int l1,
-                                   byte[] b2, int s2, int l2) {
+    public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
         int end1 = s1 + l1;
         int end2 = s2 + l2;
         for (int i = s1, j = s2; i < end1 && j < end2; i++, j++) {
@@ -163,7 +161,7 @@ public class WritableComparator implements RawComparator {
     public static int hashBytes(byte[] bytes, int offset, int length) {
         int hash = 1;
         for (int i = offset; i < offset + length; i++)
-            hash = (31 * hash) + (int)bytes[i];
+            hash = (31 * hash) + (int) bytes[i];
         return hash;
     }
 
@@ -174,16 +172,13 @@ public class WritableComparator implements RawComparator {
 
     /** Parse an unsigned short from a byte array. */
     public static int readUnsignedShort(byte[] bytes, int start) {
-        return (((bytes[start]   & 0xff) <<  8) +
-                ((bytes[start+1] & 0xff)));
+        return (((bytes[start] & 0xff) << 8) + ((bytes[start + 1] & 0xff)));
     }
 
     /** Parse an integer from a byte array. */
     public static int readInt(byte[] bytes, int start) {
-        return (((bytes[start  ] & 0xff) << 24) +
-                ((bytes[start+1] & 0xff) << 16) +
-                ((bytes[start+2] & 0xff) <<  8) +
-                ((bytes[start+3] & 0xff)));
+        return (((bytes[start] & 0xff) << 24) + ((bytes[start + 1] & 0xff) << 16) + ((bytes[start + 2] & 0xff) << 8)
+                        + ((bytes[start + 3] & 0xff)));
 
     }
 
@@ -194,8 +189,7 @@ public class WritableComparator implements RawComparator {
 
     /** Parse a long from a byte array. */
     public static long readLong(byte[] bytes, int start) {
-        return ((long)(readInt(bytes, start)) << 32) +
-                (readInt(bytes, start+4) & 0xFFFFFFFFL);
+        return ((long) (readInt(bytes, start)) << 32) + (readInt(bytes, start + 4) & 0xFFFFFFFFL);
     }
 
     /** Parse a double from a byte array. */
@@ -217,13 +211,12 @@ public class WritableComparator implements RawComparator {
         }
         boolean isNegative = (len < -120);
         len = isNegative ? -(len + 120) : -(len + 112);
-        if (start+1+len>bytes.length)
-            throw new IOException(
-                    "Not enough number of bytes for a zero-compressed integer");
+        if (start + 1 + len > bytes.length)
+            throw new IOException("Not enough number of bytes for a zero-compressed integer");
         long i = 0;
         for (int idx = 0; idx < len; idx++) {
             i = i << 8;
-            i = i | (bytes[start+1+idx] & 0xFF);
+            i = i | (bytes[start + 1 + idx] & 0xFF);
         }
         return (isNegative ? (~i) : i);
     }

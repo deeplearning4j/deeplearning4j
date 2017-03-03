@@ -9,12 +9,12 @@ import org.datavec.dataframe.reducing.NumericReduceUtils;
  */
 public class FirstQuartile extends SummaryFunction {
 
-  public FirstQuartile(Table original, String summarizedColumnName) {
-    super(original, summarizedColumnName);
-  }
+    public FirstQuartile(Table original, String summarizedColumnName) {
+        super(original, summarizedColumnName);
+    }
 
-  @Override
-  public NumericReduceFunction function() {
-    return NumericReduceUtils.quartile1;
-  }
+    @Override
+    public NumericReduceFunction function() {
+        return NumericReduceUtils.quartile1;
+    }
 }

@@ -15,17 +15,17 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsShorterThan extends ColumnFilter {
 
-  private int length;
+    private int length;
 
-  public TextIsShorterThan(ColumnReference reference, int length) {
-    super(reference);
-    this.length = length;
-  }
+    public TextIsShorterThan(ColumnReference reference, int length) {
+        super(reference);
+        this.length = length;
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isShorterThan(length);
-  }
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isShorterThan(length);
+    }
 }

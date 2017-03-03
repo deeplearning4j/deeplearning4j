@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,26 +49,25 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  */
 public class NativeImageLoader extends BaseImageLoader {
 
-    public static final String[] ALLOWED_FORMATS =
-            {"bmp", "gif", "jpg", "jpeg", "jp2", "pbm", "pgm", "ppm", "pnm", "png", "tif", "tiff", "exr", "webp",
-             "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM", "PNG", "TIF", "TIFF", "EXR", "WEBP"};
+    public static final String[] ALLOWED_FORMATS = {"bmp", "gif", "jpg", "jpeg", "jp2", "pbm", "pgm", "ppm", "pnm",
+                    "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
+                    "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
     OpenCVFrameConverter.ToMat converter = null;
 
     /**
      * Loads images with no scaling or conversion.
      */
-    public NativeImageLoader() {
-    }
+    public NativeImageLoader() {}
 
     /**
      * Instantiate an image with the given
      * height and width
      * @param height the height to load*
      * @param width  the width to load
-
+    
      */
-    public NativeImageLoader(int height,int width) {
+    public NativeImageLoader(int height, int width) {
         this.height = height;
         this.width = width;
     }
@@ -152,10 +151,17 @@ public class NativeImageLoader extends BaseImageLoader {
         } else if (pix.d() < 8) {
             PIX pix2 = null;
             switch (pix.d()) {
-                case 1: pix2 = pixConvert1To8(null, pix, (byte)0, (byte)255); break;
-                case 2: pix2 = pixConvert2To8(pix, (byte)0, (byte)85, (byte)170, (byte)255, 0); break;
-                case 4: pix2 = pixConvert4To8(pix, 0); break;
-                default: assert false;
+                case 1:
+                    pix2 = pixConvert1To8(null, pix, (byte) 0, (byte) 255);
+                    break;
+                case 2:
+                    pix2 = pixConvert2To8(pix, (byte) 0, (byte) 85, (byte) 170, (byte) 255, 0);
+                    break;
+                case 4:
+                    pix2 = pixConvert4To8(pix, 0);
+                    break;
+                default:
+                    assert false;
             }
             tempPix = pix = pix2;
         }
@@ -165,10 +171,8 @@ public class NativeImageLoader extends BaseImageLoader {
         Mat mat = new Mat(height, width, CV_8UC(channels), pix.data(), 4 * pix.wpl());
         Mat mat2 = new Mat(height, width, CV_8UC(channels));
         // swap bytes if needed
-        int[] swap = { 0,3, 1,2, 2,1, 3,0 },
-              copy = { 0,0, 1,1, 2,2, 3,3 },
-              fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)
-                     ? swap : copy;
+        int[] swap = {0, 3, 1, 2, 2, 1, 3, 0}, copy = {0, 0, 1, 1, 2, 2, 3, 3},
+                        fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN) ? swap : copy;
         mixChannels(mat, 1, mat2, 1, fromTo, fromTo.length / 2);
         if (tempPix != null) {
             pixDestroy(tempPix);
@@ -219,26 +223,37 @@ public class NativeImageLoader extends BaseImageLoader {
             switch (image.channels()) {
                 case 1:
                     switch (channels) {
-                        case 3: code = CV_GRAY2BGR; break;
-                        case 4: code = CV_GRAY2RGBA; break;
+                        case 3:
+                            code = CV_GRAY2BGR;
+                            break;
+                        case 4:
+                            code = CV_GRAY2RGBA;
+                            break;
                     }
                     break;
                 case 3:
                     switch (channels) {
-                        case 1: code = CV_BGR2GRAY; break;
-                        case 4: code = CV_BGR2RGBA; break;
+                        case 1:
+                            code = CV_BGR2GRAY;
+                            break;
+                        case 4:
+                            code = CV_BGR2RGBA;
+                            break;
                     }
                     break;
                 case 4:
                     switch (channels) {
-                        case 1: code = CV_RGBA2GRAY; break;
-                        case 3: code = CV_RGBA2BGR; break;
+                        case 1:
+                            code = CV_RGBA2GRAY;
+                            break;
+                        case 3:
+                            code = CV_RGBA2BGR;
+                            break;
                     }
                     break;
             }
             if (code < 0) {
-                throw new IOException("Cannot convert from " + image.channels()
-                                                    + " to " + channels + " channels.");
+                throw new IOException("Cannot convert from " + image.channels() + " to " + channels + " channels.");
             }
             Mat newimage = new Mat();
             cvtColor(image, newimage, code);
@@ -258,10 +273,10 @@ public class NativeImageLoader extends BaseImageLoader {
         int[] stride = ret.stride();
         boolean done = false;
         if (pointer instanceof FloatPointer) {
-            FloatIndexer retidx = FloatIndexer.create((FloatPointer)pointer,
-                    new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]} );
+            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pointer, new long[] {channels, rows, cols},
+                            new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
-                UByteIndexer ubyteidx = (UByteIndexer)idx;
+                UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -271,7 +286,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof UShortIndexer) {
-                UShortIndexer ushortidx = (UShortIndexer)idx;
+                UShortIndexer ushortidx = (UShortIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -281,7 +296,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof IntIndexer) {
-                IntIndexer intidx = (IntIndexer)idx;
+                IntIndexer intidx = (IntIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -291,7 +306,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof FloatIndexer) {
-                FloatIndexer floatidx = (FloatIndexer)idx;
+                FloatIndexer floatidx = (FloatIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -302,10 +317,10 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             }
         } else if (pointer instanceof DoublePointer) {
-            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer)pointer,
-                    new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]} );
+            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pointer, new long[] {channels, rows, cols},
+                            new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
-                UByteIndexer ubyteidx = (UByteIndexer)idx;
+                UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -315,7 +330,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof UShortIndexer) {
-                UShortIndexer ushortidx = (UShortIndexer)idx;
+                UShortIndexer ushortidx = (UShortIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -325,7 +340,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof IntIndexer) {
-                IntIndexer intidx = (IntIndexer)idx;
+                IntIndexer intidx = (IntIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -335,7 +350,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             } else if (idx instanceof FloatIndexer) {
-                FloatIndexer floatidx = (FloatIndexer)idx;
+                FloatIndexer floatidx = (FloatIndexer) idx;
                 for (int k = 0; k < channels; k++) {
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
@@ -361,7 +376,7 @@ public class NativeImageLoader extends BaseImageLoader {
         }
         image.data(); // dummy call to make sure it does not get deallocated prematurely
         Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
-        return ret.reshape(ArrayUtil.combine(new int[]{1},ret.shape()));
+        return ret.reshape(ArrayUtil.combine(new int[] {1}, ret.shape()));
     }
 
     // TODO build flexibility on where to crop the image

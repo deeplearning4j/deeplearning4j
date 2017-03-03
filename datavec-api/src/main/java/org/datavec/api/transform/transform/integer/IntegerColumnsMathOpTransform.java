@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,8 +50,8 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
      * @param mathOp        Mathematical operation. Only Add/Subtract/Multiply/Divide/Modulus is allowed here
      * @param columns       Columns to use in the mathematical operation
      */
-    public IntegerColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName, @JsonProperty("mathOp") MathOp mathOp,
-                                         @JsonProperty("columns") String... columns) {
+    public IntegerColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
@@ -65,13 +65,15 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 int sum = 0;
-                for (Writable w : input) sum += w.toInt();
+                for (Writable w : input)
+                    sum += w.toInt();
                 return new IntWritable(sum);
             case Subtract:
                 return new IntWritable(input[0].toInt() - input[1].toInt());
             case Multiply:
                 int product = 1;
-                for (Writable w : input) product *= w.toInt();
+                for (Writable w : input)
+                    product *= w.toInt();
                 return new IntWritable(product);
             case Divide:
                 return new IntWritable(input[0].toInt() / input[1].toInt());
@@ -82,13 +84,14 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
     @Override
-    public String toString(){
-        return "IntegerColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
+    public String toString() {
+        return "IntegerColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns="
+                        + Arrays.toString(columns) + ")";
     }
 
     /**
@@ -104,13 +107,15 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         switch (mathOp) {
             case Add:
                 int sum = 0;
-                for (Integer w : list) sum += w;
+                for (Integer w : list)
+                    sum += w;
                 return sum;
             case Subtract:
                 return new IntWritable(list.get(0) - list.get(1));
             case Multiply:
                 int product = 1;
-                for (Integer w : list) product *= w;
+                for (Integer w : list)
+                    product *= w;
                 return product;
             case Divide:
                 return list.get(0) / list.get(1);
@@ -121,7 +126,7 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
             default:
-                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+                throw new RuntimeException("Invalid mathOp: " + mathOp); //Should never happen
         }
     }
 
@@ -134,7 +139,7 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     public Object mapSequence(Object sequence) {
         List<List<Integer>> seq = (List<List<Integer>>) sequence;
         List<Integer> ret = new ArrayList<>();
-        for(List<Integer> step : seq)
+        for (List<Integer> step : seq)
             ret.add((Integer) map(step));
         return ret;
     }

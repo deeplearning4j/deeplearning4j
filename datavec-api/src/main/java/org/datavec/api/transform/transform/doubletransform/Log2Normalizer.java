@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,10 +40,11 @@ public class Log2Normalizer extends BaseDoubleTransform {
     protected final double scalingFactor;
 
     public Log2Normalizer(@JsonProperty("columnName") String columnName, @JsonProperty("columnMean") double columnMean,
-                          @JsonProperty("columnMin") double columnMin, @JsonProperty("scalingFactor") double scalingFactor) {
+                    @JsonProperty("columnMin") double columnMin, @JsonProperty("scalingFactor") double scalingFactor) {
         super(columnName);
         if (Double.isNaN(columnMean) || Double.isInfinite(columnMean))
-            throw new IllegalArgumentException("Invalid input: column mean cannot be null/infinite (is: " + columnMean + ")");
+            throw new IllegalArgumentException(
+                            "Invalid input: column mean cannot be null/infinite (is: " + columnMean + ")");
         this.columnMean = columnMean;
         this.columnMin = columnMin;
         this.scalingFactor = scalingFactor;
@@ -51,7 +52,8 @@ public class Log2Normalizer extends BaseDoubleTransform {
 
     public Writable map(Writable writable) {
         double val = writable.toDouble();
-        if (Double.isNaN(val)) return new DoubleWritable(0);
+        if (Double.isNaN(val))
+            return new DoubleWritable(0);
         return new DoubleWritable(normMean(val));
     }
 
@@ -70,7 +72,8 @@ public class Log2Normalizer extends BaseDoubleTransform {
 
     @Override
     public String toString() {
-        return "Log2Normalizer(columnMean=" + columnMean + ",columnMin=" + columnMin + ",scalingFactor=" + scalingFactor + ")";
+        return "Log2Normalizer(columnMean=" + columnMean + ",columnMin=" + columnMin + ",scalingFactor=" + scalingFactor
+                        + ")";
     }
 
     /**
@@ -84,7 +87,8 @@ public class Log2Normalizer extends BaseDoubleTransform {
     public Object map(Object input) {
         Number n = (Number) input;
         double val = n.doubleValue();
-        if (Double.isNaN(val)) return new DoubleWritable(0);
+        if (Double.isNaN(val))
+            return new DoubleWritable(0);
         return normMean(val);
     }
 

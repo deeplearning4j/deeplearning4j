@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,15 +25,15 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 /**
  * Created by Alex on 6/03/2016.
  */
-public class FilterWritablesBySchemaFunction implements Function<Writable,Boolean> {
+public class FilterWritablesBySchemaFunction implements Function<Writable, Boolean> {
 
     private final ColumnMetaData meta;
-    private final boolean keepValid;    //If true: keep valid. If false: keep invalid
-    private final boolean excludeMissing;   //If true: remove/exclude any
+    private final boolean keepValid; //If true: keep valid. If false: keep invalid
+    private final boolean excludeMissing; //If true: remove/exclude any
 
 
     public FilterWritablesBySchemaFunction(ColumnMetaData meta, boolean keepValid) {
-        this(meta,keepValid,false);
+        this(meta, keepValid, false);
     }
 
     /**
@@ -51,8 +51,12 @@ public class FilterWritablesBySchemaFunction implements Function<Writable,Boolea
     @Override
     public Boolean call(Writable v1) throws Exception {
         boolean valid = meta.isValid(v1);
-        if(excludeMissing && (v1 instanceof NullWritable || v1 instanceof Text && (v1.toString() == null || v1.toString().isEmpty()))) return false;    //Remove (spark)
-        if(keepValid) return valid; //Spark: return true to keep
-        else return !valid;
+        if (excludeMissing && (v1 instanceof NullWritable
+                        || v1 instanceof Text && (v1.toString() == null || v1.toString().isEmpty())))
+            return false; //Remove (spark)
+        if (keepValid)
+            return valid; //Spark: return true to keep
+        else
+            return !valid;
     }
 }

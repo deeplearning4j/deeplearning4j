@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,13 +43,13 @@ public class TestCollectionRecordReaders {
         List<List<List<Writable>>> listOfSequences = new ArrayList<>();
 
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable)new IntWritable(0), new IntWritable(1)));
-        sequence1.add(Arrays.asList((Writable)new IntWritable(2), new IntWritable(3)));
+        sequence1.add(Arrays.asList((Writable) new IntWritable(0), new IntWritable(1)));
+        sequence1.add(Arrays.asList((Writable) new IntWritable(2), new IntWritable(3)));
         listOfSequences.add(sequence1);
 
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable)new IntWritable(4), new IntWritable(5)));
-        sequence2.add(Arrays.asList((Writable)new IntWritable(6), new IntWritable(7)));
+        sequence2.add(Arrays.asList((Writable) new IntWritable(4), new IntWritable(5)));
+        sequence2.add(Arrays.asList((Writable) new IntWritable(6), new IntWritable(7)));
         listOfSequences.add(sequence2);
 
         SequenceRecordReader seqRR = new CollectionSequenceRecordReader(listOfSequences);
@@ -70,7 +70,7 @@ public class TestCollectionRecordReaders {
         List<SequenceRecord> seq = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
 
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             SequenceRecord r = seqRR.nextSequence();
             out2.add(r.getSequenceRecord());
             seq.add(r);

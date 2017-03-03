@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,20 +18,23 @@ package org.datavec.api.berkeley;
 
 
 public interface Factory<T> {
-	T newInstance(Object... args);
-	public static class DefaultFactory<T> implements Factory<T> {
-		private final Class c;
-		public DefaultFactory(Class c) {
-      this.c = c;
-		}
-		public T newInstance(Object... args) {
-      try {
-        return (T) c.newInstance();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      return null;
+    T newInstance(Object... args);
+
+    public static class DefaultFactory<T> implements Factory<T> {
+        private final Class c;
+
+        public DefaultFactory(Class c) {
+            this.c = c;
+        }
+
+        public T newInstance(Object... args) {
+            try {
+                return (T) c.newInstance();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
-	}
-  
+
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,10 +30,11 @@ import java.util.List;
  * sequence data into a {@code List<List<Writable>>}
  * @author Alex Black
  */
-public class SequenceRecordReaderFunction implements Function<Tuple2<String,PortableDataStream>,List<List<Writable>>> {
+public class SequenceRecordReaderFunction
+                implements Function<Tuple2<String, PortableDataStream>, List<List<Writable>>> {
     protected SequenceRecordReader sequenceRecordReader;
 
-    public SequenceRecordReaderFunction(SequenceRecordReader sequenceRecordReader){
+    public SequenceRecordReaderFunction(SequenceRecordReader sequenceRecordReader) {
         this.sequenceRecordReader = sequenceRecordReader;
     }
 
@@ -41,8 +42,8 @@ public class SequenceRecordReaderFunction implements Function<Tuple2<String,Port
     public List<List<Writable>> call(Tuple2<String, PortableDataStream> value) throws Exception {
         URI uri = new URI(value._1());
         PortableDataStream ds = value._2();
-        try(DataInputStream dis = ds.open()){
-            return sequenceRecordReader.sequenceRecord(uri,dis);
+        try (DataInputStream dis = ds.open()) {
+            return sequenceRecordReader.sequenceRecord(uri, dis);
         }
     }
 }

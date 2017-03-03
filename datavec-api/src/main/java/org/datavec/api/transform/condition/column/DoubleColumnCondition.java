@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,11 +58,12 @@ public class DoubleColumnCondition extends BaseColumnCondition {
      * @param op                    Operation (<, >=, !=, etc)
      * @param value                 Value to use in the condition
      */
-    public DoubleColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
-                                 ConditionOp op, double value) {
+    public DoubleColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    double value) {
         super(column, sequenceConditionMode);
         if (op == ConditionOp.InSet || op == ConditionOp.NotInSet) {
-            throw new IllegalArgumentException("Invalid condition op: cannot use this constructor with InSet or NotInSet ops");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: cannot use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
         this.value = value;
@@ -89,11 +90,12 @@ public class DoubleColumnCondition extends BaseColumnCondition {
      * @param op                    Operation. Must be either ConditionOp.InSet, ConditionOp.NotInSet
      * @param set                   Set to use in the condition
      */
-    public DoubleColumnCondition(String column, SequenceConditionMode sequenceConditionMode,
-                                 ConditionOp op, Set<Double> set) {
+    public DoubleColumnCondition(String column, SequenceConditionMode sequenceConditionMode, ConditionOp op,
+                    Set<Double> set) {
         super(column, sequenceConditionMode);
         if (op != ConditionOp.InSet && op != ConditionOp.NotInSet) {
-            throw new IllegalArgumentException("Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
+            throw new IllegalArgumentException(
+                            "Invalid condition op: can ONLY use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
         this.value = null;
@@ -102,7 +104,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
 
     //Private constructor for Jackson deserialization only
     private DoubleColumnCondition(@JsonProperty("columnName") String columnName, @JsonProperty("op") ConditionOp op,
-                                  @JsonProperty("value") double value, @JsonProperty("set") Set<Double> set) {
+                    @JsonProperty("value") double value, @JsonProperty("set") Set<Double> set) {
         super(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
         this.op = op;
         this.value = (set == null ? value : null);
@@ -136,8 +138,8 @@ public class DoubleColumnCondition extends BaseColumnCondition {
 
     @Override
     public String toString() {
-        return "DoubleColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
-                (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+        return "DoubleColumnCondition(columnName=\"" + columnName + "\"," + op + ","
+                        + (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
 
     /**

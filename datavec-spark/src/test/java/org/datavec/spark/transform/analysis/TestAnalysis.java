@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,25 +41,25 @@ public class TestAnalysis extends BaseSparkTest {
     @Test
     public void TestAnalysisBasic() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("intCol")
-                .addColumnDouble("doubleCol")
-                .addColumnTime("timeCol", DateTimeZone.UTC)
-                .addColumnCategorical("catCol", "A", "B")
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("intCol").addColumnDouble("doubleCol")
+                        .addColumnTime("timeCol", DateTimeZone.UTC).addColumnCategorical("catCol", "A", "B").build();
 
         List<List<Writable>> data = new ArrayList<>();
-        data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000), new Text("A")));
-        data.add(Arrays.asList((Writable) new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000), new Text("A")));
-        data.add(Arrays.asList((Writable) new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000), new Text("A")));
-        data.add(Arrays.asList((Writable) new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000), new Text("B")));
+        data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000),
+                        new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000),
+                        new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000),
+                        new Text("A")));
+        data.add(Arrays.asList((Writable) new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000),
+                        new Text("B")));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
         String daString = da.toString();
 
-//        System.out.println(da);
+        //        System.out.println(da);
 
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
         assertEquals(4, ca.size());
@@ -129,9 +129,11 @@ public class TestAnalysis extends BaseSparkTest {
         }
 
         List<Double> l2d = new ArrayList<>();
-        for (Integer i : l2) l2d.add(i.doubleValue());
+        for (Integer i : l2)
+            l2d.add(i.doubleValue());
         List<Double> l3d = new ArrayList<>();
-        for (Long l : l3) l3d.add(l.doubleValue());
+        for (Long l : l3)
+            l3d.add(l.doubleValue());
 
 
         StatCounter sc1 = sc.parallelizeDoubles(l1).stats();
@@ -147,11 +149,7 @@ public class TestAnalysis extends BaseSparkTest {
             data.add(l);
         }
 
-        Schema schema = new Schema.Builder()
-                .addColumnDouble("d")
-                .addColumnInteger("i")
-                .addColumnLong("l")
-                .build();
+        Schema schema = new Schema.Builder().addColumnDouble("d").addColumnInteger("i").addColumnLong("l").build();
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
@@ -174,7 +172,7 @@ public class TestAnalysis extends BaseSparkTest {
 
 
     @Test
-    public void testSampleMostFrequent(){
+    public void testSampleMostFrequent() {
 
         List<List<Writable>> toParallelize = new ArrayList<>();
         toParallelize.add(Arrays.<Writable>asList(new Text("a"), new Text("MostCommon")));
@@ -196,18 +194,16 @@ public class TestAnalysis extends BaseSparkTest {
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(toParallelize);
 
-        Schema schema = new Schema.Builder()
-                .addColumnsString("irrelevant","column")
-                .build();
+        Schema schema = new Schema.Builder().addColumnsString("irrelevant", "column").build();
 
-        Map<Writable,Long> map = AnalyzeSpark.sampleMostFrequentFromColumn(3, "column", schema, rdd);
+        Map<Writable, Long> map = AnalyzeSpark.sampleMostFrequentFromColumn(3, "column", schema, rdd);
 
-//        System.out.println(map);
+        //        System.out.println(map);
 
-        assertEquals(3,map.size());
-        assertEquals(4L, (long)map.get(new Text("MostCommon")));
-        assertEquals(3L, (long)map.get(new Text("SecondMostCommon")));
-        assertEquals(2L, (long)map.get(new Text("ThirdMostCommon")));
+        assertEquals(3, map.size());
+        assertEquals(4L, (long) map.get(new Text("MostCommon")));
+        assertEquals(3L, (long) map.get(new Text("SecondMostCommon")));
+        assertEquals(2L, (long) map.get(new Text("ThirdMostCommon")));
     }
 
 }

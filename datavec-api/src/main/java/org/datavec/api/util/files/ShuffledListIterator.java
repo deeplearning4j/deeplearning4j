@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,8 +32,8 @@ public class ShuffledListIterator<T> implements Iterator<T> {
     private final int[] order;
     private int currentPosition = 0;
 
-    public ShuffledListIterator(List<T> list, int[] order){
-        if(order != null && list.size() != order.length){
+    public ShuffledListIterator(List<T> list, int[] order) {
+        if (order != null && list.size() != order.length) {
             throw new IllegalArgumentException("Order array and list sizes differ");
         }
         this.list = list;
@@ -47,7 +47,7 @@ public class ShuffledListIterator<T> implements Iterator<T> {
 
     @Override
     public T next() {
-        if(!hasNext()){
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 

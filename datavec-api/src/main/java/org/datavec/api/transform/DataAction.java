@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ public class DataAction implements Serializable {
     private IReducer reducer;
     private CalculateSortedRank calculateSortedRank;
 
-    public DataAction(){
+    public DataAction() {
         //No-arg constructor for Jackson
     }
 
@@ -66,58 +66,60 @@ public class DataAction implements Serializable {
         this.convertFromSequence = convertFromSequence;
     }
 
-    public DataAction(SequenceSplit sequenceSplit){
+    public DataAction(SequenceSplit sequenceSplit) {
         this.sequenceSplit = sequenceSplit;
     }
 
-    public DataAction(IReducer reducer){
+    public DataAction(IReducer reducer) {
         this.reducer = reducer;
     }
 
-    public DataAction(CalculateSortedRank calculateSortedRank){
+    public DataAction(CalculateSortedRank calculateSortedRank) {
         this.calculateSortedRank = calculateSortedRank;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         String str;
-        if(transform != null){
+        if (transform != null) {
             str = transform.toString();
-        } else if(filter != null){
+        } else if (filter != null) {
             str = filter.toString();
-        } else if(convertToSequence != null){
+        } else if (convertToSequence != null) {
             str = convertToSequence.toString();
-        } else if(convertFromSequence != null){
+        } else if (convertFromSequence != null) {
             str = convertFromSequence.toString();
-        } else if(sequenceSplit != null) {
+        } else if (sequenceSplit != null) {
             str = sequenceSplit.toString();
-        } else if(reducer != null) {
+        } else if (reducer != null) {
             str = reducer.toString();
-        } else if(calculateSortedRank != null) {
+        } else if (calculateSortedRank != null) {
             str = calculateSortedRank.toString();
         } else {
-            throw new IllegalStateException("Invalid DataAction: does not contain any operation to perform (all fields are null)");
+            throw new IllegalStateException(
+                            "Invalid DataAction: does not contain any operation to perform (all fields are null)");
         }
         return "DataAction(" + str + ")";
     }
 
     public Schema getSchema() {
-        if(transform != null){
+        if (transform != null) {
             return transform.getInputSchema();
-        } else if(filter != null) {
+        } else if (filter != null) {
             return filter.getInputSchema();
-        } else if(convertToSequence != null) {
+        } else if (convertToSequence != null) {
             return convertToSequence.getInputSchema();
-        } else if(convertFromSequence != null){
+        } else if (convertFromSequence != null) {
             return convertFromSequence.getInputSchema();
-        } else if(sequenceSplit != null) {
+        } else if (sequenceSplit != null) {
             return sequenceSplit.getInputSchema();
-        } else if(reducer != null) {
+        } else if (reducer != null) {
             return reducer.getInputSchema();
-        } else if(calculateSortedRank != null) {
+        } else if (calculateSortedRank != null) {
             return calculateSortedRank.getInputSchema();
         } else {
-            throw new IllegalStateException("Invalid DataAction: does not contain any operation to perform (all fields are null)");
+            throw new IllegalStateException(
+                            "Invalid DataAction: does not contain any operation to perform (all fields are null)");
         }
     }
 

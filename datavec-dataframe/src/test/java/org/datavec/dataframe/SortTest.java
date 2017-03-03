@@ -65,7 +65,7 @@ public class SortTest {
     @Test
     public void testAscendingAndDescending() {
         Table sortedTable = unsortedTable.sortOn("+" + columnNames[IQ_INDEX], "-" + columnNames[DOB_INDEX]);
-        Table expectedResults =  TestData.SIMPLE_SORTED_DATA_BY_INT_ASCENDING_AND_THEN_DATE_DESCENDING.getTable();
+        Table expectedResults = TestData.SIMPLE_SORTED_DATA_BY_INT_ASCENDING_AND_THEN_DATE_DESCENDING.getTable();
         compareTables(expectedResults, sortedTable);
     }
 
@@ -107,7 +107,7 @@ public class SortTest {
         for (int rowIndex = 0; rowIndex < maxRows; rowIndex++) {
             for (int columnIndex = 0; columnIndex < numberOfColumns; columnIndex++) {
                 assertEquals("cells[" + rowIndex + ", " + columnIndex + "]  match",
-                        sortedTable.get(rowIndex, columnIndex), compareWith.get(rowIndex, columnIndex));
+                                sortedTable.get(rowIndex, columnIndex), compareWith.get(rowIndex, columnIndex));
             }
         }
     }

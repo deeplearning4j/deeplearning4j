@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnToReplaceIdx"})
 @EqualsAndHashCode(exclude = {"columnToReplaceIdx"})
-public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
+public class ConditionalReplaceValueTransform implements Transform, ColumnOp {
 
     private final String columnToReplace;
     private final Writable newValue;
@@ -53,7 +53,8 @@ public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
      * @param newValue        New value to use
      * @param condition       Condition
      */
-    public ConditionalReplaceValueTransform(@JsonProperty("columnToReplace") String columnToReplace, @JsonProperty("newValue") Writable newValue, @JsonProperty("condition") Condition condition) {
+    public ConditionalReplaceValueTransform(@JsonProperty("columnToReplace") String columnToReplace,
+                    @JsonProperty("newValue") Writable newValue, @JsonProperty("condition") Condition condition) {
         this.columnToReplace = columnToReplace;
         this.newValue = newValue;
         this.condition = condition;
@@ -110,7 +111,7 @@ public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
      */
     @Override
     public Object map(Object input) {
-        if(condition.condition(input))
+        if (condition.condition(input))
             return newValue;
         return input;
 
@@ -133,7 +134,8 @@ public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
 
     @Override
     public String toString() {
-        return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue=" + newValue + ",condition=" + condition + ")";
+        return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue=" + newValue
+                        + ",condition=" + condition + ")";
     }
 
     /**
@@ -166,7 +168,7 @@ public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
      */
     @Override
     public String[] columnNames() {
-        return new String[]{columnToReplace};
+        return new String[] {columnToReplace};
     }
 
     /**

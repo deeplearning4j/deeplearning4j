@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,8 +49,10 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"inputSchema","offsetAmountMilliseconds","windowSizeMilliseconds","windowSeparationMilliseconds", "timeZone"})
-@EqualsAndHashCode(exclude = {"inputSchema","offsetAmountMilliseconds","windowSizeMilliseconds","windowSeparationMilliseconds", "timeZone"})
+@JsonIgnoreProperties({"inputSchema", "offsetAmountMilliseconds", "windowSizeMilliseconds",
+                "windowSeparationMilliseconds", "timeZone"})
+@EqualsAndHashCode(exclude = {"inputSchema", "offsetAmountMilliseconds", "windowSizeMilliseconds",
+                "windowSeparationMilliseconds", "timeZone"})
 public class OverlappingTimeWindowFunction implements WindowFunction {
 
     private final String timeColumn;
@@ -80,8 +82,8 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
      * @param windowSeparation     The separation between consecutive window start times (used in conjunction with WindowSeparationUnit)
      * @param windowSeparationUnit Unit for the separation between windows
      */
-    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long windowSeparation,
-                                         TimeUnit windowSeparationUnit) {
+    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit,
+                    long windowSeparation, TimeUnit windowSeparationUnit) {
         this(timeColumn, windowSize, windowSizeUnit, windowSeparation, windowSeparationUnit, 0, null);
     }
 
@@ -94,9 +96,11 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
      * @param windowSeparation     The separation between consecutive window start times (used in conjunction with WindowSeparationUnit)
      * @param windowSeparationUnit Unit for the separation between windows
      */
-    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long windowSeparation,
-                                         TimeUnit windowSeparationUnit, boolean addWindowStartTimeColumn, boolean addWindowEndTimeColumn) {
-        this(timeColumn, windowSize, windowSizeUnit, windowSeparation, windowSeparationUnit, 0, null, addWindowStartTimeColumn, addWindowEndTimeColumn, false);
+    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit,
+                    long windowSeparation, TimeUnit windowSeparationUnit, boolean addWindowStartTimeColumn,
+                    boolean addWindowEndTimeColumn) {
+        this(timeColumn, windowSize, windowSizeUnit, windowSeparation, windowSeparationUnit, 0, null,
+                        addWindowStartTimeColumn, addWindowEndTimeColumn, false);
     }
 
     /**
@@ -110,9 +114,10 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
      * @param offset               Optional offset amount, to shift start/end of the time window forward or back
      * @param offsetUnit           Optional offset unit for the offset amount.
      */
-    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit, long windowSeparation,
-                                         TimeUnit windowSeparationUnit, long offset, TimeUnit offsetUnit) {
-        this(timeColumn, windowSize, windowSizeUnit, windowSeparation, windowSeparationUnit, offset, offsetUnit, false, false, false);
+    public OverlappingTimeWindowFunction(String timeColumn, long windowSize, TimeUnit windowSizeUnit,
+                    long windowSeparation, TimeUnit windowSeparationUnit, long offset, TimeUnit offsetUnit) {
+        this(timeColumn, windowSize, windowSizeUnit, windowSeparation, windowSeparationUnit, offset, offsetUnit, false,
+                        false, false);
     }
 
     /**
@@ -131,11 +136,15 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
      *                                 of the window
      * @param excludeEmptyWindows      If true: exclude any windows that don't have any values in them
      */
-    public OverlappingTimeWindowFunction(@JsonProperty("timeColumn") String timeColumn, @JsonProperty("windowSize") long windowSize,
-                                         @JsonProperty("windowSizeUnit") TimeUnit windowSizeUnit, @JsonProperty("windowSeparation") long windowSeparation,
-                                         @JsonProperty("windowSeparationUnit") TimeUnit windowSeparationUnit, @JsonProperty("offset") long offset,
-                                         @JsonProperty("offsetUnit") TimeUnit offsetUnit, @JsonProperty("addWindowStartTimeColumn")boolean addWindowStartTimeColumn,
-                                         @JsonProperty("addWindowEndTimeColumn") boolean addWindowEndTimeColumn, @JsonProperty("excludeEmptyWindows") boolean excludeEmptyWindows) {
+    public OverlappingTimeWindowFunction(@JsonProperty("timeColumn") String timeColumn,
+                    @JsonProperty("windowSize") long windowSize,
+                    @JsonProperty("windowSizeUnit") TimeUnit windowSizeUnit,
+                    @JsonProperty("windowSeparation") long windowSeparation,
+                    @JsonProperty("windowSeparationUnit") TimeUnit windowSeparationUnit,
+                    @JsonProperty("offset") long offset, @JsonProperty("offsetUnit") TimeUnit offsetUnit,
+                    @JsonProperty("addWindowStartTimeColumn") boolean addWindowStartTimeColumn,
+                    @JsonProperty("addWindowEndTimeColumn") boolean addWindowEndTimeColumn,
+                    @JsonProperty("excludeEmptyWindows") boolean excludeEmptyWindows) {
         this.timeColumn = timeColumn;
         this.windowSize = windowSize;
         this.windowSizeUnit = windowSizeUnit;
@@ -147,7 +156,8 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
         this.addWindowEndTimeColumn = addWindowEndTimeColumn;
         this.excludeEmptyWindows = excludeEmptyWindows;
 
-        if (offsetAmount == 0 || offsetUnit == null) this.offsetAmountMilliseconds = 0;
+        if (offsetAmount == 0 || offsetUnit == null)
+            this.offsetAmountMilliseconds = 0;
         else {
             this.offsetAmountMilliseconds = TimeUnit.MILLISECONDS.convert(offset, offsetUnit);
         }
@@ -156,21 +166,23 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
         this.windowSeparationMilliseconds = TimeUnit.MILLISECONDS.convert(windowSeparation, windowSeparationUnit);
     }
 
-    private OverlappingTimeWindowFunction(Builder builder){
-        this(builder.timeColumn, builder.windowSize, builder.windowSizeUnit, builder.windowSeparation, builder.windowSeparationUnit,
-                builder.offsetAmount, builder.offsetUnit, builder.addWindowStartTimeColumn, builder.addWindowEndTimeColumn, builder.excludeEmptyWindows);
+    private OverlappingTimeWindowFunction(Builder builder) {
+        this(builder.timeColumn, builder.windowSize, builder.windowSizeUnit, builder.windowSeparation,
+                        builder.windowSeparationUnit, builder.offsetAmount, builder.offsetUnit,
+                        builder.addWindowStartTimeColumn, builder.addWindowEndTimeColumn, builder.excludeEmptyWindows);
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         if (!(schema instanceof SequenceSchema))
-            throw new IllegalArgumentException("Invalid schema: OverlappingTimeWindowFunction can only operate on SequenceSchema");
+            throw new IllegalArgumentException(
+                            "Invalid schema: OverlappingTimeWindowFunction can only operate on SequenceSchema");
         if (!schema.hasColumn(timeColumn))
             throw new IllegalStateException("Input schema does not have a column with name \"" + timeColumn + "\"");
 
-        if (schema.getMetaData(timeColumn).getColumnType() != ColumnType.Time) throw new IllegalStateException(
-                "Invalid column: column \"" + timeColumn + "\" is not of type " + ColumnType.Time + "; is " +
-                        schema.getMetaData(timeColumn).getColumnType());
+        if (schema.getMetaData(timeColumn).getColumnType() != ColumnType.Time)
+            throw new IllegalStateException("Invalid column: column \"" + timeColumn + "\" is not of type "
+                            + ColumnType.Time + "; is " + schema.getMetaData(timeColumn).getColumnType());
 
         this.inputSchema = schema;
 
@@ -184,7 +196,8 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if (!addWindowStartTimeColumn && !addWindowEndTimeColumn) return inputSchema;
+        if (!addWindowStartTimeColumn && !addWindowEndTimeColumn)
+            return inputSchema;
         List<ColumnMetaData> newMeta = new ArrayList<>();
 
         newMeta.addAll(inputSchema.getColumnMetaData());
@@ -202,11 +215,12 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
 
     @Override
     public String toString() {
-        return "OverlappingTimeWindowFunction(columnName=\"" + timeColumn + "\",windowSize=" + windowSize + windowSizeUnit +
-                ",windowSeparation=" + windowSeparation + windowSeparationUnit + ",offset="
-                + offsetAmount + (offsetAmount != 0 && offsetUnit != null ? offsetUnit : "") +
-                (addWindowStartTimeColumn ? ",addWindowStartTimeColumn=true" : "") + (addWindowEndTimeColumn ? ",addWindowEndTimeColumn=true" : "")
-                + (excludeEmptyWindows ? ",excludeEmptyWindows=true" : "") + ")";
+        return "OverlappingTimeWindowFunction(columnName=\"" + timeColumn + "\",windowSize=" + windowSize
+                        + windowSizeUnit + ",windowSeparation=" + windowSeparation + windowSeparationUnit + ",offset="
+                        + offsetAmount + (offsetAmount != 0 && offsetUnit != null ? offsetUnit : "")
+                        + (addWindowStartTimeColumn ? ",addWindowStartTimeColumn=true" : "")
+                        + (addWindowEndTimeColumn ? ",addWindowEndTimeColumn=true" : "")
+                        + (excludeEmptyWindows ? ",excludeEmptyWindows=true" : "") + ")";
     }
 
 
@@ -221,13 +235,15 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
 
         //First: work out the window to start on. The window to start on is the first window that includes the first time step values
         long firstTimeStepTimePlusOffset = sequence.get(0).get(timeColumnIdx).toLong() + offsetAmountMilliseconds;
-        long windowBorder = firstTimeStepTimePlusOffset - (firstTimeStepTimePlusOffset % windowSeparationMilliseconds);     //Round down to time where a window starts/ends
+        long windowBorder = firstTimeStepTimePlusOffset - (firstTimeStepTimePlusOffset % windowSeparationMilliseconds); //Round down to time where a window starts/ends
         //At this windowBorder time: the window that _ends_ at windowBorder does NOT include the first time step
         // Therefore the window that ends at windowBorder+1*windowSeparation is first window that includes the first data point
 
         //Second: work out the window to end on. The window to end on is the last window that includes the last time step values
-        long lastTimeStepTimePlusOffset = sequence.get(sequence.size() - 1).get(timeColumnIdx).toLong() + offsetAmountMilliseconds;
-        long windowBorderLastTimeStep = lastTimeStepTimePlusOffset - (lastTimeStepTimePlusOffset % windowSeparationMilliseconds);
+        long lastTimeStepTimePlusOffset =
+                        sequence.get(sequence.size() - 1).get(timeColumnIdx).toLong() + offsetAmountMilliseconds;
+        long windowBorderLastTimeStep =
+                        lastTimeStepTimePlusOffset - (lastTimeStepTimePlusOffset % windowSeparationMilliseconds);
         //At this windowBorderLastTimeStep time: the window that _starts_ this time is the last window to include the last time step
 
         long lastWindowStartTime = windowBorderLastTimeStep;
@@ -255,10 +271,12 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
                 boolean nextWindow = false;
                 if (currentTime < currentWindowEndTime) {
                     //This time step is included in the current window
-                    if(addWindowStartTimeColumn || addWindowEndTimeColumn){
+                    if (addWindowStartTimeColumn || addWindowEndTimeColumn) {
                         List<Writable> timeStep2 = new ArrayList<>(timeStep);
-                        if(addWindowStartTimeColumn) timeStep2.add(new LongWritable(currentWindowStartTime));
-                        if(addWindowEndTimeColumn) timeStep2.add(new LongWritable(currentWindowStartTime + windowSizeMilliseconds));
+                        if (addWindowStartTimeColumn)
+                            timeStep2.add(new LongWritable(currentWindowStartTime));
+                        if (addWindowEndTimeColumn)
+                            timeStep2.add(new LongWritable(currentWindowStartTime + windowSizeMilliseconds));
                         currentWindow.add(timeStep2);
                     } else {
                         currentWindow.add(timeStep);
@@ -270,10 +288,12 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
 
                 //Once we reach the end of the input sequence: we might have added it to the current time step, but still
                 // need to create the next window
-                if (i == sequenceLength - 1) nextWindow = true;
+                if (i == sequenceLength - 1)
+                    nextWindow = true;
 
                 if (nextWindow) {
-                    if (!(excludeEmptyWindows && currentWindow.size() == 0)) out.add(currentWindow);
+                    if (!(excludeEmptyWindows && currentWindow.size() == 0))
+                        out.add(currentWindow);
                     currentWindow = new ArrayList<>();
                     currentWindowStartTime = currentWindowStartTime + windowSeparationMilliseconds;
                     currentWindowEndTime = currentWindowStartTime + windowSizeMilliseconds;
@@ -310,7 +330,7 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
             return this;
         }
 
-        public Builder windowSeparation(long windowSeparation, TimeUnit windowSeparationUnit){
+        public Builder windowSeparation(long windowSeparation, TimeUnit windowSeparationUnit) {
             this.windowSeparation = windowSeparation;
             this.windowSeparationUnit = windowSeparationUnit;
             return this;
@@ -338,9 +358,12 @@ public class OverlappingTimeWindowFunction implements WindowFunction {
         }
 
         public OverlappingTimeWindowFunction build() {
-            if (timeColumn == null) throw new IllegalStateException("Time column is null (not specified)");
-            if (windowSize == -1 || windowSizeUnit == null) throw new IllegalStateException("Window size/unit not set");
-            if (windowSeparation == -1 || windowSeparationUnit == null) throw new IllegalStateException("Window separation and/or unit not set");
+            if (timeColumn == null)
+                throw new IllegalStateException("Time column is null (not specified)");
+            if (windowSize == -1 || windowSizeUnit == null)
+                throw new IllegalStateException("Window size/unit not set");
+            if (windowSeparation == -1 || windowSeparationUnit == null)
+                throw new IllegalStateException("Window separation and/or unit not set");
             return new OverlappingTimeWindowFunction(this);
         }
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,14 +27,15 @@ public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
 
     private final int value;
 
-    public ReplaceInvalidWithIntegerTransform(@JsonProperty("columnName") String columnName, @JsonProperty("value") int value) {
+    public ReplaceInvalidWithIntegerTransform(@JsonProperty("columnName") String columnName,
+                    @JsonProperty("value") int value) {
         super(columnName);
         this.value = value;
     }
 
     @Override
     public Writable map(Writable writable) {
-        if(inputSchema.getMetaData(columnNumber).isValid(writable)) {
+        if (inputSchema.getMetaData(columnNumber).isValid(writable)) {
             return writable;
         } else {
             return new IntWritable(value);
@@ -51,7 +52,7 @@ public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
     @Override
     public Object map(Object input) {
         Number n = (Number) input;
-        if(inputSchema.getMetaData(columnNumber).isValid(new IntWritable(n.intValue()))) {
+        if (inputSchema.getMetaData(columnNumber).isValid(new IntWritable(n.intValue()))) {
             return input;
         } else {
             return value;

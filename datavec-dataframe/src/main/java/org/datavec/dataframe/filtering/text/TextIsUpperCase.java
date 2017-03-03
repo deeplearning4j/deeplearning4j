@@ -15,15 +15,15 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class TextIsUpperCase extends ColumnFilter {
 
-  public TextIsUpperCase(ColumnReference reference) {
-    super(reference);
-  }
+    public TextIsUpperCase(ColumnReference reference) {
+        super(reference);
+    }
 
-  @Override
-  public Selection apply(Table relation) {
-    Column column = relation.column(columnReference().getColumnName());
-    CategoryColumn textColumn = (CategoryColumn) column;
-    return textColumn.isUpperCase();
+    @Override
+    public Selection apply(Table relation) {
+        Column column = relation.column(columnReference().getColumnName());
+        CategoryColumn textColumn = (CategoryColumn) column;
+        return textColumn.isUpperCase();
 
-  }
+    }
 }

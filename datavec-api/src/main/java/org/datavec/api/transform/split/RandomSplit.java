@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,8 @@ import lombok.Data;
 /**
  * Created by Alex on 5/03/2016.
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class RandomSplit implements SplitStrategy {
 
     private double fractionTrain;

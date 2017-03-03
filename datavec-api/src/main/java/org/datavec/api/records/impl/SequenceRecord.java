@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,14 +37,16 @@ public class SequenceRecord implements org.datavec.api.records.SequenceRecord {
 
     @Override
     public int getSequenceLength() {
-        if(sequenceRecord == null) return 0;
+        if (sequenceRecord == null)
+            return 0;
         return sequenceRecord.size();
     }
 
     @Override
     public List<Writable> getTimeStep(int timeStep) {
-        if(timeStep < 0 || timeStep > sequenceRecord.size()){
-            throw new IllegalArgumentException("Invalid input: " + sequenceRecord.size() + " time steps available; cannot get " + timeStep);
+        if (timeStep < 0 || timeStep > sequenceRecord.size()) {
+            throw new IllegalArgumentException("Invalid input: " + sequenceRecord.size()
+                            + " time steps available; cannot get " + timeStep);
         }
         return sequenceRecord.get(timeStep);
     }

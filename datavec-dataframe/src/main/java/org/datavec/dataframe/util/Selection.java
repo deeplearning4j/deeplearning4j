@@ -9,50 +9,50 @@ import org.roaringbitmap.RoaringBitmap;
  */
 public interface Selection extends IntIterable {
 
-  int[] toArray();
+    int[] toArray();
 
-  /**
-   * Returns an IntArrayList containing the ints in this selection
-   */
-  RoaringBitmap toBitmap();
+    /**
+     * Returns an IntArrayList containing the ints in this selection
+     */
+    RoaringBitmap toBitmap();
 
-  IntArrayList toIntArrayList();
+    IntArrayList toIntArrayList();
 
-  /**
-   * Adds the given integer to the Selection if it is not already present, and does nothing otherwise
-   */
-  void add(int i);
+    /**
+     * Adds the given integer to the Selection if it is not already present, and does nothing otherwise
+     */
+    void add(int i);
 
-  int size();
+    int size();
 
-  /**
-   * Intersects the receiver and {@code otherSelection}, updating the receiver
-   */
-  void and(Selection otherSelection);
+    /**
+     * Intersects the receiver and {@code otherSelection}, updating the receiver
+     */
+    void and(Selection otherSelection);
 
-  /**
-   * Implements the union of the receiver and {@code otherSelection}, updating the receiver
-   */
-  void or(Selection otherSelection);
+    /**
+     * Implements the union of the receiver and {@code otherSelection}, updating the receiver
+     */
+    void or(Selection otherSelection);
 
-  /**
-   * Implements the set difference operation between the receiver and {@code otherSelection}, updating the receiver
-   */
-  void andNot(Selection otherSelection);
+    /**
+     * Implements the set difference operation between the receiver and {@code otherSelection}, updating the receiver
+     */
+    void andNot(Selection otherSelection);
 
-  boolean isEmpty();
+    boolean isEmpty();
 
-  void clear();
+    void clear();
 
-  boolean contains(int i);
+    boolean contains(int i);
 
-  /**
-   * Adds to the current bitmap all integers in [rangeStart,rangeEnd)
-   *
-   * @param start inclusive beginning of range
-   * @param end exclusive ending of range
-   */
-  void addRange(int start, int end);
+    /**
+     * Adds to the current bitmap all integers in [rangeStart,rangeEnd)
+     *
+     * @param start inclusive beginning of range
+     * @param end exclusive ending of range
+     */
+    void addRange(int start, int end);
 
-  int get(int i);
+    int get(int i);
 }

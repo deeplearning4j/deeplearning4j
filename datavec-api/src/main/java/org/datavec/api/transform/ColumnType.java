@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,18 +22,11 @@ import org.datavec.api.transform.metadata.*;
  * The type of column.
  */
 public enum ColumnType {
-    String,
-    Integer,
-    Long,
-    Double,
-    Float,
-    Categorical,
-    Time,
-    Bytes, //Arbitrary byte[] data
+    String, Integer, Long, Double, Float, Categorical, Time, Bytes, //Arbitrary byte[] data
     Boolean;
 
-    public ColumnMetaData newColumnMetaData(String columnName){
-        switch (this){
+    public ColumnMetaData newColumnMetaData(String columnName) {
+        switch (this) {
             case String:
                 return new StringMetaData(columnName);
             case Integer:
@@ -49,7 +42,8 @@ public enum ColumnType {
             case Boolean:
                 return new CategoricalMetaData(columnName, "true", "false");
             case Categorical:
-                throw new UnsupportedOperationException("Cannot create new categorical column using this method: categorical state names would be unknown");
+                throw new UnsupportedOperationException(
+                                "Cannot create new categorical column using this method: categorical state names would be unknown");
             default: //And Bytes
                 throw new UnsupportedOperationException("Unknown or not supported column type: " + this);
         }

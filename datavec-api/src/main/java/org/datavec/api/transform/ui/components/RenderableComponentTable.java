@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,12 +37,12 @@ public class RenderableComponentTable extends RenderableComponent {
     private String backgroundColor;
     private String headerColor;
 
-    public RenderableComponentTable(){
+    public RenderableComponentTable() {
         super(COMPONENT_TYPE);
         //No arg constructor for Jackson
     }
 
-    public RenderableComponentTable(Builder builder){
+    public RenderableComponentTable(Builder builder) {
         super(COMPONENT_TYPE);
         this.title = builder.title;
         this.header = builder.header;
@@ -57,11 +57,11 @@ public class RenderableComponentTable extends RenderableComponent {
         this.headerColor = builder.headerColor;
     }
 
-    public RenderableComponentTable(String[] header, String[][] table){
-        this(null,header,table);
+    public RenderableComponentTable(String[] header, String[][] table) {
+        this(null, header, table);
     }
 
-    public RenderableComponentTable(String title, String[] header, String[][] table){
+    public RenderableComponentTable(String title, String[] header, String[][] table) {
         super(COMPONENT_TYPE);
         this.title = title;
         this.header = header;
@@ -82,47 +82,47 @@ public class RenderableComponentTable extends RenderableComponent {
         private String backgroundColor;
         private String headerColor;
 
-        public Builder title(String title){
+        public Builder title(String title) {
             this.title = title;
             return this;
         }
 
-        public Builder header(String... header){
+        public Builder header(String... header) {
             this.header = header;
             return this;
         }
 
-        public Builder table(String[][] table){
+        public Builder table(String[][] table) {
             this.table = table;
             return this;
         }
 
-        public Builder border(int border){
+        public Builder border(int border) {
             this.border = border;
             return this;
         }
 
-        public Builder padLeftPx(int padLeftPx){
+        public Builder padLeftPx(int padLeftPx) {
             this.padLeftPx = padLeftPx;
             return this;
         }
 
-        public Builder padRightPx(int padRightPx){
+        public Builder padRightPx(int padRightPx) {
             this.padRightPx = padRightPx;
             return this;
         }
 
-        public Builder padTopPx(int padTopPx){
+        public Builder padTopPx(int padTopPx) {
             this.padTopPx = padTopPx;
             return this;
         }
 
-        public Builder padBottomPx(int padBottomPx){
+        public Builder padBottomPx(int padBottomPx) {
             this.padBottomPx = padBottomPx;
             return this;
         }
 
-        public Builder paddingPx(int paddingPx){
+        public Builder paddingPx(int paddingPx) {
             padLeftPx(paddingPx);
             padRightPx(paddingPx);
             padTopPx(paddingPx);
@@ -130,7 +130,7 @@ public class RenderableComponentTable extends RenderableComponent {
             return this;
         }
 
-        public Builder paddingPx(int left, int right, int top, int bottom){
+        public Builder paddingPx(int left, int right, int top, int bottom) {
             padLeftPx(left);
             padRightPx(right);
             padTopPx(top);
@@ -138,22 +138,22 @@ public class RenderableComponentTable extends RenderableComponent {
             return this;
         }
 
-        public Builder colWidthsPercent(double... colWidthsPercent){
+        public Builder colWidthsPercent(double... colWidthsPercent) {
             this.colWidthsPercent = colWidthsPercent;
             return this;
         }
 
-        public Builder backgroundColor(String backgroundColor){
+        public Builder backgroundColor(String backgroundColor) {
             this.backgroundColor = backgroundColor;
             return this;
         }
 
-        public Builder headerColor(String headerColor){
+        public Builder headerColor(String headerColor) {
             this.headerColor = headerColor;
             return this;
         }
 
-        public RenderableComponentTable build(){
+        public RenderableComponentTable build() {
             return new RenderableComponentTable(this);
         }
 

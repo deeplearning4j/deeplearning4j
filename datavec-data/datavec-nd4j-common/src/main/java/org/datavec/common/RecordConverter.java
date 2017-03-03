@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,26 +34,26 @@ import java.util.List;
  */
 public class RecordConverter {
     private RecordConverter() {}
+
     /**
      * Convert a record to an ndarray
      * @param record the record to convert
      *
      * @return the array
      */
-    public static INDArray toArray(Collection<Writable> record,int size) {
+    public static INDArray toArray(Collection<Writable> record, int size) {
         Iterator<Writable> writables = record.iterator();
         Writable firstWritable = writables.next();
-        if(firstWritable instanceof NDArrayWritable) {
+        if (firstWritable instanceof NDArrayWritable) {
             NDArrayWritable ret = (NDArrayWritable) firstWritable;
             return ret.get();
-        }
-        else {
+        } else {
             INDArray vector = Nd4j.create(size);
-            vector.putScalar(0,firstWritable.toDouble());
+            vector.putScalar(0, firstWritable.toDouble());
             int count = 1;
-            while(writables.hasNext()) {
+            while (writables.hasNext()) {
                 Writable w = writables.next();
-                vector.putScalar(count++,w.toDouble());
+                vector.putScalar(count++, w.toDouble());
             }
 
             return vector;
@@ -67,8 +67,8 @@ public class RecordConverter {
      */
     public static List<List<Writable>> toRecords(INDArray matrix) {
         List<List<Writable>> ret = new ArrayList<>();
-        for(int i = 0; i < matrix.rows(); i++) {
-           ret.add(RecordConverter.toRecord(matrix.getRow(i)));
+        for (int i = 0; i < matrix.rows(); i++) {
+            ret.add(RecordConverter.toRecord(matrix.getRow(i)));
         }
 
         return ret;
@@ -80,9 +80,9 @@ public class RecordConverter {
      * @return the matrix for the records
      */
     public static INDArray toMatrix(List<List<Writable>> records) {
-        INDArray arr = Nd4j.create(records.size(),records.get(0).size());
-        for(int i = 0; i < arr.rows(); i++) {
-            arr.putRow(i,toArray(records.get(i)));
+        INDArray arr = Nd4j.create(records.size(), records.get(0).size());
+        for (int i = 0; i < arr.rows(); i++) {
+            arr.putRow(i, toArray(records.get(i)));
         }
 
         return arr;
@@ -94,7 +94,7 @@ public class RecordConverter {
      * @return the array
      */
     public static INDArray toArray(Collection<Writable> record) {
-       return toArray(record,record.size());
+        return toArray(record, record.size());
     }
 
 
@@ -146,11 +146,11 @@ public class RecordConverter {
     private static List<List<Writable>> getRegressionWritableMatrix(DataSet dataSet) {
         List<List<Writable>> writableMatrix = new ArrayList<>();
 
-        for(int i = 0; i < dataSet.numExamples(); i++) {
+        for (int i = 0; i < dataSet.numExamples(); i++) {
             List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i));
             INDArray labelRow = dataSet.getLabels().getRow(i);
 
-            for(int j = 0; j < labelRow.shape()[1]; j++) {
+            for (int j = 0; j < labelRow.shape()[1]; j++) {
                 writables.add(new DoubleWritable(labelRow.getDouble(j)));
             }
 

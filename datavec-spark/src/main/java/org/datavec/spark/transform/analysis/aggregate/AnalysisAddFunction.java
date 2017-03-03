@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,17 +38,18 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class AnalysisAddFunction implements Function2<List<AnalysisCounter>,List<Writable>,List<AnalysisCounter>> {
+public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
 
     private Schema schema;
 
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> analysisCounters, List<Writable> writables) throws Exception {
-        if(analysisCounters == null){
+    public List<AnalysisCounter> call(List<AnalysisCounter> analysisCounters, List<Writable> writables)
+                    throws Exception {
+        if (analysisCounters == null) {
             analysisCounters = new ArrayList<>();
             List<ColumnType> columnTypes = schema.getColumnTypes();
-            for(ColumnType ct : columnTypes){
-                switch (ct){
+            for (ColumnType ct : columnTypes) {
+                switch (ct) {
                     case String:
                         analysisCounters.add(new StringAnalysisCounter());
                         break;
@@ -77,8 +78,10 @@ public class AnalysisAddFunction implements Function2<List<AnalysisCounter>,List
         }
 
         int size = analysisCounters.size();
-        if(size != writables.size()) throw new IllegalStateException("Writables list and number of counters does not match (" + writables.size() + " vs " + size + ")");
-        for( int i=0; i<size; i++ ){
+        if (size != writables.size())
+            throw new IllegalStateException("Writables list and number of counters does not match (" + writables.size()
+                            + " vs " + size + ")");
+        for (int i = 0; i < size; i++) {
             analysisCounters.get(i).add(writables.get(i));
         }
 

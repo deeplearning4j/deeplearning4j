@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,10 +44,10 @@ public class FileRecordReaderTest {
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         int nResets = 5;
-        for( int i=0; i < nResets; i++ ){
+        for (int i = 0; i < nResets; i++) {
 
             int lineCount = 0;
-            while(rr.hasNext()){
+            while (rr.hasNext()) {
                 List<Writable> line = rr.next();
                 assertEquals(1, line.size());
                 lineCount++;
@@ -72,7 +72,7 @@ public class FileRecordReaderTest {
         rr.initialize(is);
 
         List<List<Writable>> out = new ArrayList<>();
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             out.add(rr.next());
         }
 
@@ -83,7 +83,7 @@ public class FileRecordReaderTest {
         List<Record> out3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         int count = 0;
-        while(rr.hasNext()){
+        while (rr.hasNext()) {
             Record r = rr.nextRecord();
             out2.add(r.getRecord());
             out3.add(r);

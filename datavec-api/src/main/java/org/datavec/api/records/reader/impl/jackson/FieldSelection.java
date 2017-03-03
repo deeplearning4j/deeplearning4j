@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,20 +40,20 @@ public class FieldSelection {
     private List<String[]> fieldPaths;
     private List<Writable> valueIfMissing;
 
-    private FieldSelection(Builder builder){
+    private FieldSelection(Builder builder) {
         this.fieldPaths = builder.fieldPaths;
         this.valueIfMissing = builder.valueIfMissing;
     }
 
-    public List<String[]> getFieldPaths(){
+    public List<String[]> getFieldPaths() {
         return fieldPaths;
     }
 
-    public List<Writable> getValueIfMissing(){
+    public List<Writable> getValueIfMissing() {
         return valueIfMissing;
     }
 
-    public int getNumFields(){
+    public int getNumFields() {
         return fieldPaths.size();
     }
 
@@ -68,17 +68,17 @@ public class FieldSelection {
          * @param fieldPath    Path to the field. For example, {"a", "b", "c"} would be a field named c, in an object b,
          *                     where b is in an object a
          */
-        public Builder addField(String... fieldPath){
+        public Builder addField(String... fieldPath) {
             return addField(DEFAULT_MISSING_VALUE, fieldPath);
         }
 
-        public Builder addField(Writable valueIfMissing, String... fieldPath){
+        public Builder addField(Writable valueIfMissing, String... fieldPath) {
             fieldPaths.add(fieldPath);
             this.valueIfMissing.add(valueIfMissing);
             return this;
         }
 
-        public FieldSelection build(){
+        public FieldSelection build() {
             return new FieldSelection(this);
         }
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,8 +30,8 @@ import java.util.List;
  * invalid values in any of a specified set of columns.
  * Invalid values are determined with respect to the schema
  */
-@EqualsAndHashCode(exclude = {"schema","columnIdxs"})
-@JsonIgnoreProperties({"schema","columnIdxs"})
+@EqualsAndHashCode(exclude = {"schema", "columnIdxs"})
+@JsonIgnoreProperties({"schema", "columnIdxs"})
 public class FilterInvalidValues implements Filter {
 
     private Schema schema;
@@ -40,7 +40,7 @@ public class FilterInvalidValues implements Filter {
     private int[] columnIdxs;
 
     /** Filter examples that have invalid values in ANY columns. */
-    public FilterInvalidValues(){
+    public FilterInvalidValues() {
         filterAnyInvalid = true;
         columnsToFilterIfInvalid = null;
     }
@@ -68,7 +68,7 @@ public class FilterInvalidValues implements Filter {
     @Override
     public void setInputSchema(Schema schema) {
         this.schema = schema;
-        if(!filterAnyInvalid) {
+        if (!filterAnyInvalid) {
             this.columnIdxs = new int[columnsToFilterIfInvalid.length];
             for (int i = 0; i < columnsToFilterIfInvalid.length; i++) {
                 this.columnIdxs[i] = schema.getIndexOfColumn(columnsToFilterIfInvalid[i]);
@@ -88,54 +88,55 @@ public class FilterInvalidValues implements Filter {
     @Override
     public boolean removeExample(Object writables) {
         List<?> row = (List<?>) writables;
-        if(!filterAnyInvalid) {
+        if (!filterAnyInvalid) {
             //Filter only on specific columns
             for (int i : columnIdxs) {
                 ColumnMetaData meta = schema.getMetaData(i);
-                if(row.get(i) instanceof Float) {
-                    if (!meta.isValid(new FloatWritable((Float) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Double) {
-                    if (!meta.isValid(new DoubleWritable((Double) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof String) {
-                    if (!meta.isValid(new Text(((String) row.get(i)).toString()))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Integer) {
-                    if (!meta.isValid(new IntWritable((Integer) row.get(i)))) return true; //Remove if not valid
+                if (row.get(i) instanceof Float) {
+                    if (!meta.isValid(new FloatWritable((Float) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Double) {
+                    if (!meta.isValid(new DoubleWritable((Double) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof String) {
+                    if (!meta.isValid(new Text(((String) row.get(i)).toString())))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Integer) {
+                    if (!meta.isValid(new IntWritable((Integer) row.get(i))))
+                        return true; //Remove if not valid
 
-                }
-                else if(row.get(i) instanceof Long) {
-                    if (!meta.isValid(new LongWritable((Long) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Boolean) {
-                    if (!meta.isValid(new BooleanWritable((Boolean) row.get(i)))) return true; //Remove if not valid
+                } else if (row.get(i) instanceof Long) {
+                    if (!meta.isValid(new LongWritable((Long) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Boolean) {
+                    if (!meta.isValid(new BooleanWritable((Boolean) row.get(i))))
+                        return true; //Remove if not valid
                 }
             }
-        }
-        else {
+        } else {
             //Filter on ALL columns
             int nCols = schema.numColumns();
-            for( int i = 0; i < nCols; i++) {
+            for (int i = 0; i < nCols; i++) {
                 ColumnMetaData meta = schema.getMetaData(i);
-                if(row.get(i) instanceof Float) {
-                    if (!meta.isValid(new FloatWritable((Float) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Double) {
-                    if (!meta.isValid(new DoubleWritable((Double) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof String) {
-                    if (!meta.isValid(new Text(((String) row.get(i)).toString()))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Integer) {
-                    if (!meta.isValid(new IntWritable((Integer) row.get(i)))) return true; //Remove if not valid
+                if (row.get(i) instanceof Float) {
+                    if (!meta.isValid(new FloatWritable((Float) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Double) {
+                    if (!meta.isValid(new DoubleWritable((Double) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof String) {
+                    if (!meta.isValid(new Text(((String) row.get(i)).toString())))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Integer) {
+                    if (!meta.isValid(new IntWritable((Integer) row.get(i))))
+                        return true; //Remove if not valid
 
-                }
-                else if(row.get(i) instanceof Long) {
-                    if (!meta.isValid(new LongWritable((Long) row.get(i)))) return true; //Remove if not valid
-                }
-                else if(row.get(i) instanceof Boolean) {
-                    if (!meta.isValid(new BooleanWritable((Boolean) row.get(i)))) return true; //Remove if not valid
+                } else if (row.get(i) instanceof Long) {
+                    if (!meta.isValid(new LongWritable((Long) row.get(i))))
+                        return true; //Remove if not valid
+                } else if (row.get(i) instanceof Boolean) {
+                    if (!meta.isValid(new BooleanWritable((Boolean) row.get(i))))
+                        return true; //Remove if not valid
                 }
             }
         }
@@ -151,27 +152,31 @@ public class FilterInvalidValues implements Filter {
         List<?> seq = (List<?>) sequence;
         //If _any_ of the values are invalid, remove the entire sequence
         for (Object c : seq) {
-            if (removeExample(c)) return true;
+            if (removeExample(c))
+                return true;
         }
         return false;
     }
 
     @Override
     public boolean removeExample(List<Writable> writables) {
-        if(writables.size() != schema.numColumns()) return true;
+        if (writables.size() != schema.numColumns())
+            return true;
 
-        if(!filterAnyInvalid) {
+        if (!filterAnyInvalid) {
             //Filter only on specific columns
             for (int i : columnIdxs) {
                 ColumnMetaData meta = schema.getMetaData(i);
-                if (!meta.isValid(writables.get(i))) return true; //Remove if not valid
+                if (!meta.isValid(writables.get(i)))
+                    return true; //Remove if not valid
             }
         } else {
             //Filter on ALL columns
             int nCols = schema.numColumns();
-            for( int i = 0; i < nCols; i++) {
+            for (int i = 0; i < nCols; i++) {
                 ColumnMetaData meta = schema.getMetaData(i);
-                if (!meta.isValid(writables.get(i))) return true; //Remove if not valid
+                if (!meta.isValid(writables.get(i)))
+                    return true; //Remove if not valid
             }
         }
         return false;
@@ -181,7 +186,8 @@ public class FilterInvalidValues implements Filter {
     public boolean removeSequence(List<List<Writable>> sequence) {
         //If _any_ of the values are invalid, remove the entire sequence
         for (List<Writable> c : sequence) {
-            if (removeExample(c)) return true;
+            if (removeExample(c))
+                return true;
         }
         return false;
     }

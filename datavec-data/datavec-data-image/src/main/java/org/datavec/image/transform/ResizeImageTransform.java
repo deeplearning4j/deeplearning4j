@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
  *
  * @author raver119@gmail.com
  */
-public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat>  {
+public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
     int newHeight, newWidth;
 

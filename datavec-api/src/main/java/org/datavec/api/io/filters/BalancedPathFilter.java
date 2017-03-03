@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,17 +50,20 @@ public class BalancedPathFilter extends RandomPathFilter {
     }
 
     /** Calls {@code this(random, extensions, labelGenerator, 0, 0, 0, maxPathsPerLabel)}. */
-    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator, int maxPathsPerLabel) {
+    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator,
+                    int maxPathsPerLabel) {
         this(random, extensions, labelGenerator, 0, 0, 0, maxPathsPerLabel);
     }
 
     /** Calls {@code this(random, extensions, labelGenerator, 0, maxLabels, 0, maxPathsPerLabel)}. */
-    public BalancedPathFilter(Random random, PathLabelGenerator labelGenerator, int maxPaths, int maxLabels, int maxPathsPerLabel) {
+    public BalancedPathFilter(Random random, PathLabelGenerator labelGenerator, int maxPaths, int maxLabels,
+                    int maxPathsPerLabel) {
         this(random, null, labelGenerator, maxPaths, maxLabels, 0, maxPathsPerLabel);
     }
 
     /** Calls {@code this(random, extensions, labelGenerator, 0, maxLabels, 0, maxPathsPerLabel)}. */
-    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator, int maxLabels, int maxPathsPerLabel) {
+    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator, int maxLabels,
+                    int maxPathsPerLabel) {
         this(random, extensions, labelGenerator, 0, maxLabels, 0, maxPathsPerLabel);
     }
 
@@ -78,8 +81,8 @@ public class BalancedPathFilter extends RandomPathFilter {
      * @param maxPathsPerLabel max number of paths per labels to return (0 == unlimited)
      * @param labels           of the paths to keep (empty set == keep all paths)
      */
-    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator,
-            int maxPaths, int maxLabels, int minPathsPerLabel, int maxPathsPerLabel, String... labels) {
+    public BalancedPathFilter(Random random, String[] extensions, PathLabelGenerator labelGenerator, int maxPaths,
+                    int maxLabels, int minPathsPerLabel, int maxPathsPerLabel, String... labels) {
         super(random, extensions, maxPaths);
         this.labelGenerator = labelGenerator;
         this.maxLabels = maxLabels;
@@ -103,9 +106,9 @@ public class BalancedPathFilter extends RandomPathFilter {
     @Override
     public URI[] filter(URI[] paths) {
         paths = super.filter(paths);
-        if(labelGenerator == null)
+        if (labelGenerator == null)
             labelGenerator = new ParentPathLabelGenerator();
-        Map<Writable, List<URI>> labelPaths  = new LinkedHashMap<Writable, List<URI>>();
+        Map<Writable, List<URI>> labelPaths = new LinkedHashMap<Writable, List<URI>>();
         for (int i = 0; i < paths.length; i++) {
             URI path = paths[i];
             Writable label = labelGenerator.getLabelForPath(path);
