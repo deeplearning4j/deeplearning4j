@@ -165,7 +165,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         return ret;
     }
 
-    public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
+    public Collection<String> wordsNearest(@NonNull Collection<String> positive, @NonNull Collection<String> negative, int top) {
         // Check every word is in the model
         for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
             if (!vocabCache.containsWord(p)) {
@@ -186,7 +186,15 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
 
-        return wordsNearest(mean, top);
+        Collection<String> tempRes = wordsNearest(mean, top + positive.size() + negative.size());
+        List<String> realResults = new ArrayList<>();
+
+        for (String word: tempRes) {
+            if (!positive.contains(word) && !negative.contains(negative) && realResults.size() < top)
+                realResults.add(word);
+        }
+
+        return realResults;
     }
 
     /**
