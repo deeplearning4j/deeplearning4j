@@ -9,25 +9,27 @@ import lombok.Getter;
  */
 public class PartitionCountEventStats extends BaseEventStats {
 
-    @Getter private final int numPartitions;
+    @Getter
+    private final int numPartitions;
 
     public PartitionCountEventStats(long startTime, long durationMs, int numPartitions) {
         super(startTime, durationMs);
         this.numPartitions = numPartitions;
     }
 
-    public PartitionCountEventStats(String machineId, String jvmId, long threadId, long startTime, long durationMs, int numPartitions){
+    public PartitionCountEventStats(String machineId, String jvmId, long threadId, long startTime, long durationMs,
+                    int numPartitions) {
         super(machineId, jvmId, threadId, startTime, durationMs);
         this.numPartitions = numPartitions;
     }
 
     @Override
-    public String asString(String delimiter){
+    public String asString(String delimiter) {
         return super.asString(delimiter) + delimiter + numPartitions;
     }
 
     @Override
-    public String getStringHeader(String delimiter){
+    public String getStringHeader(String delimiter) {
         return super.getStringHeader(delimiter) + delimiter + "numPartitions";
     }
 }

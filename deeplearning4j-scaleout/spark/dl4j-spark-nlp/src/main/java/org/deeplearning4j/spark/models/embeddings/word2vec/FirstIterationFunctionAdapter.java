@@ -16,8 +16,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author jeffreytang
  * @author raver119@gmail.com
  */
-public class FirstIterationFunctionAdapter
-        implements FlatMapFunctionAdapter< Iterator<Tuple2<List<VocabWord>, Long>>, Map.Entry<VocabWord, INDArray> > {
+public class FirstIterationFunctionAdapter implements
+                FlatMapFunctionAdapter<Iterator<Tuple2<List<VocabWord>, Long>>, Map.Entry<VocabWord, INDArray>> {
 
     private int ithIteration = 1;
     private int vectorLength;
@@ -43,10 +43,8 @@ public class FirstIterationFunctionAdapter
 
 
 
-
-
     public FirstIterationFunctionAdapter(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
-                                  Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
+                    Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
 
         Map<String, Object> word2vecVarMap = word2vecVarMapBroadcast.getValue();
         this.expTable = expTableBroadcast.getValue();
@@ -65,7 +63,8 @@ public class FirstIterationFunctionAdapter
         this.pointSyn1VecMap = new HashMap<>();
         this.vocab = vocabCacheBroadcast.getValue();
 
-        if (this.vocab == null) throw new RuntimeException("VocabCache is null");
+        if (this.vocab == null)
+            throw new RuntimeException("VocabCache is null");
 
         if (negative > 0) {
             negativeHolder = NegativeHolder.getInstance();
@@ -88,11 +87,11 @@ public class FirstIterationFunctionAdapter
 
             for (int i = 0; i < iterations; i++) {
                 //System.out.println("Training sentence: " + vocabWordsList);
-                for (Pair<List<VocabWord>, Long> pair: batch) {
+                for (Pair<List<VocabWord>, Long> pair : batch) {
                     List<VocabWord> vocabWordsList = pair.getKey();
                     Long sentenceCumSumCount = pair.getValue();
                     double currentSentenceAlpha = Math.max(minAlpha,
-                            alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
+                                    alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
                     trainSentence(vocabWordsList, currentSentenceAlpha);
                 }
             }
@@ -155,7 +154,7 @@ public class FirstIterationFunctionAdapter
         for (int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
-            if(point < 0)
+            if (point < 0)
                 throw new IllegalStateException("Illegal point " + point);
             // Point to
             INDArray syn1;
@@ -174,12 +173,14 @@ public class FirstIterationFunctionAdapter
 
             int idx = (int) ((dot + maxExp) * ((double) expTable.length / maxExp / 2.0));
 
-            if (idx > expTable.length) continue;
+            if (idx > expTable.length)
+                continue;
 
             //score
             double f = expTable[idx];
             //gradient
-            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, currentSentenceAlpha, currentSentenceAlpha) : currentSentenceAlpha);
+            double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, currentSentenceAlpha, currentSentenceAlpha)
+                            : currentSentenceAlpha);
 
 
             Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, syn1, neu1e);
@@ -189,7 +190,7 @@ public class FirstIterationFunctionAdapter
         int target = w1.getIndex();
         int label;
         //negative sampling
-        if(negative > 0)
+        if (negative > 0)
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)
                     label = 1;
@@ -206,26 +207,27 @@ public class FirstIterationFunctionAdapter
                     label = 0;
                 }
 
-                if(target >= negativeHolder.getSyn1Neg().rows() || target < 0)
+                if (target >= negativeHolder.getSyn1Neg().rows() || target < 0)
                     continue;
 
-                double f = Nd4j.getBlasWrapper().dot(l1,negativeHolder.getSyn1Neg().slice(target));
+                double f = Nd4j.getBlasWrapper().dot(l1, negativeHolder.getSyn1Neg().slice(target));
                 double g;
                 if (f > maxExp)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) * alpha;
                 else if (f < -maxExp)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, alpha) : alpha);
+                    g = label * (useAdaGrad ? w1.getGradient(target, alpha, alpha) : alpha);
                 else {
                     int idx = (int) ((f + maxExp) * (expTable.length / maxExp / 2));
                     if (idx >= expTable.length)
                         continue;
 
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[idx], alpha) : (label - expTable[idx]) * alpha;
+                    g = useAdaGrad ? w1.getGradient(target, label - expTable[idx], alpha)
+                                    : (label - expTable[idx]) * alpha;
                 }
 
-                    Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, negativeHolder.getSyn1Neg().slice(target),neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, negativeHolder.getSyn1Neg().slice(target), neu1e);
 
-                    Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, l1,negativeHolder.getSyn1Neg().slice(target));
+                Nd4j.getBlasWrapper().level1().axpy(vectorLength, g, l1, negativeHolder.getSyn1Neg().slice(target));
             }
 
 
@@ -240,6 +242,6 @@ public class FirstIterationFunctionAdapter
         /*
             we use wordIndex as part of seed here, to guarantee that during word syn0 initialization on dwo distinct nodes, initial weights will be the same for the same word
          */
-        return Nd4j.rand(lseed * seed, new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
+        return Nd4j.rand(lseed * seed, new int[] {1, vectorLength}).subi(0.5).divi(vectorLength);
     }
 }

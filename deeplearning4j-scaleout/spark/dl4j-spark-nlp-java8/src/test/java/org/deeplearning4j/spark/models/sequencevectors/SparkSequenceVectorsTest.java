@@ -68,7 +68,7 @@ public class SparkSequenceVectorsTest {
         assertEquals(20, counter.getCount(0L), 1e-5);
 
         // elements 1 - 9 should have frequencies of 10
-        for (int e = 1; e < sequencesCyclic.get(0).getElements().size() - 1; e++ ) {
+        for (int e = 1; e < sequencesCyclic.get(0).getElements().size() - 1; e++) {
             assertEquals(10, counter.getCount(sequencesCyclic.get(0).getElementByIndex(e).getStorageId()), 1e-5);
         }
 

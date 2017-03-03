@@ -41,7 +41,7 @@ public class FileDocumentIterator implements DocumentIterator {
     private Iterator<File> iter;
     private LineIterator lineIterator;
     private File rootDir;
-    private static final Logger log  = LoggerFactory.getLogger(FileDocumentIterator.class);
+    private static final Logger log = LoggerFactory.getLogger(FileDocumentIterator.class);
 
     public FileDocumentIterator(String path) {
         this(new File(path));
@@ -49,7 +49,7 @@ public class FileDocumentIterator implements DocumentIterator {
 
 
     public FileDocumentIterator(File path) {
-        if(path.isFile())  {
+        if (path.isFile()) {
             iter = Arrays.asList(path).iterator();
             try {
                 lineIterator = FileUtils.lineIterator(path);
@@ -57,8 +57,7 @@ public class FileDocumentIterator implements DocumentIterator {
                 throw new RuntimeException(e);
             }
             this.rootDir = path;
-        }
-        else {
+        } else {
             iter = FileUtils.iterateFiles(path, null, true);
             try {
                 lineIterator = FileUtils.lineIterator(iter.next());
@@ -72,13 +71,13 @@ public class FileDocumentIterator implements DocumentIterator {
     }
 
     @Override
-    public synchronized  InputStream nextDocument() {
+    public synchronized InputStream nextDocument() {
         try {
-            if(lineIterator != null && !lineIterator.hasNext() && iter.hasNext()) {
+            if (lineIterator != null && !lineIterator.hasNext() && iter.hasNext()) {
                 File next = iter.next();
                 lineIterator.close();
                 lineIterator = FileUtils.lineIterator(next);
-                while(!lineIterator.hasNext()) {
+                while (!lineIterator.hasNext()) {
                     lineIterator.close();
                     lineIterator = FileUtils.lineIterator(next);
                 }
@@ -86,11 +85,11 @@ public class FileDocumentIterator implements DocumentIterator {
 
             }
 
-            if(lineIterator != null && lineIterator.hasNext()) {
+            if (lineIterator != null && lineIterator.hasNext()) {
                 return new BufferedInputStream(IOUtils.toInputStream(lineIterator.nextLine()));
             }
         } catch (Exception e) {
-           log.warn("Error reading input stream...this is just a warning..Going to return",e);
+            log.warn("Error reading input stream...this is just a warning..Going to return", e);
             return null;
         }
 
@@ -104,10 +103,10 @@ public class FileDocumentIterator implements DocumentIterator {
 
     @Override
     public void reset() {
-        if(rootDir.isDirectory())
+        if (rootDir.isDirectory())
             iter = FileUtils.iterateFiles(rootDir, null, true);
         else
-            iter =  Arrays.asList(rootDir).iterator();
+            iter = Arrays.asList(rootDir).iterator();
 
     }
 

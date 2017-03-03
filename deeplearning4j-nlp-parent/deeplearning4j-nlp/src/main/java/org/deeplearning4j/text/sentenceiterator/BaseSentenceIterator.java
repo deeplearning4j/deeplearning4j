@@ -28,33 +28,32 @@ package org.deeplearning4j.text.sentenceiterator;
  */
 public abstract class BaseSentenceIterator implements SentenceIterator {
 
-	protected SentencePreProcessor preProcessor;
+    protected SentencePreProcessor preProcessor;
 
-	
-	
-	
-	public BaseSentenceIterator(SentencePreProcessor preProcessor) {
-		super();
-		this.preProcessor = preProcessor;
-	}
 
-	public BaseSentenceIterator() {
-		super();
-	}
 
-	public SentencePreProcessor getPreProcessor() {
-		return preProcessor;
-	}
+    public BaseSentenceIterator(SentencePreProcessor preProcessor) {
+        super();
+        this.preProcessor = preProcessor;
+    }
 
-	public void setPreProcessor(SentencePreProcessor preProcessor) {
-		this.preProcessor = preProcessor;
-	}
+    public BaseSentenceIterator() {
+        super();
+    }
 
-	@Override
-	public void finish() {
-		//No-op
-	}
-	
-	
+    public SentencePreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    public void setPreProcessor(SentencePreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
+    }
+
+    @Override
+    public void finish() {
+        //No-op
+    }
+
+
 
 }

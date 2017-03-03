@@ -38,23 +38,27 @@ public class SparkEarlyStoppingTrainer extends BaseSparkEarlyStoppingTrainer<Mul
 
     private SparkDl4jMultiLayer sparkNet;
 
-    public SparkEarlyStoppingTrainer(SparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig,
-                                     MultiLayerNetwork net, JavaRDD<DataSet> train) {
+    public SparkEarlyStoppingTrainer(SparkContext sc, TrainingMaster trainingMaster,
+                    EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                    JavaRDD<DataSet> train) {
         this(new JavaSparkContext(sc), trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingTrainer(JavaSparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig,
-                                     MultiLayerNetwork net, JavaRDD<DataSet> train) {
+    public SparkEarlyStoppingTrainer(JavaSparkContext sc, TrainingMaster trainingMaster,
+                    EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                    JavaRDD<DataSet> train) {
         this(sc, trainingMaster, esConfig, net, train, null);
     }
 
-    public SparkEarlyStoppingTrainer(SparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig,
-                                     MultiLayerNetwork net, JavaRDD<DataSet> train, EarlyStoppingListener<MultiLayerNetwork> listener) {
+    public SparkEarlyStoppingTrainer(SparkContext sc, TrainingMaster trainingMaster,
+                    EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                    JavaRDD<DataSet> train, EarlyStoppingListener<MultiLayerNetwork> listener) {
         this(new JavaSparkContext(sc), trainingMaster, esConfig, net, train, listener);
     }
 
-    public SparkEarlyStoppingTrainer(JavaSparkContext sc, TrainingMaster trainingMaster, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
-                                     JavaRDD<DataSet> train, EarlyStoppingListener<MultiLayerNetwork> listener) {
+    public SparkEarlyStoppingTrainer(JavaSparkContext sc, TrainingMaster trainingMaster,
+                    EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                    JavaRDD<DataSet> train, EarlyStoppingListener<MultiLayerNetwork> listener) {
         super(sc, esConfig, net, train, null, listener);
         sparkNet = new SparkDl4jMultiLayer(sc, net, trainingMaster);
     }

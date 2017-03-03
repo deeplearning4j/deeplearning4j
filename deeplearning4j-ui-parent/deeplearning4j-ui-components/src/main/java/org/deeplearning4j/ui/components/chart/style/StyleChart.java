@@ -33,7 +33,10 @@ import java.awt.*;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data @NoArgsConstructor @EqualsAndHashCode(callSuper=true)
+@AllArgsConstructor
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleChart extends Style {
 
@@ -48,7 +51,7 @@ public class StyleChart extends Style {
     protected Double axisStrokeWidth;
     protected StyleText titleStyle;
 
-    private StyleChart(Builder b){
+    private StyleChart(Builder b) {
         super(b);
         this.strokeWidth = b.strokeWidth;
         this.pointSize = b.pointSize;
@@ -59,7 +62,7 @@ public class StyleChart extends Style {
 
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
         protected Double strokeWidth;
         protected Double pointSize;
@@ -67,46 +70,47 @@ public class StyleChart extends Style {
         protected Double axisStrokeWidth;
         protected StyleText titleStyle;
 
-        public Builder(){
+        public Builder() {
             super.marginTop = DEFAULT_CHART_MARGIN_TOP;
             super.marginBottom = DEFAULT_CHART_MARGIN_BOTTOM;
             super.marginLeft = DEFAULT_CHART_MARGIN_LEFT;
             super.marginRight = DEFAULT_CHART_MARGIN_RIGHT;
         }
 
-        public Builder strokeWidth(double strokeWidth){
+        public Builder strokeWidth(double strokeWidth) {
             this.strokeWidth = strokeWidth;
             return this;
         }
 
         /** Point size, for scatter plot etc */
-        public Builder pointSize(double pointSize){
+        public Builder pointSize(double pointSize) {
             this.pointSize = pointSize;
             return this;
         }
 
-        public Builder seriesColors(Color... colors){
+        public Builder seriesColors(Color... colors) {
             String[] str = new String[colors.length];
-            for( int i=0; i<str.length; i++ ) str[i] = Utils.colorToHex(colors[i]);
+            for (int i = 0; i < str.length; i++)
+                str[i] = Utils.colorToHex(colors[i]);
             return seriesColors(str);
         }
 
-        public Builder seriesColors(String... colors){
+        public Builder seriesColors(String... colors) {
             this.seriesColors = colors;
             return this;
         }
 
-        public Builder axisStrokeWidth(double axisStrokeWidth){
+        public Builder axisStrokeWidth(double axisStrokeWidth) {
             this.axisStrokeWidth = axisStrokeWidth;
             return this;
         }
 
-        public Builder titleStyle(StyleText style){
+        public Builder titleStyle(StyleText style) {
             this.titleStyle = style;
             return this;
         }
 
-        public StyleChart build(){
+        public StyleChart build() {
             return new StyleChart(this);
         }
     }

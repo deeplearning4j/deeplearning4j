@@ -20,15 +20,14 @@ package org.deeplearning4j.aws.ec2.provision;
 
 public class DistributedDeepLearningTrainer {
 
-	private DistributedDeepLearningTrainer() {
-	}
+    private DistributedDeepLearningTrainer() {}
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		ClusterSetup clusterSet = new ClusterSetup(args);
-		
-	}
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        ClusterSetup clusterSet = new ClusterSetup(args);
+
+    }
 
 }

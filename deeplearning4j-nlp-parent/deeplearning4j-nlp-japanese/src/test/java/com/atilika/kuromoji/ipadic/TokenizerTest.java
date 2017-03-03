@@ -152,49 +152,32 @@ public class TokenizerTest {
     public void testCustomPenalties() {
         String input = "シニアソフトウェアエンジニアを探しています";
 
-        Tokenizer customTokenizer = new Tokenizer.Builder()
-            .mode(Tokenizer.Mode.SEARCH)
-            .kanjiPenalty(3, 10000)
-            .otherPenalty(Integer.MAX_VALUE, 0)
-            .build();
+        Tokenizer customTokenizer = new Tokenizer.Builder().mode(Tokenizer.Mode.SEARCH).kanjiPenalty(3, 10000)
+                        .otherPenalty(Integer.MAX_VALUE, 0).build();
 
         String[] expected1 = {"シニアソフトウェアエンジニア", "を", "探し", "て", "い", "ます"};
 
-        assertTokenSurfacesEquals(
-            Arrays.asList(expected1),
-            customTokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList(expected1), customTokenizer.tokenize(input));
 
-        Tokenizer searchTokenizer = new Tokenizer.Builder()
-            .mode(Tokenizer.Mode.SEARCH)
-            .build();
+        Tokenizer searchTokenizer = new Tokenizer.Builder().mode(Tokenizer.Mode.SEARCH).build();
 
         String[] expected2 = {"シニア", "ソフトウェア", "エンジニア", "を", "探し", "て", "い", "ます"};
 
-        assertTokenSurfacesEquals(
-            Arrays.asList(expected2),
-            searchTokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList(expected2), searchTokenizer.tokenize(input));
 
     }
 
     @Test
     public void testNakaguroSplit() {
         Tokenizer defaultTokenizer = new Tokenizer();
-        Tokenizer nakakuroSplittingTokenizer = new Tokenizer.Builder()
-            .isSplitOnNakaguro(true)
-            .build();
+        Tokenizer nakakuroSplittingTokenizer = new Tokenizer.Builder().isSplitOnNakaguro(true).build();
 
         String input = "ラレ・プールカリムの音楽が好き。";
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("ラレ・プールカリム", "の", "音楽", "が", "好き", "。"),
-            defaultTokenizer.tokenize(input)
-        );
-        assertTokenSurfacesEquals(
-            Arrays.asList("ラレ", "・", "プールカリム", "の", "音楽", "が", "好き", "。"),
-            nakakuroSplittingTokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList("ラレ・プールカリム", "の", "音楽", "が", "好き", "。"),
+                        defaultTokenizer.tokenize(input));
+        assertTokenSurfacesEquals(Arrays.asList("ラレ", "・", "プールカリム", "の", "音楽", "が", "好き", "。"),
+                        nakakuroSplittingTokenizer.tokenize(input));
     }
 
     @Test
@@ -219,35 +202,24 @@ public class TokenizerTest {
         String input = "＼ｍ";
         Tokenizer tokenizer = new Tokenizer();
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("＼", "ｍ"),
-            tokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList("＼", "ｍ"), tokenizer.tokenize(input));
     }
 
     @Test
     public void testFeatureLengths() throws IOException {
-        String userDictionary = "" +
-            "gsf,gsf,ジーエスーエフ,カスタム名詞\n";
+        String userDictionary = "" + "gsf,gsf,ジーエスーエフ,カスタム名詞\n";
 
         Tokenizer tokenizer = new Tokenizer.Builder()
-            .userDictionary(
-                new ByteArrayInputStream(
-                    userDictionary.getBytes(StandardCharsets.UTF_8)
-                )
-            )
-            .build();
+                        .userDictionary(new ByteArrayInputStream(userDictionary.getBytes(StandardCharsets.UTF_8)))
+                        .build();
 
         assertEqualTokenFeatureLengths("ahgsfdajhgsfdこの丘はアクロポリスと呼ばれている。", tokenizer);
     }
 
     @Test
     public void testNewBocchan() throws IOException {
-        assertTokenizedStreamEquals(
-            getClass().getResourceAsStream("/bocchan-ipadic-features.txt"),
-            getClass().getResourceAsStream("/bocchan.txt"),
-            tokenizer
-        );
+        assertTokenizedStreamEquals(getClass().getResourceAsStream("/bocchan-ipadic-features.txt"),
+                        getClass().getResourceAsStream("/bocchan.txt"), tokenizer);
     }
 
     @Test

@@ -49,7 +49,7 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
     private boolean stripNones = false;
 
     public PosUimaTokenizerFactory(Collection<String> allowedPoSTags, boolean stripNones) {
-        this(defaultAnalysisEngine(),allowedPoSTags);
+        this(defaultAnalysisEngine(), allowedPoSTags);
         this.stripNones = stripNones;
     }
 
@@ -57,20 +57,18 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
         this(allowedPoSTags, false);
     }
 
-    public PosUimaTokenizerFactory(AnalysisEngine tokenizer,Collection<String> allowedPosTags) {
+    public PosUimaTokenizerFactory(AnalysisEngine tokenizer, Collection<String> allowedPosTags) {
         this.tokenizer = tokenizer;
         this.allowedPoSTags = allowedPosTags;
     }
 
 
-    public static AnalysisEngine defaultAnalysisEngine()  {
+    public static AnalysisEngine defaultAnalysisEngine() {
         try {
-            return createEngine(
-                    createEngineDescription(SentenceAnnotator.getDescription(),
-                            TokenizerAnnotator.getDescription(),
-                            PoStagger.getDescription("en"),
+            return createEngine(createEngineDescription(SentenceAnnotator.getDescription(),
+                            TokenizerAnnotator.getDescription(), PoStagger.getDescription("en"),
                             StemmerAnnotator.getDescription("English")));
-        }catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -78,8 +76,9 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        PosUimaTokenizer t =  new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags, stripNones);
-        if (tokenPreProcess!= null) t.setTokenPreProcessor(tokenPreProcess);
+        PosUimaTokenizer t = new PosUimaTokenizer(toTokenize, tokenizer, allowedPoSTags, stripNones);
+        if (tokenPreProcess != null)
+            t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
 

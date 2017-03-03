@@ -22,15 +22,18 @@ public class Vertex<T> {
 
     @Override
     public String toString() {
-        return "vertex(" + idx + "," + (value!=null ? value : "") + ")";
+        return "vertex(" + idx + "," + (value != null ? value : "") + ")";
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Vertex)) return false;
+        if (!(o instanceof Vertex))
+            return false;
         Vertex<?> v = (Vertex<?>) o;
-        if (idx != v.idx) return false;
-        if ((value == null && v.value != null) || (value != null && v.value == null)) return false;
+        if (idx != v.idx)
+            return false;
+        if ((value == null && v.value != null) || (value != null && v.value == null))
+            return false;
         return value == null || value.equals(v.value);
     }
 
@@ -38,7 +41,7 @@ public class Vertex<T> {
     public int hashCode() {
         int result = 17;
         result = 31 * result + idx;
-        result = 31 * result + (value==null? 0 : value.hashCode());
+        result = 31 * result + (value == null ? 0 : value.hashCode());
         return result;
     }
 }

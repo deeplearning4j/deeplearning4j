@@ -44,7 +44,7 @@ public class Tree implements Serializable {
     private List<String> tokens;
     private List<String> tags;
     private String parse;
-    private int begin,end;
+    private int begin, end;
 
     /**
      * Clone constructor (all but the children)
@@ -64,7 +64,7 @@ public class Tree implements Serializable {
         setType(tree.type);
     }
 
-    public Tree(Tree parent,List<String> tokens) {
+    public Tree(Tree parent, List<String> tokens) {
         this.parent = parent;
         this.tokens = tokens;
         children = new ArrayList<>();
@@ -105,7 +105,7 @@ public class Tree implements Serializable {
      */
     private List<String> yield(List<String> labels) {
         labels.add(label);
-        for(Tree t : children()) {
+        for (Tree t : children()) {
             labels.addAll(t.yield());
         }
         return labels;
@@ -113,7 +113,7 @@ public class Tree implements Serializable {
 
 
     public void setGoldLabel(int goldLabel) {
-          this.goldLabel = goldLabel;
+        this.goldLabel = goldLabel;
     }
 
     public int goldLabel() {
@@ -149,7 +149,7 @@ public class Tree implements Serializable {
     }
 
     public List<Tree> children() {
-        if(children == null)
+        if (children == null)
             children = new ArrayList<>();
 
         return children;
@@ -160,9 +160,9 @@ public class Tree implements Serializable {
      * @return whether the node has one child and the child is a leaf
      */
     public boolean isPreTerminal() {
-        if(children == null && label != null && !label.equals("TOP"))
+        if (children == null && label != null && !label.equals("TOP"))
             children = new ArrayList<>();
-        if(children != null && children.size() == 1) {
+        if (children != null && children.size() == 1) {
             Tree child = children.get(0);
             return child != null && child.isLeaf();
         }
@@ -177,6 +177,7 @@ public class Tree implements Serializable {
     public Tree lastChild() {
         return children.isEmpty() ? null : children.get(children.size() - 1);
     }
+
     /**
      * Finds the depth of the tree.  The depth is defined as the length
      * of the longest path from this node to a leaf node.  Leaf nodes
@@ -208,8 +209,12 @@ public class Tree implements Serializable {
      */
     public int depth(Tree node) {
         Tree p = node.parent(this);
-        if (this == node) { return 0; }
-        if (p == null) { return -1; }
+        if (this == node) {
+            return 0;
+        }
+        if (p == null) {
+            return -1;
+        }
         int depth = 1;
         while (this != p) {
             p = p.parent(this);
@@ -307,7 +312,7 @@ public class Tree implements Serializable {
     @SuppressWarnings("unchecked")
     public <T extends Tree> List<T> getLeaves(List<T> list) {
         if (isLeaf()) {
-            list.add((T)this);
+            list.add((T) this);
         } else {
             for (Tree kid : children()) {
                 kid.getLeaves(list);
@@ -399,7 +404,7 @@ public class Tree implements Serializable {
      */
     public void connect(List<Tree> children) {
         this.children = children;
-        for(Tree t : children)
+        for (Tree t : children)
             t.setParent(this);
     }
 
@@ -421,39 +426,44 @@ public class Tree implements Serializable {
 
     @Override
     public String toString() {
-        return "Tree{" +
-                "error=" + error +
-                ", parent=" + parent +
-                ", headWord='" + headWord + '\'' +
-                ", value='" + value + '\'' +
-                ", label='" + label + '\'' +
-                ", type='" + type + '\'' +
-                ", goldLabel=" + goldLabel +
-                ", parse='" + parse + '\'' +
-                ", begin=" + begin +
-                ", end=" + end +
-                '}';
+        return "Tree{" + "error=" + error + ", parent=" + parent + ", headWord='" + headWord + '\'' + ", value='"
+                        + value + '\'' + ", label='" + label + '\'' + ", type='" + type + '\'' + ", goldLabel="
+                        + goldLabel + ", parse='" + parse + '\'' + ", begin=" + begin + ", end=" + end + '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Tree)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Tree))
+            return false;
 
         Tree tree = (Tree) o;
 
-        if (begin != tree.begin) return false;
-        if (end != tree.end) return false;
-        if (Double.compare(tree.error, error) != 0) return false;
-        if (goldLabel != tree.goldLabel) return false;
-        if (headWord != null ? !headWord.equals(tree.headWord) : tree.headWord != null) return false;
-        if (label != null ? !label.equals(tree.label) : tree.label != null) return false;
-        if (parse != null ? !parse.equals(tree.parse) : tree.parse != null) return false;
-        if (prediction != null ? !prediction.equals(tree.prediction) : tree.prediction != null) return false;
-        if (tags != null ? !tags.equals(tree.tags) : tree.tags != null) return false;
-        if (tokens != null ? !tokens.equals(tree.tokens) : tree.tokens != null) return false;
-        if (type != null ? !type.equals(tree.type) : tree.type != null) return false;
-        if (value != null ? !value.equals(tree.value) : tree.value != null) return false;
+        if (begin != tree.begin)
+            return false;
+        if (end != tree.end)
+            return false;
+        if (Double.compare(tree.error, error) != 0)
+            return false;
+        if (goldLabel != tree.goldLabel)
+            return false;
+        if (headWord != null ? !headWord.equals(tree.headWord) : tree.headWord != null)
+            return false;
+        if (label != null ? !label.equals(tree.label) : tree.label != null)
+            return false;
+        if (parse != null ? !parse.equals(tree.parse) : tree.parse != null)
+            return false;
+        if (prediction != null ? !prediction.equals(tree.prediction) : tree.prediction != null)
+            return false;
+        if (tags != null ? !tags.equals(tree.tags) : tree.tags != null)
+            return false;
+        if (tokens != null ? !tokens.equals(tree.tokens) : tree.tokens != null)
+            return false;
+        if (type != null ? !type.equals(tree.type) : tree.type != null)
+            return false;
+        if (value != null ? !value.equals(tree.value) : tree.value != null)
+            return false;
         return !(vector != null ? !vector.equals(tree.vector) : tree.vector != null);
 
     }

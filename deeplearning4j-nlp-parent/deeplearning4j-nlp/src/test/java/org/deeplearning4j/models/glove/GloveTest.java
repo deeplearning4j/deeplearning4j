@@ -73,13 +73,13 @@ public class GloveTest {
                 .minWordFrequency(1).iterations(10).learningRate(0.1)
                 .layerSize(300)
                 .build();
-
+        
         glove.fit();
         Collection<String> words = glove.wordsNearest("day", 20);
         log.info("Nearest words to 'day': " + words);
         assertTrue(words.contains("week"));
-
-*/
+        
+        */
 
     }
 
@@ -93,16 +93,8 @@ public class GloveTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Glove glove = new Glove.Builder()
-                .iterate(iter)
-                .tokenizerFactory(t)
-                .alpha(0.75)
-                .learningRate(0.1)
-                .epochs(45)
-                .xMax(100)
-                .shuffle(true)
-                .symmetric(true)
-                .build();
+        Glove glove = new Glove.Builder().iterate(iter).tokenizerFactory(t).alpha(0.75).learningRate(0.1).epochs(45)
+                        .xMax(100).shuffle(true).symmetric(true).build();
 
         glove.fit();
 

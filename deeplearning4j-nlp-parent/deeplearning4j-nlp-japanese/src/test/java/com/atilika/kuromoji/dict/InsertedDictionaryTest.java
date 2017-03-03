@@ -31,13 +31,8 @@ public class InsertedDictionaryTest {
         assertEquals("*,*,*,*,*,*,*,*,*", dictionary1.getAllFeatures(0));
         assertEquals("*,*,*,*,*", dictionary2.getAllFeatures(0));
 
-        assertArrayEquals(
-            new String[]{"*", "*", "*", "*", "*", "*", "*", "*", "*"},
-            dictionary1.getAllFeaturesArray(0)
-        );
-        assertArrayEquals(
-            new String[]{"*", "*", "*", "*", "*"},
-            dictionary2.getAllFeaturesArray(0)
-        );
+        assertArrayEquals(new String[] {"*", "*", "*", "*", "*", "*", "*", "*", "*"},
+                        dictionary1.getAllFeaturesArray(0));
+        assertArrayEquals(new String[] {"*", "*", "*", "*", "*"}, dictionary2.getAllFeaturesArray(0));
     }
 }

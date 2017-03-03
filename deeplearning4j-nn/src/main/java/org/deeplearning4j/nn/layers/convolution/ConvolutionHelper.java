@@ -30,10 +30,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface ConvolutionHelper {
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta,
-                                              int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView,
-                                              IActivation afn, AlgoMode mode, ConvolutionMode convolutionMode);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
+                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                    AlgoMode mode, ConvolutionMode convolutionMode);
+
     INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                       AlgoMode mode, ConvolutionMode convolutionMode);
+                    AlgoMode mode, ConvolutionMode convolutionMode);
+
     INDArray activate(INDArray z, IActivation afn);
 }

@@ -23,21 +23,24 @@ import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 
 public interface ClusteringStrategy {
 
-	ClusteringStrategyType getType();
-	boolean isStrategyOfType(ClusteringStrategyType type);
-	
-	Integer getInitialClusterCount();
-	
-	String getDistanceFunction();
+    ClusteringStrategyType getType();
 
-	boolean isAllowEmptyClusters();
+    boolean isStrategyOfType(ClusteringStrategyType type);
 
-	ClusteringAlgorithmCondition getTerminationCondition();
-	
-	boolean isOptimizationDefined();
-	boolean isOptimizationApplicableNow(IterationHistory iterationHistory);
-	
-	BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount);
-	BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate);
-	
+    Integer getInitialClusterCount();
+
+    String getDistanceFunction();
+
+    boolean isAllowEmptyClusters();
+
+    ClusteringAlgorithmCondition getTerminationCondition();
+
+    boolean isOptimizationDefined();
+
+    boolean isOptimizationApplicableNow(IterationHistory iterationHistory);
+
+    BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount);
+
+    BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate);
+
 }

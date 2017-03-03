@@ -28,7 +28,7 @@ public class FileResourceResolver implements ResourceResolver {
     protected static final Logger log = LoggerFactory.getLogger(FileResourceResolver.class);
 
     static {
-        if( KuromojiBinFilesFetcher.kuromojiExist() == false ){
+        if (KuromojiBinFilesFetcher.kuromojiExist() == false) {
             log.info("Kuromoji bin folder not exist ");
             try {
                 KuromojiBinFilesFetcher.downloadAndUntar();
@@ -39,7 +39,8 @@ public class FileResourceResolver implements ResourceResolver {
         }
     }
 
-    public FileResourceResolver() {  }
+    public FileResourceResolver() {}
+
     @Override
     public InputStream resolve(String fileName) throws IOException {
         InputStream input = new FileInputStream(new File(fileName));

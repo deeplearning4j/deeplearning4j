@@ -56,7 +56,7 @@ public interface ConvexOptimizer extends Serializable {
      * The gradient and score for this optimizer
      * @return the gradient and score for this optimizer
      */
-    Pair<Gradient,Double> gradientAndScore();
+    Pair<Gradient, Double> gradientAndScore();
 
     /**
      * Calls optimize

@@ -48,7 +48,7 @@ public class SerializationUtilsTest {
 
         DataSet readDataSet = SerializationUtils.readObject(new File(irisData));
 
-        assertEquals(freshDataSet.getFeatureMatrix(),readDataSet.getFeatureMatrix());
+        assertEquals(freshDataSet.getFeatureMatrix(), readDataSet.getFeatureMatrix());
         assertEquals(freshDataSet.getLabels(), readDataSet.getLabels());
         try {
             FileUtils.forceDelete(new File(irisData));

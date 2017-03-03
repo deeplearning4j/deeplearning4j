@@ -71,8 +71,7 @@ public class LabelAwareUimaSentenceIterator extends UimaSentenceIterator impleme
 
         catch (NullPointerException e1) {
             return "NONE";
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -85,8 +84,12 @@ public class LabelAwareUimaSentenceIterator extends UimaSentenceIterator impleme
      * @throws Exception
      */
     public static LabelAwareSentenceIterator createWithPath(String path) throws Exception {
-        return new LabelAwareUimaSentenceIterator(null,path,new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription()))));
+        return new LabelAwareUimaSentenceIterator(null, path,
+                        new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory
+                                        .createEngineDescription(TokenizerAnnotator.getDescription(),
+                                                        SentenceAnnotator.getDescription()))));
     }
+
     @Override
     public List<String> currentLabels() {
         return Arrays.asList(currentLabel());

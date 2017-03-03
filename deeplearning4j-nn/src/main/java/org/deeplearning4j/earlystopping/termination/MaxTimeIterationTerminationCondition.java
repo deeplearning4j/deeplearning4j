@@ -29,9 +29,10 @@ public class MaxTimeIterationTerminationCondition implements IterationTerminatio
     private long initializationTime;
     private long endTime;
 
-    public MaxTimeIterationTerminationCondition(long maxTimeAmount, TimeUnit maxTimeUnit){
-        if(maxTimeAmount <= 0 || maxTimeUnit == null) throw new IllegalArgumentException("Invalid maximum training time: "
-            + "amount = " + maxTimeAmount + " unit = " + maxTimeUnit);
+    public MaxTimeIterationTerminationCondition(long maxTimeAmount, TimeUnit maxTimeUnit) {
+        if (maxTimeAmount <= 0 || maxTimeUnit == null)
+            throw new IllegalArgumentException(
+                            "Invalid maximum training time: " + "amount = " + maxTimeAmount + " unit = " + maxTimeUnit);
         this.maxTimeAmount = maxTimeAmount;
         this.maxTimeUnit = maxTimeUnit;
     }
@@ -48,7 +49,7 @@ public class MaxTimeIterationTerminationCondition implements IterationTerminatio
     }
 
     @Override
-    public String toString(){
-        return "MaxTimeIterationTerminationCondition(" + maxTimeAmount+",unit="+maxTimeUnit+")";
+    public String toString() {
+        return "MaxTimeIterationTerminationCondition(" + maxTimeAmount + ",unit=" + maxTimeUnit + ")";
     }
 }

@@ -28,10 +28,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-@Data  @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
-	@Override
+    @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         INDArray columnMeans = input.mean(0);
         input.subiRowVector(columnMeans);
@@ -45,7 +46,8 @@ public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;
     }
 }

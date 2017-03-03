@@ -43,8 +43,8 @@ public class UimaTokenizer implements Tokenizer {
     private TokenPreProcess preProcess;
 
 
-    public UimaTokenizer(String tokens,UimaResource resource,boolean checkForLabel) {
-    
+    public UimaTokenizer(String tokens, UimaResource resource, boolean checkForLabel) {
+
         this.checkForLabel = checkForLabel;
         this.tokens = new ArrayList<>();
         try {
@@ -52,23 +52,23 @@ public class UimaTokenizer implements Tokenizer {
 
             Collection<Token> tokenList = JCasUtil.select(cas.getJCas(), Token.class);
 
-            for(Token t : tokenList) {
+            for (Token t : tokenList) {
 
-                if(!checkForLabel || valid(t.getCoveredText()))
-                    if(t.getLemma() != null)
+                if (!checkForLabel || valid(t.getCoveredText()))
+                    if (t.getLemma() != null)
                         this.tokens.add(t.getLemma());
-                    else if(t.getStem() != null)
+                    else if (t.getStem() != null)
                         this.tokens.add(t.getStem());
                     else
                         this.tokens.add(t.getCoveredText());
             }
 
 
-           resource.release(cas);
+            resource.release(cas);
 
 
         } catch (Exception e) {
-        	e.printStackTrace();
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
 
@@ -94,7 +94,7 @@ public class UimaTokenizer implements Tokenizer {
     public String nextToken() {
         String ret = tokens.get(index);
         index++;
-        if(preProcess != null)
+        if (preProcess != null)
             ret = preProcess.preProcess(ret);
         return ret;
     }
@@ -102,17 +102,16 @@ public class UimaTokenizer implements Tokenizer {
     @Override
     public List<String> getTokens() {
         List<String> tokens = new ArrayList<>();
-        while(hasMoreTokens()) {
+        while (hasMoreTokens()) {
             tokens.add(nextToken());
         }
         return tokens;
     }
 
-	@Override
-	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-       this.preProcess = tokenPreProcessor;
-	}
-
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+        this.preProcess = tokenPreProcessor;
+    }
 
 
 

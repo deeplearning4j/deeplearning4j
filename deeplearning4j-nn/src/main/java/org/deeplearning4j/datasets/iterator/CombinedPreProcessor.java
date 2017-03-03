@@ -18,6 +18,7 @@ public class CombinedPreProcessor implements DataSetPreProcessor {
     private CombinedPreProcessor() {
 
     }
+
     /**
      * Pre process a dataset sequentially
      *
@@ -25,7 +26,7 @@ public class CombinedPreProcessor implements DataSetPreProcessor {
      */
     @Override
     public void preProcess(DataSet toPreProcess) {
-        for(DataSetPreProcessor preProcessor: preProcessors) {
+        for (DataSetPreProcessor preProcessor : preProcessors) {
             preProcessor.preProcess(toPreProcess);
         }
     }

@@ -52,7 +52,7 @@ public class MovingWindowMatrix {
      * @param windowColumnSize the number of columns in each window
      * @param addRotate whether to add the possible rotations of each moving window
      */
-    public MovingWindowMatrix(INDArray toSlice,int windowRowSize,int windowColumnSize,boolean addRotate) {
+    public MovingWindowMatrix(INDArray toSlice, int windowRowSize, int windowColumnSize, boolean addRotate) {
         this.toSlice = toSlice;
         this.windowRowSize = windowRowSize;
         this.windowColumnSize = windowColumnSize;
@@ -66,10 +66,9 @@ public class MovingWindowMatrix {
      * @param windowRowSize
      * @param windowColumnSize
      */
-    public MovingWindowMatrix(INDArray toSlice,int windowRowSize,int windowColumnSize) {
-        this(toSlice,windowRowSize,windowColumnSize,false);
+    public MovingWindowMatrix(INDArray toSlice, int windowRowSize, int windowColumnSize) {
+        this(toSlice, windowRowSize, windowColumnSize, false);
     }
-
 
 
 
@@ -91,22 +90,22 @@ public class MovingWindowMatrix {
         List<INDArray> ret = new ArrayList<>();
         int window = 0;
 
-        for(int i = 0; i < toSlice.length(); i++) {
-            if(window >= toSlice.length())
+        for (int i = 0; i < toSlice.length(); i++) {
+            if (window >= toSlice.length())
                 break;
             double[] w = new double[this.windowRowSize * this.windowColumnSize];
-            for(int count = 0; count < this.windowRowSize * this.windowColumnSize; count++) {
+            for (int count = 0; count < this.windowRowSize * this.windowColumnSize; count++) {
                 w[count] = toSlice.getDouble(count + window);
             }
             INDArray add = Nd4j.create(w);
-            if(flattened)
+            if (flattened)
                 add = add.ravel();
             else
-                add = add.reshape(windowRowSize,windowColumnSize);
-            if(addRotate) {
+                add = add.reshape(windowRowSize, windowColumnSize);
+            if (addRotate) {
                 INDArray currRotation = add.dup();
                 //3 different orientations besides the original
-                for(int rotation = 0; rotation < 3; rotation++) {
+                for (int rotation = 0; rotation < 3; rotation++) {
                     Nd4j.rot90(currRotation);
                     ret.add(currRotation.dup());
                 }

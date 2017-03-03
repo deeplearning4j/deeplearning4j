@@ -74,7 +74,7 @@ public interface StatsReport extends Persistable {
      * @param deviceMaxBytes      Maximum bytes for each device (GPU, etc). May be null if no devices are present
      */
     void reportMemoryUse(long jvmCurrentBytes, long jvmMaxBytes, long offHeapCurrentBytes, long offHeapMaxBytes,
-                         long[] deviceCurrentBytes, long[] deviceMaxBytes);
+                    long[] deviceCurrentBytes, long[] deviceMaxBytes);
 
     /**
      * Get JVM memory - current bytes used
@@ -115,8 +115,8 @@ public interface StatsReport extends Persistable {
      * @param examplesPerSecond    Examples per second since last report
      * @param minibatchesPerSecond Minibatches per second since last report
      */
-    void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
-                           double examplesPerSecond, double minibatchesPerSecond);
+    void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches, double examplesPerSecond,
+                    double minibatchesPerSecond);
 
     /**
      * Get the total runtime since listener/model initialization

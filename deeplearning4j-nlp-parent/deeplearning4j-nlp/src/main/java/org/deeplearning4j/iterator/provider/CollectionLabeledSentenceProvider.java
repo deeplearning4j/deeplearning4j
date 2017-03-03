@@ -23,24 +23,26 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
 
     private int cursor = 0;
 
-    public CollectionLabeledSentenceProvider(@NonNull List<String> sentences, @NonNull List<String> labelsForSentences) {
+    public CollectionLabeledSentenceProvider(@NonNull List<String> sentences,
+                    @NonNull List<String> labelsForSentences) {
         this(sentences, labelsForSentences, new Random());
     }
 
-    public CollectionLabeledSentenceProvider(@NonNull List<String> sentences, @NonNull List<String> labelsForSentences, Random rng) {
-        if(sentences.size() != labelsForSentences.size()){
+    public CollectionLabeledSentenceProvider(@NonNull List<String> sentences, @NonNull List<String> labelsForSentences,
+                    Random rng) {
+        if (sentences.size() != labelsForSentences.size()) {
             throw new IllegalArgumentException("Sentences and labels must be same size (sentences size: "
-                    + sentences.size() + ", labels size: " + labelsForSentences.size() + ")");
+                            + sentences.size() + ", labels size: " + labelsForSentences.size() + ")");
         }
 
         this.sentences = sentences;
         this.labels = labelsForSentences;
         this.rng = rng;
-        if(rng == null){
+        if (rng == null) {
             order = null;
         } else {
             order = new int[sentences.size()];
-            for( int i = 0; i < sentences.size(); i++ ){
+            for (int i = 0; i < sentences.size(); i++) {
                 order[i] = i;
             }
 
@@ -49,7 +51,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
 
         //Collect set of unique labels for all sentences
         Set<String> uniqueLabels = new HashSet<>();
-        for(String s : labelsForSentences){
+        for (String s : labelsForSentences) {
             uniqueLabels.add(s);
         }
         allLabels = new ArrayList<>(uniqueLabels);
@@ -64,7 +66,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
     @Override
     public Pair<String, String> nextSentence() {
         int idx;
-        if(rng == null){
+        if (rng == null) {
             idx = cursor++;
         } else {
             idx = order[cursor++];
@@ -75,7 +77,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
     @Override
     public void reset() {
         cursor = 0;
-        if(rng != null){
+        if (rng != null) {
             RandomUtils.shuffleInPlace(order, rng);
         }
     }

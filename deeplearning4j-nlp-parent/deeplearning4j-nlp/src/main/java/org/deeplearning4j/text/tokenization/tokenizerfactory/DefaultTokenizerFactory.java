@@ -35,14 +35,14 @@ public class DefaultTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        DefaultTokenizer t =  new DefaultTokenizer(toTokenize);
+        DefaultTokenizer t = new DefaultTokenizer(toTokenize);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t =  new DefaultStreamTokenizer(toTokenize);
+        Tokenizer t = new DefaultStreamTokenizer(toTokenize);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }

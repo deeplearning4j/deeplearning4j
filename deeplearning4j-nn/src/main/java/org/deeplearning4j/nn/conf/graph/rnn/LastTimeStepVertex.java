@@ -36,7 +36,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * step of the last non-zero entry in the mask array (for each example separately) will be used.
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;
@@ -47,7 +48,7 @@ public class LastTimeStepVertex extends GraphVertex {
      *                           mask array of this time series input is used when determining which time step to extract
      *                           and return.
      */
-    public LastTimeStepVertex(@JsonProperty("maskArrayInputName") String maskArrayInputName){
+    public LastTimeStepVertex(@JsonProperty("maskArrayInputName") String maskArrayInputName) {
         this.maskArrayInputName = maskArrayInputName;
     }
 
@@ -58,9 +59,12 @@ public class LastTimeStepVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if(!(o instanceof LastTimeStepVertex)) return false;
-        LastTimeStepVertex ltsv = (LastTimeStepVertex)o;
-        if(maskArrayInputName == null && ltsv.maskArrayInputName != null || maskArrayInputName != null && ltsv.maskArrayInputName == null) return false;
+        if (!(o instanceof LastTimeStepVertex))
+            return false;
+        LastTimeStepVertex ltsv = (LastTimeStepVertex) o;
+        if (maskArrayInputName == null && ltsv.maskArrayInputName != null
+                        || maskArrayInputName != null && ltsv.maskArrayInputName == null)
+            return false;
         return maskArrayInputName == null || maskArrayInputName.equals(ltsv.maskArrayInputName);
     }
 
@@ -70,28 +74,30 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                                      INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph,name,idx,maskArrayInputName);
+    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph,
+                    String name, int idx, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph, name, idx, maskArrayInputName);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input type: cannot get last time step of more than 1 input");
-        if(vertexInputs[0].getType() != InputType.Type.RNN){
-            throw new InvalidInputTypeException("Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");
+        if (vertexInputs.length != 1)
+            throw new InvalidInputTypeException("Invalid input type: cannot get last time step of more than 1 input");
+        if (vertexInputs[0].getType() != InputType.Type.RNN) {
+            throw new InvalidInputTypeException(
+                            "Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");
         }
 
-        return InputType.feedForward(((InputType.InputTypeRecurrent)vertexInputs[0]).getSize());
+        return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
     }
 
     @Override
-    public String toString(){
-        return "LastTimeStepVertex(inputName="+maskArrayInputName+")";
+    public String toString() {
+        return "LastTimeStepVertex(inputName=" + maskArrayInputName + ")";
     }
 }

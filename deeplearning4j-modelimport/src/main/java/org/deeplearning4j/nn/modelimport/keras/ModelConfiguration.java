@@ -52,9 +52,9 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfigFromInputStream(InputStream inputStream)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        IOUtils.copy(inputStream,byteArrayOutputStream);
+        IOUtils.copy(inputStream, byteArrayOutputStream);
         String configJson = new String(byteArrayOutputStream.toByteArray());
         return importSequentialModelConfig(configJson);
     }
@@ -68,9 +68,9 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfigFromInputStream(InputStream inputStream)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        IOUtils.copy(inputStream,byteArrayOutputStream);
+        IOUtils.copy(inputStream, byteArrayOutputStream);
         String configJson = new String(byteArrayOutputStream.toByteArray());
         return importFunctionalApiConfig(configJson);
     }
@@ -85,7 +85,7 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfigFromFile(String modelJsonFilename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return importSequentialModelConfigFromInputStream(new FileInputStream(modelJsonFilename));
     }
 
@@ -99,7 +99,7 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfigFromFile(String modelJsonFilename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return importFunctionalApiConfigFromInputStream(new FileInputStream(modelJsonFilename));
     }
 
@@ -113,8 +113,9 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfig(String modelJson)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJson(modelJson).buildSequential();
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasSequentialModel kerasModel =
+                        new KerasSequentialModel.ModelBuilder().modelJson(modelJson).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }
 
@@ -128,7 +129,7 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfig(String modelJson)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasModel kerasModel = new KerasModel.ModelBuilder().modelJson(modelJson).buildModel();
         return kerasModel.getComputationGraphConfiguration();
     }

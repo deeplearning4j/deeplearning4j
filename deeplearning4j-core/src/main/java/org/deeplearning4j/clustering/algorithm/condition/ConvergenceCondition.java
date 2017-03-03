@@ -26,36 +26,36 @@ import java.io.Serializable;
 
 public class ConvergenceCondition implements ClusteringAlgorithmCondition, Serializable {
 
-	private Condition	convergenceCondition;
-	private double		pointsDistributionChangeRate;
+    private Condition convergenceCondition;
+    private double pointsDistributionChangeRate;
 
-	protected ConvergenceCondition() {
+    protected ConvergenceCondition() {
 
-	}
-	
-	protected ConvergenceCondition(Condition varianceVariationCondition, double pointsDistributionChangeRate) {
-		super();
-		this.convergenceCondition = varianceVariationCondition;
-		this.pointsDistributionChangeRate = pointsDistributionChangeRate;
-	}
+    }
 
-	public static ConvergenceCondition distributionVariationRateLessThan(double pointsDistributionChangeRate) {
-		Condition condition = new LessThan(pointsDistributionChangeRate);
-		return new ConvergenceCondition(condition, pointsDistributionChangeRate);
-	}
+    protected ConvergenceCondition(Condition varianceVariationCondition, double pointsDistributionChangeRate) {
+        super();
+        this.convergenceCondition = varianceVariationCondition;
+        this.pointsDistributionChangeRate = pointsDistributionChangeRate;
+    }
 
-	
-	public boolean isSatisfied(IterationHistory iterationHistory) {
-		int iterationCount = iterationHistory.getIterationCount();
-		if( iterationCount<=1 )
-			return false;
-		
-		double variation = iterationHistory.getMostRecentClusterSetInfo().getPointLocationChange().get();
-		variation /= iterationHistory.getMostRecentClusterSetInfo().getPointsCount();
-		
-		return convergenceCondition.apply(variation);
-	}
+    public static ConvergenceCondition distributionVariationRateLessThan(double pointsDistributionChangeRate) {
+        Condition condition = new LessThan(pointsDistributionChangeRate);
+        return new ConvergenceCondition(condition, pointsDistributionChangeRate);
+    }
 
-	
+
+    public boolean isSatisfied(IterationHistory iterationHistory) {
+        int iterationCount = iterationHistory.getIterationCount();
+        if (iterationCount <= 1)
+            return false;
+
+        double variation = iterationHistory.getMostRecentClusterSetInfo().getPointLocationChange().get();
+        variation /= iterationHistory.getMostRecentClusterSetInfo().getPointsCount();
+
+        return convergenceCondition.apply(variation);
+    }
+
+
 
 }

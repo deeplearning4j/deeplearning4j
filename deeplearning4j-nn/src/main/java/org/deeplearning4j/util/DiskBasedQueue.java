@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Only meant for poll and adding items.
  * @author Adam Gibson
  */
-public class DiskBasedQueue<E> implements Queue<E>,Serializable {
+public class DiskBasedQueue<E> implements Queue<E>, Serializable {
 
     private File dir;
     private Queue<String> paths = new ConcurrentLinkedDeque<>();
@@ -56,13 +56,13 @@ public class DiskBasedQueue<E> implements Queue<E>,Serializable {
 
     public DiskBasedQueue(File dir) {
         this.dir = dir;
-        if(!dir.exists() && dir.isDirectory()) {
+        if (!dir.exists() && dir.isDirectory()) {
             throw new IllegalArgumentException("Illegal queue: must be a directory");
         }
 
-        if(!dir.exists())
+        if (!dir.exists())
             dir.mkdirs();
-        if(dir.listFiles() != null && dir.listFiles().length > 1)
+        if (dir.listFiles() != null && dir.listFiles().length > 1)
             try {
                 FileUtils.deleteDirectory(dir);
             } catch (IOException e) {
@@ -78,15 +78,15 @@ public class DiskBasedQueue<E> implements Queue<E>,Serializable {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-               while(running.get()) {
-                while(!save.isEmpty())
-                    addAndSave(save.poll());
-                   try {
-                       Thread.sleep(1000);
-                   } catch (InterruptedException e) {
-                       Thread.currentThread().interrupt();
-                   }
-               }
+                while (running.get()) {
+                    while (!save.isEmpty())
+                        addAndSave(save.poll());
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
         });
     }
@@ -142,7 +142,7 @@ public class DiskBasedQueue<E> implements Queue<E>,Serializable {
 
     @Override
     public boolean addAll(Collection<? extends E> c) {
-        for(E e : c)
+        for (E e : c)
             addAndSave(e);
         return true;
     }
@@ -193,10 +193,9 @@ public class DiskBasedQueue<E> implements Queue<E>,Serializable {
 
 
 
-
     private void addAndSave(E e) {
-        File path = new File(dir,UUID.randomUUID().toString());
-        SerializationUtils.saveObject(e,path);
+        File path = new File(dir, UUID.randomUUID().toString());
+        SerializationUtils.saveObject(e, path);
         paths.add(path.getAbsolutePath());
     }
 

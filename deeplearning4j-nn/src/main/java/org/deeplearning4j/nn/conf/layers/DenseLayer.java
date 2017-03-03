@@ -33,22 +33,23 @@ import java.util.Map;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
     private DenseLayer(Builder builder) {
-    	super(builder);
+        super(builder);
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
-                             INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("DenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret
-                = new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+        org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
+                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

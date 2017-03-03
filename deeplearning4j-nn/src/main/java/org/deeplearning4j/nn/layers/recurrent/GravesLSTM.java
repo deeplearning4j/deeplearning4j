@@ -52,7 +52,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("gradient() method for layerwise pretraining: not supported for LSTMs (pretraining not possible)");
+        throw new UnsupportedOperationException(
+                        "gradient() method for layerwise pretraining: not supported for LSTMs (pretraining not possible)");
     }
 
     @Override
@@ -71,15 +72,17 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     }
 
 
-    private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon,final boolean truncatedBPTT,final int tbpttBackwardLength) {
+    private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
+                    final int tbpttBackwardLength) {
 
         final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
-        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);    //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
 
         //First: Do forward pass to get gate activations, zs etc.
         FwdPassReturn fwdPass;
         if (truncatedBPTT) {
-            fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION), stateMap.get(STATE_KEY_PREV_MEMCELL), true);
+            fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION),
+                            stateMap.get(STATE_KEY_PREV_MEMCELL), true);
             //Store last time step of output activations and memory cell state in tBpttStateMap
             tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
@@ -88,21 +91,10 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         }
 
 
-        return LSTMHelpers.backpropGradientHelper(this.conf,
-                this.layerConf().getGateActivationFn(),
-                this.input,
-                recurrentWeights,
-                inputWeights,
-                epsilon,
-                truncatedBPTT,
-                tbpttBackwardLength,
-                fwdPass,
-                true,
-                GravesLSTMParamInitializer.INPUT_WEIGHT_KEY,
-                GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                GravesLSTMParamInitializer.BIAS_KEY,
-                gradientViews,
-                null);
+        return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
+                        recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null);
     }
 
 
@@ -140,18 +132,16 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return activateHelper(false, null, null, false).fwdPassOutput;
     }
 
-    private FwdPassReturn activateHelper(final boolean training,
-                                         final INDArray prevOutputActivations,
-                                         final INDArray prevMemCellState,
-                                         boolean forBackprop) {
+    private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
+                    final INDArray prevMemCellState, boolean forBackprop) {
 
-        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);    //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-        final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);            //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+        final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParam(GravesLSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null);
+                        recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
+                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null);
     }
 
     @Override
@@ -175,7 +165,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
         //Any relevant masking occurs during backprop
         //They also set the current mask array as inactive: this is for situations like the following:
@@ -188,7 +179,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization()) return 0.0;
+        if (!conf.isUseRegularization())
+            return 0.0;
 
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
@@ -204,7 +196,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization()) return 0.0;
+        if (!conf.isUseRegularization())
+            return 0.0;
 
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
@@ -221,7 +214,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     @Override
     public INDArray rnnTimeStep(INDArray input) {
         setInput(input);
-        FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION), stateMap.get(STATE_KEY_PREV_MEMCELL), false);
+        FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION),
+                        stateMap.get(STATE_KEY_PREV_MEMCELL), false);
         INDArray outAct = fwdPass.fwdPassOutput;
         //Store last time step of output activations and memory cell state for later use:
         stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
@@ -235,7 +229,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
         setInput(input);
-        FwdPassReturn fwdPass = activateHelper(training, stateMap.get(STATE_KEY_PREV_ACTIVATION), stateMap.get(STATE_KEY_PREV_MEMCELL), false);
+        FwdPassReturn fwdPass = activateHelper(training, stateMap.get(STATE_KEY_PREV_ACTIVATION),
+                        stateMap.get(STATE_KEY_PREV_MEMCELL), false);
         INDArray outAct = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap

@@ -22,33 +22,33 @@ import java.io.Serializable;
 
 public class ClusteringOptimization implements Serializable {
 
-	private ClusteringOptimizationType	type;
-	private double value;
+    private ClusteringOptimizationType type;
+    private double value;
 
-	protected ClusteringOptimization() {
-		// no-op for serialization only
-	}
+    protected ClusteringOptimization() {
+        // no-op for serialization only
+    }
 
-	public ClusteringOptimization(ClusteringOptimizationType type, double value) {
-		super();
-		this.type = type;
-		this.value = value;
-	}
+    public ClusteringOptimization(ClusteringOptimizationType type, double value) {
+        super();
+        this.type = type;
+        this.value = value;
+    }
 
-	public ClusteringOptimizationType getType() {
-		return type;
-	}
+    public ClusteringOptimizationType getType() {
+        return type;
+    }
 
-	public void setType(ClusteringOptimizationType type) {
-		this.type = type;
-	}
+    public void setType(ClusteringOptimizationType type) {
+        this.type = type;
+    }
 
-	public double getValue() {
-		return value;
-	}
+    public double getValue() {
+        return value;
+    }
 
-	public void setValue(double value) {
-		this.value = value;
-	}
+    public void setValue(double value) {
+        this.value = value;
+    }
 
 }

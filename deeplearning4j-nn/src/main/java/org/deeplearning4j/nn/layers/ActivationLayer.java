@@ -66,36 +66,36 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst();  //TODO handle activation function params
+        INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
-        if(maskArray != null){
+        if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
         Gradient ret = new DefaultGradient();
-        return new Pair<>(ret,delta);
+        return new Pair<>(ret, delta);
     }
 
     @Override
     public INDArray activate(boolean training) {
-        if(input == null)
+        if (input == null)
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(training);
 
         INDArray in;
-        if(training){
+        if (training) {
             //dup required: need to keep original input for backprop
             in = input.dup();
         } else {
             in = input;
         }
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
-        return conf().getLayer().getActivationFn().getActivation(in,training);
+        return conf().getLayer().getActivationFn().getActivation(in, training);
 
     }
 
     @Override
-    public Layer transpose(){
+    public Layer transpose() {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -116,7 +116,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
     }
 
     @Override
-    public INDArray params(){
+    public INDArray params() {
         return null;
     }
 

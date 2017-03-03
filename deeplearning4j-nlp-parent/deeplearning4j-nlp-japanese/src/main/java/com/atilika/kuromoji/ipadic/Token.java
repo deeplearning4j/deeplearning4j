@@ -26,11 +26,7 @@ import com.atilika.kuromoji.viterbi.ViterbiNode;
  */
 public class Token extends TokenBase {
 
-    public Token(int wordId,
-                 String surface,
-                 ViterbiNode.Type type,
-                 int position,
-                 Dictionary dictionary) {
+    public Token(int wordId, String surface, ViterbiNode.Type type, int position, Dictionary dictionary) {
         super(wordId, surface, type, position, dictionary);
     }
 

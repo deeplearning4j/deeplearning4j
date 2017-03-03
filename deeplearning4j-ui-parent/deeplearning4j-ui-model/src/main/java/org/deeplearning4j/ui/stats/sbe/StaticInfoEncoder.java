@@ -6,8 +6,7 @@ import org.agrona.DirectBuffer;
 
 @javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.StaticInfoEncoder"})
 @SuppressWarnings("all")
-public class StaticInfoEncoder
-{
+public class StaticInfoEncoder {
     public static final int BLOCK_LENGTH = 40;
     public static final int TEMPLATE_ID = 1;
     public static final int SCHEMA_ID = 1;
@@ -20,38 +19,31 @@ public class StaticInfoEncoder
     protected int actingBlockLength;
     protected int actingVersion;
 
-    public int sbeBlockLength()
-    {
+    public int sbeBlockLength() {
         return BLOCK_LENGTH;
     }
 
-    public int sbeTemplateId()
-    {
+    public int sbeTemplateId() {
         return TEMPLATE_ID;
     }
 
-    public int sbeSchemaId()
-    {
+    public int sbeSchemaId() {
         return SCHEMA_ID;
     }
 
-    public int sbeSchemaVersion()
-    {
+    public int sbeSchemaVersion() {
         return SCHEMA_VERSION;
     }
 
-    public String sbeSemanticType()
-    {
+    public String sbeSemanticType() {
         return "";
     }
 
-    public int offset()
-    {
+    public int offset() {
         return offset;
     }
 
-    public StaticInfoEncoder wrap(final MutableDirectBuffer buffer, final int offset)
-    {
+    public StaticInfoEncoder wrap(final MutableDirectBuffer buffer, final int offset) {
         this.buffer = buffer;
         this.offset = offset;
         limit(offset + BLOCK_LENGTH);
@@ -59,38 +51,31 @@ public class StaticInfoEncoder
         return this;
     }
 
-    public int encodedLength()
-    {
+    public int encodedLength() {
         return limit - offset;
     }
 
-    public int limit()
-    {
+    public int limit() {
         return limit;
     }
 
-    public void limit(final int limit)
-    {
+    public void limit(final int limit) {
         this.limit = limit;
     }
 
-    public static long timeNullValue()
-    {
+    public static long timeNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long timeMinValue()
-    {
+    public static long timeMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long timeMaxValue()
-    {
+    public static long timeMaxValue() {
         return 9223372036854775807L;
     }
 
-    public StaticInfoEncoder time(final long value)
-    {
+    public StaticInfoEncoder time(final long value) {
         buffer.putLong(offset + 0, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
@@ -98,139 +83,114 @@ public class StaticInfoEncoder
 
     private final InitFieldsPresentEncoder fieldsPresent = new InitFieldsPresentEncoder();
 
-    public InitFieldsPresentEncoder fieldsPresent()
-    {
+    public InitFieldsPresentEncoder fieldsPresent() {
         fieldsPresent.wrap(buffer, offset + 8);
         return fieldsPresent;
     }
 
-    public static int hwJvmProcessorsNullValue()
-    {
+    public static int hwJvmProcessorsNullValue() {
         return 65535;
     }
 
-    public static int hwJvmProcessorsMinValue()
-    {
+    public static int hwJvmProcessorsMinValue() {
         return 0;
     }
 
-    public static int hwJvmProcessorsMaxValue()
-    {
+    public static int hwJvmProcessorsMaxValue() {
         return 65534;
     }
 
-    public StaticInfoEncoder hwJvmProcessors(final int value)
-    {
-        buffer.putShort(offset + 9, (short)value, java.nio.ByteOrder.LITTLE_ENDIAN);
+    public StaticInfoEncoder hwJvmProcessors(final int value) {
+        buffer.putShort(offset + 9, (short) value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
 
-    public static short hwNumDevicesNullValue()
-    {
-        return (short)255;
+    public static short hwNumDevicesNullValue() {
+        return (short) 255;
     }
 
-    public static short hwNumDevicesMinValue()
-    {
-        return (short)0;
+    public static short hwNumDevicesMinValue() {
+        return (short) 0;
     }
 
-    public static short hwNumDevicesMaxValue()
-    {
-        return (short)254;
+    public static short hwNumDevicesMaxValue() {
+        return (short) 254;
     }
 
-    public StaticInfoEncoder hwNumDevices(final short value)
-    {
-        buffer.putByte(offset + 11, (byte)value);
+    public StaticInfoEncoder hwNumDevices(final short value) {
+        buffer.putByte(offset + 11, (byte) value);
         return this;
     }
 
 
-    public static long hwJvmMaxMemoryNullValue()
-    {
+    public static long hwJvmMaxMemoryNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long hwJvmMaxMemoryMinValue()
-    {
+    public static long hwJvmMaxMemoryMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long hwJvmMaxMemoryMaxValue()
-    {
+    public static long hwJvmMaxMemoryMaxValue() {
         return 9223372036854775807L;
     }
 
-    public StaticInfoEncoder hwJvmMaxMemory(final long value)
-    {
+    public StaticInfoEncoder hwJvmMaxMemory(final long value) {
         buffer.putLong(offset + 12, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
 
-    public static long hwOffheapMaxMemoryNullValue()
-    {
+    public static long hwOffheapMaxMemoryNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long hwOffheapMaxMemoryMinValue()
-    {
+    public static long hwOffheapMaxMemoryMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long hwOffheapMaxMemoryMaxValue()
-    {
+    public static long hwOffheapMaxMemoryMaxValue() {
         return 9223372036854775807L;
     }
 
-    public StaticInfoEncoder hwOffheapMaxMemory(final long value)
-    {
+    public StaticInfoEncoder hwOffheapMaxMemory(final long value) {
         buffer.putLong(offset + 20, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
 
-    public static int modelNumLayersNullValue()
-    {
+    public static int modelNumLayersNullValue() {
         return -2147483648;
     }
 
-    public static int modelNumLayersMinValue()
-    {
+    public static int modelNumLayersMinValue() {
         return -2147483647;
     }
 
-    public static int modelNumLayersMaxValue()
-    {
+    public static int modelNumLayersMaxValue() {
         return 2147483647;
     }
 
-    public StaticInfoEncoder modelNumLayers(final int value)
-    {
+    public StaticInfoEncoder modelNumLayers(final int value) {
         buffer.putInt(offset + 28, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
 
-    public static long modelNumParamsNullValue()
-    {
+    public static long modelNumParamsNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long modelNumParamsMinValue()
-    {
+    public static long modelNumParamsMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long modelNumParamsMaxValue()
-    {
+    public static long modelNumParamsMaxValue() {
         return 9223372036854775807L;
     }
 
-    public StaticInfoEncoder modelNumParams(final long value)
-    {
+    public StaticInfoEncoder modelNumParams(final long value) {
         buffer.putLong(offset + 32, value, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }
@@ -238,19 +198,16 @@ public class StaticInfoEncoder
 
     private final HwDeviceInfoGroupEncoder hwDeviceInfoGroup = new HwDeviceInfoGroupEncoder();
 
-    public static long hwDeviceInfoGroupId()
-    {
+    public static long hwDeviceInfoGroupId() {
         return 9;
     }
 
-    public HwDeviceInfoGroupEncoder hwDeviceInfoGroupCount(final int count)
-    {
+    public HwDeviceInfoGroupEncoder hwDeviceInfoGroupCount(final int count) {
         hwDeviceInfoGroup.wrap(parentMessage, buffer, count);
         return hwDeviceInfoGroup;
     }
 
-    public static class HwDeviceInfoGroupEncoder
-    {
+    public static class HwDeviceInfoGroupEncoder {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
         private StaticInfoEncoder parentMessage;
@@ -261,11 +218,8 @@ public class StaticInfoEncoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
-        {
-            if (count < 0 || count > 65534)
-            {
+        public void wrap(final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count) {
+            if (count < 0 || count > 65534) {
                 throw new IllegalArgumentException("count outside allowed range: count=" + count);
             }
 
@@ -273,28 +227,24 @@ public class StaticInfoEncoder
             this.buffer = buffer;
             actingVersion = SCHEMA_VERSION;
             dimensions.wrap(buffer, parentMessage.limit());
-            dimensions.blockLength((int)8);
-            dimensions.numInGroup((int)count);
+            dimensions.blockLength((int) 8);
+            dimensions.numInGroup((int) count);
             index = -1;
             this.count = count;
             blockLength = 8;
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 8;
         }
 
-        public HwDeviceInfoGroupEncoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public HwDeviceInfoGroupEncoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -305,109 +255,95 @@ public class StaticInfoEncoder
             return this;
         }
 
-        public static long deviceMemoryMaxNullValue()
-        {
+        public static long deviceMemoryMaxNullValue() {
             return -9223372036854775808L;
         }
 
-        public static long deviceMemoryMaxMinValue()
-        {
+        public static long deviceMemoryMaxMinValue() {
             return -9223372036854775807L;
         }
 
-        public static long deviceMemoryMaxMaxValue()
-        {
+        public static long deviceMemoryMaxMaxValue() {
             return 9223372036854775807L;
         }
 
-        public HwDeviceInfoGroupEncoder deviceMemoryMax(final long value)
-        {
+        public HwDeviceInfoGroupEncoder deviceMemoryMax(final long value) {
             buffer.putLong(offset + 0, value, java.nio.ByteOrder.LITTLE_ENDIAN);
             return this;
         }
 
 
-        public static int deviceDescriptionId()
-        {
+        public static int deviceDescriptionId() {
             return 50;
         }
 
-        public static String deviceDescriptionCharacterEncoding()
-        {
+        public static String deviceDescriptionCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String deviceDescriptionMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String deviceDescriptionMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int deviceDescriptionHeaderLength()
-        {
+        public static int deviceDescriptionHeaderLength() {
             return 4;
         }
 
-        public HwDeviceInfoGroupEncoder putDeviceDescription(final DirectBuffer src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public HwDeviceInfoGroupEncoder putDeviceDescription(final DirectBuffer src, final int srcOffset,
+                        final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public HwDeviceInfoGroupEncoder putDeviceDescription(final byte[] src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public HwDeviceInfoGroupEncoder putDeviceDescription(final byte[] src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public HwDeviceInfoGroupEncoder deviceDescription(final String value)
-        {
+        public HwDeviceInfoGroupEncoder deviceDescription(final String value) {
             final byte[] bytes;
-            try
-            {
+            try {
                 bytes = value.getBytes("UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             final int length = bytes.length;
-            if (length > 1073741824)
-            {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, bytes, 0, length);
 
             return this;
@@ -416,19 +352,16 @@ public class StaticInfoEncoder
 
     private final SwEnvironmentInfoEncoder swEnvironmentInfo = new SwEnvironmentInfoEncoder();
 
-    public static long swEnvironmentInfoId()
-    {
+    public static long swEnvironmentInfoId() {
         return 12;
     }
 
-    public SwEnvironmentInfoEncoder swEnvironmentInfoCount(final int count)
-    {
+    public SwEnvironmentInfoEncoder swEnvironmentInfoCount(final int count) {
         swEnvironmentInfo.wrap(parentMessage, buffer, count);
         return swEnvironmentInfo;
     }
 
-    public static class SwEnvironmentInfoEncoder
-    {
+    public static class SwEnvironmentInfoEncoder {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
         private StaticInfoEncoder parentMessage;
@@ -439,11 +372,8 @@ public class StaticInfoEncoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
-        {
-            if (count < 0 || count > 65534)
-            {
+        public void wrap(final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count) {
+            if (count < 0 || count > 65534) {
                 throw new IllegalArgumentException("count outside allowed range: count=" + count);
             }
 
@@ -451,28 +381,24 @@ public class StaticInfoEncoder
             this.buffer = buffer;
             actingVersion = SCHEMA_VERSION;
             dimensions.wrap(buffer, parentMessage.limit());
-            dimensions.blockLength((int)0);
-            dimensions.numInGroup((int)count);
+            dimensions.blockLength((int) 0);
+            dimensions.numInGroup((int) count);
             index = -1;
             this.count = count;
             blockLength = 0;
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 0;
         }
 
-        public SwEnvironmentInfoEncoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public SwEnvironmentInfoEncoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -483,173 +409,151 @@ public class StaticInfoEncoder
             return this;
         }
 
-        public static int envKeyId()
-        {
+        public static int envKeyId() {
             return 51;
         }
 
-        public static String envKeyCharacterEncoding()
-        {
+        public static String envKeyCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String envKeyMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String envKeyMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int envKeyHeaderLength()
-        {
+        public static int envKeyHeaderLength() {
             return 4;
         }
 
-        public SwEnvironmentInfoEncoder putEnvKey(final DirectBuffer src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public SwEnvironmentInfoEncoder putEnvKey(final DirectBuffer src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public SwEnvironmentInfoEncoder putEnvKey(final byte[] src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public SwEnvironmentInfoEncoder putEnvKey(final byte[] src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public SwEnvironmentInfoEncoder envKey(final String value)
-        {
+        public SwEnvironmentInfoEncoder envKey(final String value) {
             final byte[] bytes;
-            try
-            {
+            try {
                 bytes = value.getBytes("UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             final int length = bytes.length;
-            if (length > 1073741824)
-            {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, bytes, 0, length);
 
             return this;
         }
 
-        public static int envValueId()
-        {
+        public static int envValueId() {
             return 52;
         }
 
-        public static String envValueCharacterEncoding()
-        {
+        public static String envValueCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String envValueMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String envValueMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int envValueHeaderLength()
-        {
+        public static int envValueHeaderLength() {
             return 4;
         }
 
-        public SwEnvironmentInfoEncoder putEnvValue(final DirectBuffer src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public SwEnvironmentInfoEncoder putEnvValue(final DirectBuffer src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public SwEnvironmentInfoEncoder putEnvValue(final byte[] src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public SwEnvironmentInfoEncoder putEnvValue(final byte[] src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public SwEnvironmentInfoEncoder envValue(final String value)
-        {
+        public SwEnvironmentInfoEncoder envValue(final String value) {
             final byte[] bytes;
-            try
-            {
+            try {
                 bytes = value.getBytes("UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             final int length = bytes.length;
-            if (length > 1073741824)
-            {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, bytes, 0, length);
 
             return this;
@@ -658,19 +562,16 @@ public class StaticInfoEncoder
 
     private final ModelParamNamesEncoder modelParamNames = new ModelParamNamesEncoder();
 
-    public static long modelParamNamesId()
-    {
+    public static long modelParamNamesId() {
         return 11;
     }
 
-    public ModelParamNamesEncoder modelParamNamesCount(final int count)
-    {
+    public ModelParamNamesEncoder modelParamNamesCount(final int count) {
         modelParamNames.wrap(parentMessage, buffer, count);
         return modelParamNames;
     }
 
-    public static class ModelParamNamesEncoder
-    {
+    public static class ModelParamNamesEncoder {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
         private StaticInfoEncoder parentMessage;
@@ -681,11 +582,8 @@ public class StaticInfoEncoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
-        {
-            if (count < 0 || count > 65534)
-            {
+        public void wrap(final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count) {
+            if (count < 0 || count > 65534) {
                 throw new IllegalArgumentException("count outside allowed range: count=" + count);
             }
 
@@ -693,28 +591,24 @@ public class StaticInfoEncoder
             this.buffer = buffer;
             actingVersion = SCHEMA_VERSION;
             dimensions.wrap(buffer, parentMessage.limit());
-            dimensions.blockLength((int)0);
-            dimensions.numInGroup((int)count);
+            dimensions.blockLength((int) 0);
+            dimensions.numInGroup((int) count);
             index = -1;
             this.count = count;
             blockLength = 0;
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 0;
         }
 
-        public ModelParamNamesEncoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public ModelParamNamesEncoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -725,1389 +619,1213 @@ public class StaticInfoEncoder
             return this;
         }
 
-        public static int modelParamNamesId()
-        {
+        public static int modelParamNamesId() {
             return 53;
         }
 
-        public static String modelParamNamesCharacterEncoding()
-        {
+        public static String modelParamNamesCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String modelParamNamesMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String modelParamNamesMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int modelParamNamesHeaderLength()
-        {
+        public static int modelParamNamesHeaderLength() {
             return 4;
         }
 
-        public ModelParamNamesEncoder putModelParamNames(final DirectBuffer src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public ModelParamNamesEncoder putModelParamNames(final DirectBuffer src, final int srcOffset,
+                        final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public ModelParamNamesEncoder putModelParamNames(final byte[] src, final int srcOffset, final int length)
-        {
-            if (length > 1073741824)
-            {
+        public ModelParamNamesEncoder putModelParamNames(final byte[] src, final int srcOffset, final int length) {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
             return this;
         }
 
-        public ModelParamNamesEncoder modelParamNames(final String value)
-        {
+        public ModelParamNamesEncoder modelParamNames(final String value) {
             final byte[] bytes;
-            try
-            {
+            try {
                 bytes = value.getBytes("UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             final int length = bytes.length;
-            if (length > 1073741824)
-            {
+            if (length > 1073741824) {
                 throw new IllegalArgumentException("length > max value for type: " + length);
             }
 
             final int headerLength = 4;
             final int limit = parentMessage.limit();
             parentMessage.limit(limit + headerLength + length);
-            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
             buffer.putBytes(limit + headerLength, bytes, 0, length);
 
             return this;
         }
     }
 
-    public static int sessionIDId()
-    {
+    public static int sessionIDId() {
         return 100;
     }
 
-    public static String sessionIDCharacterEncoding()
-    {
+    public static String sessionIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int sessionIDHeaderLength()
-    {
+    public static int sessionIDHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSessionID(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSessionID(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSessionID(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSessionID(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder sessionID(final String value)
-    {
+    public StaticInfoEncoder sessionID(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int typeIDId()
-    {
+    public static int typeIDId() {
         return 101;
     }
 
-    public static String typeIDCharacterEncoding()
-    {
+    public static String typeIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int typeIDHeaderLength()
-    {
+    public static int typeIDHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putTypeID(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putTypeID(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putTypeID(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putTypeID(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder typeID(final String value)
-    {
+    public StaticInfoEncoder typeID(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int workerIDId()
-    {
+    public static int workerIDId() {
         return 102;
     }
 
-    public static String workerIDCharacterEncoding()
-    {
+    public static String workerIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int workerIDHeaderLength()
-    {
+    public static int workerIDHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putWorkerID(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putWorkerID(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putWorkerID(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putWorkerID(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder workerID(final String value)
-    {
+    public StaticInfoEncoder workerID(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swArchId()
-    {
+    public static int swArchId() {
         return 201;
     }
 
-    public static String swArchCharacterEncoding()
-    {
+    public static String swArchCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swArchMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swArchMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swArchHeaderLength()
-    {
+    public static int swArchHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwArch(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwArch(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwArch(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwArch(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swArch(final String value)
-    {
+    public StaticInfoEncoder swArch(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swOsNameId()
-    {
+    public static int swOsNameId() {
         return 202;
     }
 
-    public static String swOsNameCharacterEncoding()
-    {
+    public static String swOsNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swOsNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swOsNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swOsNameHeaderLength()
-    {
+    public static int swOsNameHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwOsName(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwOsName(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwOsName(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwOsName(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swOsName(final String value)
-    {
+    public StaticInfoEncoder swOsName(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swJvmNameId()
-    {
+    public static int swJvmNameId() {
         return 203;
     }
 
-    public static String swJvmNameCharacterEncoding()
-    {
+    public static String swJvmNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmNameHeaderLength()
-    {
+    public static int swJvmNameHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwJvmName(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmName(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwJvmName(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmName(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swJvmName(final String value)
-    {
+    public StaticInfoEncoder swJvmName(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swJvmVersionId()
-    {
+    public static int swJvmVersionId() {
         return 204;
     }
 
-    public static String swJvmVersionCharacterEncoding()
-    {
+    public static String swJvmVersionCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmVersionMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmVersionMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmVersionHeaderLength()
-    {
+    public static int swJvmVersionHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwJvmVersion(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmVersion(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwJvmVersion(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmVersion(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swJvmVersion(final String value)
-    {
+    public StaticInfoEncoder swJvmVersion(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swJvmSpecVersionId()
-    {
+    public static int swJvmSpecVersionId() {
         return 205;
     }
 
-    public static String swJvmSpecVersionCharacterEncoding()
-    {
+    public static String swJvmSpecVersionCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmSpecVersionMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmSpecVersionMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmSpecVersionHeaderLength()
-    {
+    public static int swJvmSpecVersionHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwJvmSpecVersion(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmSpecVersion(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwJvmSpecVersion(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmSpecVersion(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swJvmSpecVersion(final String value)
-    {
+    public StaticInfoEncoder swJvmSpecVersion(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swNd4jBackendClassId()
-    {
+    public static int swNd4jBackendClassId() {
         return 206;
     }
 
-    public static String swNd4jBackendClassCharacterEncoding()
-    {
+    public static String swNd4jBackendClassCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swNd4jBackendClassMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swNd4jBackendClassMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swNd4jBackendClassHeaderLength()
-    {
+    public static int swNd4jBackendClassHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwNd4jBackendClass(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwNd4jBackendClass(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwNd4jBackendClass(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwNd4jBackendClass(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swNd4jBackendClass(final String value)
-    {
+    public StaticInfoEncoder swNd4jBackendClass(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swNd4jDataTypeNameId()
-    {
+    public static int swNd4jDataTypeNameId() {
         return 207;
     }
 
-    public static String swNd4jDataTypeNameCharacterEncoding()
-    {
+    public static String swNd4jDataTypeNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swNd4jDataTypeNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swNd4jDataTypeNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swNd4jDataTypeNameHeaderLength()
-    {
+    public static int swNd4jDataTypeNameHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwNd4jDataTypeName(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwNd4jDataTypeName(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwNd4jDataTypeName(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwNd4jDataTypeName(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swNd4jDataTypeName(final String value)
-    {
+    public StaticInfoEncoder swNd4jDataTypeName(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swHostNameId()
-    {
+    public static int swHostNameId() {
         return 208;
     }
 
-    public static String swHostNameCharacterEncoding()
-    {
+    public static String swHostNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swHostNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swHostNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swHostNameHeaderLength()
-    {
+    public static int swHostNameHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwHostName(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwHostName(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwHostName(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwHostName(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swHostName(final String value)
-    {
+    public StaticInfoEncoder swHostName(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int swJvmUIDId()
-    {
+    public static int swJvmUIDId() {
         return 209;
     }
 
-    public static String swJvmUIDCharacterEncoding()
-    {
+    public static String swJvmUIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmUIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmUIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmUIDHeaderLength()
-    {
+    public static int swJvmUIDHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putSwJvmUID(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmUID(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putSwJvmUID(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putSwJvmUID(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder swJvmUID(final String value)
-    {
+    public StaticInfoEncoder swJvmUID(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int hwHardwareUIDId()
-    {
+    public static int hwHardwareUIDId() {
         return 300;
     }
 
-    public static String hwHardwareUIDCharacterEncoding()
-    {
+    public static String hwHardwareUIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String hwHardwareUIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwHardwareUIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int hwHardwareUIDHeaderLength()
-    {
+    public static int hwHardwareUIDHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putHwHardwareUID(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putHwHardwareUID(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putHwHardwareUID(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putHwHardwareUID(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder hwHardwareUID(final String value)
-    {
+    public StaticInfoEncoder hwHardwareUID(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int modelConfigClassNameId()
-    {
+    public static int modelConfigClassNameId() {
         return 400;
     }
 
-    public static String modelConfigClassNameCharacterEncoding()
-    {
+    public static String modelConfigClassNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String modelConfigClassNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelConfigClassNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int modelConfigClassNameHeaderLength()
-    {
+    public static int modelConfigClassNameHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putModelConfigClassName(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putModelConfigClassName(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putModelConfigClassName(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putModelConfigClassName(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder modelConfigClassName(final String value)
-    {
+    public StaticInfoEncoder modelConfigClassName(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
 
-    public static int modelConfigJsonId()
-    {
+    public static int modelConfigJsonId() {
         return 401;
     }
 
-    public static String modelConfigJsonCharacterEncoding()
-    {
+    public static String modelConfigJsonCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String modelConfigJsonMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelConfigJsonMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int modelConfigJsonHeaderLength()
-    {
+    public static int modelConfigJsonHeaderLength() {
         return 4;
     }
 
-    public StaticInfoEncoder putModelConfigJson(final DirectBuffer src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putModelConfigJson(final DirectBuffer src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder putModelConfigJson(final byte[] src, final int srcOffset, final int length)
-    {
-        if (length > 1073741824)
-        {
+    public StaticInfoEncoder putModelConfigJson(final byte[] src, final int srcOffset, final int length) {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, src, srcOffset, length);
 
         return this;
     }
 
-    public StaticInfoEncoder modelConfigJson(final String value)
-    {
+    public StaticInfoEncoder modelConfigJson(final String value) {
         final byte[] bytes;
-        try
-        {
+        try {
             bytes = value.getBytes("UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         final int length = bytes.length;
-        if (length > 1073741824)
-        {
+        if (length > 1073741824) {
             throw new IllegalArgumentException("length > max value for type: " + length);
         }
 
         final int headerLength = 4;
         final int limit = parentMessage.limit();
         parentMessage.limit(limit + headerLength + length);
-        buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(limit, (int) length, java.nio.ByteOrder.LITTLE_ENDIAN);
         buffer.putBytes(limit + headerLength, bytes, 0, length);
 
         return this;
     }
-    public String toString()
-    {
+
+    public String toString() {
         return appendTo(new StringBuilder(100)).toString();
     }
 
-    public StringBuilder appendTo(final StringBuilder builder)
-    {
+    public StringBuilder appendTo(final StringBuilder builder) {
         StaticInfoDecoder writer = new StaticInfoDecoder();
         writer.wrap(buffer, offset, BLOCK_LENGTH, SCHEMA_VERSION);
 

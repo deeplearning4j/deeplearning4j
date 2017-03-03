@@ -39,15 +39,18 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a DataSet using a ComputationGraph */
-public class ScoreFlatMapFunctionCGDataSet extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, Tuple2<Integer,Double>> {
+public class ScoreFlatMapFunctionCGDataSet
+                extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, Tuple2<Integer, Double>> {
 
     public ScoreFlatMapFunctionCGDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
         super(new ScoreFlatMapFunctionCGDataSetAdapter(json, params, minibatchSize));
     }
 }
 
+
 /** Function used to score a DataSet using a ComputationGraph */
-class ScoreFlatMapFunctionCGDataSetAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, Tuple2<Integer,Double>> {
+class ScoreFlatMapFunctionCGDataSetAdapter
+                implements FlatMapFunctionAdapter<Iterator<DataSet>, Tuple2<Integer, Double>> {
 
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGDataSet.class);
     private String json;
@@ -55,37 +58,38 @@ class ScoreFlatMapFunctionCGDataSetAdapter implements FlatMapFunctionAdapter<Ite
     private int minibatchSize;
 
 
-    public ScoreFlatMapFunctionCGDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize){
+    public ScoreFlatMapFunctionCGDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize) {
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
     }
 
     @Override
-    public Iterable<Tuple2<Integer,Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
-        if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<>(0,0.0));
+    public Iterable<Tuple2<Integer, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        if (!dataSetIterator.hasNext()) {
+            return Collections.singletonList(new Tuple2<>(0, 0.0));
         }
 
         DataSetIterator iter = new IteratorDataSetIterator(dataSetIterator, minibatchSize); //Does batching where appropriate
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value().unsafeDuplication();  //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
-        if(val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+        INDArray val = params.value().unsafeDuplication(); //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
+        if (val.length() != network.numParams(false))
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
 
-        List<Tuple2<Integer,Double>> out = new ArrayList<>();
-        while(iter.hasNext()){
+        List<Tuple2<Integer, Double>> out = new ArrayList<>();
+        while (iter.hasNext()) {
             DataSet ds = iter.next();
-            double score = network.score(ds,false);
+            double score = network.score(ds, false);
             int numExamples = ds.getFeatureMatrix().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         return out;
     }

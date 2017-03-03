@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.serde.jackson.ndarray.NDArrayDeSerializer;
 import org.nd4j.shade.serde.jackson.ndarray.NDArraySerializer;
 
-
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 

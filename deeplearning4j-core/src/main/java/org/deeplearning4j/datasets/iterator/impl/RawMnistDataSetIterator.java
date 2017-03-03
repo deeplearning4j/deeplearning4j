@@ -28,10 +28,10 @@ import java.io.IOException;
  */
 public class RawMnistDataSetIterator extends BaseDatasetIterator {
 
-	public RawMnistDataSetIterator(int batch, int numExamples) throws IOException {
-		super(batch, numExamples,new MnistDataFetcher(false));
+    public RawMnistDataSetIterator(int batch, int numExamples) throws IOException {
+        super(batch, numExamples, new MnistDataFetcher(false));
 
-	}
+    }
 
 
 

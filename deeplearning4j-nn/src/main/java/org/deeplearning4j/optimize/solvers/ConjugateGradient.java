@@ -38,15 +38,18 @@ import java.util.Collection;
  * See also Nocedal & Wright, Numerical optimization, Ch5
  */
 public class ConjugateGradient extends BaseOptimizer {
-	private static final long serialVersionUID = -1269296013474864091L;
-	private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
+    private static final long serialVersionUID = -1269296013474864091L;
+    private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
 
-    public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
 
-    public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners,
+                    Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
@@ -54,16 +57,17 @@ public class ConjugateGradient extends BaseOptimizer {
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        if( searchDir == null )
+        if (searchDir == null)
             searchState.put(SEARCH_DIR, gradient);
-        else searchDir.assign(gradient);
+        else
+            searchDir.assign(gradient);
     }
 
     @Override
     public void postStep(INDArray gradient) {
         //line is current gradient
         //Last gradient is stored in searchState map
-        INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY);		//Previous iteration gradient
+        INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY); //Previous iteration gradient
         INDArray searchDirLast = (INDArray) searchState.get(SEARCH_DIR);//Previous iteration search dir
 
         //Calculate gamma (or beta, by Bengio et al. notation). Polak and Ribiere method.
@@ -71,7 +75,8 @@ public class ConjugateGradient extends BaseOptimizer {
         double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast), gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
         double gamma = Math.max(dgg / gg, 0.0);
-        if( dgg <= 0.0 ) logger.debug("Polak-Ribiere gamma <= 0.0; using gamma=0.0 -> SGD line search. dgg={}, gg={}",dgg,gg);
+        if (dgg <= 0.0)
+            logger.debug("Polak-Ribiere gamma <= 0.0; using gamma=0.0 -> SGD line search. dgg={}, gg={}", dgg, gg);
 
         //Standard Polak-Ribiere does not guarantee that the search direction is a descent direction
         //But using max(gamma_Polak-Ribiere,0) does guarantee a descent direction. Hence the max above.

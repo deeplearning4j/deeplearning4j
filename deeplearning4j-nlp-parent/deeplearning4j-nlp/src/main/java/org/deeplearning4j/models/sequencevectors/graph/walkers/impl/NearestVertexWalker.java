@@ -28,7 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class NearestVertexWalker<V extends SequenceElement> implements GraphWalker<V> {
-    @Getter protected IGraph<V, ?> sourceGraph;
+    @Getter
+    protected IGraph<V, ?> sourceGraph;
     protected int walkLength = 0;
     protected long seed = 0;
     protected SamplingMode samplingMode = SamplingMode.RANDOM;
@@ -49,7 +50,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
 
     @Override
     public Sequence<V> next() {
-        return walk(sourceGraph.getVertex(order[position.getAndIncrement()]),1);
+        return walk(sourceGraph.getVertex(order[position.getAndIncrement()]), 1);
     }
 
     @Override
@@ -58,8 +59,8 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
         if (shuffle) {
             log.debug("Calling shuffle() on entries...");
             // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-            for(int i=order.length-1; i>0; i-- ){
-                int j = rng.nextInt(i+1);
+            for (int i = order.length - 1; i > 0; i--) {
+                int j = rng.nextInt(i + 1);
                 int temp = order[j];
                 order[j] = order[i];
                 order[i] = temp;
@@ -77,7 +78,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
 
         if (walkLength == 0) {
             // if walk is unlimited - we use all connected vertices as is
-            for (Vertex<V> vertex: vertices)
+            for (Vertex<V> vertex : vertices)
                 sequence.addElement(vertex.getValue());
         } else {
             // if walks are limited, we care about sampling mode
@@ -90,7 +91,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                         // going for one more depth level
                         if (depth > 1 && cDepth < depth) {
                             Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
-                            for (V element: nextDepth.getElements()){
+                            for (V element : nextDepth.getElements()) {
                                 if (sequence.getElementByLabel(element.getLabel()) == null)
                                     sequence.addElement(element);
                             }
@@ -100,13 +101,14 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                 }
                 case MEDIAN_POPULARITY: {
                     Collections.sort(vertices, new VertexComparator<>(sourceGraph));
-                    for (int i = (vertices.size() / 2) - (walkLength / 2), e = 0; e < walkLength && i < vertices.size(); i++, e++) {
+                    for (int i = (vertices.size() / 2) - (walkLength / 2), e = 0; e < walkLength
+                                    && i < vertices.size(); i++, e++) {
                         sequence.addElement(vertices.get(i).getValue());
 
                         // going for one more depth level
                         if (depth > 1 && cDepth < depth) {
                             Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
-                            for (V element: nextDepth.getElements()){
+                            for (V element : nextDepth.getElements()) {
                                 if (sequence.getElementByLabel(element.getLabel()) == null)
                                     sequence.addElement(element);
                             }
@@ -122,7 +124,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                         // going for one more depth level
                         if (depth > 1 && cDepth < depth) {
                             Sequence<V> nextDepth = walk(vertices.get(i), ++cDepth);
-                            for (V element: nextDepth.getElements()){
+                            for (V element : nextDepth.getElements()) {
                                 if (sequence.getElementByLabel(element.getLabel()) == null)
                                     sequence.addElement(element);
                             }
@@ -132,7 +134,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                 case RANDOM: {
                     // we randomly sample some number of connected vertices
                     if (vertices.size() <= walkLength)
-                        for (Vertex<V> vertex: vertices)
+                        for (Vertex<V> vertex : vertices)
                             sequence.addElement(vertex.getValue());
                     else {
                         Set<V> elements = new HashSet<>();
@@ -143,7 +145,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                             // going for one more depth level
                             if (depth > 1 && cDepth < depth) {
                                 Sequence<V> nextDepth = walk(vertex, ++cDepth);
-                                for (V element: nextDepth.getElements()){
+                                for (V element : nextDepth.getElements()) {
                                     if (sequence.getElementByLabel(element.getLabel()) == null)
                                         sequence.addElement(element);
                                 }
@@ -153,7 +155,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
                         sequence.addElements(elements);
                     }
                 }
-                break;
+                    break;
                 default:
                     throw new ND4JIllegalStateException("Unknown sampling mode was passed in: [" + samplingMode + "]");
             }
@@ -192,7 +194,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
          * @param length
          * @return
          */
-        public Builder setWalkLength(int length){
+        public Builder setWalkLength(int length) {
             walkLength = length;
             return this;
         }
@@ -235,7 +237,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
             walker.depth = this.depth;
 
             walker.order = new int[sourceGraph.numVertices()];
-            for (int i =0; i < walker.order.length; i++) {
+            for (int i = 0; i < walker.order.length; i++) {
                 walker.order[i] = i;
             }
 
@@ -256,7 +258,8 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
 
         @Override
         public int compare(Vertex<V> o1, Vertex<V> o2) {
-            return Integer.compare(graph.getConnectedVertices(o2.vertexID()).size(), graph.getConnectedVertices(o1.vertexID()).size());
+            return Integer.compare(graph.getConnectedVertices(o2.vertexID()).size(),
+                            graph.getConnectedVertices(o1.vertexID()).size());
         }
     }
 }

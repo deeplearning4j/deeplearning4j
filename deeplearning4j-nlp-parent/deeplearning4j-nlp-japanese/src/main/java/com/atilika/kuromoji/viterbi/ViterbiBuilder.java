@@ -45,11 +45,8 @@ public class ViterbiBuilder {
      * @param userDictionary  user dictionary
      * @param mode  tokenization {@link Mode mode}
      */
-    public ViterbiBuilder(DoubleArrayTrie trie,
-                          TokenInfoDictionary dictionary,
-                          UnknownDictionary unknownDictionary,
-                          UserDictionary userDictionary,
-                          Mode mode) {
+    public ViterbiBuilder(DoubleArrayTrie trie, TokenInfoDictionary dictionary, UnknownDictionary unknownDictionary,
+                    UserDictionary userDictionary, Mode mode) {
         this.trie = trie;
         this.dictionary = dictionary;
         this.unknownDictionary = unknownDictionary;
@@ -92,7 +89,8 @@ public class ViterbiBuilder {
 
                     for (int i = 0; i < categories.length; i++) {
                         int category = categories[i];
-                        unknownWordEndIndex = processUnknownWord(category, i, lattice, unknownWordEndIndex, startIndex, suffix, found);
+                        unknownWordEndIndex = processUnknownWord(category, i, lattice, unknownWordEndIndex, startIndex,
+                                        suffix, found);
                     }
                 }
             }
@@ -113,20 +111,21 @@ public class ViterbiBuilder {
             String prefix = suffix.substring(0, endIndex);
             int result = trie.lookup(prefix, 0, 0);
 
-            if (result > 0) {    // Found match in double array trie
-                found = true;    // Don't produce unknown word starting from this index
+            if (result > 0) { // Found match in double array trie
+                found = true; // Don't produce unknown word starting from this index
                 for (int wordId : dictionary.lookupWordIds(result)) {
                     ViterbiNode node = new ViterbiNode(wordId, prefix, dictionary, startIndex, ViterbiNode.Type.KNOWN);
                     lattice.addNode(node, startIndex + 1, startIndex + 1 + endIndex);
                 }
-            } else if (result < 0) {    // If result is less than zero, continue to next position
+            } else if (result < 0) { // If result is less than zero, continue to next position
                 break;
             }
         }
         return found;
     }
 
-    private int processUnknownWord(int category, int i, ViterbiLattice lattice, int unknownWordEndIndex, int startIndex, String suffix, boolean found) {
+    private int processUnknownWord(int category, int i, ViterbiLattice lattice, int unknownWordEndIndex, int startIndex,
+                    String suffix, boolean found) {
         int unknownWordLength = 0;
         int[] definition = characterDefinitions.lookupDefinition(category);
 
@@ -158,7 +157,8 @@ public class ViterbiBuilder {
             int[] wordIds = unknownDictionary.lookupWordIds(category); // characters in input text are supposed to be the same
 
             for (int wordId : wordIds) {
-                ViterbiNode node = new ViterbiNode(wordId, unkWord, unknownDictionary, startIndex, ViterbiNode.Type.UNKNOWN);
+                ViterbiNode node = new ViterbiNode(wordId, unkWord, unknownDictionary, startIndex,
+                                ViterbiNode.Type.UNKNOWN);
                 lattice.addNode(node, startIndex + 1, startIndex + 1 + unknownWordLength);
             }
             unknownWordEndIndex = startIndex + unknownWordLength;
@@ -317,8 +317,8 @@ public class ViterbiBuilder {
      * @return whether candidate is acceptable
      */
     private boolean isAcceptableCandidate(int targetLength, ViterbiNode glueBase, ViterbiNode candidate) {
-        return (glueBase == null || candidate.getSurface().length() < glueBase.getSurface().length()) &&
-            candidate.getSurface().length() >= targetLength;
+        return (glueBase == null || candidate.getSurface().length() < glueBase.getSurface().length())
+                        && candidate.getSurface().length() >= targetLength;
     }
 
     /**
@@ -332,14 +332,7 @@ public class ViterbiBuilder {
      * @return new ViterbiNode to be inserted as glue into the lattice
      */
     private ViterbiNode createGlueNode(int startIndex, ViterbiNode glueBase, String surface) {
-        return new ViterbiNode(
-            glueBase.getWordId(),
-            surface,
-            glueBase.getLeftId(),
-            glueBase.getRightId(),
-            glueBase.getWordCost(),
-            startIndex,
-            ViterbiNode.Type.INSERTED
-        );
+        return new ViterbiNode(glueBase.getWordId(), surface, glueBase.getLeftId(), glueBase.getRightId(),
+                        glueBase.getWordCost(), startIndex, ViterbiNode.Type.INSERTED);
     }
 }

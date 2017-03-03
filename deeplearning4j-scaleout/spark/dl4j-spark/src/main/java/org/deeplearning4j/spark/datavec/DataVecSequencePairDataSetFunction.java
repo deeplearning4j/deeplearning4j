@@ -40,7 +40,8 @@ import java.util.List;
  * see {@link DataVecSequenceDataSetFunction} for the single file version
  * @author Alex Black
  */
-public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<List<Writable>>,List<List<Writable>>>,DataSet>, Serializable {
+public class DataVecSequencePairDataSetFunction
+                implements Function<Tuple2<List<List<Writable>>, List<List<Writable>>>, DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>
      * <b>EQUAL_LENGTH</b>: Default. Assume that label and input time series are of equal length<br>
@@ -49,9 +50,7 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
      * <b>ALIGN_END</b>: Align the label/input at the last time step, zero padding either the input or the labels as required<br>
      */
     public enum AlignmentMode {
-        EQUAL_LENGTH,
-        ALIGN_START,
-        ALIGN_END
+        EQUAL_LENGTH, ALIGN_START, ALIGN_END
     }
 
     private final boolean regression;
@@ -63,21 +62,21 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
     /** Constructor for equal length and no conversion of labels (i.e., regression or already in one-hot representation).
      * No data set proprocessor or writable converter
      */
-    public DataVecSequencePairDataSetFunction(){
+    public DataVecSequencePairDataSetFunction() {
         this(-1, true);
     }
 
     /**Constructor for equal length, no data set preprocessor or writable converter
      * @see #DataVecSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
      */
-    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression) {
         this(numPossibleLabels, regression, AlignmentMode.EQUAL_LENGTH);
     }
 
     /**Constructor for data with a specified alignment mode, no data set preprocessor or writable converter
      * @see #DataVecSequencePairDataSetFunction(int, boolean, AlignmentMode, DataSetPreProcessor, WritableConverter)
      */
-    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode) {
         this(numPossibleLabels, regression, alignmentMode, null, null);
     }
 
@@ -88,9 +87,8 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
      * @param preProcessor DataSetPreprocessor (may be null)
      * @param converter WritableConverter (may be null)
      */
-    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression,
-                                              AlignmentMode alignmentMode, DataSetPreProcessor preProcessor,
-                                              WritableConverter converter){
+    public DataVecSequencePairDataSetFunction(int numPossibleLabels, boolean regression, AlignmentMode alignmentMode,
+                    DataSetPreProcessor preProcessor, WritableConverter converter) {
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
         this.alignmentMode = alignmentMode;
@@ -100,7 +98,7 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
 
 
     @Override
-    public DataSet call(Tuple2<List<List<Writable>>,List<List<Writable>>> input) throws Exception {
+    public DataSet call(Tuple2<List<List<Writable>>, List<List<Writable>>> input) throws Exception {
         List<List<Writable>> featuresSeq = input._1();
         List<List<Writable>> labelsSeq = input._2();
 
@@ -116,10 +114,10 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
 
         int[] idx = new int[3];
         int i = 0;
-        while(fIter.hasNext()){
+        while (fIter.hasNext()) {
             List<Writable> step = fIter.next();
             if (i == 0) {
-                int[] inShape = new int[]{1,step.size(),featuresLength};
+                int[] inShape = new int[] {1, step.size(), featuresLength};
                 inputArr = Nd4j.create(inShape);
             }
             Iterator<Writable> timeStepIter = step.iterator();
@@ -127,14 +125,15 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
             idx[1] = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                if(converter != null) current = converter.convert(current);
+                if (converter != null)
+                    current = converter.convert(current);
                 try {
                     inputArr.putScalar(idx, current.toDouble());
                 } catch (UnsupportedOperationException e) {
                     // This isn't a scalar, so check if we got an array already
                     if (current instanceof NDArrayWritable) {
                         inputArr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
-                                .putRow(0, ((NDArrayWritable)current).get());
+                                        .putRow(0, ((NDArrayWritable) current).get());
                     } else {
                         throw e;
                     }
@@ -146,20 +145,21 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
 
         idx = new int[3];
         i = 0;
-        while(lIter.hasNext()){
+        while (lIter.hasNext()) {
             List<Writable> step = lIter.next();
             if (i == 0) {
-                int[] outShape = new int[]{1,(regression ? step.size() : numPossibleLabels),labelsLength};
+                int[] outShape = new int[] {1, (regression ? step.size() : numPossibleLabels), labelsLength};
                 outputArr = Nd4j.create(outShape);
             }
             Iterator<Writable> timeStepIter = step.iterator();
             int f = 0;
             idx[1] = 0;
-            if(regression){
+            if (regression) {
                 //Load all values without modification
                 while (timeStepIter.hasNext()) {
                     Writable current = timeStepIter.next();
-                    if(converter != null) current = converter.convert(current);
+                    if (converter != null)
+                        current = converter.convert(current);
                     outputArr.putScalar(idx, current.toDouble());
                     idx[1] = ++f;
                 }
@@ -175,52 +175,59 @@ public class DataVecSequencePairDataSetFunction implements Function<Tuple2<List<
         }
 
         DataSet ds;
-        if(alignmentMode == AlignmentMode.EQUAL_LENGTH || featuresLength == labelsLength){
-            ds = new DataSet(inputArr,outputArr);
-        } else if(alignmentMode == AlignmentMode.ALIGN_END){
-            if(featuresLength > labelsLength ){
+        if (alignmentMode == AlignmentMode.EQUAL_LENGTH || featuresLength == labelsLength) {
+            ds = new DataSet(inputArr, outputArr);
+        } else if (alignmentMode == AlignmentMode.ALIGN_END) {
+            if (featuresLength > labelsLength) {
                 //Input longer, pad output
-                INDArray newOutput = Nd4j.create(1,outputArr.size(1),featuresLength);
-                newOutput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(featuresLength-labelsLength,featuresLength))
-                        .assign(outputArr);
+                INDArray newOutput = Nd4j.create(1, outputArr.size(1), featuresLength);
+                newOutput.get(NDArrayIndex.point(0), NDArrayIndex.all(),
+                                NDArrayIndex.interval(featuresLength - labelsLength, featuresLength)).assign(outputArr);
                 //Need an output mask array, but not an input mask array
-                INDArray outputMask = Nd4j.create(1,featuresLength);
-                for( int j=featuresLength-labelsLength; j<featuresLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
+                INDArray outputMask = Nd4j.create(1, featuresLength);
+                for (int j = featuresLength - labelsLength; j < featuresLength; j++)
+                    outputMask.putScalar(j, 1.0);
+                ds = new DataSet(inputArr, newOutput, Nd4j.ones(outputMask.shape()), outputMask);
             } else {
                 //Output longer, pad input
-                INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
-                newInput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(labelsLength-featuresLength,labelsLength))
-                        .assign(inputArr);
+                INDArray newInput = Nd4j.create(1, inputArr.size(1), labelsLength);
+                newInput.get(NDArrayIndex.point(0), NDArrayIndex.all(),
+                                NDArrayIndex.interval(labelsLength - featuresLength, labelsLength)).assign(inputArr);
                 //Need an input mask array, but not an output mask array
-                INDArray inputMask = Nd4j.create(1,labelsLength);
-                for( int j=labelsLength-featuresLength; j<labelsLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new DataSet(newInput,outputArr,inputMask,Nd4j.ones(inputMask.shape()));
+                INDArray inputMask = Nd4j.create(1, labelsLength);
+                for (int j = labelsLength - featuresLength; j < labelsLength; j++)
+                    inputMask.putScalar(j, 1.0);
+                ds = new DataSet(newInput, outputArr, inputMask, Nd4j.ones(inputMask.shape()));
             }
-        } else if(alignmentMode == AlignmentMode.ALIGN_START){
-            if(featuresLength > labelsLength ){
+        } else if (alignmentMode == AlignmentMode.ALIGN_START) {
+            if (featuresLength > labelsLength) {
                 //Input longer, pad output
-                INDArray newOutput = Nd4j.create(1,outputArr.size(1),featuresLength);
-                newOutput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(0,labelsLength)).assign(outputArr);
+                INDArray newOutput = Nd4j.create(1, outputArr.size(1), featuresLength);
+                newOutput.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, labelsLength))
+                                .assign(outputArr);
                 //Need an output mask array, but not an input mask array
-                INDArray outputMask = Nd4j.create(1,featuresLength);
-                for( int j=0; j<labelsLength; j++ ) outputMask.putScalar(j,1.0);
-                ds = new DataSet(inputArr,newOutput,Nd4j.ones(outputMask.shape()),outputMask);
+                INDArray outputMask = Nd4j.create(1, featuresLength);
+                for (int j = 0; j < labelsLength; j++)
+                    outputMask.putScalar(j, 1.0);
+                ds = new DataSet(inputArr, newOutput, Nd4j.ones(outputMask.shape()), outputMask);
             } else {
                 //Output longer, pad input
-                INDArray newInput = Nd4j.create(1,inputArr.size(1),labelsLength);
-                newInput.get(NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.interval(0,featuresLength)).assign(inputArr);
+                INDArray newInput = Nd4j.create(1, inputArr.size(1), labelsLength);
+                newInput.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, featuresLength))
+                                .assign(inputArr);
                 //Need an input mask array, but not an output mask array
-                INDArray inputMask = Nd4j.create(1,labelsLength);
-                for( int j=0; j<featuresLength; j++ ) inputMask.putScalar(j,1.0);
-                ds = new DataSet(newInput,outputArr,inputMask,Nd4j.ones(inputMask.shape()));
+                INDArray inputMask = Nd4j.create(1, labelsLength);
+                for (int j = 0; j < featuresLength; j++)
+                    inputMask.putScalar(j, 1.0);
+                ds = new DataSet(newInput, outputArr, inputMask, Nd4j.ones(inputMask.shape()));
             }
         } else {
             throw new UnsupportedOperationException("Invalid alignment mode: " + alignmentMode);
         }
 
 
-        if(preProcessor != null) preProcessor.preProcess(ds);
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return ds;
     }
 }

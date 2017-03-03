@@ -62,7 +62,7 @@ public interface TextVectorizer extends Vectorizer {
      * @param label the label to assign
      * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(InputStream is,String label);
+    DataSet vectorize(InputStream is, String label);
 
     /**
      * Vectorizes the passed in text treating it as one document
@@ -70,7 +70,7 @@ public interface TextVectorizer extends Vectorizer {
      * @param label the label of the text
      * @return a dataset with a transform of weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(String text,String label);
+    DataSet vectorize(String text, String label);
 
     /**
      * Train the model
@@ -84,7 +84,7 @@ public interface TextVectorizer extends Vectorizer {
      * @return {@link DataSet} with a applyTransformToDestination of
      *          weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(File input,String label);
+    DataSet vectorize(File input, String label);
 
 
     /**

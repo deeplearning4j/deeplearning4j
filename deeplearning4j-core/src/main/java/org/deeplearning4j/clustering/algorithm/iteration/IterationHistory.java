@@ -26,29 +26,32 @@ import java.util.Map;
 
 public class IterationHistory implements Serializable {
 
-	private Map<Integer, IterationInfo> iterationsInfos = new HashMap<>();
+    private Map<Integer, IterationInfo> iterationsInfos = new HashMap<>();
 
-	public ClusterSetInfo getMostRecentClusterSetInfo() {
-		IterationInfo iterationInfo = getMostRecentIterationInfo();
-		return iterationInfo==null ? null : iterationInfo.getClusterSetInfo();
-	}
-	public IterationInfo getMostRecentIterationInfo() {
-		return getIterationInfo(getIterationCount()-1);
-	}
-	public int getIterationCount() {
-		return getIterationsInfos().size();
-	}
-	public IterationInfo getIterationInfo(int iterationIdx) {
-		return getIterationsInfos().get(iterationIdx);
-	}
+    public ClusterSetInfo getMostRecentClusterSetInfo() {
+        IterationInfo iterationInfo = getMostRecentIterationInfo();
+        return iterationInfo == null ? null : iterationInfo.getClusterSetInfo();
+    }
 
-	public Map<Integer, IterationInfo> getIterationsInfos() {
-		return iterationsInfos;
-	}
+    public IterationInfo getMostRecentIterationInfo() {
+        return getIterationInfo(getIterationCount() - 1);
+    }
 
-	public void setIterationsInfos(Map<Integer, IterationInfo> iterationsInfos) {
-		this.iterationsInfos = iterationsInfos;
-	}
-	
-	
+    public int getIterationCount() {
+        return getIterationsInfos().size();
+    }
+
+    public IterationInfo getIterationInfo(int iterationIdx) {
+        return getIterationsInfos().get(iterationIdx);
+    }
+
+    public Map<Integer, IterationInfo> getIterationsInfos() {
+        return iterationsInfos;
+    }
+
+    public void setIterationsInfos(Map<Integer, IterationInfo> iterationsInfos) {
+        this.iterationsInfos = iterationsInfos;
+    }
+
+
 }

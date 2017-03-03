@@ -39,21 +39,20 @@ public class TestMasking {
     }
 
     @Test
-    public void checkMaskArrayClearance(){
-        for(boolean tbptt : new boolean[]{true, false}) {
+    public void checkMaskArrayClearance() {
+        for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .iterations(1).seed(12345).list()
-                    .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                            .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
-                    .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345).list()
+                            .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                            .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
+                            .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard)
+                            .tBPTTForwardLength(8).tBPTTBackwardLength(8).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10), Nd4j.linspace(2, 20, 10).reshape(1, 1, 10),
-                    Nd4j.ones(10), Nd4j.ones(10));
+            DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10),
+                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(10), Nd4j.ones(10));
 
             net.fit(data);
             for (Layer l : net.getLayers()) {
@@ -75,84 +74,65 @@ public class TestMasking {
     }
 
     @Test
-    public void testPerOutputMaskingMLN(){
+    public void testPerOutputMaskingMLN() {
         //Idea: for per-output masking, the contents of the masked label entries should make zero difference to either
         // the score or the gradients
 
         int nIn = 6;
         int layerSize = 4;
 
-        INDArray mask1 = Nd4j.create(new double[]{1,0,0,1,0});
-        INDArray mask3 = Nd4j.create(new double[][]{
-                {1,1,1,1,1},
-                {0,1,0,1,0},
-                {1,0,0,1,1}});
-        INDArray[] labelMasks = new INDArray[]{mask1, mask3};
+        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0});
+        INDArray mask3 = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 0, 1, 0}, {1, 0, 0, 1, 1}});
+        INDArray[] labelMasks = new INDArray[] {mask1, mask3};
 
-        ILossFunction[] lossFunctions = new ILossFunction[]{
-                new LossBinaryXENT(),
-//                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
-                new LossHinge(),
-                new LossKLD(),
-                new LossKLD(),
-                new LossL1(),
-                new LossL2(),
-                new LossMAE(),
-                new LossMAE(),
-                new LossMAPE(),
-                new LossMAPE(),
-//                new LossMCXENT(),             //Per output masking on MCXENT+Softmax: not yet supported
-                new LossMCXENT(),
-                new LossMSE(),
-                new LossMSE(),
-                new LossMSLE(),
-                new LossMSLE(),
-                new LossNegativeLogLikelihood(),
-                new LossPoisson(),
-                new LossSquaredHinge()};
+        ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(),
+                        //                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
+                        new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(), new LossL2(), new LossMAE(),
+                        new LossMAE(), new LossMAPE(), new LossMAPE(),
+                        //                new LossMCXENT(),             //Per output masking on MCXENT+Softmax: not yet supported
+                        new LossMCXENT(), new LossMSE(), new LossMSE(), new LossMSLE(), new LossMSLE(),
+                        new LossNegativeLogLikelihood(), new LossPoisson(), new LossSquaredHinge()};
 
-        Activation[] act = new Activation[]{
-                Activation.SIGMOID, //XENT
-//                Activation.TANH,
-                Activation.TANH,    //Hinge
-                Activation.SIGMOID, //KLD
-                Activation.SOFTMAX, //KLD + softmax
-                Activation.TANH,    //L1
-                Activation.TANH,    //L2
-                Activation.TANH,    //MAE
-                Activation.SOFTMAX, //MAE + softmax
-                Activation.TANH,    //MAPE
-                Activation.SOFTMAX ,//MAPE + softmax
-//                Activation.SOFTMAX, //MCXENT + softmax: see comment above
-                Activation.SIGMOID, //MCXENT + sigmoid
-                Activation.TANH,    //MSE
-                Activation.SOFTMAX, //MSE + softmax
-                Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
-                Activation.SOFTMAX, //MSLE + softmax
-                Activation.SIGMOID, //NLL
-                Activation.SIGMOID, //Poisson
-                Activation.TANH     //Squared hinge
+        Activation[] act = new Activation[] {Activation.SIGMOID, //XENT
+                        //                Activation.TANH,
+                        Activation.TANH, //Hinge
+                        Activation.SIGMOID, //KLD
+                        Activation.SOFTMAX, //KLD + softmax
+                        Activation.TANH, //L1
+                        Activation.TANH, //L2
+                        Activation.TANH, //MAE
+                        Activation.SOFTMAX, //MAE + softmax
+                        Activation.TANH, //MAPE
+                        Activation.SOFTMAX, //MAPE + softmax
+                        //                Activation.SOFTMAX, //MCXENT + softmax: see comment above
+                        Activation.SIGMOID, //MCXENT + sigmoid
+                        Activation.TANH, //MSE
+                        Activation.SOFTMAX, //MSE + softmax
+                        Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
+                        Activation.SOFTMAX, //MSLE + softmax
+                        Activation.SIGMOID, //NLL
+                        Activation.SIGMOID, //Poisson
+                        Activation.TANH //Squared hinge
         };
 
-        for( INDArray labelMask : labelMasks ){
+        for (INDArray labelMask : labelMasks) {
 
             int minibatch = labelMask.size(0);
             int nOut = labelMask.size(1);
 
-            for( int i=0; i<lossFunctions.length; i++ ){
+            for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];
                 Activation a = act[i];
 
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .updater(Updater.NONE)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-                        .seed(12345)
-                        .list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
-                        .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut)
-                                .lossFunction(lf).activation(a).build())
-                        .build();
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .list()
+                                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                                .build())
+                                .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
+                                                .activation(a).build())
+                                .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
@@ -174,7 +154,7 @@ public class TestMasking {
                 INDArray maskZeroLocations = Nd4j.getExecutioner().execAndReturn(new Not(labelMask.dup()));
                 INDArray rand = Nd4j.rand(maskZeroLocations.shape()).muli(0.5);
 
-                INDArray newLabels = labels.add(rand.muli(maskZeroLocations));      //Only the masked values are changed
+                INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed
 
                 net.setLabels(newLabels);
                 net.computeGradientAndScore();
@@ -190,22 +170,19 @@ public class TestMasking {
 
 
                 //Do the same for CompGraph
-                ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .updater(Updater.NONE)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-                        .seed(12345)
-                        .graphBuilder()
-                        .addInputs("in")
-                        .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build(), "in")
-                        .addLayer("1", new OutputLayer.Builder().nIn(layerSize).nOut(nOut)
-                                .lossFunction(lf).activation(a).build(), "0")
-                        .setOutputs("1")
-                        .build();
+                ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .graphBuilder().addInputs("in")
+                                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
+                                                .activation(Activation.TANH).build(), "in")
+                                .addLayer("1", new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
+                                                .activation(a).build(), "0")
+                                .setOutputs("1").build();
 
                 ComputationGraph graph = new ComputationGraph(conf2);
                 graph.init();
 
-                graph.setLayerMaskArrays(null, new INDArray[]{labelMask});
+                graph.setLayerMaskArrays(null, new INDArray[] {labelMask});
 
                 graph.setInputs(features);
                 graph.setLabels(labels);

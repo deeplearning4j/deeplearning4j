@@ -98,13 +98,8 @@ public abstract class TokenBase {
 
     @Override
     public String toString() {
-        return "Token{" +
-            "surface='" + surface + '\'' +
-            ", position=" + position +
-            ", type=" + type +
-            ", dictionary=" + dictionary +
-            ", wordId=" + wordId +
-            '}';
+        return "Token{" + "surface='" + surface + '\'' + ", position=" + position + ", type=" + type + ", dictionary="
+                        + dictionary + ", wordId=" + wordId + '}';
     }
 
     /**

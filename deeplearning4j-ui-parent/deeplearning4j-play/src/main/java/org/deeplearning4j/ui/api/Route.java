@@ -32,7 +32,8 @@ public class Route {
         this(route, method, functionType, null, function, null);
     }
 
-    public Route(String route, HttpMethod method, FunctionType functionType, BiFunction<String,String,Result> function) {
+    public Route(String route, HttpMethod method, FunctionType functionType,
+                    BiFunction<String, String, Result> function) {
         this(route, method, functionType, null, null, function);
     }
 }

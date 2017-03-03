@@ -12,7 +12,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
  *
  * @author raver119@gmail.com
  */
-public class FilteredSequenceIterator<T extends SequenceElement> implements SequenceIterator<T>{
+public class FilteredSequenceIterator<T extends SequenceElement> implements SequenceIterator<T> {
 
     private final SequenceIterator<T> underlyingIterator;
     private final VocabCache<T> vocabCache;
@@ -47,11 +47,12 @@ public class FilteredSequenceIterator<T extends SequenceElement> implements Sequ
         Sequence<T> originalSequence = underlyingIterator.nextSequence();
         Sequence<T> newSequence = new Sequence<>();
 
-        if (originalSequence != null) for (T element: originalSequence.getElements()) {
-            if (element != null && vocabCache.hasToken(element.getLabel())) {
-                newSequence.addElement(vocabCache.wordFor(element.getLabel()));
+        if (originalSequence != null)
+            for (T element : originalSequence.getElements()) {
+                if (element != null && vocabCache.hasToken(element.getLabel())) {
+                    newSequence.addElement(vocabCache.wordFor(element.getLabel()));
+                }
             }
-        }
 
         newSequence.setSequenceId(originalSequence.getSequenceId());
 

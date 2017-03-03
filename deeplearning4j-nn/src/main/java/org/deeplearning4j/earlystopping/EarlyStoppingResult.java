@@ -35,18 +35,21 @@ import java.util.Map;
  */
 @Data
 public class EarlyStoppingResult<T extends Model> implements Serializable {
-    public enum TerminationReason {Error, IterationTerminationCondition, EpochTerminationCondition}
+    public enum TerminationReason {
+        Error, IterationTerminationCondition, EpochTerminationCondition
+    }
 
     private TerminationReason terminationReason;
     private String terminationDetails;
-    private Map<Integer,Double> scoreVsEpoch;
+    private Map<Integer, Double> scoreVsEpoch;
     private int bestModelEpoch;
     private double bestModelScore;
     private int totalEpochs;
     private T bestModel;
 
-    public EarlyStoppingResult(TerminationReason terminationReason, String terminationDetails, Map<Integer,Double> scoreVsEpoch,
-                               int bestModelEpoch, double bestModelScore, int totalEpochs, T bestModel ){
+    public EarlyStoppingResult(TerminationReason terminationReason, String terminationDetails,
+                    Map<Integer, Double> scoreVsEpoch, int bestModelEpoch, double bestModelScore, int totalEpochs,
+                    T bestModel) {
         this.terminationReason = terminationReason;
         this.terminationDetails = terminationDetails;
         this.scoreVsEpoch = scoreVsEpoch;
@@ -57,13 +60,14 @@ public class EarlyStoppingResult<T extends Model> implements Serializable {
     }
 
     @Override
-    public String toString(){
-        return "EarlyStoppingResult(terminationReason=" + terminationReason + ",details="+terminationDetails +
-                ",bestModelEpoch="+bestModelEpoch + ",bestModelScore="+bestModelScore + ",totalEpochs="+totalEpochs + ")";
+    public String toString() {
+        return "EarlyStoppingResult(terminationReason=" + terminationReason + ",details=" + terminationDetails
+                        + ",bestModelEpoch=" + bestModelEpoch + ",bestModelScore=" + bestModelScore + ",totalEpochs="
+                        + totalEpochs + ")";
 
     }
 
-    public T getBestModel(){
+    public T getBestModel() {
         return bestModel;
     }
 

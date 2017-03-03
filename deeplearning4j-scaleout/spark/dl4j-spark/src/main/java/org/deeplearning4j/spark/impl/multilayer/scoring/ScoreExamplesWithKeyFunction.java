@@ -47,13 +47,15 @@ import java.util.List;
  * @author Alex Black
  * @see ScoreExamplesFunction
  */
-public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, DataSet>>, K, Double> {
+public class ScoreExamplesWithKeyFunction<K>
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, DataSet>>, K, Double> {
 
-    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                        int batchSize) {
+    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         super(new ScoreExamplesWithKeyFunctionAdapter(params, jsonConfig, addRegularizationTerms, batchSize));
     }
 }
+
 
 /**
  * Function to score examples individually, where each example is associated with a particular key<br>
@@ -66,7 +68,8 @@ public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdap
  * @author Alex Black
  * @see ScoreExamplesFunction
  */
-class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, DataSet>>, Tuple2<K, Double>> {
+class ScoreExamplesWithKeyFunctionAdapter<K>
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, DataSet>>, Tuple2<K, Double>> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
@@ -81,8 +84,8 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
      * @param addRegularizationTerms if true: add regularization terms (L1, L2) to the score
      * @param batchSize              Batch size to use when scoring
      */
-    public ScoreExamplesWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                        int batchSize) {
+    public ScoreExamplesWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.addRegularization = addRegularizationTerms;
@@ -100,7 +103,8 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParameters(val);
 
         List<Tuple2<K, Double>> ret = new ArrayList<>();
@@ -116,8 +120,9 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
                 Tuple2<K, DataSet> t2 = iterator.next();
                 DataSet ds = t2._2();
                 int n = ds.numExamples();
-                if (n != 1) throw new IllegalStateException("Cannot score examples with one key per data set if "
-                        + "data set contains more than 1 example (numExamples: " + n + ")");
+                if (n != 1)
+                    throw new IllegalStateException("Cannot score examples with one key per data set if "
+                                    + "data set contains more than 1 example (numExamples: " + n + ")");
                 collect.add(ds);
                 collectKey.add(t2._1());
                 nExamples += n;

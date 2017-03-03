@@ -25,7 +25,8 @@ import lombok.ToString;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
@@ -34,8 +35,8 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     protected double visibleBiasInit;
     private int preTrainIterations;
 
-    public BasePretrainNetwork(Builder builder){
-    	super(builder);
+    public BasePretrainNetwork(Builder builder) {
+        super(builder);
         this.lossFunction = builder.lossFunction;
         this.visibleBiasInit = builder.visibleBiasInit;
         this.preTrainIterations = builder.preTrainIterations;
@@ -44,7 +45,7 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case PretrainParamInitializer.WEIGHT_KEY:
                 return l1;
             case PretrainParamInitializer.BIAS_KEY:
@@ -58,7 +59,7 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     @Override
     public double getL2ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case PretrainParamInitializer.WEIGHT_KEY:
                 return l2;
             case PretrainParamInitializer.BIAS_KEY:
@@ -72,18 +73,18 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case PretrainParamInitializer.WEIGHT_KEY:
                 return learningRate;
             case PretrainParamInitializer.BIAS_KEY:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {
                     return learningRate;
                 }
             case PretrainParamInitializer.VISIBLE_BIAS_KEY:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {
@@ -106,12 +107,12 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
             return (T) this;
         }
 
-        public T visibleBiasInit(double visibleBiasInit){
+        public T visibleBiasInit(double visibleBiasInit) {
             this.visibleBiasInit = visibleBiasInit;
             return (T) this;
         }
 
-        public T preTrainIterations(int preTrainIterations){
+        public T preTrainIterations(int preTrainIterations) {
             this.preTrainIterations = preTrainIterations;
             return (T) this;
         }

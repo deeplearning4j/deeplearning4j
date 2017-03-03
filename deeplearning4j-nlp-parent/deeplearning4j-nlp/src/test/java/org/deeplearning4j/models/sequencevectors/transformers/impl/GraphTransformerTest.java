@@ -31,7 +31,8 @@ public class GraphTransformerTest {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
 
                 int x = i + 3;
-                if (x >= 10) x = 0;
+                if (x >= 10)
+                    x = 0;
                 graph.addEdge(i, x, 1.0, false);
             }
         }
@@ -40,12 +41,9 @@ public class GraphTransformerTest {
     @Test
     public void testGraphTransformer1() throws Exception {
         GraphWalker<VocabWord> walker = new RandomWalker.Builder<>(graph)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .build();
+                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
-        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<>(graph)
-                .setGraphWalker(walker)
-                .build();
+        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<>(graph).setGraphWalker(walker).build();
 
         Iterator<Sequence<VocabWord>> iterator = transformer.iterator();
         int cnt = 0;

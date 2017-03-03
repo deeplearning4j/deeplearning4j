@@ -53,7 +53,8 @@ import java.util.Map;
  *
  */
 
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class RBM extends BasePretrainNetwork {
@@ -63,9 +64,10 @@ public class RBM extends BasePretrainNetwork {
     protected double sparsity;
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.rbm.RBM ret
-                = new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.rbm.RBM ret =
+                        new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -88,7 +90,7 @@ public class RBM extends BasePretrainNetwork {
     }
 
     private RBM(Builder builder) {
-    	super(builder);
+        super(builder);
         this.hiddenUnit = builder.hiddenUnit;
         this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
@@ -97,7 +99,7 @@ public class RBM extends BasePretrainNetwork {
 
     @AllArgsConstructor
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
-        private HiddenUnit hiddenUnit= HiddenUnit.BINARY;
+        private HiddenUnit hiddenUnit = HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = VisibleUnit.BINARY;
         private int k = 1;
         private double sparsity = 0f;
@@ -116,22 +118,22 @@ public class RBM extends BasePretrainNetwork {
         }
 
         // convergence iterations
-        public Builder k(int k){
-        	this.k = k;
-        	return this;
+        public Builder k(int k) {
+            this.k = k;
+            return this;
         }
 
-        public Builder hiddenUnit(HiddenUnit hiddenUnit){
-        	this.hiddenUnit =  hiddenUnit;
-        	return this;
+        public Builder hiddenUnit(HiddenUnit hiddenUnit) {
+            this.hiddenUnit = hiddenUnit;
+            return this;
         }
 
-        public Builder visibleUnit(VisibleUnit visibleUnit){
-        	this.visibleUnit = visibleUnit;
-        	return this;
+        public Builder visibleUnit(VisibleUnit visibleUnit) {
+            this.visibleUnit = visibleUnit;
+            return this;
         }
 
-        public Builder sparsity(double sparsity){
+        public Builder sparsity(double sparsity) {
             this.sparsity = sparsity;
             return this;
         }

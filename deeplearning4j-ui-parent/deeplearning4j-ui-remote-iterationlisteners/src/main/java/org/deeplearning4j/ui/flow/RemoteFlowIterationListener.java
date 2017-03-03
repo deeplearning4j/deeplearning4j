@@ -62,7 +62,8 @@ public class RemoteFlowIterationListener implements IterationListener {
     private long currTime;
     private long initTime = System.currentTimeMillis();
 
-    private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
+    private static final List<String> colors = Collections.unmodifiableList(
+                    Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
     private Client client = ClientBuilder.newClient();
     private WebTarget target;
@@ -79,8 +80,6 @@ public class RemoteFlowIterationListener implements IterationListener {
 
 
 
-
-
     public RemoteFlowIterationListener(@NonNull UiConnectionInfo connectionInfo, int frequency) {
         setup(connectionInfo);
         this.frequency = frequency;
@@ -91,14 +90,16 @@ public class RemoteFlowIterationListener implements IterationListener {
 
         this.connectionInfo = connectionInfo;
 
-        java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
+        java.util.logging.Logger logger = java.util.logging.Logger.getGlobal();
         login = null;
         password = null;
         // client.register(new LoggingFilter(logger, true));
         if (login == null || password == null)
-            target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
+            target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow"))
+                            .path("info").queryParam("sid", connectionInfo.getSessionId());
 
-        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
+        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow"))
+                        .path("state").queryParam("sid", connectionInfo.getSessionId());
         this.path = connectionInfo.getFullAddress("flow");
 
 
@@ -131,7 +132,7 @@ public class RemoteFlowIterationListener implements IterationListener {
     public synchronized void iterationDone(Model model, int iteration) {
         if (iterationCount.incrementAndGet() % frequency == 0) {
             currTime = System.currentTimeMillis();
-        /*
+            /*
             Basic plan:
                 1. We should detect, if that's CompGraph or MultilayerNetwork. However the actual difference will be limited to number of non-linear connections.
                 2. Network structure should be converted to JSON
@@ -140,7 +141,7 @@ public class RemoteFlowIterationListener implements IterationListener {
                 5. For arrays/params gzip could be used (to be investigated)
                 ......
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
-         */
+             */
 
             // update modelState
             buildModelState(model);
@@ -150,23 +151,24 @@ public class RemoteFlowIterationListener implements IterationListener {
 
 
 
-
-        /*
+            /*
             as soon as model info is built, we need to define color scheme based on number of unique nodes
-         */
+             */
 
             // send ModelInfo to UiServer
-            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
+            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                            .post(Entity.entity(info, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
 
             // send ModelState to UiServer
-            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
+            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                            .post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
             log.debug("Response: " + resp);
-        /*
+            /*
             TODO: it would be nice to send updates of nodes as well
-         */
+             */
 
-            if(firstIteration){
+            if (firstIteration) {
                 firstIteration = false;
             }
         }
@@ -182,63 +184,67 @@ public class RemoteFlowIterationListener implements IterationListener {
      * @param currentY
      * @return
      */
-    protected  List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput, int currentY) {
+    protected List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput,
+                    int currentY) {
         List<LayerInfo> results = new ArrayList<>();
         int x = 0;
         for (int v = 0; v < vertices.length; v++) {
             GraphVertex vertex = vertices[v];
             VertexIndices[] indices = vertex.getInputVertices();
 
-            if (indices != null) for (int i = 0; i < indices.length; i++) {
-                GraphVertex cv = vertices[indices[i].getVertexIndex()];
-                String inputName = cv.getVertexName();
+            if (indices != null)
+                for (int i = 0; i < indices.length; i++) {
+                    GraphVertex cv = vertices[indices[i].getVertexIndex()];
+                    String inputName = cv.getVertexName();
 
-                for (String input: currentInput) {
-                    if (inputName.equals(input)) {
-                        // we have match for Vertex
-                        //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
-                        try {
-                            LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
-                            if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
-                            info.setName(vertex.getVertexName());
+                    for (String input : currentInput) {
+                        if (inputName.equals(input)) {
+                            // we have match for Vertex
+                            //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
+                            try {
+                                LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
+                                if (info == null)
+                                    info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
+                                info.setName(vertex.getVertexName());
 
-                            // special case here: vertex isn't a layer
-                            if (vertex.getLayer() == null) {
-                                info.setLayerType(vertex.getClass().getSimpleName());
-                            }
-                            if (info.getName().endsWith("-merge")) info.setLayerType("MERGE");
-                            if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
-                                x++;
-                                model.addLayer(info);
-                                results.add(info);
-                            }
+                                // special case here: vertex isn't a layer
+                                if (vertex.getLayer() == null) {
+                                    info.setLayerType(vertex.getClass().getSimpleName());
+                                }
+                                if (info.getName().endsWith("-merge"))
+                                    info.setLayerType("MERGE");
+                                if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
+                                    x++;
+                                    model.addLayer(info);
+                                    results.add(info);
+                                }
 
-                            // now we should map connections
-                            LayerInfo connection = model.getLayerInfoByName(input);
-                            if (connection != null) {
-                                connection.addConnection(info);
-                                //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
-                            } else {
-                                // the only reason to have null here, is direct input connection
-                                //connection.addConnection(0,0);
+                                // now we should map connections
+                                LayerInfo connection = model.getLayerInfoByName(input);
+                                if (connection != null) {
+                                    connection.addConnection(info);
+                                    //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
+                                } else {
+                                    // the only reason to have null here, is direct input connection
+                                    //connection.addConnection(0,0);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
                 }
-            }
         }
         return results;
     }
 
     protected void buildModelState(Model model) {
         // first we update performance state
-        long timeSpent = currTime - lastTime ;
+        long timeSpent = currTime - lastTime;
         float timeSec = timeSpent / 1000f;
 
         INDArray input = model.input();
-        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
         long numSamples = input.lengthLong() / tadLength;
 
@@ -255,8 +261,8 @@ public class RemoteFlowIterationListener implements IterationListener {
         // and now update model params/gradients
         Map<String, Map> newGrad = new LinkedHashMap<>();
 
-        Map<String,Map> newParams = new LinkedHashMap<>();
-        Map<String,INDArray> params = model.paramTable();
+        Map<String, Map> newParams = new LinkedHashMap<>();
+        Map<String, INDArray> params = model.paramTable();
 
         Layer[] layers = null;
         if (model instanceof MultiLayerNetwork) {
@@ -267,28 +273,26 @@ public class RemoteFlowIterationListener implements IterationListener {
 
         List<Double> lrs = new ArrayList<>();
         if (layers != null) {
-            for (Layer layer: layers) {
+            for (Layer layer : layers) {
                 lrs.add(layer.conf().getLayer().getLearningRate());
             }
             modelState.setLearningRates(lrs);
         }
         Map<Integer, LayerParams> layerParamsMap = new LinkedHashMap<>();
 
-        for(Map.Entry<String,INDArray> entry : params.entrySet()) {
+        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             String param = entry.getKey();
             if (!Character.isDigit(param.charAt(0)))
                 continue;
 
-            int layer = Integer.parseInt(param.replaceAll("\\_.*$",""));
-            String key = param.replaceAll("^.*?_","").toLowerCase();
+            int layer = Integer.parseInt(param.replaceAll("\\_.*$", ""));
+            String key = param.replaceAll("^.*?_", "").toLowerCase();
 
             if (!layerParamsMap.containsKey(layer))
                 layerParamsMap.put(layer, new LayerParams());
 
-            HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                    .setBinCount(14)
-                    .setRounding(6)
-                    .build();
+            HistogramBin histogram =
+                            new HistogramBin.Builder(entry.getValue().dup()).setBinCount(14).setRounding(6).build();
 
             // TODO: something better would be nice to have here
             if (key.equalsIgnoreCase("w")) {
@@ -316,10 +320,10 @@ public class RemoteFlowIterationListener implements IterationListener {
             List<String> inputs = graph.getConfiguration().getNetworkInputs();
             // now we need to add inputs as y0 nodes
             int x = 0;
-            for (String input: inputs) {
+            for (String input : inputs) {
                 GraphVertex vertex = graph.getVertex(input);
                 INDArray gInput = vertex.getInputs()[0];
-                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
+                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1, gInput.rank()));
 
                 long numSamples = gInput.lengthLong() / tadLength;
 
@@ -350,18 +354,20 @@ public class RemoteFlowIterationListener implements IterationListener {
 
             // we assume that max row can't be higher then total number of vertices
             for (int y = 1; y < vertices.length; y++) {
-                if (needle.isEmpty()) needle.addAll(inputs);
+                if (needle.isEmpty())
+                    needle.addAll(inputs);
 
                 /*
                     for each grid row we look for nodes, that are connected to previous layer
                 */
-                List<LayerInfo> layersForGridY =  flattenToY(modelInfo, vertices, needle, y);
+                List<LayerInfo> layersForGridY = flattenToY(modelInfo, vertices, needle, y);
 
                 needle.clear();
-                for (LayerInfo layerInfo: layersForGridY) {
+                for (LayerInfo layerInfo : layersForGridY) {
                     needle.add(layerInfo.getName());
                 }
-                if (needle.isEmpty()) break;
+                if (needle.isEmpty())
+                    break;
             }
 
         } else if (model instanceof MultiLayerNetwork) {
@@ -370,7 +376,7 @@ public class RemoteFlowIterationListener implements IterationListener {
             // manually adding input layer
 
             INDArray input = model.input();
-            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
             long numSamples = input.lengthLong() / tadLength;
 
@@ -397,10 +403,10 @@ public class RemoteFlowIterationListener implements IterationListener {
 
             // for MLN x value is always 0
             final int x = 0;
-            for (Layer layer: network.getLayers()) {
+            for (Layer layer : network.getLayers()) {
                 LayerInfo layerInfo = getLayerInfo(layer, x, y, y);
                 // since it's MLN, we know connections in advance as curLayer + 1
-                layerInfo.addConnection(x, y+1);
+                layerInfo.addConnection(x, y + 1);
                 modelInfo.addLayer(layerInfo);
                 y++;
             }
@@ -408,19 +414,21 @@ public class RemoteFlowIterationListener implements IterationListener {
             LayerInfo layerInfo = modelInfo.getLayerInfoByCoords(x, y - 1);
             layerInfo.dropConnections();
 
-        }// else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
+        } // else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
         // find layers without connections, and mark them as output layers
-        for (LayerInfo layerInfo: modelInfo.getLayers()) {
-            if (layerInfo.getConnections().size() == 0) layerInfo.setLayerType("OUTPUT");
+        for (LayerInfo layerInfo : modelInfo.getLayers()) {
+            if (layerInfo.getConnections().size() == 0)
+                layerInfo.setLayerType("OUTPUT");
         }
 
         // now we apply colors to distinct layer types
         AtomicInteger cnt = new AtomicInteger(0);
-        for (String layerType: modelInfo.getLayerTypes()) {
+        for (String layerType : modelInfo.getLayerTypes()) {
             String curColor = colors.get(cnt.getAndIncrement());
-            if (cnt.get() >= colors.size()) cnt.set(0);
-            for (LayerInfo layerInfo: modelInfo.getLayersByType(layerType)) {
+            if (cnt.get() >= colors.size())
+                cnt.set(0);
+            for (LayerInfo layerInfo : modelInfo.getLayersByType(layerType)) {
                 if (layerType.equals(INPUT)) {
                     layerInfo.setColor("#99ff66");
                 } else if (layerType.equals("OUTPUT")) {
@@ -446,7 +454,8 @@ public class RemoteFlowIterationListener implements IterationListener {
             info.setName(layer.conf().getLayer().getLayerName());
         } catch (Exception e) {
         }
-        if (info.getName() == null || info.getName().isEmpty()) info.setName("unnamed");
+        if (info.getName() == null || info.getName().isEmpty())
+            info.setName("unnamed");
 
         // unique layer id required here
         info.setId(order);
@@ -457,7 +466,7 @@ public class RemoteFlowIterationListener implements IterationListener {
 
         // set layer type
         try {
-            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$",""));
+            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$", ""));
         } catch (Exception e) {
             info.setLayerType("n/a");
             return info;
@@ -471,8 +480,10 @@ public class RemoteFlowIterationListener implements IterationListener {
         //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
         if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
-            mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
+            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 =
+                            (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
+            mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: "
+                            + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
             subLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
             fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
@@ -494,13 +505,15 @@ public class RemoteFlowIterationListener implements IterationListener {
         } else {
             // TODO: Introduce Layer.Type.OUTPUT
             if (layer instanceof BaseOutputLayer) {
-                mainLine.append("Outputs: [" + ((BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
-                fullLine.append("Outputs number: ").append(((BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
+                mainLine.append("Outputs: [" + ((BaseOutputLayer) layer.conf().getLayer()).getNOut() + "]");
+                fullLine.append("Outputs number: ").append(((BaseOutputLayer) layer.conf().getLayer()).getNOut())
+                                .append("<br/>");
             }
         }
 
         subLine.append(" A: [").append(layer.conf().getLayer().getActivationFn().toString()).append("]");
-        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
+        fullLine.append("Activation function: ").append("<b>")
+                        .append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());
@@ -510,11 +523,10 @@ public class RemoteFlowIterationListener implements IterationListener {
     }
 
     protected String parseTime(long milliseconds) {
-        return String.format(FORMAT,
-                TimeUnit.MILLISECONDS.toHours(milliseconds),
-                TimeUnit.MILLISECONDS.toMinutes(milliseconds) - TimeUnit.HOURS.toMinutes(
-                        TimeUnit.MILLISECONDS.toHours(milliseconds)),
-                TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(
-                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
+        return String.format(FORMAT, TimeUnit.MILLISECONDS.toHours(milliseconds),
+                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+                                        - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)),
+                        TimeUnit.MILLISECONDS.toSeconds(milliseconds)
+                                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
     }
 }

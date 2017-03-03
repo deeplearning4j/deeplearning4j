@@ -21,10 +21,7 @@ import com.atilika.kuromoji.dict.Dictionary;
 public class ViterbiNode {
 
     public enum Type {
-        KNOWN,
-        UNKNOWN,
-        USER,
-        INSERTED
+        KNOWN, UNKNOWN, USER, INSERTED
     }
 
     private final int wordId;
@@ -56,7 +53,8 @@ public class ViterbiNode {
     }
 
     public ViterbiNode(int wordId, String word, Dictionary dictionary, int startIndex, Type type) {
-        this(wordId, word, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId), startIndex, type);
+        this(wordId, word, dictionary.getLeftId(wordId), dictionary.getRightId(wordId), dictionary.getWordCost(wordId),
+                        startIndex, type);
     }
 
     /**

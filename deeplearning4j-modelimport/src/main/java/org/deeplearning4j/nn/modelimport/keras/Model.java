@@ -53,7 +53,7 @@ public class Model {
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModelInputStream(InputStream modelHdf5Stream)
-            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);
     }
 
@@ -71,7 +71,7 @@ public class Model {
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModelInputStream(InputStream modelHdf5Stream)
-            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Stream, false);
     }
 
@@ -88,7 +88,7 @@ public class Model {
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModelInputStream(InputStream modelHdf5Stream)
-            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);
     }
 
@@ -103,7 +103,7 @@ public class Model {
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModel(String modelHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -120,7 +120,7 @@ public class Model {
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 
@@ -136,7 +136,7 @@ public class Model {
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -152,7 +152,7 @@ public class Model {
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -169,7 +169,7 @@ public class Model {
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 
@@ -186,7 +186,7 @@ public class Model {
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 }

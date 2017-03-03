@@ -27,12 +27,11 @@ import java.io.InputStream;
 /**
  * Created by kepricon on 16. 10. 20.
  */
-public class KoreanTokenizerFactory implements TokenizerFactory{
+public class KoreanTokenizerFactory implements TokenizerFactory {
 
     private TokenPreProcess preProcess;
 
-    public KoreanTokenizerFactory() {
-    }
+    public KoreanTokenizerFactory() {}
 
     @Override
     public Tokenizer create(String toTokenize) {
@@ -44,7 +43,7 @@ public class KoreanTokenizerFactory implements TokenizerFactory{
     @Override
     public Tokenizer create(InputStream inputStream) {
         throw new UnsupportedOperationException("Not supported");
-//        return null;
+        //        return null;
     }
 
     @Override

@@ -41,7 +41,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                                 VertexIndices[] outputVertices, InputPreProcessor preProcessor) {
+                    VertexIndices[] outputVertices, InputPreProcessor preProcessor) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.preProcessor = preProcessor;
     }
@@ -63,28 +63,31 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        return preProcessor.preProcess(inputs[0],graph.batchSize());
+        return preProcessor.preProcess(inputs[0], graph.batchSize());
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        return new Pair<>(null,new INDArray[]{preProcessor.backprop(epsilon,graph.batchSize())});
+        return new Pair<>(null, new INDArray[] {preProcessor.backprop(epsilon, graph.batchSize())});
     }
 
     @Override
     public String toString() {
-        return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor=" + preProcessor.toString() + ")";
+        return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
+                        + preProcessor.toString() + ")";
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //No op
-        if(maskArrays == null || maskArrays.length == 0){
+        if (maskArrays == null || maskArrays.length == 0) {
             return null;
         }
 

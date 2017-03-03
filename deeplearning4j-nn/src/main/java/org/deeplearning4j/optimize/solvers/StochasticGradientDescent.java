@@ -38,31 +38,34 @@ import java.util.Collection;
 public class StochasticGradientDescent extends BaseOptimizer {
 
 
-    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners,
+                    Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
 
     @Override
     public boolean optimize() {
-        for(int i = 0; i < conf.getNumIterations(); i++) {
+        for (int i = 0; i < conf.getNumIterations(); i++) {
 
-            Pair<Gradient,Double> pair = gradientAndScore();
+            Pair<Gradient, Double> pair = gradientAndScore();
             Gradient gradient = pair.getFirst();
 
             INDArray params = model.params();
-            stepFunction.step(params,gradient.gradient());
+            stepFunction.step(params, gradient.gradient());
             //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
             //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary
             //But setParams should be a no-op for MLN and CG
             model.setParams(params);
 
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            for(IterationListener listener : iterationListeners)
+            for (IterationListener listener : iterationListeners)
                 listener.iterationDone(model, iterationCount);
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
@@ -73,10 +76,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
     }
 
     @Override
-    public void preProcessLine() {
-    }
+    public void preProcessLine() {}
 
     @Override
-    public void postStep(INDArray gradient) {
-    }
+    public void postStep(INDArray gradient) {}
 }

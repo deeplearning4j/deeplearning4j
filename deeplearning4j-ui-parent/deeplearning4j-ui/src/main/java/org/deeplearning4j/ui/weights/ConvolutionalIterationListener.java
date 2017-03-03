@@ -37,9 +37,9 @@ import java.util.UUID;
 public class ConvolutionalIterationListener implements IterationListener {
 
     private enum Orientation {
-        LANDSCAPE,
-        PORTRAIT
+        LANDSCAPE, PORTRAIT
     }
+
     private int freq = 10;
     private static final Logger log = LoggerFactory.getLogger(ConvolutionalIterationListener.class);
     private int minibatchNum = 0;
@@ -47,8 +47,8 @@ public class ConvolutionalIterationListener implements IterationListener {
     private String path;
     private boolean firstIteration = true;
 
-    private Color borderColor = new Color(140,140,140);
-    private Color bgColor = new Color(255,255,255);
+    private Color borderColor = new Color(140, 140, 140);
+    private Color bgColor = new Color(255, 255, 255);
 
     private final StatsStorageRouter ssr;
     private final String sessionID;
@@ -63,7 +63,7 @@ public class ConvolutionalIterationListener implements IterationListener {
         this(visualizationFrequency, true);
     }
 
-    public ConvolutionalIterationListener(int iterations, boolean openBrowser){
+    public ConvolutionalIterationListener(int iterations, boolean openBrowser) {
         this(new MapDBStatsStorage(), iterations, openBrowser);
     }
 
@@ -71,16 +71,16 @@ public class ConvolutionalIterationListener implements IterationListener {
         this(ssr, iterations, openBrowser, null, null);
     }
 
-    public ConvolutionalIterationListener(StatsStorageRouter ssr, int iterations, boolean openBrowser,
-                                          String sessionID, String workerID){
+    public ConvolutionalIterationListener(StatsStorageRouter ssr, int iterations, boolean openBrowser, String sessionID,
+                    String workerID) {
         this.ssr = ssr;
-        if(sessionID == null){
+        if (sessionID == null) {
             //TODO handle syncing session IDs across different listeners in the same model...
             this.sessionID = UUID.randomUUID().toString();
         } else {
             this.sessionID = sessionID;
         }
-        if(workerID == null){
+        if (workerID == null) {
             this.workerID = UIDProvider.getJVMUID() + "_" + Thread.currentThread().getId();
         } else {
             this.workerID = workerID;
@@ -92,7 +92,7 @@ public class ConvolutionalIterationListener implements IterationListener {
         this.openBrowser = openBrowser;
         path = "http://localhost:" + UIServer.getInstance().getPort() + "/" + subPath;
 
-        if(openBrowser && ssr instanceof StatsStorage){
+        if (openBrowser && ssr instanceof StatsStorage) {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
 
@@ -129,7 +129,7 @@ public class ConvolutionalIterationListener implements IterationListener {
             int cnt = 0;
             Random rnd = new Random();
             BufferedImage sourceImage = null;
-            if(model instanceof MultiLayerNetwork) {
+            if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
@@ -139,7 +139,8 @@ public class ConvolutionalIterationListener implements IterationListener {
                             INDArray inputs = ((ConvolutionLayer) layer).input();
 
                             try {
-                                sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[]{3, 2, 1}));
+                                sourceImage = restoreRGBImage(
+                                                inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -153,7 +154,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                     }
                 }
 
-            } else if(model instanceof ComputationGraph) {
+            } else if (model instanceof ComputationGraph) {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
@@ -163,7 +164,8 @@ public class ConvolutionalIterationListener implements IterationListener {
                             INDArray inputs = ((ConvolutionLayer) layer).input();
 
                             try {
-                                sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[]{3, 2, 1}));
+                                sourceImage = restoreRGBImage(
+                                                inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -206,7 +208,7 @@ public class ConvolutionalIterationListener implements IterationListener {
         int numImages = shape[0];
         height = (shape[2]);
         width = (shape[1]);
-//        log.info("Output image dimensions: {height: " + height + ", width: " + width + "}");
+        //        log.info("Output image dimensions: {height: " + height + ", width: " + width + "}");
         int maxHeight = 0; //(height + (border * 2 ) + padding_row) * numImages;
         int totalWidth = 0;
         int iOffset = 1;
@@ -228,7 +230,7 @@ public class ConvolutionalIterationListener implements IterationListener {
 
             BufferedImage image = null;
             if (orientation == Orientation.LANDSCAPE) {
-                maxHeight = (height + (border * 2 ) + padding_row) * numImages;
+                maxHeight = (height + (border * 2) + padding_row) * numImages;
                 image = renderMultipleImagesLandscape(tad, maxHeight, width, height);
                 totalWidth += image.getWidth() + padding_col;
             } else if (orientation == Orientation.PORTRAIT) {
@@ -272,15 +274,19 @@ public class ConvolutionalIterationListener implements IterationListener {
                 } catch (Exception e) {
                 }
 
-                graphics2D.drawImage(sourceImage, (padding_col / 2) - (sourceImage.getWidth() / 2),  (maxHeight / 2) - (sourceImage.getHeight() / 2), null );
+                graphics2D.drawImage(sourceImage, (padding_col / 2) - (sourceImage.getWidth() / 2),
+                                (maxHeight / 2) - (sourceImage.getHeight() / 2), null);
 
                 graphics2D.setPaint(borderColor);
-                graphics2D.drawRect((padding_col / 2) - (sourceImage.getWidth() / 2), (maxHeight / 2) - (sourceImage.getHeight() / 2), sourceImage.getWidth(), sourceImage.getHeight());
+                graphics2D.drawRect((padding_col / 2) - (sourceImage.getWidth() / 2),
+                                (maxHeight / 2) - (sourceImage.getHeight() / 2), sourceImage.getWidth(),
+                                sourceImage.getHeight());
 
                 iOffset += sourceImage.getWidth();
 
                 if (singleArrow != null)
-                    graphics2D.drawImage(singleArrow, iOffset + (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                    graphics2D.drawImage(singleArrow, iOffset + (padding_col / 2) - (singleArrow.getWidth() / 2),
+                                    (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
             } else {
                 try {
                     ClassPathResource resource = new ClassPathResource("arrow_singi.PNG");
@@ -291,14 +297,18 @@ public class ConvolutionalIterationListener implements IterationListener {
                 } catch (Exception e) {
                 }
 
-                graphics2D.drawImage(sourceImage, (totalWidth / 2) - (sourceImage.getWidth() / 2),  (padding_col / 2) - (sourceImage.getHeight() / 2), null );
+                graphics2D.drawImage(sourceImage, (totalWidth / 2) - (sourceImage.getWidth() / 2),
+                                (padding_col / 2) - (sourceImage.getHeight() / 2), null);
 
                 graphics2D.setPaint(borderColor);
-                graphics2D.drawRect((totalWidth / 2) - (sourceImage.getWidth() / 2), (padding_col / 2) - (sourceImage.getHeight() / 2), sourceImage.getWidth(), sourceImage.getHeight());
+                graphics2D.drawRect((totalWidth / 2) - (sourceImage.getWidth() / 2),
+                                (padding_col / 2) - (sourceImage.getHeight() / 2), sourceImage.getWidth(),
+                                sourceImage.getHeight());
 
                 iOffset += sourceImage.getHeight();
                 if (singleArrow != null)
-                    graphics2D.drawImage(singleArrow,(totalWidth / 2) - (singleArrow.getWidth() / 2), iOffset + (padding_col / 2) - (singleArrow.getHeight() / 2), null);
+                    graphics2D.drawImage(singleArrow, (totalWidth / 2) - (singleArrow.getWidth() / 2),
+                                    iOffset + (padding_col / 2) - (singleArrow.getHeight() / 2), null);
 
             }
             iOffset += padding_col;
@@ -324,10 +334,12 @@ public class ConvolutionalIterationListener implements IterationListener {
                     if (i < images.size() - 1) {
                         // draw multiple arrows here
                         if (multipleArrows != null)
-                        graphics2D.drawImage(multipleArrows, iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2), (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
+                            graphics2D.drawImage(multipleArrows,
+                                            iOffset - (padding_col / 2) - (multipleArrows.getWidth() / 2),
+                                            (maxHeight / 2) - (multipleArrows.getHeight() / 2), null);
                     } else {
                         // draw single arrow
-                    //    graphics2D.drawImage(singleArrow, iOffset - (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
+                        //    graphics2D.drawImage(singleArrow, iOffset - (padding_col / 2) - (singleArrow.getWidth() / 2), (maxHeight / 2) - (singleArrow.getHeight() / 2), null);
                     }
                 }
             } else if (orientation == Orientation.PORTRAIT) {
@@ -339,10 +351,11 @@ public class ConvolutionalIterationListener implements IterationListener {
                     if (i < images.size() - 1) {
                         // draw multiple arrows here
                         if (multipleArrows != null)
-                            graphics2D.drawImage(multipleArrows, (totalWidth / 2) - (multipleArrows.getWidth() / 2),  iOffset - (padding_col / 2) - (multipleArrows.getHeight() / 2) , null);
+                            graphics2D.drawImage(multipleArrows, (totalWidth / 2) - (multipleArrows.getWidth() / 2),
+                                            iOffset - (padding_col / 2) - (multipleArrows.getHeight() / 2), null);
                     } else {
                         // draw single arrow
-                     //   graphics2D.drawImage(singleArrow, (totalWidth / 2) - (singleArrow.getWidth() / 2),  iOffset - (padding_col / 2) - (singleArrow.getHeight() / 2) , null);
+                        //   graphics2D.drawImage(singleArrow, (totalWidth / 2) - (singleArrow.getWidth() / 2),  iOffset - (padding_col / 2) - (singleArrow.getHeight() / 2) , null);
                     }
                 }
             }
@@ -402,7 +415,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 now we should place this image into output image
             */
 
-            graphics2D.drawImage(currentImage, columnOffset+1, rowOffset + 1, null);
+            graphics2D.drawImage(currentImage, columnOffset + 1, rowOffset + 1, null);
 
 
             /*
@@ -419,15 +432,15 @@ public class ConvolutionalIterationListener implements IterationListener {
             */
 
             if (z % 7 == 0 && // zoom each 5th element
-                    z != 0 && // do not zoom 0 element
-                    numZoomed < limZoomed && // we want only few zoomed samples
-                    (rHeight != zoomHeight && rWidth != zoomWidth ) // do not zoom if dimensions match
-                    ) {
+                            z != 0 && // do not zoom 0 element
+                            numZoomed < limZoomed && // we want only few zoomed samples
+                            (rHeight != zoomHeight && rWidth != zoomWidth) // do not zoom if dimensions match
+            ) {
 
                 int cY = (zoomSpan * numZoomed) + (zoomHeight);
                 int cX = (zoomSpan * numZoomed) + (zoomWidth);
 
-                graphics2D.drawImage(currentImage, cX - 1 , height - zoomWidth - 1, zoomWidth, zoomHeight, null);
+                graphics2D.drawImage(currentImage, cX - 1, height - zoomWidth - 1, zoomWidth, zoomHeight, null);
                 graphics2D.drawRect(cX - 2, height - zoomWidth - 2, zoomWidth, zoomHeight);
 
                 // draw line to connect this zoomed pic with its original
@@ -447,7 +460,8 @@ public class ConvolutionalIterationListener implements IterationListener {
      * @param tensor3D
      * @return
      */
-    private BufferedImage renderMultipleImagesLandscape(INDArray tensor3D, int maxHeight, int zoomWidth, int zoomHeight) {
+    private BufferedImage renderMultipleImagesLandscape(INDArray tensor3D, int maxHeight, int zoomWidth,
+                    int zoomHeight) {
         /*
             first we need to determine, weight of output image.
          */
@@ -499,7 +513,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 now we should place this image into output image
             */
 
-            graphics2D.drawImage(currentImage, columnOffset+1, rowOffset + 1, null);
+            graphics2D.drawImage(currentImage, columnOffset + 1, rowOffset + 1, null);
 
 
             /*
@@ -516,18 +530,19 @@ public class ConvolutionalIterationListener implements IterationListener {
             */
 
             if (z % 5 == 0 && // zoom each 5th element
-                    z != 0 && // do not zoom 0 element
-                    numZoomed < limZoomed && // we want only few zoomed samples
-                    (rHeight != zoomHeight && rWidth != zoomWidth ) // do not zoom if dimensions match
-                    ) {
+                            z != 0 && // do not zoom 0 element
+                            numZoomed < limZoomed && // we want only few zoomed samples
+                            (rHeight != zoomHeight && rWidth != zoomWidth) // do not zoom if dimensions match
+            ) {
 
                 int cY = (zoomSpan * numZoomed) + (zoomHeight);
 
-                graphics2D.drawImage(currentImage, width - zoomWidth -1 , cY - 1, zoomWidth, zoomHeight, null);
-                graphics2D.drawRect(width - zoomWidth -2, cY -2, zoomWidth, zoomHeight);
+                graphics2D.drawImage(currentImage, width - zoomWidth - 1, cY - 1, zoomWidth, zoomHeight, null);
+                graphics2D.drawRect(width - zoomWidth - 2, cY - 2, zoomWidth, zoomHeight);
 
                 // draw line to connect this zoomed pic with its original
-                graphics2D.drawLine(columnOffset + rWidth, rowOffset + rHeight, width - zoomWidth -2, cY - 2 + zoomHeight );
+                graphics2D.drawLine(columnOffset + rWidth, rowOffset + rHeight, width - zoomWidth - 2,
+                                cY - 2 + zoomHeight);
                 numZoomed++;
             }
 
@@ -559,10 +574,12 @@ public class ConvolutionalIterationListener implements IterationListener {
             arrayR = arrayB;
         }
 
-        BufferedImage imageToRender = new BufferedImage(arrayR.columns(),arrayR.rows(),BufferedImage.TYPE_INT_RGB);
-        for( int x = 0; x < arrayR.columns(); x++ ){
-            for (int y = 0; y < arrayR.rows(); y++ ) {
-                Color pix = new Color((int) (255 * arrayR.getRow(y).getDouble(x)), (int) (255 * arrayG.getRow(y).getDouble(x)), (int) (255 * arrayB.getRow(y).getDouble(x)));
+        BufferedImage imageToRender = new BufferedImage(arrayR.columns(), arrayR.rows(), BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < arrayR.columns(); x++) {
+            for (int y = 0; y < arrayR.rows(); y++) {
+                Color pix = new Color((int) (255 * arrayR.getRow(y).getDouble(x)),
+                                (int) (255 * arrayG.getRow(y).getDouble(x)),
+                                (int) (255 * arrayB.getRow(y).getDouble(x)));
                 int rgb = pix.getRGB();
                 imageToRender.setRGB(x, y, rgb);
             }
@@ -576,9 +593,9 @@ public class ConvolutionalIterationListener implements IterationListener {
      * @param array
      */
     private BufferedImage renderImageGrayscale(INDArray array) {
-        BufferedImage imageToRender = new BufferedImage(array.columns(),array.rows(),BufferedImage.TYPE_BYTE_GRAY);
-        for( int x = 0; x < array.columns(); x++ ){
-            for (int y = 0; y < array.rows(); y++ ) {
+        BufferedImage imageToRender = new BufferedImage(array.columns(), array.rows(), BufferedImage.TYPE_BYTE_GRAY);
+        for (int x = 0; x < array.columns(); x++) {
+            for (int y = 0; y < array.rows(); y++) {
                 imageToRender.getRaster().setSample(x, y, 0, (int) (255 * array.getRow(y).getDouble(x)));
             }
         }

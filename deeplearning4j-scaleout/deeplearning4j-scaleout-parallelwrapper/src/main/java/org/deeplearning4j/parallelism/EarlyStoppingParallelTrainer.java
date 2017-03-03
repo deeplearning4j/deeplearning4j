@@ -67,20 +67,23 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     protected volatile IterationTerminationCondition terminationReason = null;
 
     public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
-                                        DataSetIterator train, MultiDataSetIterator trainMulti,
-                                        int workers, int prefetchBuffer, int averagingFrequency) {
-        this(earlyStoppingConfiguration, model, train, trainMulti, null, workers, prefetchBuffer, averagingFrequency, true, true);
+                    DataSetIterator train, MultiDataSetIterator trainMulti, int workers, int prefetchBuffer,
+                    int averagingFrequency) {
+        this(earlyStoppingConfiguration, model, train, trainMulti, null, workers, prefetchBuffer, averagingFrequency,
+                        true, true);
     }
 
     public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
-                                        DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
-                                        int workers, int prefetchBuffer, int averagingFrequency) {
-        this(earlyStoppingConfiguration, model, train, trainMulti, listener, workers, prefetchBuffer, averagingFrequency, true, true);
+                    DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
+                    int workers, int prefetchBuffer, int averagingFrequency) {
+        this(earlyStoppingConfiguration, model, train, trainMulti, listener, workers, prefetchBuffer,
+                        averagingFrequency, true, true);
     }
 
     public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
-                                           DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
-                                           int workers, int prefetchBuffer, int averagingFrequency, boolean reportScoreAfterAveraging, boolean useLegacyAveraging) {
+                    DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
+                    int workers, int prefetchBuffer, int averagingFrequency, boolean reportScoreAfterAveraging,
+                    boolean useLegacyAveraging) {
         this.esConfig = earlyStoppingConfiguration;
         this.train = train;
         this.trainMulti = trainMulti;
@@ -103,10 +106,9 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             model.setListeners(newListeners);
         }
 
-        this.wrapper = new ParallelWrapper.Builder<>(model)
-            .workers(workers).prefetchBuffer(prefetchBuffer)
-            .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
-            .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
+        this.wrapper = new ParallelWrapper.Builder<>(model).workers(workers).prefetchBuffer(prefetchBuffer)
+                        .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
+                        .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
     }
 
     protected void setTerminationReason(IterationTerminationCondition terminationReason) {
@@ -116,8 +118,9 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     @Override
     public EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
-        if(wrapper == null) {
-            throw new IllegalStateException("Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
+        if (wrapper == null) {
+            throw new IllegalStateException(
+                            "Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
         }
         if (esConfig.getScoreCalculator() == null)
             log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
@@ -152,8 +155,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 } else
                     wrapper.fit(trainMulti);
             } catch (Exception e) {
-                log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
-                    epochCount, iterCount, e);
+                log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}", epochCount,
+                                iterCount, e);
                 //Load best model to return
                 T bestModel;
                 try {
@@ -161,20 +164,14 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
-                return new EarlyStoppingResult<>(
-                    EarlyStoppingResult.TerminationReason.Error,
-                    e.toString(),
-                    scoreVsEpoch,
-                    bestModelEpoch,
-                    bestModelScore,
-                    epochCount,
-                    bestModel);
+                return new EarlyStoppingResult<>(EarlyStoppingResult.TerminationReason.Error, e.toString(),
+                                scoreVsEpoch, bestModelEpoch, bestModelScore, epochCount, bestModel);
             }
 
             if (terminate.get()) {
                 //Handle termination condition:
-                log.info("Hit per iteration termination condition at epoch {}, iteration {}. Reason: {}",
-                        epochCount, iterCount, terminationReason);
+                log.info("Hit per iteration termination condition at epoch {}, iteration {}. Reason: {}", epochCount,
+                                iterCount, terminationReason);
 
                 if (esConfig.isSaveLastModel()) {
                     //Save last model:
@@ -192,19 +189,15 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     throw new RuntimeException(e2);
                 }
 
-                if(bestModel == null){
+                if (bestModel == null) {
                     //Could occur with very early termination
                     bestModel = model;
                 }
 
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
-                        EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        terminationReason.toString(),
-                        scoreVsEpoch,
-                        bestModelEpoch,
-                        bestModelScore,
-                        epochCount,
-                        bestModel);
+                                EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
+                                terminationReason.toString(), scoreVsEpoch, bestModelEpoch, bestModelScore, epochCount,
+                                bestModel);
                 if (listener != null) {
                     listener.onCompletion(result);
                 }
@@ -219,7 +212,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             log.info("Completed training epoch {}", epochCount);
 
 
-            if ((epochCount == 0 && esConfig.getEvaluateEveryNEpochs() == 1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0) {
+            if ((epochCount == 0 && esConfig.getEvaluateEveryNEpochs() == 1)
+                            || epochCount % esConfig.getEvaluateEveryNEpochs() == 0) {
                 //Calculate score at this epoch:
                 ScoreCalculator sc = esConfig.getScoreCalculator();
                 double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(model));
@@ -231,8 +225,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                         //First calculated/reported score
                         log.info("Score at epoch {}: {}", epochCount, score);
                     } else {
-                        log.info("New best model: score = {}, epoch = {} (previous: score = {}, epoch = {})",
-                                score, epochCount, bestModelScore, bestModelEpoch);
+                        log.info("New best model: score = {}, epoch = {} (previous: score = {}, epoch = {})", score,
+                                        epochCount, bestModelScore, bestModelEpoch);
                     }
                     bestModelScore = score;
                     bestModelEpoch = epochCount;
@@ -269,7 +263,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     }
                 }
                 if (epochTerminate) {
-                    log.info("Hit epoch termination condition at epoch {}. Details: {}", epochCount, termReason.toString());
+                    log.info("Hit epoch termination condition at epoch {}. Details: {}", epochCount,
+                                    termReason.toString());
                     T bestModel;
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
@@ -277,13 +272,9 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                         throw new RuntimeException(e2);
                     }
                     EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
-                            EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
-                            termReason.toString(),
-                            scoreVsEpoch,
-                            bestModelEpoch,
-                            bestModelScore,
-                            epochCount + 1,
-                            bestModel);
+                                    EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
+                                    termReason.toString(), scoreVsEpoch, bestModelEpoch, bestModelScore, epochCount + 1,
+                                    bestModel);
                     if (listener != null) {
                         listener.onCompletion(result);
                     }
@@ -332,10 +323,14 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
 
         @Override
-        public boolean invoked(){ return invoked; }
+        public boolean invoked() {
+            return invoked;
+        }
 
         @Override
-        public void invoke() { this.invoked = true; }
+        public void invoke() {
+            this.invoked = true;
+        }
 
         @Override
         public void iterationDone(Model model, int iteration) {

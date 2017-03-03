@@ -47,10 +47,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * or whether the value is merely masked.<br>
      */
     public enum AlignmentMode {
-        EQUAL_LENGTH,
-        ALIGN_START,
-        ALIGN_END
+        EQUAL_LENGTH, ALIGN_START, ALIGN_END
     }
+
     private SequenceRecordReader recordReader;
     private SequenceRecordReader labelsReader;
     private int miniBatchSize = 10;
@@ -62,12 +61,14 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private int totalOutcomes = -1;
     private boolean useStored = false;
     private DataSet stored = null;
-    @Getter private DataSetPreProcessor preProcessor;
+    @Getter
+    private DataSetPreProcessor preProcessor;
     private AlignmentMode alignmentMode;
 
     private final boolean singleSequenceReaderMode;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean collectMetaData = false;
 
     /**
@@ -80,23 +81,23 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * @param numPossibleLabels    Number of classes for the labels
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
-                                               int miniBatchSize, int numPossibleLabels) {
+                    int miniBatchSize, int numPossibleLabels) {
         this(featuresReader, labels, miniBatchSize, numPossibleLabels, false);
-    }
-    /**
-     * Constructor where features and labels come from different RecordReaders (for example, different files)
-     */
-    public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
-                                               int miniBatchSize, int numPossibleLabels, boolean regression) {
-        this(featuresReader,labels,miniBatchSize,numPossibleLabels,regression, AlignmentMode.EQUAL_LENGTH);
     }
 
     /**
      * Constructor where features and labels come from different RecordReaders (for example, different files)
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
-                                               int miniBatchSize, int numPossibleLabels, boolean regression,
-                                               AlignmentMode alignmentMode) {
+                    int miniBatchSize, int numPossibleLabels, boolean regression) {
+        this(featuresReader, labels, miniBatchSize, numPossibleLabels, regression, AlignmentMode.EQUAL_LENGTH);
+    }
+
+    /**
+     * Constructor where features and labels come from different RecordReaders (for example, different files)
+     */
+    public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
+                    int miniBatchSize, int numPossibleLabels, boolean regression, AlignmentMode alignmentMode) {
         this.recordReader = featuresReader;
         this.labelsReader = labels;
         this.miniBatchSize = miniBatchSize;
@@ -113,7 +114,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * @param numPossibleLabels number of labels/classes for classification (or not used if regression == true)
      * @param labelIndex index in input of the label index
      */
-    public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels, int labelIndex){
+    public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels,
+                    int labelIndex) {
         this(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
     }
 
@@ -126,7 +128,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      * @param regression Whether output is for regression or classification
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels,
-                                               int labelIndex, boolean regression){
+                    int labelIndex, boolean regression) {
         this.recordReader = reader;
         this.labelsReader = null;
         this.miniBatchSize = miniBatchSize;
@@ -153,10 +155,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             useStored = false;
             DataSet temp = stored;
             stored = null;
-            if (preProcessor != null) preProcessor.preProcess(temp);
+            if (preProcessor != null)
+                preProcessor.preProcess(temp);
             return temp;
         }
-        if (!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
 
         if (singleSequenceReaderMode) {
             return nextSingleSequenceReader(num);
@@ -173,7 +177,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         int maxLength = 0;
         for (int i = 0; i < num && hasNext(); i++) {
             List<List<Writable>> sequence;
-            if (collectMetaData ) {
+            if (collectMetaData) {
                 SequenceRecord sequenceRecord = recordReader.nextSequence();
                 sequence = sequenceRecord.getSequenceRecord();
                 meta.add(sequenceRecord.getMetaData());
@@ -197,48 +201,53 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         return getSingleSequenceReader(listFeatures, listLabels, minLength, maxLength, meta);
     }
 
-    private DataSet getSingleSequenceReader(List<INDArray> listFeatures, List<INDArray> listLabels, int minLength, int maxLength,
-                                            List<RecordMetaData> meta ){
+    private DataSet getSingleSequenceReader(List<INDArray> listFeatures, List<INDArray> listLabels, int minLength,
+                    int maxLength, List<RecordMetaData> meta) {
 
         //Convert to 3d minibatch
         //Note: using f order here, as each  time step is contiguous in the buffer with f order (isn't the case with c order)
-        INDArray featuresOut = Nd4j.create(new int[]{listFeatures.size(),listFeatures.get(0).size(1),maxLength},'f');
-        INDArray labelsOut = Nd4j.create(new int[]{listLabels.size(),listLabels.get(0).size(1),maxLength},'f');
+        INDArray featuresOut =
+                        Nd4j.create(new int[] {listFeatures.size(), listFeatures.get(0).size(1), maxLength}, 'f');
+        INDArray labelsOut = Nd4j.create(new int[] {listLabels.size(), listLabels.get(0).size(1), maxLength}, 'f');
         INDArray featuresMask = null;
         INDArray labelsMask = null;
 
-        if(minLength == maxLength){
+        if (minLength == maxLength) {
             for (int i = 0; i < listFeatures.size(); i++) {
                 //Note: this TAD gives us shape [vectorSize,tsLength] whereas we need a [vectorSize,timeSeriesLength] matrix (that listFeatures contains)
-                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0).assign(listFeatures.get(i));
-                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0).assign(listLabels.get(i));
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).assign(listFeatures.get(i));
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).assign(listLabels.get(i));
             }
         } else {
-            featuresMask = Nd4j.ones(listFeatures.size(),maxLength);
-            labelsMask = Nd4j.ones(listLabels.size(),maxLength);
+            featuresMask = Nd4j.ones(listFeatures.size(), maxLength);
+            labelsMask = Nd4j.ones(listLabels.size(), maxLength);
             for (int i = 0; i < listFeatures.size(); i++) {
                 INDArray f = listFeatures.get(i);
                 int tsLength = f.size(0);
 
-                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, f);
-                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, listLabels.get(i));
-                for( int j=tsLength; j<maxLength; j++ ){
-                    featuresMask.put(i,j,0.0);
-                    labelsMask.put(i,j,0.0);
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0)
+                                .put(new INDArrayIndex[] {NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, f);
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).put(
+                                new INDArrayIndex[] {NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()},
+                                listLabels.get(i));
+                for (int j = tsLength; j < maxLength; j++) {
+                    featuresMask.put(i, j, 0.0);
+                    labelsMask.put(i, j, 0.0);
                 }
             }
         }
 
         cursor += listFeatures.size();
-        if (inputColumns == -1) inputColumns = featuresOut.size(1);
-        if (totalOutcomes == -1) totalOutcomes = labelsOut.size(1);
+        if (inputColumns == -1)
+            inputColumns = featuresOut.size(1);
+        if (totalOutcomes == -1)
+            totalOutcomes = labelsOut.size(1);
         DataSet ds = new DataSet(featuresOut, labelsOut, featuresMask, labelsMask);
-        if(collectMetaData){
+        if (collectMetaData) {
             ds.setExampleMetaData(meta);
         }
-        if (preProcessor != null) preProcessor.preProcess(ds);
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return ds;
     }
 
@@ -278,91 +287,86 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         }
     }
 
-    private DataSet nextMultipleSequenceReaders(List<INDArray> featureList, List<INDArray> labelList, List<RecordMetaData> meta ){
+    private DataSet nextMultipleSequenceReaders(List<INDArray> featureList, List<INDArray> labelList,
+                    List<RecordMetaData> meta) {
 
         //Convert 2d sequences/time series to 3d minibatch data
         INDArray featuresOut;
         INDArray labelsOut;
         INDArray featuresMask = null;
         INDArray labelsMask = null;
-        if(alignmentMode == AlignmentMode.EQUAL_LENGTH) {
+        if (alignmentMode == AlignmentMode.EQUAL_LENGTH) {
             int[] featureShape = new int[3];
-            featureShape[0] = featureList.size();   //mini batch size
-            featureShape[1] = featureList.get(0).size(1);   //example vector size
-            featureShape[2] = featureList.get(0).size(0);   //time series/sequence length
+            featureShape[0] = featureList.size(); //mini batch size
+            featureShape[1] = featureList.get(0).size(1); //example vector size
+            featureShape[2] = featureList.get(0).size(0); //time series/sequence length
 
             int[] labelShape = new int[3];
             labelShape[0] = labelList.size();
-            labelShape[1] = labelList.get(0).size(1);   //label vector size
-            labelShape[2] = labelList.get(0).size(0);   //time series/sequence length
+            labelShape[1] = labelList.get(0).size(1); //label vector size
+            labelShape[2] = labelList.get(0).size(0); //time series/sequence length
 
-            featuresOut = Nd4j.create(featureShape,'f');
-            labelsOut = Nd4j.create(labelShape,'f');
+            featuresOut = Nd4j.create(featureShape, 'f');
+            labelsOut = Nd4j.create(labelShape, 'f');
             for (int i = 0; i < featureList.size(); i++) {
-                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .assign(featureList.get(i));
-                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .assign(labelList.get(i));
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).assign(featureList.get(i));
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).assign(labelList.get(i));
             }
-        } else if( alignmentMode == AlignmentMode.ALIGN_START ){
+        } else if (alignmentMode == AlignmentMode.ALIGN_START) {
             int longestTimeSeries = 0;
-            for(INDArray features : featureList){
-                longestTimeSeries = Math.max(features.size(0),longestTimeSeries);
+            for (INDArray features : featureList) {
+                longestTimeSeries = Math.max(features.size(0), longestTimeSeries);
             }
-            for(INDArray labels : labelList ){
-                longestTimeSeries = Math.max(labels.size(0),longestTimeSeries);
+            for (INDArray labels : labelList) {
+                longestTimeSeries = Math.max(labels.size(0), longestTimeSeries);
             }
 
-            int[] featuresShape = new int[]{
-                    featureList.size(), //# examples
-                    featureList.get(0).size(1), //example vector size
-                    longestTimeSeries};
-            int[] labelsShape = new int[]{
-                    labelList.size(), //# examples
-                    labelList.get(0).size(1), //example vector size
-                    longestTimeSeries};
+            int[] featuresShape = new int[] {featureList.size(), //# examples
+                            featureList.get(0).size(1), //example vector size
+                            longestTimeSeries};
+            int[] labelsShape = new int[] {labelList.size(), //# examples
+                            labelList.get(0).size(1), //example vector size
+                            longestTimeSeries};
 
-            featuresOut = Nd4j.create(featuresShape,'f');
-            labelsOut = Nd4j.create(labelsShape,'f');
-            featuresMask = Nd4j.ones(featureList.size(),longestTimeSeries);
-            labelsMask = Nd4j.ones(labelList.size(),longestTimeSeries);
+            featuresOut = Nd4j.create(featuresShape, 'f');
+            labelsOut = Nd4j.create(labelsShape, 'f');
+            featuresMask = Nd4j.ones(featureList.size(), longestTimeSeries);
+            labelsMask = Nd4j.ones(labelList.size(), longestTimeSeries);
             for (int i = 0; i < featureList.size(); i++) {
                 INDArray f = featureList.get(i);
                 INDArray l = labelList.get(i);
 
                 //Again, permute is to put [timeSeriesLength,vectorSize] into a [vectorSize,timeSeriesLength] matrix
-                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, f.size(0)), NDArrayIndex.all()}, f);
-                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, l.size(0)), NDArrayIndex.all()}, l);
-                for( int j=f.size(0); j<longestTimeSeries; j++ ){
-                    featuresMask.putScalar(i,j,0.0);
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0)
+                                .put(new INDArrayIndex[] {NDArrayIndex.interval(0, f.size(0)), NDArrayIndex.all()}, f);
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0)
+                                .put(new INDArrayIndex[] {NDArrayIndex.interval(0, l.size(0)), NDArrayIndex.all()}, l);
+                for (int j = f.size(0); j < longestTimeSeries; j++) {
+                    featuresMask.putScalar(i, j, 0.0);
                 }
-                for( int j=l.size(0); j<longestTimeSeries; j++ ){
-                    labelsMask.putScalar(i,j,0.0);
+                for (int j = l.size(0); j < longestTimeSeries; j++) {
+                    labelsMask.putScalar(i, j, 0.0);
                 }
             }
-        } else if( alignmentMode == AlignmentMode.ALIGN_END ){    //Align at end
+        } else if (alignmentMode == AlignmentMode.ALIGN_END) { //Align at end
 
             int longestTimeSeries = 0;
-            for(INDArray features : featureList){
-                longestTimeSeries = Math.max(features.size(0),longestTimeSeries);
+            for (INDArray features : featureList) {
+                longestTimeSeries = Math.max(features.size(0), longestTimeSeries);
             }
-            for(INDArray labels : labelList ){
-                longestTimeSeries = Math.max(labels.size(0),longestTimeSeries);
+            for (INDArray labels : labelList) {
+                longestTimeSeries = Math.max(labels.size(0), longestTimeSeries);
             }
 
-            int[] featuresShape = new int[]{
-                    featureList.size(), //# examples
-                    featureList.get(0).size(1), //example vector size
-                    longestTimeSeries};
-            int[] labelsShape = new int[]{
-                    labelList.size(), //# examples
-                    labelList.get(0).size(1), //example vector size
-                    longestTimeSeries};
+            int[] featuresShape = new int[] {featureList.size(), //# examples
+                            featureList.get(0).size(1), //example vector size
+                            longestTimeSeries};
+            int[] labelsShape = new int[] {labelList.size(), //# examples
+                            labelList.get(0).size(1), //example vector size
+                            longestTimeSeries};
 
-            featuresOut = Nd4j.create(featuresShape,'f');
-            labelsOut = Nd4j.create(labelsShape,'f');
+            featuresOut = Nd4j.create(featuresShape, 'f');
+            labelsOut = Nd4j.create(labelsShape, 'f');
             featuresMask = Nd4j.ones(featureList.size(), longestTimeSeries);
             labelsMask = Nd4j.ones(labelList.size(), longestTimeSeries);
             for (int i = 0; i < featureList.size(); i++) {
@@ -372,43 +376,45 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 int fLen = f.size(0);
                 int lLen = l.size(0);
 
-                if(fLen >= lLen){
+                if (fLen >= lLen) {
                     //Align labels with end of features (features are longer)
-                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                            .put(new INDArrayIndex[]{NDArrayIndex.interval(0, fLen), NDArrayIndex.all()}, f);
-                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                            .put(new INDArrayIndex[]{NDArrayIndex.interval(fLen-lLen, fLen), NDArrayIndex.all()}, l);
+                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0)
+                                    .put(new INDArrayIndex[] {NDArrayIndex.interval(0, fLen), NDArrayIndex.all()}, f);
+                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).put(
+                                    new INDArrayIndex[] {NDArrayIndex.interval(fLen - lLen, fLen), NDArrayIndex.all()},
+                                    l);
 
-                    for( int j=fLen; j<longestTimeSeries; j++ ){
-                        featuresMask.putScalar(i,j,0.0);
+                    for (int j = fLen; j < longestTimeSeries; j++) {
+                        featuresMask.putScalar(i, j, 0.0);
                     }
                     //labels mask: component before labels
-                    for( int j=0; j<fLen-lLen; j++ ){
-                        labelsMask.putScalar(i,j,0.0);
+                    for (int j = 0; j < fLen - lLen; j++) {
+                        labelsMask.putScalar(i, j, 0.0);
                     }
                     //labels mask: component after labels
-                    for( int j=fLen; j<longestTimeSeries; j++ ){
-                        labelsMask.putScalar(i,j,0.0);
+                    for (int j = fLen; j < longestTimeSeries; j++) {
+                        labelsMask.putScalar(i, j, 0.0);
                     }
                 } else {
                     //Align features with end of labels (labels are longer)
-                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                            .put(new INDArrayIndex[]{NDArrayIndex.interval(lLen-fLen, lLen), NDArrayIndex.all()}, f);
-                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
-                            .put(new INDArrayIndex[]{NDArrayIndex.interval(0, lLen), NDArrayIndex.all()}, l);
+                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1, 0).put(
+                                    new INDArrayIndex[] {NDArrayIndex.interval(lLen - fLen, lLen), NDArrayIndex.all()},
+                                    f);
+                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1, 0)
+                                    .put(new INDArrayIndex[] {NDArrayIndex.interval(0, lLen), NDArrayIndex.all()}, l);
 
                     //features mask: component before features
-                    for( int j=0; j<lLen-fLen; j++ ){
-                        featuresMask.putScalar(i,j,0.0);
+                    for (int j = 0; j < lLen - fLen; j++) {
+                        featuresMask.putScalar(i, j, 0.0);
                     }
                     //features mask: component after features
-                    for( int j=lLen; j<longestTimeSeries; j++ ){
-                        featuresMask.putScalar(i,j,0.0);
+                    for (int j = lLen; j < longestTimeSeries; j++) {
+                        featuresMask.putScalar(i, j, 0.0);
                     }
 
                     //labels mask
-                    for( int j=lLen; j<longestTimeSeries; j++ ){
-                        labelsMask.putScalar(i,j,0.0);
+                    for (int j = lLen; j < longestTimeSeries; j++) {
+                        labelsMask.putScalar(i, j, 0.0);
                     }
                 }
             }
@@ -418,13 +424,16 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         }
 
         cursor += featureList.size();
-        if (inputColumns == -1) inputColumns = featuresOut.size(1);
-        if (totalOutcomes == -1) totalOutcomes = labelsOut.size(1);
+        if (inputColumns == -1)
+            inputColumns = featuresOut.size(1);
+        if (totalOutcomes == -1)
+            totalOutcomes = labelsOut.size(1);
         DataSet ds = new DataSet(featuresOut, labelsOut, featuresMask, labelsMask);
-        if(collectMetaData){
+        if (collectMetaData) {
             ds.setExampleMetaData(meta);
         }
-        if (preProcessor != null) preProcessor.preProcess(ds);
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return ds;
     }
 
@@ -435,14 +444,16 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        if (inputColumns != -1) return inputColumns;
+        if (inputColumns != -1)
+            return inputColumns;
         preLoad();
         return inputColumns;
     }
 
     @Override
     public int totalOutcomes() {
-        if (totalOutcomes != -1) return totalOutcomes;
+        if (totalOutcomes != -1)
+            return totalOutcomes;
         preLoad();
         return totalOutcomes;
     }
@@ -455,7 +466,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 
@@ -467,7 +478,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         recordReader.reset();
-        if(labelsReader != null) labelsReader.reset();  //May be null for single seqRR case
+        if (labelsReader != null)
+            labelsReader.reset(); //May be null for single seqRR case
         cursor = 0;
         stored = null;
         useStored = false;
@@ -516,14 +528,14 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         while (iter.hasNext()) {
             List<Writable> step = iter.next();
             if (i == 0) {
-                for( Writable w : step){
-                    if(w instanceof NDArrayWritable){
+                for (Writable w : step) {
+                    if (w instanceof NDArrayWritable) {
                         shape[1] += ((NDArrayWritable) w).get().length();
                     } else {
                         shape[1]++;
                     }
                 }
-                out = Nd4j.create(shape,'f');
+                out = Nd4j.create(shape, 'f');
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
@@ -531,10 +543,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
 
-                if(current instanceof NDArrayWritable){
+                if (current instanceof NDArrayWritable) {
                     //Array writable -> multiple values
                     INDArray arr = ((NDArrayWritable) current).get();
-                    out.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(f,f+arr.length())}, arr);
+                    out.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(f, f + arr.length())},
+                                    arr);
                     f += arr.length();
                 } else {
                     //Single value case
@@ -548,8 +561,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
     private INDArray getLabels(List<List<Writable>> labels) {
         //Size of the record?
-        int[] shape = new int[2];   //[timeSeriesLength,vectorSize]
-        shape[0] = labels.size();   //time series/sequence length
+        int[] shape = new int[2]; //[timeSeriesLength,vectorSize]
+        shape[0] = labels.size(); //time series/sequence length
 
         Iterator<List<Writable>> iter = labels.iterator();
 
@@ -560,8 +573,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
             if (i == 0) {
                 if (regression) {
-                    for(Writable w : step){
-                        if(w instanceof NDArrayWritable){
+                    for (Writable w : step) {
+                        if (w instanceof NDArrayWritable) {
                             shape[1] += ((NDArrayWritable) w).get().length();
                         } else {
                             shape[1]++;
@@ -570,7 +583,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 } else {
                     shape[1] = numPossibleLabels;
                 }
-                out = Nd4j.create(shape,'f');
+                out = Nd4j.create(shape, 'f');
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
@@ -579,9 +592,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Load all values
                 while (timeStepIter.hasNext()) {
                     Writable current = timeStepIter.next();
-                    if(current instanceof NDArrayWritable){
+                    if (current instanceof NDArrayWritable) {
                         INDArray w = ((NDArrayWritable) current).get();
-                        out.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(f,f+w.length())},w);
+                        out.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.interval(f, f + w.length())},
+                                        w);
                         f += w.length();
                     } else {
                         out.put(i, f++, current.toDouble());
@@ -591,10 +605,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Expect a single value (index) -> convert to one-hot vector
                 Writable value = timeStepIter.next();
                 int idx = value.toInt();
-                if(idx < 0 || idx >= numPossibleLabels){
-                    throw new DL4JInvalidInputException("Invalid classification data: expect label value to be in range 0 to " +
-                            (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
-                            + "); got label value of " + idx);
+                if (idx < 0 || idx >= numPossibleLabels) {
+                    throw new DL4JInvalidInputException(
+                                    "Invalid classification data: expect label value to be in range 0 to "
+                                                    + (numPossibleLabels - 1)
+                                                    + " inclusive (0 to numClasses-1, with numClasses="
+                                                    + numPossibleLabels + "); got label value of " + idx);
                 }
                 INDArray line = FeatureUtil.toOutcomeVector(idx, numPossibleLabels);
                 out.getRow(i).assign(line);
@@ -605,22 +621,22 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         return out;
     }
 
-    private INDArray[] getFeaturesLabelsSingleReader(List<List<Writable>> input){
+    private INDArray[] getFeaturesLabelsSingleReader(List<List<Writable>> input) {
         Iterator<List<Writable>> iter = input.iterator();
 
-        int i=0;
+        int i = 0;
         INDArray features = null;
-        INDArray labels = null;    //= Nd4j.zeros(input.size(), regression ? 1 : numPossibleLabels);
+        INDArray labels = null; //= Nd4j.zeros(input.size(), regression ? 1 : numPossibleLabels);
 
         int featureSize = 0;
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             List<Writable> step = iter.next();
             if (i == 0) {
                 //First: determine the features size. Usually equal to the number of Writable objects, except when
                 // one or more of the Writables is an INDArray (i.e., NDArrayWritable)
-                int j=0;
-                for(Writable w : step){
-                    if(j++ != labelIndex) {
+                int j = 0;
+                for (Writable w : step) {
+                    if (j++ != labelIndex) {
                         if (w instanceof NDArrayWritable) {
                             featureSize += ((NDArrayWritable) w).get().length();
                         } else {
@@ -628,12 +644,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                         }
                     }
                 }
-                features = Nd4j.zeros( input.size(), featureSize);
+                features = Nd4j.zeros(input.size(), featureSize);
 
                 //Second: determine the output (labels) size.
                 int labelSize;
-                if(regression){
-                    if(step.get(labelIndex) instanceof NDArrayWritable){
+                if (regression) {
+                    if (step.get(labelIndex) instanceof NDArrayWritable) {
                         labelSize = ((NDArrayWritable) step.get(labelIndex)).get().length();
                     } else {
                         labelSize = 1;
@@ -650,31 +666,35 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             int countFeatures = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                if(countIn++ == labelIndex){
+                if (countIn++ == labelIndex) {
                     //label
-                    if(regression){
-                        if(current instanceof NDArrayWritable){
+                    if (regression) {
+                        if (current instanceof NDArrayWritable) {
                             //Standard case
                             labels.putRow(i, ((NDArrayWritable) current).get());
                         } else {
-                            labels.put(i,0,current.toDouble());
+                            labels.put(i, 0, current.toDouble());
                         }
                     } else {
                         int idx = current.toInt();
-                        if(idx < 0 || idx >= numPossibleLabels){
-                            throw new DL4JInvalidInputException("Invalid classification data: expect label value (at label index column = " + labelIndex
-                                    + ") to be in range 0 to " + (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
-                                    + "); got label value of " + current);
+                        if (idx < 0 || idx >= numPossibleLabels) {
+                            throw new DL4JInvalidInputException(
+                                            "Invalid classification data: expect label value (at label index column = "
+                                                            + labelIndex + ") to be in range 0 to "
+                                                            + (numPossibleLabels - 1)
+                                                            + " inclusive (0 to numClasses-1, with numClasses="
+                                                            + numPossibleLabels + "); got label value of " + current);
                         }
-                        labels.putScalar(i,current.toInt(),1.0);    //Labels initialized as 0s
+                        labels.putScalar(i, current.toInt(), 1.0); //Labels initialized as 0s
                     }
                 } else {
                     //feature
-                    if(current instanceof NDArrayWritable){
+                    if (current instanceof NDArrayWritable) {
                         //NDArrayWritable: multiple values
                         INDArray w = ((NDArrayWritable) current).get();
                         int length = w.length();
-                        features.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.interval(countFeatures,countFeatures+length)}, w);
+                        features.put(new INDArrayIndex[] {NDArrayIndex.point(i),
+                                        NDArrayIndex.interval(countFeatures, countFeatures + length)}, w);
                         countFeatures += length;
                     } else {
                         //Standard case: single value
@@ -685,7 +705,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             i++;
         }
 
-        return new INDArray[]{features,labels};
+        return new INDArray[] {features, labels};
     }
 
 
@@ -711,14 +731,14 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
      */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
         //Two cases: single vs. multiple reader...
-        if(singleSequenceReaderMode){
+        if (singleSequenceReaderMode) {
             List<SequenceRecord> records = recordReader.loadSequenceFromMetaData(list);
 
             List<INDArray> listFeatures = new ArrayList<>(list.size());
             List<INDArray> listLabels = new ArrayList<>(list.size());
             int minLength = Integer.MAX_VALUE;
             int maxLength = Integer.MIN_VALUE;
-            for(SequenceRecord sr : records){
+            for (SequenceRecord sr : records) {
                 INDArray[] fl = getFeaturesLabelsSingleReader(sr.getSequenceRecord());
                 listFeatures.add(fl[0]);
                 listLabels.add(fl[1]);
@@ -732,8 +752,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
             List<RecordMetaData> fMeta = new ArrayList<>();
             List<RecordMetaData> lMeta = new ArrayList<>();
-            for(RecordMetaData m : list){
-                RecordMetaDataComposable m2 = (RecordMetaDataComposable)m;
+            for (RecordMetaData m : list) {
+                RecordMetaDataComposable m2 = (RecordMetaDataComposable) m;
                 fMeta.add(m2.getMeta()[0]);
                 lMeta.add(m2.getMeta()[1]);
             }
@@ -744,7 +764,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             List<INDArray> featureList = new ArrayList<>(fMeta.size());
             List<INDArray> labelList = new ArrayList<>(fMeta.size());
 
-            for(int i=0; i<fMeta.size(); i++ ){
+            for (int i = 0; i < fMeta.size(); i++) {
                 featureList.add(getFeatures(f.get(i).getSequenceRecord()));
                 labelList.add(getLabels(l.get(i).getSequenceRecord()));
             }

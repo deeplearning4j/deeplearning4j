@@ -32,8 +32,7 @@ public class NearestNeighborsQuery implements Serializable {
         this.numWords = numWords;
     }
 
-    public NearestNeighborsQuery() {
-    }
+    public NearestNeighborsQuery() {}
 
     public String getWord() {
         return word;
@@ -53,12 +52,15 @@ public class NearestNeighborsQuery implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         NearestNeighborsQuery that = (NearestNeighborsQuery) o;
 
-        if (numWords != that.numWords) return false;
+        if (numWords != that.numWords)
+            return false;
         return !(word != null ? !word.equals(that.word) : that.word != null);
 
     }

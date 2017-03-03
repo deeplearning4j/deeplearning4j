@@ -18,11 +18,11 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer> {
 
-    private int[] padding;  //[padTop, padBottom, padLeft, padRight]
+    private int[] padding; //[padTop, padBottom, padLeft, padRight]
 
     public ZeroPaddingLayer(NeuralNetConfiguration conf) {
         super(conf);
-        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer)conf.getLayer()).getPadding();
+        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer) conf.getLayer()).getPadding();
     }
 
     @Override
@@ -31,7 +31,7 @@ public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Type type(){
+    public Type type() {
         return Type.CONVOLUTIONAL;
     }
 
@@ -39,13 +39,11 @@ public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         int[] inShape = input.shape();
 
-        INDArray epsNext = epsilon.get(
-                NDArrayIndex.all(),
-                NDArrayIndex.all(),
-                NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
-                NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
+        INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
+                        NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
 
-        return new Pair<>((Gradient)new DefaultGradient(), epsNext);
+        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
 
 
@@ -54,15 +52,13 @@ public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] inShape = input.shape();
         int outH = inShape[2] + padding[0] + padding[1];
         int outW = inShape[3] + padding[2] + padding[3];
-        int[] outShape = new int[]{inShape[0], inShape[1], outH, outW};
+        int[] outShape = new int[] {inShape[0], inShape[1], outH, outW};
 
         INDArray out = Nd4j.create(outShape);
 
-        out.put(new INDArrayIndex[]{
-                NDArrayIndex.all(),
-                NDArrayIndex.all(),
-                NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
-                NDArrayIndex.interval(padding[2], padding[2] + inShape[3])}, input);
+        out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
+                        NDArrayIndex.interval(padding[2], padding[2] + inShape[3])}, input);
 
         return out;
     }

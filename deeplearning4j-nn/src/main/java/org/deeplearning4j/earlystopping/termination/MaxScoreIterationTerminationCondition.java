@@ -40,7 +40,7 @@ public class MaxScoreIterationTerminationCondition implements IterationTerminati
     }
 
     @Override
-    public String toString(){
-        return "MaxScoreIterationTerminationCondition("+maxScore+")";
+    public String toString() {
+        return "MaxScoreIterationTerminationCondition(" + maxScore + ")";
     }
 }

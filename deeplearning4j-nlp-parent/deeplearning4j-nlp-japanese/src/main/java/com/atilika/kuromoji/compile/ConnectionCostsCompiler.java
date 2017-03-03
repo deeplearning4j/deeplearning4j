@@ -39,9 +39,7 @@ public class ConnectionCostsCompiler implements Compiler {
     }
 
     public void readCosts(InputStream input) throws IOException {
-        BufferedReader lineReader = new BufferedReader(
-            new InputStreamReader(input)
-        );
+        BufferedReader lineReader = new BufferedReader(new InputStreamReader(input));
 
         String line = lineReader.readLine();
         String[] cardinalities = line.split("\\s+");
@@ -78,9 +76,7 @@ public class ConnectionCostsCompiler implements Compiler {
 
     @Override
     public void compile() throws IOException {
-        DataOutputStream dataOutput = new DataOutputStream(
-            new BufferedOutputStream(output)
-        );
+        DataOutputStream dataOutput = new DataOutputStream(new BufferedOutputStream(output));
 
         dataOutput.writeInt(cardinality);
         dataOutput.writeInt(bufferSize * SHORT_BYTES);

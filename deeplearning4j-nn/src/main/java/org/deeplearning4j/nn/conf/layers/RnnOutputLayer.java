@@ -30,11 +30,12 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret
-                = new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+        org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -52,8 +53,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex +
-                    ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
+                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         return InputType.recurrent(nOut);
     }
@@ -61,7 +62,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName()
+                            + "\"): Expected RNN input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -86,7 +88,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
             lossFunction(lossFunction);
         }
 
-        public Builder(ILossFunction lossFunction){
+        public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
         }
 

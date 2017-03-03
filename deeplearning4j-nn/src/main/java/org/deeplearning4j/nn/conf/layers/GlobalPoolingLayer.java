@@ -35,7 +35,8 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 public class GlobalPoolingLayer extends Layer {
 
     private PoolingType poolingType;
@@ -43,7 +44,7 @@ public class GlobalPoolingLayer extends Layer {
     private int pnorm;
     private boolean collapseDimensions;
 
-    private GlobalPoolingLayer(Builder builder){
+    private GlobalPoolingLayer(Builder builder) {
         this.poolingType = builder.poolingType;
         this.poolingDimensions = builder.poolingDimensions;
         this.collapseDimensions = builder.collapseDimensions;
@@ -53,8 +54,11 @@ public class GlobalPoolingLayer extends Layer {
 
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret = new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
+        org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
+                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -72,12 +76,14 @@ public class GlobalPoolingLayer extends Layer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
 
-        switch (inputType.getType()){
+        switch (inputType.getType()) {
             case FF:
-                throw new UnsupportedOperationException("Global max pooling cannot be applied to feed-forward input type. Got input type = " + inputType);
+                throw new UnsupportedOperationException(
+                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                                + inputType);
             case RNN:
-                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent)inputType;
-                if(collapseDimensions){
+                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                if (collapseDimensions) {
                     //Return 2d (feed-forward) activations
                     return InputType.feedForward(recurrent.getSize());
                 } else {
@@ -85,15 +91,15 @@ public class GlobalPoolingLayer extends Layer {
                     return recurrent;
                 }
             case CNN:
-                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)inputType;
-                if(collapseDimensions){
+                InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+                if (collapseDimensions) {
                     return InputType.feedForward(conv.getDepth());
                 } else {
                     return InputType.convolutional(1, 1, conv.getDepth());
                 }
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat)inputType;
-                if(collapseDimensions){
+                InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
+                if (collapseDimensions) {
                     return InputType.feedForward(convFlat.getDepth());
                 } else {
                     return InputType.convolutional(1, 1, convFlat.getDepth());
@@ -111,15 +117,17 @@ public class GlobalPoolingLayer extends Layer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
 
-        switch(inputType.getType()){
+        switch (inputType.getType()) {
             case FF:
-                throw new UnsupportedOperationException("Global max pooling cannot be applied to feed-forward input type. Got input type = " + inputType);
+                throw new UnsupportedOperationException(
+                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                                + inputType);
             case RNN:
             case CNN:
                 //No preprocessor required
                 return null;
             case CNNFlat:
-                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat)inputType;
+                InputType.InputTypeConvolutionalFlat cFlat = (InputType.InputTypeConvolutionalFlat) inputType;
                 return new FeedForwardToCnnPreProcessor(cFlat.getHeight(), cFlat.getWidth(), cFlat.getDepth());
         }
 
@@ -151,11 +159,11 @@ public class GlobalPoolingLayer extends Layer {
         private int pnorm = 2;
         private boolean collapseDimensions = true;
 
-        public Builder(){
+        public Builder() {
 
         }
 
-        public Builder(PoolingType poolingType){
+        public Builder(PoolingType poolingType) {
             this.poolingType = poolingType;
         }
 
@@ -166,7 +174,7 @@ public class GlobalPoolingLayer extends Layer {
          *
          * @param poolingDimensions Pooling dimensions to use
          */
-        public Builder poolingDimensions(int... poolingDimensions){
+        public Builder poolingDimensions(int... poolingDimensions) {
             this.poolingDimensions = poolingDimensions;
             return this;
         }
@@ -174,7 +182,7 @@ public class GlobalPoolingLayer extends Layer {
         /**
          * @param poolingType Pooling type for global pooling
          */
-        public Builder poolingType(PoolingType poolingType){
+        public Builder poolingType(PoolingType poolingType) {
             this.poolingType = poolingType;
             return this;
         }
@@ -191,7 +199,7 @@ public class GlobalPoolingLayer extends Layer {
          *
          * @param collapseDimensions Whether to collapse the dimensions or not
          */
-        public Builder collapseDimensions(boolean collapseDimensions){
+        public Builder collapseDimensions(boolean collapseDimensions) {
             this.collapseDimensions = collapseDimensions;
             return this;
         }
@@ -201,14 +209,15 @@ public class GlobalPoolingLayer extends Layer {
          *
          * @param pnorm P-norm constant
          */
-        public Builder pnorm(int pnorm){
-            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0. Got: " + pnorm);
+        public Builder pnorm(int pnorm) {
+            if (pnorm <= 0)
+                throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0. Got: " + pnorm);
             this.pnorm = pnorm;
             return this;
         }
 
         @SuppressWarnings("unchecked")
-        public GlobalPoolingLayer build(){
+        public GlobalPoolingLayer build() {
             return new GlobalPoolingLayer(this);
         }
     }

@@ -30,7 +30,8 @@ import static org.junit.Assert.*;
 
 public class TestUtils {
 
-    public static void assertTokenSurfacesEquals(List<String> expectedSurfaces, List<? extends TokenBase> actualTokens) {
+    public static void assertTokenSurfacesEquals(List<String> expectedSurfaces,
+                    List<? extends TokenBase> actualTokens) {
         List<String> actualSurfaces = new ArrayList<>();
 
         for (TokenBase token : actualTokens) {
@@ -40,10 +41,10 @@ public class TestUtils {
         assertEquals(expectedSurfaces, actualSurfaces);
     }
 
-    public static void assertCanTokenizeStream(InputStream untokenizedInput, TokenizerBase tokenizer) throws IOException {
-        BufferedReader untokenizedInputReader = new BufferedReader(
-            new InputStreamReader(untokenizedInput, StandardCharsets.UTF_8)
-        );
+    public static void assertCanTokenizeStream(InputStream untokenizedInput, TokenizerBase tokenizer)
+                    throws IOException {
+        BufferedReader untokenizedInputReader =
+                        new BufferedReader(new InputStreamReader(untokenizedInput, StandardCharsets.UTF_8));
 
         String untokenizedLine;
 
@@ -64,15 +65,12 @@ public class TestUtils {
         }
     }
 
-    public static void assertTokenizedStreamEquals(InputStream tokenizedInput,
-                                                   InputStream untokenizedInput,
-                                                   TokenizerBase tokenizer) throws IOException {
-        BufferedReader untokenizedInputReader = new BufferedReader(
-            new InputStreamReader(untokenizedInput, StandardCharsets.UTF_8)
-        );
-        BufferedReader tokenizedInputReader = new BufferedReader(
-            new InputStreamReader(tokenizedInput, StandardCharsets.UTF_8)
-        );
+    public static void assertTokenizedStreamEquals(InputStream tokenizedInput, InputStream untokenizedInput,
+                    TokenizerBase tokenizer) throws IOException {
+        BufferedReader untokenizedInputReader =
+                        new BufferedReader(new InputStreamReader(untokenizedInput, StandardCharsets.UTF_8));
+        BufferedReader tokenizedInputReader =
+                        new BufferedReader(new InputStreamReader(tokenizedInput, StandardCharsets.UTF_8));
 
         String untokenizedLine;
 
@@ -95,42 +93,33 @@ public class TestUtils {
         }
     }
 
-    public static void assertMultiThreadedTokenizedStreamEquals(int numThreads,
-                                                                final int perThreadRuns,
-                                                                final String tokenizedInputResource,
-                                                                final String untokenizedInputResource,
-                                                                final TokenizerBase tokenizer)
-        throws IOException, InterruptedException {
+    public static void assertMultiThreadedTokenizedStreamEquals(int numThreads, final int perThreadRuns,
+                    final String tokenizedInputResource, final String untokenizedInputResource,
+                    final TokenizerBase tokenizer) throws IOException, InterruptedException {
         List<Thread> threads = new ArrayList<>();
 
         for (int i = 0; i < numThreads; i++) {
-            Thread thread = new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        for (int run = 0; run < perThreadRuns; run++) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int run = 0; run < perThreadRuns; run++) {
 
-//                            System.out.println(Thread.currentThread().getName() + ": tokenizer run " + run);
+                        //                            System.out.println(Thread.currentThread().getName() + ": tokenizer run " + run);
 
-                            try {
-                                InputStream tokenizedInput = getClass().getResourceAsStream(tokenizedInputResource);
-                                InputStream untokenizedInput = getClass().getResourceAsStream(untokenizedInputResource);
+                        try {
+                            InputStream tokenizedInput = getClass().getResourceAsStream(tokenizedInputResource);
+                            InputStream untokenizedInput = getClass().getResourceAsStream(untokenizedInputResource);
 
-                                assertTokenizedStreamEquals(
-                                    tokenizedInput,
-                                    untokenizedInput,
-                                    tokenizer
-                                );
+                            assertTokenizedStreamEquals(tokenizedInput, untokenizedInput, tokenizer);
 
-                                untokenizedInput.close();
-                                tokenizedInput.close();
-                            } catch (IOException e) {
-                                fail(e.getMessage());
-                            }
+                            untokenizedInput.close();
+                            tokenizedInput.close();
+                        } catch (IOException e) {
+                            fail(e.getMessage());
                         }
                     }
                 }
-            );
+            });
             threads.add(thread);
             thread.start();
         }
@@ -147,9 +136,7 @@ public class TestUtils {
         Set<Integer> lengths = new HashSet<>();
 
         for (TokenBase token : tokens) {
-            lengths.add(
-                token.getAllFeaturesArray().length
-            );
+            lengths.add(token.getAllFeaturesArray().length);
         }
 
         assertEquals(1, lengths.size());

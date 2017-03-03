@@ -62,7 +62,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
-        this.convolutionMode = ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer)conf.getLayer()).getConvolutionMode();
+        this.convolutionMode =
+                        ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
     }
 
     public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -73,7 +74,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
-                    .asSubclass(SubsamplingHelper.class).newInstance();
+                            .asSubclass(SubsamplingHelper.class).newInstance();
             log.debug("CudnnSubsamplingHelper successfully loaded");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
@@ -110,19 +111,20 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] pad;
         int[] outSize;
-        if(convolutionMode == ConvolutionMode.Same){
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{inH, inW}, kernel, strides);
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
         int outH = outSize[0];
         int outW = outSize[1];
 
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
+                            layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -149,13 +151,13 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         // instead of a slower broadcast muli op
 
         boolean cOrderStrides = false;
-        if(epsilon.ordering() != 'c'){
+        if (epsilon.ordering() != 'c') {
             epsilon = epsilon.dup('c');
             cOrderStrides = true;
         }
-        if(!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)){
+        if (!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)) {
             cOrderStrides = true;
-        } else if(!Arrays.equals(new int[]{outH*outW, inDepth*outH*outW, outW, 1}, epsilon.stride())){
+        } else if (!Arrays.equals(new int[] {outH * outW, inDepth * outH * outW, outW, 1}, epsilon.stride())) {
             //Unexpected/unusual strides, not either (a) or (b) cases above
             epsilon = epsilon.dup('c');
             cOrderStrides = true;
@@ -164,28 +166,29 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray col6d;
         INDArray col6dPermuted;
         INDArray epsilon1d;
-        if(cOrderStrides){
+        if (cOrderStrides) {
             //"Dense/Output layer above strides... i.e., standard c-order strides
-            col6d = Nd4j.create(new int[]{miniBatch,inDepth,outH,outW,kernel[0],kernel[1]},'c');
-            col6dPermuted = col6d.permute(0,1,4,5,2,3);
-            epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1);  //zero copy reshape
+            col6d = Nd4j.create(new int[] {miniBatch, inDepth, outH, outW, kernel[0], kernel[1]}, 'c');
+            col6dPermuted = col6d.permute(0, 1, 4, 5, 2, 3);
+            epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1); //zero copy reshape
         } else {
             //"CNN layer above" strides...
-            col6d = Nd4j.create(new int[]{inDepth,miniBatch,outH,outW,kernel[0],kernel[1]},'c');
-            col6dPermuted = col6d.permute(1,0,4,5,2,3);
+            col6d = Nd4j.create(new int[] {inDepth, miniBatch, outH, outW, kernel[0], kernel[1]}, 'c');
+            col6dPermuted = col6d.permute(1, 0, 4, 5, 2, 3);
 
-            INDArray epsilonTemp = epsilon.permute(1,0,2,3);
-            epsilon1d = epsilonTemp.reshape('c', new int[]{ArrayUtil.prod(epsilon.length()),1} );   //Should be a zero-copy reshape always
+            INDArray epsilonTemp = epsilon.permute(1, 0, 2, 3);
+            epsilon1d = epsilonTemp.reshape('c', new int[] {ArrayUtil.prod(epsilon.length()), 1}); //Should be a zero-copy reshape always
         }
 
-        INDArray col2d = col6d.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
+        INDArray col2d = col6d.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
 
 
-        switch(layerConf().getPoolingType()) {
+        switch (layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col6dPermuted);
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                                convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d, 1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
             case AVG:
@@ -197,30 +200,32 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 int pnorm = layerConf().getPnorm();
 
                 //First: do forward pass to get pNorm array
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                                convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
                 Transforms.pow(pNorm, pnorm, false);
                 pNorm = pNorm.sum(1);
-                Transforms.pow(pNorm, (1.0/pnorm), false);
+                Transforms.pow(pNorm, (1.0 / pnorm), false);
 
                 //dL/dIn = dL/dOut * dOut/dIn
                 //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
                 INDArray numerator;
-                if(pnorm == 2){
+                if (pnorm == 2) {
                     numerator = col2d;
                 } else {
-                    INDArray absp2 = Transforms.pow(Transforms.abs(col2d, true), pnorm-2, false);
+                    INDArray absp2 = Transforms.pow(Transforms.abs(col2d, true), pnorm - 2, false);
                     numerator = col2d.muli(absp2);
                 }
 
-                INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                INDArray denom = Transforms.pow(pNorm, pnorm - 1, false);
                 double eps = layerConf().getEps();
                 Transforms.max(denom, eps, false); // in case of 0
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
-            default: throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType());
+            default:
+                throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType());
         }
 
         //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
@@ -228,26 +233,27 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         // c-order [depth*H*W, H*W, W, 1] strides
         //To achieve this: [depth, miniBatch, H, W] in c order, then permute to [miniBatch, depth, H, W]
         //This gives us proper strides of 1 on the muli...
-        INDArray tempEpsilon = Nd4j.create(new int[]{inDepth,miniBatch,inH, inW},'c');
-        INDArray outEpsilon = tempEpsilon.permute(1,0,2,3);
+        INDArray tempEpsilon = Nd4j.create(new int[] {inDepth, miniBatch, inH, inW}, 'c');
+        INDArray outEpsilon = tempEpsilon.permute(1, 0, 2, 3);
         Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth);
 
-        if(layerConf().getPoolingType() == PoolingType.AVG)
+        if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-        return new Pair<>(retGradient,outEpsilon);
+        return new Pair<>(retGradient, outEpsilon);
     }
 
 
     @Override
     public INDArray activate(boolean training) {
-        if(training && conf.getLayer().getDropOut() > 0) {
-            Dropout.applyDropout(input,conf.getLayer().getDropOut());
+        if (training && conf.getLayer().getDropOut() > 0) {
+            Dropout.applyDropout(input, conf.getLayer().getDropOut());
         }
 
         //Input validation: expect rank 4 matrix
-        if(input.rank() != 4){
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to SubsamplingLayer with shape "
-                    + Arrays.toString(input.shape()) + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth].");
+        if (input.rank() != 4) {
+            throw new DL4JInvalidInputException("Got rank " + input.rank()
+                            + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                            + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth].");
         }
 
         int miniBatch = input.size(0);
@@ -259,18 +265,19 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad;
         int[] outSize;
-        if(convolutionMode == ConvolutionMode.Same){
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{inH, inW}, kernel, strides);
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
         int outH = outSize[0];
         int outW = outSize[1];
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
-            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
+            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
+                            convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -278,15 +285,16 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
-        INDArray col = Nd4j.create(new int[]{miniBatch,inDepth,outH,outW,kernel[0],kernel[1]},'c');
-        INDArray col2 = col.permute(0,1,4,5,2,3);
-        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col2);
+        INDArray col = Nd4j.create(new int[] {miniBatch, inDepth, outH, outW, kernel[0], kernel[1]}, 'c');
+        INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
+        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                        convolutionMode == ConvolutionMode.Same, col2);
 
         //Reshape to 2d; should be zero-copy reshape due to permute above
-        INDArray col2d = col.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
+        INDArray col2d = col.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
 
         INDArray reduced;
-        switch(layerConf().getPoolingType()) {
+        switch (layerConf().getPoolingType()) {
             case AVG:
                 reduced = col2d.mean(1);
                 break;
@@ -302,13 +310,14 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
-                Transforms.pow(reduced, (1.0/pnorm), false);
+                Transforms.pow(reduced, (1.0 / pnorm), false);
                 break;
             case NONE:
                 return input;
-            default: throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType());
+            default:
+                throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType());
         }
-        return reduced.reshape('c',miniBatch,inDepth,outH,outW);
+        return reduced.reshape('c', miniBatch, inDepth, outH, outW);
     }
 
     @Override
@@ -371,7 +380,9 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void accumulateScore(double accum) { throw new UnsupportedOperationException(); }
+    public void accumulateScore(double accum) {
+        throw new UnsupportedOperationException();
+    }
 
 
     @Override

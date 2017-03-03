@@ -37,11 +37,11 @@ import java.util.Collection;
 public interface Layer extends Serializable, Cloneable, Model {
 
     enum Type {
-       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,SUBSAMPLING,RECURSIVE,MULTILAYER,NORMALIZATION
+        FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
     }
 
     enum TrainingMode {
-        TRAIN,TEST
+        TRAIN, TEST
     }
 
 
@@ -116,7 +116,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon);
+    Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
 
 
     /**
@@ -232,7 +232,6 @@ public interface Layer extends Serializable, Cloneable, Model {
 
 
 
-
     /**
      * Get the iteration listeners for this layer.
      */
@@ -242,6 +241,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * Set the iteration listeners for this layer.
      */
     void setListeners(IterationListener... listeners);
+
     /**
      * Set the iteration listeners for this layer.
      */
@@ -268,7 +268,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * DenseLayer and OutputLayer. Called automatically during forward pass.
      */
     void setInputMiniBatchSize(int size);
-    
+
     /** Get current/last input mini-batch size, as set by setInputMiniBatchSize(int)
      * @see Layer#setInputMiniBatchSize(int)
      */
@@ -306,5 +306,5 @@ public interface Layer extends Serializable, Cloneable, Model {
      *                         array due to reshaping (such as a DenseLayer within a recurrent neural network)
      * @return                 New mask array after this layer, along with the new mask state.
      */
-    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+    Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 }

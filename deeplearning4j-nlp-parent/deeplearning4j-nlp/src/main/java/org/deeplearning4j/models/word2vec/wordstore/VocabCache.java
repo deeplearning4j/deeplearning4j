@@ -33,23 +33,23 @@ import java.util.Collection;
 public interface VocabCache<T extends SequenceElement> extends Serializable {
 
 
-	/**
-	 * Load vocab
-	 */
-	void loadVocab();
-	
- 
-	/**
-	 * Vocab exists already
-	 * @return
-	 */
-	boolean vocabExists();
-	
+    /**
+     * Load vocab
+     */
+    void loadVocab();
+
+
+    /**
+     * Vocab exists already
+     * @return
+     */
+    boolean vocabExists();
+
     /**
      * Saves the vocab: this allow for reuse of word frequencies	
      */
-	void saveVocab();
-	
+    void saveVocab();
+
 
     /**
      * Returns all of the words in the vocab
@@ -71,7 +71,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word the word to increment the count for
      * @param increment the amount to increment by
      */
-    void incrementWordCount(String word,int increment);
+    void incrementWordCount(String word, int increment);
 
     /**
      * Returns the number of times the word has occurred
@@ -131,7 +131,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word
      * @return
      */
-     T wordFor(String word);
+    T wordFor(String word);
 
 
     T wordFor(long id);
@@ -141,7 +141,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param index
      * @param word
      */
-    void addWordToIndex(int index,String word);
+    void addWordToIndex(int index, String word);
 
 
     void addWordToIndex(int index, long elementId);
@@ -182,7 +182,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word the word to set the count for
      * @param count the count of the word
      */
-    void setCountForDoc(String word,long count);
+    void setCountForDoc(String word, long count);
 
     /**
      * Returns the total of number of documents encountered in the corpus
@@ -214,7 +214,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * to the cache
      * @param element the word to add
      */
-     void addToken(T element);
+    void addToken(T element);
 
     /**
      * Returns the token (again not necessarily in the vocab)
@@ -222,7 +222,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word the word to get the token for
      * @return the vocab word for this token
      */
-     T tokenFor(String word);
+    T tokenFor(String word);
 
     T tokenFor(long id);
 

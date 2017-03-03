@@ -55,7 +55,7 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
         } else {
             double improvement = bestScore - score;
             if (improvement > minImprovement) {
-                if (minImprovement > 0){
+                if (minImprovement > 0) {
                     log.info("Epoch with score greater than threshold * * *");
                 }
                 bestScore = score;
@@ -69,6 +69,7 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
 
     @Override
     public String toString() {
-        return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement=" + maxEpochsWithNoImprovement + ", minImprovement="+minImprovement+")";
+        return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement=" + maxEpochsWithNoImprovement
+                        + ", minImprovement=" + minImprovement + ")";
     }
 }

@@ -28,10 +28,10 @@ public class RandomUtils {
      * @param toShuffle Array to shuffle
      * @param random    RNG to use for shuffling
      */
-    public static void shuffleInPlace(int[] toShuffle, Random random){
+    public static void shuffleInPlace(int[] toShuffle, Random random) {
         //Fisher-Yates shuffle: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-        for( int i=0; i<toShuffle.length-1; i++ ){
-            int j = i + random.nextInt(toShuffle.length-i);
+        for (int i = 0; i < toShuffle.length - 1; i++) {
+            int j = i + random.nextInt(toShuffle.length - i);
             int temp = toShuffle[i];
             toShuffle[i] = toShuffle[j];
             toShuffle[j] = temp;

@@ -122,10 +122,7 @@ public class WordIdMapCompiler implements Compiler {
         }
 
         private int getNewLength(int index) {
-            return (int) Math.max(
-                index + 1,
-                array.length * ARRAY_GROWTH_RATE
-            );
+            return (int) Math.max(index + 1, array.length * ARRAY_GROWTH_RATE);
         }
     }
 }

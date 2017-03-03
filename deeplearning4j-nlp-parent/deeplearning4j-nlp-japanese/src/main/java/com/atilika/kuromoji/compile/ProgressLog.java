@@ -44,7 +44,8 @@ public class ProgressLog {
         newLine();
         Long start = startTimes.get(indent);
         indent = Math.max(0, indent - 1);
-        System.out.println(leader() + "done" + (start != null ? " [" + ((System.currentTimeMillis() - start) / 1000) + "s]" : ""));
+        System.out.println(leader() + "done"
+                        + (start != null ? " [" + ((System.currentTimeMillis() - start) / 1000) + "s]" : ""));
         System.out.flush();
     }
 
@@ -62,6 +63,7 @@ public class ProgressLog {
     }
 
     private static String leader() {
-        return "[KUROMOJI] " + dateFormat.format(new Date()) + ": " + (new String(new char[indent * 4]).replace("\0", " "));
+        return "[KUROMOJI] " + dateFormat.format(new Date()) + ": "
+                        + (new String(new char[indent * 4]).replace("\0", " "));
     }
 }

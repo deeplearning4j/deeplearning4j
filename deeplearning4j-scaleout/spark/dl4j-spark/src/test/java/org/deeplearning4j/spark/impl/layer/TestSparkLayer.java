@@ -43,26 +43,24 @@ public class TestSparkLayer extends BaseSparkTest {
     @Test
     public void testIris2() throws Exception {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(10)
-                .learningRate(1e-1)
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(4).nOut(3)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.SOFTMAX).build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
+                        .learningRate(1e-1)
+                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.SOFTMAX).build())
+                        .build();
 
 
         System.out.println("Initializing network");
-        SparkDl4jLayer master = new SparkDl4jLayer(sc,conf);
-        DataSet d = new IrisDataSetIterator(150,150).next();
+        SparkDl4jLayer master = new SparkDl4jLayer(sc, conf);
+        DataSet d = new IrisDataSetIterator(150, 150).next();
         d.normalizeZeroMeanZeroUnitVariance();
         d.shuffle();
         List<DataSet> next = d.asList();
 
         JavaRDD<DataSet> data = sc.parallelize(next);
 
-        OutputLayer network2 =(OutputLayer) master.fitDataSet(data);
+        OutputLayer network2 = (OutputLayer) master.fitDataSet(data);
 
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));

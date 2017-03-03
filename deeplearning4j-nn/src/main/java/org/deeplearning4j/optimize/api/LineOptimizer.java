@@ -41,5 +41,4 @@ public interface LineOptimizer extends Serializable {
 
 
 
-
 }

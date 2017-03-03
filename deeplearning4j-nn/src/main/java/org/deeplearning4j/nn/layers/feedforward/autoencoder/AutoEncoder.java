@@ -34,7 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  *
  */
-public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder>  {
+public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
 
     public AutoEncoder(NeuralNetConfiguration conf) {
         super(conf);
@@ -45,31 +45,29 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public Pair<INDArray, INDArray> sampleHiddenGivenVisible(
-            INDArray v) {
+    public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
         setInput(v);
         INDArray ret = encode(v, true);
-        return new Pair<>(ret,ret);
+        return new Pair<>(ret, ret);
     }
 
     @Override
-    public Pair<INDArray, INDArray> sampleVisibleGivenHidden(
-            INDArray h) {
+    public Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h) {
         INDArray ret = decode(h);
-        return new Pair<>(ret,ret);
+        return new Pair<>(ret, ret);
     }
 
     // Encode
     public INDArray encode(INDArray v, boolean training) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if(training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
+        if (training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
             W = Dropout.applyDropConnect(this, PretrainParamInitializer.WEIGHT_KEY);
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
         INDArray preAct = v.mmul(W).addiRowVector(hBias);
 
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(preAct,training);
+        INDArray ret = conf.getLayer().getActivationFn().getActivation(preAct, training);
 
         return ret;
     }
@@ -80,7 +78,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
-        return conf.getLayer().getActivationFn().getActivation(preAct,true);
+        return conf.getLayer().getActivationFn().getActivation(preAct, true);
 
     }
 
@@ -123,9 +121,9 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);
 
-        INDArray visibleLoss =  input.sub(z);
-        INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
-                visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
+        INDArray visibleLoss = input.sub(z);
+        INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1))
+                        : visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
         INDArray hBiasGradient = hiddenLoss.sum(0);

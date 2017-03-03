@@ -25,26 +25,24 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 public class Distributions {
-    private Distributions() {
-    }
+    private Distributions() {}
 
-    public static org.nd4j.linalg.api.rng.distribution.Distribution createDistribution(
-            Distribution dist) {
+    public static org.nd4j.linalg.api.rng.distribution.Distribution createDistribution(Distribution dist) {
         if (dist == null)
             return null;
-        if(dist instanceof NormalDistribution) {
+        if (dist instanceof NormalDistribution) {
             NormalDistribution nd = (NormalDistribution) dist;
             return Nd4j.getDistributions().createNormal(nd.getMean(), nd.getStd());
         }
-        if(dist instanceof GaussianDistribution) {
+        if (dist instanceof GaussianDistribution) {
             GaussianDistribution nd = (GaussianDistribution) dist;
             return Nd4j.getDistributions().createNormal(nd.getMean(), nd.getStd());
         }
-        if(dist instanceof UniformDistribution) {
+        if (dist instanceof UniformDistribution) {
             UniformDistribution ud = (UniformDistribution) dist;
             return Nd4j.getDistributions().createUniform(ud.getLower(), ud.getUpper());
         }
-        if(dist instanceof BinomialDistribution) {
+        if (dist instanceof BinomialDistribution) {
             BinomialDistribution bd = (BinomialDistribution) dist;
             return Nd4j.getDistributions().createBinomial(bd.getNumberOfTrials(), bd.getProbabilityOfSuccess());
         }

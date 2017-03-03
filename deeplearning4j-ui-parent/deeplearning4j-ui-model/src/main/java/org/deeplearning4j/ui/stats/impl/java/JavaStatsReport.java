@@ -67,7 +67,7 @@ public class JavaStatsReport implements StatsReport {
     private boolean memoryUsePresent;
     private boolean performanceStatsPresent;
 
-    public JavaStatsReport(){
+    public JavaStatsReport() {
         //No-Arg constructor only for deserialization
     }
 
@@ -104,7 +104,7 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public void reportMemoryUse(long jvmCurrentBytes, long jvmMaxBytes, long offHeapCurrentBytes, long offHeapMaxBytes,
-                                long[] deviceCurrentBytes, long[] deviceMaxBytes) {
+                    long[] deviceCurrentBytes, long[] deviceMaxBytes) {
         this.jvmCurrentBytes = jvmCurrentBytes;
         this.jvmMaxBytes = jvmMaxBytes;
         this.offHeapCurrentBytes = offHeapCurrentBytes;
@@ -115,8 +115,8 @@ public class JavaStatsReport implements StatsReport {
     }
 
     @Override
-    public void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches, double examplesPerSecond,
-                                  double minibatchesPerSecond) {
+    public void reportPerformance(long totalRuntimeMs, long totalExamples, long totalMinibatches,
+                    double examplesPerSecond, double minibatchesPerSecond) {
         this.totalRuntimeMs = totalRuntimeMs;
         this.totalExamples = totalExamples;
         this.totalMinibatches = totalMinibatches;
@@ -127,59 +127,68 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public void reportGarbageCollection(String gcName, int deltaGCCount, int deltaGCTime) {
-        if (gcStats == null) gcStats = new ArrayList<>();
+        if (gcStats == null)
+            gcStats = new ArrayList<>();
         gcStats.add(new GCStats(gcName, deltaGCCount, deltaGCTime));
     }
 
     @Override
     public List<Pair<String, int[]>> getGarbageCollectionStats() {
-        if (gcStats == null) return null;
+        if (gcStats == null)
+            return null;
         List<Pair<String, int[]>> temp = new ArrayList<>();
         for (GCStats g : gcStats) {
-            temp.add(new Pair<>(g.gcName, new int[]{g.getDeltaGCCount(), g.getDeltaGCTime()}));
+            temp.add(new Pair<>(g.gcName, new int[] {g.getDeltaGCCount(), g.getDeltaGCTime()}));
         }
         return temp;
     }
 
     @Override
     public void reportHistograms(StatsType statsType, Map<String, Histogram> histogram) {
-        if (this.histograms == null) this.histograms = new HashMap<>();
+        if (this.histograms == null)
+            this.histograms = new HashMap<>();
         this.histograms.put(statsType, histogram);
     }
 
     @Override
     public Map<String, Histogram> getHistograms(StatsType statsType) {
-        if (histograms == null) return null;
+        if (histograms == null)
+            return null;
         return histograms.get(statsType);
     }
 
     @Override
     public void reportMean(StatsType statsType, Map<String, Double> mean) {
-        if (this.meanValues == null) this.meanValues = new HashMap<>();
+        if (this.meanValues == null)
+            this.meanValues = new HashMap<>();
         this.meanValues.put(statsType, mean);
     }
 
     @Override
     public Map<String, Double> getMean(StatsType statsType) {
-        if (this.meanValues == null) return null;
+        if (this.meanValues == null)
+            return null;
         return meanValues.get(statsType);
     }
 
     @Override
     public void reportStdev(StatsType statsType, Map<String, Double> stdev) {
-        if (this.stdevValues == null) this.stdevValues = new HashMap<>();
+        if (this.stdevValues == null)
+            this.stdevValues = new HashMap<>();
         this.stdevValues.put(statsType, stdev);
     }
 
     @Override
     public Map<String, Double> getStdev(StatsType statsType) {
-        if (this.stdevValues == null) return null;
+        if (this.stdevValues == null)
+            return null;
         return stdevValues.get(statsType);
     }
 
     @Override
     public void reportMeanMagnitudes(StatsType statsType, Map<String, Double> meanMagnitudes) {
-        if (this.meanMagnitudeValues == null) this.meanMagnitudeValues = new HashMap<>();
+        if (this.meanMagnitudeValues == null)
+            this.meanMagnitudeValues = new HashMap<>();
         this.meanMagnitudeValues.put(statsType, meanMagnitudes);
     }
 
@@ -212,13 +221,15 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public Map<String, Double> getMeanMagnitudes(StatsType statsType) {
-        if (this.meanMagnitudeValues == null) return null;
+        if (this.meanMagnitudeValues == null)
+            return null;
         return this.meanMagnitudeValues.get(statsType);
     }
 
     @Override
     public List<Serializable> getDataSetMetaData() {
-        if (dataSetMetaData == null || dataSetMetaData.size() == 0) return null;
+        if (dataSetMetaData == null || dataSetMetaData.size() == 0)
+            return null;
 
         List<Serializable> l = new ArrayList<>();
         for (byte[] b : dataSetMetaData) {
@@ -268,7 +279,8 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public boolean hasHistograms(StatsType statsType) {
-        if (histograms == null) return false;
+        if (histograms == null)
+            return false;
         return histograms.containsKey(statsType);
     }
 
@@ -311,7 +323,7 @@ public class JavaStatsReport implements StatsReport {
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(this);
         } catch (IOException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
         return baos.toByteArray();
     }
@@ -334,7 +346,7 @@ public class JavaStatsReport implements StatsReport {
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
             r = (JavaStatsReport) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
 
         Field[] fields = JavaStatsReport.class.getDeclaredFields();
@@ -343,7 +355,7 @@ public class JavaStatsReport implements StatsReport {
             try {
                 f.set(this, f.get(r));
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);  //Should never happen
+                throw new RuntimeException(e); //Should never happen
             }
         }
     }

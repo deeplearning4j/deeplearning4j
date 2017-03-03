@@ -57,7 +57,7 @@ public interface WordVectors extends Serializable {
      * @param n the n to get
      * @return the top n words
      */
-    Collection<String> wordsNearestSum(String word,int n);
+    Collection<String> wordsNearestSum(String word, int n);
 
 
     /**
@@ -67,7 +67,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top);
+    Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top);
 
     /**
      * Accuracy based on questions which are a space separated list of strings
@@ -76,7 +76,7 @@ public interface WordVectors extends Serializable {
      * @param questions the questions to ask
      * @return the accuracy based on these questions
      */
-    Map<String,Double> accuracy(List<String> questions);
+    Map<String, Double> accuracy(List<String> questions);
 
     int indexOf(String word);
 
@@ -87,7 +87,7 @@ public interface WordVectors extends Serializable {
      * @param accuracy the accuracy: 0 to 1
      * @return the list of words that are similar in the vocab
      */
-    List<String> similarWordsInVocabTo(String word,double accuracy);
+    List<String> similarWordsInVocabTo(String word, double accuracy);
 
     /**
      * Get the word vector for a given matrix
@@ -134,7 +134,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    Collection<String> wordsNearest(Collection<String> positive,Collection<String> negative,int top);
+    Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top);
 
 
     /**
@@ -143,7 +143,7 @@ public interface WordVectors extends Serializable {
      * @param n the n to get
      * @return the top n words
      */
-    Collection<String> wordsNearest(String word,int n);
+    Collection<String> wordsNearest(String word, int n);
 
 
 
@@ -153,7 +153,7 @@ public interface WordVectors extends Serializable {
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
      */
-    double similarity(String word,String word2);
+    double similarity(String word, String word2);
 
     /**
      * Vocab for the vectors

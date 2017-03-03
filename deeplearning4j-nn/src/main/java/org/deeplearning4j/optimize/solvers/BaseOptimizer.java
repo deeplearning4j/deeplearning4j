@@ -61,13 +61,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected ComputationGraphUpdater computationGraphUpdater;
     protected double step;
     private int batchSize;
-    protected double score,oldScore;
+    protected double score, oldScore;
     protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
     public final static String SEARCH_DIR = "searchDirection";
-    protected Map<String,Object> searchState = new ConcurrentHashMap<>();
+    protected Map<String, Object> searchState = new ConcurrentHashMap<>();
 
     /**
      *
@@ -76,7 +76,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * @param iterationListeners
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Model model) {
+    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners, Model model) {
         this(conf, stepFunction, iterationListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
     }
 
@@ -89,13 +90,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * @param terminationConditions
      * @param model
      */
-    public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
+    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners,
+                    Collection<TerminationCondition> terminationConditions, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
-        lineMaximizer = new BackTrackLineSearch(model,this.stepFunction,this);
+        lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
         lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
 
@@ -110,14 +113,14 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public Updater getUpdater() {
-        if(updater == null) {
+        if (updater == null) {
             updater = UpdaterCreator.getUpdater(model);
         }
         return updater;
     }
 
     @Override
-    public void setUpdater(Updater updater){
+    public void setUpdater(Updater updater) {
         this.updater = updater;
     }
 
@@ -125,8 +128,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public ComputationGraphUpdater getComputationGraphUpdater() {
-        if(computationGraphUpdater == null && model instanceof ComputationGraph){
-            computationGraphUpdater = new ComputationGraphUpdater((ComputationGraph)model);
+        if (computationGraphUpdater == null && model instanceof ComputationGraph) {
+            computationGraphUpdater = new ComputationGraphUpdater((ComputationGraph) model);
         }
         return computationGraphUpdater;
     }
@@ -137,28 +140,32 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners){
-        if(listeners == null) this.iterationListeners = Collections.emptyList();
-        else this.iterationListeners = listeners;
+    public void setListeners(Collection<IterationListener> listeners) {
+        if (listeners == null)
+            this.iterationListeners = Collections.emptyList();
+        else
+            this.iterationListeners = listeners;
     }
 
     @Override
-    public NeuralNetConfiguration getConf() { return conf; }
+    public NeuralNetConfiguration getConf() {
+        return conf;
+    }
 
     @Override
-    public Pair<Gradient,Double> gradientAndScore() {
+    public Pair<Gradient, Double> gradientAndScore() {
         oldScore = score;
         model.computeGradientAndScore();
 
-        if(iterationListeners != null && iterationListeners.size() > 0){
-            for(IterationListener l : iterationListeners){
-                if(l instanceof TrainingListener){
-                    ((TrainingListener)l).onGradientCalculation(model);
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (IterationListener l : iterationListeners) {
+                if (l instanceof TrainingListener) {
+                    ((TrainingListener) l).onGradientCalculation(model);
                 }
             }
         }
 
-        Pair<Gradient,Double> pair = model.gradientAndScore();
+        Pair<Gradient, Double> pair = model.gradientAndScore();
         score = pair.getSecond();
         updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
         return pair;
@@ -170,15 +177,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
-    public  boolean optimize() {
+    public boolean optimize() {
         //validate the input before training
         INDArray gradient;
         INDArray searchDirection;
         INDArray parameters;
-        Pair<Gradient,Double> pair = gradientAndScore();
-        if(searchState.isEmpty()){
+        Pair<Gradient, Double> pair = gradientAndScore();
+        if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
-            setupSearchState(pair);		//Only do this once
+            setupSearchState(pair); //Only do this once
         } else {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         }
@@ -187,8 +194,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         /*
          * Commented out for now; this has been problematic for testing/debugging
          * Revisit & re-enable later. */
-        for(TerminationCondition condition : terminationConditions){
-            if(condition.terminate(0.0,0.0,new Object[]{pair.getFirst().gradient()})) {
+        for (TerminationCondition condition : terminationConditions) {
+            if (condition.terminate(0.0, 0.0, new Object[] {pair.getFirst().gradient()})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
@@ -197,7 +204,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //calculate initial search direction
         preProcessLine();
 
-        for(int i = 0; i < conf.getNumIterations(); i++) {
+        for (int i = 0; i < conf.getNumIterations(); i++) {
             gradient = (INDArray) searchState.get(GRADIENT_KEY);
             searchDirection = (INDArray) searchState.get(SEARCH_DIR);
             parameters = (INDArray) searchState.get(PARAMS_KEY);
@@ -206,15 +213,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             try {
                 step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
+                log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
                 step = 0.0;
             }
 
             //Update parameters based on final/best step size returned by line search:
-            if(step != 0.0) {
-                stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
+            if (step != 0.0) {
+                stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
                 model.setParams(parameters);
-            }else {
+            } else {
                 log.debug("Step size returned by line search is 0.0.");
             }
 
@@ -225,7 +232,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //invoke listeners
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            for(IterationListener listener : iterationListeners)
+            for (IterationListener listener : iterationListeners)
                 listener.iterationDone(model, iterationCount);
 
             //check for termination conditions based on absolute change in score
@@ -235,16 +242,18 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return true;
     }
 
-    protected  void postFirstStep(INDArray gradient) {
+    protected void postFirstStep(INDArray gradient) {
         //no-op
     }
 
     @Override
-    public boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int i){
-        for(TerminationCondition condition : terminationConditions){
-            if(condition.terminate(score,oldScore,new Object[]{gradient})){
-                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
-                if(condition instanceof EpsTermination && conf.getLayer() != null && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
+    public boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int i) {
+        for (TerminationCondition condition : terminationConditions) {
+            if (condition.terminate(score, oldScore, new Object[] {gradient})) {
+                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
+                                oldScore, condition);
+                if (condition instanceof EpsTermination && conf.getLayer() != null
+                                && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
                     model.applyLearningRateScoreDecay();
                 }
                 return true;
@@ -268,23 +277,24 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * Pre preProcess to setup initial searchDirection approximation
      */
     @Override
-    public  void preProcessLine() {
+    public void preProcessLine() {
         //no-op
     }
+
     /**
      * Post step to update searchDirection with new gradient and parameter information
      */
     @Override
-    public  void postStep(INDArray gradient) {
+    public void postStep(INDArray gradient) {
         //no-op
     }
 
 
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
-        if(model instanceof ComputationGraph){
-            ComputationGraph graph = (ComputationGraph)model;
-            if(computationGraphUpdater == null){
+        if (model instanceof ComputationGraph) {
+            ComputationGraph graph = (ComputationGraph) model;
+            if (computationGraphUpdater == null) {
                 computationGraphUpdater = new ComputationGraphUpdater(graph);
             }
             computationGraphUpdater.update(graph, gradient, getIterationCount(model), batchSize);
@@ -302,39 +312,39 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * @param pair
      */
     @Override
-    public  void setupSearchState(Pair<Gradient, Double> pair) {
+    public void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params().dup(); //Need dup here: params returns an array that isn't a copy (hence changes to this are problematic for line search methods)
-        searchState.put(GRADIENT_KEY,gradient);
-        searchState.put(SCORE_KEY,pair.getSecond());
-        searchState.put(PARAMS_KEY,params);
+        searchState.put(GRADIENT_KEY, gradient);
+        searchState.put(SCORE_KEY, pair.getSecond());
+        searchState.put(PARAMS_KEY, params);
     }
 
 
-    public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
-        if( optimizerClass == StochasticGradientDescent.class ){
+    public static StepFunction getDefaultStepFunctionForOptimizer(Class<? extends ConvexOptimizer> optimizerClass) {
+        if (optimizerClass == StochasticGradientDescent.class) {
             return new NegativeGradientStepFunction();
         } else {
             return new NegativeDefaultStepFunction();
         }
     }
 
-    public static int getIterationCount(Model model){
-        if(model instanceof MultiLayerNetwork){
-            return ((MultiLayerNetwork)model).getLayerWiseConfigurations().getIterationCount();
-        } else if(model instanceof ComputationGraph){
-            return ((ComputationGraph)model).getConfiguration().getIterationCount();
+    public static int getIterationCount(Model model) {
+        if (model instanceof MultiLayerNetwork) {
+            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getIterationCount();
+        } else if (model instanceof ComputationGraph) {
+            return ((ComputationGraph) model).getConfiguration().getIterationCount();
         } else {
             return model.conf().getIterationCount();
         }
     }
 
-    public static void incrementIterationCount(Model model, int incrementBy){
-        if(model instanceof MultiLayerNetwork){
-            MultiLayerConfiguration conf = ((MultiLayerNetwork)model).getLayerWiseConfigurations();
+    public static void incrementIterationCount(Model model, int incrementBy) {
+        if (model instanceof MultiLayerNetwork) {
+            MultiLayerConfiguration conf = ((MultiLayerNetwork) model).getLayerWiseConfigurations();
             conf.setIterationCount(conf.getIterationCount() + incrementBy);
-        } else if(model instanceof ComputationGraph){
-            ComputationGraphConfiguration conf = ((ComputationGraph)model).getConfiguration();
+        } else if (model instanceof ComputationGraph) {
+            ComputationGraphConfiguration conf = ((ComputationGraph) model).getConfiguration();
             conf.setIterationCount(conf.getIterationCount() + incrementBy);
         } else {
             model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);

@@ -53,7 +53,7 @@ public class DefaultStreamTokenizer implements Tokenizer {
      * @return
      */
     private boolean streamHasMoreTokens() {
-        if(streamTokenizer.ttype != StreamTokenizer.TT_EOF) {
+        if (streamTokenizer.ttype != StreamTokenizer.TT_EOF) {
             try {
                 streamTokenizer.nextToken();
             } catch (IOException e1) {
@@ -69,9 +69,11 @@ public class DefaultStreamTokenizer implements Tokenizer {
      */
     @Override
     public boolean hasMoreTokens() {
-        log.info("Tokens size: [" + tokens.size()+"], position: ["+ position.get()+"]");
-        if (!tokens.isEmpty()) return position.get() < tokens.size();
-            else return streamHasMoreTokens();
+        log.info("Tokens size: [" + tokens.size() + "], position: [" + position.get() + "]");
+        if (!tokens.isEmpty())
+            return position.get() < tokens.size();
+        else
+            return streamHasMoreTokens();
     }
 
     /**
@@ -93,7 +95,8 @@ public class DefaultStreamTokenizer implements Tokenizer {
      */
     @Override
     public String nextToken() {
-        if (!tokens.isEmpty() && position.get() < tokens.size()) return tokens.get(position.getAndIncrement());
+        if (!tokens.isEmpty() && position.get() < tokens.size())
+            return tokens.get(position.getAndIncrement());
         return nextTokenFromStream();
     }
 
@@ -106,24 +109,24 @@ public class DefaultStreamTokenizer implements Tokenizer {
         StringBuilder sb = new StringBuilder();
 
 
-        if(streamTokenizer.ttype == StreamTokenizer.TT_WORD) {
+        if (streamTokenizer.ttype == StreamTokenizer.TT_WORD) {
             sb.append(streamTokenizer.sval);
-        } else if(streamTokenizer.ttype == StreamTokenizer.TT_NUMBER) {
+        } else if (streamTokenizer.ttype == StreamTokenizer.TT_NUMBER) {
             sb.append(streamTokenizer.nval);
-        } else if(streamTokenizer.ttype == StreamTokenizer.TT_EOL) {
+        } else if (streamTokenizer.ttype == StreamTokenizer.TT_EOL) {
             try {
-                while(streamTokenizer.ttype == StreamTokenizer.TT_EOL)
+                while (streamTokenizer.ttype == StreamTokenizer.TT_EOL)
                     streamTokenizer.nextToken();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        } else if(streamHasMoreTokens())
+        } else if (streamHasMoreTokens())
             return nextTokenFromStream();
 
 
-        String ret =  sb.toString();
+        String ret = sb.toString();
 
-        if(tokenPreProcess != null)
+        if (tokenPreProcess != null)
             ret = tokenPreProcess.preProcess(ret);
         return ret;
 
@@ -137,13 +140,14 @@ public class DefaultStreamTokenizer implements Tokenizer {
     @Override
     public List<String> getTokens() {
         //List<String> tokens = new ArrayList<>();
-        if (!tokens.isEmpty()) return tokens;
+        if (!tokens.isEmpty())
+            return tokens;
 
         log.info("Starting prebuffering...");
-        while(streamHasMoreTokens()) {
+        while (streamHasMoreTokens()) {
             tokens.add(nextTokenFromStream());
         }
-        log.info("Tokens prefetch finished. Tokens size: [" + tokens.size()+"]");
+        log.info("Tokens prefetch finished. Tokens size: [" + tokens.size() + "]");
         return tokens;
     }
 

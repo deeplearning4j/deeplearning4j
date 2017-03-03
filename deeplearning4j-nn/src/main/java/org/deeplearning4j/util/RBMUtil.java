@@ -30,27 +30,27 @@ public class RBMUtil {
     private RBMUtil() {}
 
     public static RBM.VisibleUnit inverse(RBM.HiddenUnit visible) {
-        switch(visible) {
+        switch (visible) {
             case BINARY:
-                return  RBM.VisibleUnit.BINARY;
+                return RBM.VisibleUnit.BINARY;
             case GAUSSIAN:
-                return  RBM.VisibleUnit.GAUSSIAN;
+                return RBM.VisibleUnit.GAUSSIAN;
             case SOFTMAX:
-                return  RBM.VisibleUnit.SOFTMAX;
+                return RBM.VisibleUnit.SOFTMAX;
             default:
                 return null;
 
         }
     }
 
-    public static RBM.HiddenUnit inverse( RBM.VisibleUnit hidden) {
-        switch(hidden) {
+    public static RBM.HiddenUnit inverse(RBM.VisibleUnit hidden) {
+        switch (hidden) {
             case BINARY:
-                return   RBM.HiddenUnit.BINARY;
+                return RBM.HiddenUnit.BINARY;
             case GAUSSIAN:
-                return  RBM.HiddenUnit.GAUSSIAN;
+                return RBM.HiddenUnit.GAUSSIAN;
             case SOFTMAX:
-                return  RBM.HiddenUnit.SOFTMAX;
+                return RBM.HiddenUnit.SOFTMAX;
         }
 
         return null;

@@ -27,22 +27,22 @@ import java.io.Serializable;
 
 public class FixedIterationCountCondition implements ClusteringAlgorithmCondition, Serializable {
 
-	private Condition	iterationCountCondition;
+    private Condition iterationCountCondition;
 
-	protected FixedIterationCountCondition() {
-		// no-op for serialization only
-	}
+    protected FixedIterationCountCondition() {
+        // no-op for serialization only
+    }
 
-	protected FixedIterationCountCondition(int initialClusterCount) {
-		iterationCountCondition = new GreaterThanOrEqual(initialClusterCount);
-	}
+    protected FixedIterationCountCondition(int initialClusterCount) {
+        iterationCountCondition = new GreaterThanOrEqual(initialClusterCount);
+    }
 
-	public static FixedIterationCountCondition iterationCountGreaterThan(int iterationCount) {
-		return new FixedIterationCountCondition(iterationCount);
-	}
+    public static FixedIterationCountCondition iterationCountGreaterThan(int iterationCount) {
+        return new FixedIterationCountCondition(iterationCount);
+    }
 
-	public boolean isSatisfied(IterationHistory iterationHistory) {
-		return iterationCountCondition.apply(iterationHistory == null ? 0 : iterationHistory.getIterationCount());
-	}
-	
+    public boolean isSatisfied(IterationHistory iterationHistory) {
+        return iterationCountCondition.apply(iterationHistory == null ? 0 : iterationHistory.getIterationCount());
+    }
+
 }

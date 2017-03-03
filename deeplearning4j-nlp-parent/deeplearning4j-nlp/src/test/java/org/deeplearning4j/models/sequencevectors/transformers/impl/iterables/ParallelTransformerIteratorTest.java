@@ -37,15 +37,12 @@ public class ParallelTransformerIteratorTest {
     public void hasNext() throws Exception {
         SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(iterator)
-                .allowMultithreading(true)
-                .tokenizerFactory(factory)
-                .build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                        .tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
         int cnt = 0;
-        Sequence<VocabWord> sequence  = null;
+        Sequence<VocabWord> sequence = null;
         while (iter.hasNext()) {
             sequence = iter.next();
             assertNotEquals("Failed on [" + cnt + "] iteration", null, sequence);
@@ -53,20 +50,18 @@ public class ParallelTransformerIteratorTest {
             cnt++;
         }
 
-     //   log.info("Last element: {}", sequence.asLabels());
+        //   log.info("Last element: {}", sequence.asLabels());
 
         assertEquals(97162, cnt);
     }
 
     @Test
     public void testSpeedComparison1() throws Exception {
-        SentenceIterator iterator = new MutipleEpochsSentenceIterator(new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25);
+        SentenceIterator iterator = new MutipleEpochsSentenceIterator(
+                        new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25);
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(iterator)
-                .allowMultithreading(false)
-                .tokenizerFactory(factory)
-                .build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
+                        .allowMultithreading(false).tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
         int cnt = 0;
@@ -82,11 +77,8 @@ public class ParallelTransformerIteratorTest {
         log.info("Single-threaded time: {} ms", time2 - time1);
         iterator.reset();
 
-        transformer = new SentenceTransformer.Builder()
-                .iterator(iterator)
-                .allowMultithreading(true)
-                .tokenizerFactory(factory)
-                .build();
+        transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                        .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 
@@ -106,14 +98,11 @@ public class ParallelTransformerIteratorTest {
         baseIterator.reset();
 
 
-        LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25))
-                .build();
+        LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(
+                        new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25)).build();
 
-        transformer = new SentenceTransformer.Builder()
-                .iterator(lai)
-                .allowMultithreading(false)
-                .tokenizerFactory(factory)
-                .build();
+        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(false)
+                        .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 
@@ -130,11 +119,8 @@ public class ParallelTransformerIteratorTest {
         lai.reset();
 
 
-        transformer = new SentenceTransformer.Builder()
-                .iterator(lai)
-                .allowMultithreading(true)
-                .tokenizerFactory(factory)
-                .build();
+        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(true)
+                        .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 

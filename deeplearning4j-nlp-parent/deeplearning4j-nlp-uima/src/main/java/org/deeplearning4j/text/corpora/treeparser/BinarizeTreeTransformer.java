@@ -46,21 +46,21 @@ public class BinarizeTreeTransformer implements TreeTransformer {
     public Tree transform(Tree t) {
         if (t == null)
             return null;
-        Deque<Pair<Tree,String>> stack = new ArrayDeque<>();
-        stack.add(new Pair<>(t,t.label()));
+        Deque<Pair<Tree, String>> stack = new ArrayDeque<>();
+        stack.add(new Pair<>(t, t.label()));
         String originalLabel = t.label();
         while (!stack.isEmpty()) {
-            Pair<Tree,String> curr = stack.pop();
+            Pair<Tree, String> curr = stack.pop();
             Tree node = curr.getFirst();
 
             for (Tree child : node.children())
-                stack.add(new Pair<>(child,curr.getSecond()));
+                stack.add(new Pair<>(child, curr.getSecond()));
 
 
             if (node.children().size() > 2) {
 
                 List<String> children = new ArrayList<>();
-                for(int i = 0; i < node.children().size(); i++)
+                for (int i = 0; i < node.children().size(); i++)
                     children.add(node.children().get(i).label());
 
                 Tree copy = node.clone();
@@ -73,9 +73,10 @@ public class BinarizeTreeTransformer implements TreeTransformer {
                     if (factor.equals("right")) {
                         Tree newNode = new Tree(currNode);
 
-                        List<String> subChildren = children.subList(i,Math.min(i + horizontonalMarkov,children.size()));
+                        List<String> subChildren =
+                                        children.subList(i, Math.min(i + horizontonalMarkov, children.size()));
 
-                        newNode.setLabel(originalLabel + "-" + "(" + StringUtils.join(subChildren,"-"));
+                        newNode.setLabel(originalLabel + "-" + "(" + StringUtils.join(subChildren, "-"));
 
                         newNode.setParent(currNode);
 
@@ -92,10 +93,11 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
                         newNode.setParent(copy.firstChild());
 
-                        List<String> childLabels =  children.subList(Math.max(children.size() - i - horizontonalMarkov,0),i);
+                        List<String> childLabels =
+                                        children.subList(Math.max(children.size() - i - horizontonalMarkov, 0), i);
 
                         Collections.reverse(childLabels);
-                        newNode.setLabel(originalLabel + "-" + "(" + StringUtils.join(childLabels,"-"));
+                        newNode.setLabel(originalLabel + "-" + "(" + StringUtils.join(childLabels, "-"));
 
                         currNode.children().add(newNode);
 
@@ -117,34 +119,31 @@ public class BinarizeTreeTransformer implements TreeTransformer {
     }
 
     private void addPreTerminal(Tree t) {
-        if(t.isLeaf()) {
+        if (t.isLeaf()) {
             Tree newLeaf = new Tree(t);
             newLeaf.setLabel(t.value());
             t.children().add(newLeaf);
             newLeaf.setParent(t);
-        }
-        else {
-            for(Tree child : t.children())
+        } else {
+            for (Tree child : t.children())
                 addPreTerminal(child);
         }
     }
 
 
-    private void checkState(Tree tree,Set<Tree> nonBinarized) {
-        for(Tree t : tree.children()) {
-            checkState(t,nonBinarized);
+    private void checkState(Tree tree, Set<Tree> nonBinarized) {
+        for (Tree t : tree.children()) {
+            checkState(t, nonBinarized);
         }
 
-        if(tree.children().size() > 2) {
+        if (tree.children().size() > 2) {
             Tree parent = tree.parent();
-            if(parent == null)
+            if (parent == null)
                 return;
             nonBinarized.add(tree);
 
         }
     }
-
-
 
 
 

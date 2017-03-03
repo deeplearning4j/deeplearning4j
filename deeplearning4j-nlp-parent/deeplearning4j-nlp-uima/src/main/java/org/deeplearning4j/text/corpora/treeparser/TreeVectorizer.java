@@ -65,7 +65,7 @@ public class TreeVectorizer {
     public List<Tree> getTrees(String sentences) throws Exception {
         List<Tree> ret = new ArrayList<>();
         List<Tree> baseTrees = parser.getTrees(sentences);
-        for(Tree t : baseTrees) {
+        for (Tree t : baseTrees) {
             Tree binarized = treeTransformer.transform(t);
             binarized = cnfTransformer.transform(binarized);
             ret.add(binarized);
@@ -86,10 +86,10 @@ public class TreeVectorizer {
      *
      * @throws Exception
      */
-    public List<Tree> getTreesWithLabels(String sentences,String label,List<String> labels) throws Exception {
+    public List<Tree> getTreesWithLabels(String sentences, String label, List<String> labels) throws Exception {
         List<Tree> ret = new ArrayList<>();
-        List<Tree> baseTrees = parser.getTreesWithLabels(sentences,label,labels);
-        for(Tree t : baseTrees) {
+        List<Tree> baseTrees = parser.getTreesWithLabels(sentences, label, labels);
+        for (Tree t : baseTrees) {
             Tree binarized = treeTransformer.transform(t);
             binarized = cnfTransformer.transform(binarized);
             ret.add(binarized);
@@ -110,13 +110,13 @@ public class TreeVectorizer {
      *
      * @throws Exception
      */
-    public List<Tree> getTreesWithLabels(String sentences,List<String> labels) throws Exception {
+    public List<Tree> getTreesWithLabels(String sentences, List<String> labels) throws Exception {
         List<String> realLabels = new ArrayList<>(labels);
-        if(!realLabels.contains("NONE"))
+        if (!realLabels.contains("NONE"))
             realLabels.add("NONE");
         List<Tree> ret = new ArrayList<>();
-        List<Tree> baseTrees = parser.getTreesWithLabels(sentences,realLabels);
-        for(Tree t : baseTrees) {
+        List<Tree> baseTrees = parser.getTreesWithLabels(sentences, realLabels);
+        for (Tree t : baseTrees) {
             Tree binarized = treeTransformer.transform(t);
             binarized = cnfTransformer.transform(binarized);
             ret.add(binarized);
@@ -125,8 +125,6 @@ public class TreeVectorizer {
         return ret;
 
     }
-
-
 
 
 

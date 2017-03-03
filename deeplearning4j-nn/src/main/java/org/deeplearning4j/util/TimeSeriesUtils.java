@@ -33,8 +33,7 @@ import java.util.Arrays;
 public class TimeSeriesUtils {
 
 
-    private TimeSeriesUtils() {
-    }
+    private TimeSeriesUtils() {}
 
     /**
      * Calculate a moving average given the length
@@ -42,12 +41,12 @@ public class TimeSeriesUtils {
      * @param n the length of the moving window
      * @return the moving averages for each row
      */
-    public static INDArray movingAverage(INDArray toAvg,int n) {
+    public static INDArray movingAverage(INDArray toAvg, int n) {
         INDArray ret = Nd4j.cumsum(toAvg);
-        INDArrayIndex[] ends = new INDArrayIndex[]{NDArrayIndex.interval(n ,toAvg.columns())};
-        INDArrayIndex[] begins = new INDArrayIndex[]{NDArrayIndex.interval(0,toAvg.columns() - n,false)};
-        INDArrayIndex[] nMinusOne = new INDArrayIndex[]{NDArrayIndex.interval(n - 1,toAvg.columns())};
-        ret.put(ends,ret.get(ends).sub(ret.get(begins)));
+        INDArrayIndex[] ends = new INDArrayIndex[] {NDArrayIndex.interval(n, toAvg.columns())};
+        INDArrayIndex[] begins = new INDArrayIndex[] {NDArrayIndex.interval(0, toAvg.columns() - n, false)};
+        INDArrayIndex[] nMinusOne = new INDArrayIndex[] {NDArrayIndex.interval(n - 1, toAvg.columns())};
+        ret.put(ends, ret.get(ends).sub(ret.get(begins)));
         return ret.get(nMinusOne).divi(n);
     }
 
@@ -56,12 +55,14 @@ public class TimeSeriesUtils {
      * @param timeSeriesMask    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
-    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask){
-        if(timeSeriesMask.rank() != 2) throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
+    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask) {
+        if (timeSeriesMask.rank() != 2)
+            throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
-        if(timeSeriesMask.ordering() != 'f') timeSeriesMask = timeSeriesMask.dup('f');
+        if (timeSeriesMask.ordering() != 'f')
+            timeSeriesMask = timeSeriesMask.dup('f');
 
-        return timeSeriesMask.reshape('f',new int[]{timeSeriesMask.length(),1});
+        return timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1});
     }
 
 
@@ -70,39 +71,45 @@ public class TimeSeriesUtils {
      * @param timeSeriesMaskAsVector    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
-    public static INDArray reshapeVectorToTimeSeriesMask(INDArray timeSeriesMaskAsVector, int minibatchSize ){
-        if(!timeSeriesMaskAsVector.isVector()) throw new IllegalArgumentException("Cannot reshape mask: expected vector");
+    public static INDArray reshapeVectorToTimeSeriesMask(INDArray timeSeriesMaskAsVector, int minibatchSize) {
+        if (!timeSeriesMaskAsVector.isVector())
+            throw new IllegalArgumentException("Cannot reshape mask: expected vector");
 
         int timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
-        return timeSeriesMaskAsVector.reshape('f',new int[]{minibatchSize,timeSeriesLength});
+        return timeSeriesMaskAsVector.reshape('f', new int[] {minibatchSize, timeSeriesLength});
     }
 
-    public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask){
-        if(perOutputTimeSeriesMask.rank() != 3){
-            throw new IllegalArgumentException("Cannot reshape per output mask: rank is not 3 (is: "
-                    + perOutputTimeSeriesMask.rank() + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape())
-                    + ")");
+    public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask) {
+        if (perOutputTimeSeriesMask.rank() != 3) {
+            throw new IllegalArgumentException(
+                            "Cannot reshape per output mask: rank is not 3 (is: " + perOutputTimeSeriesMask.rank()
+                                            + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape()) + ")");
         }
 
         return reshape3dTo2d(perOutputTimeSeriesMask);
     }
 
-    public static INDArray reshape3dTo2d(INDArray in){
-        if( in.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
+    public static INDArray reshape3dTo2d(INDArray in) {
+        if (in.rank() != 3)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
         int[] shape = in.shape();
-        if(shape[0]==1) return in.tensorAlongDimension(0,1,2).permutei(1,0);	//Edge case: miniBatchSize==1
-        if(shape[2]==1) return in.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
-        INDArray permuted = in.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
-        return permuted.reshape('f',shape[0] * shape[2], shape[1]);
+        if (shape[0] == 1)
+            return in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        if (shape[2] == 1)
+            return in.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        INDArray permuted = in.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
     }
 
-    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize){
-        if( in.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
+    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize) {
+        if (in.rank() != 2)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
         int[] shape = in.shape();
-        if(in.ordering() != 'f') in = Shape.toOffsetZeroCopy(in, 'f');
-        INDArray reshaped = in.reshape('f',miniBatchSize, shape[0] / miniBatchSize, shape[1]);
+        if (in.ordering() != 'f')
+            in = Shape.toOffsetZeroCopy(in, 'f');
+        INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
         return reshaped.permute(0, 2, 1);
     }
 

@@ -23,7 +23,8 @@ public class MaxEpochsTerminationCondition implements EpochTerminationCondition 
     private int maxEpochs;
 
     public MaxEpochsTerminationCondition(int maxEpochs) {
-        if(maxEpochs <= 0) throw new IllegalArgumentException("Max number of epochs must be >= 1");
+        if (maxEpochs <= 0)
+            throw new IllegalArgumentException("Max number of epochs must be >= 1");
         this.maxEpochs = maxEpochs;
     }
 
@@ -34,11 +35,11 @@ public class MaxEpochsTerminationCondition implements EpochTerminationCondition 
 
     @Override
     public boolean terminate(int epochNum, double score) {
-        return epochNum+1 >= maxEpochs; //epochNum starts at 0
+        return epochNum + 1 >= maxEpochs; //epochNum starts at 0
     }
 
     @Override
-    public String toString(){
-        return "MaxEpochsTerminationCondition("+maxEpochs+")";
+    public String toString() {
+        return "MaxEpochsTerminationCondition(" + maxEpochs + ")";
     }
 }

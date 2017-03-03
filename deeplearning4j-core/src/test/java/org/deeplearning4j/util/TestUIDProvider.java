@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotNull;
 public class TestUIDProvider {
 
     @Test
-    public void testUIDProvider(){
+    public void testUIDProvider() {
         String jvmUID = UIDProvider.getJVMUID();
         String hardwareUID = UIDProvider.getHardwareUID();
 

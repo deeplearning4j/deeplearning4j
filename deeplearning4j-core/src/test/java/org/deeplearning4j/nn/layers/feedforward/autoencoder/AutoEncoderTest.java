@@ -41,20 +41,15 @@ public class AutoEncoderTest {
 
     @Test
     public void testAutoEncoderBiasInit() {
-        org.deeplearning4j.nn.conf.layers.AutoEncoder build = new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                .nIn(1)
-                .nOut(3)
-                .biasInit(1)
-                .build();
+        org.deeplearning4j.nn.conf.layers.AutoEncoder build =
+                        new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(1).nOut(3).biasInit(1).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(build)
-                .build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
 
-//        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        //        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -65,14 +60,11 @@ public class AutoEncoderTest {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(1)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).learningRate(1e-1f)
+                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
+                                        .corruptionLevel(0.6)
+                                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                        .build();
 
 
         fetcher.fetch(100);
@@ -81,30 +73,27 @@ public class AutoEncoderTest {
         INDArray input = d2.getFeatureMatrix();
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0, params, true);
-        assertEquals(da.params(),da.params());
-        assertEquals(471784,da.params().length());
+        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf,
+                        Arrays.<IterationListener>asList(new ScoreIterationListener(1)), 0, params, true);
+        assertEquals(da.params(), da.params());
+        assertEquals(471784, da.params().length());
         da.setParams(da.params());
         da.fit(input);
     }
 
 
 
-
-
     @Test
     public void testBackProp() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-//        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
+        //        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(100)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                        .learningRate(1e-1f)
+                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
+                                        .corruptionLevel(0.6)
+                                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                        .build();
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
@@ -112,7 +101,7 @@ public class AutoEncoderTest {
         INDArray input = d2.getFeatureMatrix();
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf,null,0,params, true);
+        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf, null, 0, params, true);
         Gradient g = new DefaultGradient();
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(input)).sub(input));
     }

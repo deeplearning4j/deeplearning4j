@@ -29,13 +29,17 @@ package org.deeplearning4j.nn.modelimport.keras;
  */
 public class InvalidKerasConfigurationException extends Exception {
 
-    public InvalidKerasConfigurationException(String message) { super(appendDocumentationURL(message)); }
+    public InvalidKerasConfigurationException(String message) {
+        super(appendDocumentationURL(message));
+    }
 
     public InvalidKerasConfigurationException(String message, Throwable cause) {
         super(appendDocumentationURL(message), cause);
     }
 
-    public InvalidKerasConfigurationException(Throwable cause) { super(cause); }
+    public InvalidKerasConfigurationException(Throwable cause) {
+        super(cause);
+    }
 
     private static String appendDocumentationURL(String message) {
         return message + ". For more information, see http://deeplearning4j.org/model-import-keras.";
