@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 public class TreeParserTest {
     private static final Logger log = LoggerFactory.getLogger(TreeParserTest.class);
     private TreeParser parser;
+
     @Before
     public void init() throws Exception {
         parser = new TreeParser();
@@ -46,7 +47,7 @@ public class TreeParserTest {
     @Test
     public void testNumTrees() throws Exception {
         List<Tree> trees = parser.getTrees("This is one sentence. This is another sentence.");
-        assertEquals(2,trees.size());
+        assertEquals(2, trees.size());
 
     }
 
@@ -55,12 +56,12 @@ public class TreeParserTest {
     public void testHierarchy() throws Exception {
         List<Tree> trees = parser.getTrees("This is one sentence. This is another sentence.");
         List<TreebankNode> treebankTrees = parser.getTreebankTrees("This is one sentence. This is another sentence.");
-        assertEquals(treebankTrees.size(),trees.size());
+        assertEquals(treebankTrees.size(), trees.size());
 
-        for(int i = 0; i < treebankTrees.size(); i++) {
+        for (int i = 0; i < treebankTrees.size(); i++) {
             Tree t = trees.get(i);
             TreebankNode t2 = treebankTrees.get(i);
-            assertEquals(t.children().size(),t2.getChildren().size());
+            assertEquals(t.children().size(), t2.getChildren().size());
         }
 
     }

@@ -24,19 +24,21 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 
 
-@NoArgsConstructor @Data @EqualsAndHashCode(callSuper=true)
+@NoArgsConstructor
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleAccordion extends Style {
 
-    private StyleAccordion(Builder builder){
+    private StyleAccordion(Builder builder) {
         super(builder);
     }
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
 
-        public StyleAccordion build(){
+        public StyleAccordion build() {
             return new StyleAccordion(this);
         }
 

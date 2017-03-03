@@ -110,11 +110,8 @@ public class Tokenizer extends TokenizerBase {
 
             tokenFactory = new TokenFactory<Token>() {
                 @Override
-                public Token createToken(int wordId,
-                                         String surface,
-                                         ViterbiNode.Type type,
-                                         int position,
-                                         Dictionary dictionary) {
+                public Token createToken(int wordId, String surface, ViterbiNode.Type type, int position,
+                                Dictionary dictionary) {
                     return new Token(wordId, surface, type, position, dictionary);
                 }
             };
@@ -207,7 +204,7 @@ public class Tokenizer extends TokenizerBase {
             penalties.add(otherPenaltyLengthThreshold);
             penalties.add(otherPenalty);
 
-//            resolver = new SimpleResourceResolver(this.getClass());
+            //            resolver = new SimpleResourceResolver(this.getClass());
             resolver = new FileResourceResolver();
 
             try {
@@ -217,12 +214,10 @@ public class Tokenizer extends TokenizerBase {
                 characterDefinitions = CharacterDefinitions.newInstance(resolver);
 
                 if (nakaguroSplit) {
-                    characterDefinitions.setCategories('・', new String[]{"SYMBOL"});
+                    characterDefinitions.setCategories('・', new String[] {"SYMBOL"});
                 }
 
-                unknownDictionary = UnknownDictionary.newInstance(
-                    resolver, characterDefinitions, totalFeatures
-                );
+                unknownDictionary = UnknownDictionary.newInstance(resolver, characterDefinitions, totalFeatures);
                 insertedDictionary = new InsertedDictionary(totalFeatures);
             } catch (Exception ouch) {
                 throw new RuntimeException("Could not load dictionaries.", ouch);

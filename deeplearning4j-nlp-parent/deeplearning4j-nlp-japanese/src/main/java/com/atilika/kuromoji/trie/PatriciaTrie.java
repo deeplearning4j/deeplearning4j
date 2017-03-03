@@ -544,11 +544,11 @@ public class PatriciaTrie<V> implements Map<String, V> {
             return bit;
         }
 
-         /**
-         * Returns this node's left node
-         *
-         * @return left node
-         */
+        /**
+        * Returns this node's left node
+        *
+        * @return left node
+        */
         public PatriciaNode<V> getLeft() {
             return left;
         }
@@ -590,8 +590,8 @@ public class PatriciaTrie<V> implements Map<String, V> {
             builder.append(", ");
             builder.append("bit: " + bit);
             builder.append(", ");
-    //		builder.append("bitString: " + StringKeyMapper.toBitString(key));
-    //		builder.append(", ");
+            //		builder.append("bitString: " + StringKeyMapper.toBitString(key));
+            //		builder.append(", ");
             builder.append("value: " + value);
             builder.append(", ");
             if (left != null) {

@@ -67,8 +67,7 @@ public class Trie {
         /**
          * Constructor
          */
-        public Node() {
-        }
+        public Node() {}
 
         /**
          * Constructor

@@ -24,8 +24,7 @@ import static org.junit.Assert.assertEquals;
 public class NodeTest {
 
     @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-    }
+    public static void setUpBeforeClass() throws Exception {}
 
     @Test
     public void testNode() {

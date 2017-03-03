@@ -79,7 +79,8 @@ public class SparkComputationGraph extends SparkListenable {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
-    public SparkComputationGraph(JavaSparkContext javaSparkContext, ComputationGraph network, TrainingMaster trainingMaster) {
+    public SparkComputationGraph(JavaSparkContext javaSparkContext, ComputationGraph network,
+                    TrainingMaster trainingMaster) {
         sc = javaSparkContext;
         this.trainingMaster = trainingMaster;
         this.conf = network.getConfiguration().clone();
@@ -91,11 +92,13 @@ public class SparkComputationGraph extends SparkListenable {
     }
 
 
-    public SparkComputationGraph(SparkContext sparkContext, ComputationGraphConfiguration conf, TrainingMaster trainingMaster) {
+    public SparkComputationGraph(SparkContext sparkContext, ComputationGraphConfiguration conf,
+                    TrainingMaster trainingMaster) {
         this(new JavaSparkContext(sparkContext), conf, trainingMaster);
     }
 
-    public SparkComputationGraph(JavaSparkContext sparkContext, ComputationGraphConfiguration conf, TrainingMaster trainingMaster) {
+    public SparkComputationGraph(JavaSparkContext sparkContext, ComputationGraphConfiguration conf,
+                    TrainingMaster trainingMaster) {
         sc = sparkContext;
         this.trainingMaster = trainingMaster;
         this.conf = conf.clone();
@@ -128,7 +131,7 @@ public class SparkComputationGraph extends SparkListenable {
     /**
      * @return The TrainingMaster for this network
      */
-    public TrainingMaster getTrainingMaster(){
+    public TrainingMaster getTrainingMaster() {
         return trainingMaster;
     }
 
@@ -154,7 +157,7 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fit(JavaRDD<DataSet> rdd) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTraining(this, rdd);
         return network;
@@ -170,13 +173,13 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fit(String path) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         JavaRDD<String> paths;
-        try{
+        try {
             paths = SparkUtils.listPaths(sc, path);
-        }catch(IOException e){
-            throw new RuntimeException("Error listing paths in directory",e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error listing paths in directory", e);
         }
 
         return fitPaths(paths);
@@ -196,7 +199,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @param paths    List of paths
      * @return trained network
      */
-    public ComputationGraph fitPaths(JavaRDD<String> paths){
+    public ComputationGraph fitPaths(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPaths(this, paths);
         return network;
     }
@@ -219,7 +222,7 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fitMultiDataSet(JavaRDD<MultiDataSet> rdd) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTrainingMDS(this, rdd);
         return network;
@@ -234,13 +237,13 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fitMultiDataSet(String path) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         JavaRDD<String> paths;
-        try{
+        try {
             paths = SparkUtils.listPaths(sc, path);
-        }catch(IOException e){
-            throw new RuntimeException("Error listing paths in directory",e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error listing paths in directory", e);
         }
 
         return fitPathsMultiDataSet(paths);
@@ -252,7 +255,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @param paths    List of paths
      * @return trained network
      */
-    public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths){
+    public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPathsMDS(this, paths);
         return network;
     }
@@ -301,7 +304,8 @@ public class SparkComputationGraph extends SparkListenable {
      *                      in one go)
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
-        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(),
+                        sc.broadcast(network.params(false)), minibatchSize));
 
         //Reduce to a single tuple, with example count + sum of scores
         Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
@@ -335,7 +339,8 @@ public class SparkComputationGraph extends SparkListenable {
      *                      in one go)
      */
     public double calculateScoreMultiDataSet(JavaRDD<MultiDataSet> data, boolean average, int minibatchSize) {
-        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(),
+                        sc.broadcast(network.params(false)), minibatchSize));
         //Reduce to a single tuple, with example count + sum of scores
         Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
         if (average) {
@@ -356,21 +361,25 @@ public class SparkComputationGraph extends SparkListenable {
      * DataSet version of {@link #scoreExamples(JavaPairRDD, boolean, int)}
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return scoreExamplesMultiDataSet(data.map(new DataSetToMultiDataSetFn()), includeRegularizationTerms, batchSize);
+        return scoreExamplesMultiDataSet(data.map(new DataSetToMultiDataSetFn()), includeRegularizationTerms,
+                        batchSize);
     }
 
     /**
      * DataSet version of {@link #scoreExamples(JavaPairRDD, boolean)}
      */
     public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms) {
-        return scoreExamplesMultiDataSet(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()), includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+        return scoreExamplesMultiDataSet(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()),
+                        includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
     /**
      * DataSet version of {@link #scoreExamples(JavaPairRDD, boolean, int)}
      */
-    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return scoreExamplesMultiDataSet(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()), includeRegularizationTerms, batchSize);
+    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms,
+                    int batchSize) {
+        return scoreExamplesMultiDataSet(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()),
+                        includeRegularizationTerms, batchSize);
     }
 
     /**
@@ -400,9 +409,10 @@ public class SparkComputationGraph extends SparkListenable {
      * @return A JavaDoubleRDD containing the scores of each example
      * @see ComputationGraph#scoreExamples(MultiDataSet, boolean)
      */
-    public JavaDoubleRDD scoreExamplesMultiDataSet(JavaRDD<MultiDataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
-                includeRegularizationTerms, batchSize));
+    public JavaDoubleRDD scoreExamplesMultiDataSet(JavaRDD<MultiDataSet> data, boolean includeRegularizationTerms,
+                    int batchSize) {
+        return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -418,7 +428,8 @@ public class SparkComputationGraph extends SparkListenable {
      * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
-    public <K> JavaPairRDD<K, Double> scoreExamplesMultiDataSet(JavaPairRDD<K, MultiDataSet> data, boolean includeRegularizationTerms) {
+    public <K> JavaPairRDD<K, Double> scoreExamplesMultiDataSet(JavaPairRDD<K, MultiDataSet> data,
+                    boolean includeRegularizationTerms) {
         return scoreExamplesMultiDataSet(data, includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
@@ -430,13 +441,15 @@ public class SparkComputationGraph extends SparkListenable {
      * @param <K>          Type of data for key - may be anything
      * @return             Network output given the input, by key
      */
-    public <K> JavaPairRDD<K, INDArray> feedForwardWithKeySingle(JavaPairRDD<K,INDArray> featuresData, int batchSize){
-        if(network.getNumInputArrays() != 1 || network.getNumOutputArrays() != 1){
-            throw new IllegalStateException("Cannot use this method with computation graphs with more than 1 input or output "
-            + "( has: " + network.getNumInputArrays() + " inputs, " + network.getNumOutputArrays() + " outputs");
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithKeySingle(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
+        if (network.getNumInputArrays() != 1 || network.getNumOutputArrays() != 1) {
+            throw new IllegalStateException(
+                            "Cannot use this method with computation graphs with more than 1 input or output "
+                                            + "( has: " + network.getNumInputArrays() + " inputs, "
+                                            + network.getNumOutputArrays() + " outputs");
         }
         PairToArrayPair<K> p = new PairToArrayPair<K>();
-        JavaPairRDD<K,INDArray[]> rdd = featuresData.mapToPair(p);
+        JavaPairRDD<K, INDArray[]> rdd = featuresData.mapToPair(p);
         return feedForwardWithKey(rdd, batchSize).mapToPair(new ArrayPairToPair<K>());
     }
 
@@ -448,8 +461,9 @@ public class SparkComputationGraph extends SparkListenable {
      * @param <K>          Type of data for key - may be anything
      * @return             Network output given the input, by key
      */
-    public <K> JavaPairRDD<K, INDArray[]> feedForwardWithKey(JavaPairRDD<K,INDArray[]> featuresData, int batchSize){
-        return featuresData.mapPartitionsToPair(new GraphFeedForwardWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()), batchSize));
+    public <K> JavaPairRDD<K, INDArray[]> feedForwardWithKey(JavaPairRDD<K, INDArray[]> featuresData, int batchSize) {
+        return featuresData.mapPartitionsToPair(new GraphFeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), batchSize));
     }
 
     private void update(int mr, long mg) {
@@ -473,8 +487,9 @@ public class SparkComputationGraph extends SparkListenable {
      * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
-    public <K> JavaPairRDD<K, Double> scoreExamplesMultiDataSet(JavaPairRDD<K, MultiDataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
-                includeRegularizationTerms, batchSize));
+    public <K> JavaPairRDD<K, Double> scoreExamplesMultiDataSet(JavaPairRDD<K, MultiDataSet> data,
+                    boolean includeRegularizationTerms, int batchSize) {
+        return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 }

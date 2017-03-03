@@ -37,19 +37,19 @@ public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNet
     private boolean isMultiEpoch = false;
 
 
-    public EarlyStoppingTrainer(EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration, MultiLayerConfiguration configuration,
-                                DataSetIterator train) {
+    public EarlyStoppingTrainer(EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration,
+                    MultiLayerConfiguration configuration, DataSetIterator train) {
         this(earlyStoppingConfiguration, new MultiLayerNetwork(configuration), train);
         net.init();
     }
 
     public EarlyStoppingTrainer(EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
-                                DataSetIterator train) {
+                    DataSetIterator train) {
         this(esConfig, net, train, null);
     }
 
     public EarlyStoppingTrainer(EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
-                                DataSetIterator train, EarlyStoppingListener<MultiLayerNetwork> listener) {
+                    DataSetIterator train, EarlyStoppingListener<MultiLayerNetwork> listener) {
         super(esConfig, net, train, null, listener);
         this.net = net;
     }

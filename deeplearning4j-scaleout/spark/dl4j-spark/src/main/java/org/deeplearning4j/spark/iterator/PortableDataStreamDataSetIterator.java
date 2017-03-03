@@ -20,12 +20,12 @@ import java.util.List;
  */
 public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<PortableDataStream> {
 
-    public PortableDataStreamDataSetIterator(Iterator<PortableDataStream> iter){
+    public PortableDataStreamDataSetIterator(Iterator<PortableDataStream> iter) {
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PortableDataStreamDataSetIterator(Collection<PortableDataStream> dataSetStreams){
+    public PortableDataStreamDataSetIterator(Collection<PortableDataStream> dataSetStreams) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -38,7 +38,7 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
     @Override
     public DataSet next() {
         DataSet ds;
-        if(preloadedDataSet != null){
+        if (preloadedDataSet != null) {
             ds = preloadedDataSet;
             preloadedDataSet = null;
         } else {
@@ -49,13 +49,14 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
         inputColumns = ds.getFeatureMatrix().size(1);
         batch = ds.numExamples();
 
-        if(preprocessor != null) preprocessor.preProcess(ds);
+        if (preprocessor != null)
+            preprocessor.preProcess(ds);
         return ds;
     }
 
-    protected DataSet load(PortableDataStream pds){
+    protected DataSet load(PortableDataStream pds) {
         DataSet ds = new DataSet();
-        try(InputStream is = pds.open()){
+        try (InputStream is = pds.open()) {
             ds.load(is);
         } catch (IOException e) {
             throw new RuntimeException(e);

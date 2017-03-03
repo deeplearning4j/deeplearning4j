@@ -42,7 +42,6 @@ public class DefaultStepFunction extends StepFunction {
     }
 
     public String toString() {
-        return "DefaultStepFunction{" +
-                '}';
+        return "DefaultStepFunction{" + '}';
     }
 }

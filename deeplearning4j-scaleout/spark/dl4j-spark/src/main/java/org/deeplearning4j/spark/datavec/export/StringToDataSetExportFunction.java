@@ -56,7 +56,7 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
     private int outputCount;
 
     public StringToDataSetExportFunction(URI outputDir, RecordReader recordReader, int batchSize, boolean regression,
-                                         int labelIndex, int numPossibleLabels) {
+                    int labelIndex, int numPossibleLabels) {
         this.outputDir = outputDir;
         this.recordReader = recordReader;
         this.batchSize = batchSize;
@@ -68,11 +68,11 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
     @Override
     public void call(Iterator<String> stringIterator) throws Exception {
         String jvmuid = UIDProvider.getJVMUID();
-        uid = Thread.currentThread().getId() + jvmuid.substring(0,Math.min(8,jvmuid.length()));
+        uid = Thread.currentThread().getId() + jvmuid.substring(0, Math.min(8, jvmuid.length()));
 
         List<List<Writable>> list = new ArrayList<>(batchSize);
 
-        while(stringIterator.hasNext()){
+        while (stringIterator.hasNext()) {
             String next = stringIterator.next();
             recordReader.initialize(new StringSplit(next));
             list.add(recordReader.next());
@@ -81,12 +81,15 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
         }
     }
 
-    private void processBatchIfRequired(List<List<Writable>> list, boolean finalRecord) throws Exception{
-        if(list.isEmpty()) return;
-        if(list.size() < batchSize && !finalRecord) return;
+    private void processBatchIfRequired(List<List<Writable>> list, boolean finalRecord) throws Exception {
+        if (list.isEmpty())
+            return;
+        if (list.size() < batchSize && !finalRecord)
+            return;
 
         RecordReader rr = new CollectionRecordReader(list);
-        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(rr, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, regression);
+        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(rr, new SelfWritableConverter(), batchSize,
+                        labelIndex, numPossibleLabels, regression);
 
         DataSet ds = iter.next();
 
@@ -94,7 +97,7 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
 
         URI uri = new URI(outputDir.getPath() + "/" + filename);
         FileSystem file = FileSystem.get(uri, conf);
-        try(FSDataOutputStream out = file.create(new Path(uri))){
+        try (FSDataOutputStream out = file.create(new Path(uri))) {
             ds.save(out);
         }
 

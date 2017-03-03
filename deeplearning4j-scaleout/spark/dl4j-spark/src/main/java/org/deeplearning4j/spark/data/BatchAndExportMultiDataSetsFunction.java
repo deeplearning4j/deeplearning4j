@@ -41,7 +41,8 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class BatchAndExportMultiDataSetsFunction implements Function2<Integer, Iterator<MultiDataSet>, Iterator<String>> {
+public class BatchAndExportMultiDataSetsFunction
+                implements Function2<Integer, Iterator<MultiDataSet>, Iterator<String>> {
 
     private static final Configuration conf = new Configuration();
     private final int minibatchSize;
@@ -90,7 +91,8 @@ public class BatchAndExportMultiDataSetsFunction implements Function2<Integer, I
         return outputPaths.iterator();
     }
 
-    private Pair<Integer, List<String>> processList(LinkedList<MultiDataSet> tempList, int partitionIdx, int countBefore, boolean finalExport) throws Exception {
+    private Pair<Integer, List<String>> processList(LinkedList<MultiDataSet> tempList, int partitionIdx,
+                    int countBefore, boolean finalExport) throws Exception {
         //Go through the list. If we have enough examples: remove the DataSet objects, merge and export them. Otherwise: do nothing
         int numExamples = 0;
         for (MultiDataSet ds : tempList) {
@@ -133,7 +135,9 @@ public class BatchAndExportMultiDataSetsFunction implements Function2<Integer, I
     private String export(MultiDataSet dataSet, int partitionIdx, int outputCount) throws Exception {
         String filename = "mds_" + partitionIdx + jvmuid + "_" + outputCount + ".bin";
 
-        URI uri = new URI(exportBaseDirectory + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/") + filename);
+        URI uri = new URI(exportBaseDirectory
+                        + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/")
+                        + filename);
         FileSystem file = FileSystem.get(uri, conf);
         try (FSDataOutputStream out = file.create(new Path(uri))) {
             dataSet.save(out);

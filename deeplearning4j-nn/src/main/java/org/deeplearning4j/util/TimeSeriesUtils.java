@@ -30,8 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 public class TimeSeriesUtils {
 
 
-    private TimeSeriesUtils() {
-    }
+    private TimeSeriesUtils() {}
 
     /**
      * Calculate a moving average given the length
@@ -39,12 +38,12 @@ public class TimeSeriesUtils {
      * @param n the length of the moving window
      * @return the moving averages for each row
      */
-    public static INDArray movingAverage(INDArray toAvg,int n) {
+    public static INDArray movingAverage(INDArray toAvg, int n) {
         INDArray ret = Nd4j.cumsum(toAvg);
-        INDArrayIndex[] ends = new INDArrayIndex[]{NDArrayIndex.interval(n ,toAvg.columns())};
-        INDArrayIndex[] begins = new INDArrayIndex[]{NDArrayIndex.interval(0,toAvg.columns() - n,false)};
-        INDArrayIndex[] nMinusOne = new INDArrayIndex[]{NDArrayIndex.interval(n - 1,toAvg.columns())};
-        ret.put(ends,ret.get(ends).sub(ret.get(begins)));
+        INDArrayIndex[] ends = new INDArrayIndex[] {NDArrayIndex.interval(n, toAvg.columns())};
+        INDArrayIndex[] begins = new INDArrayIndex[] {NDArrayIndex.interval(0, toAvg.columns() - n, false)};
+        INDArrayIndex[] nMinusOne = new INDArrayIndex[] {NDArrayIndex.interval(n - 1, toAvg.columns())};
+        ret.put(ends, ret.get(ends).sub(ret.get(begins)));
         return ret.get(nMinusOne).divi(n);
     }
 
@@ -53,12 +52,14 @@ public class TimeSeriesUtils {
      * @param timeSeriesMask    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
-    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask){
-        if(timeSeriesMask.rank() != 2) throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
+    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask) {
+        if (timeSeriesMask.rank() != 2)
+            throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
-        if(timeSeriesMask.ordering() != 'f') timeSeriesMask = timeSeriesMask.dup('f');
+        if (timeSeriesMask.ordering() != 'f')
+            timeSeriesMask = timeSeriesMask.dup('f');
 
-        return timeSeriesMask.reshape('f',new int[]{timeSeriesMask.length(),1});
+        return timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1});
     }
 
 
@@ -67,12 +68,13 @@ public class TimeSeriesUtils {
      * @param timeSeriesMaskAsVector    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
-    public static INDArray reshapeVectorToTimeSeriesMask(INDArray timeSeriesMaskAsVector, int minibatchSize ){
-        if(!timeSeriesMaskAsVector.isVector()) throw new IllegalArgumentException("Cannot reshape mask: expected vector");
+    public static INDArray reshapeVectorToTimeSeriesMask(INDArray timeSeriesMaskAsVector, int minibatchSize) {
+        if (!timeSeriesMaskAsVector.isVector())
+            throw new IllegalArgumentException("Cannot reshape mask: expected vector");
 
         int timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
-        return timeSeriesMaskAsVector.reshape('f',new int[]{minibatchSize,timeSeriesLength});
+        return timeSeriesMaskAsVector.reshape('f', new int[] {minibatchSize, timeSeriesLength});
     }
 
 }

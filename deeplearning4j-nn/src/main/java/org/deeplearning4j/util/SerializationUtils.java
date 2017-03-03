@@ -29,43 +29,42 @@ import java.io.*;
  */
 public class SerializationUtils {
 
-	private SerializationUtils() {
-	}
+    private SerializationUtils() {}
 
-	@SuppressWarnings("unchecked")
-	public static <T> T readObject(File file) {
-		ObjectInputStream ois = null;
-		try {
-			ois = new ObjectInputStream(FileUtils.openInputStream(file));
-			return (T) ois.readObject();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		} finally {
-			if (ois != null)
-				try {
-					ois.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-		}
-		
-	}
-	
-	/**
-	 * Reads an object from the given input stream
-	 * @param is the input stream to read from
-	 * @return the read object
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T readObject(InputStream is) {
-		try {
-			ObjectInputStream ois = new ObjectInputStream(is);
-			return (T) ois.readObject();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-	}
+    @SuppressWarnings("unchecked")
+    public static <T> T readObject(File file) {
+        ObjectInputStream ois = null;
+        try {
+            ois = new ObjectInputStream(FileUtils.openInputStream(file));
+            return (T) ois.readObject();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (ois != null)
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+        }
+
+    }
+
+    /**
+     * Reads an object from the given input stream
+     * @param is the input stream to read from
+     * @return the read object
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T readObject(InputStream is) {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(is);
+            return (T) ois.readObject();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
 
 
@@ -88,33 +87,33 @@ public class SerializationUtils {
     }
 
 
-	/**
-	 * Writes the object to the output stream
-	 * THIS DOES NOT FLUSH THE STREAMMultiLayerNetwork
-	 * @param toSave the object to save
-	 * @param writeTo the output stream to write to
-	 */
-	public static void writeObject(Serializable toSave,OutputStream writeTo) {
-		try {
-			ObjectOutputStream os = new ObjectOutputStream(writeTo);
-			os.writeObject(toSave);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-	}
-	
-	public static void saveObject(Object toSave,File saveTo) {
-		try {
-			OutputStream os1 = FileUtils.openOutputStream(saveTo);
-			ObjectOutputStream os = new ObjectOutputStream(os1);
-			os.writeObject(toSave);
-			os.flush();
+    /**
+     * Writes the object to the output stream
+     * THIS DOES NOT FLUSH THE STREAMMultiLayerNetwork
+     * @param toSave the object to save
+     * @param writeTo the output stream to write to
+     */
+    public static void writeObject(Serializable toSave, OutputStream writeTo) {
+        try {
+            ObjectOutputStream os = new ObjectOutputStream(writeTo);
+            os.writeObject(toSave);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public static void saveObject(Object toSave, File saveTo) {
+        try {
+            OutputStream os1 = FileUtils.openOutputStream(saveTo);
+            ObjectOutputStream os = new ObjectOutputStream(os1);
+            os.writeObject(toSave);
+            os.flush();
             os.close();
             os1.close();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-	}
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 }

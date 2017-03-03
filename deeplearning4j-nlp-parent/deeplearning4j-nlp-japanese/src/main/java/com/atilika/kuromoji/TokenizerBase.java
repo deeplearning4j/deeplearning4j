@@ -68,20 +68,11 @@ public abstract class TokenizerBase {
         this.userDictionary = builder.userDictionary;
         this.insertedDictionary = builder.insertedDictionary;
 
-        this.viterbiBuilder = new ViterbiBuilder(
-            builder.doubleArrayTrie,
-            tokenInfoDictionary,
-            unknownDictionary,
-            userDictionary,
-            builder.mode
-        );
+        this.viterbiBuilder = new ViterbiBuilder(builder.doubleArrayTrie, tokenInfoDictionary, unknownDictionary,
+                        userDictionary, builder.mode);
 
-        this.viterbiSearcher = new ViterbiSearcher(
-            builder.mode,
-            builder.connectionCosts,
-            unknownDictionary,
-            builder.penalties
-        );
+        this.viterbiSearcher = new ViterbiSearcher(builder.mode, builder.connectionCosts, unknownDictionary,
+                        builder.penalties);
 
         this.viterbiFormatter = new ViterbiFormatter(builder.connectionCosts);
         this.split = builder.split;
@@ -153,9 +144,7 @@ public abstract class TokenizerBase {
         ViterbiLattice lattice = viterbiBuilder.build(text);
         List<ViterbiNode> bestPath = viterbiSearcher.search(lattice);
 
-        outputStream.write(
-            viterbiFormatter.format(lattice, bestPath).getBytes(StandardCharsets.UTF_8)
-        );
+        outputStream.write(viterbiFormatter.format(lattice, bestPath).getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
     }
 
@@ -173,9 +162,7 @@ public abstract class TokenizerBase {
     public void debugLattice(OutputStream outputStream, String text) throws IOException {
         ViterbiLattice lattice = viterbiBuilder.build(text);
 
-        outputStream.write(
-            viterbiFormatter.format(lattice).getBytes(StandardCharsets.UTF_8)
-        );
+        outputStream.write(viterbiFormatter.format(lattice).getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
     }
 
@@ -230,13 +217,8 @@ public abstract class TokenizerBase {
                 continue;
             }
             @SuppressWarnings("unchecked")
-            T token = (T) tokenFactory.createToken(
-                wordId,
-                node.getSurface(),
-                node.getType(),
-                offset + node.getStartIndex(),
-                dictionaryMap.get(node.getType())
-            );
+            T token = (T) tokenFactory.createToken(wordId, node.getSurface(), node.getType(),
+                            offset + node.getStartIndex(), dictionaryMap.get(node.getType()));
             result.add(token);
         }
 
@@ -273,9 +255,7 @@ public abstract class TokenizerBase {
                 connectionCosts = ConnectionCosts.newInstance(resolver);
                 tokenInfoDictionary = TokenInfoDictionary.newInstance(resolver);
                 characterDefinitions = CharacterDefinitions.newInstance(resolver);
-                unknownDictionary = UnknownDictionary.newInstance(
-                    resolver, characterDefinitions, totalFeatures
-                );
+                unknownDictionary = UnknownDictionary.newInstance(resolver, characterDefinitions, totalFeatures);
                 insertedDictionary = new InsertedDictionary(totalFeatures);
             } catch (Exception ouch) {
                 throw new RuntimeException("Could not load dictionaries.", ouch);
@@ -300,9 +280,7 @@ public abstract class TokenizerBase {
          * @throws IOException if an error occurs when reading the user dictionary
          */
         public Builder userDictionary(InputStream input) throws IOException {
-            this.userDictionary = new UserDictionary(
-                input, totalFeatures, readingFeature, partOfSpeechFeature
-            );
+            this.userDictionary = new UserDictionary(input, totalFeatures, readingFeature, partOfSpeechFeature);
             return this;
         }
 
@@ -314,9 +292,7 @@ public abstract class TokenizerBase {
          * @throws IOException if an error occurs when reading the user dictionary
          */
         public Builder userDictionary(String filename) throws IOException {
-            InputStream input = new BufferedInputStream(
-                new FileInputStream(filename)
-            );
+            InputStream input = new BufferedInputStream(new FileInputStream(filename));
 
             this.userDictionary(input);
             input.close();

@@ -14,12 +14,12 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class CountPartitionsFunction<T> implements Function2<Integer, Iterator<T>, Iterator<Tuple2<Integer,Integer>>> {
+public class CountPartitionsFunction<T> implements Function2<Integer, Iterator<T>, Iterator<Tuple2<Integer, Integer>>> {
     @Override
-    public Iterator<Tuple2<Integer,Integer>> call(Integer v1, Iterator<T> v2) throws Exception {
+    public Iterator<Tuple2<Integer, Integer>> call(Integer v1, Iterator<T> v2) throws Exception {
 
         int count = 0;
-        while(v2.hasNext()){
+        while (v2.hasNext()) {
             v2.next();
             count++;
         }

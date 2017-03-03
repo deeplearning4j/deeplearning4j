@@ -27,11 +27,9 @@ public class ASCIICoOccurrenceWriter<T extends SequenceElement> implements CoOcc
 
     @Override
     public void writeObject(CoOccurrenceWeight<T> object) {
-        StringBuilder builder = new StringBuilder(String.valueOf(object.getElement1().getIndex()))
-                .append(" ")
-                .append(String.valueOf(object.getElement2().getIndex()))
-                .append(" ")
-                .append(String.valueOf(object.getWeight()));
+        StringBuilder builder = new StringBuilder(String.valueOf(object.getElement1().getIndex())).append(" ")
+                        .append(String.valueOf(object.getElement2().getIndex())).append(" ")
+                        .append(String.valueOf(object.getWeight()));
         writer.println(builder.toString());
     }
 
@@ -43,7 +41,7 @@ public class ASCIICoOccurrenceWriter<T extends SequenceElement> implements CoOcc
     @Override
     public void finish() {
         try {
-                writer.flush();
+            writer.flush();
         } catch (Exception e) {
         }
 

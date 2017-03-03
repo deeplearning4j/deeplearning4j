@@ -40,9 +40,7 @@ public class CharacterDefinitionsCompiler implements Compiler {
     }
 
     public void readCharacterDefinition(InputStream stream, String encoding) throws IOException {
-        LineNumberReader reader = new LineNumberReader(
-            new InputStreamReader(stream, encoding)
-        );
+        LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, encoding));
 
         String line;
 
@@ -73,10 +71,7 @@ public class CharacterDefinitionsCompiler implements Compiler {
 
         assert !categoryDefinitions.containsKey(classname);
 
-        categoryDefinitions.put(
-            classname,
-            new int[]{invoke, group, length}
-        );
+        categoryDefinitions.put(classname, new int[] {invoke, group, length});
     }
 
     private void parseMapping(String line) {

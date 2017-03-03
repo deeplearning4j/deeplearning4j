@@ -12,7 +12,8 @@ import java.util.*;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SplitPartitionsFunction2<T,U> implements Function2<Integer, Iterator<Tuple2<T,U>>, Iterator<Tuple2<T,U>>> {
+public class SplitPartitionsFunction2<T, U>
+                implements Function2<Integer, Iterator<Tuple2<T, U>>, Iterator<Tuple2<T, U>>> {
     private final int splitIndex;
     private final int numSplits;
     private final long baseRngSeed;
@@ -23,17 +24,19 @@ public class SplitPartitionsFunction2<T,U> implements Function2<Integer, Iterato
 
         Random r = new Random(thisRngSeed);
         List<Integer> list = new ArrayList<>();
-        for( int i=0; i<numSplits; i++ ){
+        for (int i = 0; i < numSplits; i++) {
             list.add(i);
         }
 
-        List<Tuple2<T,U>> outputList = new ArrayList<>();
-        int i=0;
-        while(iter.hasNext()){
-            if(i%numSplits == 0) Collections.shuffle(list, r);
+        List<Tuple2<T, U>> outputList = new ArrayList<>();
+        int i = 0;
+        while (iter.hasNext()) {
+            if (i % numSplits == 0)
+                Collections.shuffle(list, r);
 
-            Tuple2<T,U> next = iter.next();
-            if(list.get(i%numSplits) == splitIndex) outputList.add(next);
+            Tuple2<T, U> next = iter.next();
+            if (list.get(i % numSplits) == splitIndex)
+                outputList.add(next);
             i++;
         }
 

@@ -26,8 +26,9 @@ import java.io.InputStream;
 
 public final class CharacterDefinitions {
 
-//    public static final String CHARACTER_DEFINITIONS_FILENAME = "characterDefinitions.bin";
-    public static final String CHARACTER_DEFINITIONS_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "characterDefinitions.bin";
+    //    public static final String CHARACTER_DEFINITIONS_FILENAME = "characterDefinitions.bin";
+    public static final String CHARACTER_DEFINITIONS_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "characterDefinitions.bin";
 
     public static final int INVOKE = 0;
 
@@ -45,13 +46,11 @@ public final class CharacterDefinitions {
 
     private final int[] defaultCategory;
 
-    public CharacterDefinitions(int[][] categoryDefinitions,
-                                int[][] codepointMappings,
-                                String[] categorySymbols) {
+    public CharacterDefinitions(int[][] categoryDefinitions, int[][] codepointMappings, String[] categorySymbols) {
         this.categoryDefinitions = categoryDefinitions;
         this.codepointMappings = codepointMappings;
         this.categorySymbols = categorySymbols;
-        this.defaultCategory = lookupCategories(new String[]{DEFAULT_CATEGORY});
+        this.defaultCategory = lookupCategories(new String[] {DEFAULT_CATEGORY});
     }
 
     public int[] lookupCategories(char c) {
@@ -75,11 +74,7 @@ public final class CharacterDefinitions {
         int[][] mappings = IntegerArrayIO.readSparseArray2D(charDefInput);
         String[] symbols = StringArrayIO.readArray(charDefInput);
 
-        CharacterDefinitions characterDefinition = new CharacterDefinitions(
-            definitions,
-            mappings,
-            symbols
-        );
+        CharacterDefinitions characterDefinition = new CharacterDefinitions(definitions, mappings, symbols);
 
         return characterDefinition;
     }

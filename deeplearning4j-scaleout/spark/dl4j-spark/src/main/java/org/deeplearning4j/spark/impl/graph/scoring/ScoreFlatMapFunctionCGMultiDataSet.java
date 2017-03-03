@@ -39,15 +39,18 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a MultiDataSet using a given ComputationGraph */
-public class ScoreFlatMapFunctionCGMultiDataSet extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>,Tuple2<Integer,Double>> {
+public class ScoreFlatMapFunctionCGMultiDataSet
+                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
 
     public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
         super(new ScoreFlatMapFunctionCGMultiDataSetAdapter(json, params, minibatchSize));
     }
 }
 
+
 /** Function used to score a MultiDataSet using a given ComputationGraph */
-class ScoreFlatMapFunctionCGMultiDataSetAdapter implements FlatMapFunctionAdapter<Iterator<MultiDataSet>,Tuple2<Integer,Double>> {
+class ScoreFlatMapFunctionCGMultiDataSetAdapter
+                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
 
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGMultiDataSet.class);
     private String json;
@@ -55,16 +58,16 @@ class ScoreFlatMapFunctionCGMultiDataSetAdapter implements FlatMapFunctionAdapte
     private int minibatchSize;
 
 
-    public ScoreFlatMapFunctionCGMultiDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize){
+    public ScoreFlatMapFunctionCGMultiDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize) {
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
     }
 
     @Override
-    public Iterable<Tuple2<Integer,Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
-        if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<>(0,0.0));
+    public Iterable<Tuple2<Integer, Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+        if (!dataSetIterator.hasNext()) {
+            return Collections.singletonList(new Tuple2<>(0, 0.0));
         }
 
         MultiDataSetIterator iter = new IteratorMultiDataSetIterator(dataSetIterator, minibatchSize); //Does batching where appropriate
@@ -72,21 +75,22 @@ class ScoreFlatMapFunctionCGMultiDataSetAdapter implements FlatMapFunctionAdapte
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value().unsafeDuplication();    //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
-        if(val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+        INDArray val = params.value().unsafeDuplication(); //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
+        if (val.length() != network.numParams(false))
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
 
-        List<Tuple2<Integer,Double>> out = new ArrayList<>();
-        while(iter.hasNext()){
+        List<Tuple2<Integer, Double>> out = new ArrayList<>();
+        while (iter.hasNext()) {
             MultiDataSet ds = iter.next();
-            double score = network.score(ds,false);
+            double score = network.score(ds, false);
             int numExamples = ds.getFeatures(0).size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         return out;
     }

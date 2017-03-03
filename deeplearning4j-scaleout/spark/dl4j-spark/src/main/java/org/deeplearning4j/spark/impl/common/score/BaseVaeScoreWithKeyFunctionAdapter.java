@@ -40,7 +40,8 @@ import java.util.List;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseVaeScoreWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
+public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
 
     protected final Broadcast<INDArray> params;
     protected final Broadcast<String> jsonConfig;
@@ -84,8 +85,9 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K> implements FlatMapFu
                 Tuple2<K, INDArray> t2 = iterator.next();
                 INDArray features = t2._2();
                 int n = features.size(0);
-                if (n != 1) throw new IllegalStateException("Cannot score examples with one key per data set if "
-                        + "data set contains more than 1 example (numExamples: " + n + ")");
+                if (n != 1)
+                    throw new IllegalStateException("Cannot score examples with one key per data set if "
+                                    + "data set contains more than 1 example (numExamples: " + n + ")");
                 collect.add(features);
                 collectKey.add(t2._1());
                 nExamples += n;

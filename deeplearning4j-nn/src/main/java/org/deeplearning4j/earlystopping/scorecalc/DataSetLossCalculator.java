@@ -9,7 +9,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  * Typically used to calculate the loss on a test set.
  * Note: For early stopping on a {@link ComputationGraph} use {@link DataSetLossCalculatorCG}
  */
-public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork>{
+public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork> {
 
     private DataSetIterator dataSetIterator;
     private boolean average;
@@ -30,20 +30,23 @@ public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork>
 
         double lossSum = 0.0;
         int exCount = 0;
-        while(dataSetIterator.hasNext()){
+        while (dataSetIterator.hasNext()) {
             DataSet dataSet = dataSetIterator.next();
-            if(dataSet==null) break;
+            if (dataSet == null)
+                break;
             int nEx = dataSet.getFeatureMatrix().size(0);
             lossSum += network.score(dataSet) * nEx;
             exCount += nEx;
         }
 
-        if(average) return lossSum / exCount;
-        else return lossSum;
+        if (average)
+            return lossSum / exCount;
+        else
+            return lossSum;
     }
 
     @Override
-    public String toString(){
-        return "DataSetLossCalculator(" + dataSetIterator + ",average="+average+")";
+    public String toString() {
+        return "DataSetLossCalculator(" + dataSetIterator + ",average=" + average + ")";
     }
 }

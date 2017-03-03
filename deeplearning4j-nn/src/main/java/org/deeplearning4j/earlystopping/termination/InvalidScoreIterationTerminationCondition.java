@@ -31,7 +31,7 @@ public class InvalidScoreIterationTerminationCondition implements IterationTermi
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "InvalidScoreIterationTerminationCondition()";
     }
 }

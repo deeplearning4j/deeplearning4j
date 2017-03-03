@@ -42,8 +42,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class L2Vertex extends BaseGraphVertex {
     private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps){
-        this(graph,name,vertexIndex,null,null,eps);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps) {
+        this(graph, name, vertexIndex, null, null, eps);
     }
 
     public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
@@ -69,65 +69,69 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: input not set");
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
 
-        int[] dimensions = new int[a.rank()-1];
-        for( int i=1; i<a.rank(); i++ ){
-            dimensions[i-1] = i;
+        int[] dimensions = new int[a.rank() - 1];
+        for (int i = 1; i < a.rank(); i++) {
+            dimensions[i - 1] = i;
         }
 
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(a,b),dimensions);
+        return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
+        if (!canDoBackward())
+            throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
         INDArray out = doForward(tbptt);
         Transforms.max(out, eps, false); // in case of 0
 
-        INDArray dLdlambda = epsilon;      //dL/dlambda aka 'epsilon' - from layer above
+        INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above
 
-        INDArray sNegHalf = out.rdiv(1.0);      //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
+        INDArray sNegHalf = out.rdiv(1.0); //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
         INDArray diff = a.sub(b);
 
-        INDArray first = dLdlambda.mul(sNegHalf);   //Column vector for all cases
+        INDArray first = dLdlambda.mul(sNegHalf); //Column vector for all cases
 
         INDArray dLda;
         INDArray dLdb;
-        if (a.rank() == 2){
+        if (a.rank() == 2) {
             //2d case (MLPs etc)
             dLda = diff.muliColumnVector(first);
             dLdb = dLda.neg();
         } else {
             //RNN and CNN case - Broadcast along dimension 0
-            dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff,first,diff,0));
+            dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff, first, diff, 0));
             dLdb = dLda.neg();
         }
 
-        return new Pair<>(null, new INDArray[]{dLda, dLdb});
+        return new Pair<>(null, new INDArray[] {dLda, dLdb});
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //No op
-        if(maskArrays == null || maskArrays.length == 0){
+        if (maskArrays == null || maskArrays.length == 0) {
             return null;
         }
 

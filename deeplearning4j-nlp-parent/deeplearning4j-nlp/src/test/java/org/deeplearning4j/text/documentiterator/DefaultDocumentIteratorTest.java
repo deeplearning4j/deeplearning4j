@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 public class DefaultDocumentIteratorTest {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultDocumentIteratorTest.class);
+
     @Test
     public void testDocumentIterator() throws Exception {
         ClassPathResource reuters5250 = new ClassPathResource("/reuters/5250");
@@ -51,16 +52,13 @@ public class DefaultDocumentIteratorTest {
         String[] list = "PEARSON CONCENTRATES ON FOUR SECTORS".split(" ");
         ///PEARSON CONCENTRATES ON FOUR SECTORS
         int count = 0;
-        while(next.hasMoreTokens() && count < list.length) {
+        while (next.hasMoreTokens() && count < list.length) {
             String token = next.nextToken();
-            assertEquals(list[count++],token);
+            assertEquals(list[count++], token);
         }
 
 
         doc.close();
-
-
-
 
 
 

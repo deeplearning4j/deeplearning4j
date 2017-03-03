@@ -21,9 +21,8 @@ public class FileLabelAwareIteratorTest {
     public void testExtractLabelFromPath1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/labeled");
 
-        FileLabelAwareIterator iterator = new FileLabelAwareIterator.Builder()
-                .addSourceFolder(resource.getFile())
-                .build();
+        FileLabelAwareIterator iterator =
+                        new FileLabelAwareIterator.Builder().addSourceFolder(resource.getFile()).build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {
@@ -48,12 +47,10 @@ public class FileLabelAwareIteratorTest {
     @Test
     public void testExtractLabelFromPath2() throws Exception {
         ClassPathResource resource = new ClassPathResource("/labeled");
-        ClassPathResource resource2= new ClassPathResource("/rootdir");
+        ClassPathResource resource2 = new ClassPathResource("/rootdir");
 
-        FileLabelAwareIterator iterator = new FileLabelAwareIterator.Builder()
-                .addSourceFolder(resource.getFile())
-                .addSourceFolder(resource2.getFile())
-                .build();
+        FileLabelAwareIterator iterator = new FileLabelAwareIterator.Builder().addSourceFolder(resource.getFile())
+                        .addSourceFolder(resource2.getFile()).build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {

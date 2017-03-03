@@ -44,11 +44,12 @@ import java.util.List;
  */
 public class ScoreExamplesFunction extends BaseDoubleFlatMapFunctionAdaptee<Iterator<DataSet>> {
 
-    public ScoreExamplesFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                 int batchSize) {
+    public ScoreExamplesFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         super(new ScoreExamplesFunctionAdapter(params, jsonConfig, addRegularizationTerms, batchSize));
     }
 }
+
 
 /**Function to score examples individually. Note that scoring is batched for computational efficiency.<br>
  * This is essentially a Spark implementation of the {@link MultiLayerNetwork#scoreExamples(DataSet, boolean)} method<br>
@@ -66,8 +67,8 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
     private final boolean addRegularization;
     private final int batchSize;
 
-    public ScoreExamplesFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                 int batchSize){
+    public ScoreExamplesFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.addRegularization = addRegularizationTerms;
@@ -85,7 +86,8 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParameters(val);
 
         List<Double> ret = new ArrayList<>();
@@ -106,7 +108,7 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
             DataSet data = DataSet.merge(collect);
 
 
-            INDArray scores = network.scoreExamples(data,addRegularization);
+            INDArray scores = network.scoreExamples(data, addRegularization);
             double[] doubleScores = scores.data().asDouble();
 
             for (double doubleScore : doubleScores) {
@@ -115,7 +117,7 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);

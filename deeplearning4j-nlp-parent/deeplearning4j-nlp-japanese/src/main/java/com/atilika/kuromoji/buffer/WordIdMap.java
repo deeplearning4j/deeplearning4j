@@ -28,7 +28,7 @@ public class WordIdMap {
 
     private final int[] wordIds;
 
-    private final int[] empty = new int[]{};
+    private final int[] empty = new int[] {};
 
     public WordIdMap(InputStream input) throws IOException {
         indices = IntegerArrayIO.readArray(input);

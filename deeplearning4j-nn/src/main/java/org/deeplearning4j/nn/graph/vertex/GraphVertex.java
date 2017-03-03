@@ -117,7 +117,7 @@ public interface GraphVertex extends Serializable {
      * @param tbptt If true: do backprop using truncated BPTT
      * @return The gradients (may be null), and the errors/epsilons for all inputs to this GraphVertex
      */
-    Pair<Gradient,INDArray[]> doBackward(boolean tbptt);
+    Pair<Gradient, INDArray[]> doBackward(boolean tbptt);
 
     /** Get the array of inputs previously set for this GraphVertex */
     INDArray[] getInputs();
@@ -136,7 +136,8 @@ public interface GraphVertex extends Serializable {
      */
     void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
 
-    Pair<INDArray,MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
+    Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize);
 
     /**
      * Only applies to layer vertices. Will throw exceptions on others.

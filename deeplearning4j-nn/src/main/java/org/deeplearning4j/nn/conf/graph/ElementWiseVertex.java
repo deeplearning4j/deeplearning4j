@@ -37,7 +37,9 @@ public class ElementWiseVertex extends GraphVertex {
         this.op = op;
     }
 
-    public enum Op {Add, Subtract, Product}
+    public enum Op {
+        Add, Subtract, Product
+    }
 
     protected Op op;
 
@@ -47,26 +49,27 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o){
-        if(!(o instanceof ElementWiseVertex)) return false;
-        return ((ElementWiseVertex)o).op == op;
+    public boolean equals(Object o) {
+        if (!(o instanceof ElementWiseVertex))
+            return false;
+        return ((ElementWiseVertex) o).op == op;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return op.hashCode();
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;
-        switch(this.op){
+        switch (this.op) {
             case Add:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Add;
                 break;
@@ -79,32 +82,37 @@ public class ElementWiseVertex extends GraphVertex {
             default:
                 throw new RuntimeException();
         }
-        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph,name,idx,op);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph, name, idx, op);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length == 1) return vertexInputs[0];
+        if (vertexInputs.length == 1)
+            return vertexInputs[0];
         InputType first = vertexInputs[0];
-        if(first.getType() != InputType.Type.CNN){
+        if (first.getType() != InputType.Type.CNN) {
             //FF, RNN or flat CNN data inputs
-            for( int i=1; i<vertexInputs.length; i++ ){
-                if(vertexInputs[i].getType() != first.getType()){
-                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"
-                        + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
+            for (int i = 1; i < vertexInputs.length; i++) {
+                if (vertexInputs[i].getType() != first.getType()) {
+                    throw new InvalidInputTypeException(
+                                    "Invalid input: ElementWise vertex cannot process activations of different types:"
+                                                    + " first type = " + first.getType() + ", input type " + (i + 1)
+                                                    + " = " + vertexInputs[i].getType());
                 }
             }
         } else {
             //CNN inputs... also check that the depth, width and heights match:
-            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional)first;
+            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
             int fd = firstConv.getDepth();
             int fw = firstConv.getWidth();
             int fh = firstConv.getHeight();
 
-            for( int i=1; i<vertexInputs.length; i++ ){
-                if(vertexInputs[i].getType() != InputType.Type.CNN){
-                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process activations of different types:"
-                            + " first type = " + InputType.Type.CNN + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
+            for (int i = 1; i < vertexInputs.length; i++) {
+                if (vertexInputs[i].getType() != InputType.Type.CNN) {
+                    throw new InvalidInputTypeException(
+                                    "Invalid input: ElementWise vertex cannot process activations of different types:"
+                                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
+                                                    + " = " + vertexInputs[i].getType());
                 }
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
@@ -113,12 +121,14 @@ public class ElementWiseVertex extends GraphVertex {
                 int ow = otherConv.getWidth();
                 int oh = otherConv.getHeight();
 
-                if(fd != od || fw != ow || fh != oh){
-                    throw new InvalidInputTypeException("Invalid input: ElementWise vertex cannot process CNN activations of different sizes:"
-                            + "first [depth,width,height] = [" + fd + "," + fw + "," + fh + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
+                if (fd != od || fw != ow || fh != oh) {
+                    throw new InvalidInputTypeException(
+                                    "Invalid input: ElementWise vertex cannot process CNN activations of different sizes:"
+                                                    + "first [depth,width,height] = [" + fd + "," + fw + "," + fh
+                                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
             }
         }
-        return first;   //Same output shape/size as
+        return first; //Same output shape/size as
     }
 }

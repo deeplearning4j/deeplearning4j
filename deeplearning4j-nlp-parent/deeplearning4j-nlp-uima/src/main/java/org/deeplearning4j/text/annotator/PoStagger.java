@@ -58,190 +58,180 @@ public class PoStagger extends CasAnnotator_ImplBase {
         Util.disableLogging();
     }
 
-	 private POSTaggerME posTagger;
+    private POSTaggerME posTagger;
 
-	  private Type sentenceType;
+    private Type sentenceType;
 
-	  private Type tokenType;
+    private Type tokenType;
 
-	  private Feature posFeature;
+    private Feature posFeature;
 
-	  private Feature probabilityFeature;
+    private Feature probabilityFeature;
 
-	  private UimaContext context;
+    private UimaContext context;
 
-	  private Logger logger;
+    private Logger logger;
 
-	  /**
-	   * Initializes a new instance.
-	   * 
-	   * Note: Use {@link #initialize(UimaContext) } to initialize this instance. Not use the
-	   * constructor.
-	   */
-	  public PoStagger() {
-	    // must not be implemented !
-	  }
+    /**
+     * Initializes a new instance.
+     * 
+     * Note: Use {@link #initialize(UimaContext) } to initialize this instance. Not use the
+     * constructor.
+     */
+    public PoStagger() {
+        // must not be implemented !
+    }
 
-	  /**
-	   * Initializes the current instance with the given context.
-	   * 
-	   * Note: Do all initialization in this method, do not use the constructor.
-	   */
-	  @Override
-	  public void initialize(UimaContext context)
-	      throws ResourceInitializationException {
+    /**
+     * Initializes the current instance with the given context.
+     * 
+     * Note: Do all initialization in this method, do not use the constructor.
+     */
+    @Override
+    public void initialize(UimaContext context) throws ResourceInitializationException {
 
-	    super.initialize(context);
+        super.initialize(context);
 
-	    this.context = context;
+        this.context = context;
 
-	    this.logger = context.getLogger();
+        this.logger = context.getLogger();
 
-	    if (this.logger.isLoggable(Level.INFO)) {
-	      this.logger.log(Level.INFO, "Initializing the OpenNLP "
-	          + "Part of Speech annotator.");
-	    }
+        if (this.logger.isLoggable(Level.INFO)) {
+            this.logger.log(Level.INFO, "Initializing the OpenNLP " + "Part of Speech annotator.");
+        }
 
-	    POSModel model;
+        POSModel model;
 
-	    try {
-	      POSModelResource modelResource = (POSModelResource) context
-	          .getResourceObject(UimaUtil.MODEL_PARAMETER);
+        try {
+            POSModelResource modelResource = (POSModelResource) context.getResourceObject(UimaUtil.MODEL_PARAMETER);
 
-	      model = modelResource.getModel();
-	    } catch (ResourceAccessException e) {
-	      throw new ResourceInitializationException(e);
-	    }
+            model = modelResource.getModel();
+        } catch (ResourceAccessException e) {
+            throw new ResourceInitializationException(e);
+        }
 
-	    Integer beamSize = AnnotatorUtil.getOptionalIntegerParameter(context,
-	        UimaUtil.BEAM_SIZE_PARAMETER);
+        Integer beamSize = AnnotatorUtil.getOptionalIntegerParameter(context, UimaUtil.BEAM_SIZE_PARAMETER);
 
-	    if (beamSize == null)
-	      beamSize = POSTaggerME.DEFAULT_BEAM_SIZE;
+        if (beamSize == null)
+            beamSize = POSTaggerME.DEFAULT_BEAM_SIZE;
 
-	    this.posTagger = new POSTaggerME(model, beamSize, 0);
-	  }
+        this.posTagger = new POSTaggerME(model, beamSize, 0);
+    }
 
-	  /**
-	   * Initializes the type system.
-	   */
-	  @Override
-	  public void typeSystemInit(TypeSystem typeSystem) throws AnalysisEngineProcessException {
+    /**
+     * Initializes the type system.
+     */
+    @Override
+    public void typeSystemInit(TypeSystem typeSystem) throws AnalysisEngineProcessException {
 
-	    // sentence type
-	    this.sentenceType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem,
-	        UimaUtil.SENTENCE_TYPE_PARAMETER);
+        // sentence type
+        this.sentenceType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem,
+                        UimaUtil.SENTENCE_TYPE_PARAMETER);
 
-	    // token type
-	    this.tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem,
-	        UimaUtil.TOKEN_TYPE_PARAMETER);
+        // token type
+        this.tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem,
+                        UimaUtil.TOKEN_TYPE_PARAMETER);
 
-	    // pos feature
-	    this.posFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.tokenType,
-	        UimaUtil.POS_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
+        // pos feature
+        this.posFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.tokenType,
+                        UimaUtil.POS_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
 
-	    this.probabilityFeature = AnnotatorUtil.getOptionalFeatureParameter(this.context,
-	        this.tokenType, UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
-	  }
+        this.probabilityFeature = AnnotatorUtil.getOptionalFeatureParameter(this.context, this.tokenType,
+                        UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
+    }
 
-	  /**
-	   * Performs pos-tagging on the given tcas object.
-	   */
-	  @Override
-	  public synchronized void process(CAS tcas) {
+    /**
+     * Performs pos-tagging on the given tcas object.
+     */
+    @Override
+    public synchronized void process(CAS tcas) {
 
-	    final AnnotationComboIterator comboIterator = new AnnotationComboIterator(tcas,
-	        this.sentenceType, this.tokenType);
+        final AnnotationComboIterator comboIterator =
+                        new AnnotationComboIterator(tcas, this.sentenceType, this.tokenType);
 
-	    for (AnnotationIteratorPair annotationIteratorPair : comboIterator) {
-	      
-	      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<>();
+        for (AnnotationIteratorPair annotationIteratorPair : comboIterator) {
 
-	      final List<String> sentenceTokenList = new LinkedList<>();
+            final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<>();
 
-	      for (AnnotationFS tokenAnnotation : annotationIteratorPair.getSubIterator()) {
+            final List<String> sentenceTokenList = new LinkedList<>();
 
-	        sentenceTokenAnnotationList.add(tokenAnnotation);
+            for (AnnotationFS tokenAnnotation : annotationIteratorPair.getSubIterator()) {
 
-	        sentenceTokenList.add(tokenAnnotation.getCoveredText());
-	      }
+                sentenceTokenAnnotationList.add(tokenAnnotation);
 
-	      final List<String> posTags = this.posTagger.tag(sentenceTokenList);
+                sentenceTokenList.add(tokenAnnotation.getCoveredText());
+            }
 
-	      double posProbabilities[] = null;
+            final List<String> posTags = this.posTagger.tag(sentenceTokenList);
 
-	      if (this.probabilityFeature != null) {
-	        posProbabilities = this.posTagger.probs();
-	      }
+            double posProbabilities[] = null;
 
-	      final Iterator<String> posTagIterator = posTags.iterator();
-	      final Iterator<AnnotationFS> sentenceTokenIterator = sentenceTokenAnnotationList.iterator();
+            if (this.probabilityFeature != null) {
+                posProbabilities = this.posTagger.probs();
+            }
 
-	      int index = 0;
-	      while (posTagIterator.hasNext() && sentenceTokenIterator.hasNext()) {
-	        final String posTag = posTagIterator.next();
-	        final AnnotationFS tokenAnnotation = sentenceTokenIterator.next();
+            final Iterator<String> posTagIterator = posTags.iterator();
+            final Iterator<AnnotationFS> sentenceTokenIterator = sentenceTokenAnnotationList.iterator();
 
-	        tokenAnnotation.setStringValue(this.posFeature, posTag);
+            int index = 0;
+            while (posTagIterator.hasNext() && sentenceTokenIterator.hasNext()) {
+                final String posTag = posTagIterator.next();
+                final AnnotationFS tokenAnnotation = sentenceTokenIterator.next();
 
-	        if (posProbabilities != null) {
-	          tokenAnnotation.setDoubleValue(this.posFeature, posProbabilities[index]);
-	        }
+                tokenAnnotation.setStringValue(this.posFeature, posTag);
 
-	        index++;
-	      }
+                if (posProbabilities != null) {
+                    tokenAnnotation.setDoubleValue(this.posFeature, posProbabilities[index]);
+                }
 
-	      // log tokens with pos
-	      if (this.logger.isLoggable(Level.FINER)) {
+                index++;
+            }
 
-	        final StringBuilder sentenceWithPos = new StringBuilder();
+            // log tokens with pos
+            if (this.logger.isLoggable(Level.FINER)) {
 
-	        sentenceWithPos.append("\"");
+                final StringBuilder sentenceWithPos = new StringBuilder();
 
-	        for (final Iterator<AnnotationFS> it = sentenceTokenAnnotationList.iterator(); it.hasNext();) {
-	          final AnnotationFS token = it.next();
-	          sentenceWithPos.append(token.getCoveredText());
-	          sentenceWithPos.append('\\');
-	          sentenceWithPos.append(token.getStringValue(this.posFeature));
-	          sentenceWithPos.append(' ');
-	        }
+                sentenceWithPos.append("\"");
 
-	        // delete last whitespace
-	        if (sentenceWithPos.length() > 1) // not 0 because it contains already the " char
-	          sentenceWithPos.setLength(sentenceWithPos.length() - 1);
-	        
-	        sentenceWithPos.append("\"");
+                for (final Iterator<AnnotationFS> it = sentenceTokenAnnotationList.iterator(); it.hasNext();) {
+                    final AnnotationFS token = it.next();
+                    sentenceWithPos.append(token.getCoveredText());
+                    sentenceWithPos.append('\\');
+                    sentenceWithPos.append(token.getStringValue(this.posFeature));
+                    sentenceWithPos.append(' ');
+                }
 
-	        this.logger.log(Level.FINER, sentenceWithPos.toString());
-	      }
-	    }
-	  }
+                // delete last whitespace
+                if (sentenceWithPos.length() > 1) // not 0 because it contains already the " char
+                    sentenceWithPos.setLength(sentenceWithPos.length() - 1);
 
-	  /**
-	   * Releases allocated resources.
-	   */
-	  @Override
-	  public void destroy() {
-	    this.posTagger = null;
-	  }
-	
-	
-	public static AnalysisEngineDescription getDescription(String languageCode)
-      throws ResourceInitializationException {
-    String modelPath = String.format("/models/%s-pos-maxent.bin", languageCode);
-    return AnalysisEngineFactory.createEngineDescription(
-            PoStagger.class,
-            opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
-            ExternalResourceFactory.createExternalResourceDescription(
-                    POSModelResourceImpl.class,
-                    PoStagger.class.getResource(modelPath).toString()),
-            opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER,
-            Sentence.class.getName(),
-            opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER,
-            Token.class.getName(),
-            opennlp.uima.util.UimaUtil.POS_FEATURE_PARAMETER,
-            "pos");
-  }
+                sentenceWithPos.append("\"");
+
+                this.logger.log(Level.FINER, sentenceWithPos.toString());
+            }
+        }
+    }
+
+    /**
+     * Releases allocated resources.
+     */
+    @Override
+    public void destroy() {
+        this.posTagger = null;
+    }
+
+
+    public static AnalysisEngineDescription getDescription(String languageCode) throws ResourceInitializationException {
+        String modelPath = String.format("/models/%s-pos-maxent.bin", languageCode);
+        return AnalysisEngineFactory.createEngineDescription(PoStagger.class,
+                        opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
+                        ExternalResourceFactory.createExternalResourceDescription(POSModelResourceImpl.class,
+                                        PoStagger.class.getResource(modelPath).toString()),
+                        opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER, Sentence.class.getName(),
+                        opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER, Token.class.getName(),
+                        opennlp.uima.util.UimaUtil.POS_FEATURE_PARAMETER, "pos");
+    }
 
 
 

@@ -53,28 +53,27 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     private UimaResource resource;
 
 
-    public UimaSentenceIterator(SentencePreProcessor preProcessor,String path,UimaResource resource) {
+    public UimaSentenceIterator(SentencePreProcessor preProcessor, String path, UimaResource resource) {
         super(preProcessor);
         this.path = path;
-        File  f = new File(path);
-        if(f.isFile()) {
+        File f = new File(path);
+        if (f.isFile()) {
 
             //more than a kilobyte break up the file (only do this for files
 
 
             try {
 
-                this.reader  = FilesCollectionReader.getCollectionReader(path);
+                this.reader = FilesCollectionReader.getCollectionReader(path);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
 
 
-        }
-        else {
+        } else {
             try {
-                this.reader  = FilesCollectionReader.getCollectionReader(path);
+                this.reader = FilesCollectionReader.getCollectionReader(path);
             } catch (ResourceInitializationException e) {
                 throw new RuntimeException(e);
             }
@@ -84,27 +83,27 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     }
 
 
-    public UimaSentenceIterator(SentencePreProcessor preProcessor,CollectionReader cr,UimaResource resource) {
+    public UimaSentenceIterator(SentencePreProcessor preProcessor, CollectionReader cr, UimaResource resource) {
         super(preProcessor);
-	this.reader = cr;
+        this.reader = cr;
         this.resource = resource;
     }
 
 
     public UimaSentenceIterator(String path, UimaResource resource) {
-        this(null,path,resource);
+        this(null, path, resource);
     }
 
     @Override
-    public synchronized  String nextSentence() {
-        if(sentences == null || !sentences.hasNext()) {
+    public synchronized String nextSentence() {
+        if (sentences == null || !sentences.hasNext()) {
             try {
-                if(getReader().hasNext()) {
-                    CAS cas =  resource.retrieve();
+                if (getReader().hasNext()) {
+                    CAS cas = resource.retrieve();
 
                     try {
                         getReader().getNext(cas);
-                    }catch(Exception e) {
+                    } catch (Exception e) {
                         log.warn("Done iterating returning an empty string");
                         return "";
                     }
@@ -115,31 +114,30 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 
 
                     List<String> list = new ArrayList<>();
-                    for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                    for (Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
                         list.add(sentence.getCoveredText());
                     }
 
 
                     sentences = list.iterator();
                     //needs to be next cas
-                    while(!sentences.hasNext()) {
+                    while (!sentences.hasNext()) {
                         //sentence is empty; go to another cas
-                        if(reader.hasNext()) {
+                        if (reader.hasNext()) {
                             cas.reset();
                             getReader().getNext(cas);
                             resource.getAnalysisEngine().process(cas);
-                            for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                            for (Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
                                 list.add(sentence.getCoveredText());
                             }
                             sentences = list.iterator();
-                        }
-                        else
+                        } else
                             return null;
                     }
 
 
                     String ret = sentences.next();
-                    if(this.getPreProcessor() != null)
+                    if (this.getPreProcessor() != null)
                         ret = this.getPreProcessor().preProcess(ret);
                     return ret;
                 }
@@ -150,10 +148,9 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
                 throw new RuntimeException(e);
             }
 
-        }
-        else {
+        } else {
             String ret = sentences.next();
-            if(this.getPreProcessor() != null)
+            if (this.getPreProcessor() != null)
                 ret = this.getPreProcessor().preProcess(ret);
             return ret;
         }
@@ -173,7 +170,10 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
      * @throws Exception
      */
     public static SentenceIterator createWithPath(String path) throws Exception {
-        return new UimaSentenceIterator(path,new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription()))));
+        return new UimaSentenceIterator(path,
+                        new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory
+                                        .createEngineDescription(TokenizerAnnotator.getDescription(),
+                                                        SentenceAnnotator.getDescription()))));
     }
 
 
@@ -187,7 +187,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     }
 
 
-    private synchronized  CollectionReader getReader() {
+    private synchronized CollectionReader getReader() {
         return reader;
     }
 
@@ -195,7 +195,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     @Override
     public void reset() {
         try {
-            this.reader  = FilesCollectionReader.getCollectionReader(path);
+            this.reader = FilesCollectionReader.getCollectionReader(path);
         } catch (ResourceInitializationException e) {
             throw new RuntimeException(e);
         }
@@ -208,17 +208,16 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
      */
     public static AnalysisEngine segmenter() {
         try {
-            if(defaultAnalysisEngine == null)
+            if (defaultAnalysisEngine == null)
 
-                defaultAnalysisEngine =  AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
-                        SentenceAnnotator.getDescription()));
+                defaultAnalysisEngine = AnalysisEngineFactory.createEngine(
+                                AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription()));
 
             return defaultAnalysisEngine;
-        }catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
 
 
 

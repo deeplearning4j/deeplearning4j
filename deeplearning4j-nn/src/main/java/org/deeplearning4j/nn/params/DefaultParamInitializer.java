@@ -39,7 +39,8 @@ import java.util.Map;
 public class DefaultParamInitializer implements ParamInitializer {
 
     private static final DefaultParamInitializer INSTANCE = new DefaultParamInitializer();
-    public static DefaultParamInitializer getInstance(){
+
+    public static DefaultParamInitializer getInstance() {
         return INSTANCE;
     }
 
@@ -49,34 +50,37 @@ public class DefaultParamInitializer implements ParamInitializer {
     @Override
     public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        return nIn*nOut + nOut;     //weights + bias
+        return nIn * nOut + nOut; //weights + bias
     }
 
     @Override
-    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
+    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
-        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         int length = numParams(conf);
-        if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView.length());
+        if (paramsView.length() != length)
+            throw new IllegalStateException(
+                            "Expected params view of length " + length + ", got length " + paramsView.length());
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
 
-        int nWeightParams = nIn*nOut;
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams));
-        INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
+        int nWeightParams = nIn * nOut;
+        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
+        INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+                        NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
 
 
-        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParams));
-        params.put(BIAS_KEY,createBias(conf, biasView, initializeParams));
+        params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
+        params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
@@ -86,15 +90,17 @@ public class DefaultParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        int nWeightParams = nIn*nOut;
+        int nWeightParams = nIn * nOut;
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));    //Already a row vector
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams))
+                        .reshape('f', nIn, nOut);
+        INDArray biasView = gradientView.get(NDArrayIndex.point(0),
+                        NDArrayIndex.interval(nWeightParams, nWeightParams + nOut)); //Already a row vector
 
-        Map<String,INDArray> out = new LinkedHashMap<>();
+        Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
         out.put(BIAS_KEY, biasView);
 
@@ -104,12 +110,12 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView, boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
     }
 
-    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters){
-        if(initializeParameters) {
+    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
+        if (initializeParameters) {
             INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
             biasParamView.assign(ret);
         }
@@ -117,29 +123,28 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
 
-    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView, boolean initializeParameters) {
+    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
+                    boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
-        if(initializeParameters){
+        if (initializeParameters) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist, weightParamView, true);
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist,
+                            weightParamView, true);
         } else {
             return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, null, weightParamView, false);
         }
     }
 
-    protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist, INDArray weightParamView, boolean initializeParameters){
-        int[] shape = new int[]{nIn,nOut};
+    protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
+                    INDArray weightParamView, boolean initializeParameters) {
+        int[] shape = new int[] {nIn, nOut};
 
-        if(initializeParameters) {
-            INDArray ret = WeightInitUtil.initWeights(
-                    nIn,    //Fan in
-                    nOut,   //Fan out
-                    shape,
-                    weightInit,
-                    dist,
-                    weightParamView);
+        if (initializeParameters) {
+            INDArray ret = WeightInitUtil.initWeights(nIn, //Fan in
+                            nOut, //Fan out
+                            shape, weightInit, dist, weightParamView);
             return ret;
         } else {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);

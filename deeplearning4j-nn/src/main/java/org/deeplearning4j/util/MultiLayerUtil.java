@@ -30,8 +30,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class MultiLayerUtil {
-    private MultiLayerUtil() {
-    }
+    private MultiLayerUtil() {}
 
     /**
      * Return the weight matrices for a multi layer network
@@ -40,7 +39,7 @@ public class MultiLayerUtil {
      */
     public static List<INDArray> weightMatrices(MultiLayerNetwork network) {
         List<INDArray> ret = new ArrayList<>();
-        for(int i = 0; i < network.getLayers().length; i++) {
+        for (int i = 0; i < network.getLayers().length; i++) {
             ret.add(network.getLayers()[i].getParam(DefaultParamInitializer.WEIGHT_KEY));
         }
         return ret;

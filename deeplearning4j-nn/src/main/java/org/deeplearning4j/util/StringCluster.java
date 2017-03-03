@@ -27,7 +27,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
-public class StringCluster extends HashMap<String,Map<String,Integer>> {
+public class StringCluster extends HashMap<String, Map<String, Integer>> {
 
     /**
      *
@@ -35,41 +35,42 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
     private static final long serialVersionUID = -4120559428585520276L;
 
     public StringCluster(List<String> list) {
-        for(int i = 0; i< list.size(); i++) {
+        for (int i = 0; i < list.size(); i++) {
             String s = list.get(i);
             FingerPrintKeyer keyer = new FingerPrintKeyer();
             String key = keyer.key(s);
             if (containsKey(key)) {
-                Map<String,Integer> m = get(key);
+                Map<String, Integer> m = get(key);
                 if (m.containsKey(s)) {
                     m.put(s, m.get(s) + 1);
                 } else {
-                    m.put(s,1);
+                    m.put(s, 1);
                 }
             } else {
-                Map<String,Integer> m = new TreeMap<>();
-                m.put(s,1);
+                Map<String, Integer> m = new TreeMap<>();
+                m.put(s, 1);
                 put(key, m);
             }
         }
     }
 
-    public List<Map<String,Integer>> getClusters() {
-        List<Map<String,Integer>>_clusters = new ArrayList<>(values());
-        Collections.sort(_clusters,new SizeComparator());
+    public List<Map<String, Integer>> getClusters() {
+        List<Map<String, Integer>> _clusters = new ArrayList<>(values());
+        Collections.sort(_clusters, new SizeComparator());
         return _clusters;
     }
 
 
     public void sort() {
-        Collections.sort(new ArrayList<>(values()),new SizeComparator());
+        Collections.sort(new ArrayList<>(values()), new SizeComparator());
     }
 
 
-    public static class SizeComparator implements Comparator<Map<String,Integer>>, Serializable {
+    public static class SizeComparator implements Comparator<Map<String, Integer>>, Serializable {
         private static final long serialVersionUID = -1390696157208674054L;
+
         @Override
-        public int compare(Map<String,Integer> o1, Map<String,Integer> o2) {
+        public int compare(Map<String, Integer> o1, Map<String, Integer> o2) {
             int s1 = o1.size();
             int s2 = o2.size();
             if (s1 == s2) {
@@ -81,8 +82,10 @@ public class StringCluster extends HashMap<String,Map<String,Integer>> {
                 for (int i : o2.values()) {
                     total2 += i;
                 }
-                if (total2 < total1) return -1;
-                if (total2 > total1) return 1;
+                if (total2 < total1)
+                    return -1;
+                if (total2 > total1)
+                    return 1;
                 return 0;
             } else if (s2 < s1) {
                 return -1;

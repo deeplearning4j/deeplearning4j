@@ -33,7 +33,7 @@ public class ComposableIterationListener implements IterationListener {
     private Collection<IterationListener> listeners = new ArrayList<>();
     private boolean invoked = false;
 
-    public ComposableIterationListener(IterationListener...iterationListener) {
+    public ComposableIterationListener(IterationListener... iterationListener) {
         listeners.addAll(Arrays.asList(iterationListener));
     }
 
@@ -42,14 +42,18 @@ public class ComposableIterationListener implements IterationListener {
     }
 
     @Override
-    public boolean invoked(){ return invoked; }
+    public boolean invoked() {
+        return invoked;
+    }
 
     @Override
-    public void invoke() { this.invoked = true; }
+    public void invoke() {
+        this.invoked = true;
+    }
 
     @Override
-    public void iterationDone(Model model,int iteration) {
-        for(IterationListener listener : listeners)
-            listener.iterationDone(model,iteration);
+    public void iterationDone(Model model, int iteration) {
+        for (IterationListener listener : listeners)
+            listener.iterationDone(model, iteration);
     }
 }

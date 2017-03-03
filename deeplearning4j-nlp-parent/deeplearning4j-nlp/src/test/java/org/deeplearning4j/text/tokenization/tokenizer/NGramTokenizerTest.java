@@ -60,7 +60,7 @@ public class NGramTokenizerTest {
 
         factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 2, 2);
         tokens = factory.create(toTokenize).getTokens();
-        assertEquals(4,tokens.size());
+        assertEquals(4, tokens.size());
 
         assertTrue(tokens.contains("Mary had"));
         assertTrue(tokens.contains("had a"));

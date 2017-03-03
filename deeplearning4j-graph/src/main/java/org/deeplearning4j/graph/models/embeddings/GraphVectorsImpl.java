@@ -17,10 +17,11 @@ import java.util.PriorityQueue;
 /** Base implementation for GraphVectors. Used in DeepWalk, and also when loading
  * graph vectors from file.
  */
-@AllArgsConstructor @NoArgsConstructor
-public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
+@AllArgsConstructor
+@NoArgsConstructor
+public class GraphVectorsImpl<V, E> implements GraphVectors<V, E> {
 
-    protected IGraph<V,E> graph;
+    protected IGraph<V, E> graph;
     protected GraphVectorLookupTable lookupTable;
 
 
@@ -35,7 +36,7 @@ public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
     }
 
     @Override
-    public int getVectorSize(){
+    public int getVectorSize() {
         return lookupTable.vectorSize();
     }
 
@@ -56,30 +57,32 @@ public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
         double norm2 = vec.norm2Number().doubleValue();
 
 
-        PriorityQueue<Pair<Double,Integer>> pq = new PriorityQueue<>(lookupTable.getNumVertices(), new PairComparator());
+        PriorityQueue<Pair<Double, Integer>> pq =
+                        new PriorityQueue<>(lookupTable.getNumVertices(), new PairComparator());
 
         Level1 l1 = Nd4j.getBlasWrapper().level1();
-        for( int i=0; i<numVertices(); i++ ){
-            if(i == vertexIdx ) continue;
+        for (int i = 0; i < numVertices(); i++) {
+            if (i == vertexIdx)
+                continue;
 
             INDArray other = lookupTable.getVector(i);
-            double cosineSim = l1.dot(vec.length(),1.0,vec,other) / (norm2 * other.norm2Number().doubleValue());
+            double cosineSim = l1.dot(vec.length(), 1.0, vec, other) / (norm2 * other.norm2Number().doubleValue());
 
-            pq.add(new Pair<>(cosineSim,i));
+            pq.add(new Pair<>(cosineSim, i));
         }
 
         int[] out = new int[top];
-        for( int i=0; i<top; i++ ){
+        for (int i = 0; i < top; i++) {
             out[i] = pq.remove().getSecond();
         }
 
         return out;
     }
 
-    private static class PairComparator implements Comparator<Pair<Double,Integer>> {
+    private static class PairComparator implements Comparator<Pair<Double, Integer>> {
         @Override
         public int compare(Pair<Double, Integer> o1, Pair<Double, Integer> o2) {
-            return -Double.compare(o1.getFirst(),o2.getFirst());
+            return -Double.compare(o1.getFirst(), o2.getFirst());
         }
     }
 
@@ -88,7 +91,7 @@ public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
      */
     @Override
     public double similarity(Vertex<V> vertex1, Vertex<V> vertex2) {
-        return similarity(vertex1.vertexID(),vertex2.vertexID());
+        return similarity(vertex1.vertexID(), vertex2.vertexID());
     }
 
     /**Returns the cosine similarity of the vector representations of two vertices in the graph,
@@ -97,10 +100,11 @@ public class GraphVectorsImpl<V,E> implements GraphVectors<V,E> {
      */
     @Override
     public double similarity(int vertexIdx1, int vertexIdx2) {
-        if(vertexIdx1 == vertexIdx2) return 1.0;
+        if (vertexIdx1 == vertexIdx2)
+            return 1.0;
 
         INDArray vector = Transforms.unitVec(getVertexVector(vertexIdx1));
         INDArray vector2 = Transforms.unitVec(getVertexVector(vertexIdx2));
-        return  Nd4j.getBlasWrapper().dot(vector, vector2);
+        return Nd4j.getBlasWrapper().dot(vector, vector2);
     }
 }

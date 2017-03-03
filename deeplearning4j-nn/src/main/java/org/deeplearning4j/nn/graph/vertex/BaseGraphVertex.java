@@ -50,7 +50,8 @@ public abstract class BaseGraphVertex implements GraphVertex {
     protected INDArray[] inputs;
     protected INDArray epsilon;
 
-    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices){
+    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                    VertexIndices[] outputVertices) {
         this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
@@ -61,22 +62,22 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public String getVertexName(){
+    public String getVertexName() {
         return vertexName;
     }
 
     @Override
-    public int getVertexIndex(){
+    public int getVertexIndex() {
         return vertexIndex;
     }
 
     @Override
-    public int getNumInputArrays(){
+    public int getNumInputArrays() {
         return (inputVertices == null ? 0 : inputVertices.length);
     }
 
     @Override
-    public int getNumOutputConnections(){
+    public int getNumOutputConnections() {
         return (outputVertices == null ? 0 : outputVertices.length);
     }
 
@@ -85,12 +86,12 @@ public abstract class BaseGraphVertex implements GraphVertex {
      * then the Zth output of vertex Y is the Xth input to this vertex
      */
     @Override
-    public VertexIndices[] getInputVertices(){
+    public VertexIndices[] getInputVertices() {
         return inputVertices;
     }
 
     @Override
-    public void setInputVertices(VertexIndices[] inputVertices){
+    public void setInputVertices(VertexIndices[] inputVertices) {
         this.inputVertices = inputVertices;
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
     }
@@ -100,42 +101,42 @@ public abstract class BaseGraphVertex implements GraphVertex {
      * then the Xth output of this vertex is connected to the Zth input of vertex Y
      */
     @Override
-    public VertexIndices[] getOutputVertices(){
+    public VertexIndices[] getOutputVertices() {
         return outputVertices;
     }
 
     @Override
-    public void setOutputVertices(VertexIndices[] outputVertices){
+    public void setOutputVertices(VertexIndices[] outputVertices) {
         this.outputVertices = outputVertices;
     }
 
     @Override
-    public boolean isInputVertex(){
+    public boolean isInputVertex() {
         return false;
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input){
-        if(inputNumber >= getNumInputArrays()) {
+    public void setInput(int inputNumber, INDArray input) {
+        if (inputNumber >= getNumInputArrays()) {
             throw new IllegalArgumentException("Invalid input number");
         }
         inputs[inputNumber] = input;
     }
 
     @Override
-    public void setEpsilon(INDArray epsilon){
+    public void setEpsilon(INDArray epsilon) {
         this.epsilon = epsilon;
     }
 
     @Override
-    public void clear(){
+    public void clear() {
         for (int i = 0; i < inputs.length; i++) {
             inputs[i] = null;
         }
     }
 
     @Override
-    public boolean canDoForward(){
+    public boolean canDoForward() {
         for (INDArray input : inputs) {
             if (input == null) {
                 return false;
@@ -145,7 +146,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public boolean canDoBackward(){
+    public boolean canDoBackward() {
         for (INDArray input : inputs) {
             if (input == null) {
                 return false;
@@ -155,7 +156,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public INDArray getEpsilon(){
+    public INDArray getEpsilon() {
         return epsilon;
     }
 

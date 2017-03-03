@@ -53,26 +53,23 @@ public class TfidfVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
-        TfidfVectorizer vectorizer = new TfidfVectorizer.Builder()
-                .setMinWordFrequency(1)
-                .setStopWords(new ArrayList<String>())
-                .setTokenizerFactory(tokenizerFactory)
-                .setIterator(iter)
-                .allowParallelTokenization(false)
-//                .labels(labels)
-//                .cleanup(true)
-                .build();
+        TfidfVectorizer vectorizer = new TfidfVectorizer.Builder().setMinWordFrequency(1)
+                        .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
+                        .allowParallelTokenization(false)
+                        //                .labels(labels)
+                        //                .cleanup(true)
+                        .build();
 
         vectorizer.fit();
-        VocabWord word =vectorizer.getVocabCache().wordFor("file.");
+        VocabWord word = vectorizer.getVocabCache().wordFor("file.");
         assumeNotNull(word);
-        assertEquals(word,vectorizer.getVocabCache().tokenFor("file."));
-        assertEquals(3,vectorizer.getVocabCache().totalNumberOfDocs());
+        assertEquals(word, vectorizer.getVocabCache().tokenFor("file."));
+        assertEquals(3, vectorizer.getVocabCache().totalNumberOfDocs());
 
         assertEquals(3, word.getSequencesCount());
         assertEquals(3, word.getElementFrequency(), 0.1);
 
-        VocabWord word1 =vectorizer.getVocabCache().wordFor("1");
+        VocabWord word1 = vectorizer.getVocabCache().wordFor("1");
 
         assertEquals(1, word1.getSequencesCount());
         assertEquals(1, word1.getElementFrequency(), 0.1);
@@ -109,7 +106,7 @@ public class TfidfVectorizerTest {
         assertEquals(1, cnt);
 
 
-        File tempFile = File.createTempFile("somefile","Dsdas");
+        File tempFile = File.createTempFile("somefile", "Dsdas");
         tempFile.deleteOnExit();
 
         SerializationUtils.saveObject(vectorizer, tempFile);

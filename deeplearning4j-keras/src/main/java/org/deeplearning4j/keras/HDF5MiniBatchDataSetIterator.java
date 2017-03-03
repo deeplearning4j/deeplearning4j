@@ -65,10 +65,10 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
             log.trace("Reading: " + batchFileName);
         }
 
-        INDArray features = ndArrayHDF5Reader.readFromPath(
-                Paths.get(trainFeaturesDirectory.getAbsolutePath(), batchFileName));
-        INDArray labels = ndArrayHDF5Reader.readFromPath(
-                Paths.get(trainLabelsDirectory.getAbsolutePath(), batchFileName));
+        INDArray features = ndArrayHDF5Reader
+                        .readFromPath(Paths.get(trainFeaturesDirectory.getAbsolutePath(), batchFileName));
+        INDArray labels = ndArrayHDF5Reader
+                        .readFromPath(Paths.get(trainLabelsDirectory.getAbsolutePath(), batchFileName));
 
         return new DataSet(features, labels);
     }

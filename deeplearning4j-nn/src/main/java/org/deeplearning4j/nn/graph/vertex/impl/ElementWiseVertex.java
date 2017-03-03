@@ -37,16 +37,19 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ElementWiseVertex extends BaseGraphVertex {
 
-    public enum Op {Add, Subtract, Product}
+    public enum Op {
+        Add, Subtract, Product
+    }
 
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op){
-        this(graph,name,vertexIndex,null,null,op);
+    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op) {
+        this(graph, name, vertexIndex, null, null, op);
     }
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices, Op op) {
+    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                    VertexIndices[] outputVertices, Op op) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.op = op;
     }
@@ -68,20 +71,23 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: inputs not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
         nInForwardPass = inputs.length;
-        if(inputs.length == 1) return inputs[0];
+        if (inputs.length == 1)
+            return inputs[0];
 
-        switch(op){
+        switch (op) {
             case Add:
                 INDArray sum = inputs[0].dup();
-                for( int i=1; i<inputs.length; i++){
+                for (int i = 1; i < inputs.length; i++) {
                     sum.addi(inputs[i]);
                 }
                 return sum;
             case Subtract:
-                if(inputs.length != 2) throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
+                if (inputs.length != 2)
+                    throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
                 return inputs[0].sub(inputs[1]);
             case Product:
                 throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
@@ -92,21 +98,24 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set");
+        if (!canDoBackward())
+            throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        if(nInForwardPass == 1) return new Pair<>(null,new INDArray[]{epsilon});
+        if (nInForwardPass == 1)
+            return new Pair<>(null, new INDArray[] {epsilon});
 
-        switch(op){
+        switch (op) {
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
                 INDArray[] out = new INDArray[nInForwardPass];
-                for( int i=0; i<nInForwardPass; i++ ) out[i] = epsilon.dup();
-                return new Pair<>(null,out);
+                for (int i = 0; i < nInForwardPass; i++)
+                    out[i] = epsilon.dup();
+                return new Pair<>(null, out);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
                 out2[0] = epsilon;
                 out2[1] = epsilon.neg();
-                return new Pair<>(null,out2);
+                return new Pair<>(null, out2);
             case Product:
                 throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
             default:
@@ -116,12 +125,14 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        if(maskArrays == null){
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
+        if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
         }
 
@@ -132,19 +143,19 @@ public class ElementWiseVertex extends BaseGraphVertex {
         //Which means: if any masks are missing, output null (equivalent to no mask, or all steps present)
         //Otherwise do an element-wise OR operation
 
-        for(INDArray arr : maskArrays){
-            if(arr == null){
+        for (INDArray arr : maskArrays) {
+            if (arr == null) {
                 return new Pair<>(null, currentMaskState);
             }
         }
 
         //At this point: all present. Do OR operation
-        if(maskArrays.length == 1){
+        if (maskArrays.length == 1) {
             return new Pair<>(maskArrays[0], currentMaskState);
         } else {
             INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
             Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
-            for( int i=2; i<maskArrays.length; i++ ){
+            for (int i = 2; i < maskArrays.length; i++) {
                 Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
             }
             return new Pair<>(ret, currentMaskState);
@@ -153,6 +164,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op + ")";
+        return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op
+                        + ")";
     }
 }

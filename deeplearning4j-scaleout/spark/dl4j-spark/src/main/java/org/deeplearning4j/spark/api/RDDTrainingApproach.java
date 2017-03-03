@@ -26,6 +26,5 @@ package org.deeplearning4j.spark.api;
  * @author Alex Black
  */
 public enum RDDTrainingApproach {
-    Export,
-    Direct
+    Export, Direct
 }

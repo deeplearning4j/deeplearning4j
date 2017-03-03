@@ -23,29 +23,30 @@ import static org.junit.Assert.assertTrue;
 public class TestCustomActivation {
 
     @Test
-    public void testCustomActivationFn(){
+    public void testCustomActivationFn() {
 
         //First: Ensure that the CustomActivation class is registered
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
 
-        AnnotatedClass ac = AnnotatedClass.construct(IActivation.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+        AnnotatedClass ac = AnnotatedClass.construct(IActivation.class,
+                        mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac,
+                        mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
         boolean found = false;
         for (NamedType nt : types) {
             System.out.println(nt);
-            if (nt.getType() == CustomActivation.class) found = true;
+            if (nt.getType() == CustomActivation.class)
+                found = true;
         }
 
         assertTrue("CustomActivation: not registered with NeuralNetConfiguration mapper", found);
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).activation(new CustomActivation()).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
-                .pretrain(false).backprop(true).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).activation(new CustomActivation()).build())
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
+                        .pretrain(false).backprop(true).build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();

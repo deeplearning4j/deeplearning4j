@@ -43,17 +43,11 @@ public class CharacterDefinitionsCompilerTest {
         charDef = File.createTempFile("kuromoji-chardef-", ".bin");
         charDef.deleteOnExit();
 
-        CharacterDefinitionsCompiler compiler = new CharacterDefinitionsCompiler(
-            new BufferedOutputStream(
-                new FileOutputStream(charDef)
-            )
-        );
-        compiler.readCharacterDefinition(
-            new BufferedInputStream(
-                CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")
-            ),
-            "euc-jp"
-        );
+        CharacterDefinitionsCompiler compiler =
+                        new CharacterDefinitionsCompiler(new BufferedOutputStream(new FileOutputStream(charDef)));
+        compiler.readCharacterDefinition(new BufferedInputStream(
+                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")),
+                        "euc-jp");
         categoryIdMap = invert(compiler.makeCharacterCategoryMap());
         compiler.compile();
 
@@ -63,11 +57,7 @@ public class CharacterDefinitionsCompilerTest {
         int[][] mappings = IntegerArrayIO.readSparseArray2D(input);
         String[] symbols = StringArrayIO.readArray(input);
 
-        characterDefinition = new CharacterDefinitions(
-            definitions,
-            mappings,
-            symbols
-        );
+        characterDefinition = new CharacterDefinitions(definitions, mappings, symbols);
     }
 
     @Test
@@ -85,15 +75,13 @@ public class CharacterDefinitionsCompilerTest {
     public void testAddCategoryDefinitions() {
         assertCharacterCategories(characterDefinition, '・', "KATAKANA");
 
-        characterDefinition.setCategories('・', new String[]{"SYMBOL", "KATAKANA"});
+        characterDefinition.setCategories('・', new String[] {"SYMBOL", "KATAKANA"});
 
         assertCharacterCategories(characterDefinition, '・', "KATAKANA", "SYMBOL");
         assertCharacterCategories(characterDefinition, '・', "SYMBOL", "KATAKANA");
     }
 
-    public void assertCharacterCategories(CharacterDefinitions characterDefinition,
-                                          char c,
-                                          String... categories) {
+    public void assertCharacterCategories(CharacterDefinitions characterDefinition, char c, String... categories) {
         int[] categoryIds = characterDefinition.lookupCategories(c);
 
         if (categoryIds == null) {

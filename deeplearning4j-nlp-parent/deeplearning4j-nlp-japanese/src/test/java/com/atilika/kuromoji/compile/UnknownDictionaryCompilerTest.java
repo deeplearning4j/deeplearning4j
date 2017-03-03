@@ -46,17 +46,11 @@ public class UnknownDictionaryCompilerTest {
         File charDef = File.createTempFile("kuromoji-chardef-", ".bin");
         charDef.deleteOnExit();
 
-        CharacterDefinitionsCompiler charDefCompiler = new CharacterDefinitionsCompiler(
-            new BufferedOutputStream(
-                new FileOutputStream(charDef)
-            )
-        );
-        charDefCompiler.readCharacterDefinition(
-            new BufferedInputStream(
-                CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")
-            ),
-            "euc-jp"
-        );
+        CharacterDefinitionsCompiler charDefCompiler =
+                        new CharacterDefinitionsCompiler(new BufferedOutputStream(new FileOutputStream(charDef)));
+        charDefCompiler.readCharacterDefinition(new BufferedInputStream(
+                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")),
+                        "euc-jp");
         charDefCompiler.compile();
 
         Map<String, Integer> categoryMap = charDefCompiler.makeCharacterCategoryMap();
@@ -64,17 +58,11 @@ public class UnknownDictionaryCompilerTest {
         File unkDef = File.createTempFile("kuromoji-unkdef-", ".bin");
         unkDef.deleteOnExit();
 
-        UnknownDictionaryCompiler unkDefCompiler = new UnknownDictionaryCompiler(
-            categoryMap,
-            new FileOutputStream(unkDef)
-        );
+        UnknownDictionaryCompiler unkDefCompiler =
+                        new UnknownDictionaryCompiler(categoryMap, new FileOutputStream(unkDef));
 
-        unkDefCompiler.readUnknownDefinition(
-            new BufferedInputStream(
-                UnknownDictionaryCompilerTest.class.getClassLoader().getResourceAsStream("unk.def")
-            ),
-            "euc-jp"
-        );
+        unkDefCompiler.readUnknownDefinition(new BufferedInputStream(
+                        UnknownDictionaryCompilerTest.class.getClassLoader().getResourceAsStream("unk.def")), "euc-jp");
 
         unkDefCompiler.compile();
 
@@ -84,11 +72,7 @@ public class UnknownDictionaryCompilerTest {
         int[][] mappings = IntegerArrayIO.readSparseArray2D(charDefInput);
         String[] symbols = StringArrayIO.readArray(charDefInput);
 
-        characterDefinitions = new CharacterDefinitions(
-            definitions,
-            mappings,
-            symbols
-        );
+        characterDefinitions = new CharacterDefinitions(definitions, mappings, symbols);
 
         InputStream unkDefInput = new BufferedInputStream(new FileInputStream(unkDef));
 
@@ -96,12 +80,7 @@ public class UnknownDictionaryCompilerTest {
         references = IntegerArrayIO.readArray2D(unkDefInput);
         features = StringArrayIO.readArray2D(unkDefInput);
 
-        unknownDictionary = new UnknownDictionary(
-            characterDefinitions,
-            references,
-            costs,
-            features
-        );
+        unknownDictionary = new UnknownDictionary(characterDefinitions, references, costs, features);
 
     }
 
@@ -112,50 +91,31 @@ public class UnknownDictionaryCompilerTest {
         // KANJI & KANJINUMERIC
         assertEquals(2, categories.length);
 
-        assertArrayEquals(new int[]{5, 6}, categories);
+        assertArrayEquals(new int[] {5, 6}, categories);
 
         // KANJI entries
-        assertArrayEquals(
-            new int[]{2, 3, 4, 5, 6, 7},
-            unknownDictionary.lookupWordIds(categories[0])
-        );
+        assertArrayEquals(new int[] {2, 3, 4, 5, 6, 7}, unknownDictionary.lookupWordIds(categories[0]));
 
         // KANJI feature variety
-        assertArrayEquals(
-            new String[]{"名詞", "一般", "*", "*", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(2)
-        );
+        assertArrayEquals(new String[] {"名詞", "一般", "*", "*", "*", "*", "*"}, unknownDictionary.getAllFeaturesArray(2));
 
-        assertArrayEquals(
-            new String[]{"名詞", "サ変接続", "*", "*", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(3)
-        );
+        assertArrayEquals(new String[] {"名詞", "サ変接続", "*", "*", "*", "*", "*"},
+                        unknownDictionary.getAllFeaturesArray(3));
 
-        assertArrayEquals(
-            new String[]{"名詞", "固有名詞", "地域", "一般", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(4)
-        );
+        assertArrayEquals(new String[] {"名詞", "固有名詞", "地域", "一般", "*", "*", "*"},
+                        unknownDictionary.getAllFeaturesArray(4));
 
-        assertArrayEquals(
-            new String[]{"名詞", "固有名詞", "組織", "*", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(5)
-        );
+        assertArrayEquals(new String[] {"名詞", "固有名詞", "組織", "*", "*", "*", "*"},
+                        unknownDictionary.getAllFeaturesArray(5));
 
-        assertArrayEquals(
-            new String[]{"名詞", "固有名詞", "人名", "一般", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(6)
-        );
+        assertArrayEquals(new String[] {"名詞", "固有名詞", "人名", "一般", "*", "*", "*"},
+                        unknownDictionary.getAllFeaturesArray(6));
 
-        assertArrayEquals(
-            new String[]{"名詞", "固有名詞", "人名", "一般", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(6)
-        );
+        assertArrayEquals(new String[] {"名詞", "固有名詞", "人名", "一般", "*", "*", "*"},
+                        unknownDictionary.getAllFeaturesArray(6));
 
         // KANJINUMERIC entry
-        assertArrayEquals(
-            new int[]{29},
-            unknownDictionary.lookupWordIds(categories[1])
-        );
+        assertArrayEquals(new int[] {29}, unknownDictionary.lookupWordIds(categories[1]));
 
         // KANJINUMERIC costs
         assertEquals(1295, unknownDictionary.getLeftId(29));
@@ -163,9 +123,6 @@ public class UnknownDictionaryCompilerTest {
         assertEquals(27473, unknownDictionary.getWordCost(29));
 
         // KANJINUMERIC features
-        assertArrayEquals(
-            new String[]{"名詞", "数", "*", "*", "*", "*", "*"},
-            unknownDictionary.getAllFeaturesArray(29)
-        );
+        assertArrayEquals(new String[] {"名詞", "数", "*", "*", "*", "*", "*"}, unknownDictionary.getAllFeaturesArray(29));
     }
 }

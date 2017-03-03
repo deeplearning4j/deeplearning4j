@@ -6,8 +6,7 @@ import org.agrona.DirectBuffer;
 
 @javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.StaticInfoDecoder"})
 @SuppressWarnings("all")
-public class StaticInfoDecoder
-{
+public class StaticInfoDecoder {
     public static final int BLOCK_LENGTH = 40;
     public static final int TEMPLATE_ID = 1;
     public static final int SCHEMA_ID = 1;
@@ -20,39 +19,32 @@ public class StaticInfoDecoder
     protected int actingBlockLength;
     protected int actingVersion;
 
-    public int sbeBlockLength()
-    {
+    public int sbeBlockLength() {
         return BLOCK_LENGTH;
     }
 
-    public int sbeTemplateId()
-    {
+    public int sbeTemplateId() {
         return TEMPLATE_ID;
     }
 
-    public int sbeSchemaId()
-    {
+    public int sbeSchemaId() {
         return SCHEMA_ID;
     }
 
-    public int sbeSchemaVersion()
-    {
+    public int sbeSchemaVersion() {
         return SCHEMA_VERSION;
     }
 
-    public String sbeSemanticType()
-    {
+    public String sbeSemanticType() {
         return "";
     }
 
-    public int offset()
-    {
+    public int offset() {
         return offset;
     }
 
-    public StaticInfoDecoder wrap(
-        final DirectBuffer buffer, final int offset, final int actingBlockLength, final int actingVersion)
-    {
+    public StaticInfoDecoder wrap(final DirectBuffer buffer, final int offset, final int actingBlockLength,
+                    final int actingVersion) {
         this.buffer = buffer;
         this.offset = offset;
         this.actingBlockLength = actingBlockLength;
@@ -62,71 +54,64 @@ public class StaticInfoDecoder
         return this;
     }
 
-    public int encodedLength()
-    {
+    public int encodedLength() {
         return limit - offset;
     }
 
-    public int limit()
-    {
+    public int limit() {
         return limit;
     }
 
-    public void limit(final int limit)
-    {
+    public void limit(final int limit) {
         this.limit = limit;
     }
 
-    public static int timeId()
-    {
+    public static int timeId() {
         return 1;
     }
 
-    public static String timeMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String timeMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static long timeNullValue()
-    {
+    public static long timeNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long timeMinValue()
-    {
+    public static long timeMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long timeMaxValue()
-    {
+    public static long timeMaxValue() {
         return 9223372036854775807L;
     }
 
-    public long time()
-    {
+    public long time() {
         return buffer.getLong(offset + 0, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
-    public static int fieldsPresentId()
-    {
+    public static int fieldsPresentId() {
         return 2;
     }
 
-    public static String fieldsPresentMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String fieldsPresentMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
@@ -134,256 +119,228 @@ public class StaticInfoDecoder
 
     private final InitFieldsPresentDecoder fieldsPresent = new InitFieldsPresentDecoder();
 
-    public InitFieldsPresentDecoder fieldsPresent()
-    {
+    public InitFieldsPresentDecoder fieldsPresent() {
         fieldsPresent.wrap(buffer, offset + 8);
         return fieldsPresent;
     }
 
-    public static int hwJvmProcessorsId()
-    {
+    public static int hwJvmProcessorsId() {
         return 3;
     }
 
-    public static String hwJvmProcessorsMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwJvmProcessorsMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int hwJvmProcessorsNullValue()
-    {
+    public static int hwJvmProcessorsNullValue() {
         return 65535;
     }
 
-    public static int hwJvmProcessorsMinValue()
-    {
+    public static int hwJvmProcessorsMinValue() {
         return 0;
     }
 
-    public static int hwJvmProcessorsMaxValue()
-    {
+    public static int hwJvmProcessorsMaxValue() {
         return 65534;
     }
 
-    public int hwJvmProcessors()
-    {
+    public int hwJvmProcessors() {
         return (buffer.getShort(offset + 9, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF);
     }
 
 
-    public static int hwNumDevicesId()
-    {
+    public static int hwNumDevicesId() {
         return 4;
     }
 
-    public static String hwNumDevicesMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwNumDevicesMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static short hwNumDevicesNullValue()
-    {
-        return (short)255;
+    public static short hwNumDevicesNullValue() {
+        return (short) 255;
     }
 
-    public static short hwNumDevicesMinValue()
-    {
-        return (short)0;
+    public static short hwNumDevicesMinValue() {
+        return (short) 0;
     }
 
-    public static short hwNumDevicesMaxValue()
-    {
-        return (short)254;
+    public static short hwNumDevicesMaxValue() {
+        return (short) 254;
     }
 
-    public short hwNumDevices()
-    {
-        return ((short)(buffer.getByte(offset + 11) & 0xFF));
+    public short hwNumDevices() {
+        return ((short) (buffer.getByte(offset + 11) & 0xFF));
     }
 
 
-    public static int hwJvmMaxMemoryId()
-    {
+    public static int hwJvmMaxMemoryId() {
         return 5;
     }
 
-    public static String hwJvmMaxMemoryMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwJvmMaxMemoryMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static long hwJvmMaxMemoryNullValue()
-    {
+    public static long hwJvmMaxMemoryNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long hwJvmMaxMemoryMinValue()
-    {
+    public static long hwJvmMaxMemoryMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long hwJvmMaxMemoryMaxValue()
-    {
+    public static long hwJvmMaxMemoryMaxValue() {
         return 9223372036854775807L;
     }
 
-    public long hwJvmMaxMemory()
-    {
+    public long hwJvmMaxMemory() {
         return buffer.getLong(offset + 12, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
-    public static int hwOffheapMaxMemoryId()
-    {
+    public static int hwOffheapMaxMemoryId() {
         return 6;
     }
 
-    public static String hwOffheapMaxMemoryMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwOffheapMaxMemoryMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static long hwOffheapMaxMemoryNullValue()
-    {
+    public static long hwOffheapMaxMemoryNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long hwOffheapMaxMemoryMinValue()
-    {
+    public static long hwOffheapMaxMemoryMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long hwOffheapMaxMemoryMaxValue()
-    {
+    public static long hwOffheapMaxMemoryMaxValue() {
         return 9223372036854775807L;
     }
 
-    public long hwOffheapMaxMemory()
-    {
+    public long hwOffheapMaxMemory() {
         return buffer.getLong(offset + 20, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
-    public static int modelNumLayersId()
-    {
+    public static int modelNumLayersId() {
         return 7;
     }
 
-    public static String modelNumLayersMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelNumLayersMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int modelNumLayersNullValue()
-    {
+    public static int modelNumLayersNullValue() {
         return -2147483648;
     }
 
-    public static int modelNumLayersMinValue()
-    {
+    public static int modelNumLayersMinValue() {
         return -2147483647;
     }
 
-    public static int modelNumLayersMaxValue()
-    {
+    public static int modelNumLayersMaxValue() {
         return 2147483647;
     }
 
-    public int modelNumLayers()
-    {
+    public int modelNumLayers() {
         return buffer.getInt(offset + 28, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
-    public static int modelNumParamsId()
-    {
+    public static int modelNumParamsId() {
         return 8;
     }
 
-    public static String modelNumParamsMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelNumParamsMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static long modelNumParamsNullValue()
-    {
+    public static long modelNumParamsNullValue() {
         return -9223372036854775808L;
     }
 
-    public static long modelNumParamsMinValue()
-    {
+    public static long modelNumParamsMinValue() {
         return -9223372036854775807L;
     }
 
-    public static long modelNumParamsMaxValue()
-    {
+    public static long modelNumParamsMaxValue() {
         return 9223372036854775807L;
     }
 
-    public long modelNumParams()
-    {
+    public long modelNumParams() {
         return buffer.getLong(offset + 32, java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
 
     private final HwDeviceInfoGroupDecoder hwDeviceInfoGroup = new HwDeviceInfoGroupDecoder();
 
-    public static long hwDeviceInfoGroupDecoderId()
-    {
+    public static long hwDeviceInfoGroupDecoderId() {
         return 9;
     }
 
-    public HwDeviceInfoGroupDecoder hwDeviceInfoGroup()
-    {
+    public HwDeviceInfoGroupDecoder hwDeviceInfoGroup() {
         hwDeviceInfoGroup.wrap(parentMessage, buffer);
         return hwDeviceInfoGroup;
     }
 
     public static class HwDeviceInfoGroupDecoder
-        implements Iterable<HwDeviceInfoGroupDecoder>, java.util.Iterator<HwDeviceInfoGroupDecoder>
-    {
+                    implements Iterable<HwDeviceInfoGroupDecoder>, java.util.Iterator<HwDeviceInfoGroupDecoder> {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
         private StaticInfoDecoder parentMessage;
@@ -394,9 +351,7 @@ public class StaticInfoDecoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoDecoder parentMessage, final DirectBuffer buffer)
-        {
+        public void wrap(final StaticInfoDecoder parentMessage, final DirectBuffer buffer) {
             this.parentMessage = parentMessage;
             this.buffer = buffer;
             dimensions.wrap(buffer, parentMessage.limit());
@@ -406,45 +361,36 @@ public class StaticInfoDecoder
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 8;
         }
 
-        public int actingBlockLength()
-        {
+        public int actingBlockLength() {
             return blockLength;
         }
 
-        public int count()
-        {
+        public int count() {
             return count;
         }
 
-        public java.util.Iterator<HwDeviceInfoGroupDecoder> iterator()
-        {
+        public java.util.Iterator<HwDeviceInfoGroupDecoder> iterator() {
             return this;
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return (index + 1) < count;
         }
 
-        public HwDeviceInfoGroupDecoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public HwDeviceInfoGroupDecoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -455,82 +401,74 @@ public class StaticInfoDecoder
             return this;
         }
 
-        public static int deviceMemoryMaxId()
-        {
+        public static int deviceMemoryMaxId() {
             return 10;
         }
 
-        public static String deviceMemoryMaxMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String deviceMemoryMaxMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static long deviceMemoryMaxNullValue()
-        {
+        public static long deviceMemoryMaxNullValue() {
             return -9223372036854775808L;
         }
 
-        public static long deviceMemoryMaxMinValue()
-        {
+        public static long deviceMemoryMaxMinValue() {
             return -9223372036854775807L;
         }
 
-        public static long deviceMemoryMaxMaxValue()
-        {
+        public static long deviceMemoryMaxMaxValue() {
             return 9223372036854775807L;
         }
 
-        public long deviceMemoryMax()
-        {
+        public long deviceMemoryMax() {
             return buffer.getLong(offset + 0, java.nio.ByteOrder.LITTLE_ENDIAN);
         }
 
 
-        public static int deviceDescriptionId()
-        {
+        public static int deviceDescriptionId() {
             return 50;
         }
 
-        public static String deviceDescriptionCharacterEncoding()
-        {
+        public static String deviceDescriptionCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String deviceDescriptionMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String deviceDescriptionMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int deviceDescriptionHeaderLength()
-        {
+        public static int deviceDescriptionHeaderLength() {
             return 4;
         }
 
-        public int deviceDescriptionLength()
-        {
+        public int deviceDescriptionLength() {
             final int limit = parentMessage.limit();
-            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         }
 
-        public int getDeviceDescription(final MutableDirectBuffer dst, final int dstOffset, final int length)
-        {
+        public int getDeviceDescription(final MutableDirectBuffer dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -538,11 +476,10 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public int getDeviceDescription(final byte[] dst, final int dstOffset, final int length)
-        {
+        public int getDeviceDescription(final byte[] dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -550,35 +487,29 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public String deviceDescription()
-        {
+        public String deviceDescription() {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             parentMessage.limit(limit + headerLength + dataLength);
             final byte[] tmp = new byte[dataLength];
             buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
             final String value;
-            try
-            {
+            try {
                 value = new String(tmp, "UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             return value;
         }
 
-        public String toString()
-        {
+        public String toString() {
             return appendTo(new StringBuilder(100)).toString();
         }
 
-        public StringBuilder appendTo(final StringBuilder builder)
-        {
+        public StringBuilder appendTo(final StringBuilder builder) {
             builder.append('(');
             //Token{signal=BEGIN_FIELD, name='deviceMemoryMax', description='null', id=10, version=0, encodedLength=0, offset=0, componentTokenCount=3, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             //Token{signal=ENCODING, name='int64', description='null', id=-1, version=0, encodedLength=8, offset=0, componentTokenCount=1, encoding=Encoding{presence=REQUIRED, primitiveType=INT64, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
@@ -595,20 +526,17 @@ public class StaticInfoDecoder
 
     private final SwEnvironmentInfoDecoder swEnvironmentInfo = new SwEnvironmentInfoDecoder();
 
-    public static long swEnvironmentInfoDecoderId()
-    {
+    public static long swEnvironmentInfoDecoderId() {
         return 12;
     }
 
-    public SwEnvironmentInfoDecoder swEnvironmentInfo()
-    {
+    public SwEnvironmentInfoDecoder swEnvironmentInfo() {
         swEnvironmentInfo.wrap(parentMessage, buffer);
         return swEnvironmentInfo;
     }
 
     public static class SwEnvironmentInfoDecoder
-        implements Iterable<SwEnvironmentInfoDecoder>, java.util.Iterator<SwEnvironmentInfoDecoder>
-    {
+                    implements Iterable<SwEnvironmentInfoDecoder>, java.util.Iterator<SwEnvironmentInfoDecoder> {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
         private StaticInfoDecoder parentMessage;
@@ -619,9 +547,7 @@ public class StaticInfoDecoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoDecoder parentMessage, final DirectBuffer buffer)
-        {
+        public void wrap(final StaticInfoDecoder parentMessage, final DirectBuffer buffer) {
             this.parentMessage = parentMessage;
             this.buffer = buffer;
             dimensions.wrap(buffer, parentMessage.limit());
@@ -631,45 +557,36 @@ public class StaticInfoDecoder
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 0;
         }
 
-        public int actingBlockLength()
-        {
+        public int actingBlockLength() {
             return blockLength;
         }
 
-        public int count()
-        {
+        public int count() {
             return count;
         }
 
-        public java.util.Iterator<SwEnvironmentInfoDecoder> iterator()
-        {
+        public java.util.Iterator<SwEnvironmentInfoDecoder> iterator() {
             return this;
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return (index + 1) < count;
         }
 
-        public SwEnvironmentInfoDecoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public SwEnvironmentInfoDecoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -680,44 +597,40 @@ public class StaticInfoDecoder
             return this;
         }
 
-        public static int envKeyId()
-        {
+        public static int envKeyId() {
             return 51;
         }
 
-        public static String envKeyCharacterEncoding()
-        {
+        public static String envKeyCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String envKeyMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String envKeyMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int envKeyHeaderLength()
-        {
+        public static int envKeyHeaderLength() {
             return 4;
         }
 
-        public int envKeyLength()
-        {
+        public int envKeyLength() {
             final int limit = parentMessage.limit();
-            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         }
 
-        public int getEnvKey(final MutableDirectBuffer dst, final int dstOffset, final int length)
-        {
+        public int getEnvKey(final MutableDirectBuffer dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -725,11 +638,10 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public int getEnvKey(final byte[] dst, final int dstOffset, final int length)
-        {
+        public int getEnvKey(final byte[] dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -737,66 +649,58 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public String envKey()
-        {
+        public String envKey() {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             parentMessage.limit(limit + headerLength + dataLength);
             final byte[] tmp = new byte[dataLength];
             buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
             final String value;
-            try
-            {
+            try {
                 value = new String(tmp, "UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             return value;
         }
 
-        public static int envValueId()
-        {
+        public static int envValueId() {
             return 52;
         }
 
-        public static String envValueCharacterEncoding()
-        {
+        public static String envValueCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String envValueMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String envValueMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int envValueHeaderLength()
-        {
+        public static int envValueHeaderLength() {
             return 4;
         }
 
-        public int envValueLength()
-        {
+        public int envValueLength() {
             final int limit = parentMessage.limit();
-            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         }
 
-        public int getEnvValue(final MutableDirectBuffer dst, final int dstOffset, final int length)
-        {
+        public int getEnvValue(final MutableDirectBuffer dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -804,11 +708,10 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public int getEnvValue(final byte[] dst, final int dstOffset, final int length)
-        {
+        public int getEnvValue(final byte[] dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -816,35 +719,29 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public String envValue()
-        {
+        public String envValue() {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             parentMessage.limit(limit + headerLength + dataLength);
             final byte[] tmp = new byte[dataLength];
             buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
             final String value;
-            try
-            {
+            try {
                 value = new String(tmp, "UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             return value;
         }
 
-        public String toString()
-        {
+        public String toString() {
             return appendTo(new StringBuilder(100)).toString();
         }
 
-        public StringBuilder appendTo(final StringBuilder builder)
-        {
+        public StringBuilder appendTo(final StringBuilder builder) {
             builder.append('(');
             //Token{signal=BEGIN_VAR_DATA, name='envKey', description='null', id=51, version=0, encodedLength=0, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             builder.append("envKey=");
@@ -860,20 +757,17 @@ public class StaticInfoDecoder
 
     private final ModelParamNamesDecoder modelParamNames = new ModelParamNamesDecoder();
 
-    public static long modelParamNamesDecoderId()
-    {
+    public static long modelParamNamesDecoderId() {
         return 11;
     }
 
-    public ModelParamNamesDecoder modelParamNames()
-    {
+    public ModelParamNamesDecoder modelParamNames() {
         modelParamNames.wrap(parentMessage, buffer);
         return modelParamNames;
     }
 
     public static class ModelParamNamesDecoder
-        implements Iterable<ModelParamNamesDecoder>, java.util.Iterator<ModelParamNamesDecoder>
-    {
+                    implements Iterable<ModelParamNamesDecoder>, java.util.Iterator<ModelParamNamesDecoder> {
         private static final int HEADER_SIZE = 4;
         private final GroupSizeEncodingDecoder dimensions = new GroupSizeEncodingDecoder();
         private StaticInfoDecoder parentMessage;
@@ -884,9 +778,7 @@ public class StaticInfoDecoder
         private int index;
         private int offset;
 
-        public void wrap(
-            final StaticInfoDecoder parentMessage, final DirectBuffer buffer)
-        {
+        public void wrap(final StaticInfoDecoder parentMessage, final DirectBuffer buffer) {
             this.parentMessage = parentMessage;
             this.buffer = buffer;
             dimensions.wrap(buffer, parentMessage.limit());
@@ -896,45 +788,36 @@ public class StaticInfoDecoder
             parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
         }
 
-        public static int sbeHeaderSize()
-        {
+        public static int sbeHeaderSize() {
             return HEADER_SIZE;
         }
 
-        public static int sbeBlockLength()
-        {
+        public static int sbeBlockLength() {
             return 0;
         }
 
-        public int actingBlockLength()
-        {
+        public int actingBlockLength() {
             return blockLength;
         }
 
-        public int count()
-        {
+        public int count() {
             return count;
         }
 
-        public java.util.Iterator<ModelParamNamesDecoder> iterator()
-        {
+        public java.util.Iterator<ModelParamNamesDecoder> iterator() {
             return this;
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return (index + 1) < count;
         }
 
-        public ModelParamNamesDecoder next()
-        {
-            if (index + 1 >= count)
-            {
+        public ModelParamNamesDecoder next() {
+            if (index + 1 >= count) {
                 throw new java.util.NoSuchElementException();
             }
 
@@ -945,44 +828,40 @@ public class StaticInfoDecoder
             return this;
         }
 
-        public static int modelParamNamesId()
-        {
+        public static int modelParamNamesId() {
             return 53;
         }
 
-        public static String modelParamNamesCharacterEncoding()
-        {
+        public static String modelParamNamesCharacterEncoding() {
             return "UTF-8";
         }
 
-        public static String modelParamNamesMetaAttribute(final MetaAttribute metaAttribute)
-        {
-            switch (metaAttribute)
-            {
-                case EPOCH: return "unix";
-                case TIME_UNIT: return "nanosecond";
-                case SEMANTIC_TYPE: return "";
+        public static String modelParamNamesMetaAttribute(final MetaAttribute metaAttribute) {
+            switch (metaAttribute) {
+                case EPOCH:
+                    return "unix";
+                case TIME_UNIT:
+                    return "nanosecond";
+                case SEMANTIC_TYPE:
+                    return "";
             }
 
             return "";
         }
 
-        public static int modelParamNamesHeaderLength()
-        {
+        public static int modelParamNamesHeaderLength() {
             return 4;
         }
 
-        public int modelParamNamesLength()
-        {
+        public int modelParamNamesLength() {
             final int limit = parentMessage.limit();
-            return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         }
 
-        public int getModelParamNames(final MutableDirectBuffer dst, final int dstOffset, final int length)
-        {
+        public int getModelParamNames(final MutableDirectBuffer dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -990,11 +869,10 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public int getModelParamNames(final byte[] dst, final int dstOffset, final int length)
-        {
+        public int getModelParamNames(final byte[] dst, final int dstOffset, final int length) {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             final int bytesCopied = Math.min(length, dataLength);
             parentMessage.limit(limit + headerLength + dataLength);
             buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1002,35 +880,29 @@ public class StaticInfoDecoder
             return bytesCopied;
         }
 
-        public String modelParamNames()
-        {
+        public String modelParamNames() {
             final int headerLength = 4;
             final int limit = parentMessage.limit();
-            final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+            final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
             parentMessage.limit(limit + headerLength + dataLength);
             final byte[] tmp = new byte[dataLength];
             buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
             final String value;
-            try
-            {
+            try {
                 value = new String(tmp, "UTF-8");
-            }
-            catch (final java.io.UnsupportedEncodingException ex)
-            {
+            } catch (final java.io.UnsupportedEncodingException ex) {
                 throw new RuntimeException(ex);
             }
 
             return value;
         }
 
-        public String toString()
-        {
+        public String toString() {
             return appendTo(new StringBuilder(100)).toString();
         }
 
-        public StringBuilder appendTo(final StringBuilder builder)
-        {
+        public StringBuilder appendTo(final StringBuilder builder) {
             builder.append('(');
             //Token{signal=BEGIN_VAR_DATA, name='modelParamNames', description='null', id=53, version=0, encodedLength=0, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
             builder.append("modelParamNames=");
@@ -1040,44 +912,40 @@ public class StaticInfoDecoder
         }
     }
 
-    public static int sessionIDId()
-    {
+    public static int sessionIDId() {
         return 100;
     }
 
-    public static String sessionIDCharacterEncoding()
-    {
+    public static String sessionIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String sessionIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int sessionIDHeaderLength()
-    {
+    public static int sessionIDHeaderLength() {
         return 4;
     }
 
-    public int sessionIDLength()
-    {
+    public int sessionIDLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSessionID(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSessionID(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1085,11 +953,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSessionID(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSessionID(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1097,66 +964,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String sessionID()
-    {
+    public String sessionID() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int typeIDId()
-    {
+    public static int typeIDId() {
         return 101;
     }
 
-    public static String typeIDCharacterEncoding()
-    {
+    public static String typeIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String typeIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int typeIDHeaderLength()
-    {
+    public static int typeIDHeaderLength() {
         return 4;
     }
 
-    public int typeIDLength()
-    {
+    public int typeIDLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getTypeID(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getTypeID(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1164,11 +1023,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getTypeID(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getTypeID(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1176,66 +1034,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String typeID()
-    {
+    public String typeID() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int workerIDId()
-    {
+    public static int workerIDId() {
         return 102;
     }
 
-    public static String workerIDCharacterEncoding()
-    {
+    public static String workerIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String workerIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int workerIDHeaderLength()
-    {
+    public static int workerIDHeaderLength() {
         return 4;
     }
 
-    public int workerIDLength()
-    {
+    public int workerIDLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getWorkerID(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getWorkerID(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1243,11 +1093,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getWorkerID(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getWorkerID(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1255,66 +1104,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String workerID()
-    {
+    public String workerID() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swArchId()
-    {
+    public static int swArchId() {
         return 201;
     }
 
-    public static String swArchCharacterEncoding()
-    {
+    public static String swArchCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swArchMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swArchMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swArchHeaderLength()
-    {
+    public static int swArchHeaderLength() {
         return 4;
     }
 
-    public int swArchLength()
-    {
+    public int swArchLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwArch(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwArch(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1322,11 +1163,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwArch(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwArch(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1334,66 +1174,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swArch()
-    {
+    public String swArch() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swOsNameId()
-    {
+    public static int swOsNameId() {
         return 202;
     }
 
-    public static String swOsNameCharacterEncoding()
-    {
+    public static String swOsNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swOsNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swOsNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swOsNameHeaderLength()
-    {
+    public static int swOsNameHeaderLength() {
         return 4;
     }
 
-    public int swOsNameLength()
-    {
+    public int swOsNameLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwOsName(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwOsName(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1401,11 +1233,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwOsName(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwOsName(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1413,66 +1244,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swOsName()
-    {
+    public String swOsName() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swJvmNameId()
-    {
+    public static int swJvmNameId() {
         return 203;
     }
 
-    public static String swJvmNameCharacterEncoding()
-    {
+    public static String swJvmNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmNameHeaderLength()
-    {
+    public static int swJvmNameHeaderLength() {
         return 4;
     }
 
-    public int swJvmNameLength()
-    {
+    public int swJvmNameLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwJvmName(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmName(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1480,11 +1303,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwJvmName(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmName(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1492,66 +1314,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swJvmName()
-    {
+    public String swJvmName() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swJvmVersionId()
-    {
+    public static int swJvmVersionId() {
         return 204;
     }
 
-    public static String swJvmVersionCharacterEncoding()
-    {
+    public static String swJvmVersionCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmVersionMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmVersionMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmVersionHeaderLength()
-    {
+    public static int swJvmVersionHeaderLength() {
         return 4;
     }
 
-    public int swJvmVersionLength()
-    {
+    public int swJvmVersionLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwJvmVersion(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmVersion(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1559,11 +1373,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwJvmVersion(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmVersion(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1571,66 +1384,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swJvmVersion()
-    {
+    public String swJvmVersion() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swJvmSpecVersionId()
-    {
+    public static int swJvmSpecVersionId() {
         return 205;
     }
 
-    public static String swJvmSpecVersionCharacterEncoding()
-    {
+    public static String swJvmSpecVersionCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmSpecVersionMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmSpecVersionMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmSpecVersionHeaderLength()
-    {
+    public static int swJvmSpecVersionHeaderLength() {
         return 4;
     }
 
-    public int swJvmSpecVersionLength()
-    {
+    public int swJvmSpecVersionLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwJvmSpecVersion(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmSpecVersion(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1638,11 +1443,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwJvmSpecVersion(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmSpecVersion(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1650,66 +1454,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swJvmSpecVersion()
-    {
+    public String swJvmSpecVersion() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swNd4jBackendClassId()
-    {
+    public static int swNd4jBackendClassId() {
         return 206;
     }
 
-    public static String swNd4jBackendClassCharacterEncoding()
-    {
+    public static String swNd4jBackendClassCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swNd4jBackendClassMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swNd4jBackendClassMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swNd4jBackendClassHeaderLength()
-    {
+    public static int swNd4jBackendClassHeaderLength() {
         return 4;
     }
 
-    public int swNd4jBackendClassLength()
-    {
+    public int swNd4jBackendClassLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwNd4jBackendClass(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwNd4jBackendClass(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1717,11 +1513,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwNd4jBackendClass(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwNd4jBackendClass(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1729,66 +1524,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swNd4jBackendClass()
-    {
+    public String swNd4jBackendClass() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swNd4jDataTypeNameId()
-    {
+    public static int swNd4jDataTypeNameId() {
         return 207;
     }
 
-    public static String swNd4jDataTypeNameCharacterEncoding()
-    {
+    public static String swNd4jDataTypeNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swNd4jDataTypeNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swNd4jDataTypeNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swNd4jDataTypeNameHeaderLength()
-    {
+    public static int swNd4jDataTypeNameHeaderLength() {
         return 4;
     }
 
-    public int swNd4jDataTypeNameLength()
-    {
+    public int swNd4jDataTypeNameLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwNd4jDataTypeName(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwNd4jDataTypeName(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1796,11 +1583,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwNd4jDataTypeName(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwNd4jDataTypeName(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1808,66 +1594,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swNd4jDataTypeName()
-    {
+    public String swNd4jDataTypeName() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swHostNameId()
-    {
+    public static int swHostNameId() {
         return 208;
     }
 
-    public static String swHostNameCharacterEncoding()
-    {
+    public static String swHostNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swHostNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swHostNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swHostNameHeaderLength()
-    {
+    public static int swHostNameHeaderLength() {
         return 4;
     }
 
-    public int swHostNameLength()
-    {
+    public int swHostNameLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwHostName(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwHostName(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1875,11 +1653,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwHostName(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwHostName(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1887,66 +1664,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swHostName()
-    {
+    public String swHostName() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int swJvmUIDId()
-    {
+    public static int swJvmUIDId() {
         return 209;
     }
 
-    public static String swJvmUIDCharacterEncoding()
-    {
+    public static String swJvmUIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String swJvmUIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String swJvmUIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int swJvmUIDHeaderLength()
-    {
+    public static int swJvmUIDHeaderLength() {
         return 4;
     }
 
-    public int swJvmUIDLength()
-    {
+    public int swJvmUIDLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getSwJvmUID(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmUID(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1954,11 +1723,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getSwJvmUID(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getSwJvmUID(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -1966,66 +1734,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String swJvmUID()
-    {
+    public String swJvmUID() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int hwHardwareUIDId()
-    {
+    public static int hwHardwareUIDId() {
         return 300;
     }
 
-    public static String hwHardwareUIDCharacterEncoding()
-    {
+    public static String hwHardwareUIDCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String hwHardwareUIDMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String hwHardwareUIDMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int hwHardwareUIDHeaderLength()
-    {
+    public static int hwHardwareUIDHeaderLength() {
         return 4;
     }
 
-    public int hwHardwareUIDLength()
-    {
+    public int hwHardwareUIDLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getHwHardwareUID(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getHwHardwareUID(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2033,11 +1793,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getHwHardwareUID(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getHwHardwareUID(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2045,66 +1804,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String hwHardwareUID()
-    {
+    public String hwHardwareUID() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int modelConfigClassNameId()
-    {
+    public static int modelConfigClassNameId() {
         return 400;
     }
 
-    public static String modelConfigClassNameCharacterEncoding()
-    {
+    public static String modelConfigClassNameCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String modelConfigClassNameMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelConfigClassNameMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int modelConfigClassNameHeaderLength()
-    {
+    public static int modelConfigClassNameHeaderLength() {
         return 4;
     }
 
-    public int modelConfigClassNameLength()
-    {
+    public int modelConfigClassNameLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getModelConfigClassName(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getModelConfigClassName(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2112,11 +1863,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getModelConfigClassName(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getModelConfigClassName(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2124,66 +1874,58 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String modelConfigClassName()
-    {
+    public String modelConfigClassName() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public static int modelConfigJsonId()
-    {
+    public static int modelConfigJsonId() {
         return 401;
     }
 
-    public static String modelConfigJsonCharacterEncoding()
-    {
+    public static String modelConfigJsonCharacterEncoding() {
         return "UTF-8";
     }
 
-    public static String modelConfigJsonMetaAttribute(final MetaAttribute metaAttribute)
-    {
-        switch (metaAttribute)
-        {
-            case EPOCH: return "unix";
-            case TIME_UNIT: return "nanosecond";
-            case SEMANTIC_TYPE: return "";
+    public static String modelConfigJsonMetaAttribute(final MetaAttribute metaAttribute) {
+        switch (metaAttribute) {
+            case EPOCH:
+                return "unix";
+            case TIME_UNIT:
+                return "nanosecond";
+            case SEMANTIC_TYPE:
+                return "";
         }
 
         return "";
     }
 
-    public static int modelConfigJsonHeaderLength()
-    {
+    public static int modelConfigJsonHeaderLength() {
         return 4;
     }
 
-    public int modelConfigJsonLength()
-    {
+    public int modelConfigJsonLength() {
         final int limit = parentMessage.limit();
-        return (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        return (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
     }
 
-    public int getModelConfigJson(final MutableDirectBuffer dst, final int dstOffset, final int length)
-    {
+    public int getModelConfigJson(final MutableDirectBuffer dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2191,11 +1933,10 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public int getModelConfigJson(final byte[] dst, final int dstOffset, final int length)
-    {
+    public int getModelConfigJson(final byte[] dst, final int dstOffset, final int length) {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         final int bytesCopied = Math.min(length, dataLength);
         parentMessage.limit(limit + headerLength + dataLength);
         buffer.getBytes(limit + headerLength, dst, dstOffset, bytesCopied);
@@ -2203,35 +1944,29 @@ public class StaticInfoDecoder
         return bytesCopied;
     }
 
-    public String modelConfigJson()
-    {
+    public String modelConfigJson() {
         final int headerLength = 4;
         final int limit = parentMessage.limit();
-        final int dataLength = (int)(buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
+        final int dataLength = (int) (buffer.getInt(limit, java.nio.ByteOrder.LITTLE_ENDIAN) & 0xFFFF_FFFFL);
         parentMessage.limit(limit + headerLength + dataLength);
         final byte[] tmp = new byte[dataLength];
         buffer.getBytes(limit + headerLength, tmp, 0, dataLength);
 
         final String value;
-        try
-        {
+        try {
             value = new String(tmp, "UTF-8");
-        }
-        catch (final java.io.UnsupportedEncodingException ex)
-        {
+        } catch (final java.io.UnsupportedEncodingException ex) {
             throw new RuntimeException(ex);
         }
 
         return value;
     }
 
-    public String toString()
-    {
+    public String toString() {
         return appendTo(new StringBuilder(100)).toString();
     }
 
-    public StringBuilder appendTo(final StringBuilder builder)
-    {
+    public StringBuilder appendTo(final StringBuilder builder) {
         final int originalLimit = limit();
         limit(offset + actingBlockLength);
         builder.append("[StaticInfo](sbeTemplateId=");
@@ -2239,15 +1974,13 @@ public class StaticInfoDecoder
         builder.append("|sbeSchemaId=");
         builder.append(SCHEMA_ID);
         builder.append("|sbeSchemaVersion=");
-        if (actingVersion != SCHEMA_VERSION)
-        {
+        if (actingVersion != SCHEMA_VERSION) {
             builder.append(actingVersion);
             builder.append('/');
         }
         builder.append(SCHEMA_VERSION);
         builder.append("|sbeBlockLength=");
-        if (actingBlockLength != BLOCK_LENGTH)
-        {
+        if (actingBlockLength != BLOCK_LENGTH) {
             builder.append(actingBlockLength);
             builder.append('/');
         }
@@ -2296,10 +2029,8 @@ public class StaticInfoDecoder
         //Token{signal=BEGIN_GROUP, name='hwDeviceInfoGroup', description='null', id=9, version=0, encodedLength=8, offset=40, componentTokenCount=15, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("hwDeviceInfoGroup=[");
         HwDeviceInfoGroupDecoder hwDeviceInfoGroup = hwDeviceInfoGroup();
-        if (hwDeviceInfoGroup.count() > 0)
-        {
-            while (hwDeviceInfoGroup.hasNext())
-            {
+        if (hwDeviceInfoGroup.count() > 0) {
+            while (hwDeviceInfoGroup.hasNext()) {
                 hwDeviceInfoGroup.next().appendTo(builder);
                 builder.append(',');
             }
@@ -2310,10 +2041,8 @@ public class StaticInfoDecoder
         //Token{signal=BEGIN_GROUP, name='swEnvironmentInfo', description='null', id=12, version=0, encodedLength=0, offset=-1, componentTokenCount=18, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("swEnvironmentInfo=[");
         SwEnvironmentInfoDecoder swEnvironmentInfo = swEnvironmentInfo();
-        if (swEnvironmentInfo.count() > 0)
-        {
-            while (swEnvironmentInfo.hasNext())
-            {
+        if (swEnvironmentInfo.count() > 0) {
+            while (swEnvironmentInfo.hasNext()) {
                 swEnvironmentInfo.next().appendTo(builder);
                 builder.append(',');
             }
@@ -2324,10 +2053,8 @@ public class StaticInfoDecoder
         //Token{signal=BEGIN_GROUP, name='modelParamNames', description='null', id=11, version=0, encodedLength=0, offset=-1, componentTokenCount=12, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("modelParamNames=[");
         ModelParamNamesDecoder modelParamNames = modelParamNames();
-        if (modelParamNames.count() > 0)
-        {
-            while (modelParamNames.hasNext())
-            {
+        if (modelParamNames.count() > 0) {
+            while (modelParamNames.hasNext()) {
                 modelParamNames.next().appendTo(builder);
                 builder.append(',');
             }

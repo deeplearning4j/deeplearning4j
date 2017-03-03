@@ -41,7 +41,7 @@ public class Word2VecFuncCall implements Serializable {
         this.sentence = sentence;
     }
 
-    public Broadcast<Word2VecParam>  getParam() {
+    public Broadcast<Word2VecParam> getParam() {
         return param;
     }
 

@@ -62,9 +62,11 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof LayerVertex)) return false;
+        if (!(o instanceof LayerVertex))
+            return false;
         LayerVertex lv = (LayerVertex) o;
-        if (!layerConf.equals(lv.layerConf)) return false;
+        if (!layerConf.equals(lv.layerConf))
+            return false;
         if (preProcessor == null && lv.preProcessor != null || preProcessor != null && lv.preProcessor == null)
             return false;
         return preProcessor == null || preProcessor.equals(lv.preProcessor);
@@ -82,11 +84,12 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         //Now, we need to work out if this vertex is an output vertex or not...
         boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
 
-        org.deeplearning4j.nn.api.Layer layer = layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
+        org.deeplearning4j.nn.api.Layer layer =
+                        layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
 
         return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
     }
@@ -94,13 +97,16 @@ public class LayerVertex extends GraphVertex {
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
-            throw new InvalidInputTypeException("LayerVertex expects exactly one input. Got: " + Arrays.toString(vertexInputs));
+            throw new InvalidInputTypeException(
+                            "LayerVertex expects exactly one input. Got: " + Arrays.toString(vertexInputs));
         }
 
         //Assume any necessary preprocessors have already been added
         InputType afterPreprocessor;
-        if (preProcessor == null) afterPreprocessor = vertexInputs[0];
-        else afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
+        if (preProcessor == null)
+            afterPreprocessor = vertexInputs[0];
+        else
+            afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
         return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
     }

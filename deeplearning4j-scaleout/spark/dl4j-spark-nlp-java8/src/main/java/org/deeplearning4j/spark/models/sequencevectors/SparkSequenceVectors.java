@@ -90,15 +90,18 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         throw new UnsupportedOperationException("To use fit() method, please consider using standalone implementation");
     }
 
-    protected void validateConfiguration(){
+    protected void validateConfiguration() {
         if (!configuration.isUseHierarchicSoftmax() && configuration.getNegative() == 0)
-            throw new DL4JInvalidConfigException("Both HierarchicSoftmax and NegativeSampling are disabled. Nothing to learn here.");
+            throw new DL4JInvalidConfigException(
+                            "Both HierarchicSoftmax and NegativeSampling are disabled. Nothing to learn here.");
 
-        if (configuration.getElementsLearningAlgorithm() == null && configuration.getSequenceLearningAlgorithm() == null)
+        if (configuration.getElementsLearningAlgorithm() == null
+                        && configuration.getSequenceLearningAlgorithm() == null)
             throw new DL4JInvalidConfigException("No LearningAlgorithm was set. Nothing to learn here.");
 
         if (exporter == null)
-            throw new DL4JInvalidConfigException("SparkModelExporter is undefined. No sense for training, if model won't be exported.");
+            throw new DL4JInvalidConfigException(
+                            "SparkModelExporter is undefined. No sense for training, if model won't be exported.");
     }
 
     protected void broadcastEnvironment(JavaSparkContext context) {
@@ -144,7 +147,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         if (ela == null) {
             try {
-                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm()).newInstance();
+                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm())
+                                .newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -171,23 +175,22 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * Here we s
          */
         if (paramServerConfiguration == null)
-            paramServerConfiguration = VoidConfiguration.builder()
-                .faultToleranceStrategy(FaultToleranceStrategy.NONE)
-                .numberOfShards(2)
-                .unicastPort(40123)
-                .multicastPort(40124)
-                .build();
+            paramServerConfiguration = VoidConfiguration.builder().faultToleranceStrategy(FaultToleranceStrategy.NONE)
+                            .numberOfShards(2).unicastPort(40123).multicastPort(40124).build();
 
-        isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
+        isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null
+                        && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
 
         Broadcast<VoidConfiguration> paramServerConfigurationBroadcast = null;
 
         if (isAutoDiscoveryMode) {
             log.info("Trying auto discovery mode...");
 
-            elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
+            elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(),
+                            new ExtraElementsFrequenciesAccumulator());
 
-            ExtraCountFunction<T> elementsCounter = new ExtraCountFunction<>(elementsFreqAccumExtra, configuration.isTrainSequenceVectors());
+            ExtraCountFunction<T> elementsCounter =
+                            new ExtraCountFunction<>(elementsFreqAccumExtra, configuration.isTrainSequenceVectors());
 
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
 
@@ -204,17 +207,22 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             log.info("availableHosts: {}", availableHosts);
             if (availableHosts.size() > 1) {
                 // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
-                NetworkOrganizer organizer = new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
+                NetworkOrganizer organizer =
+                                new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
 
-                paramServerConfiguration.setShardAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards()));
+                paramServerConfiguration
+                                .setShardAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards()));
 
                 // backup shards are optional
                 if (paramServerConfiguration.getFaultToleranceStrategy() != FaultToleranceStrategy.NONE) {
-                    paramServerConfiguration.setBackupAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.getShardAddresses()));
+                    paramServerConfiguration.setBackupAddresses(
+                                    organizer.getSubset(paramServerConfiguration.getNumberOfShards(),
+                                                    paramServerConfiguration.getShardAddresses()));
                 }
             } else {
                 // for single host (aka driver-only, aka spark-local) just run on loopback interface
-                paramServerConfiguration.setShardAddresses(Arrays.asList("127.0.0.1:" + paramServerConfiguration.getUnicastPort()));
+                paramServerConfiguration.setShardAddresses(
+                                Arrays.asList("127.0.0.1:" + paramServerConfiguration.getUnicastPort()));
                 paramServerConfiguration.setFaultToleranceStrategy(FaultToleranceStrategy.NONE);
             }
 
@@ -241,7 +249,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
-            CountFunction<T> elementsCounter = new CountFunction<>(configurationBroadcast, paramServerConfigurationBroadcast, elementsFreqAccum, configuration.isTrainSequenceVectors());
+            CountFunction<T> elementsCounter =
+                            new CountFunction<>(configurationBroadcast, paramServerConfigurationBroadcast,
+                                            elementsFreqAccum, configuration.isTrainSequenceVectors());
 
             // count all sequence elements and their sum
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
@@ -257,7 +267,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         long numberOfUniqueElements = finalCounter.size();
 
-        log.info("Total number of sequences: {}; Total number of elements entries: {}; Total number of unique elements: {}", numberOfSequences, numberOfElements, numberOfUniqueElements);
+        log.info("Total number of sequences: {}; Total number of elements entries: {}; Total number of unique elements: {}",
+                        numberOfSequences, numberOfElements, numberOfUniqueElements);
 
         /*
          build RDD of reduced SequenceElements, just get rid of labels temporary, stick to some numerical values,
@@ -270,28 +281,37 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
 
         // FIXME: probably we need to reconsider this approach
-        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunctionFlat<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
+        JavaRDD<T> vocabRDD = corpus
+                        .flatMap(new VocabRddFunctionFlat<T>(configurationBroadcast, paramServerConfigurationBroadcast))
+                        .distinct();
         vocabRDD.count();
 
         /**
          * now we initialize Shards with values. That call should be started from driver which is either Client or Shard in standalone mode.
          */
-        VoidParameterServer.getInstance().init(paramServerConfiguration, new RoutedTransport(), ela.getTrainingDriver());
-        VoidParameterServer.getInstance().initializeSeqVec(configuration.getLayersSize(), (int) numberOfUniqueElements, 119, configuration.getLayersSize() / paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.isUseHS(), paramServerConfiguration.isUseNS());
+        VoidParameterServer.getInstance().init(paramServerConfiguration, new RoutedTransport(),
+                        ela.getTrainingDriver());
+        VoidParameterServer.getInstance().initializeSeqVec(configuration.getLayersSize(), (int) numberOfUniqueElements,
+                        119, configuration.getLayersSize() / paramServerConfiguration.getNumberOfShards(),
+                        paramServerConfiguration.isUseHS(), paramServerConfiguration.isUseNS());
 
         // proceed to training
         // also, training function is the place where we invoke ParameterServer
-        TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
-        PartitionTrainingFunction<T> partitionTrainer = new PartitionTrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
+        TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast,
+                        paramServerConfigurationBroadcast);
+        PartitionTrainingFunction<T> partitionTrainer = new PartitionTrainingFunction<>(shallowVocabCacheBroadcast,
+                        configurationBroadcast, paramServerConfigurationBroadcast);
 
         if (configuration != null)
             for (int e = 0; e < configuration.getEpochs(); e++)
                 corpus.foreachPartition(partitionTrainer);
-                //corpus.foreach(trainer);
+        //corpus.foreach(trainer);
 
 
         // we're transferring vectors to ExportContainer
-        JavaRDD<ExportContainer<T>> exportRdd = vocabRDD.map(new DistributedFunction<T>(paramServerConfigurationBroadcast, configurationBroadcast, shallowVocabCacheBroadcast));
+        JavaRDD<ExportContainer<T>> exportRdd =
+                        vocabRDD.map(new DistributedFunction<T>(paramServerConfigurationBroadcast,
+                                        configurationBroadcast, shallowVocabCacheBroadcast));
 
         // at this particular moment training should be pretty much done, and we're good to go for export
         if (exporter != null)
@@ -385,7 +405,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * @param num
          * @return
          */
-        public Builder<T> workers(int num){
+        public Builder<T> workers(int num) {
             this.workers = num;
             return this;
         }

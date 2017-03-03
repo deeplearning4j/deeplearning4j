@@ -178,10 +178,8 @@ public abstract class TokenInfoDictionaryCompilerBase<T extends DictionaryEntryB
     }
 
     protected void writeDictionary(String filename) throws IOException {
-        TokenInfoBufferCompiler tokenInfoBufferCompiler = new TokenInfoBufferCompiler(
-            new FileOutputStream(filename),
-            bufferEntries
-        );
+        TokenInfoBufferCompiler tokenInfoBufferCompiler =
+                        new TokenInfoBufferCompiler(new FileOutputStream(filename), bufferEntries);
         tokenInfoBufferCompiler.compile();
     }
 

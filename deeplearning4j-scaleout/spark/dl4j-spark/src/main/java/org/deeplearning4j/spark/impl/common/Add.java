@@ -27,7 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Adds 2 ndarrays
  * @author Adam Gibson
  */
-public class Add implements Function2<INDArray,INDArray,INDArray> {
+public class Add implements Function2<INDArray, INDArray, INDArray> {
     @Override
     public INDArray call(INDArray v1, INDArray v2) throws Exception {
         INDArray res = v1.addi(v2);

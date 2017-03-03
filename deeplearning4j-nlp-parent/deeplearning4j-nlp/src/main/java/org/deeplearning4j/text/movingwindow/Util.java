@@ -31,15 +31,14 @@ import java.util.logging.Logger;
 public class Util {
 
 
-    private Util() {
-    }
+    private Util() {}
 
     /**
      * Returns a thread safe counter map
      * @return
      */
-    public static <K,V> CounterMap<K,V> parallelCounterMap() {
-        MapFactory<K,Double> factory = new MapFactory<K,Double>() {
+    public static <K, V> CounterMap<K, V> parallelCounterMap() {
+        MapFactory<K, Double> factory = new MapFactory<K, Double>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
@@ -50,7 +49,7 @@ public class Util {
 
         };
 
-        CounterMap<K,V> totalWords = new CounterMap(factory,factory);
+        CounterMap<K, V> totalWords = new CounterMap(factory, factory);
         return totalWords;
     }
 
@@ -60,7 +59,7 @@ public class Util {
      * @return
      */
     public static <K> Counter<K> parallelCounter() {
-        MapFactory<K,Double> factory = new MapFactory<K,Double>() {
+        MapFactory<K, Double> factory = new MapFactory<K, Double>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
@@ -77,9 +76,9 @@ public class Util {
 
 
 
-    public static boolean matchesAnyStopWord(List<String> stopWords,String word) {
-        for(String s : stopWords)
-            if(s.equalsIgnoreCase(word))
+    public static boolean matchesAnyStopWord(List<String> stopWords, String word) {
+        for (String s : stopWords)
+            if (s.equalsIgnoreCase(word))
                 return true;
         return false;
     }

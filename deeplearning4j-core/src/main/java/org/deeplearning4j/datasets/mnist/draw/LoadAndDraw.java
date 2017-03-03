@@ -32,45 +32,45 @@ import java.io.ObjectInputStream;
 
 public class LoadAndDraw {
 
-	private LoadAndDraw() {
-	}
+    private LoadAndDraw() {}
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		MnistDataSetIterator iter = new MnistDataSetIterator(60,60000);
-		@SuppressWarnings("unchecked")
-		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[0]));
-		
-		BasePretrainNetwork network = (BasePretrainNetwork) ois.readObject();
-		try {
-			ois.close();
-		} catch (IOException e) {
-		}
+    /**
+     * @param args
+     */
+    public static void main(String[] args) throws Exception {
+        MnistDataSetIterator iter = new MnistDataSetIterator(60, 60000);
+        @SuppressWarnings("unchecked")
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[0]));
 
-		DataSet test = null;
-		while(iter.hasNext()) {
-			test = iter.next();
-			INDArray reconstructed = network.activate(test.getFeatureMatrix());
-			for(int i = 0; i < test.numExamples(); i++) {
-				INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
-				INDArray reconstructed2 = reconstructed.getRow(i);
-				INDArray draw2 = Nd4j.getDistributions().createBinomial(1,reconstructed2).sample(reconstructed2.shape()).mul(255);
+        BasePretrainNetwork network = (BasePretrainNetwork) ois.readObject();
+        try {
+            ois.close();
+        } catch (IOException e) {
+        }
 
-				DrawReconstruction d = new DrawReconstruction(draw1);
-				d.title = "REAL";
-				d.draw();
-				DrawReconstruction d2 = new DrawReconstruction(draw2,100,100);
-				d2.title = "TEST";
-				d2.draw();
-				Thread.sleep(10000);
-				d.frame.dispose();
-				d2.frame.dispose();
-			}
-		}
-		
-		
-	}
+        DataSet test = null;
+        while (iter.hasNext()) {
+            test = iter.next();
+            INDArray reconstructed = network.activate(test.getFeatureMatrix());
+            for (int i = 0; i < test.numExamples(); i++) {
+                INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
+                INDArray reconstructed2 = reconstructed.getRow(i);
+                INDArray draw2 = Nd4j.getDistributions().createBinomial(1, reconstructed2)
+                                .sample(reconstructed2.shape()).mul(255);
+
+                DrawReconstruction d = new DrawReconstruction(draw1);
+                d.title = "REAL";
+                d.draw();
+                DrawReconstruction d2 = new DrawReconstruction(draw2, 100, 100);
+                d2.title = "TEST";
+                d2.draw();
+                Thread.sleep(10000);
+                d.frame.dispose();
+                d2.frame.dispose();
+            }
+        }
+
+
+    }
 
 }

@@ -32,73 +32,79 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public  class VocabWord extends SequenceElement implements Serializable {
+public class VocabWord extends SequenceElement implements Serializable {
 
-	private static final long serialVersionUID = 2223750736522624256L;
+    private static final long serialVersionUID = 2223750736522624256L;
 
-	//for my sanity
-	private String word;
+    //for my sanity
+    private String word;
 
     /*
         Used for Joint/Distributed vocabs mechanics
      */
-	@Getter @Setter protected Long vocabId;
-	@Getter @Setter protected Long affinityId;
+    @Getter
+    @Setter
+    protected Long vocabId;
+    @Getter
+    @Setter
+    protected Long affinityId;
 
-	public static VocabWord none() {
-		return new VocabWord(0,"none");
-	}
+    public static VocabWord none() {
+        return new VocabWord(0, "none");
+    }
 
-	/**
-	 *
-	 * @param wordFrequency count of the word
-
-	 */
-	public VocabWord(double wordFrequency, @NonNull String word) {
-		if(word == null || word.isEmpty())
-			throw new IllegalArgumentException("Word must not be null or empty");
-		this.word = word;
+    /**
+     *
+     * @param wordFrequency count of the word
+    
+     */
+    public VocabWord(double wordFrequency, @NonNull String word) {
+        if (word == null || word.isEmpty())
+            throw new IllegalArgumentException("Word must not be null or empty");
+        this.word = word;
         this.elementFrequency.set(wordFrequency);
         this.storageId = SequenceElement.getLongHash(word);
-	}
+    }
 
-	public VocabWord(double wordFrequency, @NonNull String word, long storageId) {
-		this(wordFrequency, word);
-		this.storageId = storageId;
-	}
+    public VocabWord(double wordFrequency, @NonNull String word, long storageId) {
+        this(wordFrequency, word);
+        this.storageId = storageId;
+    }
 
 
-	public VocabWord() {}
+    public VocabWord() {}
 
 
     public String getLabel() {
         return this.word;
     }
-/*
-	public void write(DataOutputStream dos) throws IOException {
-		dos.writeDouble(this.elementFrequency.get());
-	}
+    /*
+    	public void write(DataOutputStream dos) throws IOException {
+    		dos.writeDouble(this.elementFrequency.get());
+    	}
+    
+    	public VocabWord read(DataInputStream dos) throws IOException {
+    		this.elementFrequency.set(dos.readDouble());
+    		return this;
+    	}
+    
+    */
 
-	public VocabWord read(DataInputStream dos) throws IOException {
-		this.elementFrequency.set(dos.readDouble());
-		return this;
-	}
+    public String getWord() {
+        return word;
+    }
 
-*/
-
-	public String getWord() {
-		return word;
-	}
-
-	public void setWord(String word) {
-		this.word = word;
-	}
+    public void setWord(String word) {
+        this.word = word;
+    }
 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof VocabWord)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof VocabWord))
+            return false;
         final VocabWord vocabWord = (VocabWord) o;
         if (this.word == null)
             return vocabWord.word == null;
@@ -132,26 +138,22 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
     @Override
     public String toString() {
-        return "VocabWord{" +
-                "wordFrequency=" + this.elementFrequency +
-                ", index=" + index +
-                ", word='" + word + '\'' +
-                ", codeLength=" + codeLength +
-                '}';
+        return "VocabWord{" + "wordFrequency=" + this.elementFrequency + ", index=" + index + ", word='" + word + '\''
+                        + ", codeLength=" + codeLength + '}';
     }
 
-	@Override
-	public String toJSON() {
-		ObjectMapper mapper = mapper();
-		try {
+    @Override
+    public String toJSON() {
+        ObjectMapper mapper = mapper();
+        try {
             /*
                 we need JSON as single line to save it at first line of the CSV model file
             */
-			return mapper.writeValueAsString(this);
-		} catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            return mapper.writeValueAsString(this);
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
 }

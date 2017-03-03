@@ -27,7 +27,7 @@ import scala.Tuple2;
 /**Simple conversion function to convert from a {@code JavaPairRDD<K,DataSet>} to a {@code JavaPairRDD<K,MultiDataSet>}
  * @author Alex Black
  */
-public class PairDataSetToMultiDataSetFn<K> implements PairFunction<Tuple2<K,DataSet>,K,MultiDataSet> {
+public class PairDataSetToMultiDataSetFn<K> implements PairFunction<Tuple2<K, DataSet>, K, MultiDataSet> {
 
     @Override
     public Tuple2<K, MultiDataSet> call(Tuple2<K, DataSet> in) throws Exception {

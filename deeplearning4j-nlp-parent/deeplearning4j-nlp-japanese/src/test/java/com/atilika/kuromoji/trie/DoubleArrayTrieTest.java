@@ -47,9 +47,7 @@ public class DoubleArrayTrieTest {
         doubleArrayTrie.write(output);
         output.close();
 
-        doubleArrayTrie = DoubleArrayTrie.read(
-            new FileInputStream(costsFile)
-        );
+        doubleArrayTrie = DoubleArrayTrie.read(new FileInputStream(costsFile));
 
         assertEquals(0, doubleArrayTrie.lookup("a"));
         assertTrue(doubleArrayTrie.lookup("abc") > 0);

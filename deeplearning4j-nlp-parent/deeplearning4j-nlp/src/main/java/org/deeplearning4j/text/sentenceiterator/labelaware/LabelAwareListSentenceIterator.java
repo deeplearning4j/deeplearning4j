@@ -48,8 +48,9 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @param textPosition the position of the text on each line
      * @throws IOException
      */
-    public LabelAwareListSentenceIterator(InputStream is,String delimiter,int labelPosition,int textPosition) throws IOException {
-        StringGrid grid = StringGrid.fromInput(is,delimiter);
+    public LabelAwareListSentenceIterator(InputStream is, String delimiter, int labelPosition, int textPosition)
+                    throws IOException {
+        StringGrid grid = StringGrid.fromInput(is, delimiter);
         labels = grid.getColumn(labelPosition);
         text = grid.getColumn(textPosition);
 
@@ -64,7 +65,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @throws IOException
      */
     public LabelAwareListSentenceIterator(InputStream is) throws IOException {
-        this(is,"\t",0,1);
+        this(is, "\t", 0, 1);
     }
 
     /**
@@ -73,10 +74,9 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @param sep the separator for the file
      * @throws IOException
      */
-    public LabelAwareListSentenceIterator(InputStream is,String sep) throws IOException {
-        this(is,sep,0,1);
+    public LabelAwareListSentenceIterator(InputStream is, String sep) throws IOException {
+        this(is, sep, 0, 1);
     }
-
 
 
 
@@ -103,10 +103,10 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @return the next sentence in the iterator
      */
     @Override
-    public  String nextSentence() {
+    public String nextSentence() {
         String ret = text.get(currPosition);
         currentLabel = labels.get(currPosition);
-        if(sentencePreProcessor != null)
+        if (sentencePreProcessor != null)
             ret = sentencePreProcessor.preProcess(ret);
         currPosition++;
         return ret;
@@ -118,7 +118,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @return whether there's anymore sentences left
      */
     @Override
-    public synchronized  boolean hasNext() {
+    public synchronized boolean hasNext() {
         return currPosition < text.size();
     }
 
@@ -136,7 +136,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      */
     @Override
     public void finish() {
-         //no op
+        //no op
     }
 
     @Override

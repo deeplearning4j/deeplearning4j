@@ -39,8 +39,7 @@ import java.util.Random;
  */
 public class SparkUtils {
 
-    private SparkUtils() {
-    }
+    private SparkUtils() {}
 
     /**
      * Check the spark configuration for incorrect Kryo configuration, logging a warning message if necessary
@@ -185,9 +184,10 @@ public class SparkUtils {
      * @param <T>                 Type of the RDD
      * @return Repartitioned RDD, or original RDD if no repartitioning was conducted
      */
-    public static <T> JavaRDD<T> repartition(JavaRDD<T> rdd, Repartition repartition, RepartitionStrategy repartitionStrategy,
-                                             int objectsPerPartition, int numPartitions) {
-        if (repartition == Repartition.Never) return rdd;
+    public static <T> JavaRDD<T> repartition(JavaRDD<T> rdd, Repartition repartition,
+                    RepartitionStrategy repartitionStrategy, int objectsPerPartition, int numPartitions) {
+        if (repartition == Repartition.Never)
+            return rdd;
 
         switch (repartitionStrategy) {
             case SparkDefault:
@@ -215,13 +215,15 @@ public class SparkUtils {
      * @param <T>                 Type of RDD
      * @return Repartitioned RDD, or the original RDD if no repartitioning was performed
      */
-    public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition, int objectsPerPartition, int numPartitions) {
+    public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition,
+                    int objectsPerPartition, int numPartitions) {
         int origNumPartitions = rdd.partitions().size();
         switch (repartition) {
             case Never:
                 return rdd;
             case NumPartitionsWorkersDiffers:
-                if (origNumPartitions == numPartitions) return rdd;
+                if (origNumPartitions == numPartitions)
+                    return rdd;
             case Always:
                 //Repartition: either always, or origNumPartitions != numWorkers
 
@@ -230,7 +232,8 @@ public class SparkUtils {
                 //Because the objects (DataSets etc) should be small, this should be OK
 
                 //Count each partition...
-                List<Tuple2<Integer, Integer>> partitionCounts = rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+                List<Tuple2<Integer, Integer>> partitionCounts =
+                                rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
                 int totalObjects = 0;
                 int initialPartitions = partitionCounts.size();
 
@@ -260,15 +263,19 @@ public class SparkUtils {
                 //In each partition: work out the start offset (so we can work out the index of each element)
                 int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
                 for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
-                    elementStartOffsetByPartitions[i] = elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
+                    elementStartOffsetByPartitions[i] =
+                                    elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
                 }
 
                 //Index each element for repartitioning (can only do manual repartitioning on a JavaPairRDD)
-                JavaRDD<Tuple2<Integer, T>> indexed = rdd.mapPartitionsWithIndex(new AssignIndexFunction<T>(elementStartOffsetByPartitions), true);
-                JavaPairRDD<Integer, T> pairIndexed = indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, T>(), true);
+                JavaRDD<Tuple2<Integer, T>> indexed = rdd.mapPartitionsWithIndex(
+                                new AssignIndexFunction<T>(elementStartOffsetByPartitions), true);
+                JavaPairRDD<Integer, T> pairIndexed =
+                                indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, T>(), true);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
-                pairIndexed = pairIndexed.partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
+                pairIndexed = pairIndexed
+                                .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
 
                 return pairIndexed.values();
             default:
@@ -301,7 +308,8 @@ public class SparkUtils {
     /**
      * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} with control over the RNG seed
      */
-    public static <T> JavaRDD<T>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data, long rngSeed) {
+    public static <T> JavaRDD<T>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data,
+                    long rngSeed) {
         JavaRDD<T>[] splits;
         if (totalObjectCount <= numObjectsPerSplit) {
             splits = (JavaRDD<T>[]) Array.newInstance(JavaRDD.class, 1);
@@ -320,14 +328,16 @@ public class SparkUtils {
     /**
      * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} but for Pair RDDs
      */
-    public static <T, U> JavaPairRDD<T, U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaPairRDD<T, U> data) {
+    public static <T, U> JavaPairRDD<T, U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit,
+                    JavaPairRDD<T, U> data) {
         return balancedRandomSplit(totalObjectCount, numObjectsPerSplit, data, new Random().nextLong());
     }
 
     /**
      * Equivalent to {@link #balancedRandomSplit(int, int, JavaRDD)} but for pair RDDs, and with control over the RNG seed
      */
-    public static <T, U> JavaPairRDD<T, U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaPairRDD<T, U> data, long rngSeed) {
+    public static <T, U> JavaPairRDD<T, U>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit,
+                    JavaPairRDD<T, U> data, long rngSeed) {
         JavaPairRDD<T, U>[] splits;
         if (totalObjectCount <= numObjectsPerSplit) {
             splits = (JavaPairRDD<T, U>[]) Array.newInstance(JavaPairRDD.class, 1);
@@ -342,7 +352,8 @@ public class SparkUtils {
                 //but, of course Spark doesn't provide this
                 //So we need to do a two-step process here...
 
-                JavaRDD<Tuple2<T, U>> split = data.mapPartitionsWithIndex(new SplitPartitionsFunction2<T, U>(i, numSplits, rngSeed), true);
+                JavaRDD<Tuple2<T, U>> split = data.mapPartitionsWithIndex(
+                                new SplitPartitionsFunction2<T, U>(i, numSplits, rngSeed), true);
                 splits[i] = split.mapPartitionsToPair(new MapTupleToPairFlatMap<T, U>(), true);
             }
         }
@@ -380,10 +391,11 @@ public class SparkUtils {
      * @param numPartitions Number of partitions to use when splitting/recombining
      * @return A new {@link JavaRDD<DataSet>}, with the examples shuffled/combined in each
      */
-    public static JavaRDD<DataSet> shuffleExamples(JavaRDD<DataSet> rdd, int newBatchSize, int numPartitions){
+    public static JavaRDD<DataSet> shuffleExamples(JavaRDD<DataSet> rdd, int newBatchSize, int numPartitions) {
         //Step 1: split into individual examples, mapping to a pair RDD (random key in range 0 to numPartitions)
 
-        JavaPairRDD<Integer,DataSet> singleExampleDataSets = rdd.flatMapToPair(new SplitDataSetExamplesPairFlatMapFunction(numPartitions));
+        JavaPairRDD<Integer, DataSet> singleExampleDataSets =
+                        rdd.flatMapToPair(new SplitDataSetExamplesPairFlatMapFunction(numPartitions));
 
         //Step 2: repartition according to the random keys
         singleExampleDataSets = singleExampleDataSets.partitionBy(new IntPartitioner(numPartitions));

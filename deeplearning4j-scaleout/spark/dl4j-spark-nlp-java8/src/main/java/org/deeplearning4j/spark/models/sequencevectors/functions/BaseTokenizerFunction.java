@@ -40,9 +40,10 @@ public abstract class BaseTokenizerFunction implements Serializable {
                 if (tokenPreprocessor != null) {
                     tokenizerFactory.setTokenPreProcessor(tokenPreprocessor);
                 }
-            } catch (Exception e ) {
+            } catch (Exception e) {
                 throw new RuntimeException("Unable to instantiate TokenizerFactory.", e);
             }
-        } else throw new RuntimeException("TokenizerFactory wasn't defined.");
+        } else
+            throw new RuntimeException("TokenizerFactory wasn't defined.");
     }
 }

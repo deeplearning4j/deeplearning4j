@@ -27,32 +27,36 @@ import org.deeplearning4j.ui.api.Style;
  *
  * @author Alex Black
  */
-@NoArgsConstructor @Data @EqualsAndHashCode(callSuper=true)
+@NoArgsConstructor
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleDiv extends Style {
 
     /** Enumeration: possible values for float style option */
-    public enum FloatValue {non, left, right, initial, inherit}
+    public enum FloatValue {
+        non, left, right, initial, inherit
+    }
 
     private FloatValue floatValue;
 
-    private StyleDiv(Builder builder){
+    private StyleDiv(Builder builder) {
         super(builder);
         this.floatValue = builder.floatValue;
     }
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
         private FloatValue floatValue;
 
         /** CSS float styling option */
-        public Builder floatValue(FloatValue floatValue){
+        public Builder floatValue(FloatValue floatValue) {
             this.floatValue = floatValue;
             return this;
         }
 
-        public StyleDiv build(){
+        public StyleDiv build() {
             return new StyleDiv(this);
         }
     }

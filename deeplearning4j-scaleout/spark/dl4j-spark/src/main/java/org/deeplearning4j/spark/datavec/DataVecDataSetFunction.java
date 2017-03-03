@@ -35,7 +35,7 @@ import java.util.List;
  * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
  */
-public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>, Serializable {
+public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>, Serializable {
 
     private final int labelIndex;
     private final int labelIndexTo;
@@ -45,7 +45,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
     private final WritableConverter converter;
     protected int batchSize = -1;
 
-    public DataVecDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
+    public DataVecDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression) {
         this(labelIndex, numPossibleLabels, regression, null, null);
     }
 
@@ -57,7 +57,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
      * @param converter WritableConverter (may be null)
      */
     public DataVecDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
-                                  DataSetPreProcessor preProcessor, WritableConverter converter) {
+                    DataSetPreProcessor preProcessor, WritableConverter converter) {
         this(labelIndex, labelIndex, numPossibleLabels, regression, preProcessor, converter);
     }
 
@@ -70,7 +70,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
      * @param regression        If true: regression. false: classification
      */
     public DataVecDataSetFunction(int labelIndexFrom, int labelIndexTo, int numPossibleLabels, boolean regression,
-                                  DataSetPreProcessor preProcessor, WritableConverter converter){
+                    DataSetPreProcessor preProcessor, WritableConverter converter) {
         this.labelIndex = labelIndexFrom;
         this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
@@ -94,31 +94,35 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
         int labelCount = 0;
 
         //no labels
-        if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
-            NDArrayWritable writable = (NDArrayWritable)currList.get(0);
-            DataSet ds = new DataSet(writable.get(),writable.get());
-            if (preProcessor != null) preProcessor.preProcess(ds);
+        if (currList.size() == 2 && currList.get(1) instanceof NDArrayWritable
+                        && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
+            NDArrayWritable writable = (NDArrayWritable) currList.get(0);
+            DataSet ds = new DataSet(writable.get(), writable.get());
+            if (preProcessor != null)
+                preProcessor.preProcess(ds);
             return ds;
         }
-        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
-            if(!regression)
-                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
+        if (currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+            if (!regression)
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),
+                                numPossibleLabels);
             else
                 label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
             NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
             featureVector = ndArrayWritable.get();
-            DataSet ds = new DataSet(featureVector,label);
-            if (preProcessor != null) preProcessor.preProcess(ds);
+            DataSet ds = new DataSet(featureVector, label);
+            if (preProcessor != null)
+                preProcessor.preProcess(ds);
             return ds;
         }
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
             //ndarray writable is an insane slow down here
-            if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
+            if (!(current instanceof NDArrayWritable) && current.toString().isEmpty())
                 continue;
 
-            if (labelIndex >= 0 && j >= labelIndex && j<= labelIndexTo ) {
+            if (labelIndex >= 0 && j >= labelIndex && j <= labelIndexTo) {
                 //single label case (classification, single label regression etc)
                 if (converter != null) {
                     try {
@@ -127,25 +131,28 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
                         e.printStackTrace();
                     }
                 }
-                if(regression){
+                if (regression) {
                     //single and multi-label regression
-                    if(label == null){
-                        label = Nd4j.zeros(labelIndexTo-labelIndex+1);
+                    if (label == null) {
+                        label = Nd4j.zeros(labelIndexTo - labelIndex + 1);
                     }
-                    label.putScalar(0,labelCount++, current.toDouble());
+                    label.putScalar(0, labelCount++, current.toDouble());
                 } else {
                     if (numPossibleLabels < 1)
-                        throw new IllegalStateException("Number of possible labels invalid, must be >= 1 for classification");
+                        throw new IllegalStateException(
+                                        "Number of possible labels invalid, must be >= 1 for classification");
                     int curr = current.toInt();
                     if (curr >= numPossibleLabels)
-                        throw new IllegalStateException("Invalid index: got index " + curr + " but numPossibleLabels is " + numPossibleLabels + " (must be 0 <= idx < numPossibleLabels");
+                        throw new IllegalStateException(
+                                        "Invalid index: got index " + curr + " but numPossibleLabels is "
+                                                        + numPossibleLabels + " (must be 0 <= idx < numPossibleLabels");
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
                 try {
                     double value = current.toDouble();
                     if (featureVector == null) {
-                        if(regression && labelIndex >= 0){
+                        if (regression && labelIndex >= 0) {
                             //Handle the possibly multi-label regression case here:
                             int nLabels = labelIndexTo - labelIndex + 1;
                             featureVector = Nd4j.create(1, currList.size() - nLabels);
@@ -159,7 +166,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
                     // This isn't a scalar, so check if we got an array already
                     if (current instanceof NDArrayWritable) {
                         assert featureVector == null;
-                        featureVector = ((NDArrayWritable)current).get();
+                        featureVector = ((NDArrayWritable) current).get();
                     } else {
                         throw e;
                     }
@@ -167,8 +174,9 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
             }
         }
 
-        DataSet ds = new DataSet(featureVector, (labelIndex >= 0 ? label : featureVector) );
-        if(preProcessor != null) preProcessor.preProcess(ds);
+        DataSet ds = new DataSet(featureVector, (labelIndex >= 0 ? label : featureVector));
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return ds;
     }
 }

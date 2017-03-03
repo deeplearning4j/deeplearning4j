@@ -34,7 +34,8 @@ import java.util.Map;
 /**
  * Created by Alex on 26/08/2016.
  */
-@Data @EqualsAndHashCode(callSuper=true)
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class CustomLayer extends FeedForwardLayer {
 
     private final double someCustomParameter;
@@ -46,7 +47,9 @@ public class CustomLayer extends FeedForwardLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         CustomLayerImpl ret = new CustomLayerImpl(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);

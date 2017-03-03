@@ -23,10 +23,7 @@ public abstract class DictionaryEntryBase {
     protected final short rightId;
     protected final short wordCost;
 
-    public DictionaryEntryBase(String surface,
-                               short leftId,
-                               short rightId,
-                               short wordCost) {
+    public DictionaryEntryBase(String surface, short leftId, short rightId, short wordCost) {
         this.surface = surface;
         this.leftId = leftId;
         this.rightId = rightId;

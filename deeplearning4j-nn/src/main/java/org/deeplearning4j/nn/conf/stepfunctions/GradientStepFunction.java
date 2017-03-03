@@ -42,7 +42,6 @@ public class GradientStepFunction extends StepFunction {
     }
 
     public String toString() {
-        return "GradientStepFunction{" +
-                '}';
+        return "GradientStepFunction{" + '}';
     }
 }

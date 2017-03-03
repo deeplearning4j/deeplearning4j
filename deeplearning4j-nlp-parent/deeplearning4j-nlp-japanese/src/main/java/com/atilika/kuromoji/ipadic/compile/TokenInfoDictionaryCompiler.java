@@ -41,14 +41,8 @@ public class TokenInfoDictionaryCompiler extends TokenInfoDictionaryCompilerBase
         List<String> pos = extractPosFeatures(entry);
         List<String> features = extractOtherFeatures(entry);
 
-        return new GenericDictionaryEntry.Builder()
-            .surface(entry.getSurface())
-            .leftId(entry.getLeftId())
-            .rightId(entry.getRightId())
-            .wordCost(entry.getWordCost())
-            .pos(pos)
-            .features(features)
-            .build();
+        return new GenericDictionaryEntry.Builder().surface(entry.getSurface()).leftId(entry.getLeftId())
+                        .rightId(entry.getRightId()).wordCost(entry.getWordCost()).pos(pos).features(features).build();
     }
 
     public List<String> extractPosFeatures(DictionaryEntry entry) {

@@ -63,13 +63,18 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
     static class CudnnContext extends cudnnContext {
 
         static class Deallocator extends CudnnContext implements Pointer.Deallocator {
-            Deallocator(CudnnContext c) { super(c); }
-            @Override public void deallocate() { destroyHandles(); }
+            Deallocator(CudnnContext c) {
+                super(c);
+            }
+
+            @Override
+            public void deallocate() {
+                destroyHandles();
+            }
         }
 
-        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(),
-                          dstTensorDesc = new cudnnTensorStruct(),
-                          deltaTensorDesc = new cudnnTensorStruct();
+        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
+                        deltaTensorDesc = new cudnnTensorStruct();
         cudnnPoolingStruct poolingDesc = new cudnnPoolingStruct();
 
         CudnnContext() {
@@ -105,30 +110,32 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
     }
 
     CudnnContext cudnnContext = new CudnnContext();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(1.0f)});
-    Pointer beta  = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(0.0f)});;
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
+                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
+    Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
+                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
     INDArray reduced = null;
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,
-                                                     int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
+                    int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
         int[] outSize;
-        if(convolutionMode == ConvolutionMode.Same){
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
+                            strides);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
 
         int outH = outSize[0];
@@ -143,7 +150,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
 
         int poolingMode;
-        switch(poolingType) {
+        switch (poolingType) {
             case AVG:
                 poolingMode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
                 break;
@@ -165,19 +172,19 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         int[] deltaStride = epsilon.stride();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, depth, inH, inW,
-                srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, outH, outW,
-                deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN,
-                kernel[0], kernel[1], pad[0], pad[1], strides[0], strides[1]));
+                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
+        checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
+                        kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon = Nd4j.create(new int[]{miniBatch,depth,inH,inW},'c');
+        INDArray outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
         int[] dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
-                dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, epsilon, reduced, outEpsilon);
@@ -187,36 +194,38 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         Pointer dstData = allocator.getPointer(outEpsilon, context);
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
-        checkCudnn(cudnnPoolingBackward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.deltaTensorDesc, zData,
-                cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta, cudnnContext.dstTensorDesc, dstData));
+        checkCudnn(cudnnPoolingBackward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.deltaTensorDesc,
+                        zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta,
+                        cudnnContext.dstTensorDesc, dstData));
 
         allocator.registerAction(context, input, epsilon, reduced, outEpsilon);
 
-        return new Pair<>(retGradient,outEpsilon);
+        return new Pair<>(retGradient, outEpsilon);
     }
 
 
     @Override
-    public INDArray activate(INDArray input, boolean training,
-            int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
+    public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad,
+                    PoolingType poolingType, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
         int[] outSize;
-        if(convolutionMode == ConvolutionMode.Same){
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
+                            strides);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
 
         int outH = outSize[0];
         int outW = outSize[1];
 
         int poolingMode;
-        switch(poolingType) {
+        switch (poolingType) {
             case AVG:
                 poolingMode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
                 break;
@@ -230,18 +239,18 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         int[] srcStride = input.stride();
-        checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN,
-                kernel[0], kernel[1], pad[0], pad[1], strides[0], strides[1]));
+        checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
+                        kernel[1], pad[0], pad[1], strides[0], strides[1]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        reduced = Nd4j.createUninitialized(new int[]{miniBatch,inDepth,outH,outW},'c');
+        reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
         int[] dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, outH, outW,
-                dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, reduced);
@@ -249,8 +258,8 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         Pointer dstData = allocator.getPointer(reduced, context);
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
-        checkCudnn(cudnnPoolingForward(cudnnContext, cudnnContext.poolingDesc,
-                alpha, cudnnContext.srcTensorDesc, srcData, beta, cudnnContext.dstTensorDesc, dstData));
+        checkCudnn(cudnnPoolingForward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.srcTensorDesc,
+                        srcData, beta, cudnnContext.dstTensorDesc, dstData));
 
         allocator.registerAction(context, input, reduced);
 

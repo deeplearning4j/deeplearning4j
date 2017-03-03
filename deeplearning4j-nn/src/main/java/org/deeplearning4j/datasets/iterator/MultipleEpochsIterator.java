@@ -38,36 +38,37 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting
     protected int epochs = 0;
     protected int numEpochs;
-    protected int batch=0;
+    protected int batch = 0;
     protected int lastBatch = batch;
     protected DataSetIterator iter;
     protected DataSet ds;
     protected List<DataSet> batchedDS = Lists.newArrayList();
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
-    @Getter protected DataSetPreProcessor preProcessor;
+    @Getter
+    protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;
     protected int queueSize = 1;
     protected boolean async = false;
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected long totalIterations = Long.MAX_VALUE;
 
-    public MultipleEpochsIterator(int numEpochs,DataSetIterator iter) {
+    public MultipleEpochsIterator(int numEpochs, DataSetIterator iter) {
         this.numEpochs = numEpochs;
         this.iter = iter;
     }
 
-    public MultipleEpochsIterator(int numEpochs,DataSetIterator iter, int queueSize) {
+    public MultipleEpochsIterator(int numEpochs, DataSetIterator iter, int queueSize) {
         this.numEpochs = numEpochs;
         this.queueSize = queueSize;
         this.async = queueSize > 1 && iter.asyncSupported();
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
     }
 
     public MultipleEpochsIterator(DataSetIterator iter, int queueSize, long totalIterations) {
         this.numEpochs = Integer.MAX_VALUE;
         this.queueSize = queueSize;
         this.async = queueSize > 1 && iter.asyncSupported();
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
         this.totalIterations = totalIterations;
     }
 
@@ -75,11 +76,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.numEpochs = Integer.MAX_VALUE;
         this.queueSize = 1;
         this.async = false;
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize): iter;
+        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
         this.totalIterations = totalIterations;
     }
 
-    public MultipleEpochsIterator(int numEpochs,DataSet ds) {
+    public MultipleEpochsIterator(int numEpochs, DataSet ds) {
         this.numEpochs = numEpochs;
         this.ds = ds;
     }
@@ -97,27 +98,27 @@ public class MultipleEpochsIterator implements DataSetIterator {
         DataSet next;
         batch++;
         iterationsCounter.incrementAndGet();
-        if(iter == null){
+        if (iter == null) {
             // return full DataSet
-            if(num == -1) {
+            if (num == -1) {
                 next = ds;
                 if (epochs < numEpochs)
                     trackEpochs();
             }
             // return DataSet broken into batches
             else {
-                if(batchedDS.isEmpty() && num > 0)
+                if (batchedDS.isEmpty() && num > 0)
                     batchedDS = ds.batchBy(num);
                 next = batchedDS.get(batch);
-                if(batch+1 == batchedDS.size()) {
+                if (batch + 1 == batchedDS.size()) {
                     trackEpochs();
                     if (epochs < numEpochs)
                         batch = -1;
                 }
             }
         } else {
-            next = num == -1? iter.next(): iter.next(num);
-            if(!iter.hasNext()) {
+            next = num == -1 ? iter.next() : iter.next(num);
+            if (!iter.hasNext()) {
                 trackEpochs();
                 // track number of epochs and won't reset if it's over
                 if (epochs < numEpochs) {
@@ -127,12 +128,12 @@ public class MultipleEpochsIterator implements DataSetIterator {
                 }
             }
         }
-        if(preProcessor != null)
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
     }
 
-    public void trackEpochs(){
+    public void trackEpochs() {
         epochs++;
         newEpoch = true;
     }
@@ -173,13 +174,13 @@ public class MultipleEpochsIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return iter.resetSupported();
     }
 
     @Override
     public boolean asyncSupported() {
-            return false;
+        return false;
     }
 
     /**
@@ -275,6 +276,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public void remove() {
-           iter.remove();
+        iter.remove();
     }
 }

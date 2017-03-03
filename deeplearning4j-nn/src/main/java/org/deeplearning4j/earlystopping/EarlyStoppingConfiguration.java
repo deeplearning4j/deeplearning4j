@@ -51,7 +51,7 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
     private int evaluateEveryNEpochs;
     private ScoreCalculator<T> scoreCalculator;
 
-    private EarlyStoppingConfiguration( Builder<T> builder ){
+    private EarlyStoppingConfiguration(Builder<T> builder) {
         this.modelSaver = builder.modelSaver;
         this.epochTerminationConditions = builder.epochTerminationConditions;
         this.iterationTerminationConditions = builder.iterationTerminationConditions;
@@ -71,28 +71,28 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
         private ScoreCalculator<T> scoreCalculator;
 
         /** How should models be saved? (Default: in memory)*/
-        public Builder<T> modelSaver( EarlyStoppingModelSaver<T> modelSaver ){
+        public Builder<T> modelSaver(EarlyStoppingModelSaver<T> modelSaver) {
             this.modelSaver = modelSaver;
             return this;
         }
 
         /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
-        public Builder<T> epochTerminationConditions(EpochTerminationCondition... terminationConditions){
+        public Builder<T> epochTerminationConditions(EpochTerminationCondition... terminationConditions) {
             epochTerminationConditions.clear();
             Collections.addAll(epochTerminationConditions, terminationConditions);
             return this;
         }
 
         /** Termination conditions to be evaluated every N epochs, with N set by evaluateEveryNEpochs option */
-        public Builder<T> epochTerminationConditions(List<EpochTerminationCondition> terminationConditions){
+        public Builder<T> epochTerminationConditions(List<EpochTerminationCondition> terminationConditions) {
             this.epochTerminationConditions = terminationConditions;
             return this;
         }
 
         /** Termination conditions to be evaluated every iteration (minibatch)*/
-        public Builder<T> iterationTerminationConditions(IterationTerminationCondition... terminationConditions){
+        public Builder<T> iterationTerminationConditions(IterationTerminationCondition... terminationConditions) {
             iterationTerminationConditions.clear();
-            Collections.addAll(iterationTerminationConditions,terminationConditions);
+            Collections.addAll(iterationTerminationConditions, terminationConditions);
             return this;
         }
 
@@ -101,13 +101,13 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
          * Useful for example if you might want to continue training after a max-time terminatino condition
          * occurs.
          */
-        public Builder<T> saveLastModel(boolean saveLastModel){
+        public Builder<T> saveLastModel(boolean saveLastModel) {
             this.saveLastModel = saveLastModel;
             return this;
         }
 
         /** How frequently should evaluations be conducted (in terms of epochs)? Defaults to every (1) epochs. */
-        public Builder<T> evaluateEveryNEpochs(int everyNEpochs){
+        public Builder<T> evaluateEveryNEpochs(int everyNEpochs) {
             this.evaluateEveryNEpochs = everyNEpochs;
             return this;
         }
@@ -115,13 +115,13 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
         /** Score calculator. Used to calculate a score (such as loss function on a test set), every N epochs,
          * where N is set by {@link #evaluateEveryNEpochs}
          */
-        public Builder<T> scoreCalculator(ScoreCalculator<T> scoreCalculator){
+        public Builder<T> scoreCalculator(ScoreCalculator<T> scoreCalculator) {
             this.scoreCalculator = scoreCalculator;
             return this;
         }
 
         /** Create the early stopping configuration */
-        public EarlyStoppingConfiguration<T> build(){
+        public EarlyStoppingConfiguration<T> build() {
             return new EarlyStoppingConfiguration<>(this);
         }
 

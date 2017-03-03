@@ -14,7 +14,8 @@ public class VanillaStatsStorageRouterProvider implements StatsStorageRouterProv
 
     @Override
     public synchronized StatsStorageRouter getRouter() {
-        if(router == null) router = new VanillaStatsStorageRouter();
+        if (router == null)
+            router = new VanillaStatsStorageRouter();
         return router;
     }
 }

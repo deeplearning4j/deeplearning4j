@@ -21,9 +21,5 @@ import com.atilika.kuromoji.dict.Dictionary;
 
 public interface TokenFactory<T extends TokenBase> {
 
-    T createToken(int wordId,
-                  String surface,
-                  ViterbiNode.Type type,
-                  int position,
-                  Dictionary dictionary);
+    T createToken(int wordId, String surface, ViterbiNode.Type type, int position, Dictionary dictionary);
 }

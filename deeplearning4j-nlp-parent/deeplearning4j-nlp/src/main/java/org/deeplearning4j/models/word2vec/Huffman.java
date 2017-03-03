@@ -79,7 +79,7 @@ public class Huffman {
 
         a = words.size();
 
-        while(a < words.size() * 2) {
+        while (a < words.size() * 2) {
             count[a] = Integer.MAX_VALUE;
             a++;
         }
@@ -125,7 +125,7 @@ public class Huffman {
             binary[min2i] = 1;
         }
         // Now assign binary code to each vocabulary word
-        int i ;
+        int i;
         int b;
         // Now assign binary code to each vocabulary word
         for (a = 0; a < words.size(); a++) {
@@ -137,7 +137,7 @@ public class Huffman {
                 i++;
                 b = parentNode[b];
 
-            } while(b != words.size() * 2 - 2 && i < 39);
+            } while (b != words.size() * 2 - 2 && i < 39);
 
 
             words.get(a).setCodeLength((short) i);
@@ -148,7 +148,8 @@ public class Huffman {
                     words.get(a).getCodes().set(i - b - 1, code[b]);
                     words.get(a).getPoints().set(i - b, point[b] - words.size());
                 } catch (Exception e) {
-                    logger.info("Words size: ["+ words.size()+"], a: ["+ a+"], b: ["+ b +"], i: ["+ i +"], points size: [" + words.get(a).getPoints().size()+"]");
+                    logger.info("Words size: [" + words.size() + "], a: [" + a + "], b: [" + b + "], i: [" + i
+                                    + "], points size: [" + words.get(a).getPoints().size() + "]");
                     throw new RuntimeException(e);
                 }
             }
@@ -165,7 +166,8 @@ public class Huffman {
      * @param cache VocabCache to be updated.
      */
     public void applyIndexes(VocabCache<? extends SequenceElement> cache) {
-        if (!buildTrigger) build();
+        if (!buildTrigger)
+            build();
 
         for (int a = 0; a < words.size(); a++) {
             if (words.get(a).getLabel() != null) {

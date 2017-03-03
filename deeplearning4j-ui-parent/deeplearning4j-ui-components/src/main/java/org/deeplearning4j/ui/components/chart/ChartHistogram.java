@@ -48,7 +48,7 @@ public class ChartHistogram extends Chart {
     }
 
     //No arg constructor for Jackson
-    public ChartHistogram(){
+    public ChartHistogram() {
         super(COMPONENT_TYPE);
     }
 
@@ -82,22 +82,22 @@ public class ChartHistogram extends Chart {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartHistogram(lowerBounds=");
-        if(lowerBounds != null){
+        if (lowerBounds != null) {
             sb.append(lowerBounds);
         } else {
             sb.append("[]");
         }
         sb.append(",upperBounds=");
-        if(upperBounds!= null){
+        if (upperBounds != null) {
             sb.append(upperBounds);
         } else {
             sb.append("[]");
         }
         sb.append(",yValues=");
-        if(yValues != null){
+        if (yValues != null) {
             sb.append(yValues);
         } else {
             sb.append("[]");

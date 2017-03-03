@@ -30,7 +30,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
  * Class for conducting early stopping training locally (single machine).<br>
  * Can be used to train a {@link ComputationGraph}
  */
-public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<ComputationGraph> {  //implements IEarlyStoppingTrainer<ComputationGraph> {
+public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<ComputationGraph> { //implements IEarlyStoppingTrainer<ComputationGraph> {
     private ComputationGraph net;
 
     /**
@@ -39,7 +39,7 @@ public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<Computat
      * @param train DataSetIterator for training the network
      */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
-                                     DataSetIterator train) {
+                    DataSetIterator train) {
         this(esConfig, net, train, null);
     }
 
@@ -50,10 +50,11 @@ public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<Computat
      * @param listener Early stopping listener. May be null.
      */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
-                                     DataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
+                    DataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
         super(esConfig, net, train, null, listener);
-        if (net.getNumInputArrays() != 1 || net.getNumOutputArrays() != 1) throw new IllegalStateException(
-                "Cannot do early stopping training on ComputationGraph with DataSetIterator: graph does not have 1 input and 1 output array");
+        if (net.getNumInputArrays() != 1 || net.getNumOutputArrays() != 1)
+            throw new IllegalStateException(
+                            "Cannot do early stopping training on ComputationGraph with DataSetIterator: graph does not have 1 input and 1 output array");
         this.net = net;
     }
 
@@ -64,7 +65,7 @@ public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<Computat
      * @param listener Early stopping listener. May be null.
      */
     public EarlyStoppingGraphTrainer(EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
-                                     MultiDataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
+                    MultiDataSetIterator train, EarlyStoppingListener<ComputationGraph> listener) {
         super(esConfig, net, null, train, listener);
         this.net = net;
     }

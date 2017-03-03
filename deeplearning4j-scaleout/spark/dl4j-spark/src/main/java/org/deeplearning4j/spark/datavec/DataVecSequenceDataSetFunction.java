@@ -39,7 +39,7 @@ import java.util.List;
  * see {@link DataVecSequencePairDataSetFunction} for the separate collections for input and labels version
  * @author Alex Black
  */
-public class DataVecSequenceDataSetFunction implements Function<List<List<Writable>>,DataSet>, Serializable {
+public class DataVecSequenceDataSetFunction implements Function<List<List<Writable>>, DataSet>, Serializable {
 
     private final boolean regression;
     private final int labelIndex;
@@ -52,7 +52,7 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
      * @param numPossibleLabels Number of classes for classification  (not used if regression = true)
      * @param regression False for classification, true for regression
      */
-    public DataVecSequenceDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression){
+    public DataVecSequenceDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression) {
         this(labelIndex, numPossibleLabels, regression, null, null);
     }
 
@@ -64,7 +64,7 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
      * @param converter WritableConverter (may be null)
      */
     public DataVecSequenceDataSetFunction(int labelIndex, int numPossibleLabels, boolean regression,
-                                          DataSetPreProcessor preProcessor, WritableConverter converter){
+                    DataSetPreProcessor preProcessor, WritableConverter converter) {
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
@@ -83,11 +83,11 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
         int[] fIdx = new int[3];
         int[] lIdx = new int[3];
 
-        int i=0;
-        while(iter.hasNext()){
+        int i = 0;
+        while (iter.hasNext()) {
             List<Writable> step = iter.next();
             if (i == 0) {
-                features = Nd4j.zeros(1, step.size()-1, input.size());
+                features = Nd4j.zeros(1, step.size() - 1, input.size());
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
@@ -95,15 +95,16 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
             int countFeatures = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                if(converter != null) current = converter.convert(current);
-                if(countIn++ == labelIndex){
+                if (converter != null)
+                    current = converter.convert(current);
+                if (countIn++ == labelIndex) {
                     //label
-                    if(regression){
+                    if (regression) {
                         lIdx[2] = i;
-                        labels.putScalar(lIdx,current.toDouble());
+                        labels.putScalar(lIdx, current.toDouble());
                     } else {
                         INDArray line = FeatureUtil.toOutcomeVector(current.toInt(), numPossibleLabels);
-                        labels.tensorAlongDimension(i,1).assign(line);  //1d from [1,nOut,timeSeriesLength] -> tensor i along dimension 1 is at time i
+                        labels.tensorAlongDimension(i, 1).assign(line); //1d from [1,nOut,timeSeriesLength] -> tensor i along dimension 1 is at time i
                     }
                 } else {
                     //feature
@@ -115,7 +116,7 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
                         // This isn't a scalar, so check if we got an array already
                         if (current instanceof NDArrayWritable) {
                             features.get(NDArrayIndex.point(fIdx[0]), NDArrayIndex.all(), NDArrayIndex.point(fIdx[2]))
-                                    .putRow(0, ((NDArrayWritable)current).get());
+                                            .putRow(0, ((NDArrayWritable) current).get());
                         } else {
                             throw e;
                         }
@@ -125,8 +126,9 @@ public class DataVecSequenceDataSetFunction implements Function<List<List<Writab
             i++;
         }
 
-        DataSet ds = new DataSet(features,labels);
-        if(preProcessor != null) preProcessor.preProcess(ds);
+        DataSet ds = new DataSet(features, labels);
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return ds;
     }
 }

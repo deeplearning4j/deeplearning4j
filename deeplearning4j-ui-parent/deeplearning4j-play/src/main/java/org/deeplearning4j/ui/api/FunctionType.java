@@ -6,8 +6,5 @@ package org.deeplearning4j.ui.api;
  * @author Alex Black
  */
 public enum FunctionType {
-    Supplier,
-    Function,
-    BiFunction,
-    Function3
+    Supplier, Function, BiFunction, Function3
 }

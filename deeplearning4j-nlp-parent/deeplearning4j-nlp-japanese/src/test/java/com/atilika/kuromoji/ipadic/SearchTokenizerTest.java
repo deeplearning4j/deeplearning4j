@@ -36,9 +36,7 @@ public class SearchTokenizerTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        tokenizer = new Tokenizer.Builder()
-            .mode(Mode.SEARCH)
-            .build();
+        tokenizer = new Tokenizer.Builder().mode(Mode.SEARCH).build();
     }
 
     @Test
@@ -48,8 +46,7 @@ public class SearchTokenizerTest {
 
     public void assertSegmentation(String testFilename) throws IOException {
         LineNumberReader reader = new LineNumberReader(
-            new InputStreamReader(getResourceAsStream(testFilename), StandardCharsets.UTF_8)
-        );
+                        new InputStreamReader(getResourceAsStream(testFilename), StandardCharsets.UTF_8));
 
         String line;
         while ((line = reader.readLine()) != null) {

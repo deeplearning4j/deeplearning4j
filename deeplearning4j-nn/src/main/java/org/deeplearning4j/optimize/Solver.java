@@ -46,26 +46,27 @@ public class Solver {
     private StepFunction stepFunction;
 
     public void optimize() {
-        if(optimizer == null)
+        if (optimizer == null)
             optimizer = getOptimizer();
         optimizer.optimize();
 
     }
 
     public ConvexOptimizer getOptimizer() {
-        if(optimizer != null) return optimizer;
-        switch(conf.getOptimizationAlgo()) {
+        if (optimizer != null)
+            return optimizer;
+        switch (conf.getOptimizationAlgo()) {
             case LBFGS:
-                optimizer = new LBFGS(conf,stepFunction,listeners,model);
+                optimizer = new LBFGS(conf, stepFunction, listeners, model);
                 break;
             case LINE_GRADIENT_DESCENT:
-                optimizer = new LineGradientDescent(conf,stepFunction,listeners,model);
+                optimizer = new LineGradientDescent(conf, stepFunction, listeners, model);
                 break;
             case CONJUGATE_GRADIENT:
-                optimizer = new ConjugateGradient(conf,stepFunction,listeners,model);
+                optimizer = new ConjugateGradient(conf, stepFunction, listeners, model);
                 break;
             case STOCHASTIC_GRADIENT_DESCENT:
-                optimizer = new StochasticGradientDescent(conf,stepFunction,listeners,model);
+                optimizer = new StochasticGradientDescent(conf, stepFunction, listeners, model);
                 break;
             default:
                 throw new IllegalStateException("No optimizer found");
@@ -73,9 +74,10 @@ public class Solver {
         return optimizer;
     }
 
-    public void setListeners(Collection<IterationListener> listeners){
+    public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = listeners;
-        if(optimizer != null ) optimizer.setListeners(listeners);
+        if (optimizer != null)
+            optimizer.setListeners(listeners);
     }
 
     public static class Builder {
@@ -87,7 +89,7 @@ public class Solver {
             this.conf = conf;
             return this;
         }
-        
+
         public Builder listener(IterationListener... listeners) {
             this.listeners.addAll(Arrays.asList(listeners));
             return this;
@@ -97,7 +99,7 @@ public class Solver {
             this.listeners.addAll(listeners);
             return this;
         }
-        
+
         public Builder model(Model model) {
             this.model = model;
             return this;

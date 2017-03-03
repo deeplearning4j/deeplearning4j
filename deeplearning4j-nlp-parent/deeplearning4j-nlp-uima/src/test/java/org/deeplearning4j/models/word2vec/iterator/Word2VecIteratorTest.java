@@ -44,7 +44,7 @@ public class Word2VecIteratorTest {
 
     @Before
     public void before() throws Exception {
-        if(vec == null) {
+        if (vec == null) {
             ClassPathResource resource = new ClassPathResource("/labeled/");
             File file = resource.getFile();
             SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
@@ -52,12 +52,9 @@ public class Word2VecIteratorTest {
 
             TokenizerFactory t = new UimaTokenizerFactory();
 
-            vec = new Word2Vec.Builder()
-                    .minWordFrequency(1).iterations(5)
-                    .layerSize(100)
-                    .stopWords(new ArrayList<String>())
-                    .useUnknown(true)
-                    .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+            vec = new Word2Vec.Builder().minWordFrequency(1).iterations(5).layerSize(100)
+                            .stopWords(new ArrayList<String>()).useUnknown(true).windowSize(5).iterate(iter)
+                            .tokenizerFactory(t).build();
             vec.fit();
 
         }
@@ -72,7 +69,9 @@ public class Word2VecIteratorTest {
         unk = vec.getWordVectorMatrix("2131241sdasdas");
         assertNotEquals(null, unk);
 
-        Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()), Arrays.asList("negative","positive","neutral"));
+        Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,
+                        new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()),
+                        Arrays.asList("negative", "positive", "neutral"));
         DataSet next = iter.next();
 
     }

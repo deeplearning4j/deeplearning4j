@@ -54,37 +54,39 @@ public class L2NormalizeVertex extends GraphVertex {
 
     @Override
     public L2NormalizeVertex clone() {
-        return new L2NormalizeVertex(dimension,eps);
+        return new L2NormalizeVertex(dimension, eps);
     }
 
     @Override
-    public boolean equals(Object o){
-        if(!(o instanceof L2NormalizeVertex)) return false;
-        return ((L2NormalizeVertex)o).dimension == dimension;
+    public boolean equals(Object o) {
+        if (!(o instanceof L2NormalizeVertex))
+            return false;
+        return ((L2NormalizeVertex) o).dimension == dimension;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return 123081189;
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph,name,idx,dimension,eps);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph, name, idx, dimension, eps);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length == 1) return vertexInputs[0];
+        if (vertexInputs.length == 1)
+            return vertexInputs[0];
         InputType first = vertexInputs[0];
 
-        return first;   //Same output shape/size as
+        return first; //Same output shape/size as
     }
 }

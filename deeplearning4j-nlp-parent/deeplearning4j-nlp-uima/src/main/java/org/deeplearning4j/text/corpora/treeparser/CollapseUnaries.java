@@ -40,12 +40,12 @@ public class CollapseUnaries implements TreeTransformer {
         }
 
         List<Tree> children = tree.children();
-        while(children.size() == 1 && !children.get(0).isLeaf()) {
+        while (children.size() == 1 && !children.get(0).isLeaf()) {
             children = children.get(0).children();
         }
 
         List<Tree> processed = new ArrayList<>();
-        for(Tree child : children)
+        for (Tree child : children)
             processed.add(transform(child));
 
         Tree ret = new Tree(tree);
@@ -53,7 +53,6 @@ public class CollapseUnaries implements TreeTransformer {
 
         return ret;
     }
-
 
 
 

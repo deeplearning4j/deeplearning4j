@@ -36,7 +36,8 @@ public class FlowListenerModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/flow", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.flow.Flow.apply()));
+        Route r1 = new Route("/flow", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(org.deeplearning4j.ui.views.html.flow.Flow.apply()));
         Route r2 = new Route("/flow/info/:id", HttpMethod.GET, FunctionType.Function, this::getStaticInfo);
         Route r3 = new Route("/flow/state/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
         Route r4 = new Route("/flow/listSessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
@@ -58,7 +59,8 @@ public class FlowListenerModule implements UIModule {
     public void onAttach(StatsStorage statsStorage) {
         for (String sessionID : statsStorage.listSessionIDs()) {
             for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
-                if (!TYPE_ID.equals(typeID)) continue;
+                if (!TYPE_ID.equals(typeID))
+                    continue;
                 knownSessionIDs.put(sessionID, statsStorage);
             }
         }
@@ -66,43 +68,49 @@ public class FlowListenerModule implements UIModule {
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-        for(String s : knownSessionIDs.keySet()){
-            if(statsStorage == knownSessionIDs.get(s)){
+        for (String s : knownSessionIDs.keySet()) {
+            if (statsStorage == knownSessionIDs.get(s)) {
                 knownSessionIDs.remove(s);
             }
         }
     }
 
-    private Result listSessions(){
+    private Result listSessions() {
         return ok(Json.toJson(knownSessionIDs.keySet()));
     }
 
-    private Result getStaticInfo(String sessionID){
-        if(!knownSessionIDs.containsKey(sessionID)) return ok("Unknown session ID");
+    private Result getStaticInfo(String sessionID) {
+        if (!knownSessionIDs.containsKey(sessionID))
+            return ok("Unknown session ID");
         StatsStorage ss = knownSessionIDs.get(sessionID);
 
-        List<Persistable> list = ss.getAllStaticInfos(sessionID,TYPE_ID);
-        if(list == null || list.size() == 0) return ok();
+        List<Persistable> list = ss.getAllStaticInfos(sessionID, TYPE_ID);
+        if (list == null || list.size() == 0)
+            return ok();
 
         Persistable p = list.get(0);
-        if(!(p instanceof FlowStaticPersistable)) return ok();
+        if (!(p instanceof FlowStaticPersistable))
+            return ok();
 
-        FlowStaticPersistable f = (FlowStaticPersistable)p;
+        FlowStaticPersistable f = (FlowStaticPersistable) p;
 
         return ok(Json.toJson(f.getModelInfo()));
     }
 
-    private Result getUpdate(String sessionID){
-        if(!knownSessionIDs.containsKey(sessionID)) return ok("Unknown session ID");
+    private Result getUpdate(String sessionID) {
+        if (!knownSessionIDs.containsKey(sessionID))
+            return ok("Unknown session ID");
         StatsStorage ss = knownSessionIDs.get(sessionID);
 
         List<Persistable> list = ss.getLatestUpdateAllWorkers(sessionID, TYPE_ID);
-        if(list == null || list.size() == 0) return ok();
+        if (list == null || list.size() == 0)
+            return ok();
 
         Persistable p = list.get(0);
-        if(!(p instanceof FlowUpdatePersistable)) return ok();
+        if (!(p instanceof FlowUpdatePersistable))
+            return ok();
 
-        FlowUpdatePersistable f = (FlowUpdatePersistable)p;
+        FlowUpdatePersistable f = (FlowUpdatePersistable) p;
 
         return ok(Json.toJson(f.getModelState()));
     }

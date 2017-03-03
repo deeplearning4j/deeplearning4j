@@ -48,12 +48,12 @@ public class UnstackVertex extends BaseGraphVertex {
     private int forwardShape[];
     private int step;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize){
-        this(graph,name,vertexIndex,null,null,from,stackSize);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize) {
+        this(graph, name, vertexIndex, null, null, from, stackSize);
     }
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                         VertexIndices[] outputVertices, int from, int stackSize) {
+                    VertexIndices[] outputVertices, int from, int stackSize) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.from = from;
         this.stackSize = stackSize;
@@ -76,13 +76,14 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: input not set");
 
         // once we know the inputs, save the shape and interval size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.step = inputs[0].size(0)/stackSize;
-        int start = from*step;
-        int end = (from+1)*step;
+        this.step = inputs[0].size(0) / stackSize;
+        int start = from * step;
+        int end = (from + 1) * step;
 
         switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
@@ -90,56 +91,64 @@ public class UnstackVertex extends BaseGraphVertex {
             case 3:
                 return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).dup();
             default:
-                throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
+                throw new UnsupportedOperationException(
+                                "Cannot get subset for activations of rank " + inputs[0].rank());
         }
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
+        if (!canDoBackward())
+            throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
-        int start = from*step;
-        int end = (from+1)*step;
+        int start = from * step;
+        int end = (from + 1) * step;
 
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilon);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()},
+                                epsilon);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()}, epsilon);
                 break;
             default:
-                throw new RuntimeException("Invalid activation rank");  //Should never happen
+                throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null,new INDArray[]{out});
+        return new Pair<>(null, new INDArray[] {out});
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        if(maskArrays == null || maskArrays.length == 0){
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
+        if (maskArrays == null || maskArrays.length == 0) {
             return new Pair<>(null, currentMaskState);
         }
 
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from*step;
-        int end = (from+1)*step;
+        int start = from * step;
+        int end = (from + 1) * step;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }
 
     @Override
     public String toString() {
-        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",forwardShape=" + forwardShape + ")";
+        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+                        + ",forwardShape=" + forwardShape + ")";
     }
 }

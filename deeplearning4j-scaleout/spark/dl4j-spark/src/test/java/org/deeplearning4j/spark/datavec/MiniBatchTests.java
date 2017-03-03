@@ -40,17 +40,18 @@ public class MiniBatchTests extends BaseSparkTest {
     @Test
     public void testMiniBatches() throws Exception {
         log.info("Setting up Spark Context...");
-        JavaRDD<String> lines = sc.textFile(new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive().toURI().toString()).cache();
+        JavaRDD<String> lines = sc.textFile(new ClassPathResource("svmLight/iris_svmLight_0.txt")
+                        .getTempFileFromArchive().toURI().toString()).cache();
         long count = lines.count();
-        assertEquals(300,count);
+        assertEquals(300, count);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(new SVMLightRecordReader(), 4, 3)).cache();
         count = points.count();
-        assertEquals(300,count);
+        assertEquals(300, count);
 
-        JavaRDD<DataSet> miniBatches = new RDDMiniBatches(10,points).miniBatchesJava();
+        JavaRDD<DataSet> miniBatches = new RDDMiniBatches(10, points).miniBatchesJava();
         count = miniBatches.count();
-        assertEquals(30,count);
+        assertEquals(30, count);
 
         lines.unpersist();
         points.unpersist();
@@ -58,7 +59,7 @@ public class MiniBatchTests extends BaseSparkTest {
     }
 
 
-    public static class DataSetAssertionFunction implements Function<DataSet,Object> {
+    public static class DataSetAssertionFunction implements Function<DataSet, Object> {
 
         @Override
         public Object call(DataSet dataSet) throws Exception {

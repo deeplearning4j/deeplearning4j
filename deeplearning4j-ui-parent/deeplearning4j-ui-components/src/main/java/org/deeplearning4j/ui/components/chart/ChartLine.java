@@ -31,7 +31,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=true)
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartLine extends Chart {
     public static final String COMPONENT_TYPE = "ChartLine";
@@ -40,14 +41,14 @@ public class ChartLine extends Chart {
     private List<double[]> y;
     private List<String> seriesNames;
 
-    private ChartLine(Builder builder){
+    private ChartLine(Builder builder) {
         super(COMPONENT_TYPE, builder);
         x = builder.x;
         y = builder.y;
         seriesNames = builder.seriesNames;
     }
 
-    public ChartLine(){
+    public ChartLine() {
         super(COMPONENT_TYPE);
         //no-arg constructor for Jackson
     }
@@ -60,46 +61,49 @@ public class ChartLine extends Chart {
         private boolean showLegend = true;
 
 
-        public Builder(String title, StyleChart style){
-            super(title,style);
+        public Builder(String title, StyleChart style) {
+            super(title, style);
         }
 
-        public Builder addSeries(String seriesName, double[] xValues, double[] yValues){
+        public Builder addSeries(String seriesName, double[] xValues, double[] yValues) {
             x.add(xValues);
             y.add(yValues);
             seriesNames.add(seriesName);
             return this;
         }
 
-        public ChartLine build(){
+        public ChartLine build() {
             return new ChartLine(this);
         }
 
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartLine(x=[");
         boolean first = true;
-        if(x != null) {
+        if (x != null) {
             for (double[] d : x) {
-                if (!first) sb.append(",");
+                if (!first)
+                    sb.append(",");
                 sb.append(Arrays.toString(d));
                 first = false;
             }
         }
         sb.append("],y=[");
         first = true;
-        if(y != null) {
+        if (y != null) {
             for (double[] d : y) {
-                if (!first) sb.append(",");
+                if (!first)
+                    sb.append(",");
                 sb.append(Arrays.toString(d));
                 first = false;
             }
         }
         sb.append("],seriesNames=");
-        if(seriesNames != null) sb.append(seriesNames);
+        if (seriesNames != null)
+            sb.append(seriesNames);
         sb.append(")");
         return sb.toString();
     }

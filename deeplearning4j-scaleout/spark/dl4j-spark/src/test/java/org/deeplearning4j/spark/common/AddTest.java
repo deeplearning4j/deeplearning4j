@@ -38,11 +38,11 @@ public class AddTest extends BaseSparkTest {
     @Test
     public void testAdd() {
         List<INDArray> list = new ArrayList<>();
-        for(int i = 0; i < 5; i++)
+        for (int i = 0; i < 5; i++)
             list.add(Nd4j.ones(5));
         JavaRDD<INDArray> rdd = sc.parallelize(list);
-        INDArray sum = rdd.fold(Nd4j.zeros(5),new Add());
-        assertEquals(25,sum.sum(Integer.MAX_VALUE).getDouble(0),1e-1);
+        INDArray sum = rdd.fold(Nd4j.zeros(5), new Add());
+        assertEquals(25, sum.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
     }
 
 }

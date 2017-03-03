@@ -43,10 +43,12 @@ import java.util.List;
  */
 public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T> {
 
-    public IEvaluateFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation) {
+    public IEvaluateFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+                    T evaluation) {
         super(new IEvaluateFlatMapFunctionAdapter<>(json, params, evalBatchSize, evaluation));
     }
 }
+
 
 /**
  * Function to evaluate data (using an IEvaluation instance), in a distributed manner
@@ -71,7 +73,8 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation){
+    public IEvaluateFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+                    T evaluation) {
         this.json = json;
         this.params = params;
         this.evalBatchSize = evalBatchSize;
@@ -88,7 +91,8 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParameters(val);
 
         List<DataSet> collect = new ArrayList<>();
@@ -107,21 +111,22 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
 
 
             INDArray out;
-            if(data.hasMaskArrays()) {
-                out = network.output(data.getFeatureMatrix(), false, data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+            if (data.hasMaskArrays()) {
+                out = network.output(data.getFeatureMatrix(), false, data.getFeaturesMaskArray(),
+                                data.getLabelsMaskArray());
             } else {
                 out = network.output(data.getFeatureMatrix(), false);
             }
 
 
-            if(data.getLabels().rank() == 3){
-                if(data.getLabelsMaskArray() == null){
-                    evaluation.evalTimeSeries(data.getLabels(),out);
+            if (data.getLabels().rank() == 3) {
+                if (data.getLabelsMaskArray() == null) {
+                    evaluation.evalTimeSeries(data.getLabels(), out);
                 } else {
-                    evaluation.evalTimeSeries(data.getLabels(),out,data.getLabelsMaskArray());
+                    evaluation.evalTimeSeries(data.getLabels(), out, data.getLabelsMaskArray());
                 }
             } else {
-                evaluation.eval(data.getLabels(),out);
+                evaluation.eval(data.getLabels(), out);
             }
         }
 

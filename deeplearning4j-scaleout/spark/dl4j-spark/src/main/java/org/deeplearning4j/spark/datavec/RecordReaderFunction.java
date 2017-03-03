@@ -35,13 +35,14 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RecordReaderFunction implements Function<String,DataSet> {
+public class RecordReaderFunction implements Function<String, DataSet> {
     private RecordReader recordReader;
     private int labelIndex = -1;
     private int numPossibleLabels = -1;
     private WritableConverter converter;
 
-    public RecordReaderFunction(RecordReader recordReader, int labelIndex, int numPossibleLabels, WritableConverter converter) {
+    public RecordReaderFunction(RecordReader recordReader, int labelIndex, int numPossibleLabels,
+                    WritableConverter converter) {
         this.recordReader = recordReader;
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
@@ -50,7 +51,7 @@ public class RecordReaderFunction implements Function<String,DataSet> {
     }
 
     public RecordReaderFunction(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
-        this(recordReader,labelIndex,numPossibleLabels,null);
+        this(recordReader, labelIndex, numPossibleLabels, null);
     }
 
     @Override
@@ -59,7 +60,7 @@ public class RecordReaderFunction implements Function<String,DataSet> {
         List<DataSet> dataSets = new ArrayList<>();
         List<Writable> record = recordReader.next();
         List<Writable> currList;
-        if(record instanceof List)
+        if (record instanceof List)
             currList = (List<Writable>) record;
         else
             currList = new ArrayList<>(record);
@@ -67,35 +68,34 @@ public class RecordReaderFunction implements Function<String,DataSet> {
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
         int count = 0;
-        for(int j = 0; j < currList.size(); j++) {
-            if(labelIndex >= 0 && j == labelIndex) {
-                if(numPossibleLabels < 1)
+        for (int j = 0; j < currList.size(); j++) {
+            if (labelIndex >= 0 && j == labelIndex) {
+                if (numPossibleLabels < 1)
                     throw new IllegalStateException("Number of possible labels invalid, must be >= 1");
                 Writable current = currList.get(j);
-                if(converter != null)
+                if (converter != null)
                     current = converter.convert(current);
                 label = FeatureUtil.toOutcomeVector(Double.valueOf(current.toString()).intValue(), numPossibleLabels);
-            }
-            else {
+            } else {
                 Writable current = currList.get(j);
-                featureVector.putScalar(count++,Double.valueOf(current.toString()));
+                featureVector.putScalar(count++, Double.valueOf(current.toString()));
             }
         }
 
-        dataSets.add(new DataSet(featureVector,labelIndex >= 0 ? label : featureVector));
-
+        dataSets.add(new DataSet(featureVector, labelIndex >= 0 ? label : featureVector));
 
 
 
         List<INDArray> inputs = new ArrayList<>();
         List<INDArray> labels = new ArrayList<>();
-        for(DataSet data : dataSets) {
+        for (DataSet data : dataSets) {
             inputs.add(data.getFeatureMatrix());
             labels.add(data.getLabels());
         }
 
 
-        DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),Nd4j.vstack(labels.toArray(new INDArray[0])));
+        DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),
+                        Nd4j.vstack(labels.toArray(new INDArray[0])));
         return ret;
     }
 }

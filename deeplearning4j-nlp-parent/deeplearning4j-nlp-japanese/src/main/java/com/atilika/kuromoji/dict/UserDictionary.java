@@ -62,10 +62,8 @@ public class UserDictionary implements Dictionary {
 
     private final int totalFeatures;
 
-    public UserDictionary(InputStream inputStream,
-                          int totalFeatures,
-                          int readingFeature,
-                          int partOfSpeechFeature) throws IOException {
+    public UserDictionary(InputStream inputStream, int totalFeatures, int readingFeature, int partOfSpeechFeature)
+                    throws IOException {
         this.totalFeatures = totalFeatures;
         this.readingFeature = readingFeature;
         this.partOfSpeechFeature = partOfSpeechFeature;
@@ -85,7 +83,8 @@ public class UserDictionary implements Dictionary {
         while (startIndex < text.length()) {
             int matchLength = 0;
 
-            while (startIndex + matchLength < text.length() && entries.containsKeyPrefix(text.substring(startIndex, startIndex + matchLength + 1))) {
+            while (startIndex + matchLength < text.length()
+                            && entries.containsKeyPrefix(text.substring(startIndex, startIndex + matchLength + 1))) {
                 matchLength++;
             }
 
@@ -94,9 +93,7 @@ public class UserDictionary implements Dictionary {
                 int[] details = entries.get(match);
 
                 if (details != null) {
-                    matchInfos.addAll(
-                        makeMatchDetails(startIndex, details)
-                    );
+                    matchInfos.addAll(makeMatchDetails(startIndex, details));
                 }
             }
 
@@ -115,9 +112,7 @@ public class UserDictionary implements Dictionary {
         for (int i = 1; i < details.length; i++) {
             int matchLength = details[i];
 
-            matchDetails.add(
-                new UserDictionaryMatch(wordId, matchStartIndex + startIndex, matchLength)
-            );
+            matchDetails.add(new UserDictionaryMatch(wordId, matchStartIndex + startIndex, matchLength));
 
             startIndex += matchLength;
             wordId++;
@@ -210,9 +205,7 @@ public class UserDictionary implements Dictionary {
     }
 
     public void read(InputStream input) throws IOException {
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(input, StandardCharsets.UTF_8)
-        );
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         String line;
 
         while ((line = reader.readLine()) != null) {
@@ -244,8 +237,8 @@ public class UserDictionary implements Dictionary {
             segmentation = split(segmentationValue);
             readings = split(readingsValue);
         } else {
-            segmentation = new String[]{segmentationValue};
-            readings = new String[]{readingsValue};
+            segmentation = new String[] {segmentationValue};
+            readings = new String[] {readingsValue};
         }
 
         if (segmentation.length != readings.length) {

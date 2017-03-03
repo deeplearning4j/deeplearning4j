@@ -54,9 +54,6 @@ public class FeatureInfoMap {
 
     @Override
     public String toString() {
-        return "FeatureInfoMap{" +
-            "featureMap=" + featureMap +
-            ", maxValue=" + maxValue +
-            '}';
+        return "FeatureInfoMap{" + "featureMap=" + featureMap + ", maxValue=" + maxValue + '}';
     }
 }

@@ -124,7 +124,8 @@ public class ViterbiFormatter {
         builder.append("# try to fill paper\n");
         builder.append("ratio = fill;\n");
         builder.append("edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
-        builder.append("node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]\n");
+        builder.append("node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME
+                        + "\" ]\n");
 
         return builder.toString();
     }
@@ -135,8 +136,8 @@ public class ViterbiFormatter {
 
 
     private String formatEdge(ViterbiNode from, ViterbiNode to) {
-        if (this.bestPathMap.containsKey(getNodeId(from)) &&
-            this.bestPathMap.get(getNodeId(from)).equals(getNodeId(to))) {
+        if (this.bestPathMap.containsKey(getNodeId(from))
+                        && this.bestPathMap.get(getNodeId(from)).equals(getNodeId(to))) {
             return formatEdge(from, to, "color=\"#40e050\" fontcolor=\"#40a050\" penwidth=3 fontsize=20 ");
 
         } else {

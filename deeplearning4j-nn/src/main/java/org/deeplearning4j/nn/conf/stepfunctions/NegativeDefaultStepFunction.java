@@ -42,7 +42,6 @@ public class NegativeDefaultStepFunction extends StepFunction {
     }
 
     public String toString() {
-        return "NegativeDefaultStepFunction{" +
-                '}';
+        return "NegativeDefaultStepFunction{" + '}';
     }
 }

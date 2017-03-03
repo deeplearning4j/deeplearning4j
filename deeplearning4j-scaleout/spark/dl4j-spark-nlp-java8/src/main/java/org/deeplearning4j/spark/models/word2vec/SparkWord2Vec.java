@@ -106,7 +106,8 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
             if (tokenizerFactory.getTokenPreProcessor() != null)
-                configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+                configuration.setTokenPreProcessor(
+                                tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
 
             return this;
         }

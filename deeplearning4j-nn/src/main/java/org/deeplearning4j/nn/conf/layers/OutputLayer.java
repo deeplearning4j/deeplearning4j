@@ -41,21 +41,22 @@ import java.util.Map;
  * This includes classification as well as regression
  *
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class OutputLayer extends BaseOutputLayer {
 
     protected OutputLayer(Builder builder) {
-    	super(builder);
+        super(builder);
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("OutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.OutputLayer ret
-                = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        org.deeplearning4j.nn.layers.OutputLayer ret = new org.deeplearning4j.nn.layers.OutputLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -77,10 +78,10 @@ public class OutputLayer extends BaseOutputLayer {
             super.lossFunction(lossFunction);
         }
 
-        public Builder(ILossFunction lossFunction){
+        public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
         }
-        
+
         @Override
         @SuppressWarnings("unchecked")
         public OutputLayer build() {

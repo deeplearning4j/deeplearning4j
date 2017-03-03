@@ -38,8 +38,7 @@ import java.util.List;
 public class WindowConverter {
 
 
-    private WindowConverter() {
-    }
+    private WindowConverter() {}
 
     /**
      * Converts a window (each word in the window)
@@ -56,7 +55,7 @@ public class WindowConverter {
      * @return a concacneated 1 row array
      * containing all of the numbers for each word in the window
      */
-    public static INDArray asExampleArray(Window window,Word2Vec vec,boolean normalize) {
+    public static INDArray asExampleArray(Window window, Word2Vec vec, boolean normalize) {
         int length = vec.lookupTable().layerSize();
         List<String> words = window.getWords();
         int windowSize = vec.getWindow();
@@ -65,17 +64,15 @@ public class WindowConverter {
 
 
 
-        for(int i = 0; i < words.size(); i++) {
+        for (int i = 0; i < words.size(); i++) {
             String word = words.get(i);
-            INDArray n = normalize ? vec.getWordVectorMatrixNormalized(word) :  vec.getWordVectorMatrix(word);
-            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
+            INDArray n = normalize ? vec.getWordVectorMatrixNormalized(word) : vec.getWordVectorMatrix(word);
+            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(i * vec.lookupTable().layerSize(),
+                            i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())}, n);
         }
 
         return ret;
     }
-
-
-
 
 
 
@@ -94,16 +91,16 @@ public class WindowConverter {
      * @return a concatneated 1 row array
      * containing all of the numbers for each word in the window
      */
-	public static INDArray asExampleMatrix(Window window,Word2Vec vec) {
+    public static INDArray asExampleMatrix(Window window, Word2Vec vec) {
         INDArray[] data = new INDArray[window.getWords().size()];
-        for(int i = 0; i < data.length; i++) {
+        for (int i = 0; i < data.length; i++) {
             data[i] = vec.getWordVectorMatrix(window.getWord(i));
 
             // if there's null elements
             if (data[i] == null)
                 data[i] = Nd4j.zeros(vec.getLayerSize());
         }
-		return Nd4j.hstack(data);
-	}
+        return Nd4j.hstack(data);
+    }
 
 }

@@ -33,7 +33,8 @@ public class PopularityWalkerTest {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
 
                 int x = i + 3;
-                if (x >= 10) x = 0;
+                if (x >= 10)
+                    x = 0;
                 graph.addEdge(i, x, 1.0, false);
             }
 
@@ -50,24 +51,19 @@ public class PopularityWalkerTest {
     @Test
     public void testPopularityWalkerCreation() throws Exception {
         GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
-                .setWalkLength(10)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .build();
+                        .setWalkDirection(WalkDirection.FORWARD_ONLY).setWalkLength(10)
+                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
         assertEquals("PopularityWalker", walker.getClass().getSimpleName());
     }
 
     @Test
     public void testPopularityWalker1() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkLength(10)
-                .setPopularityMode(PopularityMode.MAXIMUM)
-                .setPopularitySpread(3)
-                .setSpreadSpectrum(SpreadSpectrum.PLAIN)
-                .build();
+        GraphWalker<VocabWord> walker =
+                        new PopularityWalker.Builder<>(graph).setWalkDirection(WalkDirection.FORWARD_ONLY)
+                                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).setWalkLength(10)
+                                        .setPopularityMode(PopularityMode.MAXIMUM).setPopularitySpread(3)
+                                        .setSpreadSpectrum(SpreadSpectrum.PLAIN).build();
 
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
         System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
@@ -77,18 +73,17 @@ public class PopularityWalkerTest {
 
         System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
 
-        assertTrue(sequence.getElements().get(1).getLabel().equals("4") || sequence.getElements().get(1).getLabel().equals("7") || sequence.getElements().get(1).getLabel().equals("9"));
+        assertTrue(sequence.getElements().get(1).getLabel().equals("4")
+                        || sequence.getElements().get(1).getLabel().equals("7")
+                        || sequence.getElements().get(1).getLabel().equals("9"));
     }
 
     @Test
     public void testPopularityWalker2() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkLength(10)
-                .setPopularityMode(PopularityMode.MINIMUM)
-                .setPopularitySpread(3)
-                .build();
+        GraphWalker<VocabWord> walker =
+                        new PopularityWalker.Builder<>(graph).setWalkDirection(WalkDirection.FORWARD_ONLY)
+                                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).setWalkLength(10)
+                                        .setPopularityMode(PopularityMode.MINIMUM).setPopularitySpread(3).build();
 
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
         System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
@@ -98,19 +93,19 @@ public class PopularityWalkerTest {
 
         System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
 
-        assertTrue(sequence.getElements().get(1).getLabel().equals("8") || sequence.getElements().get(1).getLabel().equals("3") || sequence.getElements().get(1).getLabel().equals("9")  || sequence.getElements().get(1).getLabel().equals("7"));
+        assertTrue(sequence.getElements().get(1).getLabel().equals("8")
+                        || sequence.getElements().get(1).getLabel().equals("3")
+                        || sequence.getElements().get(1).getLabel().equals("9")
+                        || sequence.getElements().get(1).getLabel().equals("7"));
     }
 
     @Test
     public void testPopularityWalker3() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkLength(10)
-                .setPopularityMode(PopularityMode.MAXIMUM)
-                .setPopularitySpread(3)
-                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
-                .build();
+        GraphWalker<VocabWord> walker =
+                        new PopularityWalker.Builder<>(graph).setWalkDirection(WalkDirection.FORWARD_ONLY)
+                                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).setWalkLength(10)
+                                        .setPopularityMode(PopularityMode.MAXIMUM).setPopularitySpread(3)
+                                        .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL).build();
 
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
         System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
@@ -128,7 +123,9 @@ public class PopularityWalkerTest {
             got7.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("7"));
             got9.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("9"));
 
-            assertTrue(sequence.getElements().get(1).getLabel().equals("4") || sequence.getElements().get(1).getLabel().equals("7") || sequence.getElements().get(1).getLabel().equals("9"));
+            assertTrue(sequence.getElements().get(1).getLabel().equals("4")
+                            || sequence.getElements().get(1).getLabel().equals("7")
+                            || sequence.getElements().get(1).getLabel().equals("9"));
 
             walker.reset(false);
         }
@@ -140,14 +137,11 @@ public class PopularityWalkerTest {
 
     @Test
     public void testPopularityWalker4() throws Exception {
-        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<>(graph)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkLength(10)
-                .setPopularityMode(PopularityMode.MINIMUM)
-                .setPopularitySpread(3)
-                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
-                .build();
+        GraphWalker<VocabWord> walker =
+                        new PopularityWalker.Builder<>(graph).setWalkDirection(WalkDirection.FORWARD_ONLY)
+                                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).setWalkLength(10)
+                                        .setPopularityMode(PopularityMode.MINIMUM).setPopularitySpread(3)
+                                        .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL).build();
 
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
         System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
@@ -165,7 +159,9 @@ public class PopularityWalkerTest {
             got8.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("8"));
             got9.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("9"));
 
-            assertTrue(sequence.getElements().get(1).getLabel().equals("8") || sequence.getElements().get(1).getLabel().equals("3") || sequence.getElements().get(1).getLabel().equals("9"));
+            assertTrue(sequence.getElements().get(1).getLabel().equals("8")
+                            || sequence.getElements().get(1).getLabel().equals("3")
+                            || sequence.getElements().get(1).getLabel().equals("9"));
 
             walker.reset(false);
         }

@@ -24,47 +24,50 @@ import java.io.Serializable;
 
 public class IterationInfo implements Serializable {
 
-	private int							index;
-	private ClusterSetInfo				clusterSetInfo;
-	private boolean						strategyApplied;
-	
-	protected IterationInfo() {
-		// no-op for serialization only
-	}
+    private int index;
+    private ClusterSetInfo clusterSetInfo;
+    private boolean strategyApplied;
 
-	public IterationInfo(int index) {
-		super();
-		this.index = index;
-	}
-	
-	public IterationInfo(int index, ClusterSetInfo clusterSetInfo) {
-		super();
-		this.index = index;
-		this.clusterSetInfo = clusterSetInfo;
-	}
-	
-	
+    protected IterationInfo() {
+        // no-op for serialization only
+    }
 
-	public int getIndex() {
-		return index;
-	}
-	public void setIndex(int index) {
-		this.index = index;
-	}
-	public ClusterSetInfo getClusterSetInfo() {
-		return clusterSetInfo;
-	}
-	public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
-		this.clusterSetInfo = clusterSetInfo;
-	}
+    public IterationInfo(int index) {
+        super();
+        this.index = index;
+    }
 
-	public boolean isStrategyApplied() {
-		return strategyApplied;
-	}
+    public IterationInfo(int index, ClusterSetInfo clusterSetInfo) {
+        super();
+        this.index = index;
+        this.clusterSetInfo = clusterSetInfo;
+    }
 
-	public void setStrategyApplied(boolean optimizationApplied) {
-		this.strategyApplied = optimizationApplied;
-	}
 
-	
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public ClusterSetInfo getClusterSetInfo() {
+        return clusterSetInfo;
+    }
+
+    public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
+        this.clusterSetInfo = clusterSetInfo;
+    }
+
+    public boolean isStrategyApplied() {
+        return strategyApplied;
+    }
+
+    public void setStrategyApplied(boolean optimizationApplied) {
+        this.strategyApplied = optimizationApplied;
+    }
+
+
 }

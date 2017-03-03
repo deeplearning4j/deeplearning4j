@@ -11,12 +11,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 public interface StatsStorageListener {
 
     enum EventType {
-        NewSessionID,
-        NewTypeID,
-        NewWorkerID,
-        PostMetaData,
-        PostStaticInfo,
-        PostUpdate
+        NewSessionID, NewTypeID, NewWorkerID, PostMetaData, PostStaticInfo, PostUpdate
     }
 
     /**
