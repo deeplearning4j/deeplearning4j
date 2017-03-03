@@ -10,6 +10,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.data.BatchDataSetsFunction;
@@ -21,13 +22,16 @@ import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import scala.Tuple2;
 
 import java.io.*;
 import java.lang.reflect.Array;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -38,6 +42,12 @@ import java.util.Random;
  * @author Alex Black
  */
 public class SparkUtils {
+
+    private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator being set"
+            + "for ND4J INDArrays.\nWhen using Kryo, An appropriate Kryo registrator must be set to avoid"
+            + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
+            + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\");\n"
+            + "See https://deeplearning4j.org/spark#kryo for more details";
 
     private SparkUtils() {
     }
@@ -56,10 +66,41 @@ public class SparkUtils {
             //conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
             String kryoRegistrator = javaSparkContext.getConf().get("spark.kryo.registrator", null);
             if (kryoRegistrator == null || !kryoRegistrator.equals("org.nd4j.Nd4jRegistrator")) {
-                log.warn("***** Kryo serialization detected without Nd4j Registrator *****");
-                log.warn("***** ND4J Kryo registrator is required to avoid serialization (NullPointerException) issues on NDArrays *****");
-                log.warn("***** Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\"); *****");
-                return false;
+
+                //It's probably going to fail later due to Kryo failing on the INDArray deserialization (off-heap data)
+                //But: the user might be using a custom Kryo registrator that can handle ND4J INDArrays, even if they
+                // aren't using the official ND4J-provided one
+                //So: Let's test serialization now, and fail early if necessary
+                SerializerInstance si;
+                ByteBuffer bb;
+                try{
+                    si = javaSparkContext.env().serializer().newInstance();
+                    bb = si.serialize(Nd4j.linspace(1,5,5), null);
+                }catch (Exception e){
+                    //Failed for some unknown reason during serialization - should never happen
+                    throw new RuntimeException(KRYO_EXCEPTION_MSG, e);
+                }
+
+                if( bb == null){
+                    //Should probably never happen
+                    throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Got: null ByteBuffer from Spark SerializerInstance)");
+                } else {
+                    //Could serialize successfully, but still may not be able to deserialize if kryo config is wrong
+                    boolean equals;
+                    INDArray deserialized;
+                    try{
+                        deserialized = si.deserialize(bb, null);
+                        equals = Nd4j.linspace(1,5,5).equals(deserialized);
+                    } catch (Exception e){
+                        throw new RuntimeException(KRYO_EXCEPTION_MSG, e);
+                    }
+                    if(!equals){
+                        throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Error during deserialization: got " + deserialized + ")" );
+                    }
+
+                    //Otherwise: OK!
+                    return true;
+                }
             }
         }
         return true;
