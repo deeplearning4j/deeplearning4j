@@ -76,43 +76,7 @@ public class Rows {
 
         IntArrayList rows = new IntArrayList();
         rows.add(row);
-        for (int columnIndex = 0; columnIndex < oldTable.columnCount(); columnIndex++) {
-            ColumnType columnType = oldTable.column(columnIndex).type();
-            switch (columnType) {
-                case FLOAT:
-                    copy(rows, (FloatColumn) oldTable.column(columnIndex), (FloatColumn) newTable.column(columnIndex));
-                    break;
-                case INTEGER:
-                    copy(rows, (IntColumn) oldTable.column(columnIndex), (IntColumn) newTable.column(columnIndex));
-                    break;
-                case SHORT_INT:
-                    copy(rows, (ShortColumn) oldTable.column(columnIndex), (ShortColumn) newTable.column(columnIndex));
-                    break;
-                case LONG_INT:
-                    copy(rows, (LongColumn) oldTable.column(columnIndex), (LongColumn) newTable.column(columnIndex));
-                    break;
-                case CATEGORY:
-                    copyRow(row, (CategoryColumn) oldTable.column(columnIndex),
-                                    (CategoryColumn) newTable.column(columnIndex));
-                    break;
-                case BOOLEAN:
-                    copy(rows, (BooleanColumn) oldTable.column(columnIndex),
-                                    (BooleanColumn) newTable.column(columnIndex));
-                    break;
-                case LOCAL_DATE:
-                    copy(rows, (DateColumn) oldTable.column(columnIndex), (DateColumn) newTable.column(columnIndex));
-                    break;
-                case LOCAL_DATE_TIME:
-                    copy(rows, (DateTimeColumn) oldTable.column(columnIndex),
-                                    (DateTimeColumn) newTable.column(columnIndex));
-                    break;
-                case LOCAL_TIME:
-                    copy(rows, (TimeColumn) oldTable.column(columnIndex), (TimeColumn) newTable.column(columnIndex));
-                    break;
-                default:
-                    throw new RuntimeException("Unhandled column type in case statement");
-            }
-        }
+        copyRowsToTable(rows, oldTable, newTable);
     }
 
     public static boolean compareRows(int rowInOriginal, Table original, Table tempTable) {
