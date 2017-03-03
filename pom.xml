@@ -55,8 +55,6 @@
     </developers>
 
     <properties>
-        <spark.version>1.6.2</spark.version>
-        <spark.major.version>1</spark.major.version>
         <jcommander.version>1.27</jcommander.version>
         <play.version>2.4.6</play.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
