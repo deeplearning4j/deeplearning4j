@@ -15,7 +15,7 @@ layout: default
 * [Deep Speech は最も優れた学際的な音声認識モデルを凌ぐ性能を達成](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/), しました。ノイズのある環境においても81パーセントの精度を誇り、主要な商用アルゴリズムの性能を超えました。  
 * Googleは、2014年度ImageNetのコンペティションにおいて、ディープラーニングネットワークを使用し、エラー率6.66パーセントを達成し、勝利しました。
 * [CIFAR-10データセットの結果一覧](http://zybler.blogspot.de/2011/02/table-of-results-for-cifar-10-dataset.html)
-* [Rodrigo Benenson氏のブログ](https://rodrigob.github.io/are_we_there_yet/build/#datasets), which includes CIFAR-10、CIFAR-100、STL-10、SVHN、ILSVRC2012のタスク1、Pascal VOC 2011 comp3、Caltech Pedestrians USA、INRIA Persons、MSRC-21、Leeds Sport Poses、Salient Object Detectionのベンチマークなどが含まれています。
+* [Rodrigo Benenson氏のブログ](https://rodrigob.github.io/are_we_there_yet/build/#datasets), CIFAR-10、CIFAR-100、STL-10、SVHN、ILSVRC2012のタスク1、Pascal VOC 2011 comp3、Caltech Pedestrians USA、INRIA Persons、MSRC-21、Leeds Sport Poses、Salient Object Detectionのベンチマークなどが含まれています。
 * Googleが [ディープラーニングをベースとした音声認識](http://www.nature.com/news/computer-science-the-learning-machines-1.14481) をそのAndroidスマートフォンに採用した際には、25%の単語エラー減少を達成しました。
 * 2013年に、当時Kaggle社の社長だったJeremy Howard氏（現在はEnlitic社の社長）は、 [ほとんどの勝利者は、決定木（ランダムフォレスト）またはディープラーニングのアンサンブルを使用していた](http://www.kdnuggets.com/2013/08/top-tweets-aug12-13.html)、と述べています。
 * Yann LeCun氏の元生徒であるPierre Sermanet氏はKaggleのDogs vs CatsコンペでDLライブラリを使用して勝利しました。
