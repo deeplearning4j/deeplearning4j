@@ -1,6 +1,7 @@
 package org.deeplearning4j.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.keras.api.*;
 import org.deeplearning4j.keras.hdf5.HDF5MiniBatchDataSetIterator;
 import org.deeplearning4j.keras.model.KerasModelSerializer;
@@ -11,9 +12,10 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * The API exposed to the Python side.
@@ -140,7 +142,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param evaluateParams Parameters for a Keras evaluate operation
      */
-    public void sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
+    public Evaluation sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
             MultiLayerNetwork model = evaluateParams.getSequentialModel();
 
@@ -149,9 +151,11 @@ public class DeepLearning4jEntryPoint {
                 evaluateParams.getLabelsDirectory()
             );
 
-            model.evaluate(dataSetIterator);
+            Evaluation ret = model.evaluate(dataSetIterator);
 
             log.info("model.evaluate() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.evaluate()", e);
@@ -164,7 +168,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A single feature and associated parameters
      */
-    public void sequentialPredict(PredictParams predictParams) throws Exception {
+    public INDArray sequentialPredict(PredictParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -172,12 +176,11 @@ public class DeepLearning4jEntryPoint {
                 predictParams.getFeaturesDirectory()
             );
 
-            while(dataSetIterator.hasNext()) {
-                DataSet data = dataSetIterator.next();
-                model.output(data.getFeatures());
-            }
+            INDArray ret = model.output(dataSetIterator);
 
             log.info("model.predict() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict()", e);
@@ -190,7 +193,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and associated parameters
      */
-    public void sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+    public INDArray sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -198,14 +201,11 @@ public class DeepLearning4jEntryPoint {
                 predictParams.getFeaturesDirectory()
             );
 
-            while(dataSetIterator.hasNext()) {
-                DataSet data = dataSetIterator.next();
-                model.output(data.getFeatures());
-            }
-
-            model.output(dataSetIterator);
+            INDArray ret = model.output(dataSetIterator);
 
             log.info("model.predict_on_batch() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict_on_batch()", e);
@@ -292,7 +292,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param evaluateParams Parameters for a Keras evaluate operation
      */
-    public void functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
+    public Evaluation functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
             ComputationGraph model = evaluateParams.getFunctionalModel();
 
@@ -301,9 +301,11 @@ public class DeepLearning4jEntryPoint {
                 evaluateParams.getLabelsDirectory()
             );
 
-            model.evaluate(dataSetIterator);
+            Evaluation ret = model.evaluate(dataSetIterator);
 
             log.info("model.evaluate() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.evaluate()", e);
@@ -316,7 +318,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A single feature and associated parameters
      */
-    public void functionalPredict(PredictParams predictParams) throws Exception {
+    public List<INDArray[]> functionalPredict(PredictParams predictParams) throws Exception {
         try {
             ComputationGraph model = predictParams.getFunctionalModel();
 
@@ -324,12 +326,16 @@ public class DeepLearning4jEntryPoint {
                 predictParams.getFeaturesDirectory()
             );
 
+            List<INDArray[]> ret = new LinkedList<>();
+
             while(dataSetIterator.hasNext()) {
                 DataSet data = dataSetIterator.next();
-                model.output(data.getFeatures());
+                ret.add(model.output(data.getFeatures()));
             }
 
             log.info("model.predict() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict()", e);
@@ -342,7 +348,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and associated parameters
      */
-    public void functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+    public List<INDArray[]> functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             ComputationGraph model = predictParams.getFunctionalModel();
 
@@ -350,12 +356,16 @@ public class DeepLearning4jEntryPoint {
                 predictParams.getFeaturesDirectory()
             );
 
+            List<INDArray[]> ret = new LinkedList<>();
+
             while(dataSetIterator.hasNext()) {
                 DataSet data = dataSetIterator.next();
-                model.output(data.getFeatures());
+                ret.add(model.output(data.getFeatures()));
             }
 
             log.info("model.predict_on_batch() operation complete.");
+
+            return ret;
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict_on_batch()", e);
