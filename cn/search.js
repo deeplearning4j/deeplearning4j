@@ -393,4 +393,28 @@ var PAGES = [{
 "title": "分词",
 "description": "分词（tokenization）是将文本分解为单个词语的过程。词窗口也是由词例（token）组成的。",
 "tags": ["分词", "分词器", "token", "word2vec", "词语", "nlp", "自然语言", "词列", "token"]
+},
+{
+"url": "https://deeplearning4j.org/cn/customizelossfunction",
+"title": "在DL4J中自定义损失函数",
+"description": "若要定制一项损失函数，可以自行定义一项生成一个gradient()的优化函数。",
+"tags": ["loss function", "损失函数", "gradient"]
+},
+{
+"url": "https://deeplearning4j.org/cn/deepbeliefnetwork",
+"title": "深度置信网络与MNIST数据集教程",
+"description": "深度置信网络（DBN）可以定义为一系列堆叠起来的受限玻尔兹曼机（RBM，介绍见此处），每个RBM层都与其前后的层进行通信。单个层中的节点之间不会横向通信。",
+"tags": ["mnist", "深度置信网络", "dbm", "rbm", "deepbelief", "超参数", "hyperparameter", "mnistDataSetIterator", "DataSetIterator "]
+},
+{
+"url": "https://deeplearning4j.org/cn/versioncheck",
+"title": "Deeplearning4j的版本检查",
+"description": "Deeplearning4j包含一项版本检查功能，有可能在您的记录中生成HTTP客户端调试消息。该功能帮助我们了解DL4J库的最新版本是否得到使用。",
+"tags": ["version", "版本", "deeplearning4j", "版本检查", "heartbeat"]
+},
+{
+"url": "https://deeplearning4j.org/cn/core-concepts",
+"title": "DL4J核心概念简介",
+"description": "本页内容假设您已安装最新版本的DL4J。如果您不确定最新的版本是什么，请克隆快速入门指南中的示例，然后查看其中的pom.xml文件。",
+"tags": ["数据加工", "标准化", "dataset", "indarray", "模型", "构建", "定型", "评估"]
 }];

@@ -5,7 +5,7 @@ layout: default
 
 # Comparing Frameworks: Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
 
-Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and better than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. 
+Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. DL4J is portable and platform neutral, rather than being tied to any cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and better than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. Deeplearning4j has Java, [Scala](https://github.com/deeplearning4j/scalnet) and [Python APIs, the latter using Keras](./keras).
 
 <p align="center">
 <a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
@@ -15,15 +15,17 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Lua
 
-* <a href="#torch">Torch</a>
+* <a href="#torch">Torch & Pytorch</a>
 
 Python Frameworks
 
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
+* <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
+* <a href="#dsstne">DyNet</a>
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
@@ -41,7 +43,7 @@ JVM Considerations
 
 ## Lua
 
-### <a name="torch">Torch</a>
+### <a name="torch">Torch & Pytorch</a>
 
 [**Torch**](http://torch.ch/) is a computational framework with an API written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
@@ -83,13 +85,14 @@ Pros and Cons
 * (-) Much “fatter” than Torch
 * (-) Patchy support for pretrained models
 * (-) Buggy on AWS
-
+* (-) Single GPU
 
 ### <a name="tensorflow">TensorFlow</a>
 
 * Google created TensorFlow to replace Theano. The two libraries are in fact quite similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google before leaving for OpenAI. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
-* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run fast. It is not a solution for the Java and Scala communities. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run faster. It is not a solution for the Java and Scala communities. 
+* TensorFlow runs dramatically [slower than other frameworks](https://arxiv.org/pdf/1608.07249v7.pdf) such as CNTK and MxNet. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
 * Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
@@ -130,10 +133,15 @@ Pros and Cons:
 * (-) Cumbersome for big networks (GoogLeNet, ResNet)
 * (-) Not extensible, bit of a hairball
 * (-) No commercial support
+* (-) Probably dying; slow development
 
 ### <a name="cntk">CNTK</a>
 
 [**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. This license does not apply to the method by which CNTK makes distributed training easy -- one-bit SGD -- which is not licensed for commercial use. 
+
+### <a name="chainer">Chainer</a>
+
+Chainer is an open-source neural network framework with a Python API, whose core team of developers work at [Preferred Networks](https://www.crunchbase.com/organization/preferred-networks#/entity), a machine-learning startup based in Tokyo drawing its engineers largely from the University of Tokyo. Until the advent of DyNet at CMU, and PyTorch at Facebook, Chainer was the leading neural network framework for dynamic computation graphs, or nets that allowed for input of varying length, a popular feature for NLP tasks. By its own [benchmarks](http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html), Chainer is notably faster than other Python-oriented frameworks, with TensorFlow the slowest of a test group that includes MxNet and CNTK. 
 
 ### <a name="dsstne">DSSTNE</a>
 
@@ -143,9 +151,21 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
 * (-) Amazon has chosen another framework for use on AWS.
 
+### <a name="dynet">DyNet</a>
+
+[DyNet](https://github.com/clab/dynet), the [Dynamic Neural Network Toolkit](https://arxiv.org/abs/1701.03980), came out of Carnegie Mellon University and used to be called cnn. Its notable feature is the dynamic computation graph, which allows for inputs of varying length, which is great for NLP. PyTorch and Chainer offer the same. 
+
+* (+) Dynamic computation graph
+* (-) Small user community
+
 ### <a name="keras">Keras</a>
 
-[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j relies on Keras as its [Python API](./keras) and [imports models from Keras and through Keras from Theano and TensorFlow](./model-import-keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
+
+* (+) Intuitive API inspired by Torch
+* (+) Works with Theano, TensorFlow and Deeplearning4j backends (CNTK backend to come)
+* (+) Fast growing framework
+* (+) Likely to become standard Python API for NNs
 
 ### <a name="mxnet">MxNet</a>
 

@@ -10,7 +10,7 @@ redirect_from: /zh-restrictedboltzmannmachine
   <li><a href="#reconstruct">重构</a></li>
   <li><a href="#probability">概率分布</a></li>
   <li><a href="#multilayer">多层结构</a></li>
-  <li><a href="#code">代码示例：在DL4J中用受限玻尔兹曼机处理鸢尾花数据集</a></li>
+  <li><a href="#code">代码示例：堆叠式受限玻尔兹曼机</a></li>
   <li><a href="#params">参数与变量k</a></li>
   <li><a href="#CRBM">连续受限玻尔兹曼机</a></li>
   <li><a href="#next">后续内容</a></li>
@@ -65,8 +65,8 @@ redirect_from: /zh-restrictedboltzmannmachine
 <p><h2><a name="probability">概率分布</a></h2></p>
 <p>下面我们来介绍概率分布。如果掷两枚骰子，则所有结果的概率分布情况如下图所示：</p>
 <img class="img-responsive center-block" src="https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg" alt="deeplearning4j" style="max-width: 600px;">
-<p>也就是说，7是最有可能出现的结果，任何预测掷骰子结果的公式需要考虑这一点。</p>
-<p>语言中的字母也有特定的概率分布，因为一种语言使用某些字母的频率会高于其他语言。在英语中，字母<em>e</em>、<em>t</em>和<em>a</em>是最常见的，而冰岛语中最常见的字母则是<em>a</em>、<em>r</em>和<em>n</em>。若用处理英语文本的权重来重构冰岛语，结果就会出现较大的误差。</p>
+<p>也就是说，7是最有可能出现的结果，因为掷出7的组合方式（3+4、1+6、2+5）要多于掷出2到12之间其他数字的方式。任何预测掷骰子结果的公式都需要考虑到数字7的出现频率较高。</p>
+<p>或另一个例子：语言中的字母也有特定的概率分布，因为一种语言使用某些字母的频率会高于其他语言。在英语中，字母<em>e</em>、<em>t</em>和<em>a</em>是最常见的，而冰岛语中最常见的字母则是<em>a</em>、<em>r</em>和<em>n</em>。若用处理英语文本的权重来重构冰岛语，结果就会出现较大的误差。</p>
 <p>与此类似，图像数据集的像素值也有独特的概率分布，具体取决于数据集所包含图像的类别。数据集可能包括MNIST的手写数字图像：</p>
 <img class="img-responsive center-block" src="../img/mnist_render.png" alt="deeplearning4j">
 <p>或是自然脸部检测数据集（Labeled Faces in the Wild）中的头像：</p>
@@ -87,78 +87,16 @@ redirect_from: /zh-restrictedboltzmannmachine
 <img class="img-responsive center-block" src="../img/sym_bipartite_graph_RBM.png" alt="deeplearning4j">
 <p>深度RBM是一种<a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph" target="_blank">有向无环图（DAG）</a>，如有兴趣可点击链接了解其结构。</p><br>
 
-<p><h2><a name="code">代码示例：在DL4J中用RBM处理鸢尾花数据集</a></h2></p>
-<p>注意，以下的示例中创建的RBM仅是<code>NeuralNetConfiguration</code>中的一个层，是送入通用类中的一个参数。同样，RBM对象则被用于存储可见层与隐藏层进行的变换等属性，两种层分别采用高斯和修正线性变换。</p>
-<pre class="line-numbers"><code class="language-java">
-public class RBMIrisExample {		
+<p>
+<h2><a name="code">代码示例：堆叠式受限玻尔兹曼机</a></h2></p>
+<p>请参考<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java" target="_blank">这里</a></p>
 
- private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
-
- public static void main(String[] args) throws IOException {		          // 自定义参数		
-     Nd4j.MAX_SLICES_TO_PRINT = -1;		
-     Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
-     Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
-     final int numRows = 4;		
-     final int numColumns = 1;		
-     int outputNum = 10;		
-     int numSamples = 150;		
-     int batchSize = 150;		
-     int iterations = 100;		
-     int seed = 123;		
-     int listenerFreq = iterations/2;		
-
-     log.info("Load data....");		
-     DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-     // 将数据加载至生成器中，变为神经网络可接受的格式		
-     DataSet iris = iter.next();		
-
-     iris.normalizeZeroMeanZeroUnitVariance();		
-
-     log.info("Build model....");		
-     NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
-             .miniBatch(true)		
-             // 可见层用高斯；隐藏层用修正		
-             // 将对比散度设为1		
-             .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
-                     .nIn(numRows * numColumns) // 输入节点		
-                     .nOut(outputNum) // 输出节点		
-                     .activation("relu") // 激活函数类型		
-                     .weightInit(WeightInit.RELU) // 权重初始化		
-                     .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
-                     .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
-                     .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
-                     .build())		
-             .seed(seed) // 锁定调试时的初始化权重		
-             .iterations(iterations)		
-             .learningRate(1e-3) // 反向传播步幅		
-             // 学习速率的调整速度		
-             .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
-                     // ^^ 计算梯度		
-             .build();		
-     Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
-     model.setListeners(new ScoreIterationListener(listenerFreq));		
-
-     log.info("Evaluate weights....");		
-     INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
-     log.info("Weights:" + w);		
-     log.info("Scaling the dataset");		
-     iris.scale();		
-     log.info("Train model....");		
-     for(int i = 0; i &lt; 20; i++) {		
-         log.info("Epoch "+i+":");		
-         model.fit(iris.getFeatureMatrix());		
-     }		
- }		
- // 单个层以无监督方式学习特征。
-}
-</code></pre>
-<p>以上是用RBM处理鸢尾花数据集的示例，可点击链接查看这个示例的专门教程。</p>
 <br>
 
 
 <p><h2><a name="params">参数与变量k</a></h2></p>
-<p>变量k是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
-<p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。典型的值为1。</p>
+<p>变量 'k' 是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
+<p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。k的值通常为1。</p>
 <p>在上文的示例中，可以看到如何用更为通用的<code>MultiLayerConfiguration</code>来创建多个RBM层。每个点后面都是一项调节深度神经网络结构和性能产生的额外参数。大多数参数的定义都可在本网站内找到。</p>
 <p><strong>weightInit</strong>或<code>weightInitialization</code>表示用于放大或削弱进入每个节点的输入的系数的初始值。合理的初始权重可以节约大量定型时间，因为网络定型无非是通过调整系数来传输最佳的信号，进而让网络能进行准确的分类。</p>
 <p><strong>activationFunction</strong>指一组确定节点信号传输阈值的函数，高于阈值则让信号通过节点，反之则阻拦信号。如果节点让信号通过，则该节点被&ldquo;激活&rdquo;。</p>

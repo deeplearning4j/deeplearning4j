@@ -10,7 +10,7 @@ Contents
 * <a href="#define">Definition & Structure</a>
 * <a href="#reconstruct">Reconstructions</a>
 * <a href="#probability">Probability Distributions</a>
-* <a href="#code">Code Sample: Initiating an RBM on Iris With DL4J</a>
+* <a href="#code">Code Sample: Stacked RBMS</a>
 * <a href="#params">Parameters & k</a>
 * <a href="#CRBM">Continuous RBMs</a>
 * <a href="#next">Next Steps</a>
@@ -100,9 +100,9 @@ Let's talk about probability distributions for a moment. If you're rolling two d
 
 ![Alt text](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg)
 
-That is, 7s are the most likely, and any formula attempting to predict the outcome of dice rolls needs to take that into account.
+That is, 7s are the most likely because there are more ways to get to 7 (3+4, 1+6, 2+5) than there are ways to arrive at any other sum between 2 and 12. Any formula attempting to predict the outcome of dice rolls needs to take seven's greater frequency into account.
 
-Languages are specific in the probability distribution of their letters, because each language uses certain letters more than others. In English, the letters *e*, *t* and *a* are the most common, while in Icelandic, the most common letters are *a*, *r* and *n*. Attempting to reconstruct Icelandic with a weight set based on English would lead to a large divergence.
+Or take another example: Languages are specific in the probability distribution of their letters, because each language uses certain letters more than others. In English, the letters *e*, *t* and *a* are the most common, while in Icelandic, the most common letters are *a*, *r* and *n*. Attempting to reconstruct Icelandic with a weight set based on English would lead to a large divergence.
 
 In the same way, image datasets have unique probability distributions for their pixel values, depending on the kind of images in the set. Pixels values are distributed differently depending on whether the dataset includes MNIST's handwritten numerals:
 
@@ -112,7 +112,7 @@ or the headshots found in Labeled Faces in the Wild:
 
 ![Alt text](./img/LFW_reconstruction.jpg)
 
-Imagine for a second that an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect?
+Imagine for a second an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect?
 
 That's joint probability: the simultaneous probability of *x* given *a* and of *a* given *x*, expressed as the shared weights between the two layers of the RBM.
 
@@ -138,80 +138,15 @@ To synthesize restricted Boltzmann machines in one diagram, here is a symmetrica
 
 ![Alt text](./img/sym_bipartite_graph_RBM.png)
 
-For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+For those interested in studying the structure of RBMs in greater depth, they are one type of undirectional graphical model, also called [markov random field](https://en.wikipedia.org/wiki/Markov_random_field).
 
-### <a name="code">Code Sample: Initiating an RBM on Iris With DL4J</a>
+### <a name="code">Code Sample: Stacked RBMS</a>
+https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java
 
-Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguration`, a parameter fed into a more general class. Likewise, the RBM object is used to store properties like the transforms applied to the visible and hidden layers, Gaussian and Rectified Linear transforms, respectively.
-
-		public class RBMIrisExample {		
-
-     private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
-
-     public static void main(String[] args) throws IOException {		
-         // Customizing params		
-         Nd4j.MAX_SLICES_TO_PRINT = -1;		
-         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
-         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
-         final int numRows = 4;		
-         final int numColumns = 1;		
-         int outputNum = 10;		
-         int numSamples = 150;		
-         int batchSize = 150;		
-         int iterations = 100;		
-         int seed = 123;		
-         int listenerFreq = iterations/2;		
-
-         log.info("Load data....");		
-         DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-         // Loads data into generator and format consumable for NN		
-         DataSet iris = iter.next();		
-
-         iris.normalizeZeroMeanZeroUnitVariance();		
-
-         log.info("Build model....");		
-         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
-                 .miniBatch(true)		
-                 // Gaussian for visible; Rectified for hidden		
-                 // Set contrastive divergence to 1		
-                 .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
-                         .nIn(numRows * numColumns) // Input nodes		
-                         .nOut(outputNum) // Output nodes		
-                         .activation("relu") // Activation function type		
-                         .weightInit(WeightInit.RELU) // Weight initialization		
-                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
-                         .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
-                         .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
-                         .build())		
-                 .seed(seed) // Locks in weight initialization for tuning		
-                 .iterations(iterations)		
-                 .learningRate(1e-3) // Backprop step size		
-                 // Speed of modifying learning rate		
-                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
-                         // ^^ Calculates gradients		
-                 .build();		
-         Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
-         model.setListeners(new ScoreIterationListener(listenerFreq));		
-
-         log.info("Evaluate weights....");		
-         INDArray w = model.getParam(DefaultParamInitializer.WEIGHT_KEY);		
-         log.info("Weights: " + w);		
-         log.info("Scaling the dataset");		
-         iris.scale();		
-         log.info("Train model....");		
-         for(int i = 0; i < 20; i++) {		
-             log.info("Epoch "+i+":");		
-             model.fit(iris.getFeatureMatrix());		
-         }		
-     }		
-     // A single layer learns features unsupervised.
-    }
-
-This is an example of an RBM processing the Iris flower dataset.
 
 ## <a name="params">Parameters & k</a>
 
-The variable k is the number of times you run [contrastive divergence](./glossary.html#contrastivedivergence). Contrastive divergence is the method used to calculate the gradient (the slope representing the relationship between a network's weights and its error), without which no learning can occur.
+The variable `k` is the number of times you run [contrastive divergence](./glossary.html#contrastivedivergence). Contrastive divergence is the method used to calculate the gradient (the slope representing the relationship between a network's weights and its error), without which no learning can occur.
 
 Each time contrastive divergence is run, it's a sample of the Markov Chain composing the restricted Boltzmann machine. A typical value is 1.
 

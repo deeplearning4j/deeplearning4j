@@ -289,6 +289,19 @@ LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochr
 ### <a name="loglikelihood">Log-Likelihood</a>
 Log likelihood is related to the statistical idea of the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood). Likelihood is a function of the parameters of a statistical model. "The probability of some observed outcomes given a set of parameter values is referred to as the [likelihood](https://www.princeton.edu/~achaney/tmve/wiki100k/docs/Likelihood_function.html) of the set of parameter values given the observed outcomes."
 
+### <a name="mle">Maximum Likelihood Estimation</a>
+
+"Say you have a coin and you're not sure it's "fair." So you want to estimate the "true" probability it will come up heads. Call this probability P, and code the outcome of a coin flip as 1 if it's heads and 0 if it's tails.
+You flip the coin four times and get 1, 0, 0, 0 (i.e., 1 heads and 3 tails). What is the likelihood that you would get these outcomes, given P? Well, the probability of heads is P, as we defined it above. That means the probability of tails is (1 - P). So the probability of 1 heads and 3 tails is P * (1 - P)3 [Edit: We call this the "likelihood" of the data].
+If we "guess" that the coin is fair, that's saying P = 0.5, so the likelihood of the data is L = .5 * (1 - .5)3 = .0625.
+What if we guess that P = 0.45? Then L = .45 * (1 - .45)3 = ~.075. So P = 0.45 is actually a better estimate than P = 0.5, because the data are "more likely" to have occurred if P = 0.45 than if P = 0.5.
+At P = 0.4, the likelihood is 0.4 * (1 - 0.4)3 = .0864.
+At P = 0.35, the likelihood is 0.35 * (1 - 0.35)3 = .096.
+In this case, it turns out that the value of P that maximizes the likelihood is P = 0.25. So that's our "maximum likelihood" estimate for P.
+In practice, max likelihood is harder to estimate than this (with predictors and various assumptions about the distribution of the data and error terms), but that's the basic concept behind it." *--[u/jacknbox](https://www.reddit.com/r/AskStatistics/comments/4mpl9q/eli5_maximum_likelihood_and_reml/d3y3zaw/)*
+
+So in a sense, probability is treated as an unseen, internal property of the data. A parameter. And likelihood is a measure of how well the outcomes recorded in the data match our hypothesis about their probability; i.e. our theory about how the data is produced. The better our theory of the data's probability, the higher the likelihood of a given set of outcomes. 
+
 ### <a name="model">Model</a>
 In neural networks, the model is the collection of weights and biases that transform input into output. A neural network is a set of algorithms that update models such that the models guess with less error as they learn. A model is a symbolic, logical or mathematical machine whose purpose is to deduce output from input. If a model's assumptions are correct, then one must necessarily believe its conclusions. Neural networks produced trained models that can be deployed to process, classify, cluster and make predictions about data. 
 
@@ -352,6 +365,28 @@ Below is an example of one-hot encoding for the phrase "The quick brown fox"
 
 ### <a name="pooling">Pooling</a> 
 Pooling, max pooling and average pooling are terms that refer to downsampling or subsampling within a convolutional network. Downsampling is a way of reducing the amount of data flowing through the network, and therefore decreasing the computational cost of the network. Average pooling takes the average of several values. Max pooling takes the greatest of several values. Max pooling is currently the preferred type of downsampling layer in convolutional networks. 
+
+### <a name="density">Probability Density</a> 
+Probability densities are used in unsupervised learning, with algorithms such as autoencoders, VAEs and GANs.
+
+"A probability density essentially says "for a given variable (e.g. radius) what, at that particular value, is the likelihood of encountering an event or an object (e.g. an electron)?" So if I'm at the nucleus of a atom and I move to, say, one Angstrom away, at one Angstrom there is a certain likelihood I will spot an electron. But we like to not just ask for the probability at one point; we'd sometimes like to find the probability for a range of points: What is the probability of finding an electron between the nucleus and one Angstrom, for example. So we add up ("integrate") the probability from zero to one Angstrom. For the sake of convenience, we sometimes employ "normalization"; that is, we require that adding up all the probabilities over every possible value will give us 1.00000000 (etc)." *[--u/beigebox](https://www.reddit.com/r/explainlikeimfive/comments/yy7tv/eli5_probability_density_function/)*
+
+### <a name="distribution">Probability Distribution</a> 
+
+"A probability distribution is a mathematical function and/or graph that tells us how likely something is to happen.
+
+So, for example, if you're rolling two dice and you want to find the likelihood of each possible number you can get, you could make a [chart that looks like this](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg). As you can see, you're most likely to get a 7, then a 6, then an 8, and so on. The numbers on the left are the percent of the time where you'll get that value, and the ones on the right are a fraction (they mean the same thing, just different forms of the same number). The way that it you use the distribution to find the likelihood of each outcome is this:
+
+There are 36 possible ways for the two dice to land. There are 6 combinations that get you 7, 5 that get you 6/8, 4 that get you 5/9, and so on. So, the likelihood of each one happening is the number of possible combinations that get you that number divided by the total number of possible combinations.
+For 7, it would be 6/36, or 1/6, which you'll notice is the same as what we see in the graph. For 8, it's 5/36, etc. etc.
+
+The key thing to note here is that the sum of all of the probabilities will equal 1 (or, 100%). That's really important, because it's absolutely essential that there be a result of rolling the two die every time. If all the percentages added up to 90%, what the heck is happening that last 10% of the time?
+
+So, for more complex probability distributions, the way that the distribution is generated is more involved, but the way you read it is the same. If, for example, you see a [distribution that looks like this](https://upload.wikimedia.org/wikipedia/commons/8/8c/Standard_deviation_diagram.svg), you know that you're going to get a value of μ 40% (corresponding to .4 on the left side) of the time whenever you do whatever the experiment or test associated with that distribution.
+
+The percentages in the shaded areas are also important. Just like earlier when I said that the sum of all the probabilities has to equal 1 or 100%, the area under the curve of a probability distribution has to equal 1, too. You don't need to know why that is (it involves calculus), but it's worth mentioning. You can see that the graph I linked is actually helpfully labeled; the reason they do that is to show you that you what percentage of the time you're going to end up somewhere in that area.
+
+So, for example, about 68% of the time, you'll end up between -1σ and 1σ." *[--u/corpuscle634](https://www.reddit.com/r/explainlikeimfive/comments/1aglls/eli5_probability_distributions/)*
 
 ### <a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 

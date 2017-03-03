@@ -5,17 +5,25 @@ layout: default
 
 # Scala, Spark and Deeplearning4j
 
+Scala programmers seeking to build deep learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. Skymind's numerical computing library, [ND4J](http://nd4j.org/) (n-dimensional arrays for the JVM), comes with a Scala API, [ND4S](https://github.com/deeplearning4j/nd4s).
+
+## Scala
+
 Scala is one of the most exciting languages to be created in the 21st century. It is a multi-paradigm language that fully supports functional, object-oriented, imperative and concurrent programming. It also has a strong type system, and from our point of view, strong type is a convenient form of self-documenting code.
 
 Scala works on the JVM and has access to the riches of the Java ecosystem, but it is less verbose than Java. As we employ it for ND4J, its syntax is strikingly similar to Python, a language that many data scientists are comfortable with. Like Python, Scala makes programmers happy, but like Java, it is quite fast. 
 
-Finally, [Apache Spark](./spark.html) is written in Scala, and any library that purports to work on distributed run times should at the very least be able to interface with Spark. Deeplearning4j and ND4J go a step further, because they work in a Spark cluster, and boast Scala APIs called [ScalNet](https://github.com/deeplearning4j/scalnet) and [ND4S](https://github.com/deeplearning4j/nd4s). 
+Finally, [Apache Spark](./spark.html) is written in Scala, and any library that purports to work on distributed run times should at the very least be able to interface with Spark. Deeplearning4j and ND4J go a step further, because they work in a Spark cluster, and boast Scala APIs called ScalNet and ND4S. 
 
 We believe Scala's many strengths will lead it to dominate numerical computing, as well as deep learning. We think that will happen on Spark. And we have tried to build the tools to make it happen now. 
 
 ### See also
 
-* [Deeplearning4j on Spark](./spark.html)
+* [Docs: Deeplearning4j on Spark](./spark.html)
+* [Course: Atomic Scala](http://www.atomicscala.com/) - a recommended beginner's course
+* [Martin Odersky's Coursera course on Scala](https://www.coursera.org/learn/progfun1)
+* [Book: Scala for Data Science](https://www.amazon.com/Scala-Data-Science-Pascal-Bugnion/dp/1785281372)
+* [Video Course: Problem-solving using Scala](https://www.youtube.com/user/DrMarkCLewis)
 * [Learn: The Scala Programming Language](http://www.scala-lang.org/documentation/)
 * [A Scala Tutorial for Java programmers](http://www.scala-lang.org/docu/files/ScalaTutorial.pdf) (PDF)
 * [Scala By Example, by Martin Odersky](http://www.scala-lang.org/docu/files/ScalaByExample.pdf) (PDF) 

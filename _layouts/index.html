@@ -62,14 +62,14 @@
 
       <section>
         <h2>Welcome to Deeplearning4j</h2>
-        <p>Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. DL4J can <a href="https://deeplearning4j.org/model-import-keras" target="_blank">import neural net models</a> from most major frameworks via Keras, including TensorFlow, Caffe, Torch and Theano, bridging the gap between the Python ecosystem and the JVM with a cross-team toolkit for data scientists, data engineers and DevOps.</p>
+        <p>Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. DL4J can <a href="https://deeplearning4j.org/model-import-keras" target="_blank">import neural net models</a> from most major frameworks via Keras, including TensorFlow, Caffe, Torch and Theano, bridging the gap between the Python ecosystem and the JVM with a cross-team toolkit for data scientists, data engineers and DevOps. <a href="https://deeplearning4j.org/keras">Keras</a> is employed as Deeplearning4j's Python API.</p>
 
         <div class="row">
           <div class="col-md-4 col-sm-6">
             <div class="promo small-icon left">
               <i class="fa fa-tv"></i>
               <h3>Distributed</h3>
-              <p>DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to improve training. On multi-GPUs, it is equal to Caffe in performance.</p>
+              <p>DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to accelerate training. On multi-GPUs, it is equal to Caffe in performance.</p>
             </div>
           </div>
 
@@ -77,15 +77,15 @@
             <div class="promo small-icon left">
               <i class="fa fa-wrench"></i>
               <h3>Open-Source</h3>
-              <p>Completely open-source and is maintained by the open-source community and the <a href="https://www.skymind.io">Skymind</a> team.</p>
+              <p>The libraries are completely open-source, Apache 2.0, and maintained by the developer community and <a href="https://www.skymind.io">Skymind</a> team.</p>
             </div>
           </div>
 
           <div class="col-lg-4 col-sm-6">
             <div class="promo small-icon left">
               <i class="fa fa-cubes"></i>
-              <h3>Java/Scala/JVM</h3>
-              <p>Deeplearning4j is written in Java and is compatible with any JVM language, such as Scala or Clojure. (The underlying computations are written in C, C++ and Cuda.)</p>
+              <h3>JVM/Python/C++</h3>
+              <p>Deeplearning4j is written in Java and is compatible with any JVM language, such as <a href="https://deeplearning4j.org/scala">Scala</a> or <a href="https://deeplearning4j.org/clojure">Clojure</a>. The underlying computations are written in C, C++ and Cuda. <a href="https://deeplearning4j.org/keras">Keras</a> is its Python API.</p>
             </div>
           </div>
 
@@ -102,7 +102,7 @@
             <h3>Features</h3>
             <ul>
               <li>Distributed CPUs and GPUs</li>
-              <li>Java, Scala and Clojure</li>
+              <li>Java, Scala and Python APIs</li>
               <li>Adapted for micro-service architecture</li>
               <li>Parallel training via iterative reduce</li>
               <li>Scalable on Hadoop</li>
@@ -147,6 +147,10 @@
             <li>
               <h6>Is DL4J parallelized?</h6>
               <div>Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via <a href="iterativereduce.html" target="_blank">iterative reduce</a>, and they are equally compatible with Java, <a href="http://nd4j.org/scala.html" target="_blank">Scala</a> and <a href="https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj" target="_blank">Clojure</a>. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a <a href="http://microservices.io/patterns/microservices.html" target="_blank">micro-service architecture</a>.</div>
+            </li>
+            <li>
+             <h6>Can I program in Python with Deeplearning4j?</h6>
+              <div>Yes! Deeplearning4j's Python API employs <a href="https://deeplearning4j.org/keras" target="_blank">Keras</a>, a high-level, intuitive abstraction layer that also takes TensorFlow and Theano as a backend. Teams that have trained models on other Python frameworks can import them to the JVM and Deeplearning4j using <a href="https://deeplearning4j.org/model-import-keras" target="_blank">Keras model import</a>. And developers just starting to train configure and train a model can do so via our Python interface. </div>
             </li>
           </ul>
         </div>

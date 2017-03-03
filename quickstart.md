@@ -133,11 +133,11 @@ Within IntelliJ, you will need to choose the first Deeplearning4j example you're
 
 To run the example, right click on it and select the green button in the drop-down menu. You will see, in IntelliJ's bottom window, a series of scores. The rightmost number is the error score for the network's classifications. If your network is learning, then that number will decrease over time with each batch it processes. At the end, this window will tell you how accurate your neural-network model has become:
 
-![run IntelliJ example](./img/mlp_classifier_results.png)
+![mlp classifier results](./img/mlp_classifier_results.png)
 
 In another window, a graph will appear, showing you how the multilayer perceptron (MLP) has classified the data in the example. It will look like this:
 
-![run IntelliJ example](./img/mlp_classifier_viz.png)
+![mlp classifier viz](./img/mlp_classifier_viz.png)
 
 Congratulations! You just trained your first neural network with Deeplearning4j. Now, why don't you try our next tutorial: [**MNIST for Beginners**](./mnist-for-beginners), where you'll learn how to classify images.
 

@@ -54,7 +54,10 @@ layout: default
 
 <figure class="highlight"><pre><code class="language-groovy" data-lang="groovy"><span class="n">compile</span> <span class="s1">'org.deeplearning4j:deeplearning4j-core:0.7.2'</span>
 <span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2'</span>
-<span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2:android-x86'</span></code></pre></figure>
+<span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2:android-x86'</span>
+<span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2:android-arm'</span>
+
+</code></pre></figure>
 
 <p>As you can see, DL4J depends on ND4J, short for N-Dimensions for Java, which is a library that offers fast n-dimensional arrays. ND4J internally depends on a library called JavaCPP, which contains platform-specific native code. Therefore, you must load a version of ND4J that matches the architecture of your Android device. Because I own an x86 device, I’m using <code class="highlighter-rouge">android-x86</code> as the platform.</p>
 
@@ -203,15 +206,10 @@ layout: default
 
 <p>This was originally posted at <a href="http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html" target="_blank" rel="nofollow">Progur</a> by Ashraff Hathibelagal.
 
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                
 
 <footer class="footer">
   <div class="container">
   </div>
 </footer>
-  </body>
+  

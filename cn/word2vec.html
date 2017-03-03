@@ -332,6 +332,16 @@ JAVACopyWord2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
 <p><strong>问：</strong>如何加载我的数据？为什么定型要花这么久？</p>
 <p><strong>答：</strong>如果你的句子全部是整句加载的，那么Word2vec的定型就可能需要很长时间。原因在于Word2vec是一个句子层面的算法，所以句子的边界非常重要，因为同现关系的统计数据是逐句收集的。（对于GloVe，句子的边界无关紧要，因为GloVe关注的是整个语料库中的同现关系。）许多语料的平均句子长度是六个词。如果窗口大小为5，则会进行30（此处为随机数）轮的skip-gram运算。如果你忘记指定句子的边界，就有可能会加载有10000个词长的“句子”。在这种情况下，Word2vec会尝试对长达10000个词的“句子”进行完整的skip-gram循环。DL4J在实现过程中假定一行就是一个句子。你需要插入自己的SentenceIterator和Tokenizer。DL4J不绑定任何语言，它会让你自行指定如何判断句子结束。方法之一是使用UimaSentenceIterator。它用OpenNLP来检测句子的边界。</p><br>
 <br>
+<p><strong>问：</strong>为什么将整篇文档作为一个“句子”输入时，网络表现会与将文档切分为句子后输入有这么大的差别？</p>
+<p><strong>答：</strong>如果每个句子平均含有6个单词，而窗口大小为5，虽然理论上skip-gram最多可达10轮，但实际上没有一个词能进行这么多轮skip-gram。由于长度有限，句子无法容下完整的词窗口。对这样的句子而言，每个词最多可进行大约5轮skip-gram。</p>
+<p>但如果您的“句子”有100万个词，那么除了开头的5个词和结尾的5个词以外，句子中的每个词都可进行10轮skip-gram。因此，构建模型的时间必然大大增加，而同现关系的统计数据也会因为句子边界缺失而发生变化。</p>
+<br>
+<p><strong>问：</strong>Word2Vec如何使用内存？</p>
+<p><strong>答：</strong>Word2Vec的内存消耗大户是权重矩阵。计算方法很简单：词的数量 x 维度数量 x 2 x 数据类型的内存占用。</p>
+<p>所以，如果您的Word2Vec模型有10万个词，数据类型为float，维度数量为100，那么矩阵的内存占用为100k x 100 x 2 x 4 (float类型大小) = 80MB RAM，还要加上字符串、变量、线程等占用的内存。</p>
+<p>如果您加载一个预建的模型，它在构建时所占用的RAM大约小两倍，也就是40MB RAM。</p>
+<p>目前最受欢迎的常用模型是谷歌新闻模型。该模型有3M的词，向量大小为300。这样的话，仅加载模型就需要3.6GB。另外还要加上3M的字符串，而字符串在Java中没有恒定的大小。所以，加载模型所需的内存通常为4～6GB左右，具体取决于JVM版本/供应商、垃圾回收状态、月相……</p>
+<br>
 <p><strong>问：</strong>我完全按照你们的方法操作，但结果看起来还是不对。</p>
 <p><strong>答：</strong>如果你在使用Ubuntu，序列化的数据有可能不能正常加载。这是Ubuntu的问题。我们建议在其他版本的Linux下测试这一版本的Word2vec。</p>
 <br>
@@ -339,7 +349,7 @@ JAVACopyWord2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
 <p>谷歌学术记录了所有引用<a href="https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=" target="_blank">通过Deeplearning4j实现的Word2vec</a>的论文。</p>
 <p>比利时的数据科学家Kenny Helsens<a href="http://thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/" target="_blank">将通过Deeplearning4j实现的Word2vec应用</a>于NCBI的在线人类孟德尔遗传（OMIM）数据库。随后他查询了与一种已知的非小细胞肺癌肿瘤基因&ldquo;alk&rdquo;最相似的词，Word2vec返回的结果是：&ldquo;nonsmall、carcinomas、carcinoma、mapdkd&rdquo;。在此基础上，他确定了其他癌症的表现型与基因型之间的类比关系。这只是Word2vec可以从大规模语料库中学到的关联的例子之一。对重要疾病做出新发现的潜力才刚开始显现，而在医学之外的领域也同样存在各种各样的机会。</p>
 <p>Andreas Klintberg对Deeplearning4j实现的Word2vec进行了瑞典语的定型，并且<a href="https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb" target="_blank">在Medium上记录了完整的过程</a>。</p>
-<p>Word2vec特别适合为信息检索和QA系统准备基于文本的数据，DL4J用<a href="deepautoencoder.html">深度自动编码器</a>实现这一功能。</p>
+<p>Word2vec特别适合为信息检索和QA系统预加工基于文本的数据，DL4J用<a href="deepautoencoder.html">深度自动编码器</a>实现这一功能。</p>
 <p>市场营销人员可能会通过确定产品之间的关系来打造推荐引擎。调查人员可能会依靠分析社交图谱来寻找某一个群体的成员，或者确定这些人与特定地点或资助者之间的其他关系。</p>
 <br>
 <p><h3>谷歌的Word2vec专利</h3></p>
