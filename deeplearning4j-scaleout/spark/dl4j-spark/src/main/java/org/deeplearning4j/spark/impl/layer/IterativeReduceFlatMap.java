@@ -92,7 +92,7 @@ class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<D
         network.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
         INDArray val = params.value().unsafeDuplication();
         if(val.length() != network.numParams())
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
        if(network instanceof OutputLayer) {
            OutputLayer o = (OutputLayer) network;

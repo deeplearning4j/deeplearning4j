@@ -1,6 +1,5 @@
 package org.deeplearning4j.streaming.kafka;
 
-import kafka.serializer.StringEncoder;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.deeplearning4j.streaming.embedded.EmbeddedKafkaCluster;

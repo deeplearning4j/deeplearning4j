@@ -214,8 +214,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference, INDArray inferenceVector) {
-        if(w1 == null || lastWord == null || lastWord.getIndex() < 0 || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP") || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || lastWord.getLabel().equals("UNK"))
+        if(w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference) || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP") || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || lastWord.getLabel().equals("UNK")) {
             return 0.0;
+        }
 
 
         double score = 0.0;

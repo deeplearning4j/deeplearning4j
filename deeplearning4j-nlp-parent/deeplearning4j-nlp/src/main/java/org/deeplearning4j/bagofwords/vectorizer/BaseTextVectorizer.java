@@ -28,6 +28,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected LabelsSource labelsSource;
     protected Collection<String> stopWords = new ArrayList<>();
     @Getter protected transient InvertedIndex<VocabWord> index;
+    protected boolean isParallel = true;
 
     protected LabelsSource getLabelsSource() {
         return labelsSource;
@@ -48,6 +49,7 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
                 .addSource(iterator, minWordFrequency)
                 .setTargetVocabCache(vocabCache).setStopWords(stopWords)
+                .allowParallelTokenization(isParallel)
                 .build();
 
         constructor.buildJointVocabulary(false, true);

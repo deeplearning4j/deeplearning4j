@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * This class is used to build vocabulary and sequences out of graph, via GraphWalkers
  *
- * WORK IS IN PROGRESS, DO NOT USE
  * @author raver119@gmail.com
  */
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
@@ -90,10 +89,13 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
                 Sequence<T> sequence = walker.next();
                 sequence.setSequenceId(counter.getAndIncrement());
 
-                if (labelsProvider != null) {
-                    // TODO: sequence labels to be implemented for graph walks
-                    sequence.setSequenceLabel(labelsProvider.getLabel(sequence.getSequenceId()));
-                }
+                // we might already have labels defined from walker
+                if (walker.isLabelEnabled() && sequence.getSequenceLabels() == null)
+                    if (labelsProvider != null) {
+                        // TODO: sequence labels to be implemented for graph walks
+                        sequence.setSequenceLabel(labelsProvider.getLabel(sequence.getSequenceId()));
+                    }
+
                 return sequence;
             }
         };
@@ -106,7 +108,15 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         protected boolean shuffle = true;
         protected VocabCache<T> vocabCache;
 
-        public Builder(IGraph<T, ?> sourceGraph) {
+        public Builder() {
+            //
+        }
+
+        public Builder(@NonNull GraphWalker<T> walker) {
+            this.walker = walker;
+        }
+
+        public Builder(@NonNull IGraph<T, ?> sourceGraph) {
             this.sourceGraph = sourceGraph;
         }
 
@@ -132,16 +142,20 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         }
 
         public GraphTransformer<T> build() {
+            if (this.walker == null)
+                throw new IllegalStateException("Please provide GraphWalker instance.");
+
             GraphTransformer<T> transformer = new GraphTransformer<>();
+            if (this.sourceGraph == null)
+                this.sourceGraph = walker.getSourceGraph();
+
             transformer.sourceGraph = this.sourceGraph;
             transformer.labelsProvider = this.labelsProvider;
             transformer.shuffle = this.shuffle;
             transformer.vocabCache = this.vocabCache;
+            transformer.walker = this.walker;
 
-            if (this.walker == null)
-                throw new IllegalStateException("Please provide GraphWalker instance.");
-            else transformer.walker = this.walker;
-
+            // FIXME: get rid of this
             transformer.initialize();
 
             return transformer;

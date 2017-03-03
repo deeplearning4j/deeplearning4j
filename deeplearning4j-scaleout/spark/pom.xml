@@ -144,5 +144,12 @@
                 <spark.version>1.2.0-cdh5.3.0</spark.version>
             </properties>
         </profile>
+
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
     </profiles>
 </project>

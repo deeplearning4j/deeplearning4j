@@ -57,7 +57,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
      *
      * @param iterator SentenceIterator instance
      */
-    public void setSentenceIter(@NonNull SentenceIterator iterator) {
+    public void setSentenceIterator(@NonNull SentenceIterator iterator) {
         //if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
 
         if (tokenizerFactory != null) {
@@ -68,6 +68,16 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         } else log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
+    }
+
+    /**
+     * This method defines SequenceIterator instance, that will be used as training corpus source.
+     * Main difference with other iterators here: it allows you to pass already tokenized Sequence<VocabWord> for training
+     *
+     * @param iterator
+     */
+    public void setSequenceIterator(@NonNull SequenceIterator<VocabWord> iterator) {
+        this.iterator = iterator;
     }
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {

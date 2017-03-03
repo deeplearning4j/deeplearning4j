@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -92,12 +91,11 @@ public class ModelSerializerTest {
 
         ModelSerializer.addNormalizerToModel(tempFile, scaler);
 
-        NormalizerMinMaxScaler restoredScaler = (NormalizerMinMaxScaler) ModelSerializer.restoreNormalizerFromFile(tempFile);
+        NormalizerMinMaxScaler restoredScaler = ModelSerializer.restoreNormalizerFromFile(tempFile);
 
         assertNotEquals(null, scaler.getMax());
         assertEquals(scaler.getMax(), restoredScaler.getMax());
         assertEquals(scaler.getMin(), restoredScaler.getMin());
-
 
         FileInputStream fis = new FileInputStream(tempFile);
 

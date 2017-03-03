@@ -54,7 +54,7 @@ class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Dat
         network.init();
         INDArray val = params.value().unsafeDuplication();  //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
         if(val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
         network.setParameters(val);
 
         List<Tuple2<Integer,Double>> out = new ArrayList<>();

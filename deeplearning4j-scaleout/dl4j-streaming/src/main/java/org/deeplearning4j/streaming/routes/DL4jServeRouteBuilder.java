@@ -1,6 +1,5 @@
 package org.deeplearning4j.streaming.routes;
 
-import kafka.serializer.StringEncoder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.apache.camel.Exchange;
@@ -53,14 +52,10 @@ public class DL4jServeRouteBuilder extends RouteBuilder {
             groupId = "dl4j-serving";
         if(zooKeeperHost == null)
             zooKeeperHost = "localhost";
-        String kafkaUri = String.format("kafka:%s?topic=%s&groupId=%s&zookeeperHost=%s&zookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
+        String kafkaUri = String.format("kafka:%s?topic=%s&groupId=%s",
                 kafkaBroker,
                 consumingTopic
-                ,groupId
-                ,zooKeeperHost
-                ,zooKeeperPort,
-                StringEncoder.class.getName(),
-                StringEncoder.class.getName());
+                ,groupId);
         if(beforeProcessor == null) {
             beforeProcessor = new Processor() {
                 @Override

@@ -1,13 +1,11 @@
 package org.deeplearning4j.streaming.routes;
 
-import kafka.serializer.StringEncoder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.deeplearning4j.streaming.serde.RecordSerializer;
 
 /**
  * A Camel Java DSL Router
@@ -18,7 +16,6 @@ import org.deeplearning4j.streaming.serde.RecordSerializer;
 public class CamelKafkaRouteBuilder extends RouteBuilder {
     private String topicName;
     private String kafkaBrokerList;
-    private static RecordSerializer serializer = new RecordSerializer();
     private String writableConverter = "org.datavec.api.io.converters.SelfWritableConverter";
     private String datavecMarshaller = "org.datavec.camel.component.csv.marshaller.ListStringInputMarshaller";
     private String inputUri;
@@ -36,10 +33,10 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
                 .unmarshal(dataTypeUnMarshal)
                 .to(String.format("datavec://%s?inputMarshaller=%s&writableConverter=%s",inputFormat,datavecMarshaller,writableConverter))
                 .process(processor)
-                .to(String.format("kafka:%s?topic=%s&zookeeperHost=%szookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
+                .to(String.format("kafka:%s?topic=%s",
                         kafkaBrokerList,
                         topicName,
-                        zooKeeperHost,zooKeeperPort, StringEncoder.class.getName(),StringEncoder.class.getName()));
+                        zooKeeperHost,zooKeeperPort));
     }
 
 

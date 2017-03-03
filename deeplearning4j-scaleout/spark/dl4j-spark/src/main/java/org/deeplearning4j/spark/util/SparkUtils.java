@@ -292,7 +292,7 @@ public class SparkUtils {
      * @param numObjectsPerSplit Number of objects in each split
      * @param data               Data to split
      * @param <T>                Generic type for the RDD
-     * @return The RDD split up (without replacetement) into a number of smaller RDDs
+     * @return The RDD split up (without replacement) into a number of smaller RDDs
      */
     public static <T> JavaRDD<T>[] balancedRandomSplit(int totalObjectCount, int numObjectsPerSplit, JavaRDD<T> data) {
         return balancedRandomSplit(totalObjectCount, numObjectsPerSplit, data, new Random().nextLong());

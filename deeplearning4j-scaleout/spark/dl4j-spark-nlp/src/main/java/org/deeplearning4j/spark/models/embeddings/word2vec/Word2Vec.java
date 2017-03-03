@@ -187,7 +187,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         //////////////////////////////////////
         log.info("Mapping to RDD(vocabWordList, cumulative sentence count) ...");
         vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCumSumCountRDD)
-                .setName("vocabWordListSentenceCumSumRDD").cache();
+                .setName("vocabWordListSentenceCumSumRDD");
 
         /////////////////////////////////////
         log.info("Broadcasting word2vec variables to workers ...");

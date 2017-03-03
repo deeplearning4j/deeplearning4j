@@ -37,7 +37,7 @@ public interface TrainingHook extends Serializable {
      * A hook method for pre update.
      * @param minibatch the inibatch
      *                  that was used for the update
-     * @param model themodel that was update
+     * @param model the model that was update
      */
     void preUpdate(MultiDataSet minibatch,Model model);
 

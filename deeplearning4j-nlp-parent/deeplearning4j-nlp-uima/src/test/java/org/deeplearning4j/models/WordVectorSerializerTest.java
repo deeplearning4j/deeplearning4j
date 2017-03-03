@@ -355,7 +355,7 @@ public class WordVectorSerializerTest {
         iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
 
         vec2.setTokenizerFactory(t);
-        vec2.setSentenceIter(iter);
+        vec2.setSentenceIterator(iter);
 
         vec2.fit();
 

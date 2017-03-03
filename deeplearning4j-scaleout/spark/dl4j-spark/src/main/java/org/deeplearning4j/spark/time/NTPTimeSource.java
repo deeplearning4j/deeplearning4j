@@ -11,7 +11,7 @@ import java.util.TimerTask;
 
 /**
  * A {@link TimeSource} that utilize Network Time Protocol to determine the system clock offset<br>
- * Instances should be obvained via {@link #getInstance()} or {@link TimeSourceProvider}; one instance may be
+ * Instances should be obtained via {@link #getInstance()} or {@link TimeSourceProvider}; one instance may be
  * used per machine<br>
  *
  * Specifically, the implementation uses Apache Commons Net (already a dependency in Spark) to query a NTP server.

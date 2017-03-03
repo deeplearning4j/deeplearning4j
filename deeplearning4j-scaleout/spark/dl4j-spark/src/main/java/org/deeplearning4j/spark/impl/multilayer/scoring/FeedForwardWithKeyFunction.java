@@ -35,7 +35,7 @@ import java.util.*;
 
 /**
  * Function to feed-forward examples, and get the network output (for example, class probabilities).
- * A key value is used to keey track of which output corresponds to which input.
+ * A key value is used to keep track of which output corresponds to which input.
  *
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black

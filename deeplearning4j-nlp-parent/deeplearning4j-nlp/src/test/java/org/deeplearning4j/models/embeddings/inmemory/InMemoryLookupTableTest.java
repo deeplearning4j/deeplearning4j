@@ -78,6 +78,7 @@ public class InMemoryLookupTableTest {
         mem2.consume(mem1);
 
         assertEquals(mem1.vector("day"), mem2.vector("day"));
+
     }
 
 

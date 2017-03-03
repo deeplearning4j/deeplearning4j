@@ -38,6 +38,11 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
         return super.hasNext();
     }
 
+    @Override
+    public boolean isLabelEnabled() {
+        return false;
+    }
+
     /**
      * This method returns next walk sequence from this graph
      *

@@ -100,11 +100,13 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-
-        //Complication here: we want to take into account the masks for the time series that we are matching the length of...
-
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        //Present for all time steps, or as per the corresponding input mask (if present)
+        INDArray[] allMasks = graph.getInputMaskArrays();
+        if(allMasks == null || allMasks[inputVertexIndex] == null){
+            //No mask
+            return null;
+        }
+        return new Pair<>(allMasks[inputVertexIndex], MaskState.Active);
     }
 
     @Override

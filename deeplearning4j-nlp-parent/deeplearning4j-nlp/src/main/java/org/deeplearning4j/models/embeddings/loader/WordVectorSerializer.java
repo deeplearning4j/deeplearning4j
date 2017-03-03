@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
@@ -2369,8 +2370,9 @@ public class WordVectorSerializer {
                             vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
                         }
                     }
-                } else throw new IllegalStateException("File with frequencies isn't available");
+                }
 
+                List<INDArray> rows = new ArrayList<>();
                 // basically read up everything, call vstacl and then return model
                 try(Reader reader = new CSVReader(tmpFileSyn0)) {
                     AtomicInteger cnt = new AtomicInteger(0);
@@ -2379,17 +2381,32 @@ public class WordVectorSerializer {
                         VocabWord word = pair.getFirst();
                         INDArray vector = Nd4j.create(pair.getSecond());
 
-                        if (syn0 == null)
-                            syn0 = Nd4j.create(vocabCache.numWords(), vector.length());
+                        if (ve != null) {
+                            if (syn0 == null)
+                                syn0 = Nd4j.create(vocabCache.numWords(), vector.length());
 
-                        syn0.getRow(cnt.getAndIncrement()).assign(vector);
+                            syn0.getRow(cnt.getAndIncrement()).assign(vector);
+                        } else {
+                            rows.add(vector);
 
-                        //vocabCache.addToken(word);
-                        //vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                            vocabCache.addToken(word);
+                            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+                        }
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
+
+                if (syn0 == null && vocabCache.numWords() > 0)
+                    syn0 = Nd4j.vstack(rows);
+
+
+
+                if (syn0 == null) {
+                    log.error("Can't build syn0 table");
+                    throw new DL4JInvalidInputException("Can't build syn0 table");
+                }
+
 
 
 
@@ -2410,7 +2427,6 @@ public class WordVectorSerializer {
                 }
             }
         } catch (Exception e) {
-
             // let's try to load this file as csv file
             try {
                 log.debug("Trying CSV model restoration...");

@@ -96,7 +96,9 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
         //no labels
         if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
             NDArrayWritable writable = (NDArrayWritable)currList.get(0);
-            return new DataSet(writable.get(),writable.get());
+            DataSet ds = new DataSet(writable.get(),writable.get());
+            if (preProcessor != null) preProcessor.preProcess(ds);
+            return ds;
         }
         if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
             if(!regression)
@@ -105,12 +107,14 @@ public class DataVecDataSetFunction implements Function<List<Writable>,DataSet>,
                 label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
             NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
             featureVector = ndArrayWritable.get();
-            return new DataSet(featureVector,label);
+            DataSet ds = new DataSet(featureVector,label);
+            if (preProcessor != null) preProcessor.preProcess(ds);
+            return ds;
         }
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
-            //ndarray writable is an insane slow down herecd
+            //ndarray writable is an insane slow down here
             if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
                 continue;
 

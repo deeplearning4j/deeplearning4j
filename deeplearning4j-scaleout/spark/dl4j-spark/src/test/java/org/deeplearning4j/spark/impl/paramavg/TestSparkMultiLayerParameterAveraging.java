@@ -87,7 +87,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             public LabeledPoint call(LabeledPoint v1) throws Exception {
                 return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
             }
-        }).cache();
+        });
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         DataSet d = new IrisDataSetIterator(150,150).next();
@@ -133,7 +133,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             public LabeledPoint call(LabeledPoint v1) throws Exception {
                 return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
             }
-        }).cache();
+        });
 
         DataSet d = new IrisDataSetIterator(150,150).next();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

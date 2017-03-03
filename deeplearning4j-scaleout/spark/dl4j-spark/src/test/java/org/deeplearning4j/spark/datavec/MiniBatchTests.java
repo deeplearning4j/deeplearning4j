@@ -52,6 +52,8 @@ public class MiniBatchTests extends BaseSparkTest {
         count = miniBatches.count();
         assertEquals(30,count);
 
+        lines.unpersist();
+        points.unpersist();
         miniBatches.map(new DataSetAssertionFunction());
     }
 
