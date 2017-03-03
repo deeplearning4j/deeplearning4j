@@ -97,94 +97,14 @@ public class ArchiveUtils {
         else if (file.endsWith(".tar")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
-            TarArchiveInputStream tarIn = new TarArchiveInputStream(in);
-
-            TarArchiveEntry entry = null;
-
-            /** Read the tar entries using the getNextEntry method **/
-
-            while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
-
-                log.info("Extracting: " + entry.getName());
-
-                /** If the entry is a directory, createComplex the directory. **/
-
-                if (entry.isDirectory()) {
-
-                    File f = new File(dest + File.separator + entry.getName());
-                    f.mkdirs();
-                }
-                /**
-                 * If the entry is a file,write the decompressed file to the disk
-                 * and close destination stream.
-                 **/
-                else {
-                    int count;
-
-                    FileOutputStream fos = new FileOutputStream(dest + File.separator + entry.getName());
-                    BufferedOutputStream destStream = new BufferedOutputStream(fos, BUFFER);
-                    while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
-                        destStream.write(data, 0, count);
-                    }
-
-                    destStream.flush();;
-
-                    IOUtils.closeQuietly(destStream);
-                }
-            }
-
-
-
-            /** Close the input stream **/
-
-            tarIn.close();
+            untarData(dest, BUFFER, data, in);
         }
 
         else if (file.endsWith(".tar.gz") || file.endsWith(".tgz")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
             GzipCompressorInputStream gzIn = new GzipCompressorInputStream(in);
-            TarArchiveInputStream tarIn = new TarArchiveInputStream(gzIn);
-
-            TarArchiveEntry entry = null;
-
-            /** Read the tar entries using the getNextEntry method **/
-
-            while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
-
-                log.info("Extracting: " + entry.getName());
-
-                /** If the entry is a directory, createComplex the directory. **/
-
-                if (entry.isDirectory()) {
-
-                    File f = new File(dest + File.separator + entry.getName());
-                    f.mkdirs();
-                }
-                /**
-                 * If the entry is a file,write the decompressed file to the disk
-                 * and close destination stream.
-                 **/
-                else {
-                    int count;
-
-                    FileOutputStream fos = new FileOutputStream(dest + File.separator + entry.getName());
-                    BufferedOutputStream destStream = new BufferedOutputStream(fos, BUFFER);
-                    while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
-                        destStream.write(data, 0, count);
-                    }
-
-                    destStream.flush();
-
-                    IOUtils.closeQuietly(destStream);
-                }
-            }
-
-
-
-            /** Close the input stream **/
-
-            tarIn.close();
+            untarData(dest, BUFFER, data, gzIn);
         }
 
         else if (file.endsWith(".gz")) {
@@ -204,6 +124,48 @@ public class ArchiveUtils {
 
     }
 
+    private static void untarData(String dest, int BUFFER, byte[] data, InputStream inS) throws IOException {
+        TarArchiveInputStream tarIn = new TarArchiveInputStream(inS);
+
+        TarArchiveEntry entry = null;
+
+        /** Read the tar entries using the getNextEntry method **/
+
+        while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
+
+            log.info("Extracting: " + entry.getName());
+
+            /** If the entry is a directory, createComplex the directory. **/
+
+            if (entry.isDirectory()) {
+
+                File f = new File(dest + File.separator + entry.getName());
+                f.mkdirs();
+            }
+            /**
+             * If the entry is a file,write the decompressed file to the disk
+             * and close destination stream.
+             **/
+            else {
+                int count;
+
+                FileOutputStream fos = new FileOutputStream(dest + File.separator + entry.getName());
+                BufferedOutputStream destStream = new BufferedOutputStream(fos, BUFFER);
+                while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
+                    destStream.write(data, 0, count);
+                }
+
+                destStream.flush();
+
+                IOUtils.closeQuietly(destStream);
+            }
+        }
+
+
+        /** Close the input stream **/
+
+        tarIn.close();
+    }
 
 
 }
