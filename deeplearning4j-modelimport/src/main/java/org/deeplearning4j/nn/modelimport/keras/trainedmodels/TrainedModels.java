@@ -15,8 +15,7 @@ import java.util.ArrayList;
  */
 public enum TrainedModels {
 
-    VGG16,
-    VGG16NOTOP;
+    VGG16, VGG16NOTOP;
 
     /**
      * Name of the sub dir in the local cache associated with the model.
@@ -99,10 +98,10 @@ public enum TrainedModels {
      */
 
     public int[] getInputShape() {
-        switch(this) {
+        switch (this) {
             case VGG16:
             case VGG16NOTOP:
-                    return new int[]{1, 3, 224, 224};
+                return new int[] {1, 3, 224, 224};
             default:
                 throw new UnsupportedOperationException("Unknown or not supported trained model " + this);
         }
@@ -113,11 +112,11 @@ public enum TrainedModels {
      * @return
      */
     public int[] getOuputShape() {
-        switch(this) {
+        switch (this) {
             case VGG16:
-                return new int[]{1,1000};
+                return new int[] {1, 1000};
             case VGG16NOTOP:
-                return new int[] {1,512,7,7};
+                return new int[] {1, 512, 7, 7};
             default:
                 throw new UnsupportedOperationException("Unknown or not supported trained model " + this);
         }
@@ -130,9 +129,9 @@ public enum TrainedModels {
     public String decodePredictions(INDArray predictions) {
         ArrayList<String> labels;
         String predictionDescription = "";
-        int [] top5 = new int[5];
-        float [] top5Prob = new float[5];
-        switch(this) {
+        int[] top5 = new int[5];
+        float[] top5Prob = new float[5];
+        switch (this) {
             case VGG16:
                 labels = ImageNetLabels.getLabels();
                 break;
@@ -142,7 +141,7 @@ public enum TrainedModels {
         }
         //brute force collect top 5
         int i = 0;
-        for (int batch=0;batch<predictions.size(0);batch++) {
+        for (int batch = 0; batch < predictions.size(0); batch++) {
             predictionDescription += "Predictions for batch ";
             if (predictions.size(0) > 1) {
                 predictionDescription += String.valueOf(batch);
@@ -150,10 +149,10 @@ public enum TrainedModels {
             predictionDescription += " :";
             INDArray currentBatch = predictions.getRow(batch).dup();
             while (i < 5) {
-                top5[i] = Nd4j.argMax(currentBatch, 1).getInt(0,0);
+                top5[i] = Nd4j.argMax(currentBatch, 1).getInt(0, 0);
                 top5Prob[i] = currentBatch.getFloat(batch, top5[i]);
                 currentBatch.putScalar(0, top5[i], 0);
-                predictionDescription += "\n\t" + String.format("%3f",top5Prob[i]*100) + "%, " + labels.get(top5[i]);
+                predictionDescription += "\n\t" + String.format("%3f", top5Prob[i] * 100) + "%, " + labels.get(top5[i]);
                 i++;
             }
         }

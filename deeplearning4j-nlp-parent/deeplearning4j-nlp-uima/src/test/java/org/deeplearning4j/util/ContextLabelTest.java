@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,22 +40,23 @@ public class ContextLabelTest {
     private TokenizerFactory tokenizerFactory;
 
     @Before
-    public void init() throws  Exception {
-          if(tokenizerFactory == null) {
-              tokenizerFactory = new UimaTokenizerFactory(false);
-          }
+    public void init() throws Exception {
+        if (tokenizerFactory == null) {
+            tokenizerFactory = new UimaTokenizerFactory(false);
+        }
     }
 
     @Test
     public void testBasicLabel() {
         String labeledSentence = "<NEGATIVE> This sucks really bad </NEGATIVE> .";
-        Pair<String,MultiDimensionalMap<Integer,Integer,String>> ret = ContextLabelRetriever.stringWithLabels(labeledSentence,tokenizerFactory);
+        Pair<String, MultiDimensionalMap<Integer, Integer, String>> ret =
+                        ContextLabelRetriever.stringWithLabels(labeledSentence, tokenizerFactory);
         //positive and none
         assertEquals(2, ret.getSecond().size());
         List<String> vals = new ArrayList<>(ret.getSecond().values());
-        assertEquals(true,vals.contains("NEGATIVE"));
-        assertEquals(true,vals.contains("none"));
-        assertEquals("This sucks really bad .",ret.getFirst());
+        assertEquals(true, vals.contains("NEGATIVE"));
+        assertEquals(true, vals.contains("none"));
+        assertEquals("This sucks really bad .", ret.getFirst());
     }
 
 

@@ -42,17 +42,19 @@ public class ConvolutionalListenerModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/activations", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.convolutional.Activations.apply()));
+        Route r = new Route("/activations", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(org.deeplearning4j.ui.views.html.convolutional.Activations.apply()));
         Route r2 = new Route("/activations/data", HttpMethod.GET, FunctionType.Supplier, this::getImage);
 
-        return Arrays.asList(r,r2);
+        return Arrays.asList(r, r2);
     }
 
     @Override
     public synchronized void reportStorageEvents(Collection<StatsStorageEvent> events) {
-        for(StatsStorageEvent sse : events){
-            if(TYPE_ID.equals(sse.getTypeID()) && sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo){
-                if(sse.getTimestamp() > lastTimeStamp){
+        for (StatsStorageEvent sse : events) {
+            if (TYPE_ID.equals(sse.getTypeID())
+                            && sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo) {
+                if (sse.getTimestamp() > lastTimeStamp) {
                     lastStorage = sse.getStatsStorage();
                     lastSessionID = sse.getSessionID();
                     lastWorkerID = sse.getWorkerID();
@@ -72,17 +74,17 @@ public class ConvolutionalListenerModule implements UIModule {
 
     }
 
-    private Result getImage(){
-        if(lastTimeStamp > 0 && lastStorage != null){
+    private Result getImage() {
+        if (lastTimeStamp > 0 && lastStorage != null) {
             Persistable p = lastStorage.getStaticInfo(lastSessionID, TYPE_ID, lastWorkerID);
-            if(p instanceof ConvolutionListenerPersistable){
-                ConvolutionListenerPersistable clp = (ConvolutionListenerPersistable)p;
+            if (p instanceof ConvolutionListenerPersistable) {
+                ConvolutionListenerPersistable clp = (ConvolutionListenerPersistable) p;
                 BufferedImage bi = clp.getImg();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 try {
                     ImageIO.write(bi, "jpg", baos);
                 } catch (IOException e) {
-                    log.warn("Error displaying image",e);
+                    log.warn("Error displaying image", e);
                 }
                 return ok(baos.toByteArray()).as("image/jpg");
             } else {

@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -65,7 +65,8 @@ public class TokenInfoBuffer {
 
         // Get field value references (string references)
         for (int i = 0; i < featureCount; i++) {
-            entry.featureInfos[i] = buffer.getInt(position + tokenInfoCount * SHORT_BYTES + posInfoCount + i * INTEGER_BYTES);
+            entry.featureInfos[i] =
+                            buffer.getInt(position + tokenInfoCount * SHORT_BYTES + posInfoCount + i * INTEGER_BYTES);
         }
 
         return entry;
@@ -85,7 +86,8 @@ public class TokenInfoBuffer {
     public int lookupFeature(int offset, int i) {
         int position = getPosition(offset, entrySize);
 
-        return buffer.getInt(position + tokenInfoCount * SHORT_BYTES + posInfoCount + (i - posInfoCount) * INTEGER_BYTES);
+        return buffer.getInt(
+                        position + tokenInfoCount * SHORT_BYTES + posInfoCount + (i - posInfoCount) * INTEGER_BYTES);
     }
 
     public boolean isPartOfSpeechFeature(int i) {

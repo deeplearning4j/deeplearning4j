@@ -32,7 +32,8 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
         super.validateConfiguration();
 
         if (configuration.getTokenizerFactory() == null)
-            throw new DL4JInvalidConfigException("TokenizerFactory is undefined. Can't train ParagraphVectors without it.");
+            throw new DL4JInvalidConfigException(
+                            "TokenizerFactory is undefined. Can't train ParagraphVectors without it.");
     }
 
     /**
@@ -48,7 +49,8 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
 
         broadcastEnvironment(new JavaSparkContext(documentsRdd.context()));
 
-        JavaRDD<Sequence<VocabWord>> sequenceRdd = documentsRdd.map(new KeySequenceConvertFunction(configurationBroadcast));
+        JavaRDD<Sequence<VocabWord>> sequenceRdd =
+                        documentsRdd.map(new KeySequenceConvertFunction(configurationBroadcast));
 
         super.fitSequences(sequenceRdd);
     }
@@ -65,7 +67,8 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
 
         broadcastEnvironment(new JavaSparkContext(documentsRdd.context()));
 
-        JavaRDD<Sequence<VocabWord>> sequenceRDD = documentsRdd.map(new DocumentSequenceConvertFunction(configurationBroadcast));
+        JavaRDD<Sequence<VocabWord>> sequenceRDD =
+                        documentsRdd.map(new DocumentSequenceConvertFunction(configurationBroadcast));
 
         super.fitSequences(sequenceRDD);
     }

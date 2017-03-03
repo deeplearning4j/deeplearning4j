@@ -23,21 +23,20 @@ import static org.junit.Assert.assertNull;
 public class TestMasking {
 
     @Test
-    public void checkMaskArrayClearance(){
-        for(boolean tbptt : new boolean[]{true, false}) {
+    public void checkMaskArrayClearance() {
+        for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .iterations(1).seed(12345).list()
-                    .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                            .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
-                    .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345).list()
+                            .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                            .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
+                            .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard)
+                            .tBPTTForwardLength(8).tBPTTBackwardLength(8).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10), Nd4j.linspace(2, 20, 10).reshape(1, 1, 10),
-                    Nd4j.ones(10), Nd4j.ones(10));
+            DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10),
+                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(10), Nd4j.ones(10));
 
             net.fit(data);
             for (Layer l : net.getLayers()) {

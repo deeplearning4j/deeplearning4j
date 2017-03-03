@@ -25,14 +25,14 @@ public class DL4JSubTypesScanner implements org.reflections.scanners.Scanner {
     private Configuration configuration;
     private Multimap<String, String> store;
 
-    public DL4JSubTypesScanner(List<Class<?>> interfaces, List<Class<?>> classes){
+    public DL4JSubTypesScanner(List<Class<?>> interfaces, List<Class<?>> classes) {
         interfaceNames = new ArrayList<>(interfaces.size());
-        for(Class<?> c : interfaces){
+        for (Class<?> c : interfaces) {
             interfaceNames.add(c.getName());
         }
 
         classNames = new ArrayList<>(classes.size());
-        for(Class<?> c : interfaces){
+        for (Class<?> c : interfaces) {
             classNames.add(c.getName());
         }
     }
@@ -43,12 +43,12 @@ public class DL4JSubTypesScanner implements org.reflections.scanners.Scanner {
 
         //Unfortunately: can't simply check if superclass is one of the classes we want
         // as this doesn't take into account the class heirarchy properly
-        if(!"java.lang.Object".equals(superclass) ){
+        if (!"java.lang.Object".equals(superclass)) {
             getStore().put(superclass, className);
         }
 
         for (String interfaceName : (List<String>) configuration.getMetadataAdapter().getInterfacesNames(cls)) {
-            if(interfaceNames.contains(interfaceName)){
+            if (interfaceNames.contains(interfaceName)) {
                 getStore().put(interfaceName, className);
             }
         }

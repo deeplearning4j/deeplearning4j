@@ -18,10 +18,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class AsyncIterator<T extends Object> implements Iterator<T> {
-    @Getter protected BlockingQueue<T> buffer;
+    @Getter
+    protected BlockingQueue<T> buffer;
     protected ReaderThread<T> thread;
     protected Iterator<T> iterator;
-    @Getter protected T terminator = (T) new Object();
+    @Getter
+    protected T terminator = (T) new Object();
     protected T nextElement;
     protected AtomicBoolean shouldWork = new AtomicBoolean(true);
 

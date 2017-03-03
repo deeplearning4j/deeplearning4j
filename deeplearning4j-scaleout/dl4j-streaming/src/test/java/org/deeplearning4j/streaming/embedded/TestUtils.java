@@ -9,8 +9,7 @@ import java.util.Random;
 public class TestUtils {
     private static final Random RANDOM = new Random();
 
-    private TestUtils() {
-    }
+    private TestUtils() {}
 
     public static File constructTempDir(String dirPrefix) {
         File file = new File(System.getProperty("java.io.tmpdir"), dirPrefix + RANDOM.nextInt(10000000));

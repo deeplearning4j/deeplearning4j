@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class BagOfWordsVectorizer extends  BaseTextVectorizer {
+public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
     protected BagOfWordsVectorizer() {
 
@@ -75,7 +75,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
     @Override
     public INDArray transform(List<String> tokens) {
         INDArray input = Nd4j.create(1, vocabCache.numWords());
-        for (String token: tokens) {
+        for (String token : tokens) {
             int idx = vocabCache.indexOf(token);
             if (vocabCache.indexOf(token) >= 0)
                 input.putScalar(idx, vocabCache.wordFrequency(token));
@@ -118,8 +118,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         protected Collection<String> stopWords = new ArrayList<>();
         protected boolean isParallel = true;
 
-        public Builder() {
-        }
+        public Builder() {}
 
 
         public Builder allowParallelTokenization(boolean reallyAllow) {
@@ -158,7 +157,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         }
 
         public Builder setStopWords(Collection<String> stopWords) {
-        	this.stopWords = stopWords;
+            this.stopWords = stopWords;
             return this;
         }
 

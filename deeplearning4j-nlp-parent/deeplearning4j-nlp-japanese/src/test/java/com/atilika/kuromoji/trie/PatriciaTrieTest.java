@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -154,10 +154,10 @@ public class PatriciaTrieTest {
         trie.put("ラーメン", "ramen");
         // Test keys
         assertEquals(4, trie.keySet().size());
-        assertTrue(trie.keySet().containsAll(Arrays.asList(new String[]{"寿司", "そば", "ラーメン", "刺身"})));
+        assertTrue(trie.keySet().containsAll(Arrays.asList(new String[] {"寿司", "そば", "ラーメン", "刺身"})));
         // Test values
         assertEquals(4, trie.values().size());
-        assertTrue(trie.values().containsAll(Arrays.asList(new String[]{"sushi", "soba", "ramen", "sashimi"})));
+        assertTrue(trie.values().containsAll(Arrays.asList(new String[] {"sushi", "soba", "ramen", "sashimi"})));
     }
 
     @Test
@@ -172,34 +172,10 @@ public class PatriciaTrieTest {
     @Test
     public void testPrefix() {
         PatriciaTrie<String> trie = new PatriciaTrie<>();
-        String[] tokyoPlaces = new String[]{
-            "Hachiōji",
-            "Tachikawa",
-            "Musashino",
-            "Mitaka",
-            "Ōme",
-            "Fuchū",
-            "Akishima",
-            "Chōfu",
-            "Machida",
-            "Koganei",
-            "Kodaira",
-            "Hino",
-            "Higashimurayama",
-            "Kokubunji",
-            "Kunitachi",
-            "Fussa",
-            "Komae",
-            "Higashiyamato",
-            "Kiyose",
-            "Higashikurume",
-            "Musashimurayama",
-            "Tama",
-            "Inagi",
-            "Hamura",
-            "Akiruno",
-            "Nishitōkyō"
-        };
+        String[] tokyoPlaces = new String[] {"Hachiōji", "Tachikawa", "Musashino", "Mitaka", "Ōme", "Fuchū", "Akishima",
+                        "Chōfu", "Machida", "Koganei", "Kodaira", "Hino", "Higashimurayama", "Kokubunji", "Kunitachi",
+                        "Fussa", "Komae", "Higashiyamato", "Kiyose", "Higashikurume", "Musashimurayama", "Tama",
+                        "Inagi", "Hamura", "Akiruno", "Nishitōkyō"};
         for (int i = 0; i < tokyoPlaces.length; i++) {
             trie.put(tokyoPlaces[i], tokyoPlaces[i]);
         }
@@ -225,15 +201,8 @@ public class PatriciaTrieTest {
     @Test
     public void testTextScan() {
         PatriciaTrie<String> trie = new PatriciaTrie<>();
-        String[] terms = new String[]{
-            "お寿司", "sushi",
-            "美味しい", "tasty",
-            "日本", "japan",
-            "だと思います", "i think",
-            "料理", "food",
-            "日本料理", "japanese food",
-            "一番", "first and foremost",
-        };
+        String[] terms = new String[] {"お寿司", "sushi", "美味しい", "tasty", "日本", "japan", "だと思います", "i think", "料理",
+                        "food", "日本料理", "japanese food", "一番", "first and foremost",};
         for (int i = 0; i < terms.length; i += 2) {
             trie.put(terms[i], terms[i + 1]);
         }
@@ -260,7 +229,8 @@ public class PatriciaTrieTest {
                 startIndex++;
             }
         }
-        assertEquals("[日本料理|japanese food]の中で、[一番|first and foremost][美味しい|tasty]のは[お寿司|sushi][だと思います|i think]。すぐ[日本|japan]に帰りたいです。", builder.toString());
+        assertEquals("[日本料理|japanese food]の中で、[一番|first and foremost][美味しい|tasty]のは[お寿司|sushi][だと思います|i think]。すぐ[日本|japan]に帰りたいです。",
+                        builder.toString());
     }
 
     @Test
@@ -281,25 +251,23 @@ public class PatriciaTrieTest {
         }
 
         for (int i = 0; i < numThreads; i++) {
-            Thread thread = new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        for (int run = 0; run < perThreadRuns; run++) {
-                            int randomIndex = (int) (Math.random() * randoms.size());
-                            String random = randoms.get(randomIndex);
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int run = 0; run < perThreadRuns; run++) {
+                        int randomIndex = (int) (Math.random() * randoms.size());
+                        String random = randoms.get(randomIndex);
 
-                            // Test retrieve
-                            assertEquals(randomIndex, (int) trie.get(random));
+                        // Test retrieve
+                        assertEquals(randomIndex, (int) trie.get(random));
 
-                            int randomPrefixLength = (int) (Math.random() * random.length());
+                        int randomPrefixLength = (int) (Math.random() * random.length());
 
-                            // Test random prefix length prefix match
-                            assertTrue(trie.containsKeyPrefix(random.substring(0, randomPrefixLength)));
-                        }
+                        // Test random prefix length prefix match
+                        assertTrue(trie.containsKeyPrefix(random.substring(0, randomPrefixLength)));
                     }
                 }
-            );
+            });
             threads.add(thread);
             thread.start();
         }

@@ -25,7 +25,8 @@ public class ClassPathResource {
      * @param resourceName String name of resource, to be retrieved
      */
     public ClassPathResource(String resourceName) {
-        if (resourceName == null) throw new IllegalStateException("Resource name can't be null");
+        if (resourceName == null)
+            throw new IllegalStateException("Resource name can't be null");
         this.resourceName = resourceName;
     }
 
@@ -51,13 +52,15 @@ public class ClassPathResource {
             // try to check for mis-used starting slash
             // TODO: see TODO below
             if (this.resourceName.startsWith("/")) {
-                url = loader.getResource(this.resourceName.replaceFirst("[\\\\/]",""));
-                if (url != null) return url;
+                url = loader.getResource(this.resourceName.replaceFirst("[\\\\/]", ""));
+                if (url != null)
+                    return url;
             } else {
                 // try to add slash, to make clear it's not an issue
                 // TODO: change this mechanic to actual path purifier
                 url = loader.getResource("/" + this.resourceName);
-                if (url != null) return url;
+                if (url != null)
+                    return url;
             }
             throw new IllegalStateException("Resource '" + this.resourceName + "' cannot be found.");
         }
@@ -81,18 +84,19 @@ public class ClassPathResource {
              */
             try {
                 url = extractActualUrl(url);
-                File file = File.createTempFile("datavec_temp","file");
+                File file = File.createTempFile("datavec_temp", "file");
                 file.deleteOnExit();
 
                 ZipFile zipFile = new ZipFile(url.getFile());
                 ZipEntry entry = zipFile.getEntry(this.resourceName);
                 if (entry == null) {
                     if (this.resourceName.startsWith("/")) {
-                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/",""));
+                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/", ""));
                         if (entry == null) {
                             throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                         }
-                    } else throw new FileNotFoundException("Resource " + this.resourceName + " not found");
+                    } else
+                        throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
                 long size = entry.getSize();
@@ -104,7 +108,7 @@ public class ClassPathResource {
                 long bytesRead = 0;
                 do {
                     rd = stream.read(array);
-                    outputStream.write(array,0,rd);
+                    outputStream.write(array, 0, rd);
                     bytesRead += rd;
                 } while (bytesRead < size);
 
@@ -141,7 +145,8 @@ public class ClassPathResource {
      */
     private boolean isJarURL(URL url) {
         String protocol = url.getProtocol();
-        return "jar".equals(protocol) || "zip".equals(protocol) || "wsjar".equals(protocol) || "code-source".equals(protocol) && url.getPath().contains("!/");
+        return "jar".equals(protocol) || "zip".equals(protocol) || "wsjar".equals(protocol)
+                        || "code-source".equals(protocol) && url.getPath().contains("!/");
     }
 
     /**
@@ -154,13 +159,13 @@ public class ClassPathResource {
     private URL extractActualUrl(URL jarUrl) throws MalformedURLException {
         String urlFile = jarUrl.getFile();
         int separatorIndex = urlFile.indexOf("!/");
-        if(separatorIndex != -1) {
+        if (separatorIndex != -1) {
             String jarFile = urlFile.substring(0, separatorIndex);
 
             try {
                 return new URL(jarFile);
             } catch (MalformedURLException var5) {
-                if(!jarFile.startsWith("/")) {
+                if (!jarFile.startsWith("/")) {
                     jarFile = "/" + jarFile;
                 }
 
@@ -187,11 +192,12 @@ public class ClassPathResource {
 
                 if (entry == null) {
                     if (this.resourceName.startsWith("/")) {
-                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/",""));
+                        entry = zipFile.getEntry(this.resourceName.replaceFirst("/", ""));
                         if (entry == null) {
                             throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                         }
-                    } else throw new FileNotFoundException("Resource " + this.resourceName + " not found");
+                    } else
+                        throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
                 InputStream stream = zipFile.getInputStream(entry);

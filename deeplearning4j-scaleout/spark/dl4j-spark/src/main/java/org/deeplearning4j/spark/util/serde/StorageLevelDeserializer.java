@@ -17,10 +17,11 @@ import java.io.IOException;
  */
 public class StorageLevelDeserializer extends JsonDeserializer<StorageLevel> {
     @Override
-    public StorageLevel deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public StorageLevel deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+                    throws IOException, JsonProcessingException {
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
         String value = node.textValue();
-        if(value == null || "null".equals(value)){
+        if (value == null || "null".equals(value)) {
             return null;
         }
         return StorageLevel.fromString(value);

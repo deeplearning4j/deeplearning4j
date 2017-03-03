@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -29,13 +29,16 @@ import java.io.IOException;
 
 public class TokenInfoDictionary implements Dictionary {
 
-//    public static final String TOKEN_INFO_DICTIONARY_FILENAME = "tokenInfoDictionary.bin";
-//    public static final String FEATURE_MAP_FILENAME = "tokenInfoFeaturesMap.bin";
-//    public static final String POS_MAP_FILENAME = "tokenInfoPartOfSpeechMap.bin";
-//    public static final String TARGETMAP_FILENAME = "tokenInfoTargetMap.bin";
-    public static final String TOKEN_INFO_DICTIONARY_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoDictionary.bin";
-    public static final String FEATURE_MAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoFeaturesMap.bin";
-    public static final String POS_MAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoPartOfSpeechMap.bin";
+    //    public static final String TOKEN_INFO_DICTIONARY_FILENAME = "tokenInfoDictionary.bin";
+    //    public static final String FEATURE_MAP_FILENAME = "tokenInfoFeaturesMap.bin";
+    //    public static final String POS_MAP_FILENAME = "tokenInfoPartOfSpeechMap.bin";
+    //    public static final String TARGETMAP_FILENAME = "tokenInfoTargetMap.bin";
+    public static final String TOKEN_INFO_DICTIONARY_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoDictionary.bin";
+    public static final String FEATURE_MAP_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoFeaturesMap.bin";
+    public static final String POS_MAP_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "tokenInfoPartOfSpeechMap.bin";
     public static final String TARGETMAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoTargetMap.bin";
 
     private static final int LEFT_ID = 0;
@@ -153,9 +156,7 @@ public class TokenInfoDictionary implements Dictionary {
 
         for (int i = 0; i < fields.length; i++) {
             int featureNumber = fields[i];
-            features[i] = DictionaryEntryLineParser.escape(
-                allFeatures[featureNumber]
-            );
+            features[i] = DictionaryEntryLineParser.escape(allFeatures[featureNumber]);
         }
         return StringUtils.join(features, FEATURE_SEPARATOR);
     }

@@ -30,7 +30,7 @@ public class NetworkOrganizerTest {
     public void testSelectionUniformNetworkC1() {
         List<NetworkInformation> collection = new ArrayList<>();
 
-        for(int i = 1; i < 128; i++) {
+        for (int i = 1; i < 128; i++) {
             NetworkInformation information = new NetworkInformation();
 
             information.addIpAddress("192.168.0." + i);
@@ -46,7 +46,7 @@ public class NetworkOrganizerTest {
 
         assertEquals(10, shards.size());
 
-        for (String ip: shards) {
+        for (String ip : shards) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("192.168.0"));
         }
@@ -55,7 +55,7 @@ public class NetworkOrganizerTest {
         // check for secondary subset (aka Backup)
         List<String> backup = discoverer.getSubset(10, shards);
         assertEquals(10, backup.size());
-        for (String ip: backup) {
+        for (String ip : backup) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("192.168.0"));
             assertFalse(shards.contains(ip));
@@ -95,7 +95,7 @@ public class NetworkOrganizerTest {
     public void testSelectionDisjointNetworkC1() {
         List<NetworkInformation> collection = new ArrayList<>();
 
-        for(int i = 1; i < 128; i++) {
+        for (int i = 1; i < 128; i++) {
             NetworkInformation information = new NetworkInformation();
 
             if (i < 20)
@@ -118,7 +118,7 @@ public class NetworkOrganizerTest {
         // we expect 9 here, thus backups will be either incomplete or complex sharding will be used for them
 
         assertEquals(9, backup.size());
-        for (String ip: backup) {
+        for (String ip : backup) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("172.12.0"));
             assertFalse(shards.contains(ip));
@@ -137,7 +137,7 @@ public class NetworkOrganizerTest {
         List<NetworkInformation> collection = new ArrayList<>();
 
         // we imitiate 512 cluster nodes here
-        for(int i = 0; i < 512; i++) {
+        for (int i = 0; i < 512; i++) {
             NetworkInformation information = new NetworkInformation();
 
             information.addIpAddress(getRandomAwsIp());
@@ -153,7 +153,7 @@ public class NetworkOrganizerTest {
         List<String> backup = organizer.getSubset(10, shards);
 
         assertEquals(10, backup.size());
-        for (String ip: backup) {
+        for (String ip : backup) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("172."));
             assertFalse(shards.contains(ip));
@@ -175,7 +175,7 @@ public class NetworkOrganizerTest {
         List<NetworkInformation> collection = new ArrayList<>();
 
         // we imitiate 512 cluster nodes here
-        for(int i = 0; i < 512; i++) {
+        for (int i = 0; i < 512; i++) {
             NetworkInformation information = new NetworkInformation();
 
             information.addIpAddress(getRandomAwsIp());
@@ -197,14 +197,14 @@ public class NetworkOrganizerTest {
 
         assertEquals(15, shards.size());
 
-        for (String ip: shards) {
+        for (String ip : shards) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("172."));
         }
 
         List<String> backup = organizer.getSubset(15, shards);
 
-        for (String ip: backup) {
+        for (String ip : backup) {
             assertNotEquals(null, ip);
             assertTrue(ip.startsWith("172."));
             assertFalse(shards.contains(ip));
@@ -218,7 +218,7 @@ public class NetworkOrganizerTest {
      */
     @Test
     public void testFormat1() throws Exception {
-        for(int i = 0; i < 256; i++) {
+        for (int i = 0; i < 256; i++) {
             String octet = NetworkOrganizer.toBinaryOctet(i);
             assertEquals(8, octet.length());
             log.trace("i: {}; Octet: {}", i, octet);
@@ -239,11 +239,11 @@ public class NetworkOrganizerTest {
 
     @Test
     public void testNetTree1() throws Exception {
-        List<String> ips = Arrays.asList("192.168.0.1","192.168.0.2");
+        List<String> ips = Arrays.asList("192.168.0.1", "192.168.0.2");
 
         NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
 
-        for (String ip: ips)
+        for (String ip : ips)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(2, tree.getUniqueBranches());
@@ -254,11 +254,11 @@ public class NetworkOrganizerTest {
 
     @Test
     public void testNetTree2() throws Exception {
-        List<String> ips = Arrays.asList("192.168.12.2","192.168.0.2","192.168.0.2","192.168.62.92");
+        List<String> ips = Arrays.asList("192.168.12.2", "192.168.0.2", "192.168.0.2", "192.168.62.92");
 
         NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
 
-        for (String ip: ips)
+        for (String ip : ips)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(3, tree.getUniqueBranches());
@@ -287,7 +287,7 @@ public class NetworkOrganizerTest {
 
         Set<String> uniqueIps = new HashSet<>(ips);
 
-        for (String ip: uniqueIps)
+        for (String ip : uniqueIps)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(uniqueIps.size(), tree.getTotalBranches());
@@ -297,11 +297,11 @@ public class NetworkOrganizerTest {
 
     @Test
     public void testNetTree4() throws Exception {
-        List<String> ips = Arrays.asList("192.168.12.2","192.168.0.2","192.168.0.2","192.168.62.92","5.3.4.5");
+        List<String> ips = Arrays.asList("192.168.12.2", "192.168.0.2", "192.168.0.2", "192.168.62.92", "5.3.4.5");
 
         NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
 
-        for (String ip: ips)
+        for (String ip : ips)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(4, tree.getUniqueBranches());
@@ -325,7 +325,7 @@ public class NetworkOrganizerTest {
 
         Set<String> uniqueIps = new HashSet<>(ips);
 
-        for (String ip: uniqueIps)
+        for (String ip : uniqueIps)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(508, uniqueIps.size());
@@ -343,7 +343,7 @@ public class NetworkOrganizerTest {
 
         String networkAB = tree.getHottestNetworkAB();
 
-//        assertEquals("11000000.10101000", networkAB);
+        //        assertEquals("11000000.10101000", networkAB);
     }
 
     @Test
@@ -363,7 +363,7 @@ public class NetworkOrganizerTest {
 
         Set<String> uniqueIps = new HashSet<>(ips);
 
-        for (String ip: uniqueIps)
+        for (String ip : uniqueIps)
             tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
         assertEquals(508, uniqueIps.size());
@@ -381,7 +381,7 @@ public class NetworkOrganizerTest {
 
         String networkAB = tree.getHottestNetworkAB();
 
-      //  assertEquals("10101100.00010000", networkAB);
+        //  assertEquals("10101100.00010000", networkAB);
     }
 
     protected String getRandomIp() {

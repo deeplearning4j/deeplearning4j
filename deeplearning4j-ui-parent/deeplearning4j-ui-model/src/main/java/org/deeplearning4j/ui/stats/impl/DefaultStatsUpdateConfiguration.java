@@ -34,7 +34,7 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
     private boolean collectMeanMagnitudesUpdates = true;
     private boolean collectMeanMagnitudesActivations = true;
 
-    private DefaultStatsUpdateConfiguration(Builder b){
+    private DefaultStatsUpdateConfiguration(Builder b) {
         this.reportingFrequency = b.reportingFrequency;
         this.collectPerformanceStats = b.collectPerformanceStats;
         this.collectMemoryStats = b.collectMemoryStats;
@@ -203,7 +203,7 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
             return this;
         }
 
-        public Builder collectHistogramsGradients(boolean collectHistogramsGradients){
+        public Builder collectHistogramsGradients(boolean collectHistogramsGradients) {
             this.collectHistogramsGradients = collectHistogramsGradients;
             return this;
         }

@@ -32,8 +32,7 @@ public class VocabHolder implements Serializable {
         return ourInstance;
     }
 
-    private VocabHolder() {
-    }
+    private VocabHolder() {}
 
     public void setSeed(long seed, int vectorLength) {
         this.seed.set(seed);
@@ -74,13 +73,13 @@ public class VocabHolder implements Serializable {
         /*
             we use wordIndex as part of seed here, to guarantee that during word syn0 initialization on dwo distinct nodes, initial weights will be the same for the same word
          */
-        return Nd4j.rand(lseed * seed.get(), new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
+        return Nd4j.rand(lseed * seed.get(), new int[] {1, vectorLength}).subi(0.5).divi(vectorLength);
     }
 
     public Iterable<Map.Entry<VocabWord, INDArray>> getSplit(VocabCache<VocabWord> vocabCache) {
         Set<Map.Entry<VocabWord, INDArray>> set = new HashSet<>();
         int cnt = 0;
-        for (Map.Entry<VocabWord, INDArray> entry: indexSyn0VecMap.entrySet()) {
+        for (Map.Entry<VocabWord, INDArray> entry : indexSyn0VecMap.entrySet()) {
             set.add(entry);
             cnt++;
             if (cnt > 10)

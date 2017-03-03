@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface LocalResponseNormalizationHelper {
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha, double beta);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
+                    double beta);
+
     INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta);
 }

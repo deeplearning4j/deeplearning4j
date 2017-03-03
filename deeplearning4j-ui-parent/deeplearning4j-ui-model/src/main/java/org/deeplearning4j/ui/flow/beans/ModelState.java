@@ -17,8 +17,8 @@ public class ModelState implements Serializable {
     private float performanceSamples;
     private long iterationTime;
 
-    private Map<String,Map> parameters = new HashMap<>();
-    private Map<String,Map> gradients = new HashMap<>();
+    private Map<String, Map> parameters = new HashMap<>();
+    private Map<String, Map> gradients = new HashMap<>();
     private List<Double> learningRates = new ArrayList<>();
 
     private Map<Integer, LayerParams> layerParams = new LinkedHashMap<>();
@@ -45,19 +45,19 @@ public class ModelState implements Serializable {
     public void addPerformanceSamples(float perf) {
         performanceSamples = perf;
     }
-/*
+    /*
     public void addPerformanceBatches(float perf) {
         if (performanceBatches.size() > 100)
             performanceBatches.remove(0);
-
+    
         performanceBatches.add(perf);
     }
-
+    
     public void addPerformanceSamples(float perf) {
         if (performanceSamples.size() > 100)
             performanceSamples.remove(0);
-
+    
         performanceSamples.add(perf);
     }
-*/
+    */
 }

@@ -39,33 +39,34 @@ import static org.junit.Assert.assertTrue;
 public class TestMiscFunctions extends BaseSparkTest {
 
     @Test
-    public void testFeedForwardWithKey(){
+    public void testFeedForwardWithKey() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
+                                        .activation(Activation.SOFTMAX).build())
+                        .build();
 
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DataSetIterator iter = new IrisDataSetIterator(150,150);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
         DataSet ds = iter.next();
 
 
         List<INDArray> expected = new ArrayList<>();
-        List<Tuple2<Integer,INDArray>> mapFeatures = new ArrayList<>();
+        List<Tuple2<Integer, INDArray>> mapFeatures = new ArrayList<>();
         int count = 0;
         int arrayCount = 0;
         Random r = new Random(12345);
-        while(count < 150){
-            int exampleCount = r.nextInt(5)+1;  //1 to 5 inclusive examples
-            if(count + exampleCount > 150) exampleCount = 150 - count;
+        while (count < 150) {
+            int exampleCount = r.nextInt(5) + 1; //1 to 5 inclusive examples
+            if (count + exampleCount > 150)
+                exampleCount = 150 - count;
 
-            INDArray subset = ds.getFeatures().get(NDArrayIndex.interval(count,count+exampleCount), NDArrayIndex.all());
+            INDArray subset = ds.getFeatures().get(NDArrayIndex.interval(count, count + exampleCount),
+                            NDArrayIndex.all());
 
             expected.add(net.output(subset, false));
             mapFeatures.add(new Tuple2<>(arrayCount, subset));
@@ -73,12 +74,12 @@ public class TestMiscFunctions extends BaseSparkTest {
             count += exampleCount;
         }
 
-        JavaPairRDD<Integer,INDArray> rdd = sc.parallelizePairs(mapFeatures);
+        JavaPairRDD<Integer, INDArray> rdd = sc.parallelizePairs(mapFeatures);
 
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(sc, net, null);
-        Map<Integer,INDArray> map = multiLayer.feedForwardWithKey(rdd, 16).collectAsMap();
+        Map<Integer, INDArray> map = multiLayer.feedForwardWithKey(rdd, 16).collectAsMap();
 
-        for( int i=0; i<expected.size(); i++ ){
+        for (int i = 0; i < expected.size(); i++) {
             INDArray exp = expected.get(i);
             INDArray act = map.get(i);
 
@@ -88,49 +89,50 @@ public class TestMiscFunctions extends BaseSparkTest {
 
 
     @Test
-    public void testFeedForwardWithKeyGraph(){
+    public void testFeedForwardWithKeyGraph() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in1", "in2")
-                .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in1")
-                .addLayer("1", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in2")
-                .addLayer("2", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(6).nOut(3).activation(Activation.SOFTMAX).build(), "0", "1")
-                .setOutputs("2")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .graphBuilder().addInputs("in1", "in2")
+                        .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in1")
+                        .addLayer("1", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in2").addLayer("2",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(6).nOut(3)
+                                                        .activation(Activation.SOFTMAX).build(),
+                                        "0", "1")
+                        .setOutputs("2").build();
 
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        DataSetIterator iter = new IrisDataSetIterator(150,150);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
         DataSet ds = iter.next();
 
 
         List<INDArray> expected = new ArrayList<>();
-        List<Tuple2<Integer,INDArray[]>> mapFeatures = new ArrayList<>();
+        List<Tuple2<Integer, INDArray[]>> mapFeatures = new ArrayList<>();
         int count = 0;
         int arrayCount = 0;
         Random r = new Random(12345);
-        while(count < 150){
-            int exampleCount = r.nextInt(5)+1;  //1 to 5 inclusive examples
-            if(count + exampleCount > 150) exampleCount = 150 - count;
+        while (count < 150) {
+            int exampleCount = r.nextInt(5) + 1; //1 to 5 inclusive examples
+            if (count + exampleCount > 150)
+                exampleCount = 150 - count;
 
-            INDArray subset = ds.getFeatures().get(NDArrayIndex.interval(count,count+exampleCount), NDArrayIndex.all());
+            INDArray subset = ds.getFeatures().get(NDArrayIndex.interval(count, count + exampleCount),
+                            NDArrayIndex.all());
 
             expected.add(net.outputSingle(false, subset, subset));
-            mapFeatures.add(new Tuple2<>(arrayCount, new INDArray[]{subset,subset}));
+            mapFeatures.add(new Tuple2<>(arrayCount, new INDArray[] {subset, subset}));
             arrayCount++;
             count += exampleCount;
         }
 
-        JavaPairRDD<Integer,INDArray[]> rdd = sc.parallelizePairs(mapFeatures);
+        JavaPairRDD<Integer, INDArray[]> rdd = sc.parallelizePairs(mapFeatures);
 
         SparkComputationGraph graph = new SparkComputationGraph(sc, net, null);
-        Map<Integer,INDArray[]> map = graph.feedForwardWithKey(rdd, 16).collectAsMap();
+        Map<Integer, INDArray[]> map = graph.feedForwardWithKey(rdd, 16).collectAsMap();
 
-        for( int i=0; i<expected.size(); i++ ){
+        for (int i = 0; i < expected.size(); i++) {
             INDArray exp = expected.get(i);
             INDArray act = map.get(i)[0];
 
@@ -140,39 +142,40 @@ public class TestMiscFunctions extends BaseSparkTest {
 
 
     @Test
-    public void testVaeReconstructionProbabilityWithKey(){
+    public void testVaeReconstructionProbabilityWithKey() {
 
         //Simple test. We can't do a direct comparison, as the reconstruction probabilities are stochastic
         // due to sampling
 
         int nIn = 10;
 
-        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                        .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.IDENTITY))
-                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
-                .build();
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                                        .reconstructionDistribution(
+                                                        new GaussianReconstructionDistribution(Activation.IDENTITY))
+                                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
 
-        List<Tuple2<Integer,INDArray>> toScore = new ArrayList<>();
-        for( int i=0; i<100; i++ ){
-            INDArray arr = Nd4j.rand(1,nIn);
+        List<Tuple2<Integer, INDArray>> toScore = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            INDArray arr = Nd4j.rand(1, nIn);
             toScore.add(new Tuple2<Integer, INDArray>(i, arr));
         }
 
-        JavaPairRDD<Integer,INDArray> rdd = sc.parallelizePairs(toScore);
+        JavaPairRDD<Integer, INDArray> rdd = sc.parallelizePairs(toScore);
 
-        JavaPairRDD<Integer,Double> reconstr = rdd.mapPartitionsToPair(new VaeReconstructionProbWithKeyFunction<Integer>(sc.broadcast(net.params()), sc.broadcast(mlc.toJson()),
-                true, 16, 128));
+        JavaPairRDD<Integer, Double> reconstr =
+                        rdd.mapPartitionsToPair(new VaeReconstructionProbWithKeyFunction<Integer>(
+                                        sc.broadcast(net.params()), sc.broadcast(mlc.toJson()), true, 16, 128));
 
-        Map<Integer,Double> l = reconstr.collectAsMap();
+        Map<Integer, Double> l = reconstr.collectAsMap();
 
         assertEquals(100, l.size());
 
-        for( int i=0; i<100; i++ ){
+        for (int i = 0; i < 100; i++) {
             assertTrue(l.containsKey(i));
             assertTrue(l.get(i) < 0.0); //log probability: should be negative
         }
@@ -180,40 +183,42 @@ public class TestMiscFunctions extends BaseSparkTest {
 
 
     @Test
-    public void testVaeReconstructionErrorWithKey(){
+    public void testVaeReconstructionErrorWithKey() {
         //Simple test. We CAN do a direct comparison here vs. local, as reconstruction error is deterministic
 
         int nIn = 10;
 
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                        .reconstructionDistribution(new LossFunctionWrapper(Activation.IDENTITY, new LossMSE()))
-                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
-                .build();
+                        .list().layer(0,
+                                        new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                                                        .reconstructionDistribution(new LossFunctionWrapper(
+                                                                        Activation.IDENTITY, new LossMSE()))
+                                                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13)
+                                                        .build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
 
         VariationalAutoencoder vae = (VariationalAutoencoder) net.getLayer(0);
 
-        List<Tuple2<Integer,INDArray>> toScore = new ArrayList<>();
-        for( int i=0; i<100; i++ ){
-            INDArray arr = Nd4j.rand(1,nIn);
+        List<Tuple2<Integer, INDArray>> toScore = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            INDArray arr = Nd4j.rand(1, nIn);
             toScore.add(new Tuple2<Integer, INDArray>(i, arr));
         }
 
-        JavaPairRDD<Integer,INDArray> rdd = sc.parallelizePairs(toScore);
+        JavaPairRDD<Integer, INDArray> rdd = sc.parallelizePairs(toScore);
 
-        JavaPairRDD<Integer,Double> reconstrErrors =
-                rdd.mapPartitionsToPair(new VaeReconstructionErrorWithKeyFunction<Integer>(
-                        sc.broadcast(net.params()), sc.broadcast(mlc.toJson()),16));
+        JavaPairRDD<Integer, Double> reconstrErrors =
+                        rdd.mapPartitionsToPair(new VaeReconstructionErrorWithKeyFunction<Integer>(
+                                        sc.broadcast(net.params()), sc.broadcast(mlc.toJson()), 16));
 
-        Map<Integer,Double> l = reconstrErrors.collectAsMap();
+        Map<Integer, Double> l = reconstrErrors.collectAsMap();
 
         assertEquals(100, l.size());
 
-        for( int i=0; i<100; i++ ){
+        for (int i = 0; i < 100; i++) {
             assertTrue(l.containsKey(i));
 
             INDArray localToScore = toScore.get(i)._2();

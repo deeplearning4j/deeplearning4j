@@ -22,19 +22,19 @@ import java.util.Iterator;
  */
 public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
 
-    public static final int BUFFER_SIZE = 4194304;  //4 MB
+    public static final int BUFFER_SIZE = 4194304; //4 MB
 
     private final Collection<String> dataSetStreams;
     private MultiDataSetPreProcessor preprocessor;
     private Iterator<String> iter;
     private FileSystem fileSystem;
 
-    public PathSparkMultiDataSetIterator(Iterator<String> iter){
+    public PathSparkMultiDataSetIterator(Iterator<String> iter) {
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams){
+    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -45,7 +45,7 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return dataSetStreams != null;
     }
 
@@ -56,7 +56,8 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public void reset() {
-        if(dataSetStreams == null) throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
+        if (dataSetStreams == null)
+            throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
         iter = dataSetStreams.iterator();
     }
 
@@ -74,7 +75,8 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     public MultiDataSet next() {
         MultiDataSet ds = load(iter.next());
 
-        if(preprocessor != null) preprocessor.preProcess(ds);
+        if (preprocessor != null)
+            preprocessor.preProcess(ds);
         return ds;
     }
 
@@ -84,19 +86,19 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     }
 
 
-    private synchronized MultiDataSet load(String path){
-        if(fileSystem == null){
-            try{
+    private synchronized MultiDataSet load(String path) {
+        if (fileSystem == null) {
+            try {
                 fileSystem = FileSystem.get(new URI(path), new Configuration());
-            }catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
-        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
             ds.load(inputStream);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 

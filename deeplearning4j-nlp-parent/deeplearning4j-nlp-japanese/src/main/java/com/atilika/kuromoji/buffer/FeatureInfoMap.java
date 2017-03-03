@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -54,9 +54,6 @@ public class FeatureInfoMap {
 
     @Override
     public String toString() {
-        return "FeatureInfoMap{" +
-            "featureMap=" + featureMap +
-            ", maxValue=" + maxValue +
-            '}';
+        return "FeatureInfoMap{" + "featureMap=" + featureMap + ", maxValue=" + maxValue + '}';
     }
 }

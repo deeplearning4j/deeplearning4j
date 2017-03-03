@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
 public class TestGraphHuffman {
 
     @Test
-    public void testGraphHuffman(){
+    public void testGraphHuffman() {
         //Simple test case from Weiss - Data Structires and Algorithm Analysis in Java 3ed pg436
         //Huffman code is non-unique, but length of code for each node is same for all Huffman codes
 
@@ -21,17 +21,18 @@ public class TestGraphHuffman {
 
         gh.buildTree(vertexDegrees);
 
-        for( int i=0; i<7; i++ ) System.out.println(i + "\t" + gh.getCodeLength(i) + "\t" + gh.getCodeString(i)
-            + "\t\t" + gh.getCode(i) + "\t\t" + Arrays.toString(gh.getPathInnerNodes(i)));
+        for (int i = 0; i < 7; i++)
+            System.out.println(i + "\t" + gh.getCodeLength(i) + "\t" + gh.getCodeString(i) + "\t\t" + gh.getCode(i)
+                            + "\t\t" + Arrays.toString(gh.getPathInnerNodes(i)));
 
-        int[] expectedLengths = {3,2,2,5,4,2,5};
-        for( int i=0; i<vertexDegrees.length; i++ ){
+        int[] expectedLengths = {3, 2, 2, 5, 4, 2, 5};
+        for (int i = 0; i < vertexDegrees.length; i++) {
             assertEquals(expectedLengths[i], gh.getCodeLength(i));
         }
 
         //Check that codes are actually unique:
         Set<String> codeSet = new HashSet<>();
-        for( int i=0; i<7; i++ ){
+        for (int i = 0; i < 7; i++) {
             String code = gh.getCodeString(i);
             assertFalse(codeSet.contains(code));
             codeSet.add(code);
@@ -39,17 +40,17 @@ public class TestGraphHuffman {
 
         //Furthermore, Huffman code is a prefix code: i.e., no code word is a prefix of any other code word
         //Check all pairs of codes to ensure this holds
-        for( int i=0; i<7; i++ ){
+        for (int i = 0; i < 7; i++) {
             String code = gh.getCodeString(i);
-            for( int j=i+1; j<7; j++ ){
+            for (int j = i + 1; j < 7; j++) {
                 String codeOther = gh.getCodeString(j);
 
-                if(code.length() == codeOther.length() ){
-                    assertNotEquals(code,codeOther);
-                } else if(code.length() < codeOther.length() ){
-                    assertNotEquals(code,codeOther.substring(0,code.length()));
+                if (code.length() == codeOther.length()) {
+                    assertNotEquals(code, codeOther);
+                } else if (code.length() < codeOther.length()) {
+                    assertNotEquals(code, codeOther.substring(0, code.length()));
                 } else {
-                    assertNotEquals(codeOther,code.substring(0,codeOther.length()));
+                    assertNotEquals(codeOther, code.substring(0, codeOther.length()));
                 }
             }
         }

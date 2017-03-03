@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -17,10 +17,11 @@
  */
 
 package org.deeplearning4j.berkeley;
+
 /**
  * A function wrapping interface.
  * @author John DeNero
  */
 public interface MyMethod<I, O> {
-	O call(I obj);
+    O call(I obj);
 }

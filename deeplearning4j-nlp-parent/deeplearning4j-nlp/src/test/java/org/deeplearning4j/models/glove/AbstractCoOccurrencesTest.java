@@ -47,27 +47,19 @@ public class AbstractCoOccurrencesTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(vocabCache)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
         AbstractCoOccurrences<VocabWord> coOccurrences = new AbstractCoOccurrences.Builder<VocabWord>()
-                .iterate(sequenceIterator)
-                .vocabCache(vocabCache)
-                .symmetric(false)
-                .windowSize(15)
-                .build();
+                        .iterate(sequenceIterator).vocabCache(vocabCache).symmetric(false).windowSize(15).build();
 
         coOccurrences.fit();
 

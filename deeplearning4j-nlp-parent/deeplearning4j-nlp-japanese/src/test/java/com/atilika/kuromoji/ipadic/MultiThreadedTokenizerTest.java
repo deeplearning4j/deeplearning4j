@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -26,27 +26,14 @@ public class MultiThreadedTokenizerTest {
 
     @Test
     public void testMultiThreadedBocchan() throws IOException, InterruptedException {
-        assertMultiThreadedTokenizedStreamEquals(
-            5,
-            25,
-            "/bocchan-ipadic-features.txt",
-            "/bocchan.txt",
-            new Tokenizer()
-        );
+        assertMultiThreadedTokenizedStreamEquals(5, 25, "/bocchan-ipadic-features.txt", "/bocchan.txt",
+                        new Tokenizer());
     }
 
     @Test
     public void testMultiThreadedUserDictionary() throws IOException, InterruptedException {
-        assertMultiThreadedTokenizedStreamEquals(
-            5,
-            250,
-            "/jawikisentences-ipadic-features.txt",
-            "/jawikisentences.txt",
-            new Tokenizer.Builder()
-                .userDictionary(
-                    getClass().getResourceAsStream("/userdict.txt")
-                )
-                .build()
-        );
+        assertMultiThreadedTokenizedStreamEquals(5, 250, "/jawikisentences-ipadic-features.txt", "/jawikisentences.txt",
+                        new Tokenizer.Builder().userDictionary(getClass().getResourceAsStream("/userdict.txt"))
+                                        .build());
     }
 }

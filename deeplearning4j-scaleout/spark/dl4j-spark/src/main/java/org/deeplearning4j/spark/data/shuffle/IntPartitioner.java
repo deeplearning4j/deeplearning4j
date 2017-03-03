@@ -21,6 +21,6 @@ public class IntPartitioner extends Partitioner {
 
     @Override
     public int getPartition(Object key) {
-        return (Integer)key % numPartitions;
+        return (Integer) key % numPartitions;
     }
 }

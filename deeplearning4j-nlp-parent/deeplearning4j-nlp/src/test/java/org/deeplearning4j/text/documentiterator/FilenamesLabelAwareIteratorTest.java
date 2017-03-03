@@ -23,9 +23,7 @@ public class FilenamesLabelAwareIteratorTest {
     @Test
     public void testNextDocument() throws Exception {
         FilenamesLabelAwareIterator iterator = new FilenamesLabelAwareIterator.Builder()
-                .addSourceFolder(new ClassPathResource("/big").getFile())
-                .useAbsolutePathAsLabel(false)
-                .build();
+                        .addSourceFolder(new ClassPathResource("/big").getFile()).useAbsolutePathAsLabel(false).build();
 
         List<String> labels = new ArrayList<>();
 

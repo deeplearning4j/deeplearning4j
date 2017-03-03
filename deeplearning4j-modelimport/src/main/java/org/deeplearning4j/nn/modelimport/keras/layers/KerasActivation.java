@@ -24,8 +24,8 @@ public class KerasActivation extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasActivation(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasActivation(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -37,13 +37,11 @@ public class KerasActivation extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasActivation(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasActivation(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.layer = new ActivationLayer.Builder()
-            .name(this.layerName)
-            .activation(getActivationFromConfig(layerConfig))
-            .build();
+        this.layer = new ActivationLayer.Builder().name(this.layerName).activation(getActivationFromConfig(layerConfig))
+                        .build();
     }
 
     /**
@@ -55,7 +53,8 @@ public class KerasActivation extends KerasLayer {
      */
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Activation layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Activation layer accepts only one input (received " + inputType.length + ")");
         return this.getActivationLayer().getOutputType(-1, inputType[0]);
     }
 
@@ -65,6 +64,6 @@ public class KerasActivation extends KerasLayer {
      * @return  ActivationLayer
      */
     public ActivationLayer getActivationLayer() {
-        return (ActivationLayer)this.layer;
+        return (ActivationLayer) this.layer;
     }
 }

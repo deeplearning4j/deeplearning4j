@@ -8,7 +8,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
  *
  * @author raver119@gmail.com
  */
-public class DummyPreProcessor implements DataSetPreProcessor  {
+public class DummyPreProcessor implements DataSetPreProcessor {
     /**
      * Pre process a dataset
      *

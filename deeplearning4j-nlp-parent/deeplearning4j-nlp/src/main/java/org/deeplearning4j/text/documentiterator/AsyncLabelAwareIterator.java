@@ -4,16 +4,16 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.parallelism.AsyncIterator;
 
-
 import java.util.Iterator;
 
 /**
  * @author raver119@gmail.com
  */
-public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<LabelledDocument>{
+public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<LabelledDocument> {
 
     protected LabelAwareIterator backedIterator;
-    @Getter protected AsyncIterator<LabelledDocument> asyncIterator;
+    @Getter
+    protected AsyncIterator<LabelledDocument> asyncIterator;
     protected int bufferSize;
 
     public AsyncLabelAwareIterator(@NonNull LabelAwareIterator iterator, int bufferSize) {
