@@ -1,4 +1,4 @@
-/* Generated SBE (Simple Binary Encoding) message codec */
+/*- Generated SBE (Simple Binary Encoding) message codec */
 package org.deeplearning4j.ui.stats.sbe;
 
 @javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.StatsType"})
