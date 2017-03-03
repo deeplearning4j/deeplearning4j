@@ -27,7 +27,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.util.RecordUtils;
 import org.datavec.api.writable.Writable;
-import org.datavec.audio.musicg.Wave;
+import org.datavec.audio.Wave;
 
 import java.io.DataInputStream;
 import java.io.File;
