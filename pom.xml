@@ -540,11 +540,11 @@
               <artifactId>formatter-maven-plugin</artifactId>
               <version>2.0.0</version>
               <executions>
-                <!-- <execution> -->
-                <!--   <goals> -->
-                <!--     <goal>validate</goal> -->
-                <!--   </goals> -->
-                <!-- </execution> -->
+                <execution>
+                  <goals>
+                    <goal>validate</goal>
+                  </goals>
+                </execution>
               </executions>
               <configuration>
                 <configFile>${nd4jBasedir}/contrib/formatter.xml</configFile>
