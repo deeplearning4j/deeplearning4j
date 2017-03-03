@@ -821,4 +821,10 @@ public class NativeOpExecutionerTest {
 
         assertEquals(expected, arr);
     }
+
+
+    @Test
+    public void testPewPew2() throws Exception {
+        INDArray nd3 = Nd4j.create(new double[]{30,40,50},new int[]{3});
+    }
 }
