@@ -1,55 +1,35 @@
 ---
-title: DL4J GPU Support
+title: DL4J的GPU支持
 layout: cn-default
 ---
 
-##Philosophy
+## 我们的理念
 
-#Research
-Deeplearning4j is *not* a research framework. While it can be used for research, and we even encourage it (apache license),
-we are very use case driven.
-Most research is not directly useful for industry products. Many research papers being published (while having good ideas)
-are barely usable until ideas mature.
+# 科研
+Deeplearning4j*不是*一个科研框架。虽然它可以用于研究，而且我们也鼓励人们这样做（Apache许可协议），但我们很注重具体的用例。大多数研究的成果无法直接用于行业生产。目前发表的许多研究论文（确实提出了不少好构想）也无法直接应用，因为其中的构想尚不成熟。
 
-One question we often get: "Why don't you have last week's paper implemented?" Because we spend time on tools
-that help people build products like [DataVec](http://deeplearning4j.org/DataVec)
+人们经常问我们：“为什么不把上周的那篇论文实现一下？”因为我们把时间花在了 [DataVec](http://deeplearning4j.org/cn/DataVec)等帮助人们创造实际产品的工具上。 
 
-We recognize the need for flexibility, otherwise we wouldn't have the [Computation Graph](http://deeplearning4j.org/compgraph)
-or [Keras import](http://deeplearning4j.org/keras).
+我们也知道需要有一定的灵活度，否则就不会加入[计算图](http://deeplearning4j.org/cn/compgraph)和[Keras模型导入](http://deeplearning4j.org/cn/keras)功能。 
 
-#Don't rewrite your data pipeline glue code
-That is what [DataVec](http://deeplearning4j.org/DataVec)  is for.
-Many people are in the habit of writing 1 off code for data pipelines.
-If you are going to do that work anyways, why not contribute to 1 library?
+# 不要重写数据加工管道的粘合代码
+数据加工正是[DataVec](http://deeplearning4j.org/cn/DataVec)的功能。许多人习惯为数据加工管道编写一次性代码。如果您还是打算自己做这些工作，那何不借此机会来为这个库作贡献呢？
 
-#Spark
-Another audience we get questions from is the spark community. They often ask why we're not more tightly integrated in to spark.
-Pure and simple: Spark is a data access layer not a compute engine. Deep Learning needs things spark will likely never support
-or have the interest in supporting the *right* way. The main thing there being hardware acceleration. We also work on mobile.
-That being said, we do offer a [first class spark integration](http://deeplearning4j.org/spark) does exist. Many tools
-will bolt on support with bash scripts by just talking to yarn. Dl4j is a spark job that knows how to access your gpu if it's present.
+# Spark
+另一方面，我们也会收到来自Spark社区的问题。人们经常问我们为什么不和Spark集成得更紧密一些。原因很清楚：Spark是一种数据访问层，而非计算引擎。Spark有可能永远不会支持或者没有意向*马上*支持深度学习所需的某些元素。主要的因素是硬件加速。我们还支持移动系统。尽管如此，我们也已经推出了[一流的Spark集成](http://deeplearning4j.org/cn/spark)。许多工具都可以用bash脚本来添加支持，只需要通过与YARN互动即可实现。如果您有GPU，作为一项Spark任务运行的DL4J知道该如何访问它。
 
-Our linear algebra library can detect the hardware the worker is running on and use whatever is there.
-It allow allows fine grained control of the gpu and the compute environment via the CudaEnvironment singleton
-when needed.
+我们的线性代数库可以检测出工作节点所在的硬件并使用该位置上的任何资源。它让您可以在需要时通过CudaEnvironment单例方法来实现GPU和计算环境的细粒度
+控制。
 
-Another reason is the tooling for both binary and columnar. Dedicated data pipeline tools for machine learning are (especially on spark)
-are academic in nature not targeted at real problems. With datavec and other common tools that we allow you to run
-locally *and* on spark, you get the ability to use 1 data pipeline api across columnar data *and* binary (such as images and video)
+另一个原因则是可以同时支持二进制和纵列数据的工具。机器学习的专用数据加工管道工具（Spark上尤其如此）本质上是面向学术研究的，而非针对实际的问题。而在DataVec和其他常用工具的帮助下，我们让您能*同时*在本地和Spark上运行，可以将一个数据加工管道API*同时*用于纵列数据和二进制数据（例如图像和视频）
 
 
 
-#First class JVM
+# 头等JVM
 
-There is also this concept of first class jvm. Many frameworks that interact with spark do so via python.
-When interacting with spark, you can do things like distributed grid search and other semi powerful things.
+另外还有头等JVM的概念。大多数学习框架需要通过Python来与Spark进行互动。与Spark的互动让您可以实现分布式网格搜索和其他一些比较强大的功能。
 
-The problem here is python's speed and data bottleneck. [JNI is not slow](http://bytedeco.org/news/2015/03/14/java-meets-caffe/)
-thanks to javacpp though.
+问题在于Python的速度和数据瓶颈。但是，[JNI速度的并不慢](http://bytedeco.org/news/2015/03/14/java-meets-caffe/)，主要是因为JavaCPP的缘故。
 
-In finishing:
-We are the data engineer and ops friendly framework. A jar file is something Central IT is ok deploying.
-We will continue to build tools for business users.
-People know how to use spark. People will continue to use other tools for research in python (which already has
-the mind share and tooling) . What is missing from the ecosystem that we will continue to provide is a neutral (non cloud vendor lockin backed)
-framework meant to run anywhere (including on prem)
+总而言之：
+我们的学习框架对数据工程师和运维人员很友好。中央IT部门不会介意部署一个jar文件。我们会继续为企业用户打造工具。人们懂得如何使用Spark。人们会继续用基于Python的其他工具来开展研究（这些工具已经具备相应的用户心理占有率和工具）。我们将继续提供可以在任何地方运行（包括企业内部部署）的中立学习框架（背后没有与之相锁定的云计算服务商支持），而这正是目前整个生态系统中所缺失的部分。
