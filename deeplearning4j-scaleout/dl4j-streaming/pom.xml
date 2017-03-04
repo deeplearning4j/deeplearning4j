@@ -17,10 +17,6 @@
 
     <properties>
         <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
-        <spark.major.version>1</spark.major.version>
-        <spark.version>1.6.2</spark.version>
-        <hadoop.version>2.2.0</hadoop.version>
-        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
     </properties>
 
     <name>Dl4j Streaming</name>
