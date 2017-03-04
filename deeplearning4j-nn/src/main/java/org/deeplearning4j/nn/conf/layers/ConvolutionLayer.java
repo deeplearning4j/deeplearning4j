@@ -43,7 +43,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     * The builder specifies the filter/kernel size, the stride and padding
     * The pooling layer takes the kernel size
     */
-    private ConvolutionLayer(Builder builder) {
+    protected ConvolutionLayer(Builder builder) {
     	super(builder);
 //        this.convolutionType = builder.convolutionType;
         this.convolutionMode = builder.convolutionMode;
@@ -162,11 +162,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        private ConvolutionMode convolutionMode = null;
-        private int[] kernelSize = new int[] {5,5};
-        private int[] stride = new int[] {1,1};
-        private int[] padding = new int[] {0, 0};
-        private AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+        protected ConvolutionMode convolutionMode = null;
+        protected int[] kernelSize = new int[] {5,5};
+        protected int[] stride = new int[] {1,1};
+        protected int[] padding = new int[] {0, 0};
+        protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
