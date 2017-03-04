@@ -57,7 +57,7 @@ public class SubsamplingLayer extends Layer {
         }
     }
 
-    private SubsamplingLayer(Builder builder) {
+    protected SubsamplingLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if(builder.kernelSize.length != 2)
@@ -150,13 +150,13 @@ public class SubsamplingLayer extends Layer {
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
-        private org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
-        private int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
-        private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
-        private int[] padding = new int[] {0, 0};
-        private ConvolutionMode convolutionMode = null;
-        private int pnorm;
-        private double eps = 1e-8;
+        protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+        protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
+        protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
+        protected int[] padding = new int[] {0, 0};
+        protected ConvolutionMode convolutionMode = null;
+        protected int pnorm;
+        protected double eps = 1e-8;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.poolingType = poolingType.toPoolingType();
