@@ -71,10 +71,7 @@
         <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
         <deeplearning4j.version>0.7.3-SNAPSHOT</deeplearning4j.version>
         <datavec.version>0.7.3-SNAPSHOT</datavec.version>
-        <spark.major.version>1</spark.major.version>
-        <spark.version>1.6.2</spark.version>
         <hadoop.version>2.2.0</hadoop.version>
-        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
         <commonsio.version>2.4</commonsio.version>

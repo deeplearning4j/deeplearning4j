@@ -38,7 +38,14 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-       </properties>
+        <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom. Otherwise,
+         the properties will be resolved to their defaults (and not the values present during the build). Whereas when
+         defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
+          (in different pom files) instead of a single global property -->
+        <spark.version>1.6.2</spark.version>
+        <spark.major.version>1</spark.major.version>
+        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
+    </properties>
 
 
     <build>
