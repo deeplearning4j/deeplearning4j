@@ -83,13 +83,12 @@
     .addClass($.support.fileInput ? undefined : 'disabled');
 
     $fu.bind('fileuploadstart', function() {
-      console.log('Classification start');
       $('.demo-view').hide();
       $('#demo-loading').show();
     });
 
     $fu.bind('fileuploadprogressall', function() {
-      console.log('Chunk uploaded');
+//       console.log('File chunk uploaded');
     });
 
     $fu.bind('fileuploaddone', function(e, data) {
@@ -116,7 +115,7 @@
     });
 
     $fu.bind('fileuploadfail', function() {
-      console.log('Classification error');
+      console.log('File upload failed to server');
       $('.demo-view').hide();
       $('#demo-error').show();
     });
