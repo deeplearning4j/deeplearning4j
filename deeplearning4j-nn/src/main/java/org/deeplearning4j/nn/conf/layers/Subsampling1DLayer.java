@@ -135,17 +135,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             this.poolingType = poolingType;
         }
 
-        /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
-         *
-         * @param convolutionMode    Convolution mode for layer
-         */
-        public Subsampling1DLayer.Builder convolutionMode(ConvolutionMode convolutionMode){
-            this.convolutionMode = convolutionMode;
-            return this;
-        }
-
         public Builder() {}
 
         @SuppressWarnings("unchecked")
@@ -154,11 +143,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Subsampling1DLayer(this);
-        }
-
-        public Subsampling1DLayer.Builder poolingType(PoolingType poolingType){
-            this.poolingType = poolingType.toPoolingType();
-            return this;
         }
 
         /**
@@ -188,18 +172,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         public Subsampling1DLayer.Builder padding(int padding){
             this.padding[0] = padding;
-            return this;
-        }
-
-        public Subsampling1DLayer.Builder pnorm(int pnorm){
-            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
-            this.pnorm = pnorm;
-            return this;
-        }
-
-        public Subsampling1DLayer.Builder eps(double eps){
-            if(eps <= 0) throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
-            this.eps = eps;
             return this;
         }
     }
