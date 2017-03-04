@@ -40,25 +40,45 @@ public class Convolution1DLayer extends ConvolutionLayer {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if(epsilon.rank() != 3)
-            throw new DL4JInvalidInputException("Got rank " + epsilon.rank() + " array as epsilon for Subsampling1DLayer backprop with shape "
+            throw new DL4JInvalidInputException("Got rank " + epsilon.rank() + " array as epsilon for Convolution1DLayer backprop with shape "
                     + Arrays.toString(epsilon.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
+        // add singleton fourth dimension to input and next layer's epsilon
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+
+        // call 2D ConvolutionLayer's backpropGradient method
         Pair<Gradient,INDArray> gradientEpsNext = super.backpropGradient(epsilon);
         INDArray epsNext = gradientEpsNext.getSecond();
+
+        // remove singleton fourth dimension from input and current epsilon
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+        input = input.reshape(input.size(0), input.size(1), input.size(2));
+
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
     }
 
     @Override
     public INDArray preOutput(boolean training) {
-        if(input.rank() != 3)
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Subsampling1DLayer with shape "
+        // This is a bit of a hack due to the fact that we cache the layer input
+        // and calls to backpropGradient (which also reshape the input) result
+        // in a call to this function. Thus, this function will sometimes be called
+        // with a rank 4 input with singleton fourth dimension. Thus, we need to
+        // check for that.
+        if(input.rank() == 3) {
+            // add singleton fourth dimension to input
+            input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        } else if(input.rank() != 4 || input.size(3) != 1)
+            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Convolution1DLayer with shape "
                     + Arrays.toString(input.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        // call 2D ConvolutionLayer's activate method
         INDArray preOutput = super.preOutput(training);
+
+        // remove singleton fourth dimension from input and output activations
+        input = input.reshape(input.size(0), input.size(1), input.size(2));
         preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
+
         return preOutput;
     }
 }
