@@ -158,6 +158,9 @@ public class ParagraphVectors extends Word2Vec {
     public INDArray inferVector(String text, double learningRate, double minLearningRate, int iterations) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
+
+        reassignExistingModel();
+
         List<String> tokens = tokenizerFactory.create(text).getTokens();
         List<VocabWord> document = new ArrayList<>();
         for (String token: tokens) {
@@ -169,7 +172,18 @@ public class ParagraphVectors extends Word2Vec {
         if (document.isEmpty())
             throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
 
+        log.info("Inferring on document: {}", document);
+
         return inferVector(document, learningRate, minLearningRate, iterations);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected synchronized void reassignExistingModel(){
+        if ((this.vocab == null || this.vocab.numWords() == 0) && existingModel != null) {
+            this.vocab = existingModel.vocab();
+            this.lookupTable = existingModel.lookupTable();
+        }
+
     }
 
     /**
@@ -838,11 +852,12 @@ public class ParagraphVectors extends Word2Vec {
             ParagraphVectors ret = new ParagraphVectors();
 
             if (this.existingVectors != null) {
-                this.trainElementsVectors = false;
+                trainWordVectors(false);
+                trainElementsRepresentation(false);
                 this.elementsLearningAlgorithm = null;
 
-                //this.lookupTable = this.existingVectors.lookupTable();
-                //this.vocabCache = this.existingVectors.vocab();
+            //    this.lookupTable = this.existingVectors.lookupTable();
+            //    this.vocabCache = this.existingVectors.vocab();
             }
 
             if (this.labelsSource == null) this.labelsSource = new LabelsSource();
