@@ -107,21 +107,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
-         *
-         * @param convolutionMode    Convolution mode for layer
-         */
-        public Convolution1DLayer.Builder convolutionMode(ConvolutionMode convolutionMode){
-            this.convolutionMode = convolutionMode;
-            return this;
-        }
-
-        /**
          * Size of the convolution
          * rows/columns
-         * @param kernelSize the height and width of the
-         *                   kernel
+         * @param kernelSize the length of the kernel
          * @return
          */
         public Convolution1DLayer.Builder kernelSize(int kernelSize){
@@ -136,12 +124,6 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         public Convolution1DLayer.Builder padding(int padding){
             this.padding[0] = padding;
-            return this;
-        }
-
-        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
-        public Convolution1DLayer.Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode){
-            this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
 
