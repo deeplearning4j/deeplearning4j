@@ -43,8 +43,8 @@ import java.util.Random;
  */
 public class SparkUtils {
 
-    private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator being set"
-            + "for ND4J INDArrays.\nWhen using Kryo, An appropriate Kryo registrator must be set to avoid"
+    private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator "
+            + "for ND4J INDArrays.\nWhen using Kryo, An appropriate Kryo registrator must be used to avoid"
             + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
             + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\");\n"
             + "See https://deeplearning4j.org/spark#kryo for more details";
@@ -63,14 +63,13 @@ public class SparkUtils {
         //Check if kryo configuration is correct:
         String serializer = javaSparkContext.getConf().get("spark.serializer", null);
         if (serializer != null && serializer.equals("org.apache.spark.serializer.KryoSerializer")) {
-            //conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
             String kryoRegistrator = javaSparkContext.getConf().get("spark.kryo.registrator", null);
             if (kryoRegistrator == null || !kryoRegistrator.equals("org.nd4j.Nd4jRegistrator")) {
 
                 //It's probably going to fail later due to Kryo failing on the INDArray deserialization (off-heap data)
                 //But: the user might be using a custom Kryo registrator that can handle ND4J INDArrays, even if they
                 // aren't using the official ND4J-provided one
-                //So: Let's test serialization now, and fail early if necessary
+                //Either way: Let's test serialization now of INDArrays now, and fail early if necessary
                 SerializerInstance si;
                 ByteBuffer bb;
                 try{
@@ -90,15 +89,17 @@ public class SparkUtils {
                     INDArray deserialized;
                     try{
                         deserialized = si.deserialize(bb, null);
+                        //Equals method may fail on malformed INDArrays, hence should be within the try-catch
                         equals = Nd4j.linspace(1,5,5).equals(deserialized);
                     } catch (Exception e){
                         throw new RuntimeException(KRYO_EXCEPTION_MSG, e);
                     }
                     if(!equals){
-                        throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Error during deserialization: got " + deserialized + ")" );
+                        throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Error during deserialization: got "
+                                + deserialized + ")" );
                     }
 
-                    //Otherwise: OK!
+                    //Otherwise: serialization/deserialization was successful using Kryo
                     return true;
                 }
             }
