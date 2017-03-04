@@ -37,22 +37,37 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank() + " array as epsilon for Subsampling1DLayer backprop with shape "
                     + Arrays.toString(epsilon.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
+        // add singleton fourth dimension to input and next layer's epsilon
+        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+
+        // call 2D SubsamplingLayer's backpropGradient method
         Pair<Gradient,INDArray> gradientEpsNext = super.backpropGradient(epsilon);
         INDArray epsNext = gradientEpsNext.getSecond();
+
+        // remove singleton fourth dimension from input and current epsilon
+        input = input.reshape(input.size(0), input.size(1), input.size(2));
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
+    public INDArray activate(boolean training) {
         if(input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Subsampling1DLayer with shape "
                     + Arrays.toString(input.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
+        // add singleton fourth dimension to input
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
-        INDArray preOutput = super.preOutput(training);
-        preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
-        return preOutput;
+
+        // call 2D SubsamplingLayer's activate method
+        INDArray acts = super.activate(training);
+
+        // remove singleton fourth dimension from input and output activations
+        input = input.reshape(input.size(0), input.size(1), input.size(2));
+        acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
+
+        return acts;
     }
 }
