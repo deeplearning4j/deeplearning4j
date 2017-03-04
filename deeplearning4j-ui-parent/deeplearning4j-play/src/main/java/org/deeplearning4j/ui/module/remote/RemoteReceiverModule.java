@@ -34,7 +34,7 @@ public class RemoteReceiverModule implements UIModule {
     private AtomicBoolean enabled = new AtomicBoolean(false);
     private StatsStorageRouter statsStorage;
 
-    public void setEnabled(boolean enabled){
+    public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
         if(!enabled){
             this.statsStorage = null;
