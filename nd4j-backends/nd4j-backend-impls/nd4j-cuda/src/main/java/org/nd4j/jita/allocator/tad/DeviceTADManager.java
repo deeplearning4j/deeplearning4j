@@ -24,7 +24,6 @@ import java.util.concurrent.Semaphore;
 public class DeviceTADManager extends BasicTADManager {
     protected List<Map<TadDescriptor, Pair<DataBuffer, DataBuffer>>> tadCache = new ArrayList<>();
     private Semaphore lock = new Semaphore(1);
-    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
     public DeviceTADManager() {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();

@@ -25,8 +25,6 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     private Semaphore lock = new Semaphore(1);
 
-    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
     private static ProtectedCudaShapeInfoProvider ourInstance = new ProtectedCudaShapeInfoProvider();
@@ -62,7 +60,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             buffer.setConstant(true);
 
-            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+            if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
                 Nd4j.getConstantHandler().moveToConstantSpace(buffer);
             }
 
