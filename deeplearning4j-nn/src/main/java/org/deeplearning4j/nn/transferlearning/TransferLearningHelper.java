@@ -44,7 +44,7 @@ public class TransferLearningHelper {
     int frozenInputLayer = 0;
 
     /**
-     * Will freeze vertices from input to the vertex specified.
+     * Will modify the given comp graph (in place!) to freeze vertices from input to the vertex specified.
      * @param orig Comp graph
      * @param frozenOutputAt vertex to freeze at (hold params constant during training)
      */
@@ -65,7 +65,7 @@ public class TransferLearningHelper {
     }
 
     /**
-     * Will freeze layers (hold params constant during training) specified and below
+     * Will modify the given MLN (in place!) to freeze layers (hold params constant during training) specified and below
      * @param orig MLN to freeze
      * @param frozenTill integer indicating the index of the layer and below to freeze
      */
