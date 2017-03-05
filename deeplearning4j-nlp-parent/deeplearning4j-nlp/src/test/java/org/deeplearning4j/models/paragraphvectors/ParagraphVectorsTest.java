@@ -983,4 +983,17 @@ public class ParagraphVectorsTest {
 
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
+
+    @Test
+    public void testHash() {
+        VocabWord w1 = new VocabWord(1.0, "D1");
+        VocabWord w2 = new VocabWord(1.0, "Bo");
+
+
+
+        log.info("W1 > Short hash: {}; Long hash: {}", w1.getLabel().hashCode(), w1.getStorageId());
+        log.info("W2 > Short hash: {}; Long hash: {}", w2.getLabel().hashCode(), w2.getStorageId());
+
+        assertNotEquals(w1.getStorageId(), w2.getStorageId());
+    }
 }
