@@ -28,9 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 public class CudaAffinityManager extends BasicAffinityManager {
-
-    private static final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-
     private static Logger logger = LoggerFactory.getLogger(CudaAffinityManager.class);
 
     private Map<Long, Integer> affinityMap = new ConcurrentHashMap<>();
@@ -41,6 +38,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     public CudaAffinityManager() {
         super();
+
     }
 
     /**
@@ -126,7 +124,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
-        List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
+        List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
         logger.debug("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId,
                         devices.size());
         affinityMap.put(threadId, deviceId);
@@ -140,20 +138,20 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     protected Integer getNextDevice(long threadId) {
         Integer device = null;
-        if (!configuration.isForcedSingleGPU() && getNumberOfDevices() > 0) {
+        if (!CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() && getNumberOfDevices() > 0) {
             // simple round-robin here
             synchronized (this) {
-                device = configuration.getAvailableDevices().get(devPtr.getAndIncrement());
+                device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(devPtr.getAndIncrement());
 
                 // We check only for number of entries here, not their actual values
-                if (devPtr.get() >= configuration.getAvailableDevices().size())
+                if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
                     devPtr.set(0);
 
                 logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId, device,
-                                configuration.getAvailableDevices().size());
+                        CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
             }
         } else {
-            device = configuration.getAvailableDevices().get(0);
+            device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
             logger.debug("Single device is forced, mapping to device [{}]", device);
         }
 
