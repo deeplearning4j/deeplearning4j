@@ -150,8 +150,9 @@ public class TransferLearningHelper {
         ArrayUtils.reverse(backPropOrder);
 
         Set<String> allFrozen = new HashSet<>();
-        Collections.addAll(allFrozen, frozenOutputAt);
-
+        if (applyFrozen) {
+            Collections.addAll(allFrozen, frozenOutputAt);
+        }
         for (int i = 0; i < backPropOrder.length; i++) {
                 org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
                 if (allFrozen.contains(gv.getVertexName())) {
