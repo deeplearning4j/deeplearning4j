@@ -50,10 +50,10 @@ public class MagicQueue implements BlockingQueue<DataSet> {
         handlers = new ArrayList<>();
         if (numberOfFlows > 1) {
             for (int i = 0; i < numberOfFlows; i++) {
-                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(capacity);
                 backingQueues.add(queue);
 
-                QueueHandler handler = new QueueHandler(queue);
+                QueueHandler handler = new QueueHandler(queue, capacity);
 
                 Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
 
@@ -256,6 +256,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 if (nextBucket.get() >= backingQueues.size())
                     nextBucket.set(0);
             }
+
             handlers.get(nextBucket.getAndIncrement()).put(dataSet);
         } else {
             backingQueues.get(0).add(dataSet);
@@ -465,19 +466,23 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     }
 
     private static class QueueHandler extends Thread implements Runnable {
-        private final Queue<DataSet> targetQueue;
+        private final BlockingQueue<DataSet> targetQueue;
         private final LinkedBlockingQueue<DataSet> bufferQueue;
 
-        public QueueHandler(Queue<DataSet> queue) {
+        public QueueHandler(BlockingQueue<DataSet> queue, int capacity) {
             this.targetQueue = queue;
-            this.bufferQueue = new LinkedBlockingQueue<DataSet>();
+            this.bufferQueue = new LinkedBlockingQueue<DataSet>(capacity);
 
             this.setDaemon(true);
         }
 
 
         public void put(DataSet dataSet) {
-            bufferQueue.add(dataSet);
+            try {
+                bufferQueue.put(dataSet);
+            } catch (InterruptedException e) {
+                //
+            }
         }
 
         @Override
@@ -498,10 +503,11 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
                         //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
 
-                        targetQueue.add(ds);
+                        targetQueue.put(ds);
                     }
-                } catch (Exception e) {
-                    //
+                } catch (InterruptedException e) {
+                    log.warn("Got InterruptedException...");
+                    break;
                 }
             }
         }

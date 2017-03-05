@@ -55,7 +55,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
 	 */
 	public VocabWord(double wordFrequency, @NonNull String word) {
-		if(word == null || word.isEmpty())
+		if(word.isEmpty())
 			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
         this.elementFrequency.set(wordFrequency);
