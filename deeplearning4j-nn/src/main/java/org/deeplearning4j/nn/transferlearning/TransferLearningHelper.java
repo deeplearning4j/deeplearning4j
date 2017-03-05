@@ -65,21 +65,48 @@ public class TransferLearningHelper {
     }
 
     /**
-     * Returns the unfrozen subset of the computation graph
+     * Returns the unfrozen subset of the original computation graph as a computation graph
      * Note that with each call to featurizedFit the parameters to the original computation graph are also updated
      */
-    protected ComputationGraph unfrozenGraph() {
+    public ComputationGraph unfrozenGraph() {
         if (!isGraph) errorIfGraphIfMLN();
         return unFrozenSubsetGraph;
     }
 
     /**
-     * Returns the unfrozen layers of the MultiLayerNetwork
+     * Returns the unfrozen layers of the MultiLayerNetwork as a multilayernetwork
      * Note that with each call to featurizedFit the parameters to the original MLN are also updated
      */
-    protected MultiLayerNetwork unfrozenMLN() {
+    public MultiLayerNetwork unfrozenMLN() {
         if (isGraph) errorIfGraphIfMLN();
         return unFrozenSubsetMLN;
+    }
+
+    /**
+     * Use to get the output from a featurized input
+     * @param input featurized data
+     * @return output
+     */
+    public INDArray[] outputFromFeaturized(INDArray[] input) {
+       if (!isGraph) errorIfGraphIfMLN();
+       return unFrozenSubsetGraph.output(input);
+    }
+
+    /**
+     * Use to get the output from a featurized input
+     * @param input featurized data
+     * @return output
+     */
+    public INDArray outputFromFeaturized(INDArray input) {
+        if (isGraph) {
+            if (unFrozenSubsetGraph.getNumOutputArrays() > 1) {
+                throw new IllegalArgumentException("Graph has more than one output. Expecting an input array with outputFromFeaturized method call");
+            }
+            return unFrozenSubsetGraph.output(input)[0];
+        }
+        else {
+            return unFrozenSubsetMLN.output(input);
+        }
     }
 
     /**
