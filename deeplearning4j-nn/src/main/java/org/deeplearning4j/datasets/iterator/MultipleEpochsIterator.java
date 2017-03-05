@@ -179,7 +179,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-            return false;
+            return !async;
     }
 
     /**

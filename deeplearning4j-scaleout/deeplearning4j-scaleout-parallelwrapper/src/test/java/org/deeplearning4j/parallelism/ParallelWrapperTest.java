@@ -19,6 +19,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,7 @@ public class ParallelWrapperTest {
                 .prefetchBuffer(24)
 
                 // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
-                .workers(4)
+                .workers(2)
 
                 // rare averaging improves performance, but might reduce model accuracy
                 .averagingFrequency(3)
