@@ -151,13 +151,12 @@ public class ArchiveUtils {
 
                 FileOutputStream fos = new FileOutputStream(dest + File.separator + entry.getName());
                 BufferedOutputStream destStream = new BufferedOutputStream(fos, BUFFER);
-                while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
-                    destStream.write(data, 0, count);
+                try {
+
+                    IOUtils.copy(tarIn, destStream);
+                } finally {
+                    IOUtils.closeQuietly(destStream);
                 }
-
-                destStream.flush();
-
-                IOUtils.closeQuietly(destStream);
             }
         }
 
