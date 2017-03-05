@@ -6,6 +6,7 @@ import org.deeplearning4j.api.storage.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
+import org.deeplearning4j.spark.impl.paramavg.util.ExportSupport;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -55,8 +56,6 @@ import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -832,6 +831,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
 
     private JavaRDD<String> exportIfRequired(JavaSparkContext sc, JavaRDD<DataSet> trainingData) {
+        ExportSupport.assertExportSupported(sc);
         if (collectTrainingStats) stats.logExportStart();
 
         //Two possibilities here:
@@ -863,6 +863,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
     }
 
     private JavaRDD<String> exportIfRequiredMDS(JavaSparkContext sc, JavaRDD<MultiDataSet> trainingData) {
+        ExportSupport.assertExportSupported(sc);
         if (collectTrainingStats) stats.logExportStart();
 
         //Two possibilities here:
