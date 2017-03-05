@@ -56,6 +56,15 @@ public class TransferLearningHelper {
     }
 
     /**
+     * Expects a computation graph where some vertices are frozen
+     * @param orig
+     */
+    public TransferLearningHelper(ComputationGraph orig) {
+        origGraph = orig;
+        initHelperGraph();
+    }
+
+    /**
      * Will freeze layers (hold params constant during training) specified and below
      * @param orig MLN to freeze
      * @param frozenTill integer indicating the index of the layer and below to freeze
@@ -64,6 +73,16 @@ public class TransferLearningHelper {
         isGraph = false;
         this.frozenTill = frozenTill;
         applyFrozen = true;
+        origMLN = orig;
+        initHelperMLN();
+    }
+
+    /**
+     * Expects a MLN where some layers are frozen
+     * @param orig
+     */
+    public TransferLearningHelper(MultiLayerNetwork orig) {
+        isGraph = false;
         origMLN = orig;
         initHelperMLN();
     }
