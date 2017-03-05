@@ -107,12 +107,11 @@ public class NormalizerSerializer {
      */
     public static NormalizerSerializer getDefault() {
         if (defaultSerializer == null) {
-            defaultSerializer = new NormalizerSerializer()
-                .addStrategy(new StandardizeSerializerStrategy())
-                .addStrategy(new MinMaxSerializerStrategy())
-                .addStrategy(new MultiStandardizeSerializerStrategy())
-                .addStrategy(new MultiMinMaxSerializerStrategy())
-                .addStrategy(new MultiHybridSerializerStrategy());
+            defaultSerializer = new NormalizerSerializer().addStrategy(new StandardizeSerializerStrategy())
+                            .addStrategy(new MinMaxSerializerStrategy())
+                            .addStrategy(new MultiStandardizeSerializerStrategy())
+                            .addStrategy(new MultiMinMaxSerializerStrategy())
+                            .addStrategy(new MultiHybridSerializerStrategy());
         }
         return defaultSerializer;
     }
@@ -141,10 +140,9 @@ public class NormalizerSerializer {
             }
         }
         throw new RuntimeException(String.format(
-            "No serializer strategy found for normalizer of class %s. If this is a custom normalizer, you probably " +
-                "forgot to register a corresponding custom serializer strategy with this serializer.",
-            normalizer.getClass()
-        ));
+                        "No serializer strategy found for normalizer of class %s. If this is a custom normalizer, you probably "
+                                        + "forgot to register a corresponding custom serializer strategy with this serializer.",
+                        normalizer.getClass()));
     }
 
     /**
@@ -175,7 +173,7 @@ public class NormalizerSerializer {
      * @return whether the strategy supports the normalizer
      */
     private boolean strategySupportsNormalizer(NormalizerSerializerStrategy strategy, NormalizerType normalizerType,
-                                               Class<? extends Normalizer> normalizerClass) {
+                    Class<? extends Normalizer> normalizerClass) {
         if (!strategy.getSupportedType().equals(normalizerType)) {
             return false;
         }
@@ -183,9 +181,8 @@ public class NormalizerSerializer {
             // Strategy should be instance of CustomSerializerStrategy
             if (!(strategy instanceof CustomSerializerStrategy)) {
                 throw new IllegalArgumentException(
-                    "Strategies supporting CUSTOM type must be instance of CustomSerializerStrategy, got" +
-                        strategy.getClass()
-                );
+                                "Strategies supporting CUSTOM type must be instance of CustomSerializerStrategy, got"
+                                                + strategy.getClass());
             }
             return ((CustomSerializerStrategy) strategy).getSupportedClass().equals(normalizerClass);
         }
@@ -206,9 +203,8 @@ public class NormalizerSerializer {
         String header = dis.readUTF();
         if (!header.equals(HEADER)) {
             throw new IllegalArgumentException(
-                "Could not restore normalizer: invalid header. If this normalizer was saved with a type-specific " +
-                    "strategy like StandardizeSerializerStrategy, use that class to restore it as well."
-            );
+                            "Could not restore normalizer: invalid header. If this normalizer was saved with a type-specific "
+                                            + "strategy like StandardizeSerializerStrategy, use that class to restore it as well.");
         }
 
         // The next byte is an integer indicating the version
@@ -263,10 +259,7 @@ public class NormalizerSerializer {
 
         public static Header fromStrategy(NormalizerSerializerStrategy strategy) {
             if (strategy instanceof CustomSerializerStrategy) {
-                return new Header(
-                    strategy.getSupportedType(),
-                    strategy.getClass()
-                );
+                return new Header(strategy.getSupportedType(), strategy.getClass());
             } else {
                 return new Header(strategy.getSupportedType(), null);
             }

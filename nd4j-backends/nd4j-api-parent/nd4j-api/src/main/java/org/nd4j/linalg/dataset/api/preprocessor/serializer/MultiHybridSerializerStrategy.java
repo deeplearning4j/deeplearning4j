@@ -28,8 +28,7 @@ public class MultiHybridSerializerStrategy implements NormalizerSerializerStrate
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream)
-                    throws IOException {
+    public void write(@NonNull MultiNormalizerHybrid normalizer, @NonNull OutputStream stream) throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             writeStatsMap(normalizer.getInputStats(), dos);
             writeStatsMap(normalizer.getOutputStats(), dos);

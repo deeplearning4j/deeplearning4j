@@ -103,6 +103,13 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                  <groupId>net.revelc.code.formatter</groupId>
+                  <artifactId>formatter-maven-plugin</artifactId>
+                  <configuration>
+                    <skip>true</skip>
+                  </configuration>
+                </plugin>
             </plugins>
 
 
@@ -229,7 +236,7 @@
           </activation>
           <properties>
             <javacpp.platform>linux-armhf</javacpp.platform>
-            <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>   
+            <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>
             <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
           </properties>
         </profile>

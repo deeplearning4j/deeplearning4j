@@ -1938,9 +1938,9 @@ public interface INDArray extends Serializable {
      * http://deeplearning.net/software/theano/library/tensor/basic.html
      *
      *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of ‘x’ characters in dimensions where this tensor should be broadcasted.
-
+    
      A few examples of patterns and their effect:
-
+    
      (‘x’) -> make a 0d (scalar) into a 1d vector
      (0, 1) -> identity for 2d vectors
      (1, 0) -> inverts the first and second dimensions
@@ -1950,7 +1950,7 @@ public interface INDArray extends Serializable {
      (0, ‘x’, 1) -> AxB to Ax1xB
      (1, ‘x’, 0) -> AxB to Bx1xA
      (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
-
+    
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
