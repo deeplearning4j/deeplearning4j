@@ -41,7 +41,8 @@ public class NativeOpsHolder {
                 if (chips > 0 && cores > 0) {
                     deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
                 } else
-                    deviceNativeOps.setOmpNumThreads(deviceNativeOps.getCores(Runtime.getRuntime().availableProcessors()));
+                    deviceNativeOps.setOmpNumThreads(
+                                    deviceNativeOps.getCores(Runtime.getRuntime().availableProcessors()));
             }
             //deviceNativeOps.setOmpNumThreads(4);
 
