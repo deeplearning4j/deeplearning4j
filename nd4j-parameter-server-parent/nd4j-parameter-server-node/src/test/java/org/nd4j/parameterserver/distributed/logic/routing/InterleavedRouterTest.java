@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.logic.routing;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.io.StringUtils;
+import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
@@ -30,7 +31,7 @@ public class InterleavedRouterTest {
 
         transport = new RoutedTransport();
         transport.setIpAndPort("8.9.10.11", 87312);
-        originator = StringUtils.getLongHash(transport.getIp() + ":" + transport.getPort());
+        originator = HashUtil.getLongHash(transport.getIp() + ":" + transport.getPort());
     }
 
     /**

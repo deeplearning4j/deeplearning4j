@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.logic.routing;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.io.StringUtils;
+import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
@@ -27,7 +28,7 @@ public abstract class BaseRouter implements ClientRouter {
     @Override
     public void setOriginator(VoidMessage message) {
         if (originatorIdx == 0)
-            originatorIdx = StringUtils.getLongHash(transport.getIp() + ":" + transport.getPort());
+            originatorIdx = HashUtil.getLongHash(transport.getIp() + ":" + transport.getPort());
 
         message.setOriginatorId(originatorIdx);
     }
