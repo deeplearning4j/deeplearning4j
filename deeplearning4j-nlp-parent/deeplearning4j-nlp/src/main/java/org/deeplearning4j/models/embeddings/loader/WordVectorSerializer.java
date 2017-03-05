@@ -2514,7 +2514,10 @@ public class WordVectorSerializer {
      * @return
      */
     // TODO: this method needs better name :)
-    public static WordVectors loadStaticModel(File file) {
+    public static WordVectors loadStaticModel(File file)  {
+        if (!file.exists() || file.isDirectory())
+            throw new RuntimeException(new FileNotFoundException("File ["+ file.getAbsolutePath() + "] was not found"));
+
         CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
                 .useInplaceCompression(false)
                 .setCompressor(new NoOp())
