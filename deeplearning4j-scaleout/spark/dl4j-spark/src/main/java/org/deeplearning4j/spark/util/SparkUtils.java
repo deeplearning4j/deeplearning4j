@@ -95,8 +95,8 @@ public class SparkUtils {
                         throw new RuntimeException(KRYO_EXCEPTION_MSG, e);
                     }
                     if(!equals){
-                        throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Error during deserialization: got "
-                                + deserialized + ")" );
+                        throw new RuntimeException(KRYO_EXCEPTION_MSG + "\n(Error during deserialization: test array" +
+                                " was not deserialized successfully)" );
                     }
 
                     //Otherwise: serialization/deserialization was successful using Kryo
