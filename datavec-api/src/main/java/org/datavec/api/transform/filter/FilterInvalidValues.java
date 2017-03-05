@@ -91,14 +91,16 @@ public class FilterInvalidValues implements Filter {
         if (!filterAnyInvalid) {
             //Filter only on specific columns
             for (int i : columnIdxs) {
-                if (filterColumn(row, i)) return true; //Remove if not valid
+                if (filterColumn(row, i))
+                    return true; //Remove if not valid
 
             }
         } else {
             //Filter on ALL columns
             int nCols = schema.numColumns();
             for (int i = 0; i < nCols; i++) {
-                if (filterColumn(row, i)) return true;
+                if (filterColumn(row, i))
+                    return true;
             }
         }
         return false;

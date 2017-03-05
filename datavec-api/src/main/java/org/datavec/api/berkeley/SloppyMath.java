@@ -63,14 +63,14 @@ public final class SloppyMath {
         w = tmp;
         
         for (int k=1; k<36; k++){
-        	// Converge with Halley's iterations, about 5 iterations satisfies
-        	//the tolerance for most z
-        	double c1 = Math.exp(w);
-        	double c2 = w*c1 - z;
-        	summand = (w != -1) ? 1 : 0;
-        	double w1 = w + summand;
-        	double dw = c2/(c1*w1 - ((w + 2)*c2/(2*w1)));
-        	w = w - dw;
+        // Converge with Halley's iterations, about 5 iterations satisfies
+        //the tolerance for most z
+        double c1 = Math.exp(w);
+        double c2 = w*c1 - z;
+        summand = (w != -1) ? 1 : 0;
+        double w1 = w + summand;
+        double dw = c2/(c1*w1 - ((w + 2)*c2/(2*w1)));
+        w = w - dw;
         
           if (Math.abs(dw) < 0.7e-16*(2+Math.abs(w)))
              break;
