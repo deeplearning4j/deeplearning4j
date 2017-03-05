@@ -158,8 +158,8 @@ public class ParagraphVectors extends Word2Vec {
     public INDArray inferVector(String text, double learningRate, double minLearningRate, int iterations) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
-
-        reassignExistingModel();
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
 
         List<String> tokens = tokenizerFactory.create(text).getTokens();
         List<VocabWord> document = new ArrayList<>();
@@ -171,8 +171,6 @@ public class ParagraphVectors extends Word2Vec {
 
         if (document.isEmpty())
             throw new ND4JIllegalStateException("Text passed for inference has no matches in model vocabulary.");
-
-        log.info("Inferring on document: {}", document);
 
         return inferVector(document, learningRate, minLearningRate, iterations);
     }
@@ -282,6 +280,9 @@ public class ParagraphVectors extends Word2Vec {
         if (countSubmitted == null)
             initInference();
 
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
+
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
             try {
@@ -308,6 +309,9 @@ public class ParagraphVectors extends Word2Vec {
         if (countSubmitted == null)
             initInference();
 
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
+
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
             try {
@@ -330,6 +334,9 @@ public class ParagraphVectors extends Word2Vec {
     public List<INDArray> inferVectorBatched(@NonNull List<String> documents) {
         if (countSubmitted == null)
             initInference();
+
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
 
         List<Future<INDArray>> futuresList = new ArrayList<>();
         List<INDArray> results = new ArrayList<>();
