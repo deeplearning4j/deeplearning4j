@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform;
 
+import org.datavec.api.berkeley.Iterators;
 import org.datavec.spark.SequenceEmptyRecordFunction;
 import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
@@ -51,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -293,16 +295,24 @@ public class SparkTransformExecutor {
      * @param right Right data for join
      * @return Joined data
      */
-    public static JavaRDD<List<Writable>> executeJoin(Join join, JavaRDD<List<Writable>> left,
-                    JavaRDD<List<Writable>> right) {
-        //Extract out the keys, then join
-        //This gives us a JavaPairRDD<String,JoinValue>
-        JavaPairRDD<List<Writable>, JoinValue> leftJV = left.mapToPair(new MapToJoinValuesFunction(true, join));
-        JavaPairRDD<List<Writable>, JoinValue> rightJV = right.mapToPair(new MapToJoinValuesFunction(false, join));
+    public static JavaRDD<List<Writable>> executeJoin(Join join, JavaRDD<List<Writable>> left, JavaRDD<List<Writable>> right) {
 
-        //Then merge, collect by key, execute the join
-        JavaPairRDD<List<Writable>, JoinValue> both = leftJV.union(rightJV);
-        JavaPairRDD<List<Writable>, Iterable<JoinValue>> grouped = both.groupByKey();
-        return grouped.flatMap(new ExecuteJoinFlatMapFunction(join));
+        String [] leftColumnNames = join.getJoinColumnsLeft();
+        int[] leftColumnIndexes = new int[leftColumnNames.length];
+        for (int i = 0; i < leftColumnNames.length; i++){
+            leftColumnIndexes[i] = join.getLeftSchema().getIndexOfColumn(leftColumnNames[i]);
+        }
+        JavaPairRDD<List<Writable>, List<Writable>> leftJV = left.mapToPair(new ExtractKeysFunction(leftColumnIndexes));
+
+        String [] rightColumnNames = join.getJoinColumnsRight();
+        int[] rightColumnIndexes = new int[rightColumnNames.length];
+        for (int i = 0; i < rightColumnNames.length; i++){
+            rightColumnIndexes[i] = join.getRightSchema().getIndexOfColumn(rightColumnNames[i]);
+        }
+        JavaPairRDD<List<Writable>, List<Writable>> rightJV = right.mapToPair(new ExtractKeysFunction(rightColumnIndexes));
+
+        JavaPairRDD<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>> cogroupedJV = leftJV.cogroup(rightJV);
+
+        return cogroupedJV.flatMap(new ExecuteJoinFromCoGroupFlatMapFunction(join));
     }
 }
