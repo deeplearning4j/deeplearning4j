@@ -14,7 +14,7 @@ Keras 모델 저장은[FAQ 페이지](https://keras.io/getting-started/faq/#how-
 
 현재 Deeplearning4j에서 지원되지 않는 Keras 모델 설정을 가져오려고 할 때 바로  ‘IncompatibleKerasConfigurationException’메세지가 나타납니다. (모델 가져오기에서 지원되지 않거나  DL4J자체에서 모델, 레이어 또는 기능을 구현하지 않았기 때문임).
 
-모델을 가져온 후에는 모델을 저장하거나 다시 로드하기 위해 자체 Modelerializer 클래스를 사용하십시오.
+모델을 가져온 후에는 모델을 저장하거나 다시 로드하기 위해 자체 Modelserializer 클래스를 사용하십시오.
 
 [DL4J gitter channel](https://gitter.im/deeplearning4j/deeplearning4j) 을 방문하면 더 많은 정보를 얻을 수 있습니다. Github을 통해 기능 요청([feature request via Github](https://github.com/deeplearning4j/deeplearning4j/issues))를 하게 되면 DL4J 개발 로드맵에 반영되게 할 수 있으며, 구현되지 않은 기능을 구현하여 반영 요청(pull request)을 할 수 있습니다.
 

@@ -73,7 +73,7 @@ Many academic researchers in the field of deep learning rely on [**Theano**](htt
 
 Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
 
-In contrast, Deeplearning4j brings deep learning to production evnironment to create solutions in JVM languages like Java and Scala. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html). 
+In contrast, Deeplearning4j brings deep learning to production environment to create solutions in JVM languages like Java and Scala. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html).
 
 Pros and Cons
 
