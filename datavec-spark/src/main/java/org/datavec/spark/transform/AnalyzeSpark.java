@@ -38,6 +38,9 @@ import org.datavec.spark.transform.filter.FilterWritablesBySchemaFunction;
 import org.datavec.spark.transform.misc.ColumnToKeyPairTransform;
 import org.datavec.spark.transform.misc.SumLongsFunction2;
 import org.datavec.spark.transform.misc.comparator.Tuple2Comparator;
+import org.datavec.spark.transform.quality.QualityAnalysisAddFunction;
+import org.datavec.spark.transform.quality.QualityAnalysisCombineFunction;
+import org.datavec.spark.transform.quality.QualityAnalysisState;
 import org.datavec.spark.transform.quality.integer.IntegerQualityAddFunction;
 import org.datavec.spark.transform.quality.longq.LongQualityMergeFunction;
 import org.datavec.spark.transform.quality.string.StringQualityAddFunction;
@@ -639,13 +642,15 @@ public class AnalyzeSpark {
         data.cache();
         int nColumns = schema.numColumns();
 
-        //This is inefficient, but it's easy to implement. Good enough for now!
+
+        List<ColumnType> columnTypes = schema.getColumnTypes();
+        List<QualityAnalysisState> states = data.aggregate(null, new QualityAnalysisAddFunction(schema),
+                        new QualityAnalysisCombineFunction());
+
         List<ColumnQuality> list = new ArrayList<>(nColumns);
 
-        for (int i = 0; i < nColumns; i++) {
-            ColumnMetaData meta = schema.getMetaData(i);
-            JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(i));
-            list.add(analyze(meta, ithColumn));
+        for (QualityAnalysisState qualityState : states) {
+            list.add(qualityState.getColumnQuality());
         }
 
         return new DataQualityAnalysis(schema, list);
