@@ -152,7 +152,7 @@ if [ "$CHIP" == "cuda" ]; then
     if [ -z "$COMPUTE" ]; then
         checkexit bash buildnativeoperations.sh -c cuda
     else
-        checkexit bash buildnativeoperations.sh -c cuda --cc "$COMPUTE"
+        checkexit bash buildnativeoperations.sh -c cuda -cc "$COMPUTE"
     fi
 fi
 LIBND4J_HOME=$(pwd)
