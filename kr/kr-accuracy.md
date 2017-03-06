@@ -11,7 +11,7 @@ layout: default
 * [DeepFace: 기계의 얼굴인식 정확도를 인간 수준으로 향상](http://www.cs.toronto.edu/~ranzato/publications/taigman_cvpr14.pdf); 와일드 (LFW) 데이터 세트에서 97.35 %의 정확도에 도달하며 현재 수준의 오류를 27 % 이상 줄여 인간 수준에 근접합니다 (~ 97.53 %).
 * Andrew Ng은 2011 년에 열린 딥러닝 좌담에서, [많은 분야에서 딥러닝이 이룬 정확성에 대한 비약적인 발전](https://www.youtube.com/watch?v=ZmNOAtZIgIk) 에 대해 언급하였습니다.
 * 최근에는 Ng의 Baidu팀은 음성 및 이미지 인식 분야에서 획기적인 발전을 했습니다.
-* [Deep Speech](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/), 는 현재까지 최고로 알려진 Hub5'00이라는 데이터 세트를 기반으로 한 학술 음성 인식 모델을 약 9 % 이상을 넘어섰으며, 소음이 심한 환경에서도 81 %의 정확도를 입증하여 최고로 알려진 알고리즘을 능가하였습니다.
+* [Deep Speech](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/) 는 현재까지 최고로 알려진 Hub5'00이라는 데이터 세트를 기반으로 한 학술 음성 인식 모델을 약 9 % 이상을 넘어섰으며, 소음이 심한 환경에서도 81 %의 정확도를 입증하여 최고로 알려진 알고리즘을 능가하였습니다.
 * Google은 2014 년 ImageNet 대회에서 딥 네트워크를 사용하여 6.66 %의 오류율을 기록했습니다.
 * [CIFAR-10 데이터 세트 결과표](http://zybler.blogspot.de/2011/02/table-of-results-for-cifar-10-dataset.html)
 * [Rodrigo Benenson의 블로그](https://rodrigob.github.io/are_we_there_yet/build/#datasets), 는 CIFAR-10, CIFAR-100, STL-10, SVHN, ILSVRC2012 Task 1, Pascal VOC 2011 comp3, Caltech Pedestrians USA, INRIA Persons, MSRC-21, Leeds Sport Poses 및 중요한 개체 탐지 벤치 마크를 포함하고 있습니다.
