@@ -17,15 +17,6 @@
 package org.datavec.spark.transform;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.SequenceDataAnalysis;
@@ -73,7 +64,6 @@ import org.datavec.spark.transform.quality.time.TimeQualityMergeFunction;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.sparkfunction.ToRow;
 import scala.Tuple2;
 
 import java.util.*;
@@ -395,21 +385,19 @@ public class AnalyzeSpark {
                     StringAnalysisCounter sac = (StringAnalysisCounter) counters.get(i);
                     list.add(new StringAnalysis.Builder().countTotal(sac.getCountTotal())
                                     .minLength(sac.getMinLengthSeen()).maxLength(sac.getMaxLengthSeen())
-                                    .meanLength(((double) sac.getSumLength()) / sac.getCountTotal())
-                                    //                            .sampleStdevLength(stringLengthStats.sampleStdev())
-                                    //                            .sampleVarianceLength(stringLengthStats.sampleVariance())
-                                    .build());
+                                    .meanLength(sac.getMean()).sampleStdevLength(sac.getSampleStdev())
+                                    .sampleVarianceLength(sac.getSampleVariance()).build());
                     minsMaxes[i][0] = sac.getMinLengthSeen();
                     minsMaxes[i][1] = sac.getMaxLengthSeen();
                     break;
                 case Integer:
                     IntegerAnalysisCounter iac = (IntegerAnalysisCounter) counters.get(i);
                     IntegerAnalysis ia = new IntegerAnalysis.Builder().min(iac.getMinValueSeen())
-                                    .max(iac.getMaxValueSeen()).mean(((double) iac.getSum()) / iac.getCountTotal())
-                                    .sampleStdev(iac.getSampleStdev()).sampleVariance(iac.getSampleVariance())
-                                    .countZero(iac.getCountZero()).countNegative(iac.getCountNegative())
-                                    .countPositive(iac.getCountPositive()).countMinValue(iac.getCountMinValue())
-                                    .countMaxValue(iac.getCountMaxValue()).countTotal(iac.getCountTotal()).build();
+                                    .max(iac.getMaxValueSeen()).mean(iac.getMean()).sampleStdev(iac.getSampleStdev())
+                                    .sampleVariance(iac.getSampleVariance()).countZero(iac.getCountZero())
+                                    .countNegative(iac.getCountNegative()).countPositive(iac.getCountPositive())
+                                    .countMinValue(iac.getCountMinValue()).countMaxValue(iac.getCountMaxValue())
+                                    .countTotal(iac.getCountTotal()).build();
                     list.add(ia);
 
                     minsMaxes[i][0] = iac.getMinValueSeen();
@@ -420,11 +408,11 @@ public class AnalyzeSpark {
                     LongAnalysisCounter lac = (LongAnalysisCounter) counters.get(i);
 
                     LongAnalysis la = new LongAnalysis.Builder().min(lac.getMinValueSeen()).max(lac.getMaxValueSeen())
-                                    .mean(lac.getSum().doubleValue() / lac.getCountTotal())
-                                    .sampleStdev(lac.getSampleStdev()).sampleVariance(lac.getSampleVariance())
-                                    .countZero(lac.getCountZero()).countNegative(lac.getCountNegative())
-                                    .countPositive(lac.getCountPositive()).countMinValue(lac.getCountMinValue())
-                                    .countMaxValue(lac.getCountMaxValue()).countTotal(lac.getCountTotal()).build();
+                                    .mean(lac.getMean()).sampleStdev(lac.getSampleStdev())
+                                    .sampleVariance(lac.getSampleVariance()).countZero(lac.getCountZero())
+                                    .countNegative(lac.getCountNegative()).countPositive(lac.getCountPositive())
+                                    .countMinValue(lac.getCountMinValue()).countMaxValue(lac.getCountMaxValue())
+                                    .countTotal(lac.getCountTotal()).build();
 
                     list.add(la);
 
@@ -435,12 +423,11 @@ public class AnalyzeSpark {
                 case Double:
                     DoubleAnalysisCounter dac = (DoubleAnalysisCounter) counters.get(i);
                     DoubleAnalysis da = new DoubleAnalysis.Builder().min(dac.getMinValueSeen())
-                                    .max(dac.getMaxValueSeen()).mean(dac.getSum() / dac.getCountTotal())
-                                    .sampleStdev(dac.getSampleStdev()).sampleVariance(dac.getSampleVariance())
-                                    .countZero(dac.getCountZero()).countNegative(dac.getCountNegative())
-                                    .countPositive(dac.getCountPositive()).countMinValue(dac.getCountMinValue())
-                                    .countMaxValue(dac.getCountMaxValue()).countNaN(dac.getCountNaN())
-                                    .countTotal(dac.getCountTotal()).build();
+                                    .max(dac.getMaxValueSeen()).mean(dac.getMean()).sampleStdev(dac.getSampleStdev())
+                                    .sampleVariance(dac.getSampleVariance()).countZero(dac.getCountZero())
+                                    .countNegative(dac.getCountNegative()).countPositive(dac.getCountPositive())
+                                    .countMinValue(dac.getCountMinValue()).countMaxValue(dac.getCountMaxValue())
+                                    .countNaN(dac.getCountNaN()).countTotal(dac.getCountTotal()).build();
                     list.add(da);
 
                     minsMaxes[i][0] = dac.getMinValueSeen();
@@ -457,12 +444,11 @@ public class AnalyzeSpark {
                     LongAnalysisCounter lac2 = (LongAnalysisCounter) counters.get(i);
 
                     TimeAnalysis la2 = new TimeAnalysis.Builder().min(lac2.getMinValueSeen())
-                                    .max(lac2.getMaxValueSeen())
-                                    .mean(lac2.getSum().doubleValue() / lac2.getCountTotal())
-                                    .sampleStdev(lac2.getSampleStdev()).sampleVariance(lac2.getSampleVariance())
-                                    .countZero(lac2.getCountZero()).countNegative(lac2.getCountNegative())
-                                    .countPositive(lac2.getCountPositive()).countMinValue(lac2.getCountMinValue())
-                                    .countMaxValue(lac2.getCountMaxValue()).countTotal(lac2.getCountTotal()).build();
+                                    .max(lac2.getMaxValueSeen()).mean(lac2.getMean()).sampleStdev(lac2.getSampleStdev())
+                                    .sampleVariance(lac2.getSampleVariance()).countZero(lac2.getCountZero())
+                                    .countNegative(lac2.getCountNegative()).countPositive(lac2.getCountPositive())
+                                    .countMinValue(lac2.getCountMinValue()).countMaxValue(lac2.getCountMaxValue())
+                                    .countTotal(lac2.getCountTotal()).build();
 
                     list.add(la2);
 

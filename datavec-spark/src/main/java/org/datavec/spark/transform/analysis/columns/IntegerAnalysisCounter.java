@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.analysis.columns;
 
+import org.apache.spark.util.StatCounter;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,23 +31,42 @@ import org.datavec.api.writable.Writable;
 @Data
 public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCounter> {
 
-    private long countZero;
-    private long countPositive;
-    private long countNegative;
-    private long countMinValue;
-    private int minValueSeen = Integer.MAX_VALUE;
-    private long countMaxValue;
-    private int maxValueSeen = Integer.MIN_VALUE;
-    private long sum = 0;
-    private long countTotal = 0;
+    private StatCounter counter = new StatCounter();
+    private long countZero = 0;
+    private long countMinValue = 0;
+    private long countMaxValue = 0;
+    private long countPositive = 0;
+    private long countNegative = 0;
 
-    private double mean; //Running mean
-    private double m2; //Running variance numerator (sum (x-mean)^2)
+    public IntegerAnalysisCounter() {};
 
-    public IntegerAnalysisCounter() {
+    public int getMinValueSeen() {
+        return (int) counter.min();
+    };
 
+    public int getMaxValueSeen() {
+        return (int) counter.max();
+    };
+
+    public long getSum() {
+        return (long) counter.sum();
+    };
+
+    public long getCountTotal() {
+        return counter.count();
+    };
+
+    public double getSampleStdev() {
+        return counter.sampleStdev();
+    };
+
+    public double getMean() {
+        return counter.mean();
     }
 
+    public double getSampleVariance() {
+        return counter.sampleVariance();
+    }
 
     @Override
     public IntegerAnalysisCounter add(Writable writable) {
@@ -54,88 +74,57 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
 
         if (value == 0)
             countZero++;
-        else if (value < 0)
-            countNegative++;
-        else
-            countPositive++;
 
-        if (value == minValueSeen) {
+        if (value == getMinValueSeen())
             countMinValue++;
-        } else if (value < minValueSeen) {
-            //New minimum value
-            minValueSeen = value;
+        else if (value < getMinValueSeen()) {
             countMinValue = 1;
-        } //Don't need an else condition: if value > minValueSeen, no change to min value or count
+        }
 
-        if (value == maxValueSeen) {
+        if (value == getMaxValueSeen())
             countMaxValue++;
-        } else if (value > maxValueSeen) {
-            //new maximum value
-            maxValueSeen = value;
+        else if (value > getMaxValueSeen()) {
             countMaxValue = 1;
-        } //Don't need else condition: if value < maxValueSeen, no change to max value or count
+        }
 
-        sum += value;
-        countTotal++;
+        if (value >= 0) {
+            countPositive++;
+        } else {
+            countNegative++;
+        } ;
 
-        double delta = value - mean;
-        mean += delta / countTotal;
-        m2 += delta * (value - mean);
+        counter.merge((double) value);
 
         return this;
     }
 
     public IntegerAnalysisCounter merge(IntegerAnalysisCounter other) {
-        if (minValueSeen == other.minValueSeen) {
-            countMinValue += other.countMinValue;
-        } else if (minValueSeen > other.minValueSeen) {
+        int otherMin = other.getMinValueSeen();
+        long newCountMinValue;
+        if (getMinValueSeen() == otherMin) {
+            newCountMinValue = countMinValue + other.getCountMinValue();
+        } else if (getMinValueSeen() > otherMin) {
             //Keep other, take count from other
-            minValueSeen = other.minValueSeen;
-            countMinValue = other.countMinValue;
-        } //else: Keep this min, no change to count
-
-        if (maxValueSeen == other.maxValueSeen) {
-            countMaxValue += other.countMaxValue;
-        } else if (maxValueSeen < other.maxValueSeen) {
-            //Keep other, take count from other
-            maxValueSeen = other.maxValueSeen;
-            countMaxValue = other.countMaxValue;
-        } //else: Keep this max, no change to count
-
-        if (countTotal == 0) {
-            mean = other.mean;
-            m2 = other.m2;
-        } else if (other.countTotal != 0) {
-            double delta = other.mean - mean;
-            long tCount = countTotal + other.countTotal;
-            //For numerical stability, as per Spark StatCounter
-            if (10 * other.countTotal < countTotal) {
-                mean = mean + (delta * other.countTotal) / tCount;
-            } else if (10 * countTotal < other.countTotal) {
-                mean = other.mean - (delta * countTotal) / tCount;
-            } else {
-                mean = (mean * countTotal + other.mean * other.countTotal) / tCount;
-            }
-            m2 += other.m2 + (delta * delta * countTotal * other.countTotal) / tCount;
+            newCountMinValue = other.getCountMinValue();
+        } else {
+            //Keep this min, no change to count
+            newCountMinValue = countMinValue;
         }
 
-        countZero += other.countZero;
-        countPositive += other.countPositive;
-        countNegative += other.countNegative;
-        sum += other.sum;
-        countTotal += other.countTotal;
+        int otherMax = other.getMaxValueSeen();
+        long newCountMaxValue;
+        if (getMaxValueSeen() == otherMax) {
+            newCountMaxValue = countMaxValue + other.getCountMaxValue();
+        } else if (getMaxValueSeen() < otherMax) {
+            //Keep other, take count from other
+            newCountMaxValue = other.getCountMaxValue();
+        } else {
+            //Keep this max, no change to count
+            newCountMaxValue = countMaxValue;
+        }
 
-        return this;
+        return new IntegerAnalysisCounter(counter.merge(other.getCounter()), countZero + other.getCountZero(),
+                        newCountMinValue, newCountMaxValue, countPositive + other.getCountPositive(),
+                        countNegative + other.getCountNegative());
     }
-
-    public double getSampleVariance() {
-        if (countTotal <= 1)
-            return Double.NaN;
-        return m2 / (countTotal - 1);
-    }
-
-    public double getSampleStdev() {
-        return Math.sqrt(getSampleVariance());
-    }
-
 }

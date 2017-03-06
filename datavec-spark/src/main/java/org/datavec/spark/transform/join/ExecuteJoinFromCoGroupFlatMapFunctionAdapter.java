@@ -15,8 +15,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter
-                implements FlatMapFunctionAdapter<Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
+public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter implements
+                FlatMapFunctionAdapter<Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
 
     private final Join join;
 
@@ -25,7 +25,9 @@ public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter
     }
 
     @Override
-    public Iterable<List<Writable>> call(Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>> t2) throws Exception {
+    public Iterable<List<Writable>> call(
+                    Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>> t2)
+                    throws Exception {
 
         Iterable<List<Writable>> leftList = t2._2()._1();
         Iterable<List<Writable>> rightList = t2._2()._2();

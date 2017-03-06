@@ -12,25 +12,24 @@ import java.util.List;
 
 /** Created by huitseeker on 3/6/17. */
 @AllArgsConstructor
-public class ExtractKeysFunction
-    implements PairFunction<List<Writable>, List<Writable>, List<Writable>> {
-  private int[] columnIndexes;
+public class ExtractKeysFunction implements PairFunction<List<Writable>, List<Writable>, List<Writable>> {
+    private int[] columnIndexes;
 
-  @Override
-  public Tuple2<List<Writable>, List<Writable>> call(List<Writable> writables) throws Exception {
+    @Override
+    public Tuple2<List<Writable>, List<Writable>> call(List<Writable> writables) throws Exception {
 
-    Schema schema;
+        Schema schema;
 
-    List<Writable> keyValues;
-    if (columnIndexes.length == 1) {
-      keyValues = Collections.singletonList(writables.get(columnIndexes[0]));
-    } else {
-      keyValues = new ArrayList<>(columnIndexes.length);
-      for (int i : columnIndexes) {
-        keyValues.add(writables.get(columnIndexes[i]));
-      }
+        List<Writable> keyValues;
+        if (columnIndexes.length == 1) {
+            keyValues = Collections.singletonList(writables.get(columnIndexes[0]));
+        } else {
+            keyValues = new ArrayList<>(columnIndexes.length);
+            for (int i : columnIndexes) {
+                keyValues.add(writables.get(columnIndexes[i]));
+            }
+        }
+
+        return new Tuple2<>(keyValues, writables);
     }
-
-    return new Tuple2<>(keyValues, writables);
-  }
 }

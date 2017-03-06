@@ -28,12 +28,10 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteJoinFromCoGroupFlatMapFunction
-    extends BaseFlatMapFunctionAdaptee<
-        Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>>,
-        List<Writable>> {
+public class ExecuteJoinFromCoGroupFlatMapFunction extends
+                BaseFlatMapFunctionAdaptee<Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
 
-  public ExecuteJoinFromCoGroupFlatMapFunction(Join join) {
-    super(new ExecuteJoinFromCoGroupFlatMapFunctionAdapter(join));
-  }
+    public ExecuteJoinFromCoGroupFlatMapFunction(Join join) {
+        super(new ExecuteJoinFromCoGroupFlatMapFunctionAdapter(join));
+    }
 }
