@@ -163,7 +163,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected ConvolutionMode convolutionMode = null;
-        protected int[] kernelSize = new int[] {5,5};
+        protected int[] kernelSize = null;
         protected int[] stride = new int[] {1,1};
         protected int[] padding = new int[] {0, 0};
         protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
