@@ -57,7 +57,7 @@ Be aware that not all models will be supported, it is our goal however to import
 To use this, you would save the model in Keras to a JSON file, the DeepLEarning4J options available are. 
 
 * Sequential Model 
-* Sequetial Model with updater to allow further training
+* Sequential Model with updater to allow further training
 * Functional Model
 * Functional Model with updater for further training
 
@@ -95,7 +95,7 @@ MultiLayerNetwork network = KerasModelImport.importKerasSequentialModelAndWeight
 
 ```
 
-The network would be ready to use for inference by passing it input data, formatted, transformed, and normalized in the same manner that the orignal data was and calling network.output. 
+The network would be ready to use for inference by passing it input data, formatted, transformed, and normalized in the same manner that the original data was and calling network.output.
 
 * Sequential Model one file for config one file for weights. 
 

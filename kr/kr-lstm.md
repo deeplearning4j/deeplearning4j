@@ -165,7 +165,9 @@ RNNs 유닛의 한 종류로 GRU(Gated Recurrent Units)이 있습니다. GRU는 
 
 ## <a name="code">예제 코드</a>
 
-[Graves LSTM 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java)를 보면 어떻게 셰익스피어의 작품을 학습하고 모방하는지 잘 나와있습니다. 특히 주석이 잘 달려있으니 코드를 보시면 이해할 수 있습니다. DL4J에서 구현되었으며 API 문법이 불분명한 경우엔 모두 주석이 달려있습니다. 혹시 질문이 있다면 [저희의 Gitter 대화](https://gitter.im/deeplearning4j/deeplearning4j)에서 문의주십시오.
+[Graves LSTM 예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)를 보면 어떻게 셰익스피어의 작품을 학습하고 모방하는지 잘 나와있습니다. 특히 주석이 잘 달려있으니 코드를 보시면 이해할 수 있습니다. DL4J에서 구현되었으며 API 문법이 불분명한 경우엔 모두 주석이 달려있습니다. 혹시 질문이 있다면 [저희의 Gitter 대화](https://gitter.im/deeplearning4j/deeplearning4j)에서 문의주십시오.
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java?slice=61:82"></script>
 
 ## <a name="tuning">팁: LSTM 하이퍼파라미터 정하기</a>
 
