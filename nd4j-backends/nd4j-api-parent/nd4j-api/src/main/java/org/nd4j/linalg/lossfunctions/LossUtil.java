@@ -53,6 +53,10 @@ public class LossUtil {
         return a.muli(dlda.subiColumnVector(x));
     }
 
+    public static boolean isPerOutputMasking(INDArray to, INDArray mask){
+        return !mask.isColumnVector() ||  Arrays.equals(to.shape(), mask.shape());
+    }
+
     public static void applyMask(INDArray to, INDArray mask){
         //Two possibilities exist: it's *per example* masking, or it's *per output* masking
         //These cases have different mask shapes. Per example: column vector. Per output: same shape as score array

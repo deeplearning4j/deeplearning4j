@@ -112,6 +112,14 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
         INDArray dLda = numerator.divi(denominator);
 
+        if(mask != null && LossUtil.isPerOutputMasking(dLda, mask)){
+            //For *most* activation functions: we don't actually need to mask dL/da in addition to masking dL/dz later
+            //but: some, like softmax, require both (due to dL/dz_i being a function of dL/da_j, for i != j)
+            //We could add a special case for softmax (activationFn instanceof ActivationSoftmax) but that would be
+            // error prone - but buy us a tiny bit of performance
+            LossUtil.applyMask(dLda, mask);
+        }
+
         INDArray grad = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with weights
 
         //Weighted loss function
