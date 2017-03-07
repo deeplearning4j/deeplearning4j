@@ -352,7 +352,7 @@ public class LossFunctionGradientCheck {
         assertEquals("Tests failed", 0, failed.size());
     }
 
-    private static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed){
+    public static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed){
         Nd4j.getRandom().setSeed(seed);
         Random r = new Random(seed);
         INDArray[] ret = new INDArray[2];
