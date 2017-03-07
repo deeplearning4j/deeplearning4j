@@ -185,49 +185,49 @@ public class GradientCheckTestsMasking {
                 {1,0,0,1,1}});
         INDArray[] labelMasks = new INDArray[]{mask1, mask3};
 
-//        ILossFunction[] lossFunctions = new ILossFunction[]{
-//                new LossBinaryXENT(),
-////                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
-//                new LossHinge(),
-//                new LossKLD(),
-//                new LossL1(),
-//                new LossL2(),
-//                new LossMAE(),
-//                new LossMAPE(),
-////                new LossMCXENT(),
-//                new LossMSE(),
-//                new LossMSE(),
-//                new LossMSLE(),
-//                new LossNegativeLogLikelihood(),
-//                new LossPoisson(),
-//                new LossSquaredHinge()};
-//
-//        Activation[] act = new Activation[]{
-//                Activation.SIGMOID, //XENT
-////                Activation.TANH,
-//                Activation.TANH,    //Hinge
-//                Activation.SIGMOID, //KLD
-//                Activation.TANH,    //L1
-//                Activation.TANH,    //L2
-//                Activation.TANH,    //MAE
-//                Activation.TANH,    //MAPE
-////                Activation.SOFTMAX, //MCXENT
-//                Activation.TANH,    //MSE
-//                Activation.SOFTMAX, //MSE + softmax
-//                Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
-//                Activation.SIGMOID, //NLL
-//                Activation.SIGMOID, //Poisson
-//                Activation.TANH     //Squared hinge
-//        };
-
         ILossFunction[] lossFunctions = new ILossFunction[]{
+                new LossBinaryXENT(),
+//                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
+                new LossHinge(),
+                new LossKLD(),
+                new LossKLD(),
+                new LossL1(),
+                new LossL2(),
+                new LossMAE(),
+                new LossMAE(),
+                new LossMAPE(),
+                new LossMAPE(),
+//                new LossMCXENT(),             //Per output masking on MCXENT+Softmax: not yet supported
+                new LossMCXENT(),
                 new LossMSE(),
-                new LossMSE()
-        };
+                new LossMSE(),
+                new LossMSLE(),
+                new LossMSLE(),
+                new LossNegativeLogLikelihood(),
+                new LossPoisson(),
+                new LossSquaredHinge()};
 
         Activation[] act = new Activation[]{
+                Activation.SIGMOID, //XENT
+//                Activation.TANH,
+                Activation.TANH,    //Hinge
+                Activation.SIGMOID, //KLD
+                Activation.SOFTMAX, //KLD + softmax
+                Activation.TANH,    //L1
+                Activation.TANH,    //L2
+                Activation.TANH,    //MAE
+                Activation.SOFTMAX, //MAE + softmax
+                Activation.TANH,    //MAPE
+                Activation.SOFTMAX ,//MAPE + softmax
+//                Activation.SOFTMAX, //MCXENT + softmax: see comment above
+                Activation.SIGMOID, //MCXENT + sigmoid
                 Activation.TANH,    //MSE
                 Activation.SOFTMAX, //MSE + softmax
+                Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
+                Activation.SOFTMAX, //MSLE + softmax
+                Activation.SIGMOID, //NLL
+                Activation.SIGMOID, //Poisson
+                Activation.TANH     //Squared hinge
         };
 
         for( INDArray labelMask : labelMasks ){
@@ -235,7 +235,6 @@ public class GradientCheckTestsMasking {
             int minibatch = labelMask.size(0);
             int nOut = labelMask.size(1);
 
-//            for(ILossFunction lf : lossFunctions ) {
             for( int i=0; i<lossFunctions.length; i++ ){
                 ILossFunction lf = lossFunctions[i];
                 Activation a = act[i];
@@ -279,7 +278,6 @@ public class GradientCheckTestsMasking {
 
         int nIn = 4;
         int layerSize = 4;
-        int tsLength = 3;
         int nOut = 4;
 
         //1 example, TS length 3
@@ -312,13 +310,18 @@ public class GradientCheckTestsMasking {
 //                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
                 new LossHinge(),
                 new LossKLD(),
+                new LossKLD(),
                 new LossL1(),
                 new LossL2(),
                 new LossMAE(),
+                new LossMAE(),
                 new LossMAPE(),
-//                new LossMCXENT(),
+                new LossMAPE(),
+//                new LossMCXENT(),             //Per output masking on MCXENT+Softmax: not yet supported
+                new LossMCXENT(),
                 new LossMSE(),
                 new LossMSE(),
+                new LossMSLE(),
                 new LossMSLE(),
                 new LossNegativeLogLikelihood(),
                 new LossPoisson(),
@@ -329,14 +332,19 @@ public class GradientCheckTestsMasking {
 //                Activation.TANH,
                 Activation.TANH,    //Hinge
                 Activation.SIGMOID, //KLD
+                Activation.SOFTMAX, //KLD + softmax
                 Activation.TANH,    //L1
                 Activation.TANH,    //L2
                 Activation.TANH,    //MAE
+                Activation.SOFTMAX, //MAE + softmax
                 Activation.TANH,    //MAPE
-//                Activation.SOFTMAX, //MCXENT
+                Activation.SOFTMAX ,//MAPE + softmax
+//                Activation.SOFTMAX, //MCXENT + softmax: see comment above
+                Activation.SIGMOID, //MCXENT + sigmoid
                 Activation.TANH,    //MSE
                 Activation.SOFTMAX, //MSE + softmax
                 Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
+                Activation.SOFTMAX, //MSLE + softmax
                 Activation.SIGMOID, //NLL
                 Activation.SIGMOID, //Poisson
                 Activation.TANH     //Squared hinge
@@ -345,6 +353,7 @@ public class GradientCheckTestsMasking {
         for( INDArray labelMask : labelMasks ){
 
             int minibatch = labelMask.size(0);
+            int tsLength = labelMask.size(2);
 
             for(int i=0; i<lossFunctions.length; i++ ){
                 ILossFunction lf = lossFunctions[i];
@@ -365,7 +374,8 @@ public class GradientCheckTestsMasking {
                 net.init();
 
                 net.setLayerMaskArrays(null, labelMask);
-                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
+                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, new int[]{minibatch, nIn, tsLength},
+                        new int[]{minibatch, nOut, tsLength}, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
 
