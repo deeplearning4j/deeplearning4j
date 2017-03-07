@@ -13,6 +13,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +35,10 @@ import static org.junit.Assert.assertTrue;
  */
 @Slf4j
 public class LossFunctionGradientCheck {
+
+    static {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -352,60 +358,85 @@ public class LossFunctionGradientCheck {
         assertEquals("Tests failed", 0, failed.size());
     }
 
-    private static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed){
+    public static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed) {
+        return getFeaturesAndLabels(l, new int[]{minibatch, nIn}, new int[]{minibatch, nOut}, seed);
+    }
+
+    public static INDArray[] getFeaturesAndLabels(ILossFunction l, int[] featuresShape, int[] labelsShape, long seed){
         Nd4j.getRandom().setSeed(seed);
         Random r = new Random(seed);
         INDArray[] ret = new INDArray[2];
 
-        ret[0] = Nd4j.rand(minibatch, nIn);
+        ret[0] = Nd4j.rand(featuresShape);
 
         switch(l.getClass().getSimpleName()){
             case "LossBinaryXENT":
                 //Want binary vector labels
-                ret[1] = Nd4j.rand(minibatch, nOut);
+                ret[1] = Nd4j.rand(labelsShape);
                 BooleanIndexing.replaceWhere(ret[1],0, Conditions.lessThanOrEqual(0.5));
                 BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOrEqual(0.5));
                 break;
             case "LossCosineProximity":
                 //Should be real-valued??
-                ret[1] = Nd4j.rand(minibatch, nOut).subi(0.5);
+                ret[1] = Nd4j.rand(labelsShape).subi(0.5);
                 break;
             case "LossKLD":
                 //KL divergence: should be a probability distribution for labels??
-                ret[1] = Nd4j.rand(minibatch, nOut);
+                ret[1] = Nd4j.rand(labelsShape);
                 Nd4j.getExecutioner().exec(new SoftMax(ret[1]),1);
                 break;
             case "LossMCXENT":
             case "LossNegativeLogLikelihood":
-                ret[1] = Nd4j.zeros(minibatch, nOut);
-                for( int i=0; i<minibatch; i++ ){
-                    ret[1].putScalar(i, r.nextInt(nOut), 1.0);
+                ret[1] = Nd4j.zeros(labelsShape);
+                if (labelsShape.length == 2){
+                    for( int i=0; i<labelsShape[0]; i++ ){
+                        ret[1].putScalar(i, r.nextInt(labelsShape[1]), 1.0);
+                    }
+                } else if(labelsShape.length == 3){
+                    for( int i=0; i<labelsShape[0]; i++ ){
+                        for( int j=0; j<labelsShape[2]; j++ ) {
+                            ret[1].putScalar(i, r.nextInt(labelsShape[1]), j, 1.0);
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException();
                 }
+
                 break;
             case "LossHinge":
             case "LossSquaredHinge":
-                ret[1] = Nd4j.ones(minibatch, nOut);
-                for( int i=0; i<minibatch; i++ ){
-                    ret[1].putScalar(i, r.nextInt(nOut), -1.0);
+                ret[1] = Nd4j.ones(labelsShape);
+                if (labelsShape.length == 2){
+                    for( int i=0; i<labelsShape[0]; i++ ){
+                        ret[1].putScalar(i, r.nextInt(labelsShape[1]), -1.0);
+                    }
+                } else if(labelsShape.length == 3){
+                    for( int i=0; i<labelsShape[0]; i++ ){
+                        for( int j=0; j<labelsShape[2]; j++ ) {
+                            ret[1].putScalar(i, r.nextInt(labelsShape[1]), j, -1.0);
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException();
                 }
                 break;
             case "LossMAPE":
                 //requires non-zero values for actual...
-                ret[1] = Nd4j.rand(minibatch, nOut).addi(1.0);      //1 to 2
+                ret[1] = Nd4j.rand(labelsShape).addi(1.0);      //1 to 2
                 break;
             case "LossMAE":
             case "LossMSE":
             case "LossL1":
             case "LossL2":
-                ret[1] = Nd4j.rand(minibatch, nOut).muli(2).subi(1);
+                ret[1] = Nd4j.rand(labelsShape).muli(2).subi(1);
                 break;
             case "LossMSLE":
                 //Requires positive labels/activations due to log
-                ret[1] = Nd4j.rand(minibatch, nOut);
+                ret[1] = Nd4j.rand(labelsShape);
                 break;
             case "LossPoisson":
                 //Binary vector labels should be OK here??
-                ret[1] = Nd4j.rand(minibatch, nOut);
+                ret[1] = Nd4j.rand(labelsShape);
                 BooleanIndexing.replaceWhere(ret[1],0, Conditions.lessThanOrEqual(0.5));
                 BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOrEqual(0.5));
                 break;

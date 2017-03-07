@@ -19,9 +19,12 @@
 package org.deeplearning4j.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.Arrays;
 
 /**
  * Basic time series utils
@@ -73,6 +76,34 @@ public class TimeSeriesUtils {
         int timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
         return timeSeriesMaskAsVector.reshape('f',new int[]{minibatchSize,timeSeriesLength});
+    }
+
+    public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask){
+        if(perOutputTimeSeriesMask.rank() != 3){
+            throw new IllegalArgumentException("Cannot reshape per output mask: rank is not 3 (is: "
+                    + perOutputTimeSeriesMask.rank() + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape())
+                    + ")");
+        }
+
+        return reshape3dTo2d(perOutputTimeSeriesMask);
+    }
+
+    public static INDArray reshape3dTo2d(INDArray in){
+        if( in.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
+        int[] shape = in.shape();
+        if(shape[0]==1) return in.tensorAlongDimension(0,1,2).permutei(1,0);	//Edge case: miniBatchSize==1
+        if(shape[2]==1) return in.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
+        INDArray permuted = in.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
+        return permuted.reshape('f',shape[0] * shape[2], shape[1]);
+    }
+
+    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize){
+        if( in.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
+        //Based on: RnnToFeedForwardPreProcessor
+        int[] shape = in.shape();
+        if(in.ordering() != 'f') in = Shape.toOffsetZeroCopy(in, 'f');
+        INDArray reshaped = in.reshape('f',miniBatchSize, shape[0] / miniBatchSize, shape[1]);
+        return reshaped.permute(0, 2, 1);
     }
 
 }
