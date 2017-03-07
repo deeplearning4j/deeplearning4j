@@ -185,28 +185,60 @@ public class GradientCheckTestsMasking {
                 {1,0,0,1,1}});
         INDArray[] labelMasks = new INDArray[]{mask1, mask3};
 
+//        ILossFunction[] lossFunctions = new ILossFunction[]{
+//                new LossBinaryXENT(),
+////                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
+//                new LossHinge(),
+//                new LossKLD(),
+//                new LossL1(),
+//                new LossL2(),
+//                new LossMAE(),
+//                new LossMAPE(),
+////                new LossMCXENT(),
+//                new LossMSE(),
+//                new LossMSE(),
+//                new LossMSLE(),
+//                new LossNegativeLogLikelihood(),
+//                new LossPoisson(),
+//                new LossSquaredHinge()};
+//
+//        Activation[] act = new Activation[]{
+//                Activation.SIGMOID, //XENT
+////                Activation.TANH,
+//                Activation.TANH,    //Hinge
+//                Activation.SIGMOID, //KLD
+//                Activation.TANH,    //L1
+//                Activation.TANH,    //L2
+//                Activation.TANH,    //MAE
+//                Activation.TANH,    //MAPE
+////                Activation.SOFTMAX, //MCXENT
+//                Activation.TANH,    //MSE
+//                Activation.SOFTMAX, //MSE + softmax
+//                Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
+//                Activation.SIGMOID, //NLL
+//                Activation.SIGMOID, //Poisson
+//                Activation.TANH     //Squared hinge
+//        };
+
         ILossFunction[] lossFunctions = new ILossFunction[]{
-                new LossBinaryXENT(),
-//                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
-                new LossHinge(),
-                new LossKLD(),
-                new LossL1(),
-                new LossL2(),
-                new LossMAE(),
-                new LossMAPE(),
-                new LossMCXENT(),
                 new LossMSE(),
-                new LossMSLE(),
-                new LossNegativeLogLikelihood(),
-                new LossPoisson(),
-                new LossSquaredHinge()};
+                new LossMSE()
+        };
+
+        Activation[] act = new Activation[]{
+                Activation.TANH,    //MSE
+                Activation.SOFTMAX, //MSE + softmax
+        };
 
         for( INDArray labelMask : labelMasks ){
 
             int minibatch = labelMask.size(0);
             int nOut = labelMask.size(1);
 
-            for(ILossFunction lf : lossFunctions ) {
+//            for(ILossFunction lf : lossFunctions ) {
+            for( int i=0; i<lossFunctions.length; i++ ){
+                ILossFunction lf = lossFunctions[i];
+                Activation a = act[i];
 
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -215,7 +247,8 @@ public class GradientCheckTestsMasking {
                         .seed(12345)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
-                        .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf).build())
+                        .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                                .lossFunction(lf).activation(a).build())
                         .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -227,7 +260,117 @@ public class GradientCheckTestsMasking {
                 INDArray labels = fl[1];
 
                 String msg = "testPerOutputMaskingMLP(): maskShape = " + Arrays.toString(labelMask.shape())
-                        + ", loss function = " + lf;
+                        + ", loss function = " + lf + ", activation = " + a;
+
+                System.out.println(msg);
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+
+                assertTrue(msg, gradOK);
+            }
+        }
+    }
+
+    @Test
+    public void testPerOutputMaskingRnn(){
+        //For RNNs: per-output masking uses 3d masks (same shape as output/labels), as compared to the standard
+        // 2d masks (used for per *example* masking)
+
+        int nIn = 4;
+        int layerSize = 4;
+        int tsLength = 3;
+        int nOut = 4;
+
+        //1 example, TS length 3
+        INDArray mask1 = Nd4j.create(new double[]{1,0,0,1,  0,1,0,1,  1,1,1,0}, new int[]{1,nOut,3}, 'f');
+        //1 example, TS length 1
+        INDArray mask2 = Nd4j.create(new double[]{1,1,0,1}, new int[]{1,nOut,1}, 'f');
+        //3 examples, TS length 3
+        INDArray mask3 = Nd4j.create(new double[]{
+                //With fortran order: dimension 0 (example) changes quickest, followed by dimension 1 (value within time
+                        // step) followed by time index (least frequently)
+                1,0,1,
+                0,1,1,
+                1,1,1,
+                0,1,0,
+
+                0,1,1,
+                1,1,0,
+                1,0,1,
+                0,1,1,
+
+                1,1,1,
+                0,0,1,
+                0,1,0,
+                1,0,0},
+                new int[]{3,nOut,3}, 'f');
+        INDArray[] labelMasks = new INDArray[]{mask1, mask2, mask3};
+
+        ILossFunction[] lossFunctions = new ILossFunction[]{
+                new LossBinaryXENT(),
+//                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
+                new LossHinge(),
+                new LossKLD(),
+                new LossL1(),
+                new LossL2(),
+                new LossMAE(),
+                new LossMAPE(),
+//                new LossMCXENT(),
+                new LossMSE(),
+                new LossMSE(),
+                new LossMSLE(),
+                new LossNegativeLogLikelihood(),
+                new LossPoisson(),
+                new LossSquaredHinge()};
+
+        Activation[] act = new Activation[]{
+                Activation.SIGMOID, //XENT
+//                Activation.TANH,
+                Activation.TANH,    //Hinge
+                Activation.SIGMOID, //KLD
+                Activation.TANH,    //L1
+                Activation.TANH,    //L2
+                Activation.TANH,    //MAE
+                Activation.TANH,    //MAPE
+//                Activation.SOFTMAX, //MCXENT
+                Activation.TANH,    //MSE
+                Activation.SOFTMAX, //MSE + softmax
+                Activation.SIGMOID, //MSLE - needs positive labels/activations (due to log)
+                Activation.SIGMOID, //NLL
+                Activation.SIGMOID, //Poisson
+                Activation.TANH     //Squared hinge
+        };
+
+        for( INDArray labelMask : labelMasks ){
+
+            int minibatch = labelMask.size(0);
+
+            for(int i=0; i<lossFunctions.length; i++ ){
+                ILossFunction lf = lossFunctions[i];
+                Activation a = act[i];
+
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(Updater.NONE)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                        .seed(12345)
+                        .list()
+                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
+                        .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                                .lossFunction(lf).activation(a).build())
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                net.setLayerMaskArrays(null, labelMask);
+                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
+                INDArray features = fl[0];
+                INDArray labels = fl[1];
+
+                String msg = "testPerOutputMaskingRnn(): maskShape = " + Arrays.toString(labelMask.shape())
+                        + ", loss function = " + lf + ", activation = " + a;
 
                 System.out.println(msg);
 
