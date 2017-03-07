@@ -204,29 +204,18 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
         return (result == null) ? complement = new Complement() : result;
     }
 
-    static final class RangesByUpperBound extends TreeMap<IntCut, IntRange> {
-
-        private final NavigableMap<IntCut, IntRange> rangesByLowerBound;
-
+    private static abstract class BaseRangeByBound extends TreeMap<IntCut, IntRange> {
+        protected NavigableMap<IntCut, IntRange> rangesByLowerBound;
         /**
          * upperBoundWindow represents the headMap/subMap/tailMap view of the entire "ranges by upper
          * bound" map; it's a constraint on the *keys*, and does not affect the values.
          */
-        private final IntRange upperBoundWindow;
-
-        RangesByUpperBound(NavigableMap<IntCut, IntRange> rangesByLowerBound) {
-            this.rangesByLowerBound = rangesByLowerBound;
-            this.upperBoundWindow = IntRange.all();
-        }
-
-        private RangesByUpperBound(NavigableMap<IntCut, IntRange> rangesByLowerBound, IntRange upperBoundWindow) {
-            this.rangesByLowerBound = rangesByLowerBound;
-            this.upperBoundWindow = upperBoundWindow;
-        }
+        protected IntRange upperBoundWindow;
 
         private NavigableMap<IntCut, IntRange> subMap(IntRange window) {
             if (window.isConnected(upperBoundWindow)) {
-                return new RangesByUpperBound(rangesByLowerBound, window.intersection(upperBoundWindow));
+                return new IntTreeRangeSet.RangesByUpperBound(rangesByLowerBound,
+                                window.intersection(upperBoundWindow));
             } else {
                 return ImmutableSortedMap.of();
             }
@@ -235,18 +224,18 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
         @Override
         public NavigableMap<IntCut, IntRange> subMap(IntCut fromKey, boolean fromInclusive, IntCut toKey,
                         boolean toInclusive) {
-            return subMap(IntRange.range(fromKey.endpoint(), boundTypeForBoolean(fromInclusive), toKey.endpoint(),
-                            boundTypeForBoolean(toInclusive)));
+            return subMap(IntRange.range(fromKey.endpoint(), IntTreeRangeSet.boundTypeForBoolean(fromInclusive),
+                            toKey.endpoint(), IntTreeRangeSet.boundTypeForBoolean(toInclusive)));
         }
 
         @Override
         public NavigableMap<IntCut, IntRange> headMap(IntCut toKey, boolean inclusive) {
-            return subMap(IntRange.upTo(toKey.endpoint(), boundTypeForBoolean(inclusive)));
+            return subMap(IntRange.upTo(toKey.endpoint(), IntTreeRangeSet.boundTypeForBoolean(inclusive)));
         }
 
         @Override
         public NavigableMap<IntCut, IntRange> tailMap(IntCut fromKey, boolean inclusive) {
-            return subMap(IntRange.downTo(fromKey.endpoint(), boundTypeForBoolean(inclusive)));
+            return subMap(IntRange.downTo(fromKey.endpoint(), IntTreeRangeSet.boundTypeForBoolean(inclusive)));
         }
 
         @Override
@@ -257,6 +246,22 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
         @Override
         public boolean containsKey(@Nullable Object key) {
             return get(key) != null;
+        }
+
+        @Override
+        public abstract IntRange get(@Nullable Object key);
+    }
+
+    static final class RangesByUpperBound extends BaseRangeByBound {
+
+        RangesByUpperBound(NavigableMap<IntCut, IntRange> rangesByLowerBound) {
+            this.rangesByLowerBound = rangesByLowerBound;
+            this.upperBoundWindow = IntRange.all();
+        }
+
+        private RangesByUpperBound(NavigableMap<IntCut, IntRange> rangesByLowerBound, IntRange upperBoundWindow) {
+            this.rangesByLowerBound = rangesByLowerBound;
+            this.upperBoundWindow = upperBoundWindow;
         }
 
         @Override
@@ -351,7 +356,7 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
         }
     }
 
-    private static final class ComplementRangesByLowerBound extends TreeMap<IntCut, IntRange> {
+    private static final class ComplementRangesByLowerBound extends BaseRangeByBound {
         private final NavigableMap<IntCut, IntRange> positiveRangesByLowerBound;
         private final NavigableMap<IntCut, IntRange> positiveRangesByUpperBound;
 
@@ -380,28 +385,6 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
                 subWindow = subWindow.intersection(complementLowerBoundWindow);
                 return new ComplementRangesByLowerBound(positiveRangesByLowerBound, subWindow);
             }
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> subMap(IntCut fromKey, boolean fromInclusive, IntCut toKey,
-                        boolean toInclusive) {
-            return subMap(IntRange.range(fromKey.endpoint(), boundTypeForBoolean(fromInclusive), toKey.endpoint(),
-                            boundTypeForBoolean(toInclusive)));
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> headMap(IntCut toKey, boolean inclusive) {
-            return subMap(IntRange.upTo(toKey.endpoint(), boundTypeForBoolean(inclusive)));
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> tailMap(IntCut fromKey, boolean inclusive) {
-            return subMap(IntRange.downTo(fromKey.endpoint(), boundTypeForBoolean(inclusive)));
-        }
-
-        @Override
-        public Comparator<? super IntCut> comparator() {
-            return Ordering.natural();
         }
 
         Iterator<Entry<IntCut, IntRange>> entryIterator() {
@@ -531,11 +514,6 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
             }
             return null;
         }
-
-        @Override
-        public boolean containsKey(Object key) {
-            return get(key) != null;
-        }
     }
 
     private final class Complement extends IntTreeRangeSet {
@@ -564,7 +542,7 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
         }
     }
 
-    private static final class SubRangeSetRangesByLowerBound extends TreeMap<IntCut, IntRange> {
+    private static final class SubRangeSetRangesByLowerBound extends BaseRangeByBound {
         /**
          * lowerBoundWindow is the headMap/subMap/tailMap view; it only restricts the keys, and does not
          * affect the values.
@@ -595,33 +573,6 @@ public class IntTreeRangeSet extends AbstractIntRangeSet {
                 return new SubRangeSetRangesByLowerBound(lowerBoundWindow.intersection(window), restriction,
                                 rangesByLowerBound);
             }
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> subMap(IntCut fromKey, boolean fromInclusive, IntCut toKey,
-                        boolean toInclusive) {
-            return subMap(IntRange.range(fromKey.endpoint(), boundTypeForBoolean(fromInclusive), toKey.endpoint(),
-                            boundTypeForBoolean(toInclusive)));
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> headMap(IntCut toKey, boolean inclusive) {
-            return subMap(IntRange.upTo(toKey.endpoint(), boundTypeForBoolean(inclusive)));
-        }
-
-        @Override
-        public NavigableMap<IntCut, IntRange> tailMap(IntCut fromKey, boolean inclusive) {
-            return subMap(IntRange.downTo(fromKey.endpoint(), boundTypeForBoolean(inclusive)));
-        }
-
-        @Override
-        public Comparator<? super IntCut> comparator() {
-            return Ordering.<IntCut>natural();
-        }
-
-        @Override
-        public boolean containsKey(@Nullable Object key) {
-            return get(key) != null;
         }
 
         @Override

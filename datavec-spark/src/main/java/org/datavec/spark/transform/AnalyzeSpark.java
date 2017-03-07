@@ -598,12 +598,11 @@ public class AnalyzeSpark {
         switch (meta.getColumnType()) {
             case String:
                 ithColumn.cache();
-                long countUnique = ithColumn.distinct().count();
 
                 StringQuality initialString = new StringQuality();
                 StringQuality stringQuality = ithColumn.aggregate(initialString,
                                 new StringQualityAddFunction((StringMetaData) meta), new StringQualityMergeFunction());
-                return stringQuality.add(new StringQuality(0, 0, 0, 0, 0, 0, 0, 0, 0, countUnique));
+                return stringQuality;
             case Integer:
                 IntegerQuality initialInt = new IntegerQuality(0, 0, 0, 0, 0);
                 return ithColumn.aggregate(initialInt, new IntegerQualityAddFunction((IntegerMetaData) meta),

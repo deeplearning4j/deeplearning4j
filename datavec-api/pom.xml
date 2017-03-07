@@ -104,6 +104,12 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.clearspring.analytics</groupId>
+            <artifactId>stream</artifactId>
+            <version>${stream.analytics.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
