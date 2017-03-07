@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -76,7 +77,7 @@ public class LossMCXENT implements ILossFunction {
         }
 
         if (mask != null) {
-            scoreArr.muliColumnVector(mask);
+            LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr;
     }
@@ -108,6 +109,11 @@ public class LossMCXENT implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         if (activationFn instanceof ActivationSoftmax) {
+
+            if(mask != null && LossUtil.isPerOutputMasking(output, mask)){
+                throw new UnsupportedOperationException("Per output masking for MCXENT + softmax: not supported");
+            }
+
             //Weighted loss function
             if (weights != null) {
                 if (weights.length() != output.size(1)) {
@@ -121,9 +127,8 @@ public class LossMCXENT implements ILossFunction {
                 grad = output.subi(labels);
             }
         } else {
-            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-
             INDArray dLda = output.rdivi(labels).negi();
+
             grad = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation function with weights
 
             //Weighted loss function
@@ -138,7 +143,7 @@ public class LossMCXENT implements ILossFunction {
 
         //Loss function with masking
         if (mask != null) {
-            grad.muliColumnVector(mask);
+            LossUtil.applyMask(grad, mask);
         }
 
         return grad;
