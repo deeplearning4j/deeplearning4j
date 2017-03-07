@@ -1,4 +1,4 @@
-package org.deeplearning4j.datasets.fetchers;
+package org.deeplearning4j.base;
 
 import org.junit.Test;
 
