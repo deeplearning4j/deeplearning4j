@@ -1,10 +1,12 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -359,7 +361,7 @@ public class GradientCheckTestsMasking {
                 ILossFunction lf = lossFunctions[i];
                 Activation a = act[i];
 
-
+                Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .updater(Updater.NONE)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
@@ -388,6 +390,32 @@ public class GradientCheckTestsMasking {
                         PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
 
                 assertTrue(msg, gradOK);
+
+
+                //Check the equivalent compgraph:
+
+                Nd4j.getRandom().setSeed(12345);
+                ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder()
+                        .updater(Updater.NONE)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,2))
+                        .seed(12345)
+                        .graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build(), "in")
+                        .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                                .lossFunction(lf).activation(a).build(), "0")
+                        .setOutputs("1")
+                        .build();
+
+                ComputationGraph graph = new ComputationGraph(cg);
+                graph.init();
+
+                net.setLayerMaskArrays(null, labelMask);
+
+                gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{features}, new INDArray[]{labels});
+
+                assertTrue(msg + " (compgraph)", gradOK);
             }
         }
     }
