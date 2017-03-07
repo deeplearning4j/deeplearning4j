@@ -44,21 +44,21 @@ public class MnistFetcher {
 	protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
 	private File fileDir;
-	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
+	private static final String trainingFilesURL = "http://benchmark.deeplearn.online:8080/mnist/train-images-idx3-ubyte.gz";
 	private static final String trainingFilesMD5 = "f68b3c2dcbeaaa9fbdd348bbdeb94873";
 	private static final String trainingFilesFilename = "images-idx3-ubyte.gz";
 	public static final String trainingFilesFilename_unzipped = "images-idx3-ubyte";
-	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
+	private static final String trainingFileLabelsURL = "http://benchmark.deeplearn.online:8080/mnist/train-labels-idx1-ubyte.gz";
 	private static final String trainingFileLabelsMD5 = "d53e105ee54ea40749a09fcbcd1e9432";
 	private static final String trainingFileLabelsFilename = "labels-idx1-ubyte.gz";
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 
 	//Test data:
-	private static final String testFilesURL = "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz";
+	private static final String testFilesURL = "http://benchmark.deeplearn.online:8080/mnist/t10k-images-idx3-ubyte.gz";
 	private static final String testFilesMD5 = "9fb629c4189551a2d022fa330f9573f3";
 	private static final String testFilesFilename = "t10k-images-idx3-ubyte.gz";
 	public static final String testFilesFilename_unzipped = "t10k-images-idx3-ubyte";
-	private static final String testFileLabelsURL = "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz";
+	private static final String testFileLabelsURL = "http://benchmark.deeplearn.online:8080/mnist/t10k-labels-idx1-ubyte.gz";
 	private static final String testFileLabelsMD5 = "ec29112dd5afa0611ce80d1b7f02629c";
 	private static final String testFileLabelsFilename = "t10k-labels-idx1-ubyte.gz";
 	public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
