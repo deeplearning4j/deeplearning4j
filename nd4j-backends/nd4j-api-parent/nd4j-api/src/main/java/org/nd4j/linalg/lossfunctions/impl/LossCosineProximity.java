@@ -8,6 +8,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
+
 /**
  * Created by susaneraly on 9/9/16.
  */
@@ -30,8 +32,15 @@ public class LossCosineProximity implements ILossFunction {
         scoreArr.diviColumnVector(yhatmag);
         scoreArr.diviColumnVector(ymag);
 
-        if (mask != null)
+        if (mask != null) {
+            if(!mask.isColumnVector()){
+                //Per-output masking doesn't really make sense for cosine proximity
+                throw new UnsupportedOperationException("Expected column vector mask array for LossCosineProximity." +
+                        " Got mask array with shape " + Arrays.toString(mask.shape()) + "; per-output masking is not " +
+                        "supported for LossCosineProximity");
+            }
             scoreArr.muliColumnVector(mask);
+        }
         return scoreArr.muli(-1);
     }
 

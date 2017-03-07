@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 
 /**
  * Created by susaneraly on 8/15/16.
@@ -25,7 +26,7 @@ public class LossHinge implements ILossFunction {
         scoreArr.rsubi(1.0); //1 - y*yhat
 
         if (mask != null) {
-            scoreArr.muliColumnVector(mask);
+            LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr; // 1 - y*yhat
     }
@@ -66,7 +67,7 @@ public class LossHinge implements ILossFunction {
         INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with parameters
 
         if (mask != null) {
-            gradients.muliColumnVector(mask);
+            LossUtil.applyMask(gradients, mask);
         }
 
         return gradients;

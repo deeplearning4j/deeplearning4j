@@ -5,6 +5,7 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -24,8 +25,9 @@ public class LossPoisson implements ILossFunction {
         scoreArr.muli(labels);
         scoreArr = postOutput.sub(scoreArr);
 
-        if (mask != null)
-            scoreArr.muliColumnVector(mask);
+        if (mask != null) {
+            LossUtil.applyMask(scoreArr, mask);
+        }
         return scoreArr;
     }
 
@@ -57,7 +59,7 @@ public class LossPoisson implements ILossFunction {
         INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with params
 
         if (mask != null) {
-            gradients.muliColumnVector(mask);
+            LossUtil.applyMask(gradients, mask);
         }
 
         return gradients;

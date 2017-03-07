@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 
 /**
  * Created by susaneraly on 9/9/16.
@@ -18,14 +19,13 @@ public class LossSquaredHinge implements ILossFunction {
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray scoreArr = output.muli(labels); //y*yhat
         scoreArr.rsubi(1.0); //1 - y*yhat
 
         if (mask != null) {
-            scoreArr.muliColumnVector(mask);
+            LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr; // 1 - y*yhat
     }
@@ -65,7 +65,7 @@ public class LossSquaredHinge implements ILossFunction {
         INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with params
 
         if (mask != null) {
-            gradients.muliColumnVector(mask);
+            LossUtil.applyMask(gradients, mask);
         }
 
         return gradients;

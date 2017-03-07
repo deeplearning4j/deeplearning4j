@@ -7,6 +7,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -18,7 +19,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class LossKLD implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         // Clip output and labels to be between Nd4j.EPS_THREsHOLD and 1, i.e. a valid non-zero probability
@@ -29,7 +29,7 @@ public class LossKLD implements ILossFunction {
 
         INDArray scoreArr = logRatio.muli(labels);
         if (mask != null) {
-            scoreArr.muliColumnVector(mask);
+            LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr;
     }
@@ -63,7 +63,7 @@ public class LossKLD implements ILossFunction {
         INDArray grad = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with params
 
         if (mask != null) {
-            grad.muliColumnVector(mask);
+            LossUtil.applyMask(grad, mask);
         }
 
         return grad;
