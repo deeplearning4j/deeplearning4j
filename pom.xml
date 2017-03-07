@@ -427,10 +427,10 @@
                   </goals>
                   <phase>validate</phase>
                   <configuration>
-                    <property>nd4jBasedir</property>
+                    <property>datavecBasedir</property>
                     <project>
-                      <groupId>org.nd4j</groupId>
-                      <artifactId>nd4j</artifactId>
+                      <groupId>org.datavec</groupId>
+                      <artifactId>datavec-parent</artifactId>
                     </project>
                   </configuration>
                 </execution>
@@ -448,7 +448,7 @@
               <!--   </execution> -->
               <!-- </executions> -->
               <configuration>
-                <configFile>${nd4jBasedir}/contrib/formatter.xml</configFile>
+                <configFile>${datavecBasedir}/contrib/formatter.xml</configFile>
               </configuration>
             </plugin>
 
