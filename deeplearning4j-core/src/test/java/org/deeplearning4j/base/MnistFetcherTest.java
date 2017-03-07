@@ -10,8 +10,9 @@ public class MnistFetcherTest {
     @Test
     public void testIrisDataFetcher() throws Exception {
         MnistFetcher mnistFetcher = new MnistFetcher();
-        mnistFetcher.downloadAndUntar();
+        File mnistDir = mnistFetcher.downloadAndUntar();
 
+        assert(mnistDir.isDirectory());
     }
 
 }
