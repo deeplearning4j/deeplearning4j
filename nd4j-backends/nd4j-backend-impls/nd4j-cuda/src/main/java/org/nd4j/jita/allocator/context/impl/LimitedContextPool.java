@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -131,7 +132,8 @@ public class LimitedContextPool extends BasicContextPool {
 
             do {
                 try {
-                    System.gc();
+                    Nd4j.getMemoryManager().invokeGc();
+
                     context = pool.get(deviceId).poll(1, TimeUnit.SECONDS);
                     if (context != null) {
                         int col = RandomUtils.nextInt(0, collectors.size());
@@ -152,7 +154,8 @@ public class LimitedContextPool extends BasicContextPool {
                             currentPoolSize.addAndGet(16);
                         } else {
                             logger.warn("Can't allocate new context, sleeping...");
-                            System.gc();
+
+                            Nd4j.getMemoryManager().invokeGc();
                             try {
                                 Thread.sleep(500);
                             } catch (Exception e) {

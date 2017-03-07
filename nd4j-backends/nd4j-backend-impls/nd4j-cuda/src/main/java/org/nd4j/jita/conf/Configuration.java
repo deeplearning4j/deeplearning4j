@@ -2,6 +2,7 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -56,6 +57,9 @@ public class Configuration implements Serializable {
 
     private boolean forceSingleGPU = false;
 
+    @Getter
+    private long noGcWindowMs = 100;
+
     /**
      * Keep this value between 0.01 and 0.95 please
      */
@@ -83,15 +87,18 @@ public class Configuration implements Serializable {
     /**
      * Deallocation aggressiveness
      */
+    @Deprecated
     @Getter
     private Aggressiveness hostDeallocAggressiveness = Aggressiveness.REASONABLE;
 
+    @Deprecated
     @Getter
     private Aggressiveness gpuDeallocAggressiveness = Aggressiveness.REASONABLE;
 
     /**
      * Allocation aggressiveness
      */
+    @Deprecated
     @Getter
     private Aggressiveness gpuAllocAggressiveness = Aggressiveness.REASONABLE;
 
@@ -763,6 +770,21 @@ public class Configuration implements Serializable {
             throw new IllegalStateException("Command queue length can't be <= 0");
         this.commandQueueLength = length;
 
+        return this;
+    }
+
+    /**
+     * This option specifies minimal time gap between two subsequent System.gc() calls
+     * Set to 0 to disable this option.
+     *
+     * @param windowMs
+     * @return
+     */
+    public Configuration setNoGcWindowMs(long windowMs) {
+        if (windowMs < 0)
+            throw new IllegalStateException("No-GC window should have non-negative value");
+
+        this.noGcWindowMs = windowMs;
         return this;
     }
 
