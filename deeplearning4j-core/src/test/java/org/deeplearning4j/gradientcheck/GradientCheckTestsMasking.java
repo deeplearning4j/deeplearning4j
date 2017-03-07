@@ -4,10 +4,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -16,8 +13,11 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
@@ -169,6 +169,73 @@ public class GradientCheckTestsMasking {
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(gradOK);
+        }
+    }
+
+
+    @Test
+    public void testPerOutputMaskingMLP(){
+        int nIn = 6;
+        int layerSize = 4;
+
+        INDArray mask1 = Nd4j.create(new double[]{1,0,0,1,0});
+        INDArray mask3 = Nd4j.create(new double[][]{
+                {1,1,1,1,1},
+                {0,1,0,1,0},
+                {1,0,0,1,1}});
+        INDArray[] labelMasks = new INDArray[]{mask1, mask3};
+
+        ILossFunction[] lossFunctions = new ILossFunction[]{
+                new LossBinaryXENT(),
+//                new LossCosineProximity(),    //Doesn't support per-output masking, as it doesn't make sense for cosine proximity
+                new LossHinge(),
+                new LossKLD(),
+                new LossL1(),
+                new LossL2(),
+                new LossMAE(),
+                new LossMAPE(),
+                new LossMCXENT(),
+                new LossMSE(),
+                new LossMSLE(),
+                new LossNegativeLogLikelihood(),
+                new LossPoisson(),
+                new LossSquaredHinge()};
+
+        for( INDArray labelMask : labelMasks ){
+
+            int minibatch = labelMask.size(0);
+            int nOut = labelMask.size(1);
+
+            for(ILossFunction lf : lossFunctions ) {
+
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(Updater.NONE)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                        .seed(12345)
+                        .list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
+                        .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf).build())
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                net.setLayerMaskArrays(null, labelMask);
+                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
+                INDArray features = fl[0];
+                INDArray labels = fl[1];
+
+                String msg = "testPerOutputMaskingMLP(): maskShape = " + Arrays.toString(labelMask.shape())
+                        + ", loss function = " + lf;
+
+                System.out.println(msg);
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+
+                assertTrue(msg, gradOK);
+            }
         }
     }
 }
