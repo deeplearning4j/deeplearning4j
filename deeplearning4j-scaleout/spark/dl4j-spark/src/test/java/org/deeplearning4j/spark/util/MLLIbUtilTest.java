@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,10 +38,10 @@ public class MLLIbUtilTest extends BaseSparkTest {
 
     @Test
     public void testMlLibTest() {
-        DataSet dataSet = new IrisDataSetIterator(150,150).next();
+        DataSet dataSet = new IrisDataSetIterator(150, 150).next();
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
-        JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc,data);
+        JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc, data);
     }
 
 

@@ -36,27 +36,27 @@ public class ModelGuesser {
         //turns out to load just fine *accidentally*
         try {
             return MultiLayerConfiguration.fromJson(input);
-        }catch (Exception e) {
-            log.warn("Tried multi layer config from json",e);
+        } catch (Exception e) {
+            log.warn("Tried multi layer config from json", e);
             try {
                 return KerasModelImport.importKerasModelConfiguration(path);
-            }catch(Exception e1) {
-                log.warn("Tried keras model config",e);
+            } catch (Exception e1) {
+                log.warn("Tried keras model config", e);
                 try {
                     return KerasModelImport.importKerasSequentialConfiguration(path);
-                }catch (Exception e2) {
-                    log.warn("Tried keras sequence config",e);
+                } catch (Exception e2) {
+                    log.warn("Tried keras sequence config", e);
                     try {
                         return ComputationGraphConfiguration.fromJson(input);
-                    }catch(Exception e3) {
+                    } catch (Exception e3) {
                         log.warn("Tried computation graph from json");
                         try {
                             return MultiLayerConfiguration.fromYaml(input);
-                        }catch (Exception e4) {
+                        } catch (Exception e4) {
                             log.warn("Tried multi layer configuration from yaml");
                             try {
                                 return ComputationGraphConfiguration.fromYaml(input);
-                            }catch(Exception e5) {
+                            } catch (Exception e5) {
                                 throw e5;
                             }
                         }
@@ -77,7 +77,7 @@ public class ModelGuesser {
     public static Object loadConfigGuess(InputStream stream) throws Exception {
         File tmp = new File("model-" + UUID.randomUUID().toString());
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmp));
-        IOUtils.copy(stream,bufferedOutputStream);
+        IOUtils.copy(stream, bufferedOutputStream);
         bufferedOutputStream.flush();
         bufferedOutputStream.close();
         tmp.deleteOnExit();
@@ -95,21 +95,21 @@ public class ModelGuesser {
      */
     public static Model loadModelGuess(String path) throws Exception {
         try {
-            return ModelSerializer.restoreMultiLayerNetwork(new File(path),true);
-        }catch (Exception e) {
+            return ModelSerializer.restoreMultiLayerNetwork(new File(path), true);
+        } catch (Exception e) {
             log.warn("Tried multi layer network");
             try {
-                return ModelSerializer.restoreComputationGraph(new File(path),true);
-            }catch(Exception e1) {
+                return ModelSerializer.restoreComputationGraph(new File(path), true);
+            } catch (Exception e1) {
                 log.warn("Tried computation graph");
                 try {
                     return KerasModelImport.importKerasModelAndWeights(path);
-                }catch(Exception e2) {
+                } catch (Exception e2) {
                     log.warn("Tried multi layer network keras");
                     try {
                         return KerasModelImport.importKerasSequentialModelAndWeights(path);
 
-                    }catch(Exception e3) {
+                    } catch (Exception e3) {
                         throw e3;
                     }
                 }
@@ -127,18 +127,18 @@ public class ModelGuesser {
      */
     public static Model loadModelGuess(InputStream stream) throws Exception {
         try {
-            return ModelSerializer.restoreMultiLayerNetwork(stream,true);
-        }catch (Exception e) {
+            return ModelSerializer.restoreMultiLayerNetwork(stream, true);
+        } catch (Exception e) {
             try {
-                return ModelSerializer.restoreComputationGraph(stream,true);
-            }catch(Exception e1) {
+                return ModelSerializer.restoreComputationGraph(stream, true);
+            } catch (Exception e1) {
                 try {
                     return KerasModelImport.importKerasModelAndWeights(stream);
-                }catch(Exception e2) {
+                } catch (Exception e2) {
                     try {
                         return KerasModelImport.importKerasSequentialModelAndWeights(stream);
 
-                    }catch(Exception e3) {
+                    } catch (Exception e3) {
                         throw e3;
                     }
                 }

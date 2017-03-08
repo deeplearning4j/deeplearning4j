@@ -29,8 +29,7 @@ import java.util.*;
  */
 public class StaticPageUtil {
 
-    private StaticPageUtil() {
-    }
+    private StaticPageUtil() {}
 
     /**
      * Given the specified components, render them to a stand-alone HTML page (which is returned as a String)

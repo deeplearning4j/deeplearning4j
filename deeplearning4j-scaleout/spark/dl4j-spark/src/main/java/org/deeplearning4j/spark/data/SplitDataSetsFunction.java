@@ -21,12 +21,13 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class SplitDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>,DataSet> {
+public class SplitDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, DataSet> {
 
     public SplitDataSetsFunction() {
         super(new SplitDataSetsFunctionAdapter());
     }
 }
+
 
 /**
  * Take an existing DataSet object, and split it into multiple DataSet objects with one example in each
@@ -41,11 +42,11 @@ public class SplitDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<D
  *
  * @author Alex Black
  */
-class SplitDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>,DataSet> {
+class SplitDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, DataSet> {
     @Override
     public Iterable<DataSet> call(Iterator<DataSet> dataSetIterator) throws Exception {
         List<DataSet> out = new ArrayList<>();
-        while(dataSetIterator.hasNext()){
+        while (dataSetIterator.hasNext()) {
             out.addAll(dataSetIterator.next().asList());
         }
         return out;

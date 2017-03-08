@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -122,10 +122,7 @@ public class WordIdMapCompiler implements Compiler {
         }
 
         private int getNewLength(int index) {
-            return (int) Math.max(
-                index + 1,
-                array.length * ARRAY_GROWTH_RATE
-            );
+            return (int) Math.max(index + 1, array.length * ARRAY_GROWTH_RATE);
         }
     }
 }

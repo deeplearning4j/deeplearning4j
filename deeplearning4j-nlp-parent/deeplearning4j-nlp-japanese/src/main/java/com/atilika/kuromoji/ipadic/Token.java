@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -26,11 +26,7 @@ import com.atilika.kuromoji.viterbi.ViterbiNode;
  */
 public class Token extends TokenBase {
 
-    public Token(int wordId,
-                 String surface,
-                 ViterbiNode.Type type,
-                 int position,
-                 Dictionary dictionary) {
+    public Token(int wordId, String surface, ViterbiNode.Type type, int position, Dictionary dictionary) {
         super(wordId, surface, type, position, dictionary);
     }
 

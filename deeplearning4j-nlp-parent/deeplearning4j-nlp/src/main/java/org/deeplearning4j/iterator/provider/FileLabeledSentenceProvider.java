@@ -30,7 +30,7 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
     /**
      * @param filesByLabel Key: label. Value: list of files for that label
      */
-    public FileLabeledSentenceProvider(Map<String,List<File>> filesByLabel){
+    public FileLabeledSentenceProvider(Map<String, List<File>> filesByLabel) {
         this(filesByLabel, new Random());
     }
 
@@ -39,19 +39,19 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
      * @param filesByLabel Key: label. Value: list of files for that label
      * @param rng          Random number generator. May be null.
      */
-    public FileLabeledSentenceProvider(@NonNull  Map<String,List<File>> filesByLabel, Random rng){
+    public FileLabeledSentenceProvider(@NonNull Map<String, List<File>> filesByLabel, Random rng) {
         int totalCount = 0;
-        for(List<File> l : filesByLabel.values()){
+        for (List<File> l : filesByLabel.values()) {
             totalCount += l.size();
         }
         this.totalCount = totalCount;
 
         this.rng = rng;
-        if(rng == null){
+        if (rng == null) {
             order = null;
         } else {
             order = new int[totalCount];
-            for( int i=0; i<totalCount; i++ ){
+            for (int i = 0; i < totalCount; i++) {
                 order[i] = i;
             }
             RandomUtils.shuffleInPlace(order, rng);
@@ -60,17 +60,17 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
         allLabels = new ArrayList<>(filesByLabel.keySet());
         Collections.sort(allLabels);
 
-        Map<String,Integer> labelsToIdx = new HashMap<>();
-        for( int i=0; i<allLabels.size(); i++ ){
+        Map<String, Integer> labelsToIdx = new HashMap<>();
+        for (int i = 0; i < allLabels.size(); i++) {
             labelsToIdx.put(allLabels.get(i), i);
         }
 
         filePaths = new CompactHeapStringList();
         fileLabelIndexes = new int[totalCount];
         int position = 0;
-        for(Map.Entry<String,List<File>> entry : filesByLabel.entrySet()){
+        for (Map.Entry<String, List<File>> entry : filesByLabel.entrySet()) {
             int labelIdx = labelsToIdx.get(entry.getKey());
-            for(File f : entry.getValue()){
+            for (File f : entry.getValue()) {
                 filePaths.add(f.getPath());
                 fileLabelIndexes[position] = labelIdx;
                 position++;
@@ -86,7 +86,7 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
     @Override
     public Pair<String, String> nextSentence() {
         int idx;
-        if(rng == null){
+        if (rng == null) {
             idx = cursor++;
         } else {
             idx = order[cursor++];
@@ -95,9 +95,9 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
         String label = allLabels.get(fileLabelIndexes[idx]);
 
         String sentence;
-        try{
+        try {
             sentence = FileUtils.readFileToString(f);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
@@ -107,7 +107,7 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
     @Override
     public void reset() {
         cursor = 0;
-        if(rng != null){
+        if (rng != null) {
             RandomUtils.shuffleInPlace(order, rng);
         }
     }

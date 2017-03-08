@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -29,8 +29,9 @@ import java.nio.ShortBuffer;
 
 public class ConnectionCosts {
 
-//    public static final String CONNECTION_COSTS_FILENAME = "connectionCosts.bin";
-    public static final String CONNECTION_COSTS_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "connectionCosts.bin";
+    //    public static final String CONNECTION_COSTS_FILENAME = "connectionCosts.bin";
+    public static final String CONNECTION_COSTS_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "connectionCosts.bin";
 
     private int size;
 
@@ -50,9 +51,7 @@ public class ConnectionCosts {
     }
 
     private static ConnectionCosts read(InputStream input) throws IOException {
-        DataInputStream dataInput = new DataInputStream(
-            new BufferedInputStream(input)
-        );
+        DataInputStream dataInput = new DataInputStream(new BufferedInputStream(input));
 
         int size = dataInput.readInt();
 

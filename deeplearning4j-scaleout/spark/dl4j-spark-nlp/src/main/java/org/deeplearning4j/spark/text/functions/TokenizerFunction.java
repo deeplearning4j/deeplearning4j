@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 @SuppressWarnings("unchecked")
-public class TokenizerFunction implements Function<String,List<String>> {
-    private  String tokenizerFactoryClazz;
+public class TokenizerFunction implements Function<String, List<String>> {
+    private String tokenizerFactoryClazz;
     private String tokenizerPreprocessorClazz;
     private transient TokenizerFactory tokenizerFactory;
     private int nGrams = 1;
@@ -45,9 +45,9 @@ public class TokenizerFunction implements Function<String,List<String>> {
 
     @Override
     public List<String> call(String v1) throws Exception {
-        if(tokenizerFactory == null)
+        if (tokenizerFactory == null)
             tokenizerFactory = getTokenizerFactory();
-        if(v1.isEmpty())
+        if (v1.isEmpty())
             return Arrays.asList("");
         return tokenizerFactory.create(v1).getTokens();
     }
@@ -57,14 +57,17 @@ public class TokenizerFunction implements Function<String,List<String>> {
             TokenPreProcess tokenPreProcessInst = null;
             // token preprocess CAN be undefined
             if (tokenizerPreprocessorClazz != null && !tokenizerPreprocessorClazz.isEmpty()) {
-                Class<? extends TokenPreProcess> clazz = (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
+                Class<? extends TokenPreProcess> clazz =
+                                (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
                 tokenPreProcessInst = clazz.newInstance();
             }
 
-            Class<? extends TokenizerFactory> clazz2 = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
+            Class<? extends TokenizerFactory> clazz2 =
+                            (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
             tokenizerFactory = clazz2.newInstance();
-            if (tokenPreProcessInst != null) tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
-            if(nGrams > 1) {
+            if (tokenPreProcessInst != null)
+                tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
+            if (nGrams > 1) {
                 tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
             }
         } catch (Exception e) {

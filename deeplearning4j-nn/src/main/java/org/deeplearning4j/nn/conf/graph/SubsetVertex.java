@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -59,7 +59,8 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof SubsetVertex)) return false;
+        if (!(o instanceof SubsetVertex))
+            return false;
         SubsetVertex s = (SubsetVertex) o;
         return s.from == from && s.to == to;
     }
@@ -76,14 +77,15 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, from, to);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
-            throw new InvalidInputTypeException("SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
+            throw new InvalidInputTypeException(
+                            "SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }
 
         switch (vertexInputs[0].getType()) {
@@ -95,13 +97,15 @@ public class SubsetVertex extends GraphVertex {
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
                 int depth = conv.getDepth();
                 if (to >= depth) {
-                    throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to + "] inclusive from CNN activations with "
-                            + " [depth,width,height] = [" + depth + "," + conv.getWidth() + "," + conv.getHeight() + "]");
+                    throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to
+                                    + "] inclusive from CNN activations with " + " [depth,width,height] = [" + depth
+                                    + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
                 return InputType.convolutional(from - to + 1, conv.getWidth(), conv.getHeight());
             case CNNFlat:
                 //TODO work out how to do this - could be difficult...
-                throw new UnsupportedOperationException("Subsetting data in flattened convolutional format not yet supported");
+                throw new UnsupportedOperationException(
+                                "Subsetting data in flattened convolutional format not yet supported");
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }

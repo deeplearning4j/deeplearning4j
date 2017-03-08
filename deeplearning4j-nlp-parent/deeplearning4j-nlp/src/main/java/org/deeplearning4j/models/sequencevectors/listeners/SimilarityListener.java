@@ -46,6 +46,6 @@ public class SimilarityListener<T extends SequenceElement> implements VectorsLis
 
         double similarity = sequenceVectors.similarity(element1, element2);
 
-        logger.info("Invocation: {}, similarity: {}", cnt, similarity );
+        logger.info("Invocation: {}, similarity: {}", cnt, similarity);
     }
 }

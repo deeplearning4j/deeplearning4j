@@ -35,25 +35,26 @@ public class TestReconstructionDistributions {
         Nd4j.getRandom().setSeed(12345);
 
         int inputSize = 4;
-        int[] mbs = new int[]{1, 2, 5};
+        int[] mbs = new int[] {1, 2, 5};
 
-        for (boolean average : new boolean[]{true, false}) {
+        for (boolean average : new boolean[] {true, false}) {
             for (int minibatch : mbs) {
 
                 INDArray x = Nd4j.rand(minibatch, inputSize);
                 INDArray mean = Nd4j.randn(minibatch, inputSize);
                 INDArray logStdevSquared = Nd4j.rand(minibatch, inputSize).subi(0.5);
 
-                INDArray distributionParams = Nd4j.createUninitialized(new int[]{minibatch, 2 * inputSize});
+                INDArray distributionParams = Nd4j.createUninitialized(new int[] {minibatch, 2 * inputSize});
                 distributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(0, inputSize)).assign(mean);
-                distributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSize, 2 * inputSize)).assign(logStdevSquared);
+                distributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSize, 2 * inputSize))
+                                .assign(logStdevSquared);
 
                 ReconstructionDistribution dist = new GaussianReconstructionDistribution("identity");
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -76,13 +77,13 @@ public class TestReconstructionDistributions {
 
                 double expNegLogProb;
                 if (average) {
-                    expNegLogProb = - logProbSum / minibatch;
+                    expNegLogProb = -logProbSum / minibatch;
                 } else {
-                    expNegLogProb = - logProbSum;
+                    expNegLogProb = -logProbSum;
                 }
 
 
-//                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
+                //                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
 
 
@@ -100,11 +101,11 @@ public class TestReconstructionDistributions {
         Nd4j.getRandom().setSeed(12345);
 
         int inputSize = 4;
-        int[] mbs = new int[]{1, 2, 5};
+        int[] mbs = new int[] {1, 2, 5};
 
         Random r = new Random(12345);
 
-        for (boolean average : new boolean[]{true, false}) {
+        for (boolean average : new boolean[] {true, false}) {
             for (int minibatch : mbs) {
 
                 INDArray x = Nd4j.zeros(minibatch, inputSize);
@@ -114,7 +115,7 @@ public class TestReconstructionDistributions {
                     }
                 }
 
-                INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);  //i.e., pre-sigmoid prob
+                INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1); //i.e., pre-sigmoid prob
                 INDArray prob = Transforms.sigmoid(distributionParams, true);
 
                 ReconstructionDistribution dist = new BernoulliReconstructionDistribution("sigmoid");
@@ -122,7 +123,7 @@ public class TestReconstructionDistributions {
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -132,7 +133,7 @@ public class TestReconstructionDistributions {
                     for (int j = 0; j < inputSize; j++) {
                         double p = prob.getDouble(i, j);
 
-                        BinomialDistribution binomial = new BinomialDistribution(1, p);      //Bernoulli is a special case of binomial
+                        BinomialDistribution binomial = new BinomialDistribution(1, p); //Bernoulli is a special case of binomial
 
                         double xVal = x.getDouble(i, j);
                         double thisLogProb = binomial.logProbability((int) xVal);
@@ -144,14 +145,14 @@ public class TestReconstructionDistributions {
 
                 double expNegLogProb;
                 if (average) {
-                    expNegLogProb = - logProbSum / minibatch;
+                    expNegLogProb = -logProbSum / minibatch;
                 } else {
-                    expNegLogProb = - logProbSum;
+                    expNegLogProb = -logProbSum;
                 }
 
-//                System.out.println(x);
+                //                System.out.println(x);
 
-//                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
+                //                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
 
                 //Also: check random sampling...
@@ -160,12 +161,12 @@ public class TestReconstructionDistributions {
                 INDArray sampleMean = dist.generateAtMean(arr);
                 INDArray sampleRandom = dist.generateRandom(arr);
 
-                for( int i=0; i<minibatch; i++ ){
-                    for( int j=0; j<inputSize; j++ ){
-                        double d1 = sampleMean.getDouble(i,j);
-                        double d2 = sampleRandom.getDouble(i,j);
-                        assertTrue( d1 >= 0.0 || d1 <= 1.0 );       //Mean value - probability... could do 0 or 1 (based on most likely) but that isn't very useful...
-                        assertTrue( d2 == 0.0 || d2 == 1.0 );
+                for (int i = 0; i < minibatch; i++) {
+                    for (int j = 0; j < inputSize; j++) {
+                        double d1 = sampleMean.getDouble(i, j);
+                        double d2 = sampleRandom.getDouble(i, j);
+                        assertTrue(d1 >= 0.0 || d1 <= 1.0); //Mean value - probability... could do 0 or 1 (based on most likely) but that isn't very useful...
+                        assertTrue(d2 == 0.0 || d2 == 1.0);
                     }
                 }
             }
@@ -177,11 +178,11 @@ public class TestReconstructionDistributions {
         Nd4j.getRandom().setSeed(12345);
 
         int inputSize = 4;
-        int[] mbs = new int[]{1, 2, 5};
+        int[] mbs = new int[] {1, 2, 5};
 
         Random r = new Random(12345);
 
-        for (boolean average : new boolean[]{true, false}) {
+        for (boolean average : new boolean[] {true, false}) {
             for (int minibatch : mbs) {
 
                 INDArray x = Nd4j.zeros(minibatch, inputSize);
@@ -191,7 +192,7 @@ public class TestReconstructionDistributions {
                     }
                 }
 
-                INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);  //i.e., pre-afn gamma
+                INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1); //i.e., pre-afn gamma
                 INDArray gammas = Transforms.tanh(distributionParams, true);
 
                 ReconstructionDistribution dist = new ExponentialReconstructionDistribution("tanh");
@@ -199,7 +200,7 @@ public class TestReconstructionDistributions {
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -211,7 +212,7 @@ public class TestReconstructionDistributions {
                         double lambda = Math.exp(gamma);
                         double mean = 1.0 / lambda;
 
-                        ExponentialDistribution exp = new ExponentialDistribution(mean);    //Commons math uses mean = 1/lambda
+                        ExponentialDistribution exp = new ExponentialDistribution(mean); //Commons math uses mean = 1/lambda
 
                         double xVal = x.getDouble(i, j);
                         double thisLogProb = exp.logDensity(xVal);
@@ -223,14 +224,14 @@ public class TestReconstructionDistributions {
 
                 double expNegLogProb;
                 if (average) {
-                    expNegLogProb = - logProbSum / minibatch;
+                    expNegLogProb = -logProbSum / minibatch;
                 } else {
-                    expNegLogProb = - logProbSum;
+                    expNegLogProb = -logProbSum;
                 }
 
-//                System.out.println(x);
+                //                System.out.println(x);
 
-//                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
+                //                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
 
                 //Also: check random sampling...
@@ -239,12 +240,12 @@ public class TestReconstructionDistributions {
                 INDArray sampleMean = dist.generateAtMean(arr);
                 INDArray sampleRandom = dist.generateRandom(arr);
 
-                for( int i=0; i<minibatch; i++ ){
-                    for( int j=0; j<inputSize; j++ ){
-                        double d1 = sampleMean.getDouble(i,j);
-                        double d2 = sampleRandom.getDouble(i,j);
-                        assertTrue( d1 >= 0.0 );
-                        assertTrue( d2 >= 0.0 );
+                for (int i = 0; i < minibatch; i++) {
+                    for (int j = 0; j < inputSize; j++) {
+                        double d1 = sampleMean.getDouble(i, j);
+                        double d2 = sampleRandom.getDouble(i, j);
+                        assertTrue(d1 >= 0.0);
+                        assertTrue(d2 >= 0.0);
                     }
                 }
             }
@@ -260,17 +261,16 @@ public class TestReconstructionDistributions {
         Nd4j.getRandom().setSeed(12345);
 
         int inputSize = 4;
-        int[] mbs = new int[]{1, 3};
+        int[] mbs = new int[] {1, 3};
 
         Random r = new Random(12345);
 
-        ReconstructionDistribution[] distributions = new ReconstructionDistribution[]{
-                new GaussianReconstructionDistribution("identity"),
-                new GaussianReconstructionDistribution("tanh"),
-                new BernoulliReconstructionDistribution("sigmoid"),
-                new ExponentialReconstructionDistribution("identity"),
-                new ExponentialReconstructionDistribution("tanh")
-        };
+        ReconstructionDistribution[] distributions =
+                        new ReconstructionDistribution[] {new GaussianReconstructionDistribution("identity"),
+                                        new GaussianReconstructionDistribution("tanh"),
+                                        new BernoulliReconstructionDistribution("sigmoid"),
+                                        new ExponentialReconstructionDistribution("identity"),
+                                        new ExponentialReconstructionDistribution("tanh")};
 
 
         List<String> passes = new ArrayList<>();
@@ -284,7 +284,7 @@ public class TestReconstructionDistributions {
                 if (rd instanceof GaussianReconstructionDistribution) {
                     distributionParams = Nd4j.rand(minibatch, inputSize * 2).muli(2).subi(1);
                     x = Nd4j.rand(minibatch, inputSize);
-                } else if(rd instanceof BernoulliReconstructionDistribution ){
+                } else if (rd instanceof BernoulliReconstructionDistribution) {
                     distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);
                     x = Nd4j.zeros(minibatch, inputSize);
                     for (int i = 0; i < minibatch; i++) {
@@ -292,7 +292,7 @@ public class TestReconstructionDistributions {
                             x.putScalar(i, j, r.nextInt(2));
                         }
                     }
-                } else if(rd instanceof ExponentialReconstructionDistribution){
+                } else if (rd instanceof ExponentialReconstructionDistribution) {
                     distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);
                     x = Nd4j.rand(minibatch, inputSize);
                 } else {
@@ -317,27 +317,31 @@ public class TestReconstructionDistributions {
                         double numericalGrad = (scorePlus - scoreMinus) / (2.0 * eps);
                         double backpropGrad = gradient.getDouble(j, i);
 
-                        double relError = Math.abs(numericalGrad - backpropGrad) / (Math.abs(numericalGrad) + Math.abs(backpropGrad));
+                        double relError = Math.abs(numericalGrad - backpropGrad)
+                                        / (Math.abs(numericalGrad) + Math.abs(backpropGrad));
                         double absError = Math.abs(backpropGrad - numericalGrad);
 
                         if (relError > maxRelError || Double.isNaN(relError)) {
                             if (absError < minAbsoluteError) {
-                                log.info("Input (" + j + "," + i + ") passed: grad= " + backpropGrad + ", numericalGrad= " + numericalGrad
-                                        + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                                log.info("Input (" + j + "," + i + ") passed: grad= " + backpropGrad
+                                                + ", numericalGrad= " + numericalGrad + ", relError= " + relError
+                                                + "; absolute error = " + absError + " < minAbsoluteError = "
+                                                + minAbsoluteError);
                             } else {
-                                log.info("Input (" + j + "," + i + ") FAILED: grad= " + backpropGrad + ", numericalGrad= " + numericalGrad
-                                        + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                                log.info("Input (" + j + "," + i + ") FAILED: grad= " + backpropGrad
+                                                + ", numericalGrad= " + numericalGrad + ", relError= " + relError
+                                                + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                                 totalFailureCount++;
                             }
                         } else {
-                            log.info("Input (" + j + "," + i + ") passed: grad= " + backpropGrad + ", numericalGrad= " + numericalGrad
-                                    + ", relError= " + relError);
+                            log.info("Input (" + j + "," + i + ") passed: grad= " + backpropGrad + ", numericalGrad= "
+                                            + numericalGrad + ", relError= " + relError);
                         }
                     }
                 }
 
 
-                if(totalFailureCount > 0){
+                if (totalFailureCount > 0) {
                     failures.add(testName);
                 } else {
                     passes.add(testName);
@@ -347,12 +351,12 @@ public class TestReconstructionDistributions {
         }
 
         System.out.println("\n\n\n +++++ Test Passes +++++");
-        for(String s : passes){
+        for (String s : passes) {
             System.out.println(s);
         }
 
         System.out.println("\n\n\n +++++ Test Faliures +++++");
-        for(String s : failures){
+        for (String s : failures) {
             System.out.println(s);
         }
 

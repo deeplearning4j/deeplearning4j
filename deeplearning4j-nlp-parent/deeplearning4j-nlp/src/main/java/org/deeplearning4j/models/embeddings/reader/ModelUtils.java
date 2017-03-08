@@ -39,7 +39,7 @@ public interface ModelUtils<T extends SequenceElement> {
      * @param questions the questions to ask
      * @return the accuracy based on these questions
      */
-    Map<String,Double> accuracy(List<String> questions);
+    Map<String, Double> accuracy(List<String> questions);
 
 
     /**
@@ -49,7 +49,7 @@ public interface ModelUtils<T extends SequenceElement> {
      * @param accuracy the accuracy: 0 to 1
      * @return the list of words that are similar in the vocab
      */
-    List<String> similarWordsInVocabTo(String word,double accuracy);
+    List<String> similarWordsInVocabTo(String word, double accuracy);
 
 
     /**
@@ -80,11 +80,11 @@ public interface ModelUtils<T extends SequenceElement> {
     Collection<String> wordsNearest(INDArray words, int top);
 
 
-    Collection<String> wordsNearestSum(String word,int n);
+    Collection<String> wordsNearestSum(String word, int n);
 
 
-    Collection<String> wordsNearestSum(INDArray words,int top);
+    Collection<String> wordsNearestSum(INDArray words, int top);
 
-    Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top);
+    Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top);
 }
 

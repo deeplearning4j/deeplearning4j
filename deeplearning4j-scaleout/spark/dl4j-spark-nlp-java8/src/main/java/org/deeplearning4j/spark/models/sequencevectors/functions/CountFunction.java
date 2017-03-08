@@ -23,7 +23,7 @@ import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>>{
+public class CountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>> {
     protected Accumulator<Counter<Long>> accumulator;
     protected boolean fetchLabels;
     protected Broadcast<VoidConfiguration> voidConfigurationBroadcast;
@@ -32,7 +32,9 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
     protected transient SparkElementsLearningAlgorithm ela;
     protected transient TrainingDriver<? extends TrainingMessage> driver;
 
-    public CountFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> voidConfigurationBroadcast, @NonNull  Accumulator<Counter<Long>>  accumulator, boolean fetchLabels) {
+    public CountFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                    @NonNull Broadcast<VoidConfiguration> voidConfigurationBroadcast,
+                    @NonNull Accumulator<Counter<Long>> accumulator, boolean fetchLabels) {
         this.accumulator = accumulator;
         this.fetchLabels = fetchLabels;
         this.voidConfigurationBroadcast = voidConfigurationBroadcast;
@@ -48,7 +50,9 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
 
         if (ela == null) {
             try {
-                ela = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfigurationBroadcast.getValue().getElementsLearningAlgorithm()).newInstance();
+                ela = (SparkElementsLearningAlgorithm) Class
+                                .forName(vectorsConfigurationBroadcast.getValue().getElementsLearningAlgorithm())
+                                .newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -58,7 +62,7 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
         //System.out.println("Initializing VoidParameterServer in CountFunction");
         VoidParameterServer.getInstance().init(voidConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
 
-        for (T element: sequence.getElements()) {
+        for (T element : sequence.getElements()) {
             if (element == null)
                 continue;
 
@@ -69,7 +73,7 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
 
         // FIXME: we're missing label information here due to shallow vocab mechanics
         if (sequence.getSequenceLabels() != null)
-            for (T label: sequence.getSequenceLabels()) {
+            for (T label : sequence.getSequenceLabels()) {
                 localCounter.incrementCount(label.getStorageId(), 1.0);
             }
 

@@ -23,15 +23,15 @@ import java.util.List;
  */
 public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
 
-    public static final int BUFFER_SIZE = 4194304;  //4 MB
+    public static final int BUFFER_SIZE = 4194304; //4 MB
     private FileSystem fileSystem;
 
-    public PathSparkDataSetIterator(Iterator<String> iter){
+    public PathSparkDataSetIterator(Iterator<String> iter) {
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PathSparkDataSetIterator(Collection<String> dataSetStreams){
+    public PathSparkDataSetIterator(Collection<String> dataSetStreams) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -44,34 +44,35 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
     @Override
     public DataSet next() {
         DataSet ds;
-        if(preloadedDataSet != null){
+        if (preloadedDataSet != null) {
             ds = preloadedDataSet;
             preloadedDataSet = null;
         } else {
             ds = load(iter.next());
         }
 
-        totalOutcomes = ds.getLabels() == null ? 0 : ds.getLabels().size(1);        //May be null for layerwise pretraining
+        totalOutcomes = ds.getLabels() == null ? 0 : ds.getLabels().size(1); //May be null for layerwise pretraining
         inputColumns = ds.getFeatureMatrix().size(1);
         batch = ds.numExamples();
 
-        if(preprocessor != null) preprocessor.preProcess(ds);
+        if (preprocessor != null)
+            preprocessor.preProcess(ds);
         return ds;
     }
 
-    protected synchronized DataSet load(String path){
-        if(fileSystem == null){
-            try{
+    protected synchronized DataSet load(String path) {
+        if (fileSystem == null) {
+            try {
                 fileSystem = FileSystem.get(new URI(path), new Configuration());
-            }catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         DataSet ds = new DataSet();
-        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
             ds.load(inputStream);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 

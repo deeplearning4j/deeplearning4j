@@ -13,7 +13,7 @@ public class MnistFetcherTest {
         MnistFetcher mnistFetcher = new MnistFetcher();
         File mnistDir = mnistFetcher.downloadAndUntar();
 
-        assert(mnistDir.isDirectory());
+        assert (mnistDir.isDirectory());
     }
 
 }

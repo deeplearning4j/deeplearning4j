@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -58,9 +58,11 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof DuplicateToTimeSeriesVertex)) return false;
+        if (!(o instanceof DuplicateToTimeSeriesVertex))
+            return false;
         DuplicateToTimeSeriesVertex d = (DuplicateToTimeSeriesVertex) o;
-        if (inputName == null && d.inputName != null || inputName != null && d.inputName == null) return false;
+        if (inputName == null && d.inputName != null || inputName != null && d.inputName == null)
+            return false;
         return inputName == null || inputName.equals(d.inputName);
     }
 
@@ -76,7 +78,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph, name, idx, inputName);
     }
 
@@ -87,10 +89,12 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
         if (vertexInputs[0].getType() == InputType.Type.FF) {
             return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize());
-        } else if(vertexInputs[0].getType() != InputType.Type.CNNFlat){
+        } else if (vertexInputs[0].getType() != InputType.Type.CNNFlat) {
             return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize());
         } else {
-            throw new InvalidInputTypeException("Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: " + vertexInputs[0] + ")");
+            throw new InvalidInputTypeException(
+                            "Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: "
+                                            + vertexInputs[0] + ")");
         }
 
 

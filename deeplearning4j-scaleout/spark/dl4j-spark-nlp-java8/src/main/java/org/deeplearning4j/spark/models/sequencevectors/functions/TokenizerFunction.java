@@ -26,9 +26,9 @@ public class TokenizerFunction extends BaseTokenizerFunction implements Function
         if (tokenizerFactory == null)
             instantiateTokenizerFactory();
 
-        List<String> tokens =  tokenizerFactory.create(s).getTokens();
+        List<String> tokens = tokenizerFactory.create(s).getTokens();
         Sequence<VocabWord> seq = new Sequence<>();
-        for (String token: tokens) {
+        for (String token : tokens) {
             if (token == null || token.isEmpty())
                 continue;
 

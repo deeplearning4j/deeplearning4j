@@ -13,7 +13,8 @@ import java.util.Map;
 public class EmptyParamInitializer implements ParamInitializer {
 
     private static final EmptyParamInitializer INSTANCE = new EmptyParamInitializer();
-    public static EmptyParamInitializer getInstance(){
+
+    public static EmptyParamInitializer getInstance() {
         return INSTANCE;
     }
 
@@ -23,7 +24,7 @@ public class EmptyParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         return Collections.EMPTY_MAP;
     }
 

@@ -66,9 +66,11 @@ public class ROC extends BaseEvaluation<ROC> {
             //Assume time series input -> reshape to 2d
             evalTimeSeries(labels, predictions);
         }
-        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1) || labels.size(1) > 2) {
-            throw new IllegalArgumentException("Invalid input data shape: labels shape = " + Arrays.toString(labels.shape()) +
-                    ", predictions shape = " + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
+        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)
+                        || labels.size(1) > 2) {
+            throw new IllegalArgumentException("Invalid input data shape: labels shape = "
+                            + Arrays.toString(labels.shape()) + ", predictions shape = "
+                            + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
         double step = 1.0 / thresholdSteps;
@@ -111,8 +113,8 @@ public class ROC extends BaseEvaluation<ROC> {
 
             //True positives: occur when positive predicted class and actual positive actual class...
             //False positive occurs when positive predicted class, but negative actual class
-            INDArray isTruePositive = predictedClass1.mul(positiveActualClassColumn);       //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
-            INDArray isFalsePositive = predictedClass1.mul(negativeActualClassColumn);      //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+            INDArray isTruePositive = predictedClass1.mul(positiveActualClassColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
+            INDArray isFalsePositive = predictedClass1.mul(negativeActualClassColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
 
             //Counts for this batch:
             int truePositiveCount = isTruePositive.sumNumber().intValue();
@@ -145,7 +147,7 @@ public class ROC extends BaseEvaluation<ROC> {
         return out;
     }
 
-    public List<PrecisionRecallPoint> getPrecisionRecallCurve(){
+    public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
         //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
         //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
 
@@ -160,15 +162,15 @@ public class ROC extends BaseEvaluation<ROC> {
             //precision == 1 when FP = 0 -> no incorrect positive predictions
             //recall == 1 when no dataset positives are present (got all 0 of 0 positives)
             double precision;
-            if(tpCount == 0 && fpCount == 0){
+            if (tpCount == 0 && fpCount == 0) {
                 //At this threshold: no predicted positive cases
                 precision = 1.0;
             } else {
-                precision = tpCount / (double)(tpCount + fpCount);
+                precision = tpCount / (double) (tpCount + fpCount);
             }
 
             double recall;
-            if(countActualPositive == 0){
+            if (countActualPositive == 0) {
                 recall = 1.0;
             } else {
                 recall = tpCount / ((double) countActualPositive);
@@ -190,7 +192,7 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return ROC curve as double[][]
      */
     public double[][] getResultsAsArray() {
-        double[][] out = new double[2][thresholdSteps+1];
+        double[][] out = new double[2][thresholdSteps + 1];
         int i = 0;
         for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
             CountsForThreshold c = entry.getValue();
@@ -222,7 +224,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
             //y axis: TPR
             //x axis: FPR
-            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate());   //Iterating in threshold order, so FPR decreases as threshold increases
+            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate()); //Iterating in threshold order, so FPR decreases as threshold increases
             double avg = (left.getTruePositiveRate() + right.getTruePositiveRate()) / 2.0;
 
             auc += deltaX * avg;
@@ -237,14 +239,15 @@ public class ROC extends BaseEvaluation<ROC> {
      * @param other ROC instance to combine with this one
      */
     @Override
-    public void merge(ROC other){
-        if(this.thresholdSteps != other.thresholdSteps){
-            throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("
-                    + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
+    public void merge(ROC other) {
+        if (this.thresholdSteps != other.thresholdSteps) {
+            throw new UnsupportedOperationException(
+                            "Cannot merge ROC instances with different numbers of threshold steps ("
+                                            + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
         }
         this.countActualPositive += other.countActualPositive;
         this.countActualNegative += other.countActualNegative;
-        for(Double d : this.counts.keySet()){
+        for (Double d : this.counts.keySet()) {
             CountsForThreshold cft = this.counts.get(d);
             CountsForThreshold otherCft = other.counts.get(d);
             cft.countTruePositive += otherCft.countTruePositive;
@@ -289,7 +292,7 @@ public class ROC extends BaseEvaluation<ROC> {
         }
 
         @Override
-        public CountsForThreshold clone(){
+        public CountsForThreshold clone() {
             return new CountsForThreshold(threshold, countTruePositive, countFalsePositive);
         }
     }

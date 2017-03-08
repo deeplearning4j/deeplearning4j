@@ -27,7 +27,9 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.DropoutLayer ret = new org.deeplearning4j.nn.layers.DropoutLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
@@ -39,11 +41,14 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public ParamInitializer initializer() { return EmptyParamInitializer.getInstance(); }
+    public ParamInitializer initializer() {
+        return EmptyParamInitializer.getInstance();
+    }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
         return inputType;
     }
 

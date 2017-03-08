@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,18 +26,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class SummaryStatistics {
 
-    private double mean ,sum,min,max;
+    private double mean, sum, min, max;
 
     private SummaryStatistics() {}
 
-    private SummaryStatistics(INDArray mean,INDArray sum,INDArray min,INDArray max) {
+    private SummaryStatistics(INDArray mean, INDArray sum, INDArray min, INDArray max) {
         this.mean = (double) mean.element();
         this.sum = (double) sum.element();
         this.min = (double) min.element();
         this.max = (double) max.element();
     }
 
-    private SummaryStatistics(double mean,double sum,double min,double max) {
+    private SummaryStatistics(double mean, double sum, double min, double max) {
         this.mean = mean;
         this.sum = sum;
         this.min = min;
@@ -46,13 +46,13 @@ public class SummaryStatistics {
 
 
     public static String summaryStatsString(INDArray d) {
-        return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),
-            d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE)).toString();
+        return new SummaryStatistics(d.mean(Integer.MAX_VALUE), d.sum(Integer.MAX_VALUE), d.min(Integer.MAX_VALUE),
+                        d.max(Integer.MAX_VALUE)).toString();
     }
 
     public static SummaryStatistics summaryStats(INDArray d) {
-        return new SummaryStatistics(d.mean(Integer.MAX_VALUE),d.sum(Integer.MAX_VALUE),
-            d.min(Integer.MAX_VALUE),d.max(Integer.MAX_VALUE));
+        return new SummaryStatistics(d.mean(Integer.MAX_VALUE), d.sum(Integer.MAX_VALUE), d.min(Integer.MAX_VALUE),
+                        d.max(Integer.MAX_VALUE));
     }
 
 
@@ -90,11 +90,6 @@ public class SummaryStatistics {
 
     @Override
     public String toString() {
-        return "SummaryStatistics{" +
-                "mean=" + mean +
-                ", sum=" + sum +
-                ", min=" + min +
-                ", max=" + max +
-                '}';
+        return "SummaryStatistics{" + "mean=" + mean + ", sum=" + sum + ", min=" + min + ", max=" + max + '}';
     }
 }

@@ -5,8 +5,8 @@ package org.deeplearning4j;
  *
  * @author Adam Gibson
  */
-public abstract  class BasePipeline implements Pipeline {
-    protected String[] inputUris,outputUris,datavecUris;
+public abstract class BasePipeline implements Pipeline {
+    protected String[] inputUris, outputUris, datavecUris;
 
     @Override
     public String[] inputUris() {

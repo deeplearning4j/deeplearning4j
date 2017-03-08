@@ -22,8 +22,7 @@ public class AbstractCacheTest {
 
     @Test
     public void testNumWords() throws Exception {
-        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         cache.addToken(new VocabWord(1.0, "word"));
         cache.addToken(new VocabWord(1.0, "test"));
@@ -33,8 +32,7 @@ public class AbstractCacheTest {
 
     @Test
     public void testHuffman() throws Exception {
-        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         cache.addToken(new VocabWord(1.0, "word"));
         cache.addToken(new VocabWord(2.0, "test"));
@@ -56,8 +54,7 @@ public class AbstractCacheTest {
 
     @Test
     public void testWordsOccurencies() throws Exception {
-        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         cache.addToken(new VocabWord(1.0, "word"));
         cache.addToken(new VocabWord(2.0, "test"));
@@ -69,8 +66,7 @@ public class AbstractCacheTest {
 
     @Test
     public void testRemoval() throws Exception {
-        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         cache.addToken(new VocabWord(1.0, "word"));
         cache.addToken(new VocabWord(2.0, "test"));
@@ -86,8 +82,7 @@ public class AbstractCacheTest {
 
     @Test
     public void testLabels() throws Exception {
-        AbstractCache<VocabWord>  cache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         cache.addToken(new VocabWord(1.0, "word"));
         cache.addToken(new VocabWord(2.0, "test"));

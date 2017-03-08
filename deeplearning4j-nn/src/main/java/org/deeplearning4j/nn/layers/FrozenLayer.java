@@ -27,7 +27,7 @@ import java.util.Map;
 public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     private LayerT insideLayer;
-    private boolean logUpdate = false ;
+    private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
     private boolean logGradient = false;
@@ -39,7 +39,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
-        for(String paramType : insideLayer.paramTable().keySet()) {
+        for (String paramType : insideLayer.paramTable().keySet()) {
             //save memory??
             zeroGradient.setGradientFor(paramType, null);
         }
@@ -82,12 +82,12 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     //FIXME
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return new Pair<>(zeroGradient,null);
+        return new Pair<>(zeroGradient, null);
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        insideLayer.merge(layer,batchSize);
+        insideLayer.merge(layer, batchSize);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
         logTestMode(training);
-        return insideLayer.preOutput(x,TrainingMode.TEST);
+        return insideLayer.preOutput(x, TrainingMode.TEST);
     }
 
     @Override
@@ -115,13 +115,13 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
         logTestMode(training);
-        return insideLayer.activate(input,TrainingMode.TEST);
+        return insideLayer.activate(input, TrainingMode.TEST);
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
         logTestMode(training);
-        return preOutput(x,TrainingMode.TEST);
+        return preOutput(x, TrainingMode.TEST);
     }
 
     @Override
@@ -133,7 +133,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public INDArray activate(INDArray input, boolean training) {
         logTestMode(training);
-        return insideLayer.activate(input,false);
+        return insideLayer.activate(input, false);
     }
 
     @Override
@@ -169,7 +169,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public void fit() {
-        if(!logFit) {
+        if (!logFit) {
             log.info("Frozen layers cannot be fit. Warning will be issued only once per instance");
             logFit = true;
         }
@@ -279,7 +279,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
             log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
-        return new Pair<>(zeroGradient,insideLayer.score());
+        return new Pair<>(zeroGradient, insideLayer.score());
     }
 
     @Override
@@ -393,27 +393,28 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
-        return insideLayer.feedForwardMaskArray(maskArray,currentMaskState,minibatchSize);
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
+        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
 
     public void logTestMode(boolean training) {
-        if (!training) return;
+        if (!training)
+            return;
         if (logTestMode) {
             return;
-        }
-        else {
+        } else {
             log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }
     }
 
     public void logTestMode(TrainingMode training) {
-        if (training.equals(TrainingMode.TEST)) return;
+        if (training.equals(TrainingMode.TEST))
+            return;
         if (logTestMode) {
             return;
-        }
-        else {
+        } else {
             log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }

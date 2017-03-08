@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,12 +35,12 @@ public class Viterbi implements Serializable {
     private double metaStability = 0.9;
     private double pCorrect = 0.99;
     private INDArray possibleLabels;
-    private  int states;
+    private int states;
 
     private double logPCorrect;
     private double logPIncorrect;
     private double logMetaInstability = Math.log(metaStability);
-    private  double logOfDiangnalTProb;
+    private double logOfDiangnalTProb;
     private double logStates;
 
     /**
@@ -64,8 +64,8 @@ public class Viterbi implements Serializable {
      * @param labels the labels as a binary label matrix
      * @return the decoded labels and the most likely outcome of the sequence
      */
-    public Pair<Double,INDArray> decode(INDArray labels) {
-        return decode(labels,true);
+    public Pair<Double, INDArray> decode(INDArray labels) {
+        return decode(labels, true);
     }
 
     /**
@@ -74,51 +74,52 @@ public class Viterbi implements Serializable {
      * @param binaryLabelMatrix whether the label  is a binary label matrix
      * @return the most likely sequence and the sequence labels
      */
-    public Pair<Double,INDArray> decode(INDArray labels,boolean binaryLabelMatrix) {
-        INDArray outcomeSequence = labels.isColumnVector() || labels.isRowVector() || binaryLabelMatrix ? toOutcomesFromBinaryLabelMatrix(labels) : labels;
+    public Pair<Double, INDArray> decode(INDArray labels, boolean binaryLabelMatrix) {
+        INDArray outcomeSequence = labels.isColumnVector() || labels.isRowVector() || binaryLabelMatrix
+                        ? toOutcomesFromBinaryLabelMatrix(labels) : labels;
         int frames = outcomeSequence.length();
         INDArray V = Nd4j.ones(frames, states);
-        INDArray pointers = Nd4j.zeros(frames,states);
+        INDArray pointers = Nd4j.zeros(frames, states);
         INDArray assigned = V.getRow(0);
         assigned.assign(logPCorrect - logStates);
-        V.putRow(0,assigned);
-        V.put(0,  (int) outcomeSequence.getDouble(0), logPCorrect - logStates);
-        for(int t = 1; t < frames; t++) {
-            for(int k = 0; k < states; k++) {
-                INDArray rowLogProduct = rowOfLogTransitionMatrix(k).add(V.getRow(t  - 1));
+        V.putRow(0, assigned);
+        V.put(0, (int) outcomeSequence.getDouble(0), logPCorrect - logStates);
+        for (int t = 1; t < frames; t++) {
+            for (int k = 0; k < states; k++) {
+                INDArray rowLogProduct = rowOfLogTransitionMatrix(k).add(V.getRow(t - 1));
                 int maxVal = Nd4j.getBlasWrapper().iamax(rowLogProduct);
-                double argMax =  rowLogProduct.max(Integer.MAX_VALUE).getDouble(0);
-                V.put(t,k,argMax);
+                double argMax = rowLogProduct.max(Integer.MAX_VALUE).getDouble(0);
+                V.put(t, k, argMax);
                 int element = (int) outcomeSequence.getDouble(t);
-                if(k == element)
-                    V.put(t,k,logPCorrect + maxVal);
+                if (k == element)
+                    V.put(t, k, logPCorrect + maxVal);
                 else
-                    V.put(t,k,logPIncorrect + maxVal);
+                    V.put(t, k, logPIncorrect + maxVal);
 
             }
         }
 
         INDArray rectified = Nd4j.zeros(frames);
-        rectified.put(rectified.length() - 1,V.getRow(frames - 1).max(Integer.MAX_VALUE));
-        for(int t = rectified.length() - 2; t > 0; t--) {
-            rectified.putScalar(t,pointers.getDouble(t + 1,(int) rectified.getDouble(t + 1)));
+        rectified.put(rectified.length() - 1, V.getRow(frames - 1).max(Integer.MAX_VALUE));
+        for (int t = rectified.length() - 2; t > 0; t--) {
+            rectified.putScalar(t, pointers.getDouble(t + 1, (int) rectified.getDouble(t + 1)));
         }
 
 
-        return new Pair<>(V.getRow(frames - 1).max(Integer.MAX_VALUE).getDouble(0),rectified);
+        return new Pair<>(V.getRow(frames - 1).max(Integer.MAX_VALUE).getDouble(0), rectified);
     }
 
     private INDArray rowOfLogTransitionMatrix(int k) {
-        INDArray row = Nd4j.ones(1,states).muli(logOfDiangnalTProb);
-        row.putScalar(k,logMetaInstability);
+        INDArray row = Nd4j.ones(1, states).muli(logOfDiangnalTProb);
+        row.putScalar(k, logMetaInstability);
         return row;
     }
 
 
     private INDArray toOutcomesFromBinaryLabelMatrix(INDArray outcomes) {
-        INDArray ret = Nd4j.create(outcomes.rows(),1);
-        for(int i = 0; i < outcomes.rows(); i++)
-            ret.put(i,0, Nd4j.getBlasWrapper().iamax(outcomes.getRow(i)));
+        INDArray ret = Nd4j.create(outcomes.rows(), 1);
+        for (int i = 0; i < outcomes.rows(); i++)
+            ret.put(i, 0, Nd4j.getBlasWrapper().iamax(outcomes.getRow(i)));
         return ret;
     }
 

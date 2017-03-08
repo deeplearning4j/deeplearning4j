@@ -48,25 +48,21 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
         RecordReader rr = new CSVRecordReader(0, ",");
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
-        MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addReader("iris", rr)
-                .addInput("iris", 0, 3)
-                .addOutputOneHot("iris", 4, 3)
-                .build();
+        MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr)
+                        .addInput("iris", 0, 3).addOutputOneHot("iris", 4, 3).build();
 
         List<MultiDataSet> list = new ArrayList<>(150);
-        while (iter.hasNext()) list.add(iter.next());
+        while (iter.hasNext())
+            list.add(iter.next());
 
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.1)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in")
-                .addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(), "dense")
-                .setOutputs("out")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
+                                                        .build(),
+                                        "dense")
+                        .setOutputs("out").pretrain(false).backprop(true).build();
 
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
@@ -74,7 +70,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         SparkComputationGraph scg = new SparkComputationGraph(sc, cg, tm);
-        scg.setListeners(Collections.singleton((IterationListener)new ScoreIterationListener(1)));
+        scg.setListeners(Collections.singleton((IterationListener) new ScoreIterationListener(1)));
 
         JavaRDD<MultiDataSet> rdd = sc.parallelize(list);
         scg.fitMultiDataSet(rdd);
@@ -82,7 +78,8 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         //Try: fitting using DataSet
         DataSetIterator iris = new IrisDataSetIterator(1, 150);
         List<DataSet> list2 = new ArrayList<>();
-        while (iris.hasNext()) list2.add(iris.next());
+        while (iris.hasNext())
+            list2.add(iris.next());
         JavaRDD<DataSet> rddDS = sc.parallelize(list2);
 
         scg.fit(rddDS);
@@ -92,25 +89,16 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     @Test
     public void testDistributedScoring() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .regularization(true).l1(0.1).l2(0.1)
-                .seed(123)
-                .updater(Updater.NESTEROVS)
-                .learningRate(0.1)
-                .momentum(0.9)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(nIn).nOut(3)
-                        .activation(Activation.TANH).build(), "in")
-                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(nOut)
-                        .activation(Activation.SOFTMAX)
-                        .build(), "0")
-                .setOutputs("1")
-                .backprop(true)
-                .pretrain(false)
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.1)
+                        .seed(123).updater(Updater.NESTEROVS).learningRate(0.1).momentum(0.9).graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
+                                        .activation(Activation.TANH).build(), "in")
+                        .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
+                                                        .activation(Activation.SOFTMAX).build(),
+                                        "0")
+                        .setOutputs("1").backprop(true).pretrain(false).build();
 
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
@@ -123,7 +111,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         INDArray labels = Nd4j.zeros(nRows, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < nRows; i++) {
-            labels.putScalar(new int[]{i, r.nextInt(nOut)}, 1.0);
+            labels.putScalar(new int[] {i, r.nextInt(nOut)}, 1.0);
         }
 
         INDArray localScoresWithReg = netCopy.scoreExamples(new DataSet(features, labels), true);
@@ -151,7 +139,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
             double scoreNoRegAct = sparkScoresNoRegMap.get(String.valueOf(i));
             assertEquals(scoreNoRegExp, scoreNoRegAct, 1e-5);
 
-//            System.out.println(scoreRegExp + "\t" + scoreRegAct + "\t" + scoreNoRegExp + "\t" + scoreNoRegAct);
+            //            System.out.println(scoreRegExp + "\t" + scoreRegAct + "\t" + scoreNoRegExp + "\t" + scoreNoRegAct);
         }
 
         List<DataSet> dataNoKeys = new ArrayList<>();
@@ -173,30 +161,23 @@ public class TestSparkComputationGraph extends BaseSparkTest {
             assertEquals(localScoresWithRegDouble[i], scoresWithReg.get(i), 1e-5);
             assertEquals(localScoresNoRegDouble[i], scoresNoReg.get(i), 1e-5);
 
-//            System.out.println(localScoresWithRegDouble[i] + "\t" + scoresWithReg.get(i) + "\t" + localScoresNoRegDouble[i] + "\t" + scoresNoReg.get(i));
+            //            System.out.println(localScoresWithRegDouble[i] + "\t" + scoresWithReg.get(i) + "\t" + localScoresNoRegDouble[i] + "\t" + scoresNoReg.get(i));
         }
     }
 
     @Test
     public void testSeedRepeatability() throws Exception {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(Updater.RMSPROP)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(4).nOut(4)
-                        .activation(Activation.TANH).build(), "in")
-                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(4).nOut(3)
-                        .activation(Activation.SOFTMAX)
-                        .build(), "0")
-                .setOutputs("1")
-                .pretrain(false).backprop(true)
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
+                                        .activation(Activation.TANH).build(), "in")
+                        .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                                                        .build(),
+                                        "0")
+                        .setOutputs("1").pretrain(false).backprop(true).build();
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraph n1 = new ComputationGraph(conf);
@@ -210,40 +191,29 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraph n3 = new ComputationGraph(conf);
         n3.init();
 
-        SparkComputationGraph sparkNet1 = new SparkComputationGraph(sc,n1,
-                new ParameterAveragingTrainingMaster.Builder(1)
-                        .workerPrefetchNumBatches(5)
-                        .batchSizePerWorker(5)
-                        .averagingFrequency(1)
-                        .repartionData(Repartition.Always)
-                        .rngSeed(12345)
-                        .build());
+        SparkComputationGraph sparkNet1 = new SparkComputationGraph(sc, n1,
+                        new ParameterAveragingTrainingMaster.Builder(1).workerPrefetchNumBatches(5)
+                                        .batchSizePerWorker(5).averagingFrequency(1).repartionData(Repartition.Always)
+                                        .rngSeed(12345).build());
 
-        Thread.sleep(100);  //Training master IDs are only unique if they are created at least 1 ms apart...
+        Thread.sleep(100); //Training master IDs are only unique if they are created at least 1 ms apart...
 
-        SparkComputationGraph sparkNet2 = new SparkComputationGraph(sc,n2,
-                new ParameterAveragingTrainingMaster.Builder(1)
-                        .workerPrefetchNumBatches(5)
-                        .batchSizePerWorker(5)
-                        .averagingFrequency(1)
-                        .repartionData(Repartition.Always)
-                        .rngSeed(12345)
-                        .build());
+        SparkComputationGraph sparkNet2 = new SparkComputationGraph(sc, n2,
+                        new ParameterAveragingTrainingMaster.Builder(1).workerPrefetchNumBatches(5)
+                                        .batchSizePerWorker(5).averagingFrequency(1).repartionData(Repartition.Always)
+                                        .rngSeed(12345).build());
 
         Thread.sleep(100);
 
-        SparkComputationGraph sparkNet3 = new SparkComputationGraph(sc,n3,
-                new ParameterAveragingTrainingMaster.Builder(1)
-                        .workerPrefetchNumBatches(5)
-                        .batchSizePerWorker(5)
-                        .averagingFrequency(1)
-                        .repartionData(Repartition.Always)
-                        .rngSeed(98765)
-                        .build());
+        SparkComputationGraph sparkNet3 = new SparkComputationGraph(sc, n3,
+                        new ParameterAveragingTrainingMaster.Builder(1).workerPrefetchNumBatches(5)
+                                        .batchSizePerWorker(5).averagingFrequency(1).repartionData(Repartition.Always)
+                                        .rngSeed(98765).build());
 
         List<DataSet> data = new ArrayList<>();
-        DataSetIterator iter = new IrisDataSetIterator(1,150);
-        while(iter.hasNext()) data.add(iter.next());
+        DataSetIterator iter = new IrisDataSetIterator(1, 150);
+        while (iter.hasNext())
+            data.add(iter.next());
 
         JavaRDD<DataSet> rdd = sc.parallelize(data);
 
@@ -261,7 +231,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         sparkNet2.getTrainingMaster().deleteTempFiles(sc);
         sparkNet3.getTrainingMaster().deleteTempFiles(sc);
 
-        assertEquals(p1,p2);
-        assertNotEquals(p1,p3);
+        assertEquals(p1, p2);
+        assertNotEquals(p1, p3);
     }
 }

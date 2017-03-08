@@ -13,7 +13,9 @@ import java.nio.ByteBuffer;
 /**
  * Created by Alex on 25/10/2016.
  */
-@AllArgsConstructor @NoArgsConstructor @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class FlowUpdatePersistable implements Persistable {
 
     public static final String TYPE_ID = "FlowListener";
@@ -52,10 +54,10 @@ public class FlowUpdatePersistable implements Persistable {
     public byte[] encode() {
         //Not the most efficient: but it's easy to implement...
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(this);
-        } catch (IOException e){
-            throw new RuntimeException(e);  //Shouldn't normally happen
+        } catch (IOException e) {
+            throw new RuntimeException(e); //Shouldn't normally happen
         }
 
         return baos.toByteArray();
@@ -73,14 +75,14 @@ public class FlowUpdatePersistable implements Persistable {
 
     @Override
     public void decode(byte[] decode) {
-        try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))){
-            FlowUpdatePersistable p = (FlowUpdatePersistable)ois.readObject();
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
+            FlowUpdatePersistable p = (FlowUpdatePersistable) ois.readObject();
             this.sessionID = p.sessionID;
             this.workerID = p.workerID;
             this.timestamp = p.getTimeStamp();
             this.modelState = p.modelState;
-        }catch (IOException | ClassNotFoundException e){
-            throw new RuntimeException(e);  //Shouldn't normally happen
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e); //Shouldn't normally happen
         }
     }
 

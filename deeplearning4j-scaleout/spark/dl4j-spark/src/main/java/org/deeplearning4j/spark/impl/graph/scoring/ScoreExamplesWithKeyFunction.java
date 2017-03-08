@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -45,13 +45,15 @@ import java.util.List;
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @see ScoreExamplesFunction
  */
-public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K,MultiDataSet>>,K,Double> {
+public class ScoreExamplesWithKeyFunction<K>
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, MultiDataSet>>, K, Double> {
 
-    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                        int batchSize) {
+    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         super(new ScoreExamplesWithKeyFunctionAdapter<K>(params, jsonConfig, addRegularizationTerms, batchSize));
     }
 }
+
 
 /**Function to score examples individually, where each example is associated with a particular key<br>
  * Note that scoring is batched for computational efficiency.<br>
@@ -62,7 +64,8 @@ public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdap
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @see ScoreExamplesFunction
  */
-class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K,MultiDataSet>>, Tuple2<K, Double>> {
+class ScoreExamplesWithKeyFunctionAdapter<K>
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, MultiDataSet>>, Tuple2<K, Double>> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
@@ -77,8 +80,8 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
      * @param addRegularizationTerms if true: add regularization terms (l1/l2) if applicable; false: don't add regularization terms
      * @param batchSize Batch size to use when scoring examples
      */
-    public ScoreExamplesWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                        int batchSize){
+    public ScoreExamplesWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean addRegularizationTerms, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.addRegularization = addRegularizationTerms;
@@ -96,10 +99,11 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
 
-        List<Tuple2<K,Double>> ret = new ArrayList<>();
+        List<Tuple2<K, Double>> ret = new ArrayList<>();
 
         List<MultiDataSet> collect = new ArrayList<>(batchSize);
         List<K> collectKey = new ArrayList<>(batchSize);
@@ -109,11 +113,12 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
             collectKey.clear();
             int nExamples = 0;
             while (iterator.hasNext() && nExamples < batchSize) {
-                Tuple2<K,MultiDataSet> t2 = iterator.next();
+                Tuple2<K, MultiDataSet> t2 = iterator.next();
                 MultiDataSet ds = t2._2();
                 int n = ds.getFeatures(0).size(0);
-                if(n != 1) throw new IllegalStateException("Cannot score examples with one key per data set if "
-                    + "data set contains more than 1 example (numExamples: " + n + ")");
+                if (n != 1)
+                    throw new IllegalStateException("Cannot score examples with one key per data set if "
+                                    + "data set contains more than 1 example (numExamples: " + n + ")");
                 collect.add(ds);
                 collectKey.add(t2._1());
                 nExamples += n;
@@ -123,16 +128,16 @@ class ScoreExamplesWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<I
             MultiDataSet data = org.nd4j.linalg.dataset.MultiDataSet.merge(collect);
 
 
-            INDArray scores = network.scoreExamples(data,addRegularization);
+            INDArray scores = network.scoreExamples(data, addRegularization);
             double[] doubleScores = scores.data().asDouble();
 
-            for(int i=0; i<doubleScores.length; i++ ){
-                ret.add(new Tuple2<>(collectKey.get(i),doubleScores[i]));
+            for (int i = 0; i < doubleScores.length; i++) {
+                ret.add(new Tuple2<>(collectKey.get(i), doubleScores[i]));
             }
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);

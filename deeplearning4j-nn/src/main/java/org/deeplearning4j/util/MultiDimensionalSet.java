@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,28 +26,27 @@ import java.util.concurrent.ConcurrentSkipListSet;
 /**
  * Created by agibsonccc on 4/29/14.
  */
-public class MultiDimensionalSet<K,V> implements Set<Pair<K,V>> {
+public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
 
 
-    private Set<Pair<K,V>> backedSet;
+    private Set<Pair<K, V>> backedSet;
 
     public MultiDimensionalSet(Set<Pair<K, V>> backedSet) {
         this.backedSet = backedSet;
     }
 
-    public static <K,V> MultiDimensionalSet<K,V> hashSet() {
+    public static <K, V> MultiDimensionalSet<K, V> hashSet() {
         return new MultiDimensionalSet<>(new HashSet<Pair<K, V>>());
     }
 
 
-    public static <K,V> MultiDimensionalSet<K,V> treeSet() {
+    public static <K, V> MultiDimensionalSet<K, V> treeSet() {
         return new MultiDimensionalSet<>(new TreeSet<Pair<K, V>>());
     }
 
 
 
-
-    public static <K,V> MultiDimensionalSet<K,V> concurrentSkipListSet() {
+    public static <K, V> MultiDimensionalSet<K, V> concurrentSkipListSet() {
         return new MultiDimensionalSet<>(new ConcurrentSkipListSet<Pair<K, V>>());
     }
 
@@ -345,17 +344,17 @@ public class MultiDimensionalSet<K,V> implements Set<Pair<K,V>> {
      */
     @Override
     public void clear() {
-       backedSet.clear();
+        backedSet.clear();
     }
 
 
 
     public boolean contains(K k, V v) {
-        return contains(new Pair<>(k,v));
+        return contains(new Pair<>(k, v));
     }
 
-    public void add(K k,V v) {
-        add(new Pair<>(k,v));
+    public void add(K k, V v) {
+        add(new Pair<>(k, v));
     }
 
 }

@@ -29,56 +29,53 @@ public class StatsCalculationHelper {
 
     private TimeSource timeSource = TimeSourceProvider.getInstance();
 
-    public void logMethodStartTime(){
+    public void logMethodStartTime() {
         methodStartTime = timeSource.currentTimeMillis();
     }
 
-    public void logReturnTime(){
+    public void logReturnTime() {
         returnTime = timeSource.currentTimeMillis();
     }
 
-    public void logInitialModelBefore(){
+    public void logInitialModelBefore() {
         initalModelBefore = timeSource.currentTimeMillis();
     }
 
-    public void logInitialModelAfter(){
+    public void logInitialModelAfter() {
         initialModelAfter = timeSource.currentTimeMillis();
     }
 
-    public void logNextDataSetBefore(){
+    public void logNextDataSetBefore() {
         lastDataSetBefore = timeSource.currentTimeMillis();
     }
 
-    public void logNextDataSetAfter(int numExamples){
+    public void logNextDataSetAfter(int numExamples) {
         long now = timeSource.currentTimeMillis();
         long duration = now - lastDataSetBefore;
-        dataSetGetTimes.add(new BaseEventStats(lastDataSetBefore,duration));
+        dataSetGetTimes.add(new BaseEventStats(lastDataSetBefore, duration));
         totalExampleCount += numExamples;
     }
 
-    public void logProcessMinibatchBefore(){
+    public void logProcessMinibatchBefore() {
         lastProcessBefore = timeSource.currentTimeMillis();
     }
 
-    public void logProcessMinibatchAfter(){
+    public void logProcessMinibatchAfter() {
         long now = timeSource.currentTimeMillis();
         long duration = now - lastProcessBefore;
-        processMiniBatchTimes.add(new BaseEventStats(lastProcessBefore,duration));
+        processMiniBatchTimes.add(new BaseEventStats(lastProcessBefore, duration));
     }
 
-    public CommonSparkTrainingStats build(SparkTrainingStats masterSpecificStats){
+    public CommonSparkTrainingStats build(SparkTrainingStats masterSpecificStats) {
 
         List<EventStats> totalTime = new ArrayList<>();
-        totalTime.add(new ExampleCountEventStats(methodStartTime,returnTime-methodStartTime, totalExampleCount));
+        totalTime.add(new ExampleCountEventStats(methodStartTime, returnTime - methodStartTime, totalExampleCount));
         List<EventStats> initTime = new ArrayList<>();
-        initTime.add(new BaseEventStats(initalModelBefore,initialModelAfter-initalModelBefore));
+        initTime.add(new BaseEventStats(initalModelBefore, initialModelAfter - initalModelBefore));
 
-        return new CommonSparkTrainingStats.Builder()
-                .trainingMasterSpecificStats(masterSpecificStats)
-                .workerFlatMapTotalTimeMs(totalTime)
-                .workerFlatMapGetInitialModelTimeMs(initTime)
-                .workerFlatMapDataSetGetTimesMs(dataSetGetTimes)
-                .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimes)
-                .build();
+        return new CommonSparkTrainingStats.Builder().trainingMasterSpecificStats(masterSpecificStats)
+                        .workerFlatMapTotalTimeMs(totalTime).workerFlatMapGetInitialModelTimeMs(initTime)
+                        .workerFlatMapDataSetGetTimesMs(dataSetGetTimes)
+                        .workerFlatMapProcessMiniBatchTimesMs(processMiniBatchTimes).build();
     }
 }

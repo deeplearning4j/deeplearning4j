@@ -24,9 +24,7 @@ public class DeepLearning4jEntryPointTest {
 
     private DeepLearning4jEntryPoint deepLearning4jEntryPoint = new DeepLearning4jEntryPoint();
 
-    public
-    @Rule
-    ExpectedException thrown = ExpectedException.none();
+    public @Rule ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void shouldFitTheSampleSequentialModel() throws Exception {
@@ -35,15 +33,11 @@ public class DeepLearning4jEntryPointTest {
         final Path features = prepareFeatures("theano_mnist");
         final Path labels = prepareLabels("theano_mnist");
 
-        EntryPointFitParameters entryPointParameters = EntryPointFitParameters
-                .builder()
-                .modelFilePath(model.getAbsolutePath())
-                .trainFeaturesDirectory(features.toAbsolutePath().toString())
-                .trainLabelsDirectory(labels.toAbsolutePath().toString())
-                .batchSize(128)
-                .nbEpoch(2)
-                .type(KerasModelType.SEQUENTIAL)
-                .build();
+        EntryPointFitParameters entryPointParameters =
+                        EntryPointFitParameters.builder().modelFilePath(model.getAbsolutePath())
+                                        .trainFeaturesDirectory(features.toAbsolutePath().toString())
+                                        .trainLabelsDirectory(labels.toAbsolutePath().toString()).batchSize(128)
+                                        .nbEpoch(2).type(KerasModelType.SEQUENTIAL).build();
 
         // When
         deepLearning4jEntryPoint.fit(entryPointParameters);
@@ -72,10 +66,7 @@ public class DeepLearning4jEntryPointTest {
     }
 
     private File targetFile(Path tempFeaturesDirectory, String batchFileName) {
-        return Paths.get(
-                tempFeaturesDirectory.toFile().getAbsolutePath().toString(),
-                batchFileName
-        ).toFile();
+        return Paths.get(tempFeaturesDirectory.toFile().getAbsolutePath().toString(), batchFileName).toFile();
     }
 
     private Set<String> listBatchFiles(String classpathDirectory) {

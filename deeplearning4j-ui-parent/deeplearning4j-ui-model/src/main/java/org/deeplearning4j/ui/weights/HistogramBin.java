@@ -83,9 +83,9 @@ public class HistogramBin implements Serializable {
                 bins.putScalar(0, bins.getDouble(0) + 1);
                 data.get(keys[0]).incrementAndGet();
             } else if (bin >= numberOfBins) {
-                bins.putScalar(numberOfBins - 1, bins.getDouble(numberOfBins-1) + 1);
-                data.get(keys[numberOfBins-1]).incrementAndGet();
-              } else {
+                bins.putScalar(numberOfBins - 1, bins.getDouble(numberOfBins - 1) + 1);
+                data.get(keys[numberOfBins - 1]).incrementAndGet();
+            } else {
                 bins.putScalar(bin, bins.getDouble(bin) + 1);
                 data.get(keys[bin]).incrementAndGet();
             }

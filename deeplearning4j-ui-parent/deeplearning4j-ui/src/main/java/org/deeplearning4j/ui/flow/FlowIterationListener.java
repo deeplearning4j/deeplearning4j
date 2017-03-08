@@ -58,7 +58,8 @@ public class FlowIterationListener implements IterationListener {
     private long currTime;
     private long initTime = System.currentTimeMillis();
 
-    private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
+    private static final List<String> colors = Collections.unmodifiableList(
+                    Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
     private final StatsStorageRouter ssr;
     private final String sessionID;
@@ -84,7 +85,8 @@ public class FlowIterationListener implements IterationListener {
         this(frequency);
     }
 
-    public FlowIterationListener(StatsStorageRouter ssr, int frequency, String sessionID, String workerID, boolean openBrowser) {
+    public FlowIterationListener(StatsStorageRouter ssr, int frequency, String sessionID, String workerID,
+                    boolean openBrowser) {
         this.frequency = frequency;
 
         this.ssr = ssr;
@@ -104,7 +106,8 @@ public class FlowIterationListener implements IterationListener {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
 
-        System.out.println("FlowIterationListener path: http://localhost:" + UIServer.getInstance().getPort() + "/flow");
+        System.out.println(
+                        "FlowIterationListener path: http://localhost:" + UIServer.getInstance().getPort() + "/flow");
     }
 
 
@@ -139,7 +142,7 @@ public class FlowIterationListener implements IterationListener {
     public synchronized void iterationDone(Model model, int iteration) {
         if (iterationCount.incrementAndGet() % frequency == 0) {
             currTime = System.currentTimeMillis();
-        /*
+            /*
             Basic plan:
                 1. We should detect, if that's CompGraph or MultilayerNetwork. However the actual difference will be limited to number of non-linear connections.
                 2. Network structure should be converted to JSON
@@ -148,30 +151,33 @@ public class FlowIterationListener implements IterationListener {
                 5. For arrays/params gzip could be used (to be investigated)
                 ......
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
-         */
+             */
 
             if (firstIteration) {
                 // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
                 ModelInfo info = buildModelInfo(model);
 
                 // send ModelInfo to stats storage
-                Persistable staticInfo = new FlowStaticPersistable(sessionID, workerID, System.currentTimeMillis(), info);
+                Persistable staticInfo =
+                                new FlowStaticPersistable(sessionID, workerID, System.currentTimeMillis(), info);
                 ssr.putStaticInfo(staticInfo);
             }
 
 
             // update modelState
             buildModelState(model);
-            Persistable updateInfo = new FlowUpdatePersistable(sessionID, workerID, System.currentTimeMillis(), modelState);
+            Persistable updateInfo =
+                            new FlowUpdatePersistable(sessionID, workerID, System.currentTimeMillis(), modelState);
             ssr.putUpdate(updateInfo);
 
 
-            if (firstIteration && openBrowser ) {
+            if (firstIteration && openBrowser) {
                 UIServer uiServer = UIServer.getInstance();
                 String path = "http://localhost:" + uiServer.getPort() + "/flow?sid=" + sessionID;
                 try {
                     UiUtils.tryOpenBrowser(path, log);
-                } catch (Exception e) { }
+                } catch (Exception e) {
+                }
                 firstIteration = false;
             }
         }
@@ -187,52 +193,56 @@ public class FlowIterationListener implements IterationListener {
      * @param currentY
      * @return
      */
-    protected List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput, int currentY) {
+    protected List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput,
+                    int currentY) {
         List<LayerInfo> results = new ArrayList<>();
         int x = 0;
         for (int v = 0; v < vertices.length; v++) {
             GraphVertex vertex = vertices[v];
             VertexIndices[] indices = vertex.getInputVertices();
 
-            if (indices != null) for (int i = 0; i < indices.length; i++) {
-                GraphVertex cv = vertices[indices[i].getVertexIndex()];
-                String inputName = cv.getVertexName();
+            if (indices != null)
+                for (int i = 0; i < indices.length; i++) {
+                    GraphVertex cv = vertices[indices[i].getVertexIndex()];
+                    String inputName = cv.getVertexName();
 
-                for (String input : currentInput) {
-                    if (inputName.equals(input)) {
-                        // we have match for Vertex
-                        //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
-                        try {
-                            LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
-                            if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
-                            info.setName(vertex.getVertexName());
+                    for (String input : currentInput) {
+                        if (inputName.equals(input)) {
+                            // we have match for Vertex
+                            //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
+                            try {
+                                LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
+                                if (info == null)
+                                    info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
+                                info.setName(vertex.getVertexName());
 
-                            // special case here: vertex isn't a layer
-                            if (vertex.getLayer() == null) {
-                                info.setLayerType(vertex.getClass().getSimpleName());
-                            }
-                            if (info.getName().endsWith("-merge")) info.setLayerType("MERGE");
-                            if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
-                                x++;
-                                model.addLayer(info);
-                                results.add(info);
-                            }
+                                // special case here: vertex isn't a layer
+                                if (vertex.getLayer() == null) {
+                                    info.setLayerType(vertex.getClass().getSimpleName());
+                                }
+                                if (info.getName().endsWith("-merge"))
+                                    info.setLayerType("MERGE");
+                                if (model.getLayerInfoByName(vertex.getVertexName()) == null) {
+                                    x++;
+                                    model.addLayer(info);
+                                    results.add(info);
+                                }
 
-                            // now we should map connections
-                            LayerInfo connection = model.getLayerInfoByName(input);
-                            if (connection != null) {
-                                connection.addConnection(info);
-                                //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
-                            } else {
-                                // the only reason to have null here, is direct input connection
-                                //connection.addConnection(0,0);
+                                // now we should map connections
+                                LayerInfo connection = model.getLayerInfoByName(input);
+                                if (connection != null) {
+                                    connection.addConnection(info);
+                                    //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
+                                } else {
+                                    // the only reason to have null here, is direct input connection
+                                    //connection.addConnection(0,0);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
                 }
-            }
         }
         return results;
     }
@@ -290,10 +300,8 @@ public class FlowIterationListener implements IterationListener {
             if (!layerParamsMap.containsKey(layer))
                 layerParamsMap.put(layer, new LayerParams());
 
-            HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                    .setBinCount(14)
-                    .setRounding(6)
-                    .build();
+            HistogramBin histogram =
+                            new HistogramBin.Builder(entry.getValue().dup()).setBinCount(14).setRounding(6).build();
 
             // TODO: something better would be nice to have here
             if (key.equalsIgnoreCase("w")) {
@@ -326,7 +334,7 @@ public class FlowIterationListener implements IterationListener {
 
                 long numSamples;
                 long tadLength;
-                if(vertex.getInputs() == null || vertex.getInputs().length == 0 ){
+                if (vertex.getInputs() == null || vertex.getInputs().length == 0) {
                     numSamples = 0;
                     tadLength = 0;
                 } else {
@@ -364,7 +372,8 @@ public class FlowIterationListener implements IterationListener {
 
             // we assume that max row can't be higher then total number of vertices
             for (int y = 1; y < vertices.length; y++) {
-                if (needle.isEmpty()) needle.addAll(inputs);
+                if (needle.isEmpty())
+                    needle.addAll(inputs);
 
                 /*
                     for each grid row we look for nodes, that are connected to previous layer
@@ -375,7 +384,8 @@ public class FlowIterationListener implements IterationListener {
                 for (LayerInfo layerInfo : layersForGridY) {
                     needle.add(layerInfo.getName());
                 }
-                if (needle.isEmpty()) break;
+                if (needle.isEmpty())
+                    break;
             }
 
         } else if (model instanceof MultiLayerNetwork) {
@@ -422,18 +432,20 @@ public class FlowIterationListener implements IterationListener {
             LayerInfo layerInfo = modelInfo.getLayerInfoByCoords(x, y - 1);
             layerInfo.dropConnections();
 
-        }// else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
+        } // else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
         // find layers without connections, and mark them as output layers
         for (LayerInfo layerInfo : modelInfo.getLayers()) {
-            if (layerInfo.getConnections().size() == 0) layerInfo.setLayerType("OUTPUT");
+            if (layerInfo.getConnections().size() == 0)
+                layerInfo.setLayerType("OUTPUT");
         }
 
         // now we apply colors to distinct layer types
         AtomicInteger cnt = new AtomicInteger(0);
         for (String layerType : modelInfo.getLayerTypes()) {
             String curColor = colors.get(cnt.getAndIncrement());
-            if (cnt.get() >= colors.size()) cnt.set(0);
+            if (cnt.get() >= colors.size())
+                cnt.set(0);
             for (LayerInfo layerInfo : modelInfo.getLayersByType(layerType)) {
                 if (layerType.equals(INPUT)) {
                     layerInfo.setColor("#99ff66");
@@ -460,7 +472,8 @@ public class FlowIterationListener implements IterationListener {
             info.setName(layer.conf().getLayer().getLayerName());
         } catch (Exception e) {
         }
-        if (info.getName() == null || info.getName().isEmpty()) info.setName("unnamed");
+        if (info.getName() == null || info.getName().isEmpty())
+            info.setName("unnamed");
 
         // unique layer id required here
         info.setId(order);
@@ -485,8 +498,10 @@ public class FlowIterationListener implements IterationListener {
         //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
         if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
-            mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: " + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
+            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 =
+                            (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
+            mainLine.append("K: " + Arrays.toString(layer1.getKernelSize()) + " S: "
+                            + Arrays.toString(layer1.getStride()) + " P: " + Arrays.toString(layer1.getPadding()));
             subLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             fullLine.append("Kernel size: ").append(Arrays.toString(layer1.getKernelSize())).append("<br/>");
             fullLine.append("Stride: ").append(Arrays.toString(layer1.getStride())).append("<br/>");
@@ -500,7 +515,8 @@ public class FlowIterationListener implements IterationListener {
             fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
             fullLine.append("Pooling type: ").append(layer1.getPoolingType().toString()).append("<br/>");
         } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
-            org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
+            org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 =
+                            (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
             mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             subLine.append(info.getLayerType());
             fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
@@ -508,13 +524,19 @@ public class FlowIterationListener implements IterationListener {
         } else {
             // TODO: Introduce Layer.Type.OUTPUT
             if (layer instanceof BaseOutputLayer) {
-                mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer()).getNOut() + "]");
-                fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer()).getNOut()).append("<br/>");
+                mainLine.append("Outputs: ["
+                                + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer())
+                                                .getNOut()
+                                + "]");
+                fullLine.append("Outputs number: ").append(
+                                ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer()).getNOut())
+                                .append("<br/>");
             }
         }
 
         subLine.append(" A: [").append(layer.conf().getLayer().getActivationFn().toString()).append("]");
-        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
+        fullLine.append("Activation function: ").append("<b>")
+                        .append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());
@@ -524,11 +546,10 @@ public class FlowIterationListener implements IterationListener {
     }
 
     protected String parseTime(long milliseconds) {
-        return String.format(FORMAT,
-                TimeUnit.MILLISECONDS.toHours(milliseconds),
-                TimeUnit.MILLISECONDS.toMinutes(milliseconds) - TimeUnit.HOURS.toMinutes(
-                        TimeUnit.MILLISECONDS.toHours(milliseconds)),
-                TimeUnit.MILLISECONDS.toSeconds(milliseconds) - TimeUnit.MINUTES.toSeconds(
-                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
+        return String.format(FORMAT, TimeUnit.MILLISECONDS.toHours(milliseconds),
+                        TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+                                        - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)),
+                        TimeUnit.MILLISECONDS.toSeconds(milliseconds)
+                                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
     }
 }

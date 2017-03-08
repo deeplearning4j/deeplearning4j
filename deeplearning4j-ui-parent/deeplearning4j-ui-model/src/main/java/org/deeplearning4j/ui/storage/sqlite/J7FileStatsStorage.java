@@ -23,12 +23,12 @@ public class J7FileStatsStorage implements StatsStorage {
     private static final String TABLE_NAME_STATIC_INFO = "StaticInfo";
     private static final String TABLE_NAME_UPDATES = "Updates";
 
-    private static final String INSERT_META_SQL
-            = "INSERT OR REPLACE INTO " + TABLE_NAME_METADATA + " (SessionID, TypeID, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ? );";
-    private static final String INSERT_STATIC_SQL
-            = "INSERT OR REPLACE INTO " + TABLE_NAME_STATIC_INFO + " (SessionID, TypeID, WorkerID, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ?, ? );";
-    private static final String INSERT_UPDATE_SQL
-            = "INSERT OR REPLACE INTO " + TABLE_NAME_UPDATES + " (SessionID, TypeID, WorkerID, Timestamp, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ?, ?, ? );";
+    private static final String INSERT_META_SQL = "INSERT OR REPLACE INTO " + TABLE_NAME_METADATA
+                    + " (SessionID, TypeID, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ? );";
+    private static final String INSERT_STATIC_SQL = "INSERT OR REPLACE INTO " + TABLE_NAME_STATIC_INFO
+                    + " (SessionID, TypeID, WorkerID, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ?, ? );";
+    private static final String INSERT_UPDATE_SQL = "INSERT OR REPLACE INTO " + TABLE_NAME_UPDATES
+                    + " (SessionID, TypeID, WorkerID, Timestamp, ObjectClass, ObjectBytes) VALUES ( ?, ?, ?, ?, ?, ? );";
 
     private final File file;
     private final Connection connection;
@@ -69,48 +69,34 @@ public class J7FileStatsStorage implements StatsStorage {
         while (rs.next()) {
             //3rd value: table name - http://docs.oracle.com/javase/6/docs/api/java/sql/DatabaseMetaData.html#getTables%28java.lang.String,%20java.lang.String,%20java.lang.String,%20java.lang.String[]%29
             String name = rs.getString(3);
-            if (TABLE_NAME_METADATA.equals(name)) hasStorageMetaDataTable = true;
-            else if (TABLE_NAME_STATIC_INFO.equals(name)) hasStaticInfoTable = true;
-            else if (TABLE_NAME_UPDATES.equals(name)) hasUpdatesTable = true;
+            if (TABLE_NAME_METADATA.equals(name))
+                hasStorageMetaDataTable = true;
+            else if (TABLE_NAME_STATIC_INFO.equals(name))
+                hasStaticInfoTable = true;
+            else if (TABLE_NAME_UPDATES.equals(name))
+                hasUpdatesTable = true;
         }
 
 
         Statement statement = connection.createStatement();
 
         if (!hasStorageMetaDataTable) {
-            statement.executeUpdate(
-                    "CREATE TABLE " + TABLE_NAME_METADATA + " (" +
-                            "SessionID TEXT NOT NULL, " +
-                            "TypeID TEXT NOT NULL, " +
-                            "ObjectClass TEXT NOT NULL, " +
-                            "ObjectBytes BLOB NOT NULL, " +
-                            "PRIMARY KEY ( SessionID, TypeID )" +
-                            ");");
+            statement.executeUpdate("CREATE TABLE " + TABLE_NAME_METADATA + " (" + "SessionID TEXT NOT NULL, "
+                            + "TypeID TEXT NOT NULL, " + "ObjectClass TEXT NOT NULL, " + "ObjectBytes BLOB NOT NULL, "
+                            + "PRIMARY KEY ( SessionID, TypeID )" + ");");
         }
 
         if (!hasStaticInfoTable) {
-            statement.executeUpdate(
-                    "CREATE TABLE " + TABLE_NAME_STATIC_INFO + " (" +
-                            "SessionID TEXT NOT NULL, " +
-                            "TypeID TEXT NOT NULL, " +
-                            "WorkerID TEXT NOT NULL, " +
-                            "ObjectClass TEXT NOT NULL, " +
-                            "ObjectBytes BLOB NOT NULL, " +
-                            "PRIMARY KEY ( SessionID, TypeID, WorkerID )" +
-                            ");");
+            statement.executeUpdate("CREATE TABLE " + TABLE_NAME_STATIC_INFO + " (" + "SessionID TEXT NOT NULL, "
+                            + "TypeID TEXT NOT NULL, " + "WorkerID TEXT NOT NULL, " + "ObjectClass TEXT NOT NULL, "
+                            + "ObjectBytes BLOB NOT NULL, " + "PRIMARY KEY ( SessionID, TypeID, WorkerID )" + ");");
         }
 
         if (!hasUpdatesTable) {
-            statement.executeUpdate(
-                    "CREATE TABLE " + TABLE_NAME_UPDATES + " (" +
-                            "SessionID TEXT NOT NULL, " +
-                            "TypeID TEXT NOT NULL, " +
-                            "WorkerID TEXT NOT NULL, " +
-                            "Timestamp INTEGER NOT NULL, " +
-                            "ObjectClass TEXT NOT NULL, " +
-                            "ObjectBytes BLOB NOT NULL, " +
-                            "PRIMARY KEY ( SessionID, TypeID, WorkerID, Timestamp )" +
-                            ");");
+            statement.executeUpdate("CREATE TABLE " + TABLE_NAME_UPDATES + " (" + "SessionID TEXT NOT NULL, "
+                            + "TypeID TEXT NOT NULL, " + "WorkerID TEXT NOT NULL, " + "Timestamp INTEGER NOT NULL, "
+                            + "ObjectClass TEXT NOT NULL, " + "ObjectBytes BLOB NOT NULL, "
+                            + "PRIMARY KEY ( SessionID, TypeID, WorkerID, Timestamp )" + ");");
         }
 
         statement.close();
@@ -119,7 +105,8 @@ public class J7FileStatsStorage implements StatsStorage {
 
     private static Pair<String, byte[]> serializeForDB(Object object) {
         String classStr = object.getClass().getName();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(object);
             oos.close();
             byte[] bytes = baos.toByteArray();
@@ -140,7 +127,8 @@ public class J7FileStatsStorage implements StatsStorage {
     private <T> T queryAndGet(String sql, int columnIndex) {
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
-            if (!rs.next()) return null;
+            if (!rs.next())
+                return null;
             byte[] bytes = rs.getBytes(columnIndex);
             return deserialize(bytes);
         } catch (SQLException e) {
@@ -149,20 +137,24 @@ public class J7FileStatsStorage implements StatsStorage {
     }
 
     private List<String> selectDistinct(String columnName, boolean queryMeta, boolean queryStatic, boolean queryUpdates,
-                                        String conditionColumn, String conditionValue) {
+                    String conditionColumn, String conditionValue) {
         Set<String> unique = new HashSet<>();
 
         try (Statement statement = connection.createStatement()) {
             if (queryMeta) {
-                queryHelper(statement, querySqlHelper(columnName, TABLE_NAME_METADATA, conditionColumn, conditionValue), unique);
+                queryHelper(statement, querySqlHelper(columnName, TABLE_NAME_METADATA, conditionColumn, conditionValue),
+                                unique);
             }
 
             if (queryStatic) {
-                queryHelper(statement, querySqlHelper(columnName, TABLE_NAME_STATIC_INFO, conditionColumn, conditionValue), unique);
+                queryHelper(statement,
+                                querySqlHelper(columnName, TABLE_NAME_STATIC_INFO, conditionColumn, conditionValue),
+                                unique);
             }
 
             if (queryUpdates) {
-                queryHelper(statement, querySqlHelper(columnName, TABLE_NAME_UPDATES, conditionColumn, conditionValue), unique);
+                queryHelper(statement, querySqlHelper(columnName, TABLE_NAME_UPDATES, conditionColumn, conditionValue),
+                                unique);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -189,7 +181,8 @@ public class J7FileStatsStorage implements StatsStorage {
     }
 
     protected List<StatsStorageEvent> checkStorageEvents(Persistable p) {
-        if (listeners.size() == 0) return null;
+        if (listeners.size() == 0)
+            return null;
 
         StatsStorageEvent newSID = null;
         StatsStorageEvent newTID = null;
@@ -220,23 +213,27 @@ public class J7FileStatsStorage implements StatsStorage {
         }
 
         if (isNewSID) {
-            newSID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewSessionID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newSID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewSessionID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
         }
         if (isNewTID) {
-            newTID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewTypeID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newTID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewTypeID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
         }
         if (isNewWID) {
-            newWID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewWorkerID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newWID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewWorkerID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
         }
 
-        if (!isNewSID && !isNewTID && !isNewWID) return null;
+        if (!isNewSID && !isNewTID && !isNewWID)
+            return null;
         List<StatsStorageEvent> sses = new ArrayList<>(3);
-        if (newSID != null) sses.add(newSID);
-        if (newTID != null) sses.add(newTID);
-        if (newWID != null) sses.add(newWID);
+        if (newSID != null)
+            sses.add(newSID);
+        if (newTID != null)
+            sses.add(newTID);
+        if (newWID != null)
+            sses.add(newWID);
         return sses;
     }
 
@@ -254,14 +251,18 @@ public class J7FileStatsStorage implements StatsStorage {
             for (StorageMetaData storageMetaData : collection) {
                 List<StatsStorageEvent> ssesTemp = checkStorageEvents(storageMetaData);
                 if (ssesTemp != null) {
-                    if (sses == null) sses = ssesTemp;
-                    else sses.addAll(ssesTemp);
+                    if (sses == null)
+                        sses = ssesTemp;
+                    else
+                        sses.addAll(ssesTemp);
                 }
 
                 if (listeners.size() > 0) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
-                            storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
-                    if (sses == null) sses = new ArrayList<>();
+                                    storageMetaData.getSessionID(), storageMetaData.getTypeID(),
+                                    storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
+                    if (sses == null)
+                        sses = new ArrayList<>();
                     sses.add(sse);
                 }
 
@@ -296,14 +297,17 @@ public class J7FileStatsStorage implements StatsStorage {
             for (Persistable p : collection) {
                 List<StatsStorageEvent> ssesTemp = checkStorageEvents(p);
                 if (ssesTemp != null) {
-                    if (sses == null) sses = ssesTemp;
-                    else sses.addAll(ssesTemp);
+                    if (sses == null)
+                        sses = ssesTemp;
+                    else
+                        sses.addAll(ssesTemp);
                 }
 
                 if (listeners.size() > 0) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo,
-                            p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
-                    if (sses == null) sses = new ArrayList<>();
+                                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+                    if (sses == null)
+                        sses = new ArrayList<>();
                     sses.add(sse);
                 }
 
@@ -339,14 +343,17 @@ public class J7FileStatsStorage implements StatsStorage {
             for (Persistable p : collection) {
                 List<StatsStorageEvent> ssesTemp = checkStorageEvents(p);
                 if (ssesTemp != null) {
-                    if (sses == null) sses = ssesTemp;
-                    else sses.addAll(ssesTemp);
+                    if (sses == null)
+                        sses = ssesTemp;
+                    else
+                        sses.addAll(ssesTemp);
                 }
 
                 if (listeners.size() > 0) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate,
-                            p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
-                    if (sses == null) sses = new ArrayList<>();
+                                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+                    if (sses == null)
+                        sses = new ArrayList<>();
                     sses.add(sse);
                 }
 
@@ -411,15 +418,15 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public Persistable getStaticInfo(String sessionID, String typeID, String workerID) {
-        String selectStaticSQL = "SELECT ObjectBytes FROM " + TABLE_NAME_STATIC_INFO + " WHERE SessionID = '" + sessionID
-                + "' AND TypeID = '" + typeID + "' AND WorkerID = '" + workerID + "';";
+        String selectStaticSQL = "SELECT ObjectBytes FROM " + TABLE_NAME_STATIC_INFO + " WHERE SessionID = '"
+                        + sessionID + "' AND TypeID = '" + typeID + "' AND WorkerID = '" + workerID + "';";
         return queryAndGet(selectStaticSQL, 1);
     }
 
     @Override
     public List<Persistable> getAllStaticInfos(String sessionID, String typeID) {
         String selectStaticSQL = "SELECT * FROM " + TABLE_NAME_STATIC_INFO + " WHERE SessionID = '" + sessionID
-                + "' AND TypeID = '" + typeID + "';";
+                        + "' AND TypeID = '" + typeID + "';";
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(selectStaticSQL);
             List<Persistable> out = new ArrayList<>();
@@ -445,8 +452,10 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public List<String> listWorkerIDsForSessionAndType(String sessionID, String typeID) {
-        String uniqueStatic = "SELECT DISTINCT WorkerID FROM " + TABLE_NAME_STATIC_INFO + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID + "';";
-        String uniqueUpdates = "SELECT DISTINCT WorkerID FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID + "';";
+        String uniqueStatic = "SELECT DISTINCT WorkerID FROM " + TABLE_NAME_STATIC_INFO + " WHERE SessionID = '"
+                        + sessionID + "' AND TypeID = '" + typeID + "';";
+        String uniqueUpdates = "SELECT DISTINCT WorkerID FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '"
+                        + sessionID + "' AND TypeID = '" + typeID + "';";
 
         Set<String> unique = new HashSet<>();
         try (Statement statement = connection.createStatement()) {
@@ -481,8 +490,8 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public int getNumUpdateRecordsFor(String sessionID, String typeID, String workerID) {
-        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID
-                + "' AND WorkerID = '" + workerID + "';";
+        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID
+                        + "' AND TypeID = '" + typeID + "' AND WorkerID = '" + workerID + "';";
         try (Statement statement = connection.createStatement()) {
             return statement.executeQuery(sql).getInt(1);
         } catch (SQLException e) {
@@ -492,24 +501,27 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public Persistable getLatestUpdate(String sessionID, String typeID, String workerID) {
-        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID
-                + "' AND WorkerID = '" + workerID + "' ORDER BY Timestamp DESC LIMIT 1;";
+        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID
+                        + "' AND TypeID = '" + typeID + "' AND WorkerID = '" + workerID
+                        + "' ORDER BY Timestamp DESC LIMIT 1;";
         return queryAndGet(sql, 1);
     }
 
     @Override
     public Persistable getUpdate(String sessionID, String typeId, String workerID, long timestamp) {
-        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeId
-                + "' AND WorkerID = '" + workerID + "' AND Timestamp = '" + timestamp + "';";
+        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID
+                        + "' AND TypeID = '" + typeId + "' AND WorkerID = '" + workerID + "' AND Timestamp = '"
+                        + timestamp + "';";
         return queryAndGet(sql, 1);
     }
 
     @Override
     public List<Persistable> getLatestUpdateAllWorkers(String sessionID, String typeID) {
-        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " t1" +
-                " LEFT JOIN " + TABLE_NAME_UPDATES + " t2 ON t1.SessionID = t2.SessionID AND " +
-                "t1.TypeID = t2.TypeID AND t1.WorkerID = t2.WorkerID AND t1.Timestamp < t2.Timestamp " +
-                "WHERE t2.Timestamp IS NULL AND t1.SessionID = '" + sessionID + "' AND t1.TypeID = '" + typeID + "';";
+        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " t1" + " LEFT JOIN " + TABLE_NAME_UPDATES
+                        + " t2 ON t1.SessionID = t2.SessionID AND "
+                        + "t1.TypeID = t2.TypeID AND t1.WorkerID = t2.WorkerID AND t1.Timestamp < t2.Timestamp "
+                        + "WHERE t2.Timestamp IS NULL AND t1.SessionID = '" + sessionID + "' AND t1.TypeID = '" + typeID
+                        + "';";
 
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
@@ -526,8 +538,8 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, String workerID, long timestamp) {
-        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID + "' "
-                + "AND Timestamp > " + timestamp + ";";
+        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "' AND TypeID = '"
+                        + typeID + "' " + "AND Timestamp > " + timestamp + ";";
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
             List<Persistable> out = new ArrayList<>();
@@ -544,7 +556,7 @@ public class J7FileStatsStorage implements StatsStorage {
     @Override
     public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp) {
         String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "'  "
-                + "AND Timestamp > " + timestamp + ";";
+                        + "AND Timestamp > " + timestamp + ";";
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
             List<Persistable> out = new ArrayList<>();
@@ -560,7 +572,8 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public StorageMetaData getStorageMetaData(String sessionID, String typeID) {
-        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_METADATA + " WHERE SessionID = '" + sessionID + "' AND TypeID = '" + typeID + "' LIMIT 1;";
+        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_METADATA + " WHERE SessionID = '" + sessionID
+                        + "' AND TypeID = '" + typeID + "' LIMIT 1;";
         return queryAndGet(sql, 1);
     }
 
@@ -590,7 +603,8 @@ public class J7FileStatsStorage implements StatsStorage {
     }
 
     protected void notifyListeners(List<StatsStorageEvent> sses) {
-        if (sses == null || sses.size() == 0 || listeners.size() == 0) return;
+        if (sses == null || sses.size() == 0 || listeners.size() == 0)
+            return;
         for (StatsStorageListener l : listeners) {
             for (StatsStorageEvent e : sses) {
                 l.notify(e);

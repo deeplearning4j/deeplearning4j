@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -32,13 +32,11 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type( value = InputType.InputTypeFeedForward.class, name = "FeedForward" ),
-        @JsonSubTypes.Type( value = InputType.InputTypeRecurrent.class, name = "Recurrent" ),
-        @JsonSubTypes.Type( value = InputType.InputTypeConvolutional.class, name = "Convolutional" ),
-        @JsonSubTypes.Type( value = InputType.InputTypeConvolutionalFlat.class, name = "ConvolutionalFlat" )
-                })
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = InputType.InputTypeFeedForward.class, name = "FeedForward"),
+                @JsonSubTypes.Type(value = InputType.InputTypeRecurrent.class, name = "Recurrent"),
+                @JsonSubTypes.Type(value = InputType.InputTypeConvolutional.class, name = "Convolutional"),
+                @JsonSubTypes.Type(value = InputType.InputTypeConvolutionalFlat.class, name = "ConvolutionalFlat")})
 public abstract class InputType implements Serializable {
 
     /** The type of activations in/out of a given GraphVertex<br>
@@ -46,7 +44,9 @@ public abstract class InputType implements Serializable {
      * RNN: Recurrent neural network (3d minibatch) time series data<br>
      * CNN: Convolutional neural n
      */
-    public enum Type {FF, RNN, CNN, CNNFlat}
+    public enum Type {
+        FF, RNN, CNN, CNNFlat
+    }
 
 
     public abstract Type getType();
@@ -57,7 +57,7 @@ public abstract class InputType implements Serializable {
     /** InputType for feed forward network data
      * @param size The size of the activations
      */
-    public static InputType feedForward(int size){
+    public static InputType feedForward(int size) {
         return new InputTypeFeedForward(size);
     }
 
@@ -65,7 +65,7 @@ public abstract class InputType implements Serializable {
      * @param size The size of the activations
      * @return
      */
-    public static InputType recurrent(int size){
+    public static InputType recurrent(int size) {
         return new InputTypeRecurrent(size);
     }
 
@@ -76,8 +76,8 @@ public abstract class InputType implements Serializable {
      * @param depth Depth, or number of channels
      * @return
      */
-    public static InputType convolutional(int height, int width, int depth){
-        return new InputTypeConvolutional(height,width,depth);
+    public static InputType convolutional(int height, int width, int depth) {
+        return new InputTypeConvolutional(height, width, depth);
     }
 
     /**
@@ -89,13 +89,15 @@ public abstract class InputType implements Serializable {
      * @param depth     Depth of the (unflattened) data represented by this input type
      * @return
      */
-    public static InputType convolutionalFlat(int height, int width, int depth){
+    public static InputType convolutionalFlat(int height, int width, int depth) {
         return new InputTypeConvolutionalFlat(height, width, depth);
     }
 
 
-    @AllArgsConstructor @Getter  @NoArgsConstructor
-    public static class InputTypeFeedForward extends InputType{
+    @AllArgsConstructor
+    @Getter
+    @NoArgsConstructor
+    public static class InputTypeFeedForward extends InputType {
         private int size;
 
         @Override
@@ -104,13 +106,15 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "InputTypeFeedForward(" + size + ")";
         }
     }
 
-    @AllArgsConstructor @Getter  @NoArgsConstructor
-    public static class InputTypeRecurrent extends InputType{
+    @AllArgsConstructor
+    @Getter
+    @NoArgsConstructor
+    public static class InputTypeRecurrent extends InputType {
         private int size;
 
         @Override
@@ -119,12 +123,15 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "InputTypeRecurrent(" + size + ")";
         }
     }
 
-    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false) @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
     public static class InputTypeConvolutional extends InputType {
         private int height;
         private int width;
@@ -136,12 +143,15 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
         }
     }
 
-    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)  @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
+    @EqualsAndHashCode(callSuper = false)
+    @NoArgsConstructor
     public static class InputTypeConvolutionalFlat extends InputType {
         private int height;
         private int width;
@@ -152,16 +162,16 @@ public abstract class InputType implements Serializable {
             return Type.CNNFlat;
         }
 
-        public int getFlattenedSize(){
+        public int getFlattenedSize() {
             return height * width * depth;
         }
 
-        public InputType getUnflattenedType(){
+        public InputType getUnflattenedType() {
             return InputType.convolutional(height, width, depth);
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "InputTypeConvolutionalFlat(h=" + height + ",w=" + width + ",d=" + depth + ")";
         }
     }

@@ -33,6 +33,7 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> extends BaseFlatMapF
     }
 }
 
+
 /**
  * A FlatMapFunction for executing training on DataSets.
  * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
@@ -43,7 +44,7 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
 
     private final TrainingWorker<R> worker;
 
-    public ExecuteWorkerFlatMapAdapter(TrainingWorker<R> worker){
+    public ExecuteWorkerFlatMapAdapter(TrainingWorker<R> worker) {
         this.worker = worker;
     }
 
@@ -54,13 +55,14 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
 
         boolean stats = dataConfig.isCollectTrainingStats();
         StatsCalculationHelper s = (stats ? new StatsCalculationHelper() : null);
-        if(stats) s.logMethodStartTime();
+        if (stats)
+            s.logMethodStartTime();
 
-        if(!dataSetIterator.hasNext()){
-            if(stats){
+        if (!dataSetIterator.hasNext()) {
+            if (stats) {
                 s.logReturnTime();
 
-                Pair<R,SparkTrainingStats> pair = worker.getFinalResultNoDataWithStats();
+                Pair<R, SparkTrainingStats> pair = worker.getFinalResultNoDataWithStats();
                 pair.getFirst().setStats(s.build(pair.getSecond()));
                 return Collections.singletonList(pair.getFirst());
             } else {
@@ -72,33 +74,42 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
         final int prefetchCount = dataConfig.getPrefetchNumBatches();
 
         DataSetIterator batchedIterator = new IteratorDataSetIterator(dataSetIterator, batchSize);
-        if(prefetchCount > 0){
+        if (prefetchCount > 0) {
             batchedIterator = new AsyncDataSetIterator(batchedIterator, prefetchCount);
         }
 
         try {
             MultiLayerNetwork net = null;
             ComputationGraph graph = null;
-            if(stats) s.logInitialModelBefore();
-            if(isGraph) graph = worker.getInitialModelGraph();
-            else net = worker.getInitialModel();
-            if(stats) s.logInitialModelAfter();
+            if (stats)
+                s.logInitialModelBefore();
+            if (isGraph)
+                graph = worker.getInitialModelGraph();
+            else
+                net = worker.getInitialModel();
+            if (stats)
+                s.logInitialModelAfter();
 
             int miniBatchCount = 0;
-            int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
+            int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker()
+                            : Integer.MAX_VALUE);
 
             while (batchedIterator.hasNext() && miniBatchCount++ < maxMinibatches) {
-                if(stats) s.logNextDataSetBefore();
+                if (stats)
+                    s.logNextDataSetBefore();
                 DataSet next = batchedIterator.next();
-                if(stats) s.logNextDataSetAfter(next.numExamples());
+                if (stats)
+                    s.logNextDataSetAfter(next.numExamples());
 
-                if(stats){
+                if (stats) {
                     s.logProcessMinibatchBefore();
-                    Pair<R,SparkTrainingStats> result;
-                    if(isGraph) result = worker.processMinibatchWithStats(next, graph, !batchedIterator.hasNext());
-                    else result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
+                    Pair<R, SparkTrainingStats> result;
+                    if (isGraph)
+                        result = worker.processMinibatchWithStats(next, graph, !batchedIterator.hasNext());
+                    else
+                        result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
                     s.logProcessMinibatchAfter();
-                    if(result != null){
+                    if (result != null) {
                         //Terminate training immediately
                         s.logReturnTime();
                         SparkTrainingStats workerStats = result.getSecond();
@@ -109,9 +120,11 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
                     }
                 } else {
                     R result;
-                    if(isGraph) result = worker.processMinibatch(next, graph, !batchedIterator.hasNext());
-                    else result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
-                    if(result != null){
+                    if (isGraph)
+                        result = worker.processMinibatch(next, graph, !batchedIterator.hasNext());
+                    else
+                        result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
+                    if (result != null) {
                         //Terminate training immediately
                         return Collections.singletonList(result);
                     }
@@ -119,25 +132,29 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
             }
 
             //For some reason, we didn't return already. Normally this shouldn't happen
-            if(stats){
+            if (stats) {
                 s.logReturnTime();
-                Pair<R,SparkTrainingStats> pair;
-                if(isGraph) pair = worker.getFinalResultWithStats(graph);
-                else pair = worker.getFinalResultWithStats(net);
+                Pair<R, SparkTrainingStats> pair;
+                if (isGraph)
+                    pair = worker.getFinalResultWithStats(graph);
+                else
+                    pair = worker.getFinalResultWithStats(net);
                 pair.getFirst().setStats(s.build(pair.getSecond()));
                 return Collections.singletonList(pair.getFirst());
             } else {
-                if(isGraph) return Collections.singletonList(worker.getFinalResult(graph));
-                else return Collections.singletonList(worker.getFinalResult(net));
+                if (isGraph)
+                    return Collections.singletonList(worker.getFinalResult(graph));
+                else
+                    return Collections.singletonList(worker.getFinalResult(net));
             }
         } finally {
             //Make sure we shut down the async thread properly...
-            if(batchedIterator instanceof AsyncDataSetIterator){
-                ((AsyncDataSetIterator)batchedIterator).shutdown();
+            if (batchedIterator instanceof AsyncDataSetIterator) {
+                ((AsyncDataSetIterator) batchedIterator).shutdown();
             }
 
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
     }
 }

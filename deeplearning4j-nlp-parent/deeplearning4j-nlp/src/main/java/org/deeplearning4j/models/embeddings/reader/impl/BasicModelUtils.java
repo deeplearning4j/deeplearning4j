@@ -34,7 +34,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     protected volatile VocabCache<T> vocabCache;
     protected volatile WeightLookupTable<T> lookupTable;
 
-    protected volatile boolean normalized  = false;
+    protected volatile boolean normalized = false;
 
     private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
@@ -64,7 +64,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public double similarity(@NonNull String label1, @NonNull String label2) {
         if (label1 == null || label2 == null) {
-            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null": EXISTS)+ ";" + label2 +" vec2:" + (label2 == null ? "null": EXISTS));
+            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null" : EXISTS) + ";" + label2 + " vec2:"
+                            + (label2 == null ? "null" : EXISTS));
             return Double.NaN;
         }
 
@@ -83,11 +84,13 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
 
         if (vec1 == null || vec2 == null) {
-            log.debug(label1 + ": " + (vec1 == null ? "null": EXISTS)+ ";" + label2 +" vec2:" + (vec2 == null ? "null": EXISTS));
+            log.debug(label1 + ": " + (vec1 == null ? "null" : EXISTS) + ";" + label2 + " vec2:"
+                            + (vec2 == null ? "null" : EXISTS));
             return Double.NaN;
         }
 
-        if (label1.equals(label2)) return 1.0;
+        if (label1.equals(label2))
+            return 1.0;
 
         return Transforms.cosineSim(vec1, vec2);
     }
@@ -95,8 +98,9 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     @Override
     public Collection<String> wordsNearest(String label, int n) {
-        Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
-        if (collection.contains(label)) collection.remove(label);
+        Collection<String> collection = wordsNearest(Arrays.asList(label), new ArrayList<String>(), n + 1);
+        if (collection.contains(label))
+            collection.remove(label);
         return collection;
     }
 
@@ -109,41 +113,40 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public Map<String, Double> accuracy(List<String> questions) {
-        Map<String,Double> accuracy = new HashMap<>();
+        Map<String, Double> accuracy = new HashMap<>();
         Counter<String> right = new Counter<>();
         String analogyType = "";
-        for(String s : questions) {
-            if(s.startsWith(":")) {
+        for (String s : questions) {
+            if (s.startsWith(":")) {
                 double correct = right.getCount(CORRECT);
                 double wrong = right.getCount(WRONG);
-                if(analogyType.isEmpty()){
-                    analogyType=s;
+                if (analogyType.isEmpty()) {
+                    analogyType = s;
                     continue;
                 }
                 double accuracyRet = 100.0 * correct / (correct + wrong);
-                accuracy.put(analogyType,accuracyRet);
+                accuracy.put(analogyType, accuracyRet);
                 analogyType = s;
                 right.clear();
-            }
-            else {
+            } else {
                 String[] split = s.split(" ");
                 String word = split[0];
                 List<String> positive = Arrays.asList(word);
-                List<String> negative = Arrays.asList(split[1],split[2]);
+                List<String> negative = Arrays.asList(split[1], split[2]);
                 String predicted = split[3];
-                String w = wordsNearest(positive,negative,1).iterator().next();
-                if(predicted.equals(w))
-                    right.incrementCount(CORRECT,1.0);
+                String w = wordsNearest(positive, negative, 1).iterator().next();
+                if (predicted.equals(w))
+                    right.incrementCount(CORRECT, 1.0);
                 else
-                    right.incrementCount(WRONG,1.0);
+                    right.incrementCount(WRONG, 1.0);
 
             }
         }
-        if(!analogyType.isEmpty()){
+        if (!analogyType.isEmpty()) {
             double correct = right.getCount(CORRECT);
             double wrong = right.getCount(WRONG);
             double accuracyRet = 100.0 * correct / (correct + wrong);
-            accuracy.put(analogyType,accuracyRet);
+            accuracy.put(analogyType, accuracyRet);
         }
         return accuracy;
     }
@@ -158,14 +161,15 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public List<String> similarWordsInVocabTo(String word, double accuracy) {
         List<String> ret = new ArrayList<>();
-        for(String s : vocabCache.words()) {
-            if(MathUtils.stringSimilarity(word, s) >= accuracy)
+        for (String s : vocabCache.words()) {
+            if (MathUtils.stringSimilarity(word, s) >= accuracy)
                 ret.add(s);
         }
         return ret;
     }
 
-    public Collection<String> wordsNearest(@NonNull Collection<String> positive, @NonNull Collection<String> negative, int top) {
+    public Collection<String> wordsNearest(@NonNull Collection<String> positive, @NonNull Collection<String> negative,
+                    int top) {
         // Check every word is in the model
         for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
             if (!vocabCache.containsWord(p)) {
@@ -189,7 +193,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         Collection<String> tempRes = wordsNearest(mean, top + positive.size() + negative.size());
         List<String> realResults = new ArrayList<>();
 
-        for (String word: tempRes) {
+        for (String word : tempRes) {
             if (!positive.contains(word) && !negative.contains(negative) && realResults.size() < top)
                 realResults.add(word);
         }
@@ -217,7 +221,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-        if(lookupTable instanceof InMemoryLookupTable) {
+        if (lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
 
             INDArray syn0 = l.getSyn0();
@@ -239,7 +243,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
             for (int i = 0; i < highToLowSimList.size(); i++) {
                 String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
-                if (word != null && !word.equals("UNK") && !word.equals("STOP") ) {
+                if (word != null && !word.equals("UNK") && !word.equals("STOP")) {
                     INDArray otherVec = lookupTable.vector(word);
                     double sim = Transforms.cosineSim(words, otherVec);
 
@@ -254,7 +258,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocabCache.words()) {
+        for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(words, otherVec);
             distances.incrementCount(s, sim);
@@ -276,10 +280,10 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     private List<Double> getTopN(INDArray vec, int N) {
         ArrayComparator comparator = new ArrayComparator();
-        PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
+        PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(), comparator);
 
         for (int j = 0; j < vec.length(); j++) {
-            final Double[] pair = new Double[]{vec.getDouble(j), (double) j};
+            final Double[] pair = new Double[] {vec.getDouble(j), (double) j};
             if (queue.size() < N) {
                 queue.add(pair);
             } else {
@@ -306,25 +310,25 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      * @return the words nearest the mean of the words
      */
     @Override
-    public Collection<String> wordsNearestSum(INDArray words,int top) {
+    public Collection<String> wordsNearestSum(INDArray words, int top) {
 
-        if(lookupTable instanceof InMemoryLookupTable) {
+        if (lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
             INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances, 0, false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-            if(top > sort.length())
+            if (top > sort.length())
                 top = sort.length();
             //there will be a redundant word
             int end = top;
-            for(int i = 0; i < end; i++) {
+            for (int i = 0; i < end; i++) {
                 String add = vocabCache.wordAtIndex(sort.getInt(i));
-                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                if (add == null || add.equals("UNK") || add.equals("STOP")) {
                     end++;
-                    if(end >= sort.length())
+                    if (end >= sort.length())
                         break;
                     continue;
                 }
@@ -335,7 +339,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocabCache.words()) {
+        for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(words, otherVec);
             distances.incrementCount(s, sim);
@@ -355,15 +359,15 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top) {
         INDArray words = Nd4j.create(lookupTable.layerSize());
-    //    Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
-        for(String s : positive)
+        //    Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
+        for (String s : positive)
             words.addi(lookupTable.vector(s));
 
 
-        for(String s : negative)
+        for (String s : negative)
             words.addi(lookupTable.vector(s).mul(-1));
 
-        return wordsNearestSum(words,top);
+        return wordsNearestSum(words, top);
     }
 
 
