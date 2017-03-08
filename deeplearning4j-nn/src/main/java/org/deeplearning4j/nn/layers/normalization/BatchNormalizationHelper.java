@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -27,8 +27,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface BatchNormalizationHelper {
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape,
-                                              INDArray gamma, INDArray dGammaView, INDArray dBetaView, double eps);
-    INDArray preOutput(INDArray x, boolean training, int[] shape,
-                       INDArray gamma, INDArray beta, INDArray mean, INDArray var, double decay, double eps);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+                    INDArray dGammaView, INDArray dBetaView, double eps);
+
+    INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
+                    INDArray var, double decay, double eps);
 }

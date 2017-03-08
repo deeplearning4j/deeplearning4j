@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,7 +42,6 @@ public class NegativeGradientStepFunction extends StepFunction {
     }
 
     public String toString() {
-        return "NegativeGradientStepFunction{" +
-                '}';
+        return "NegativeGradientStepFunction{" + '}';
     }
 }

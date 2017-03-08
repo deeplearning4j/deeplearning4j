@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -47,11 +47,12 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
     private boolean regression = false;
     private DataSetPreProcessor preProcessor;
 
-    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen ){
+    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen) {
         this(labelIndex, numPossibleLabels, batchSize, byteFileLen, false, null);
     }
 
-    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen, boolean regression){
+    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen,
+                    boolean regression) {
         this(labelIndex, numPossibleLabels, batchSize, byteFileLen, regression, null);
     }
 
@@ -63,8 +64,8 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
      * @param regression False for classification, true for regression
      * @param preProcessor DataSetPreprocessor (may be null)
      */
-    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen, boolean regression,
-                                     DataSetPreProcessor preProcessor){
+    public DataVecByteDataSetFunction(int labelIndex, int numPossibleLabels, int batchSize, int byteFileLen,
+                    boolean regression, DataSetPreProcessor preProcessor) {
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
         this.batchSize = batchSize;
@@ -78,9 +79,9 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
     public Tuple2<Double, DataSet> call(Tuple2<Text, BytesWritable> inputTuple) throws Exception {
         int lenFeatureVector = 0;
 
-        if (numPossibleLabels >= 1){
-            lenFeatureVector = byteFileLen-1;
-            if(labelIndex < 0)
+        if (numPossibleLabels >= 1) {
+            lenFeatureVector = byteFileLen - 1;
+            if (labelIndex < 0)
                 labelIndex = byteFileLen - 1;
         }
 
@@ -94,7 +95,7 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
 
         try {
             INDArray featureVector = Nd4j.create(lenFeatureVector);
-            while((inputStream.read(byteFeature)) != -1 && batchNumCount != batchSize) {
+            while ((inputStream.read(byteFeature)) != -1 && batchNumCount != batchSize) {
                 featureCount = 0;
                 label = FeatureUtil.toOutcomeVector(byteFeature[labelIndex], numPossibleLabels);
                 for (int j = 1; j <= featureVector.length(); j++)
@@ -116,8 +117,10 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
             labels.add(data.getLabels());
         }
 
-        DataSet ds = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
-        if(preProcessor != null) preProcessor.preProcess(ds);
+        DataSet ds = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),
+                        Nd4j.vstack(labels.toArray(new INDArray[0])));
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
         return new Tuple2<>((double) batchNumCount, ds);
 
     }

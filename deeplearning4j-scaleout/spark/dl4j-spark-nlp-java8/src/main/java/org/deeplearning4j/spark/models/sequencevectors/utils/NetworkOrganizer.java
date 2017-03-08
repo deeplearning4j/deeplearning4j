@@ -66,8 +66,8 @@ public class NetworkOrganizer {
 
         Collections.shuffle(informationCollection);
 
-        for (NetworkInformation information: informationCollection) {
-            for (String ip: information.getIpAddresses()) {
+        for (NetworkInformation information : informationCollection) {
+            for (String ip : information.getIpAddresses()) {
                 if (primary != null && primary.contains(ip))
                     continue;
 
@@ -167,7 +167,7 @@ public class NetworkOrganizer {
 
             Collections.shuffle(candidates);
 
-            return new ArrayList<>(candidates.subList(0, Math.min(numShards,candidates.size())));
+            return new ArrayList<>(candidates.subList(0, Math.min(numShards, candidates.size())));
         } else {
             // if primary isn't null, we expect network to be already filtered
             String octetA = tree.getHottestNetworkA();
@@ -188,7 +188,7 @@ public class NetworkOrganizer {
 
             Collections.shuffle(candidates);
 
-            return new ArrayList<>(candidates.subList(0, Math.min(numShards,candidates.size())));
+            return new ArrayList<>(candidates.subList(0, Math.min(numShards, candidates.size())));
         }
     }
 
@@ -218,7 +218,7 @@ public class NetworkOrganizer {
 
         public int getUniqueBranches() {
             AtomicInteger cnt = new AtomicInteger(nodes.size());
-            for(VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 cnt.addAndGet(node.getNumDivergents());
             }
             return cnt.get();
@@ -226,7 +226,7 @@ public class NetworkOrganizer {
 
         public int getTotalBranches() {
             AtomicInteger cnt = new AtomicInteger(0);
-            for(VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 cnt.addAndGet(node.getCounter());
             }
             return cnt.get();
@@ -235,7 +235,7 @@ public class NetworkOrganizer {
         public String getHottestNetwork() {
             int max = 0;
             Character key = null;
-            for (VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 if (node.getCounter() > max) {
                     max = node.getCounter();
                     key = node.ownChar;
@@ -244,13 +244,13 @@ public class NetworkOrganizer {
             VirtualNode topNode = nodes.get(key).getHottestNode(max);
 
 
-           return topNode.rewind();
+            return topNode.rewind();
         }
 
         protected VirtualNode getHottestNode() {
             int max = 0;
             Character key = null;
-            for (VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 if (node.getCounter() > max) {
                     max = node.getCounter();
                     key = node.ownChar;
@@ -267,7 +267,8 @@ public class NetworkOrganizer {
             VirtualNode startingNode = getHottestNode();
 
             if (startingNode == null)
-                throw new ND4JIllegalStateException("VirtualTree wasn't properly initialized, and doesn't have any information within");
+                throw new ND4JIllegalStateException(
+                                "VirtualTree wasn't properly initialized, and doesn't have any information within");
 
             builder.append(startingNode.ownChar);
 
@@ -290,7 +291,8 @@ public class NetworkOrganizer {
             VirtualNode startingNode = getHottestNode();
 
             if (startingNode == null)
-                throw new ND4JIllegalStateException("VirtualTree wasn't properly initialized, and doesn't have any information within");
+                throw new ND4JIllegalStateException(
+                                "VirtualTree wasn't properly initialized, and doesn't have any information within");
 
             builder.append(startingNode.ownChar);
 
@@ -340,23 +342,23 @@ public class NetworkOrganizer {
         }
 
         protected int getNumDivergents() {
-             if (nodes.size() == 0)
-                 return 0;
+            if (nodes.size() == 0)
+                return 0;
 
-             AtomicInteger cnt = new AtomicInteger(nodes.size() - 1);
-             for(VirtualNode node: nodes.values()) {
-                 cnt.addAndGet(node.getNumDivergents());
-             }
-             return cnt.get();
+            AtomicInteger cnt = new AtomicInteger(nodes.size() - 1);
+            for (VirtualNode node : nodes.values()) {
+                cnt.addAndGet(node.getNumDivergents());
+            }
+            return cnt.get();
         }
 
 
-        protected int getDiscriminatedCount(){
+        protected int getDiscriminatedCount() {
             if (nodes.size() == 0 && counter == 1)
                 return 0;
 
             AtomicInteger cnt = new AtomicInteger(Math.max(0, counter - 1));
-            for(VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 cnt.addAndGet(node.getDiscriminatedCount());
             }
             return cnt.get();
@@ -371,7 +373,7 @@ public class NetworkOrganizer {
          * @return
          */
         protected VirtualNode getHottestNode(int threshold) {
-            for (VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 if (node.getCounter() >= threshold) {
                     return node.getHottestNode(threshold);
                 }
@@ -383,7 +385,7 @@ public class NetworkOrganizer {
         protected VirtualNode getHottestNode() {
             int max = 0;
             Character ch = null;
-            for (VirtualNode node: nodes.values()) {
+            for (VirtualNode node : nodes.values()) {
                 if (node.getCounter() > max) {
                     ch = node.ownChar;
                     max = node.getCounter();

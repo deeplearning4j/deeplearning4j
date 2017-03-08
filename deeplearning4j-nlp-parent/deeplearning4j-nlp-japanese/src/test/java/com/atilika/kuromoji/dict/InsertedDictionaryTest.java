@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -31,13 +31,8 @@ public class InsertedDictionaryTest {
         assertEquals("*,*,*,*,*,*,*,*,*", dictionary1.getAllFeatures(0));
         assertEquals("*,*,*,*,*", dictionary2.getAllFeatures(0));
 
-        assertArrayEquals(
-            new String[]{"*", "*", "*", "*", "*", "*", "*", "*", "*"},
-            dictionary1.getAllFeaturesArray(0)
-        );
-        assertArrayEquals(
-            new String[]{"*", "*", "*", "*", "*"},
-            dictionary2.getAllFeaturesArray(0)
-        );
+        assertArrayEquals(new String[] {"*", "*", "*", "*", "*", "*", "*", "*", "*"},
+                        dictionary1.getAllFeaturesArray(0));
+        assertArrayEquals(new String[] {"*", "*", "*", "*", "*"}, dictionary2.getAllFeaturesArray(0));
     }
 }

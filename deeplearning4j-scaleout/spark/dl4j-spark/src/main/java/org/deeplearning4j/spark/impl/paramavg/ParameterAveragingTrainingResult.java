@@ -28,14 +28,15 @@ public class ParameterAveragingTrainingResult implements TrainingResult {
     private final Collection<Persistable> listenerUpdates;
 
 
-    public ParameterAveragingTrainingResult(INDArray parameters, INDArray updaterState, double score, Collection<StorageMetaData> listenerMetaData,
-                                            Collection<Persistable> listenerStaticInfo, Collection<Persistable> listenerUpdates){
+    public ParameterAveragingTrainingResult(INDArray parameters, INDArray updaterState, double score,
+                    Collection<StorageMetaData> listenerMetaData, Collection<Persistable> listenerStaticInfo,
+                    Collection<Persistable> listenerUpdates) {
         this(parameters, updaterState, score, null, listenerMetaData, listenerStaticInfo, listenerUpdates);
     }
 
-    public ParameterAveragingTrainingResult(INDArray parameters, INDArray updaterState, double score, SparkTrainingStats sparkTrainingStats,
-                                            Collection<StorageMetaData> listenerMetaData, Collection<Persistable> listenerStaticInfo,
-                                            Collection<Persistable> listenerUpdates){
+    public ParameterAveragingTrainingResult(INDArray parameters, INDArray updaterState, double score,
+                    SparkTrainingStats sparkTrainingStats, Collection<StorageMetaData> listenerMetaData,
+                    Collection<Persistable> listenerStaticInfo, Collection<Persistable> listenerUpdates) {
         this.parameters = parameters;
         this.updaterState = updaterState;
         this.score = score;

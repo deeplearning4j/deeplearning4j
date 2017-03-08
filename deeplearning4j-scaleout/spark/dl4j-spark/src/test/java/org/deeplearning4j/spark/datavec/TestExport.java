@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,8 @@ public class TestExport extends BaseSparkTest {
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExport/");
         baseDir = baseDir.replaceAll("\\\\", "/");
         File f = new File(baseDir);
-        if (f.exists()) FileUtils.deleteDirectory(f);
+        if (f.exists())
+            FileUtils.deleteDirectory(f);
         f.mkdir();
         f.deleteOnExit();
         int minibatchSize = 5;
@@ -69,10 +70,11 @@ public class TestExport extends BaseSparkTest {
         Collections.shuffle(dataSets, new Random(12345));
 
         JavaRDD<DataSet> rdd = sc.parallelize(dataSets);
-        rdd = rdd.repartition(1);     //For testing purposes (should get exactly 100 out, but maybe more with more partitions)
+        rdd = rdd.repartition(1); //For testing purposes (should get exactly 100 out, but maybe more with more partitions)
 
 
-        JavaRDD<String> pathsRdd = rdd.mapPartitionsWithIndex(new BatchAndExportDataSetsFunction(minibatchSize, "file:///" + baseDir), true);
+        JavaRDD<String> pathsRdd = rdd.mapPartitionsWithIndex(
+                        new BatchAndExportDataSetsFunction(minibatchSize, "file:///" + baseDir), true);
 
         List<String> paths = pathsRdd.collect();
         assertEquals(100, paths.size());
@@ -82,7 +84,8 @@ public class TestExport extends BaseSparkTest {
 
         int count = 0;
         for (File file : files) {
-            if (!file.getPath().endsWith(".bin")) continue;
+            if (!file.getPath().endsWith(".bin"))
+                continue;
             System.out.println(file);
             DataSet ds = new DataSet();
             ds.load(file);
@@ -102,7 +105,8 @@ public class TestExport extends BaseSparkTest {
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExportMDS/");
         baseDir = baseDir.replaceAll("\\\\", "/");
         File f = new File(baseDir);
-        if (f.exists()) FileUtils.deleteDirectory(f);
+        if (f.exists())
+            FileUtils.deleteDirectory(f);
         f.mkdir();
         f.deleteOnExit();
         int minibatchSize = 5;
@@ -124,10 +128,11 @@ public class TestExport extends BaseSparkTest {
         Collections.shuffle(dataSets, new Random(12345));
 
         JavaRDD<MultiDataSet> rdd = sc.parallelize(dataSets);
-        rdd = rdd.repartition(1);     //For testing purposes (should get exactly 100 out, but maybe more with more partitions)
+        rdd = rdd.repartition(1); //For testing purposes (should get exactly 100 out, but maybe more with more partitions)
 
 
-        JavaRDD<String> pathsRdd = rdd.mapPartitionsWithIndex(new BatchAndExportMultiDataSetsFunction(minibatchSize, "file:///" + baseDir), true);
+        JavaRDD<String> pathsRdd = rdd.mapPartitionsWithIndex(
+                        new BatchAndExportMultiDataSetsFunction(minibatchSize, "file:///" + baseDir), true);
 
         List<String> paths = pathsRdd.collect();
         assertEquals(100, paths.size());
@@ -137,7 +142,8 @@ public class TestExport extends BaseSparkTest {
 
         int count = 0;
         for (File file : files) {
-            if (!file.getPath().endsWith(".bin")) continue;
+            if (!file.getPath().endsWith(".bin"))
+                continue;
             System.out.println(file);
             MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
             ds.load(file);

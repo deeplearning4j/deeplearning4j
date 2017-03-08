@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -66,14 +66,14 @@ public class EvalTest {
         Evaluation eval = new Evaluation(classNum);
 
         // Testing the edge case when some classes do not have true positive
-        INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5);       //[1,0,0,0,0]
-        INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 5);  //[1,0,0,0,0]
+        INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
+        INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
         assertEquals(1.0, eval.f1(), 1e-1);
 
         // Testing more than one sample. eval() does not reset the Evaluation instance
-        INDArray trueOutcome2 = FeatureUtil.toOutcomeVector(1, 5);      //[0,1,0,0,0]
+        INDArray trueOutcome2 = FeatureUtil.toOutcomeVector(1, 5); //[0,1,0,0,0]
         INDArray predictedOutcome2 = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
         eval.eval(trueOutcome2, predictedOutcome2);
         // Verified with sklearn in Python
@@ -100,39 +100,39 @@ public class EvalTest {
     }
 
     @Test
-    public void testEval2(){
+    public void testEval2() {
 
         //Confusion matrix:
         //actual 0      20      3
         //actual 1      10      5
 
-        Evaluation evaluation = new Evaluation(Arrays.asList("class0","class1"));
-        INDArray predicted0 = Nd4j.create(new double[]{1,0});
-        INDArray predicted1 = Nd4j.create(new double[]{0,1});
-        INDArray actual0 = Nd4j.create(new double[]{1,0});
-        INDArray actual1 = Nd4j.create(new double[]{0,1});
-        for( int i=0; i<20; i++ ){
-            evaluation.eval(actual0,predicted0);
+        Evaluation evaluation = new Evaluation(Arrays.asList("class0", "class1"));
+        INDArray predicted0 = Nd4j.create(new double[] {1, 0});
+        INDArray predicted1 = Nd4j.create(new double[] {0, 1});
+        INDArray actual0 = Nd4j.create(new double[] {1, 0});
+        INDArray actual1 = Nd4j.create(new double[] {0, 1});
+        for (int i = 0; i < 20; i++) {
+            evaluation.eval(actual0, predicted0);
         }
 
-        for( int i=0; i<3; i++ ){
-            evaluation.eval(actual0,predicted1);
+        for (int i = 0; i < 3; i++) {
+            evaluation.eval(actual0, predicted1);
         }
 
-        for( int i=0; i<10; i++ ){
-            evaluation.eval(actual1,predicted0);
+        for (int i = 0; i < 10; i++) {
+            evaluation.eval(actual1, predicted0);
         }
 
-        for( int i=0; i<5; i++ ){
-            evaluation.eval(actual1,predicted1);
+        for (int i = 0; i < 5; i++) {
+            evaluation.eval(actual1, predicted1);
         }
 
-        assertEquals(20,evaluation.truePositives().get(0),0);
-        assertEquals(3,evaluation.falseNegatives().get(0),0);
-        assertEquals(10,evaluation.falsePositives().get(0),0);
-        assertEquals(5,evaluation.trueNegatives().get(0),0);
+        assertEquals(20, evaluation.truePositives().get(0), 0);
+        assertEquals(3, evaluation.falseNegatives().get(0), 0);
+        assertEquals(10, evaluation.falsePositives().get(0), 0);
+        assertEquals(5, evaluation.trueNegatives().get(0), 0);
 
-        assertEquals((20.0+5)/(20+3+10+5), evaluation.accuracy(), 1e-6);
+        assertEquals((20.0 + 5) / (20 + 3 + 10 + 5), evaluation.accuracy(), 1e-6);
 
         System.out.println(evaluation.confusionToString());
     }
@@ -178,22 +178,15 @@ public class EvalTest {
         // Network config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(1)
-                .seed(42)
-                .learningRate(1e-6)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(2)
-                        .activation(Activation.TANH)
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(2).nOut(3)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.SOFTMAX)
-                        .build())
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(42)
+                        .learningRate(1e-6).list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH)
+                                        .weightInit(WeightInit.XAVIER).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.SOFTMAX).build())
 
-                .build();
+                        .build();
 
         // Instantiate model
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -247,7 +240,7 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalMasking(){
+    public void testEvalMasking() {
         int miniBatch = 5;
         int nOut = 3;
         int tsLength = 6;
@@ -257,34 +250,37 @@ public class EvalTest {
 
         Nd4j.getRandom().setSeed(12345);
         Random r = new Random(12345);
-        for( int i=0; i<miniBatch; i++ ){
-            for( int j=0; j<tsLength; j++ ){
-                INDArray rand = Nd4j.rand(1,nOut);
+        for (int i = 0; i < miniBatch; i++) {
+            for (int j = 0; j < tsLength; j++) {
+                INDArray rand = Nd4j.rand(1, nOut);
                 rand.divi(rand.sumNumber());
-                predicted.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.point(j)},rand);
+                predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j)},
+                                rand);
                 int idx = r.nextInt(nOut);
-                labels.putScalar(new int[]{i,idx,j},1.0);
+                labels.putScalar(new int[] {i, idx, j}, 1.0);
             }
         }
 
         //Create a longer labels/predicted with mask for first and last time step
         //Expect masked evaluation to be identical to original evaluation
         INDArray labels2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        labels2.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(1,tsLength+1)},labels);
+        labels2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(1, tsLength + 1)}, labels);
         INDArray predicted2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        predicted2.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, tsLength + 1)}, predicted);
+        predicted2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(1, tsLength + 1)}, predicted);
 
-        INDArray labelsMask = Nd4j.ones(miniBatch,tsLength+2);
-        for( int i=0; i<miniBatch; i++ ){
-            labelsMask.putScalar(new int[]{i,0},0.0);
-            labelsMask.putScalar(new int[]{i,tsLength+1},0.0);
+        INDArray labelsMask = Nd4j.ones(miniBatch, tsLength + 2);
+        for (int i = 0; i < miniBatch; i++) {
+            labelsMask.putScalar(new int[] {i, 0}, 0.0);
+            labelsMask.putScalar(new int[] {i, tsLength + 1}, 0.0);
         }
 
         Evaluation evaluation = new Evaluation();
-        evaluation.evalTimeSeries(labels,predicted);
+        evaluation.evalTimeSeries(labels, predicted);
 
         Evaluation evaluation2 = new Evaluation();
-        evaluation2.evalTimeSeries(labels2,predicted2,labelsMask);
+        evaluation2.evalTimeSeries(labels2, predicted2, labelsMask);
 
         System.out.println(evaluation.stats());
         System.out.println(evaluation2.stats());
@@ -297,13 +293,14 @@ public class EvalTest {
         assertMapEquals(evaluation.truePositives(), evaluation2.truePositives());
         assertMapEquals(evaluation.trueNegatives(), evaluation2.trueNegatives());
 
-        for( int i=0; i<nOut; i++) assertEquals(evaluation.classCount(i),evaluation2.classCount(i));
+        for (int i = 0; i < nOut; i++)
+            assertEquals(evaluation.classCount(i), evaluation2.classCount(i));
     }
 
-    private static void assertMapEquals(Map<Integer,Integer> first, Map<Integer,Integer> second){
-        assertEquals(first.keySet(),second.keySet());
-        for( Integer i : first.keySet()){
-            assertEquals(first.get(i),second.get(i));
+    private static void assertMapEquals(Map<Integer, Integer> first, Map<Integer, Integer> second) {
+        assertEquals(first.keySet(), second.keySet());
+        for (Integer i : first.keySet()) {
+            assertEquals(first.get(i), second.get(i));
         }
     }
 
@@ -321,15 +318,15 @@ public class EvalTest {
         Random r = new Random(seed);
 
         //Modelling the situation when system predicts the same class every time
-        for(int i = 0; i < testSize; i++) {
+        for (int i = 0; i < testSize; i++) {
             //Generating random prediction but with a guaranteed winner
             INDArray rand = Nd4j.rand(1, numClasses);
             rand.put(0, winner, rand.sumNumber());
             rand.divi(rand.sumNumber());
-            predicted.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all()}, rand);
+            predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all()}, rand);
             //Generating random label
             int label = r.nextInt(numClasses);
-            labels.putScalar(new int[]{i,label},1.0);
+            labels.putScalar(new int[] {i, label}, 1.0);
         }
 
         //Explicitly specify the amount of classes
@@ -341,44 +338,48 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvaluationMerging(){
+    public void testEvaluationMerging() {
 
         int nRows = 20;
         int nCols = 3;
 
         Random r = new Random(12345);
-        INDArray actual = Nd4j.create(nRows,nCols);
+        INDArray actual = Nd4j.create(nRows, nCols);
         INDArray predicted = Nd4j.create(nRows, nCols);
-        for( int i=0; i<nRows; i++ ){
+        for (int i = 0; i < nRows; i++) {
             int x1 = r.nextInt(nCols);
             int x2 = r.nextInt(nCols);
-            actual.putScalar(new int[]{i,x1},1.0);
-            predicted.putScalar(new int[]{i,x2},1.0);
+            actual.putScalar(new int[] {i, x1}, 1.0);
+            predicted.putScalar(new int[] {i, x2}, 1.0);
         }
 
         Evaluation evalExpected = new Evaluation();
-        evalExpected.eval(actual,predicted);
+        evalExpected.eval(actual, predicted);
 
 
         //Now: split into 3 separate evaluation objects -> expect identical values after merging
         Evaluation eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
+                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
         Evaluation eval2 = new Evaluation();
-        eval2.eval(actual.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+        eval2.eval(actual.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()),
+                        predicted.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         Evaluation eval3 = new Evaluation();
-        eval3.eval(actual.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()));
+        eval3.eval(actual.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()),
+                        predicted.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()));
 
         eval1.merge(eval2);
         eval1.merge(eval3);
 
-        checkEvaluationEquality(evalExpected,eval1);
+        checkEvaluationEquality(evalExpected, eval1);
 
 
         //Next: check evaluation merging with empty, and empty merging with non-empty
         eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
+                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
         Evaluation evalInitiallyEmpty = new Evaluation();
         evalInitiallyEmpty.merge(eval1);
@@ -393,25 +394,25 @@ public class EvalTest {
         checkEvaluationEquality(evalExpected, eval1);
     }
 
-    private static void checkEvaluationEquality(Evaluation evalExpected, Evaluation evalActual){
+    private static void checkEvaluationEquality(Evaluation evalExpected, Evaluation evalActual) {
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
-        assertEquals(evalExpected.getNumRowCounter(),evalActual.getNumRowCounter(), 1e-3);
-        assertMapEquals(evalExpected.falseNegatives(),evalActual.falseNegatives());
-        assertMapEquals(evalExpected.falsePositives(),evalActual.falsePositives());
-        assertMapEquals(evalExpected.trueNegatives(),evalActual.trueNegatives());
-        assertMapEquals(evalExpected.truePositives(),evalActual.truePositives());
-        assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
-        assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
-        assertEquals(evalExpected.falsePositiveRate(),evalActual.falsePositiveRate(), 1e-3);
-        assertEquals(evalExpected.falseNegativeRate(),evalActual.falseNegativeRate(), 1e-3);
-        assertEquals(evalExpected.falseAlarmRate(),evalActual.falseAlarmRate(), 1e-3);
+        assertEquals(evalExpected.getNumRowCounter(), evalActual.getNumRowCounter(), 1e-3);
+        assertMapEquals(evalExpected.falseNegatives(), evalActual.falseNegatives());
+        assertMapEquals(evalExpected.falsePositives(), evalActual.falsePositives());
+        assertMapEquals(evalExpected.trueNegatives(), evalActual.trueNegatives());
+        assertMapEquals(evalExpected.truePositives(), evalActual.truePositives());
+        assertEquals(evalExpected.precision(), evalActual.precision(), 1e-3);
+        assertEquals(evalExpected.recall(), evalActual.recall(), 1e-3);
+        assertEquals(evalExpected.falsePositiveRate(), evalActual.falsePositiveRate(), 1e-3);
+        assertEquals(evalExpected.falseNegativeRate(), evalActual.falseNegativeRate(), 1e-3);
+        assertEquals(evalExpected.falseAlarmRate(), evalActual.falseAlarmRate(), 1e-3);
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 
 
     @Test
-    public void testSingleClassBinaryClassification(){
+    public void testSingleClassBinaryClassification() {
 
         Evaluation eval = new Evaluation(1);
 
@@ -419,27 +420,27 @@ public class EvalTest {
         INDArray one = Nd4j.ones(1);
 
         //One incorrect, three correct
-        eval.eval(one,zero);
-        eval.eval(one,one);
-        eval.eval(one,one);
-        eval.eval(zero,zero);
+        eval.eval(one, zero);
+        eval.eval(one, one);
+        eval.eval(one, one);
+        eval.eval(zero, zero);
 
         System.out.println(eval.stats());
 
         assertEquals(0.75, eval.accuracy(), 1e-6);
         assertEquals(4, eval.getNumRowCounter());
 
-        assertEquals(1, (int)eval.truePositives().get(0));
-        assertEquals(2, (int)eval.truePositives().get(1));
-        assertEquals(1, (int)eval.falseNegatives().get(1));
+        assertEquals(1, (int) eval.truePositives().get(0));
+        assertEquals(2, (int) eval.truePositives().get(1));
+        assertEquals(1, (int) eval.falseNegatives().get(1));
     }
 
     @Test
-    public void testEvalInvalid(){
+    public void testEvalInvalid() {
         Evaluation e = new Evaluation(5);
-        e.eval(0,1);
-        e.eval(1,0);
-        e.eval(1,1);
+        e.eval(0, 1);
+        e.eval(1, 0);
+        e.eval(1, 1);
 
         System.out.println(e.stats());
 
@@ -450,99 +451,99 @@ public class EvalTest {
     }
 
     @Test
-    public void testEvalMethods(){
+    public void testEvalMethods() {
         //Check eval(int,int) vs. eval(INDArray,INDArray)
 
         Evaluation e1 = new Evaluation(4);
         Evaluation e2 = new Evaluation(4);
 
-        INDArray i0 = Nd4j.create(new double[]{1,0,0,0});
-        INDArray i1 = Nd4j.create(new double[]{0,1,0,0});
-        INDArray i2 = Nd4j.create(new double[]{0,0,1,0});
-        INDArray i3 = Nd4j.create(new double[]{0,0,0,1});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0});
+        INDArray i2 = Nd4j.create(new double[] {0, 0, 1, 0});
+        INDArray i3 = Nd4j.create(new double[] {0, 0, 0, 1});
 
-        e1.eval(i0,i0); //order: actual, predicted
-        e2.eval(0,0);   //order: predicted, actual
-        e1.eval(i0,i2);
-        e2.eval(2,0);
-        e1.eval(i0,i2);
-        e2.eval(2,0);
-        e1.eval(i1,i2);
-        e2.eval(2,1);
-        e1.eval(i3,i3);
-        e2.eval(3,3);
-        e1.eval(i3,i0);
-        e2.eval(0,3);
-        e1.eval(i3,i0);
-        e2.eval(0,3);
+        e1.eval(i0, i0); //order: actual, predicted
+        e2.eval(0, 0); //order: predicted, actual
+        e1.eval(i0, i2);
+        e2.eval(2, 0);
+        e1.eval(i0, i2);
+        e2.eval(2, 0);
+        e1.eval(i1, i2);
+        e2.eval(2, 1);
+        e1.eval(i3, i3);
+        e2.eval(3, 3);
+        e1.eval(i3, i0);
+        e2.eval(0, 3);
+        e1.eval(i3, i0);
+        e2.eval(0, 3);
 
         ConfusionMatrix<Integer> cm = e1.getConfusionMatrix();
-        assertEquals(1,cm.getCount(0,0));   //Order: actual, predicted
-        assertEquals(2,cm.getCount(0,2));
-        assertEquals(1,cm.getCount(1,2));
-        assertEquals(1,cm.getCount(3,3));
-        assertEquals(2,cm.getCount(3,0));
+        assertEquals(1, cm.getCount(0, 0)); //Order: actual, predicted
+        assertEquals(2, cm.getCount(0, 2));
+        assertEquals(1, cm.getCount(1, 2));
+        assertEquals(1, cm.getCount(3, 3));
+        assertEquals(2, cm.getCount(3, 0));
 
         System.out.println(e1.stats());
         System.out.println(e2.stats());
 
-        assertEquals(e1.stats(),e2.stats());
+        assertEquals(e1.stats(), e2.stats());
     }
 
 
     @Test
-    public void testTopNAccuracy(){
+    public void testTopNAccuracy() {
 
-        Evaluation e = new Evaluation(null,3);
+        Evaluation e = new Evaluation(null, 3);
 
-        INDArray i0 = Nd4j.create(new double[]{1,0,0,0,0});
-        INDArray i1 = Nd4j.create(new double[]{0,1,0,0,0});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
 
-        INDArray p0_0 = Nd4j.create(new double[]{0.8,0.05,0.05,0.05,0.05});     //class 0: highest prob
-        INDArray p0_1 = Nd4j.create(new double[]{0.4,0.45,0.05,0.05,0.05});     //class 0: 2nd highest prob
-        INDArray p0_2 = Nd4j.create(new double[]{0.1,0.45,0.35,0.05,0.05});     //class 0: 3rd highest prob
-        INDArray p0_3 = Nd4j.create(new double[]{0.1,0.40,0.30,0.15,0.05});     //class 0: 4th highest prob
+        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}); //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}); //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}); //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}); //class 0: 4th highest prob
 
-        INDArray p1_0 = Nd4j.create(new double[]{0.05,0.80,0.05,0.05,0.05});     //class 1: highest prob
-        INDArray p1_1 = Nd4j.create(new double[]{0.45,0.40,0.05,0.05,0.05});     //class 1: 2nd highest prob
-        INDArray p1_2 = Nd4j.create(new double[]{0.35,0.10,0.45,0.05,0.05});     //class 1: 3rd highest prob
-        INDArray p1_3 = Nd4j.create(new double[]{0.40,0.10,0.30,0.15,0.05});     //class 1: 4th highest prob
+        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}); //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}); //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}); //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}); //class 1: 4th highest prob
 
 
         //                                              Correct     TopNCorrect     Total
-        e.eval(i0, p0_0);                           //  1           1               1
+        e.eval(i0, p0_0); //  1           1               1
         assertEquals(1.0, e.accuracy(), 1e-6);
         assertEquals(1.0, e.topNAccuracy(), 1e-6);
         assertEquals(1, e.getTopNCorrectCount());
         assertEquals(1, e.getTopNTotalCount());
-        e.eval(i0, p0_1);                           //  1           2               2
+        e.eval(i0, p0_1); //  1           2               2
         assertEquals(0.5, e.accuracy(), 1e-6);
         assertEquals(1.0, e.topNAccuracy(), 1e-6);
         assertEquals(2, e.getTopNCorrectCount());
         assertEquals(2, e.getTopNTotalCount());
-        e.eval(i0, p0_2);                           //  1           3               3
-        assertEquals(1.0/3, e.accuracy(), 1e-6);
+        e.eval(i0, p0_2); //  1           3               3
+        assertEquals(1.0 / 3, e.accuracy(), 1e-6);
         assertEquals(1.0, e.topNAccuracy(), 1e-6);
         assertEquals(3, e.getTopNCorrectCount());
         assertEquals(3, e.getTopNTotalCount());
-        e.eval(i0, p0_3);                           //  1           3               4
+        e.eval(i0, p0_3); //  1           3               4
         assertEquals(0.25, e.accuracy(), 1e-6);
         assertEquals(0.75, e.topNAccuracy(), 1e-6);
         assertEquals(3, e.getTopNCorrectCount());
         assertEquals(4, e.getTopNTotalCount());
 
-        e.eval(i1, p1_0);                           //  2           4               5
-        assertEquals(2.0/5, e.accuracy(), 1e-6);
-        assertEquals(4.0/5, e.topNAccuracy(), 1e-6);
-        e.eval(i1, p1_1);                           //  2           5               6
-        assertEquals(2.0/6, e.accuracy(), 1e-6);
-        assertEquals(5.0/6, e.topNAccuracy(), 1e-6);
-        e.eval(i1, p1_2);                           //  2           6               7
-        assertEquals(2.0/7, e.accuracy(), 1e-6);
-        assertEquals(6.0/7, e.topNAccuracy(), 1e-6);
-        e.eval(i1, p1_3);                           //  2           6               8
-        assertEquals(2.0/8, e.accuracy(), 1e-6);
-        assertEquals(6.0/8, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_0); //  2           4               5
+        assertEquals(2.0 / 5, e.accuracy(), 1e-6);
+        assertEquals(4.0 / 5, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_1); //  2           5               6
+        assertEquals(2.0 / 6, e.accuracy(), 1e-6);
+        assertEquals(5.0 / 6, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_2); //  2           6               7
+        assertEquals(2.0 / 7, e.accuracy(), 1e-6);
+        assertEquals(6.0 / 7, e.topNAccuracy(), 1e-6);
+        e.eval(i1, p1_3); //  2           6               8
+        assertEquals(2.0 / 8, e.accuracy(), 1e-6);
+        assertEquals(6.0 / 8, e.topNAccuracy(), 1e-6);
         assertEquals(6, e.getTopNCorrectCount());
         assertEquals(8, e.getTopNTotalCount());
 
@@ -551,41 +552,41 @@ public class EvalTest {
 
 
     @Test
-    public void testTopNAccuracyMerging(){
+    public void testTopNAccuracyMerging() {
 
-        Evaluation e1 = new Evaluation(null,3);
-        Evaluation e2 = new Evaluation(null,3);
+        Evaluation e1 = new Evaluation(null, 3);
+        Evaluation e2 = new Evaluation(null, 3);
 
-        INDArray i0 = Nd4j.create(new double[]{1,0,0,0,0});
-        INDArray i1 = Nd4j.create(new double[]{0,1,0,0,0});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
 
-        INDArray p0_0 = Nd4j.create(new double[]{0.8,0.05,0.05,0.05,0.05});     //class 0: highest prob
-        INDArray p0_1 = Nd4j.create(new double[]{0.4,0.45,0.05,0.05,0.05});     //class 0: 2nd highest prob
-        INDArray p0_2 = Nd4j.create(new double[]{0.1,0.45,0.35,0.05,0.05});     //class 0: 3rd highest prob
-        INDArray p0_3 = Nd4j.create(new double[]{0.1,0.40,0.30,0.15,0.05});     //class 0: 4th highest prob
+        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}); //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}); //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}); //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}); //class 0: 4th highest prob
 
-        INDArray p1_0 = Nd4j.create(new double[]{0.05,0.80,0.05,0.05,0.05});     //class 1: highest prob
-        INDArray p1_1 = Nd4j.create(new double[]{0.45,0.40,0.05,0.05,0.05});     //class 1: 2nd highest prob
-        INDArray p1_2 = Nd4j.create(new double[]{0.35,0.10,0.45,0.05,0.05});     //class 1: 3rd highest prob
-        INDArray p1_3 = Nd4j.create(new double[]{0.40,0.10,0.30,0.15,0.05});     //class 1: 4th highest prob
+        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}); //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}); //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}); //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}); //class 1: 4th highest prob
 
 
         //                                              Correct     TopNCorrect     Total
-        e1.eval(i0, p0_0);                           //  1           1               1
-        e1.eval(i0, p0_1);                           //  1           2               2
-        e1.eval(i0, p0_2);                           //  1           3               3
-        e1.eval(i0, p0_3);                           //  1           3               4
+        e1.eval(i0, p0_0); //  1           1               1
+        e1.eval(i0, p0_1); //  1           2               2
+        e1.eval(i0, p0_2); //  1           3               3
+        e1.eval(i0, p0_3); //  1           3               4
         assertEquals(0.25, e1.accuracy(), 1e-6);
         assertEquals(0.75, e1.topNAccuracy(), 1e-6);
         assertEquals(3, e1.getTopNCorrectCount());
         assertEquals(4, e1.getTopNTotalCount());
 
-        e2.eval(i1, p1_0);                           //  1           1               1
-        e2.eval(i1, p1_1);                           //  1           2               2
-        e2.eval(i1, p1_2);                           //  1           3               3
-        e2.eval(i1, p1_3);                           //  1           3               4
-        assertEquals(1.0/4, e2.accuracy(), 1e-6);
-        assertEquals(3.0/4, e2.topNAccuracy(), 1e-6);
+        e2.eval(i1, p1_0); //  1           1               1
+        e2.eval(i1, p1_1); //  1           2               2
+        e2.eval(i1, p1_2); //  1           3               3
+        e2.eval(i1, p1_3); //  1           3               4
+        assertEquals(1.0 / 4, e2.accuracy(), 1e-6);
+        assertEquals(3.0 / 4, e2.topNAccuracy(), 1e-6);
         assertEquals(3, e2.getTopNCorrectCount());
         assertEquals(4, e2.getTopNTotalCount());
 
@@ -594,8 +595,8 @@ public class EvalTest {
         assertEquals(8, e1.getNumRowCounter());
         assertEquals(8, e1.getTopNTotalCount());
         assertEquals(6, e1.getTopNCorrectCount());
-        assertEquals(2.0/8, e1.accuracy(), 1e-6);
-        assertEquals(6.0/8, e1.topNAccuracy(), 1e-6);
+        assertEquals(2.0 / 8, e1.accuracy(), 1e-6);
+        assertEquals(6.0 / 8, e1.topNAccuracy(), 1e-6);
     }
 
 
@@ -609,7 +610,7 @@ public class EvalTest {
         int labelIdx = 4;
         int numClasses = 3;
 
-        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv,batchSize,labelIdx,numClasses);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv, batchSize, labelIdx, numClasses);
 
         NormalizerStandardize ns = new NormalizerStandardize();
         ns.fit(rrdsi);
@@ -617,21 +618,17 @@ public class EvalTest {
         rrdsi.reset();
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD).learningRate(0.1)
-                .list()
-                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true)
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+                        .learningRate(0.1).list()
+                        .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                        .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        for( int i=0; i<4; i++ ){
+        for (int i = 0; i < 4; i++) {
             net.fit(rrdsi);
             rrdsi.reset();
         }
@@ -639,32 +636,32 @@ public class EvalTest {
         Evaluation e = new Evaluation();
         rrdsi.setCollectMetaData(true); //*** New: Enable collection of metadata (stored in the DataSets) ***
 
-        while(rrdsi.hasNext()){
+        while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);    //*** New - cross dependencies here make types difficult, usid Object internally in DataSet for this***
+            List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class); //*** New - cross dependencies here make types difficult, usid Object internally in DataSet for this***
 
             INDArray out = net.output(ds.getFeatures());
-            e.eval(ds.getLabels(), out, meta);      //*** New - evaluate and also store metadata ***
+            e.eval(ds.getLabels(), out, meta); //*** New - evaluate and also store metadata ***
         }
 
         System.out.println(e.stats());
 
         System.out.println("\n\n*** Prediction Errors: ***");
 
-        List<Prediction> errors = e.getPredictionErrors();          //*** New - get list of prediction errors from evaluation ***
+        List<Prediction> errors = e.getPredictionErrors(); //*** New - get list of prediction errors from evaluation ***
         List<RecordMetaData> metaForErrors = new ArrayList<>();
-        for(Prediction p : errors){
-            metaForErrors.add((RecordMetaData)p.getRecordMetaData());
+        for (Prediction p : errors) {
+            metaForErrors.add((RecordMetaData) p.getRecordMetaData());
         }
-        DataSet ds = rrdsi.loadFromMetaData(metaForErrors);         //*** New - dynamically load a subset of the data, just for prediction errors ***
+        DataSet ds = rrdsi.loadFromMetaData(metaForErrors); //*** New - dynamically load a subset of the data, just for prediction errors ***
         INDArray output = net.output(ds.getFeatures());
 
         int count = 0;
-        for(Prediction t : errors){
-            System.out.println(t
-                    + "\t\tRaw Data: " + csv.loadFromMetaData((RecordMetaData)t.getRecordMetaData()).getRecord()    //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
-                    + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count)
-                    + "\tNetwork predictions: " + output.getRow(count));
+        for (Prediction t : errors) {
+            System.out.println(t + "\t\tRaw Data: "
+                            + csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
+                            + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: "
+                            + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count));
             count++;
         }
 
@@ -675,10 +672,10 @@ public class EvalTest {
         ConfusionMatrix<Integer> confusion = e.getConfusionMatrix();
         int[] actualCounts = new int[3];
         int[] predictedCounts = new int[3];
-        for( int i=0; i<3; i++ ){
-            for( int j=0; j<3; j++ ){
-                int entry = confusion.getCount(i,j);    //(actual,predicted)
-                List<Prediction> list = e.getPredictions(i,j);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                int entry = confusion.getCount(i, j); //(actual,predicted)
+                List<Prediction> list = e.getPredictions(i, j);
                 assertEquals(entry, list.size());
 
                 actualCounts[i] += entry;
@@ -686,7 +683,7 @@ public class EvalTest {
             }
         }
 
-        for( int i=0; i<3; i++ ){
+        for (int i = 0; i < 3; i++) {
             List<Prediction> actualClassI = e.getPredictionsByActualClass(i);
             List<Prediction> predictedClassI = e.getPredictionByPredictedClass(i);
             assertEquals(actualCounts[i], actualClassI.size());

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
+public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
 
     private VocabCache<T> vocabCache;
     private AbstractCoOccurrences<T> coOccurrences;
@@ -71,27 +71,31 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     }
 
     @Override
-    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
+    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
+                    @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
 
-        this.syn0 = ((InMemoryLookupTable<T>)lookupTable).getSyn0();
+        this.syn0 = ((InMemoryLookupTable<T>) lookupTable).getSyn0();
 
 
         this.vectorLength = configuration.getLayersSize();
 
-        if (this.learningRate == 0.0d) this.learningRate = configuration.getLearningRate();
+        if (this.learningRate == 0.0d)
+            this.learningRate = configuration.getLearningRate();
 
 
 
-        weightAdaGrad = new AdaGrad(new int[]{this.vocabCache.numWords() + 1, vectorLength}, learningRate);
+        weightAdaGrad = new AdaGrad(new int[] {this.vocabCache.numWords() + 1, vectorLength}, learningRate);
         bias = Nd4j.create(syn0.rows());
         biasAdaGrad = new AdaGrad(bias.shape(), this.learningRate);
 
-      //  maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
+        //  maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
 
-        log.info("GloVe params: {Max Memory: [" + maxmemory + "], Learning rate: [" + this.learningRate +"], Alpha: [" + alpha+"], xMax: [" + xMax +"], Symmetric: [" + symmetric+ "], Shuffle: [" + shuffle+ "]}");
+        log.info("GloVe params: {Max Memory: [" + maxmemory + "], Learning rate: [" + this.learningRate + "], Alpha: ["
+                        + alpha + "], xMax: [" + xMax + "], Symmetric: [" + symmetric + "], Shuffle: [" + shuffle
+                        + "]}");
     }
 
     /**
@@ -102,14 +106,9 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
     public void pretrain(@NonNull SequenceIterator<T> iterator) {
         // CoOccurence table should be built here
         coOccurrences = new AbstractCoOccurrences.Builder<T>()
-                // TODO: symmetric should be handled via VectorsConfiguration
-                .symmetric(this.symmetric)
-                .windowSize(configuration.getWindow())
-                .iterate(iterator)
-                .workers(workers)
-                .vocabCache(vocabCache)
-                .maxMemory(maxmemory)
-                .build();
+                        // TODO: symmetric should be handled via VectorsConfiguration
+                        .symmetric(this.symmetric).windowSize(configuration.getWindow()).iterate(iterator)
+                        .workers(workers).vocabCache(vocabCache).maxMemory(maxmemory).build();
 
         coOccurrences.fit();
     }
@@ -122,26 +121,28 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
      * @param learningRate
      */
     @Override
-    public synchronized double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
+    public synchronized double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom,
+                    double learningRate) {
         /*
                 GloVe learning algorithm is implemented like a hack over settled ElementsLearningAlgorithm mechanics. It's called in SequenceVectors context, but actually only for the first call.
                 All subsequent calls will met early termination condition, and will be successfully ignored. But since elements vectors will be updated within first call,
                 this will allow compatibility with everything beyond this implementaton
          */
-        if (isTerminate.get()) return 0;
+        if (isTerminate.get())
+            return 0;
 
         final AtomicLong pairsCount = new AtomicLong(0);
         final Counter<Integer> errorCounter = new Counter<>();
 
         //List<Pair<T, T>> coList = coOccurrences.coOccurrenceList();
 
-        for (int i = 0; i < configuration.getEpochs(); i++ ) {
+        for (int i = 0; i < configuration.getEpochs(); i++) {
 
             // TODO: shuffle should be built in another way.
             //if (shuffle)
-                //Collections.shuffle(coList);
+            //Collections.shuffle(coList);
 
-            Iterator<Pair<Pair<T,T>, Double>> pairs = coOccurrences.iterator();
+            Iterator<Pair<Pair<T, T>, Double>> pairs = coOccurrences.iterator();
 
             List<GloveCalculationsThread> threads = new ArrayList<>();
             for (int x = 0; x < workers; x++) {
@@ -159,7 +160,7 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
                 }
             }
 
-            log.info("Processed ["+ pairsCount.get()+"] pairs, Error was ["+ errorCounter.getCount(i) +"]");
+            log.info("Processed [" + pairsCount.get() + "] pairs, Error was [" + errorCounter.getCount(i) + "]");
         }
 
         isTerminate.set(true);
@@ -179,9 +180,9 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
     private double iterateSample(T element1, T element2, double score) {
         //prediction: input + bias
-        if(element1.getIndex() < 0 || element1.getIndex() >= syn0.rows())
+        if (element1.getIndex() < 0 || element1.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + element1.getLabel());
-        if(element2.getIndex() < 0 || element2.getIndex() >= syn0.rows())
+        if (element2.getIndex() < 0 || element2.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + element2.getLabel());
 
         INDArray w1Vector = syn0.slice(element1.getIndex());
@@ -189,17 +190,17 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
 
         //w1 * w2 + bias
-        double prediction = Nd4j.getBlasWrapper().dot(w1Vector,w2Vector);
-        prediction +=  bias.getDouble(element1.getIndex()) + bias.getDouble(element2.getIndex()) - Math.log(score);
+        double prediction = Nd4j.getBlasWrapper().dot(w1Vector, w2Vector);
+        prediction += bias.getDouble(element1.getIndex()) + bias.getDouble(element2.getIndex()) - Math.log(score);
 
         double fDiff = (score > xMax) ? prediction : Math.pow(score / xMax, alpha) * prediction; // Math.pow(Math.min(1.0,(score / maxCount)),xMax);
 
-//        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
+        //        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
 
-        if(Double.isNaN(fDiff))
+        if (Double.isNaN(fDiff))
             fDiff = Nd4j.EPS_THRESHOLD;
         //amount of change
-        double gradient =  fDiff * learningRate;
+        double gradient = fDiff * learningRate;
 
         //note the update step here: the gradient is
         //the gradient of the OPPOSITE word
@@ -212,31 +213,32 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
     private void update(T element1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
-        INDArray grad1 =  contextVector.mul(gradient);
-        INDArray update = weightAdaGrad.getGradient(grad1,element1.getIndex(),syn0.shape());
+        INDArray grad1 = contextVector.mul(gradient);
+        INDArray update = weightAdaGrad.getGradient(grad1, element1.getIndex(), syn0.shape());
 
         //update vector
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(element1.getIndex());
-        double biasGradient = biasAdaGrad.getGradient(gradient,element1.getIndex(),bias.shape());
+        double biasGradient = biasAdaGrad.getGradient(gradient, element1.getIndex(), bias.shape());
         double update2 = w1Bias - biasGradient;
-        bias.putScalar(element1.getIndex(),update2);
+        bias.putScalar(element1.getIndex(), update2);
     }
 
     private class GloveCalculationsThread extends Thread implements Runnable {
         private final int threadId;
         private final int epochId;
-//        private final AbstractCoOccurrences<T> coOccurrences;
-        private final Iterator<Pair<Pair<T, T>, Double>>  coList;
+        //        private final AbstractCoOccurrences<T> coOccurrences;
+        private final Iterator<Pair<Pair<T, T>, Double>> coList;
 
         private final AtomicLong pairsCounter;
         private final Counter<Integer> errorCounter;
 
-        public GloveCalculationsThread(int epochId, int threadId, @NonNull Iterator<Pair<Pair<T, T>, Double>> pairs, @NonNull AtomicLong pairsCounter, @NonNull Counter<Integer> errorCounter) {
+        public GloveCalculationsThread(int epochId, int threadId, @NonNull Iterator<Pair<Pair<T, T>, Double>> pairs,
+                        @NonNull AtomicLong pairsCounter, @NonNull Counter<Integer> errorCounter) {
             this.epochId = epochId;
             this.threadId = threadId;
-          //  this.coOccurrences = coOccurrences;
+            //  this.coOccurrences = coOccurrences;
 
             this.pairsCounter = pairsCounter;
             this.errorCounter = errorCounter;
@@ -248,23 +250,23 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
         @Override
         public void run() {
-//            int startPosition = threadId * (coList.size() / workers);
-//            int stopPosition = (threadId + 1) *  (coList.size() / workers);
-//            log.info("Total size: [" + coList.size() + "], thread start: [" + startPosition + "], thread stop: [" + stopPosition + "]");
-            while (coList.hasNext()){
+            //            int startPosition = threadId * (coList.size() / workers);
+            //            int stopPosition = (threadId + 1) *  (coList.size() / workers);
+            //            log.info("Total size: [" + coList.size() + "], thread start: [" + startPosition + "], thread stop: [" + stopPosition + "]");
+            while (coList.hasNext()) {
 
                 // now we fetch pairs into batch
-                List<Pair<Pair<T,T>, Double>> pairs = new ArrayList<>();
+                List<Pair<Pair<T, T>, Double>> pairs = new ArrayList<>();
                 int cnt = 0;
-                while (coList.hasNext() && cnt < batchSize ) {
+                while (coList.hasNext() && cnt < batchSize) {
                     pairs.add(coList.next());
-                    cnt ++;
+                    cnt++;
                 }
 
                 if (shuffle)
                     Collections.shuffle(pairs);
 
-                Iterator<Pair<Pair<T,T>, Double>> iterator = pairs.iterator();
+                Iterator<Pair<Pair<T, T>, Double>> iterator = pairs.iterator();
 
                 while (iterator.hasNext()) {
                     // now for each pair do appropriate training
@@ -274,9 +276,9 @@ public  class GloVe<T extends SequenceElement> implements ElementsLearningAlgori
 
                     T element1 = pairDoublePair.getFirst().getFirst();
                     T element2 = pairDoublePair.getFirst().getSecond();
-                    double weight = pairDoublePair.getSecond();  //coOccurrences.getCoOccurrenceCount(element1, element2);
+                    double weight = pairDoublePair.getSecond(); //coOccurrences.getCoOccurrenceCount(element1, element2);
                     if (weight <= 0) {
-//                    log.warn("Skipping pair ("+ element1.getLabel()+", " + element2.getLabel()+")");
+                        //                    log.warn("Skipping pair ("+ element1.getLabel()+", " + element2.getLabel()+")");
                         pairsCounter.incrementAndGet();
                         continue;
                     }

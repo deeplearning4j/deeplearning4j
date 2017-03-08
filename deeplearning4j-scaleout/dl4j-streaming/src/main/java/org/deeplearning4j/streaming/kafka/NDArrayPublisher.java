@@ -35,10 +35,10 @@ public class NDArrayPublisher {
      * @param arr the ndarray to publish
      */
     public void publish(INDArray[] arr) throws Exception {
-        if(!started) {
+        if (!started) {
             start();
         }
-        producerTemplate.sendBody(DIRECT_ROUTE,arr);
+        producerTemplate.sendBody(DIRECT_ROUTE, arr);
     }
 
     /**
@@ -46,10 +46,10 @@ public class NDArrayPublisher {
      * @param arr the ndarray to publish
      */
     public void publish(INDArray arr) throws Exception {
-        if(!started) {
+        if (!started) {
             start();
         }
-        producerTemplate.sendBody(DIRECT_ROUTE,arr);
+        producerTemplate.sendBody(DIRECT_ROUTE, arr);
     }
 
     /**
@@ -57,29 +57,27 @@ public class NDArrayPublisher {
      * @throws Exception
      */
     public void start() throws Exception {
-        if(started)
+        if (started)
             return;
         started = true;
 
         camelContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from(DIRECT_ROUTE)
-                        .process(new Processor() {
+                from(DIRECT_ROUTE).process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
                         Object body = exchange.getIn().getBody();
-                        if(body instanceof INDArray) {
+                        if (body instanceof INDArray) {
                             INDArray arr = (INDArray) body;
                             String arrBase = Nd4jBase64.base64String(arr);
                             exchange.getIn().setBody(arrBase);
-                            exchange.getIn().setHeader(NDARRAY_TYPE_HEADER,NDArrayType.SINGLE.toString());
-                        }
-                        else if(body instanceof INDArray[]) {
+                            exchange.getIn().setHeader(NDARRAY_TYPE_HEADER, NDArrayType.SINGLE.toString());
+                        } else if (body instanceof INDArray[]) {
                             INDArray[] arrs = (INDArray[]) body;
                             String arrBase = Nd4jBase64.arraysToBase64(arrs);
                             exchange.getIn().setBody(arrBase);
-                            exchange.getIn().setHeader(NDARRAY_TYPE_HEADER,NDArrayType.MULTI.toString());
+                            exchange.getIn().setHeader(NDARRAY_TYPE_HEADER, NDArrayType.MULTI.toString());
                         }
 
                         exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY, 0);
@@ -89,7 +87,7 @@ public class NDArrayPublisher {
             }
         });
 
-        if(producerTemplate == null)
+        if (producerTemplate == null)
             producerTemplate = camelContext.createProducerTemplate();
     }
 

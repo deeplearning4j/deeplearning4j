@@ -41,7 +41,7 @@ public class FlatModelUtilsTest {
     public void testWordsNearestFlat1() throws Exception {
         vec.setModelUtils(new FlatModelUtils<VocabWord>());
 
-        Collection<String> list = vec.wordsNearest("energy",10);
+        Collection<String> list = vec.wordsNearest("energy", 10);
         log.info("Flat model results:");
         printWords("energy", list, vec);
     }
@@ -59,15 +59,15 @@ public class FlatModelUtilsTest {
         System.out.println("[-]: " + arr1);
         System.out.println("[+]: " + Transforms.unitVec(arr1));
 
-        Collection<String> list = vec.wordsNearest(target,10);
+        Collection<String> list = vec.wordsNearest(target, 10);
         log.info("Transpose model results:");
         printWords(target, list, vec);
 
-        list = vec.wordsNearest(target,10);
+        list = vec.wordsNearest(target, 10);
         log.info("Transpose model results 2:");
         printWords(target, list, vec);
 
-        list = vec.wordsNearest(target,10);
+        list = vec.wordsNearest(target, 10);
         log.info("Transpose model results 3:");
         printWords(target, list, vec);
 
@@ -82,16 +82,16 @@ public class FlatModelUtilsTest {
     public void testWordsNearestTree1() throws Exception {
         vec.setModelUtils(new TreeModelUtils<VocabWord>());
 
-        Collection<String> list = vec.wordsNearest("energy",10);
+        Collection<String> list = vec.wordsNearest("energy", 10);
         log.info("Tree model results:");
         printWords("energy", list, vec);
     }
 
     private static void printWords(String target, Collection<String> list, WordVectors vec) {
-        System.out.println("Words close to ["+target+"]:");
-        for (String word: list) {
+        System.out.println("Words close to [" + target + "]:");
+        for (String word : list) {
             double sim = vec.similarity(target, word);
-            System.out.print("'"+ word+"': ["+ sim+"]");
+            System.out.print("'" + word + "': [" + sim + "]");
         }
         System.out.print("\n");
     }

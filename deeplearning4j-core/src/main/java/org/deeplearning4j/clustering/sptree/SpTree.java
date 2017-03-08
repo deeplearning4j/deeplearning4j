@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,7 +34,8 @@ import java.util.Set;
  * @author Adam Gibson
  */
 public class SpTree implements Serializable {
-    private int D;private INDArray data;
+    private int D;
+    private INDArray data;
     public final static int NODE_RATIO = 8000;
     private int N;
     private INDArray buf;
@@ -53,12 +54,13 @@ public class SpTree implements Serializable {
     private String similarityFunction = "euclidean";
 
 
-    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices,String similarityFunction) {
-        init(parent, data, corner, width,indices,similarityFunction);
+    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
+                    String similarityFunction) {
+        init(parent, data, corner, width, indices, similarityFunction);
     }
 
 
-    public SpTree(INDArray data,Set<INDArray> indices,String similarityFunction) {
+    public SpTree(INDArray data, Set<INDArray> indices, String similarityFunction) {
         this.indices = indices;
         this.N = data.rows();
         this.D = data.columns();
@@ -67,24 +69,25 @@ public class SpTree implements Serializable {
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
         INDArray width = Nd4j.create(meanY.shape());
-        for(int i = 0; i < width.length(); i++) {
-            width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
+        for (int i = 0; i < width.length(); i++) {
+            width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),
+                            meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
-        init(null,data,meanY,width,indices,similarityFunction);
+        init(null, data, meanY, width, indices, similarityFunction);
         fill(N);
 
 
     }
 
 
-    public SpTree(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices) {
-        this(parent, data, corner, width,indices,"euclidean");
+    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices) {
+        this(parent, data, corner, width, indices, "euclidean");
     }
 
 
-    public SpTree(INDArray data,Set<INDArray> indices) {
-        this(data,indices,"euclidean");
+    public SpTree(INDArray data, Set<INDArray> indices) {
+        this(data, indices, "euclidean");
     }
 
 
@@ -93,14 +96,15 @@ public class SpTree implements Serializable {
         this(data, new HashSet<INDArray>());
     }
 
-    private void init(SpTree parent,INDArray data,INDArray corner,INDArray width,Set<INDArray> indices,String similarityFunction) {
+    private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
+                    String similarityFunction) {
         this.parent = parent;
         D = data.columns();
         N = data.rows();
         this.similarityFunction = similarityFunction;
         nodeCapacity = N % NODE_RATIO;
         index = new int[nodeCapacity];
-        for(int d = 1; d < this.D; d++)
+        for (int d = 1; d < this.D; d++)
             numChildren *= 2;
         this.indices = indices;
         isLeaf = true;
@@ -117,10 +121,9 @@ public class SpTree implements Serializable {
 
 
 
-
     private boolean insert(int index) {
         INDArray point = data.slice(index);
-        if(!boundary.contains(point))
+        if (!boundary.contains(point))
             return false;
 
 
@@ -130,7 +133,7 @@ public class SpTree implements Serializable {
         centerOfMass.muli(mult1);
         centerOfMass.addi(point.mul(mult2));
         // If there is space in this quad tree and it is a leaf, add the object here
-        if(isLeaf() && size < nodeCapacity) {
+        if (isLeaf() && size < nodeCapacity) {
             this.index[size] = index;
             indices.add(point);
             size++;
@@ -138,20 +141,20 @@ public class SpTree implements Serializable {
         }
 
 
-        for(int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             INDArray compPoint = data.slice(this.index[i]);
-            if(compPoint.equals(point))
+            if (compPoint.equals(point))
                 return true;
         }
 
 
-        if(isLeaf())
+        if (isLeaf())
             subDivide();
 
 
         // Find out where the point can be inserted
-        for(int i = 0; i < numChildren; i++) {
-            if(children[i].insert(index))
+        for (int i = 0; i < numChildren; i++) {
+            if (children[i].insert(index))
                 return true;
         }
 
@@ -166,26 +169,26 @@ public class SpTree implements Serializable {
     public void subDivide() {
         INDArray newCorner = Nd4j.create(D);
         INDArray newWidth = Nd4j.create(D);
-        for( int i = 0; i < numChildren; i++) {
+        for (int i = 0; i < numChildren; i++) {
             int div = 1;
-            for( int d = 0; d < D; d++) {
-                newWidth.putScalar(d,.5 * boundary.width(d));
-                if((i / div) % 2 == 1)
+            for (int d = 0; d < D; d++) {
+                newWidth.putScalar(d, .5 * boundary.width(d));
+                if ((i / div) % 2 == 1)
                     newCorner.putScalar(d, boundary.corner(d) - .5 * boundary.width(d));
                 else
-                    newCorner.putScalar(d,boundary.corner(d) + .5 * boundary.width(d));
+                    newCorner.putScalar(d, boundary.corner(d) + .5 * boundary.width(d));
                 div *= 2;
             }
 
-            children[i] = new SpTree(this,data, newCorner, newWidth,indices);
+            children[i] = new SpTree(this, data, newCorner, newWidth, indices);
 
         }
 
         // Move existing points to correct children
-        for(int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             boolean success = false;
-            for(int j = 0; j < this.numChildren; j++)
-                if(!success)
+            for (int j = 0; j < this.numChildren; j++)
+                if (!success)
                     success = children[j].insert(index[i]);
 
             index[i] = -1;
@@ -207,7 +210,7 @@ public class SpTree implements Serializable {
      */
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
-        if(cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
+        if (cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
 
 
@@ -218,7 +221,7 @@ public class SpTree implements Serializable {
         // Check whether we can use this node as a "summary"
         double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
         // Check whether we can use this node as a "summary"
-        if(isLeaf() || maxWidth / FastMath.sqrt(D) < theta) {
+        if (isLeaf() || maxWidth / FastMath.sqrt(D) < theta) {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);
@@ -227,11 +230,10 @@ public class SpTree implements Serializable {
             mult *= Q;
             negativeForce.addi(buf.mul(mult));
 
-        }
-        else {
+        } else {
 
             // Recursively apply Barnes-Hut to children
-            for(int i = 0; i < numChildren; i++) {
+            for (int i = 0; i < numChildren; i++) {
                 children[i].computeNonEdgeForces(pointIndex, theta, negativeForce, sumQ);
             }
 
@@ -249,18 +251,18 @@ public class SpTree implements Serializable {
      * @param posF the positive force
      */
     public void computeEdgeForces(INDArray rowP, INDArray colP, INDArray valP, int N, INDArray posF) {
-        if(!rowP.isVector())
+        if (!rowP.isVector())
             throw new IllegalArgumentException("RowP must be a vector");
 
         // Loop over all edges in the graph
         double D;
-        for(int n = 0; n < N; n++) {
-            for(int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
+        for (int n = 0; n < N; n++) {
+            for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
                 // Compute pairwise distance and Q-value
                 buf.assign(data.slice(n)).subi(data.slice(colP.getInt(i)));
 
-                D = Nd4j.getBlasWrapper().dot(buf,buf);
+                D = Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
@@ -282,14 +284,14 @@ public class SpTree implements Serializable {
      * is correct.
      */
     public boolean isCorrect() {
-        for(int n = 0; n < size; n++) {
+        for (int n = 0; n < size; n++) {
             INDArray point = data.slice(index[n]);
-            if(!boundary.contains(point))
+            if (!boundary.contains(point))
                 return false;
         }
-        if(!isLeaf()) {
+        if (!isLeaf()) {
             boolean correct = true;
-            for(int i = 0; i < numChildren; i++)
+            for (int i = 0; i < numChildren; i++)
                 correct = correct && children[i].isCorrect();
             return correct;
         }
@@ -302,11 +304,11 @@ public class SpTree implements Serializable {
      * @return the depth of the node
      */
     public int depth() {
-        if(isLeaf())
+        if (isLeaf())
             return 1;
         int depth = 1;
         int maxChildDepth = 0;
-        for(int i = 0; i < numChildren; i++) {
+        for (int i = 0; i < numChildren; i++) {
             maxChildDepth = Math.max(maxChildDepth, children[0].depth());
         }
 
@@ -314,8 +316,8 @@ public class SpTree implements Serializable {
     }
 
     private void fill(int n) {
-        if(indices.isEmpty() && parent == null)
-            for(int i = 0; i < n; i++) {
+        if (indices.isEmpty() && parent == null)
+            for (int i = 0; i < n; i++) {
                 log.trace("Inserted " + i);
                 insert(i);
             }

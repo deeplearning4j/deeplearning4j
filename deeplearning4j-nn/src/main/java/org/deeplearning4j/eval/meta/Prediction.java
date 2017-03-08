@@ -19,7 +19,8 @@ public class Prediction {
 
     @Override
     public String toString() {
-        return "Prediction(actualClass=" + actualClass + ",predictedClass=" + predictedClass + ",RecordMetaData=" + recordMetaData + ")";
+        return "Prediction(actualClass=" + actualClass + ",predictedClass=" + predictedClass + ",RecordMetaData="
+                        + recordMetaData + ")";
     }
 
     /**

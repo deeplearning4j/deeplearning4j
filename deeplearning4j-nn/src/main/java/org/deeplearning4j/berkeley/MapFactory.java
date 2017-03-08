@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,37 +32,37 @@ import java.util.*;
 
 public abstract class MapFactory<K, V> implements Serializable {
 
-	public static class HashMapFactory<K, V> extends MapFactory<K, V> {
-		private static final long serialVersionUID = 1L;
+    public static class HashMapFactory<K, V> extends MapFactory<K, V> {
+        private static final long serialVersionUID = 1L;
 
-		public Map<K, V> buildMap() {
-			return new HashMap<>();
-		}
-	}
+        public Map<K, V> buildMap() {
+            return new HashMap<>();
+        }
+    }
 
-	public static class IdentityHashMapFactory<K, V> extends MapFactory<K, V> {
-		private static final long serialVersionUID = 1L;
+    public static class IdentityHashMapFactory<K, V> extends MapFactory<K, V> {
+        private static final long serialVersionUID = 1L;
 
-		public Map<K, V> buildMap() {
-			return new IdentityHashMap<>();
-		}
-	}
+        public Map<K, V> buildMap() {
+            return new IdentityHashMap<>();
+        }
+    }
 
-	public static class TreeMapFactory<K, V> extends MapFactory<K, V> {
-		private static final long serialVersionUID = 1L;
+    public static class TreeMapFactory<K, V> extends MapFactory<K, V> {
+        private static final long serialVersionUID = 1L;
 
-		public Map<K, V> buildMap() {
-			return new TreeMap<>();
-		}
-	}
+        public Map<K, V> buildMap() {
+            return new TreeMap<>();
+        }
+    }
 
-	public static class WeakHashMapFactory<K, V> extends MapFactory<K, V> {
-		private static final long serialVersionUID = 1L;
+    public static class WeakHashMapFactory<K, V> extends MapFactory<K, V> {
+        private static final long serialVersionUID = 1L;
 
-		public Map<K, V> buildMap() {
-			return new WeakHashMap<>();
-		}
-	}
+        public Map<K, V> buildMap() {
+            return new WeakHashMap<>();
+        }
+    }
 
-	public abstract Map<K, V> buildMap();
+    public abstract Map<K, V> buildMap();
 }

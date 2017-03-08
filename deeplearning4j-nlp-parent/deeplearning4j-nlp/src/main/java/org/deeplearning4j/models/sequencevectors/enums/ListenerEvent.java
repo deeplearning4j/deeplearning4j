@@ -6,7 +6,5 @@ package org.deeplearning4j.models.sequencevectors.enums;
  * @author raver119@gmail.com
  */
 public enum ListenerEvent {
-    EPOCH,
-    ITERATION,
-    LINE,
+    EPOCH, ITERATION, LINE,
 }

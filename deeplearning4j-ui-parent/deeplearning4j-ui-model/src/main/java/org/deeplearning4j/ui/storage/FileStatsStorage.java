@@ -22,7 +22,7 @@ public class FileStatsStorage extends MapDBStatsStorage {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "FileStatsStorage(" + file.getPath() + ")";
     }
 }

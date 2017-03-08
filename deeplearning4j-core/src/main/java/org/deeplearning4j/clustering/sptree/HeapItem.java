@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -23,7 +23,7 @@ import java.io.Serializable;
 /**
  * @author Adam Gibson
  */
-public class HeapItem implements Serializable,Comparable<HeapItem> {
+public class HeapItem implements Serializable, Comparable<HeapItem> {
     private int index;
     private double distance;
 
@@ -51,12 +51,15 @@ public class HeapItem implements Serializable,Comparable<HeapItem> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         HeapItem heapItem = (HeapItem) o;
 
-        if (index != heapItem.index) return false;
+        if (index != heapItem.index)
+            return false;
         return Double.compare(heapItem.distance, distance) == 0;
 
     }

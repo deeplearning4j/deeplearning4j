@@ -18,27 +18,21 @@ import static org.junit.Assert.assertEquals;
 
 public class SeedTest {
 
-    private DataSetIterator irisIter = new IrisDataSetIterator(50,50);
+    private DataSetIterator irisIter = new IrisDataSetIterator(50, 50);
     private DataSet data = irisIter.next();
 
 
     @Test
     public void testAutoEncoderSeed() {
-        AutoEncoder layerType = new AutoEncoder.Builder()
-                .nIn(4)
-                .nOut(3).corruptionLevel(0.0)
-                .activation(Activation.SIGMOID)
-                .build();
+        AutoEncoder layerType = new AutoEncoder.Builder().nIn(4).nOut(3).corruptionLevel(0.0)
+                        .activation(Activation.SIGMOID).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1)
-                .layer(layerType)
-                .seed(123)
-                .build();
+        NeuralNetConfiguration conf =
+                        new NeuralNetConfiguration.Builder().iterations(1).layer(layerType).seed(123).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.fit(data.getFeatureMatrix());
 
         layer.computeGradientAndScore();

@@ -106,6 +106,7 @@ public class AsyncDataSetIteratorTest {
     private class IterableWithException implements Iterable<DataSet> {
         private final AtomicLong counter = new AtomicLong(0);
         private final int crashIteration;
+
         public IterableWithException(int iteration) {
             crashIteration = iteration;
         }

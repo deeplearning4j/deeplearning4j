@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -29,103 +29,50 @@ public class DictionaryEntryLineParserTest {
 
     @Test
     public void testTrivial() {
-        assertArrayEquals(
-            new String[]{
-                "日本経済新聞", "日本 経済 新聞", "ニホン ケイザイ シンブン", "カスタム名詞"
-            },
-            parser.parseLine("日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞")
-        );
+        assertArrayEquals(new String[] {"日本経済新聞", "日本 経済 新聞", "ニホン ケイザイ シンブン", "カスタム名詞"},
+                        parser.parseLine("日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞"));
     }
 
     @Test
     public void testQuotes() {
         assertArrayEquals(
-            new String[]{
-                "Java Platform, Standard Edition",
-                "Java Platform, Standard Edition",
-                "Java Platform, Standard Edition",
-                "カスタム名詞"
-            },
-            parser.parseLine(
-                "\"Java Platform, Standard Edition\",\"Java Platform, Standard Edition\",\"Java Platform, Standard Edition\",カスタム名詞"
-            )
-        );
+                        new String[] {"Java Platform, Standard Edition", "Java Platform, Standard Edition",
+                                        "Java Platform, Standard Edition", "カスタム名詞"},
+                        parser.parseLine(
+                                        "\"Java Platform, Standard Edition\",\"Java Platform, Standard Edition\",\"Java Platform, Standard Edition\",カスタム名詞"));
     }
 
     @Test
     public void testQuotedQuotes() {
-        assertArrayEquals(
-            new String[]{
-                "Java \"Platform\"",
-                "Java \"Platform\"",
-                "Java \"Platform\"",
-                "カスタム名詞"
-            },
-            parser.parseLine(
-                "\"Java \"\"Platform\"\"\",\"Java \"\"Platform\"\"\",\"Java \"\"Platform\"\"\",カスタム名詞"
-            )
-        );
+        assertArrayEquals(new String[] {"Java \"Platform\"", "Java \"Platform\"", "Java \"Platform\"", "カスタム名詞"}, parser
+                        .parseLine("\"Java \"\"Platform\"\"\",\"Java \"\"Platform\"\"\",\"Java \"\"Platform\"\"\",カスタム名詞"));
     }
 
     @Test
     public void testEmptyQuotedQuotes() {
-        assertArrayEquals(
-            new String[]{
-                "\"",
-                "\"",
-                "quote",
-                "punctuation"
-            },
-            parser.parseLine(
-                "\"\"\"\",\"\"\"\",quote,punctuation"
-            )
-        );
+        assertArrayEquals(new String[] {"\"", "\"", "quote", "punctuation"},
+                        parser.parseLine("\"\"\"\",\"\"\"\",quote,punctuation"));
     }
 
     @Test
     public void testCSharp() {
-        assertArrayEquals(
-            new String[]{
-                "C#",
-                "C #",
-                "シーシャープ",
-                "プログラミング言語"
-            },
-            parser.parseLine(
-                "\"C#\",\"C #\",シーシャープ,プログラミング言語"
-            )
-        );
+        assertArrayEquals(new String[] {"C#", "C #", "シーシャープ", "プログラミング言語"},
+                        parser.parseLine("\"C#\",\"C #\",シーシャープ,プログラミング言語"));
     }
 
     @Test
     public void testTab() {
-        assertArrayEquals(
-            new String[]{
-                "A\tB",
-                "A B",
-                "A B",
-                "tab"
-            },
-            parser.parseLine(
-                "A\tB,A B,A B,tab"
-            )
-        );
+        assertArrayEquals(new String[] {"A\tB", "A B", "A B", "tab"}, parser.parseLine("A\tB,A B,A B,tab"));
     }
 
     @Test
     public void testFrancoisWhiteBuffaloBota() {
 
         assertArrayEquals(
-            new String[]{
-                "フランソワ\"ザホワイトバッファロー\"ボタ",
-                "フランソワ\"ザホワイトバッファロー\"ボタ",
-                "フランソワ\"ザホワイトバッファロー\"ボタ",
-                "名詞"
-            },
-            parser.parseLine(
-                "\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",名詞"
-            )
-        );
+                        new String[] {"フランソワ\"ザホワイトバッファロー\"ボタ", "フランソワ\"ザホワイトバッファロー\"ボタ", "フランソワ\"ザホワイトバッファロー\"ボタ",
+                                        "名詞"},
+                        parser.parseLine(
+                                        "\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",\"フランソワ\"\"ザホワイトバッファロー\"\"ボタ\",名詞"));
     }
 
     @Test(expected = RuntimeException.class)
@@ -143,11 +90,7 @@ public class DictionaryEntryLineParserTest {
         String original = "3,\"14";
 
         assertEquals("\"3,\"\"14\"", DictionaryEntryLineParser.escape(original));
-        assertEquals(original,
-            DictionaryEntryLineParser.unescape(
-                DictionaryEntryLineParser.escape(original)
-            )
-        );
+        assertEquals(original, DictionaryEntryLineParser.unescape(DictionaryEntryLineParser.escape(original)));
     }
 
     @Test
@@ -165,16 +108,16 @@ public class DictionaryEntryLineParserTest {
     @Test
     public void testParseInputString() throws Exception {
         String input = "日本経済新聞,1292,1292,4980,名詞,固有名詞,組織,*,*,*,日本経済新聞,ニホンケイザイシンブン,ニホンケイザイシンブン";
-        String expected = Arrays.deepToString(new String[]{"日本経済新聞", "1292", "1292", "4980",
-            "名詞", "固有名詞", "組織", "*", "*", "*", "日本経済新聞", "ニホンケイザイシンブン", "ニホンケイザイシンブン"});
+        String expected = Arrays.deepToString(new String[] {"日本経済新聞", "1292", "1292", "4980", "名詞", "固有名詞", "組織", "*",
+                        "*", "*", "日本経済新聞", "ニホンケイザイシンブン", "ニホンケイザイシンブン"});
         assertEquals(expected, given(input));
     }
 
     @Test
     public void testParseInputStringWithQuotes() throws Exception {
         String input = "日本経済新聞,1292,1292,4980,名詞,固有名詞,組織,*,*,\"1,0\",日本経済新聞,ニホンケイザイシンブン,ニホンケイザイシンブン";
-        String expected = Arrays.deepToString(new String[]{"日本経済新聞", "1292", "1292", "4980",
-            "名詞", "固有名詞", "組織", "*", "*", "1,0", "日本経済新聞", "ニホンケイザイシンブン", "ニホンケイザイシンブン"});
+        String expected = Arrays.deepToString(new String[] {"日本経済新聞", "1292", "1292", "4980", "名詞", "固有名詞", "組織", "*",
+                        "*", "1,0", "日本経済新聞", "ニホンケイザイシンブン", "ニホンケイザイシンブン"});
         assertEquals(expected, given(input));
     }
 

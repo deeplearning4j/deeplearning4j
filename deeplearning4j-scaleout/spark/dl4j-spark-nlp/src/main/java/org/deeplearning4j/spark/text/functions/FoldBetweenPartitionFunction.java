@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author jeffreytang
  */
-public class FoldBetweenPartitionFunction implements Function2<Integer, Iterator<AtomicLong>, Iterator<Long>>{
+public class FoldBetweenPartitionFunction implements Function2<Integer, Iterator<AtomicLong>, Iterator<Long>> {
     private Broadcast<Counter<Integer>> broadcastedMaxPerPartitionCounter;
 
     public FoldBetweenPartitionFunction(Broadcast<Counter<Integer>> broadcastedMaxPerPartitionCounter) {
@@ -26,7 +26,9 @@ public class FoldBetweenPartitionFunction implements Function2<Integer, Iterator
 
         // Add the sum of counts of all the partition with an index lower than the current one
         if (ind != 0) {
-            for (int i=0; i < ind; i++) { sumToAdd += maxPerPartitionCounterInScope.getCount(i); }
+            for (int i = 0; i < ind; i++) {
+                sumToAdd += maxPerPartitionCounterInScope.getCount(i);
+            }
         }
 
         // Add the sum of counts to each element of the partition

@@ -11,10 +11,10 @@ import java.io.InputStream;
  *
  * @author Alex Black
  */
-public class LoadSerializedDataSetFunction implements Function<PortableDataStream,DataSet> {
+public class LoadSerializedDataSetFunction implements Function<PortableDataStream, DataSet> {
     @Override
     public DataSet call(PortableDataStream pds) throws Exception {
-        try(InputStream is = pds.open()) {
+        try (InputStream is = pds.open()) {
             DataSet d = new DataSet();
             d.load(is);
             return d;

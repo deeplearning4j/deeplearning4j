@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,104 +31,105 @@ import java.util.List;
  *
  */
 public class TestDataSetIterator implements DataSetIterator {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -3042802726018263331L;
-	private DataSetIterator wrapped;
-	private int numDataSets = 0;
-    @Getter private DataSetPreProcessor preProcessor;
-	
-	
-	public TestDataSetIterator(DataSetIterator wrapped) {
-		super();
-		this.wrapped = wrapped;
-	}
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -3042802726018263331L;
+    private DataSetIterator wrapped;
+    private int numDataSets = 0;
+    @Getter
+    private DataSetPreProcessor preProcessor;
 
-	@Override
-	public boolean hasNext() {
-		return wrapped.hasNext();
-	}
 
-	@Override
-	public DataSet next() {
-		numDataSets++;
-		DataSet next = wrapped.next();
-        if(preProcessor != null)
+    public TestDataSetIterator(DataSetIterator wrapped) {
+        super();
+        this.wrapped = wrapped;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return wrapped.hasNext();
+    }
+
+    @Override
+    public DataSet next() {
+        numDataSets++;
+        DataSet next = wrapped.next();
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
-	}
+    }
 
-	@Override
-	public void remove() {
-		wrapped.remove();
-	}
+    @Override
+    public void remove() {
+        wrapped.remove();
+    }
 
-	@Override
-	public int totalExamples() {
-		return wrapped.totalExamples();
-	}
+    @Override
+    public int totalExamples() {
+        return wrapped.totalExamples();
+    }
 
-	@Override
-	public int inputColumns() {
-		return wrapped.inputColumns();
-	}
+    @Override
+    public int inputColumns() {
+        return wrapped.inputColumns();
+    }
 
-	@Override
-	public int totalOutcomes() {
-		return wrapped.totalOutcomes();
-	}
+    @Override
+    public int totalOutcomes() {
+        return wrapped.totalOutcomes();
+    }
 
-	@Override
-	public boolean resetSupported(){
-		return wrapped.resetSupported();
-	}
+    @Override
+    public boolean resetSupported() {
+        return wrapped.resetSupported();
+    }
 
-	@Override
-	public boolean asyncSupported() {
-		return wrapped.asyncSupported();
-	}
+    @Override
+    public boolean asyncSupported() {
+        return wrapped.asyncSupported();
+    }
 
-	@Override
-	public void reset() {
-		wrapped.reset();
-	}
+    @Override
+    public void reset() {
+        wrapped.reset();
+    }
 
-	@Override
-	public int batch() {
-		return wrapped.batch();
-	}
+    @Override
+    public int batch() {
+        return wrapped.batch();
+    }
 
-	@Override
-	public int cursor() {
-		return wrapped.cursor();
-	}
+    @Override
+    public int cursor() {
+        return wrapped.cursor();
+    }
 
-	@Override
-	public int numExamples() {
-		return wrapped.numExamples();
-	}
+    @Override
+    public int numExamples() {
+        return wrapped.numExamples();
+    }
 
     @Override
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
-	@Override
-	public List<String> getLabels() {
-		return null;
-	}
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
 
 
-	public synchronized int getNumDataSets() {
-		return numDataSets;
-	}
+    public synchronized int getNumDataSets() {
+        return numDataSets;
+    }
 
-	@Override
-	public DataSet next(int num) {
-		return wrapped.next(num);
-	}
-	
-	
-	
+    @Override
+    public DataSet next(int num) {
+        return wrapped.next(num);
+    }
+
+
+
 }

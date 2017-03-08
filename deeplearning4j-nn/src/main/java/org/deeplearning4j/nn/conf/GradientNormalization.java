@@ -50,10 +50,5 @@ package org.deeplearning4j.nn.conf;
  * @author Alex Black
  */
 public enum GradientNormalization {
-    None,
-    RenormalizeL2PerLayer,
-    RenormalizeL2PerParamType,
-    ClipElementWiseAbsoluteValue,
-    ClipL2PerLayer,
-    ClipL2PerParamType
+    None, RenormalizeL2PerLayer, RenormalizeL2PerParamType, ClipElementWiseAbsoluteValue, ClipL2PerLayer, ClipL2PerParamType
 }

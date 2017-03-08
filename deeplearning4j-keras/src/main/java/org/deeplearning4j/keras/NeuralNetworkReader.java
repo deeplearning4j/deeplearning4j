@@ -17,11 +17,12 @@ import java.io.IOException;
 public class NeuralNetworkReader {
 
     public MultiLayerNetwork readNeuralNetwork(EntryPointFitParameters entryPointFitParameters)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         MultiLayerNetwork multiLayerNetwork;
         if (KerasModelType.SEQUENTIAL.equals(entryPointFitParameters.getType())) {
-            multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(entryPointFitParameters.getModelFilePath());
+            multiLayerNetwork = KerasModelImport
+                            .importKerasSequentialModelAndWeights(entryPointFitParameters.getModelFilePath());
             multiLayerNetwork.init();
         } else {
             throw new RuntimeException("Model type unsupported! (" + entryPointFitParameters.getType() + ")");

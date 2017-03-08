@@ -23,24 +23,23 @@ public class TestHistogramListener {
     @Test
     public void testUI() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .list()
-                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                        .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                        .pretrain(false).backprop(true).build();
 
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new HistogramIterationListener(1), new ScoreIterationListener(1));
 
-        DataSetIterator iter = new IrisDataSetIterator(150,150);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        for( int i=0; i<100; i++ ){
+        for (int i = 0; i < 100; i++) {
             net.fit(iter);
             Thread.sleep(1000);
         }
-
 
 
 

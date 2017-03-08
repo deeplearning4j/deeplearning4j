@@ -22,7 +22,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author Alex Black
  */
-@Slf4j @Data
+@Slf4j
+@Data
 public class BernoulliReconstructionDistribution implements ReconstructionDistribution {
 
     private final IActivation activationFn;
@@ -30,7 +31,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     /**
      * Create a BernoulliReconstructionDistribution with the default Sigmoid activation function
      */
-    public BernoulliReconstructionDistribution(){
+    public BernoulliReconstructionDistribution() {
         this("sigmoid");
     }
 
@@ -46,18 +47,18 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     /**
      * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
      */
-    public BernoulliReconstructionDistribution(Activation activationFn){
+    public BernoulliReconstructionDistribution(Activation activationFn) {
         this(activationFn.getActivationFunction());
     }
 
     /**
      * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
      */
-    public BernoulliReconstructionDistribution(IActivation activationFn){
+    public BernoulliReconstructionDistribution(IActivation activationFn) {
         this.activationFn = activationFn;
-        if(!(activationFn instanceof ActivationSigmoid) && !(activationFn instanceof ActivationHardSigmoid)){
+        if (!(activationFn instanceof ActivationSigmoid) && !(activationFn instanceof ActivationHardSigmoid)) {
             log.warn("Using BernoulliRecontructionDistribution with activation function \"" + activationFn + "\"."
-                    + " Using sigmoid/hard sigmoid is recommended to bound probabilities in range 0 to 1");
+                            + " Using sigmoid/hard sigmoid is recommended to bound probabilities in range 0 to 1");
         }
     }
 
@@ -75,10 +76,10 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
         INDArray logProb = calcLogProbArray(x, preOutDistributionParams);
 
-        if(average){
-            return - logProb.sumNumber().doubleValue() / x.size(0);
+        if (average) {
+            return -logProb.sumNumber().doubleValue() / x.size(0);
         } else {
-            return - logProb.sumNumber().doubleValue();
+            return -logProb.sumNumber().doubleValue();
         }
     }
 
@@ -89,7 +90,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         return logProb.sum(1).negi();
     }
 
-    private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams){
+    private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams) {
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, false);
 
@@ -99,7 +100,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         //For numerical stability: if output = 0, then log(output) == -infinity
         //then x * log(output) = NaN, but lim(x->0, output->0)[ x * log(output) ] == 0
         // therefore: want 0*log(0) = 0, NOT 0*log(0) = NaN by default
-        BooleanIndexing.replaceWhere(logOutput, 0.0, Conditions.isInfinite());  //log(out)= +/- inf -> x == 0.0 -> 0 * log(0) = 0
+        BooleanIndexing.replaceWhere(logOutput, 0.0, Conditions.isInfinite()); //log(out)= +/- inf -> x == 0.0 -> 0 * log(0) = 0
         BooleanIndexing.replaceWhere(log1SubOut, 0.0, Conditions.isInfinite()); //log(out)= +/- inf -> x == 0.0 -> 0 * log(0) = 0
         return logOutput.muli(x).addi(x.rsub(1.0).muli(log1SubOut));
     }
@@ -149,7 +150,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "BernoulliReconstructionDistribution(afn=" + activationFn + ")";
     }
 }

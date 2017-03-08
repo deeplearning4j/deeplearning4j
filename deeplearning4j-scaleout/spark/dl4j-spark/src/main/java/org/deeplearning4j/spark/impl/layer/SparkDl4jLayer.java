@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -74,13 +74,12 @@ public class SparkDl4jLayer implements Serializable {
      * @param recordReader the record reader
      * @return the fit layer
      */
-    public Layer fit(String path,int labelIndex,RecordReader recordReader) {
+    public Layer fit(String path, int labelIndex, RecordReader recordReader) {
         FeedForwardLayer ffLayer = (FeedForwardLayer) conf.getLayer();
 
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
-        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, ffLayer.getNOut()));
+        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader, labelIndex, ffLayer.getNOut()));
         return fitDataSet(points);
 
     }
@@ -93,7 +92,7 @@ public class SparkDl4jLayer implements Serializable {
      * @param rdd the rdd to fitDataSet
      * @return the multi layer network that was fitDataSet
      */
-    public Layer fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
+    public Layer fit(JavaSparkContext sc, JavaRDD<LabeledPoint> rdd) {
         FeedForwardLayer ffLayer = (FeedForwardLayer) conf.getLayer();
         return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, ffLayer.getNOut()));
     }
@@ -108,40 +107,44 @@ public class SparkDl4jLayer implements Serializable {
         long count = rdd.count();
 
 
-        log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
-        if(!averageEachIteration) {
+        log.info("Running distributed training averaging each iteration " + averageEachIteration + " and "
+                        + rdd.partitions().size() + " partitions");
+        if (!averageEachIteration) {
             int numParams = conf.getLayer().initializer().numParams(conf);
             final INDArray params = Nd4j.create(1, numParams);
-            Layer layer = conf.getLayer().instantiate(conf,null,0,params, true);
-            layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
-//            final INDArray params = layer.params();
+            Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+            layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
+            //            final INDArray params = layer.params();
             this.params = sc.broadcast(params);
             log.info("Broadcasting initial parameters of length " + params.length());
             int paramsLength = layer.numParams();
-            if(params.length() != paramsLength)
-                throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+            if (params.length() != paramsLength)
+                throw new IllegalStateException(
+                                "Number of params " + paramsLength + " was not equal to " + params.length());
+            JavaRDD<INDArray> results =
+                            rdd.sample(true, 0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
             log.debug("Ran iterative reduce...averaging results now.");
-            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
+            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
             newParams.divi(rdd.partitions().size());
             layer.setParams(newParams);
             this.layer = layer;
-        }
-        else {
+        } else {
             conf.setNumIterations(1);
             int numParams = conf.getLayer().initializer().numParams(conf);
             final INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-            layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
-//            final INDArray params = layer.params();
+            layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
+            //            final INDArray params = layer.params();
             this.params = sc.broadcast(params);
 
-            for(int i = 0; i < iterations; i++) {
-                JavaRDD<INDArray> results = rdd.sample(true,0.3).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+            for (int i = 0; i < iterations; i++) {
+                JavaRDD<INDArray> results = rdd.sample(true, 0.3)
+                                .mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
 
                 int paramsLength = layer.numParams();
-                if(params.length() != paramsLength)
-                    throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+                if (params.length() != paramsLength)
+                    throw new IllegalStateException(
+                                    "Number of params " + paramsLength + " was not equal to " + params.length());
 
                 INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
                 newParams.divi(rdd.partitions().size());
@@ -184,9 +187,9 @@ public class SparkDl4jLayer implements Serializable {
      * @param conf the configuration of the network
      * @return the fit multi layer network
      */
-    public static Layer train(JavaRDD<LabeledPoint> data,NeuralNetConfiguration conf) {
-        SparkDl4jLayer multiLayer = new SparkDl4jLayer(data.context(),conf);
-        return multiLayer.fit(new JavaSparkContext(data.context()),data);
+    public static Layer train(JavaRDD<LabeledPoint> data, NeuralNetConfiguration conf) {
+        SparkDl4jLayer multiLayer = new SparkDl4jLayer(data.context(), conf);
+        return multiLayer.fit(new JavaSparkContext(data.context()), data);
 
     }
 

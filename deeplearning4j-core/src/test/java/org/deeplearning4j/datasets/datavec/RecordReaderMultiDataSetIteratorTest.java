@@ -34,20 +34,17 @@ public class RecordReaderMultiDataSetIteratorTest {
     @Test
     public void testsBasic() throws Exception {
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
-        RecordReader rr = new CSVRecordReader(0,",");
+        RecordReader rr = new CSVRecordReader(0, ",");
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
-        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr,10,4,3);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 10, 4, 3);
 
-        RecordReader rr2 = new CSVRecordReader(0,",");
+        RecordReader rr2 = new CSVRecordReader(0, ",");
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                .addReader("reader",rr2)
-                .addInput("reader",0,3)
-                .addOutputOneHot("reader",4,3)
-                .build();
+        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
+                        .addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
 
-        while(rrdsi.hasNext()){
+        while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
             INDArray fds = ds.getFeatureMatrix();
             INDArray lds = ds.getLabels();
@@ -64,15 +61,15 @@ public class RecordReaderMultiDataSetIteratorTest {
             assertNotNull(lmds);
 
             assertEquals(fds, fmds);
-            assertEquals(lds,lmds);
+            assertEquals(lds, lmds);
         }
         assertFalse(rrmdsi.hasNext());
 
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt", i)).getTempFileFromArchive();
         }
 
         //Load time series from CSV sequence files; compare to SequenceRecordReaderDataSetIterator
@@ -87,7 +84,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         SequenceRecordReaderDataSetIterator iter =
-                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+                        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
 
         SequenceRecordReader featureReader2 = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader2 = new CSVSequenceRecordReader(1, ",");
@@ -95,13 +92,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         MultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("in",featureReader2)
-                .addSequenceReader("out",labelReader2)
-                .addInput("in")
-                .addOutputOneHot("out",0,4)
-                .build();
+                        .addSequenceReader("in", featureReader2).addSequenceReader("out", labelReader2).addInput("in")
+                        .addOutputOneHot("out", 0, 4).build();
 
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             DataSet ds = iter.next();
             INDArray fds = ds.getFeatureMatrix();
             INDArray lds = ds.getLabels();
@@ -118,7 +112,7 @@ public class RecordReaderMultiDataSetIteratorTest {
             assertNotNull(lmds);
 
             assertEquals(fds, fmds);
-            assertEquals(lds,lmds);
+            assertEquals(lds, lmds);
         }
         assertFalse(srrmdsi.hasNext());
     }
@@ -126,49 +120,42 @@ public class RecordReaderMultiDataSetIteratorTest {
     @Test
     public void testsBasicMeta() throws Exception {
         //As per testBasic - but also loading metadata
-        RecordReader rr2 = new CSVRecordReader(0,",");
+        RecordReader rr2 = new CSVRecordReader(0, ",");
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                .addReader("reader",rr2)
-                .addInput("reader",0,3)
-                .addOutputOneHot("reader",4,3)
-                .build();
+                        .addReader("reader", rr2).addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
 
         rrmdsi.setCollectMetaData(true);
 
         int count = 0;
-        while(rrmdsi.hasNext()){
+        while (rrmdsi.hasNext()) {
             MultiDataSet mds = rrmdsi.next();
             MultiDataSet fromMeta = rrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
             assertEquals(mds, fromMeta);
             count++;
         }
-        assertEquals(150/10, count);
+        assertEquals(150 / 10, count);
     }
 
     @Test
-    public void testSplittingCSV() throws Exception{
+    public void testSplittingCSV() throws Exception {
         //Here's the idea: take Iris, and split it up into 2 inputs and 2 output arrays
         //Inputs: columns 0 and 1-2
         //Outputs: columns 3, and 4->OneHot
         //need to manually extract
-        RecordReader rr = new CSVRecordReader(0,",");
+        RecordReader rr = new CSVRecordReader(0, ",");
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
-        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr,10,4,3);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 10, 4, 3);
 
-        RecordReader rr2 = new CSVRecordReader(0,",");
+        RecordReader rr2 = new CSVRecordReader(0, ",");
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                .addReader("reader",rr2)
-                .addInput("reader",0,0)
-                .addInput("reader",1,2)
-                .addOutput("reader",3,3)
-                .addOutputOneHot("reader", 4, 3)
-                .build();
+        MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
+                        .addInput("reader", 0, 0).addInput("reader", 1, 2).addOutput("reader", 3, 3)
+                        .addOutputOneHot("reader", 4, 3).build();
 
-        while(rrdsi.hasNext()){
+        while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
             INDArray fds = ds.getFeatureMatrix();
             INDArray lds = ds.getLabels();
@@ -183,8 +170,10 @@ public class RecordReaderMultiDataSetIteratorTest {
 
             assertNotNull(fmds);
             assertNotNull(lmds);
-            for( int i=0; i<fmds.length; i++ ) assertNotNull(fmds[i]);
-            for( int i=0; i<lmds.length; i++ ) assertNotNull(lmds[i]);
+            for (int i = 0; i < fmds.length; i++)
+                assertNotNull(fmds[i]);
+            for (int i = 0; i < lmds.length; i++)
+                assertNotNull(lmds[i]);
 
             //Get the subsets of the original iris data
             INDArray expIn1 = fds.get(NDArrayIndex.all(), NDArrayIndex.point(0));
@@ -192,39 +181,35 @@ public class RecordReaderMultiDataSetIteratorTest {
             INDArray expOut1 = fds.get(NDArrayIndex.all(), NDArrayIndex.point(3));
             INDArray expOut2 = lds;
 
-            assertEquals(expIn1,fmds[0]);
-            assertEquals(expIn2,fmds[1]);
-            assertEquals(expOut1,lmds[0]);
-            assertEquals(expOut2,lmds[1]);
+            assertEquals(expIn1, fmds[0]);
+            assertEquals(expIn2, fmds[1]);
+            assertEquals(expOut1, lmds[0]);
+            assertEquals(expOut2, lmds[1]);
         }
         assertFalse(rrmdsi.hasNext());
     }
 
     @Test
-    public void testSplittingCSVMeta() throws Exception{
+    public void testSplittingCSVMeta() throws Exception {
         //Here's the idea: take Iris, and split it up into 2 inputs and 2 output arrays
         //Inputs: columns 0 and 1-2
         //Outputs: columns 3, and 4->OneHot
-        RecordReader rr2 = new CSVRecordReader(0,",");
+        RecordReader rr2 = new CSVRecordReader(0, ",");
         rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
-                .addReader("reader",rr2)
-                .addInput("reader",0,0)
-                .addInput("reader",1,2)
-                .addOutput("reader",3,3)
-                .addOutputOneHot("reader", 4, 3)
-                .build();
+                        .addReader("reader", rr2).addInput("reader", 0, 0).addInput("reader", 1, 2)
+                        .addOutput("reader", 3, 3).addOutputOneHot("reader", 4, 3).build();
         rrmdsi.setCollectMetaData(true);
 
         int count = 0;
-        while(rrmdsi.hasNext()){
+        while (rrmdsi.hasNext()) {
             MultiDataSet mds = rrmdsi.next();
             MultiDataSet fromMeta = rrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
             assertEquals(mds, fromMeta);
             count++;
         }
-        assertEquals(150/10, count);
+        assertEquals(150 / 10, count);
     }
 
     @Test
@@ -232,10 +217,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Idea: take CSV sequences, and split "csvsequence_i.txt" into two separate inputs; keep "csvSequencelables_i.txt"
         // as standard one-hot output
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt", i)).getTempFileFromArchive();
         }
 
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
@@ -249,7 +234,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         SequenceRecordReaderDataSetIterator iter =
-                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
+                        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false);
 
         SequenceRecordReader featureReader2 = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader2 = new CSVSequenceRecordReader(1, ",");
@@ -257,14 +242,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         MultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("seq1", featureReader2)
-                .addSequenceReader("seq2", labelReader2)
-                .addInput("seq1",0,1)
-                .addInput("seq1", 2, 2)
-                .addOutputOneHot("seq2",0,4)
-                .build();
+                        .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
+                        .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
 
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             DataSet ds = iter.next();
             INDArray fds = ds.getFeatureMatrix();
             INDArray lds = ds.getLabels();
@@ -279,15 +260,17 @@ public class RecordReaderMultiDataSetIteratorTest {
 
             assertNotNull(fmds);
             assertNotNull(lmds);
-            for( int i=0; i<fmds.length; i++ ) assertNotNull(fmds[i]);
-            for( int i=0; i<lmds.length; i++ ) assertNotNull(lmds[i]);
+            for (int i = 0; i < fmds.length; i++)
+                assertNotNull(fmds[i]);
+            for (int i = 0; i < lmds.length; i++)
+                assertNotNull(lmds[i]);
 
             INDArray expIn1 = fds.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1, true), NDArrayIndex.all());
             INDArray expIn2 = fds.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 2, true), NDArrayIndex.all());
 
-            assertEquals(expIn1,fmds[0]);
-            assertEquals(expIn2,fmds[1]);
-            assertEquals(lds,lmds[0]);
+            assertEquals(expIn1, fmds[0]);
+            assertEquals(expIn2, fmds[1]);
+            assertEquals(lds, lmds[0]);
         }
         assertFalse(srrmdsi.hasNext());
     }
@@ -297,10 +280,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         //Idea: take CSV sequences, and split "csvsequence_i.txt" into two separate inputs; keep "csvSequencelables_i.txt"
         // as standard one-hot output
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt", i)).getTempFileFromArchive();
         }
 
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
@@ -319,17 +302,13 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator srrmdsi = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("seq1", featureReader2)
-                .addSequenceReader("seq2", labelReader2)
-                .addInput("seq1",0,1)
-                .addInput("seq1", 2, 2)
-                .addOutputOneHot("seq2",0,4)
-                .build();
+                        .addSequenceReader("seq1", featureReader2).addSequenceReader("seq2", labelReader2)
+                        .addInput("seq1", 0, 1).addInput("seq1", 2, 2).addOutputOneHot("seq2", 0, 4).build();
 
         srrmdsi.setCollectMetaData(true);
 
         int count = 0;
-        while(srrmdsi.hasNext()){
+        while (srrmdsi.hasNext()) {
             MultiDataSet mds = srrmdsi.next();
             MultiDataSet fromMeta = srrmdsi.loadFromMetaData(mds.getExampleMetaData(RecordMetaData.class));
             assertEquals(mds, fromMeta);
@@ -340,49 +319,45 @@ public class RecordReaderMultiDataSetIteratorTest {
 
 
     @Test
-    public void testInputValidation(){
+    public void testInputValidation() {
 
         //Test: no readers
-        try{
-            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1)
-                    .addInput("something")
-                    .addOutput("something")
-                    .build();
+        try {
+            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addInput("something")
+                            .addOutput("something").build();
             fail("Should have thrown exception");
-        }catch(Exception e){ }
+        } catch (Exception e) {
+        }
 
         //Test: reference to reader that doesn't exist
-        try{
-            RecordReader rr = new CSVRecordReader(0,",");
+        try {
+            RecordReader rr = new CSVRecordReader(0, ",");
             rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1)
-                    .addReader("iris",rr)
-                    .addInput("thisDoesntExist", 0, 3)
-                    .addOutputOneHot("iris", 4, 3)
-                    .build();
+            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr)
+                            .addInput("thisDoesntExist", 0, 3).addOutputOneHot("iris", 4, 3).build();
             fail("Should have thrown exception");
-        }catch(Exception e){ }
+        } catch (Exception e) {
+        }
 
         //Test: no inputs or outputs
-        try{
-            RecordReader rr = new CSVRecordReader(0,",");
+        try {
+            RecordReader rr = new CSVRecordReader(0, ",");
             rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1)
-                    .addReader("iris", rr)
-                    .build();
+            MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr).build();
             fail("Should have thrown exception");
-        }catch(Exception e){ }
+        } catch (Exception e) {
+        }
     }
 
     @Test
     public void testVariableLengthTS() throws Exception {
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt", i)).getTempFileFromArchive();
         }
         //Set up SequenceRecordReaderDataSetIterators for comparison
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
@@ -400,13 +375,11 @@ public class RecordReaderMultiDataSetIteratorTest {
         featureReader2.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
         labelReader2.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
-        SequenceRecordReaderDataSetIterator iterAlignStart =
-                new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, 4, false,
-                        SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_START);
+        SequenceRecordReaderDataSetIterator iterAlignStart = new SequenceRecordReaderDataSetIterator(featureReader,
+                        labelReader, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_START);
 
-        SequenceRecordReaderDataSetIterator iterAlignEnd =
-                new SequenceRecordReaderDataSetIterator(featureReader2, labelReader2, 1, 4, false,
-                        SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+        SequenceRecordReaderDataSetIterator iterAlignEnd = new SequenceRecordReaderDataSetIterator(featureReader2,
+                        labelReader2, 1, 4, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
 
         //Set up
@@ -421,23 +394,17 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader4.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator rrmdsiStart = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("in",featureReader3)
-                .addSequenceReader("out",labelReader3)
-                .addInput("in")
-                .addOutputOneHot("out",0,4)
-                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START)
-                .build();
+                        .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
+                        .addOutputOneHot("out", 0, 4)
+                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
 
         RecordReaderMultiDataSetIterator rrmdsiEnd = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("in",featureReader4)
-                .addSequenceReader("out",labelReader4)
-                .addInput("in")
-                .addOutputOneHot("out",0,4)
-                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END)
-                .build();
+                        .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
+                        .addOutputOneHot("out", 0, 4)
+                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
 
 
-        while(iterAlignStart.hasNext()) {
+        while (iterAlignStart.hasNext()) {
             DataSet dsStart = iterAlignStart.next();
             DataSet dsEnd = iterAlignEnd.next();
 
@@ -471,10 +438,10 @@ public class RecordReaderMultiDataSetIteratorTest {
     @Test
     public void testVariableLengthTSMeta() throws Exception {
         //need to manually extract
-        for(int i = 0; i < 3; i++) {
-            new ClassPathResource(String.format("csvsequence_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabels_%d.txt",i)).getTempFileFromArchive();
-            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt",i)).getTempFileFromArchive();
+        for (int i = 0; i < 3; i++) {
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabels_%d.txt", i)).getTempFileFromArchive();
+            new ClassPathResource(String.format("csvsequencelabelsShort_%d.txt", i)).getTempFileFromArchive();
         }
         //Set up SequenceRecordReaderDataSetIterators for comparison
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
@@ -494,30 +461,25 @@ public class RecordReaderMultiDataSetIteratorTest {
         labelReader4.initialize(new NumberedFileInputSplit(labelsPath, 0, 2));
 
         RecordReaderMultiDataSetIterator rrmdsiStart = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("in",featureReader3)
-                .addSequenceReader("out",labelReader3)
-                .addInput("in")
-                .addOutputOneHot("out",0,4)
-                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START)
-                .build();
+                        .addSequenceReader("in", featureReader3).addSequenceReader("out", labelReader3).addInput("in")
+                        .addOutputOneHot("out", 0, 4)
+                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START).build();
 
         RecordReaderMultiDataSetIterator rrmdsiEnd = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addSequenceReader("in",featureReader4)
-                .addSequenceReader("out",labelReader4)
-                .addInput("in")
-                .addOutputOneHot("out",0,4)
-                .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END)
-                .build();
+                        .addSequenceReader("in", featureReader4).addSequenceReader("out", labelReader4).addInput("in")
+                        .addOutputOneHot("out", 0, 4)
+                        .sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END).build();
 
         rrmdsiStart.setCollectMetaData(true);
         rrmdsiEnd.setCollectMetaData(true);
 
         int count = 0;
-        while(rrmdsiStart.hasNext()) {
+        while (rrmdsiStart.hasNext()) {
             MultiDataSet mdsStart = rrmdsiStart.next();
             MultiDataSet mdsEnd = rrmdsiEnd.next();
 
-            MultiDataSet mdsStartFromMeta = rrmdsiStart.loadFromMetaData(mdsStart.getExampleMetaData(RecordMetaData.class));
+            MultiDataSet mdsStartFromMeta =
+                            rrmdsiStart.loadFromMetaData(mdsStart.getExampleMetaData(RecordMetaData.class));
             MultiDataSet mdsEndFromMeta = rrmdsiEnd.loadFromMetaData(mdsEnd.getExampleMetaData(RecordMetaData.class));
 
             assertEquals(mdsStart, mdsStartFromMeta);
@@ -542,8 +504,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(),"Zico_0001.jpg")), new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(),"Ziwang_Xu_0001.jpg")), new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+                        new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+                        new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
 
         int outputNum = 2;
@@ -557,13 +521,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr1s.initialize(new FileSplit(parentDir));
 
 
-        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(1)
-                .addReader("rr1", rr1)
-                .addReader("rr1s", rr1s)
-                .addInput("rr1", 0, 0)
-                .addInput("rr1s", 0, 0)
-                .addOutputOneHot("rr1s", 1, outputNum)
-                .build();
+        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(1).addReader("rr1", rr1)
+                        .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
+                        .addOutputOneHot("rr1s", 1, outputNum).build();
 
         //Now, do the same thing with ImageRecordReader, and check we get the same results:
         ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
@@ -574,7 +534,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         DataSetIterator dsi1 = new RecordReaderDataSetIterator(rr1_b, 1, 1, 2);
         DataSetIterator dsi2 = new RecordReaderDataSetIterator(rr1s_b, 1, 1, 2);
 
-        for(int i=0; i<2; i++ ) {
+        for (int i = 0; i < 2; i++) {
             MultiDataSet mds = trainDataIterator.next();
 
             DataSet d1 = dsi1.next();
@@ -598,8 +558,10 @@ public class RecordReaderMultiDataSetIteratorTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(),"Zico_0001.jpg")), new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(),"Ziwang_Xu_0001.jpg")), new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+                        new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+                        new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
         int outputNum = 2;
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
@@ -610,13 +572,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         rr1.initialize(new FileSplit(parentDir));
         rr1s.initialize(new FileSplit(parentDir));
 
-        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(2)
-                .addReader("rr1", rr1)
-                .addReader("rr1s", rr1s)
-                .addInput("rr1", 0, 0)
-                .addInput("rr1s", 0, 0)
-                .addOutputOneHot("rr1s", 1, outputNum)
-                .build();
+        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(2).addReader("rr1", rr1)
+                        .addReader("rr1s", rr1s).addInput("rr1", 0, 0).addInput("rr1s", 0, 0)
+                        .addOutputOneHot("rr1s", 1, outputNum).build();
 
         //Now, do the same thing with ImageRecordReader, and check we get the same results:
         ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
@@ -640,7 +598,7 @@ public class RecordReaderMultiDataSetIteratorTest {
 
     private static void writeStreamToFile(File out, InputStream is) throws IOException {
         byte[] b = IOUtils.toByteArray(is);
-        try(OutputStream os = new BufferedOutputStream(new FileOutputStream(out))){
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
             os.write(b);
         }
     }

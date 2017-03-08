@@ -25,25 +25,29 @@ public class CGVaeReconstructionErrorWithKeyFunction<K> extends BaseVaeScoreWith
      * @param jsonConfig        MultiLayerConfiguration, as json
      * @param batchSize         Batch size to use when scoring
      */
-    public CGVaeReconstructionErrorWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public CGVaeReconstructionErrorWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    int batchSize) {
         super(params, jsonConfig, batchSize);
     }
 
     @Override
     public VariationalAutoencoder getVaeLayer() {
-        ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson((String)jsonConfig.getValue()));
+        ComputationGraph network =
+                        new ComputationGraph(ComputationGraphConfiguration.fromJson((String) jsonConfig.getValue()));
         network.init();
-        INDArray val = ((INDArray)params.value()).unsafeDuplication();
+        INDArray val = ((INDArray) params.value()).unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcasted set parameters");
         network.setParams(val);
 
         Layer l = network.getLayer(0);
         if (!(l instanceof VariationalAutoencoder)) {
-            throw new RuntimeException("Cannot use CGVaeReconstructionErrorWithKeyFunction on network that doesn't have a VAE "
-                    + "layer as layer 0. Layer type: " + l.getClass());
+            throw new RuntimeException(
+                            "Cannot use CGVaeReconstructionErrorWithKeyFunction on network that doesn't have a VAE "
+                                            + "layer as layer 0. Layer type: " + l.getClass());
         }
-        return (VariationalAutoencoder)l;
+        return (VariationalAutoencoder) l;
     }
 
     @Override
