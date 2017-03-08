@@ -89,13 +89,18 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
     @Override
-    public void setManualGcFrequency(int frequency) {
+    public void setOccasionalGcFrequency(int frequency) {
         this.frequency.set(frequency);
     }
 
     @Override
     public void setAutoGcWindow(long windowMillis) {
         //
+    }
+
+    @Override
+    public int getOccasionalGcFrequency() {
+        return frequency.get();
     }
 
     @Override

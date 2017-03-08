@@ -58,7 +58,13 @@ public interface MemoryManager {
      * default value: 5
      * @param frequency
      */
-    void setManualGcFrequency(int frequency);
+    void setOccasionalGcFrequency(int frequency);
+
+    /**
+     * This method returns
+     * @return
+     */
+    int getOccasionalGcFrequency();
 
     /**
      * This method enables/disables periodic System.gc() calls.
