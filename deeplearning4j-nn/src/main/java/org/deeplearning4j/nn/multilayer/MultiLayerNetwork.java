@@ -972,6 +972,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
 
                 if(hasMaskArrays) clearLayerMaskArrays();
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         } else if (layerWiseConfigurations.isPretrain()) {
             log.warn("Warning: finetune is not applied.");
