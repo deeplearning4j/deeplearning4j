@@ -170,6 +170,8 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 }
 
+                Nd4j.getMemoryManager().invokeGcOccasionally();
+
                 /*
                     average model, and propagate it to whole
                 */
