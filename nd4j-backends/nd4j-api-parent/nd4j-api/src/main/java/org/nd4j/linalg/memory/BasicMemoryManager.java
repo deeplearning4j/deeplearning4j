@@ -4,16 +4,20 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
  */
 public class BasicMemoryManager implements MemoryManager {
-    protected int frequency = 5;
+    protected AtomicInteger frequency = new AtomicInteger(5);
     protected AtomicLong freqCounter = new AtomicLong(0);
 
     protected AtomicLong lastGcTime = new AtomicLong(0);
+
+    protected AtomicBoolean periodicEnabled = new AtomicBoolean(true);
 
     /**
      * This method returns
@@ -66,8 +70,8 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public void invokeGcOccasionally() {
-        if (frequency > 0)
-            if (freqCounter.incrementAndGet() % frequency == 0) {
+        if (frequency.get() > 0)
+            if (freqCounter.incrementAndGet() % frequency.get() == 0) {
                 System.gc();
                 lastGcTime.set(System.currentTimeMillis());
             }
@@ -80,8 +84,13 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
     @Override
+    public boolean isPeriodicGcActive() {
+        return periodicEnabled.get();
+    }
+
+    @Override
     public void setManualGcFrequency(int frequency) {
-        this.frequency = frequency;
+        this.frequency.set(frequency);
     }
 
     @Override
@@ -92,5 +101,10 @@ public class BasicMemoryManager implements MemoryManager {
     @Override
     public long getLastGcTime() {
         return lastGcTime.get();
+    }
+
+    @Override
+    public void togglePeriodicGc(boolean enabled) {
+        periodicEnabled.set(enabled);
     }
 }

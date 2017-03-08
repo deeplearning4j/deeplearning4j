@@ -622,7 +622,7 @@ public class AtomicAllocator implements Allocator {
                         if (threadId == 0) {
                             // we don't call for System.gc if last memory allocation was more then 3 seconds ago
                             long ct = System.currentTimeMillis();
-                            if (CudaEnvironment.getInstance().getConfiguration().getNoGcWindowMs() > 0)
+                            if (Nd4j.getMemoryManager().isPeriodicGcActive())
                                 if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + CudaEnvironment.getInstance().getConfiguration().getNoGcWindowMs()) {
 
                                     Nd4j.getMemoryManager().invokeGc();
@@ -630,7 +630,7 @@ public class AtomicAllocator implements Allocator {
                                     LockSupport.parkNanos(50000L);
                                 }
                         } else
-                            LockSupport.parkNanos(50000L);
+                            LockSupport.parkNanos(500000L);
                     } catch (Exception e) {
 
                     }

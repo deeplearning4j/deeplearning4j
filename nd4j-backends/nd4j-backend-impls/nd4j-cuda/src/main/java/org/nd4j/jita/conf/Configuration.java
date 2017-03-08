@@ -781,8 +781,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setNoGcWindowMs(long windowMs) {
-        if (windowMs < 0)
-            throw new IllegalStateException("No-GC window should have non-negative value");
+        if (windowMs < 1)
+            throw new IllegalStateException("No-GC window should have positive value");
 
         this.noGcWindowMs = windowMs;
         return this;

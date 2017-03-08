@@ -31,6 +31,20 @@ public interface MemoryManager {
     void invokeGc();
 
     /**
+     * This method enables/disables periodic GC
+     *
+     * @param enabled
+     */
+    void togglePeriodicGc(boolean enabled);
+
+    /**
+     * This method returns true, if periodic GC is active. False otherwise.
+     *
+     * @return
+     */
+    boolean isPeriodicGcActive();
+
+    /**
      * This method returns time (in milliseconds) of the las System.gc() call
      *
      * @return
