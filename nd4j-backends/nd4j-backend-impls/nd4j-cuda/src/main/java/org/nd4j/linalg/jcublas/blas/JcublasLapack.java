@@ -37,13 +37,13 @@ public class JcublasLapack extends BaseLapack {
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-
+        INDArray a = A;
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT getrf called in DOUBLE environment");
 
-        if (A.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be ordering ='f' (A)");
-        }
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -62,7 +62,7 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            CublasPointer xAPointer = new CublasPointer(A, ctx);
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -92,21 +92,27 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat);
             }
         }
-        allocator.registerAction(ctx, A);
+        allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, IPIV);
+
+        if (a != A)
+            A.assign(a);
+
+        logger.info("A: {}", A);
     }
 
 
 
     @Override
     public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
+        INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("FLOAT getrf called in FLOAT environment");
-        if (A.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be ordering ='f' (A)");
-        }
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -125,7 +131,7 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            CublasPointer xAPointer = new CublasPointer(A, ctx);
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -152,9 +158,12 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat);
             }
         }
-        allocator.registerAction(ctx, A);
+        allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, IPIV);
+
+        if (a != A)
+            A.assign(a);
     }
 
 
@@ -179,19 +188,23 @@ public class JcublasLapack extends BaseLapack {
     public void sgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
 
+        INDArray a = A;
+        INDArray u = U;
+        INDArray vt = VT;
+
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT gesvd called in DOUBLE environment");
 
         // cuda requires column ordering - we'll register a warning in case
-        if (A.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be ordering ='f' (A)");
-        }
-        if (U != null && U.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be ordering ='f' (U)");
-        }
-        if (VT != null && VT.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be ordering ='f' (VT)");
-        }
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+        if (U != null && U.ordering() == 'c')
+            u = U.dup('f');
+
+        if (VT != null && VT.ordering() == 'c')
+            vt = VT.dup('f');
+
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -210,7 +223,7 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            CublasPointer xAPointer = new CublasPointer(A, ctx);
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -228,8 +241,8 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual decomp
             stat = cusolverDnSgesvd(solverDn, jobu, jobvt, M, N, (FloatPointer) xAPointer.getDevicePointer(), M,
                             new CudaPointer(allocator.getPointer(S, ctx)).asFloatPointer(),
-                            U == null ? null : new CudaPointer(allocator.getPointer(U, ctx)).asFloatPointer(), M,
-                            VT == null ? null : new CudaPointer(allocator.getPointer(VT, ctx)).asFloatPointer(), N,
+                            U == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asFloatPointer(), M,
+                            VT == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asFloatPointer(), N,
                             new CudaPointer(workspace).asFloatPointer(), worksize,
                             new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
@@ -239,10 +252,21 @@ public class JcublasLapack extends BaseLapack {
         }
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
+        allocator.registerAction(ctx, a);
+
         if (U != null)
-            allocator.registerAction(ctx, U);
+            allocator.registerAction(ctx, u);
         if (VT != null)
-            allocator.registerAction(ctx, VT);
+            allocator.registerAction(ctx, vt);
+
+        if (a != A)
+            A.assign(a);
+
+        if (u != U)
+            U.assign(u);
+
+        if (vt != VT)
+            VT.assign(vt);
     }
 
 
@@ -250,19 +274,23 @@ public class JcublasLapack extends BaseLapack {
     public void dgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
 
+        INDArray a = A;
+        INDArray u = U;
+        INDArray vt = VT;
+
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE gesvd called in FLOAT environment");
 
         // cuda requires column ordering - we'll register a warning in case
-        if (A.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (A)");
-        }
-        if (U != null && U.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (U)");
-        }
-        if (VT != null && VT.ordering() == 'c') {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (VT)");
-        }
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+        if (U != null && U.ordering() == 'c')
+            u = U.dup('f');
+
+        if (VT != null && VT.ordering() == 'c')
+            vt = VT.dup('f');
+
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -281,7 +309,7 @@ public class JcublasLapack extends BaseLapack {
                 throw new IllegalStateException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            CublasPointer xAPointer = new CublasPointer(A, ctx);
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -301,8 +329,8 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual decomp
             stat = cusolverDnDgesvd(solverDn, jobu, jobvt, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
                             new CudaPointer(allocator.getPointer(S, ctx)).asDoublePointer(),
-                            U == null ? null : new CudaPointer(allocator.getPointer(U, ctx)).asDoublePointer(), M,
-                            VT == null ? null : new CudaPointer(allocator.getPointer(VT, ctx)).asDoublePointer(), N,
+                            U == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asDoublePointer(), M,
+                            VT == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asDoublePointer(), N,
                             new CudaPointer(workspace).asDoublePointer(), worksize,
                             new CudaPointer(allocator.getPointer(rwork, ctx)).asDoublePointer(),
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
@@ -313,11 +341,23 @@ public class JcublasLapack extends BaseLapack {
         }
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
-        allocator.registerAction(ctx, A);
+        allocator.registerAction(ctx, a);
+
         if (U != null)
-            allocator.registerAction(ctx, U);
+            allocator.registerAction(ctx, u);
+
         if (VT != null)
-            allocator.registerAction(ctx, VT);
+            allocator.registerAction(ctx, vt);
+
+
+        if (a != A)
+            A.assign(a);
+
+        if (u != U)
+            U.assign(u);
+
+        if (vt != VT)
+            VT.assign(vt);
     }
 
 

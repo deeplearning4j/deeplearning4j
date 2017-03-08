@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -78,7 +79,7 @@ public class LossBinaryXENT implements ILossFunction {
         }
 
         if (mask != null) {
-            scoreArr.muliColumnVector(mask);
+            LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr;
     }
@@ -111,6 +112,14 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
         INDArray dLda = numerator.divi(denominator);
 
+        if(mask != null && LossUtil.isPerOutputMasking(dLda, mask)){
+            //For *most* activation functions: we don't actually need to mask dL/da in addition to masking dL/dz later
+            //but: some, like softmax, require both (due to dL/dz_i being a function of dL/da_j, for i != j)
+            //We could add a special case for softmax (activationFn instanceof ActivationSoftmax) but that would be
+            // error prone - but buy us a tiny bit of performance
+            LossUtil.applyMask(dLda, mask);
+        }
+
         INDArray grad = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with weights
 
         //Weighted loss function
@@ -123,7 +132,7 @@ public class LossBinaryXENT implements ILossFunction {
         }
 
         if (mask != null) {
-            grad.muliColumnVector(mask);
+            LossUtil.applyMask(grad, mask);
         }
 
         return grad;

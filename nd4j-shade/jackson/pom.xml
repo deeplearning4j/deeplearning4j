@@ -11,8 +11,54 @@
 
     <artifactId>jackson</artifactId>
 
+    <profiles>
+      <profile>
+        <id>custom-lifecycle</id>
+
+        <activation>
+          <property><name>!skip.custom.lifecycle</name></property>
+        </activation>
+        <build>
+          <plugins>
+
+            <plugin>
+              <groupId>org.apache.portals.jetspeed-2</groupId>
+              <artifactId>jetspeed-mvn-maven-plugin</artifactId>
+              <version>2.2.2</version>
+              <executions>
+                <execution>
+                  <id>compile-and-pack</id>
+                  <phase>compile</phase>
+                  <goals>
+                    <goal>mvn</goal>
+                  </goals>
+                </execution>
+              </executions>
+              <configuration>
+                <targets combine.children="merge">
+
+                  <target>
+                    <id>create-shaded-jars</id>
+                    <dir>@rootdir@/nd4j-shade/jackson/</dir>
+                    <goals>clean,compile,package</goals>
+                    <properties>
+                      <skip.custom.lifecycle>true</skip.custom.lifecycle>
+                    </properties>
+                  </target>
+
+                </targets>
+                <defaultTarget>create-shaded-jars</defaultTarget>
+              </configuration>
+            </plugin>
+
+          </plugins>
+        </build>
+      </profile>
+    </profiles>
+
     <build>
         <plugins>
+
             <!--
             Use Maven Shade plugin to add a shaded version of the Jackson dependencies, that can be imported by
             including this module (org.nd4j.jackson) as a dependency.
@@ -75,6 +121,7 @@
                             <shadedPattern>org.nd4j.shade.jackson</shadedPattern>
                         </relocation>
                     </relocations>
+
                 </configuration>
             </plugin>
             <plugin>
@@ -88,6 +135,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <skip>false</skip>
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
                         </configuration>
@@ -104,6 +152,34 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-dependency-plugin</artifactId>
+              <version>3.0.0</version>
+              <executions>
+                <execution>
+                  <id>unpack</id>
+                  <phase>package</phase>
+                  <goals>
+                    <goal>unpack</goal>
+                  </goals>
+                  <configuration>
+                    <artifactItems>
+                      <artifactItem>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>jackson</artifactId>
+                        <version>${project.version}</version>
+                        <type>jar</type>
+                        <overWrite>false</overWrite>
+                        <outputDirectory>${project.build.directory}/classes/</outputDirectory>
+                        <includes>**/*.class,**/*.xml</includes>
+                      </artifactItem>
+                    </artifactItems>
+                  </configuration>
+                </execution>
+              </executions>
             </plugin>
         </plugins>
     </build>

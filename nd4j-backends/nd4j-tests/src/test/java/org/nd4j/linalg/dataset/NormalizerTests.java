@@ -60,7 +60,7 @@ public class NormalizerTests extends BaseNd4jTest {
         assertTrue(d1 + " < " + thresholdPerc, d1 < thresholdPerc);
         System.out.println("Running iterator vs non-iterator min max scaler..");
         double d2 = testItervsDataset(minMaxScaler);
-        assertTrue( d2 + " < " + thresholdPerc, d2 < thresholdPerc);
+        assertTrue(d2 + " < " + thresholdPerc, d2 < thresholdPerc);
     }
 
     public float testItervsDataset(DataNormalization preProcessor) {

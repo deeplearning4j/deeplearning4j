@@ -1,6 +1,7 @@
 package org.nd4j.nativeblas;
 
 
+import org.bytedeco.javacpp.Loader;
 import org.nd4j.linalg.api.blas.Blas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,12 @@ public abstract class Nd4jBlas implements Blas {
                 numThreads = Integer.parseInt(numThreadsString);
                 setMaxThreads(numThreads);
             } else {
-                numThreads = getCores(Runtime.getRuntime().availableProcessors());
+                int cores = Loader.totalCores();
+                int chips = Loader.totalChips();
+                if (cores > 0 && chips > 0)
+                    numThreads = Math.max(1, cores /chips);
+                else
+                    numThreads = getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);
             }
             logger.info("Number of threads used for BLAS: {}", getMaxThreads());

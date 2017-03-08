@@ -22,8 +22,7 @@ public class MultiStandardizeSerializerStrategy implements NormalizerSerializerS
      * @param stream     the output stream to write to
      * @throws IOException
      */
-    public void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream)
-        throws IOException {
+    public void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
         try (DataOutputStream dos = new DataOutputStream(stream)) {
             dos.writeBoolean(normalizer.isFitLabel());
             dos.writeInt(normalizer.numInputs());

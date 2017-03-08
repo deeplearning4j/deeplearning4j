@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -176,7 +177,7 @@ public class Configuration implements Serializable {
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private NativeOps nativeOps;
 
     public boolean isInitialized() {
         return initialized.get();
@@ -372,6 +373,10 @@ public class Configuration implements Serializable {
     }
 
     public Configuration() {
+        Nd4j.getAffinityManager();
+
+        nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
         int cnt = nativeOps.getAvailableDevices();
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");

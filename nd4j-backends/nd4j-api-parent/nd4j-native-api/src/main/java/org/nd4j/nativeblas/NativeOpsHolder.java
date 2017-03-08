@@ -1,6 +1,8 @@
 package org.nd4j.nativeblas;
 
 import lombok.Getter;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -22,9 +24,9 @@ public class NativeOpsHolder {
     private NativeOpsHolder() {
         try {
             Properties props = Nd4jContext.getInstance().getConf();
-            Class<? extends NativeOps> nativeOpsClazz =
-                            Class.forName(System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString()))
-                                            .asSubclass(NativeOps.class);
+
+            String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
+            Class<? extends NativeOps> nativeOpsClazz = Class.forName(name).asSubclass(NativeOps.class);
             deviceNativeOps = nativeOpsClazz.newInstance();
 
             deviceNativeOps.initializeDevicesAndFunctions();
@@ -34,7 +36,13 @@ public class NativeOpsHolder {
                 numThreads = Integer.parseInt(numThreadsString);
                 deviceNativeOps.setOmpNumThreads(numThreads);
             } else {
-                deviceNativeOps.setOmpNumThreads(deviceNativeOps.getCores(Runtime.getRuntime().availableProcessors()));
+                int cores = Loader.totalCores();
+                int chips = Loader.totalChips();
+                if (chips > 0 && cores > 0) {
+                    deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
+                } else
+                    deviceNativeOps.setOmpNumThreads(
+                                    deviceNativeOps.getCores(Runtime.getRuntime().availableProcessors()));
             }
             //deviceNativeOps.setOmpNumThreads(4);
 

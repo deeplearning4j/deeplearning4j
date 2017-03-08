@@ -12,6 +12,7 @@ import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.StringUtils;
+import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
@@ -158,7 +159,7 @@ public class RoutedTransport extends BaseTransport {
         }
 
         router.init(voidConfiguration, this);
-        this.originatorId = StringUtils.getLongHash(this.getIp() + ":" + this.getPort());
+        this.originatorId = HashUtil.getLongHash(this.getIp() + ":" + this.getPort());
 
 
 
@@ -172,7 +173,7 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-//        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
@@ -192,7 +193,7 @@ public class RoutedTransport extends BaseTransport {
             long retr = 0;
             boolean delivered = false;
 
-            long address = StringUtils.getLongHash(rc.getIp() + ":" + rc.getPort());
+            long address = HashUtil.getLongHash(rc.getIp() + ":" + rc.getPort());
             if (originatorId == address) {
                 // this is local delivery
                 try {
@@ -203,7 +204,7 @@ public class RoutedTransport extends BaseTransport {
                 return;
             }
 
-      //      log.info("Trying to send [{}] to {}", message.getClass().getSimpleName(), address);
+            //      log.info("Trying to send [{}] to {}", message.getClass().getSimpleName(), address);
             while (!delivered) {
                 synchronized (rc.locker) {
                     res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));
@@ -490,7 +491,7 @@ public class RoutedTransport extends BaseTransport {
 
     @Override
     public synchronized void addClient(String ip, int port) {
-        Long hash = StringUtils.getLongHash(ip + ":" + port);
+        Long hash = HashUtil.getLongHash(ip + ":" + port);
         if (clients.containsKey(hash))
             return;
 
