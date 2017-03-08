@@ -80,7 +80,6 @@ public class MnistFetcher {
 		File testFileLabels = new File(baseDir, testFilesFilename);
 
 		tryDownloadingAFewTimes(new URL(trainingFilesURL), tarFile, trainingFilesMD5);
-
 		tryDownloadingAFewTimes(new URL(testFilesURL), testFileLabels, testFilesMD5);
 
 		ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), baseDir.getAbsolutePath());
@@ -106,9 +105,12 @@ public class MnistFetcher {
 
 	private void tryDownloadingAFewTimes(int attempt, URL url, File f, String targetMD5) throws IOException {
 		int maxTries = 3;
-		boolean isCorrectFile = f.isFile() && checkMD5OfFile(targetMD5, f);
-		if (attempt < maxTries && isCorrectFile) {
+		boolean isCorrectFile = f.isFile();
+		if (attempt < maxTries && !isCorrectFile) {
 			FileUtils.copyURLToFile(url, f);
+			if(!checkMD5OfFile(targetMD5, f)) tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
+		} else if(isCorrectFile) {
+			// do nothing, file downloaded
 		} else {
 			throw new IOException(
 					"Could not download " + url.getPath() + "\n properly despite trying " + maxTries + " times, check your connection. File info:"+
@@ -117,7 +119,6 @@ public class MnistFetcher {
 					"\nIs valid file: " + f.isFile()
 			);
 		}
-		if (!isCorrectFile) tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
 	}
 
 	private boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
