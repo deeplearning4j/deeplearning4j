@@ -21,6 +21,8 @@ public class BasicMemoryManager implements MemoryManager {
 
     protected AtomicInteger averageLoopTime = new AtomicInteger(0);
 
+    protected AtomicInteger noGcWindow = new AtomicInteger(100);
+
     /**
      * This method returns
      * PLEASE NOTE: Cache options depend on specific implementations
@@ -73,6 +75,8 @@ public class BasicMemoryManager implements MemoryManager {
     @Override
     public void invokeGcOccasionally() {
         long currentTime = System.currentTimeMillis();
+
+        // not sure if we want to conform autoGcWindow here...
         if (frequency.get() > 0)
             if (freqCounter.incrementAndGet() % frequency.get() == 0 && currentTime > getLastGcTime() + getAutoGcWindow()) {
                 System.gc();
@@ -97,13 +101,13 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
     @Override
-    public void setAutoGcWindow(long windowMillis) {
-        //
+    public void setAutoGcWindow(int windowMillis) {
+        noGcWindow.set(windowMillis);
     }
 
     @Override
     public int getAutoGcWindow() {
-        return 0;
+        return noGcWindow.get();
     }
 
     @Override

@@ -78,7 +78,7 @@ public interface MemoryManager {
      *
      * @param windowMillis minimal time milliseconds between calls.
      */
-    void setAutoGcWindow(long windowMillis);
+    void setAutoGcWindow(int windowMillis);
 
     /**
      * This method reutrns

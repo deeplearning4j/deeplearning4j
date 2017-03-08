@@ -151,7 +151,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
     }
 
     @Override
-    public void setAutoGcWindow(long windowMillis) {
+    public void setAutoGcWindow(int windowMillis) {
+        super.setAutoGcWindow(windowMillis);
         CudaEnvironment.getInstance().getConfiguration().setNoGcWindowMs(windowMillis);
     }
 }

@@ -478,7 +478,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     }
 
                     if (match > 0)
-                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
+                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s) for Justin");
                 }
             }
                 break;
