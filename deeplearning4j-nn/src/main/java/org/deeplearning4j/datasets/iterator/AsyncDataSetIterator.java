@@ -86,7 +86,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param queueSize    size of the queue (max number of elements to load into queue)
      */
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
-        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>());
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize));
     }
 
 

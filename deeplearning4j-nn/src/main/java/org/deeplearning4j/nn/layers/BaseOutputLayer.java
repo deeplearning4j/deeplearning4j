@@ -43,6 +43,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
@@ -407,6 +408,20 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     protected INDArray preOutput2d(boolean training){
         return preOutput(training);
+    }
+
+    @Override
+    protected void applyMask(INDArray to){
+        //For output layers: can be either per-example masking, or per-
+        if(maskArray.isColumnVector()){
+            to.muliColumnVector(maskArray);
+        } else if(Arrays.equals(to.shape(), maskArray.shape())){
+            to.muli(maskArray);
+        } else {
+            throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
+                    + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
+                    + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape()));
+        }
     }
 
 
