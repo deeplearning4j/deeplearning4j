@@ -23,16 +23,15 @@ public class PrefetchingSentenceIteratorTest {
         File file = resource.getFile();
         BasicLineIterator iterator = new BasicLineIterator(file);
 
-        PrefetchingSentenceIterator fetcher = new PrefetchingSentenceIterator.Builder(iterator)
-                .setFetchSize(1000)
-                .build();
+        PrefetchingSentenceIterator fetcher =
+                        new PrefetchingSentenceIterator.Builder(iterator).setFetchSize(1000).build();
 
         log.info("Phase 1 starting");
 
         int cnt = 0;
         while (fetcher.hasNext()) {
             String line = fetcher.nextSentence();
-//            log.info(line);
+            //            log.info(line);
             cnt++;
         }
 
@@ -57,9 +56,8 @@ public class PrefetchingSentenceIteratorTest {
         File file = resource.getFile();
         BasicLineIterator iterator = new BasicLineIterator(file);
 
-        PrefetchingSentenceIterator fetcher = new PrefetchingSentenceIterator.Builder(iterator)
-                .setFetchSize(1000)
-                .build();
+        PrefetchingSentenceIterator fetcher =
+                        new PrefetchingSentenceIterator.Builder(iterator).setFetchSize(1000).build();
 
         log.info("Phase 1 starting");
 
@@ -70,10 +68,11 @@ public class PrefetchingSentenceIteratorTest {
             // there's no need to keep it enabled forever, just uncomment next line if you're going to test this iterator.
             // otherwise this test will
 
-           //    Thread.sleep(0, 10);
+            //    Thread.sleep(0, 10);
 
             cnt++;
-            if (cnt % 10000 == 0) log.info("Line processed: " + cnt);
+            if (cnt % 10000 == 0)
+                log.info("Line processed: " + cnt);
         }
     }
 
@@ -85,8 +84,7 @@ public class PrefetchingSentenceIteratorTest {
         BasicLineIterator iterator = new BasicLineIterator(file);
 
         PrefetchingSentenceIterator fetcher = new PrefetchingSentenceIterator.Builder(new BasicLineIterator(file))
-                .setFetchSize(500000)
-                .build();
+                        .setFetchSize(500000).build();
 
         long time01 = System.currentTimeMillis();
         int cnt0 = 0;

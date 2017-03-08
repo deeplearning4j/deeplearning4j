@@ -35,7 +35,8 @@ public class CollectScoresIterationListener implements IterationListener {
      * @param frequency    Frequency with which to collect/save scores
      */
     public CollectScoresIterationListener(int frequency) {
-        if (frequency <= 0) frequency = 1;
+        if (frequency <= 0)
+            frequency = 1;
         this.frequency = frequency;
     }
 

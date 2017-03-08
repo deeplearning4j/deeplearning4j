@@ -14,9 +14,6 @@ import javax.ws.rs.ext.Provider;
 public class JsonExceptionMapper implements ExceptionMapper<JsonProcessingException> {
     @Override
     public Response toResponse(JsonProcessingException exception) {
-        return Response.status(500)
-                .entity("WTF")
-                .type(MediaType.APPLICATION_JSON)
-                .build();
+        return Response.status(500).entity("WTF").type(MediaType.APPLICATION_JSON).build();
     }
 }

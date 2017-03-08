@@ -39,7 +39,8 @@ import static org.junit.Assert.assertEquals;
 @Ignore
 public class TestRemoteReceiver {
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void testRemoteBasic() throws Exception {
 
         List<Persistable> updates = new ArrayList<>();
@@ -49,29 +50,30 @@ public class TestRemoteReceiver {
 
 
         UIServer s = UIServer.getInstance();
-        s.enableRemoteListener(collectionRouter,false);
+        s.enableRemoteListener(collectionRouter, false);
 
 
         RemoteUIStatsStorageRouter remoteRouter = new RemoteUIStatsStorageRouter("http://localhost:9000");
 
         SbeStatsReport update1 = new SbeStatsReport();
-        update1.setDeviceCurrentBytes(new long[]{1,2});
+        update1.setDeviceCurrentBytes(new long[] {1, 2});
         update1.reportIterationCount(10);
-        update1.reportIDs("sid","tid","wid",123456);
-        update1.reportPerformance(10,20,30,40,50);
+        update1.reportIDs("sid", "tid", "wid", 123456);
+        update1.reportPerformance(10, 20, 30, 40, 50);
 
         SbeStatsReport update2 = new SbeStatsReport();
-        update2.setDeviceCurrentBytes(new long[]{3,4});
+        update2.setDeviceCurrentBytes(new long[] {3, 4});
         update2.reportIterationCount(20);
-        update2.reportIDs("sid2","tid2","wid2",123456);
-        update2.reportPerformance(11,21,31,40,50);
+        update2.reportIDs("sid2", "tid2", "wid2", 123456);
+        update2.reportPerformance(11, 21, 31, 40, 50);
 
-        StorageMetaData smd1 = new SbeStorageMetaData(123,"sid","typeid","wid","initTypeClass","updaterTypeClass");
-        StorageMetaData smd2 = new SbeStorageMetaData(456,"sid2","typeid2","wid2","initTypeClass2","updaterTypeClass2");
+        StorageMetaData smd1 = new SbeStorageMetaData(123, "sid", "typeid", "wid", "initTypeClass", "updaterTypeClass");
+        StorageMetaData smd2 =
+                        new SbeStorageMetaData(456, "sid2", "typeid2", "wid2", "initTypeClass2", "updaterTypeClass2");
 
         SbeStatsInitializationReport init1 = new SbeStatsInitializationReport();
-        init1.reportIDs("sid","wid","tid",3145253452L);
-        init1.reportHardwareInfo(1,2,3,4,null,null,"2344253");
+        init1.reportIDs("sid", "wid", "tid", 3145253452L);
+        init1.reportHardwareInfo(1, 2, 3, 4, null, null, "2344253");
 
         remoteRouter.putUpdate(update1);
         Thread.sleep(100);
@@ -96,33 +98,35 @@ public class TestRemoteReceiver {
     }
 
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void testRemoteFull() throws Exception {
         //Use this in conjunction with startRemoteUI()
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .list()
-                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                        .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                        .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         StatsStorageRouter ssr = new RemoteUIStatsStorageRouter("http://localhost:9000");
         net.setListeners(new StatsListener(ssr), new ScoreIterationListener(1));
 
-        DataSetIterator iter = new IrisDataSetIterator(150,150);
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        for( int i=0; i<500; i++ ){
+        for (int i = 0; i < 500; i++) {
             net.fit(iter);
-//            Thread.sleep(100);
+            //            Thread.sleep(100);
             Thread.sleep(100);
         }
 
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void startRemoteUI() throws Exception {
 
         UIServer s = UIServer.getInstance();

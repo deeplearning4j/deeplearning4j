@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -37,8 +37,7 @@ public class PatriciaTrieFormatter<V> {
     /**
      * Constructor
      */
-    public PatriciaTrieFormatter() {
-    }
+    public PatriciaTrieFormatter() {}
 
     /**
      * Format trie
@@ -100,16 +99,17 @@ public class PatriciaTrieFormatter<V> {
     private String formatHeader() {
         StringBuilder builder = new StringBuilder();
         builder.append("digraph patricia {\n");
-//      builder.append("graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false ];\n");
-//      builder.append("# A2 paper size\n");
-//      builder.append("size = \"34.4,16.5\";\n");
-//      builder.append("# try to fill paper\n");
-//      builder.append("ratio = fill;\n");
-//      builder.append("edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
+        //      builder.append("graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false ];\n");
+        //      builder.append("# A2 paper size\n");
+        //      builder.append("size = \"34.4,16.5\";\n");
+        //      builder.append("# try to fill paper\n");
+        //      builder.append("ratio = fill;\n");
+        //      builder.append("edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
         builder.append("nodesep=1.5;");
-        builder.append("node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]\n");
-//      builder.append("edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
-//      builder.append("node [ shape=\"circle\" ]\n");
+        builder.append("node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME
+                        + "\" ]\n");
+        //      builder.append("edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
+        //      builder.append("node [ shape=\"circle\" ]\n");
         return builder.toString();
     }
 
@@ -131,7 +131,8 @@ public class PatriciaTrieFormatter<V> {
      * @param formatBitString  true if the bits for this key should be included in the node
      * @return formatted node, not null
      */
-    private String formatNode(PatriciaTrie.PatriciaNode<V> node, int bit, KeyMapper<String> keyMapper, boolean formatBitString) {
+    private String formatNode(PatriciaTrie.PatriciaNode<V> node, int bit, KeyMapper<String> keyMapper,
+                    boolean formatBitString) {
         if (node.getBit() <= bit) {
             return "";
         } else {
@@ -164,7 +165,8 @@ public class PatriciaTrieFormatter<V> {
      * @param tailport  tail port to use when formatting (dot-specific, "sw" or "se)
      * @return formatted link, not null
      */
-    private String formatPointer(PatriciaTrie.PatriciaNode<V> from, PatriciaTrie.PatriciaNode<V> to, String label, String tailport) {
+    private String formatPointer(PatriciaTrie.PatriciaNode<V> from, PatriciaTrie.PatriciaNode<V> to, String label,
+                    String tailport) {
         StringBuilder builder = new StringBuilder();
         builder.append(getNodeId(from));
         builder.append(" -> ");
@@ -190,7 +192,8 @@ public class PatriciaTrieFormatter<V> {
      * @param formatBitString  true if the bits for this key should be included in the node
      * @return formatted formatted node, not null
      */
-    private String formatNodeLabel(PatriciaTrie.PatriciaNode<V> node, KeyMapper<String> keyMapper, boolean formatBitString) {
+    private String formatNodeLabel(PatriciaTrie.PatriciaNode<V> node, KeyMapper<String> keyMapper,
+                    boolean formatBitString) {
         StringBuilder builder = new StringBuilder();
         builder.append("<<table border=\"0\" cellborder=\"0\">");
         // Key

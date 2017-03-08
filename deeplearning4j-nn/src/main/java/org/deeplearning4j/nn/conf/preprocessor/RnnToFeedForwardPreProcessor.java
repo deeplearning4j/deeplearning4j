@@ -32,25 +32,31 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
         if (input.rank() != 3)
-            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
+            throw new IllegalArgumentException(
+                            "Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
 
-        if (input.ordering() != 'f') input = input.dup('f');
+        if (input.ordering() != 'f')
+            input = input.dup('f');
 
         int[] shape = input.shape();
-        if (shape[0] == 1) return input.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
-        if (shape[2] == 1) return input.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
-        INDArray permuted = input.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
+        if (shape[0] == 1)
+            return input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        if (shape[2] == 1)
+            return input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
         return permuted.reshape('f', shape[0] * shape[2], shape[1]);
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
         if (output == null)
-            return null;    //In a few cases: output may be null, and this is valid. Like time series data -> embedding layer
+            return null; //In a few cases: output may be null, and this is valid. Like time series data -> embedding layer
         //Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
         if (output.rank() != 2)
-            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
-        if (output.ordering() == 'c') output = Shape.toOffsetZeroCopy(output, 'f');
+            throw new IllegalArgumentException(
+                            "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
+        if (output.ordering() == 'c')
+            output = Shape.toOffsetZeroCopy(output, 'f');
 
         int[] shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
@@ -69,25 +75,26 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.RNN){
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input: expected input of type RNN, got " + inputType);
         }
 
-        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent)inputType;
+        InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
         return InputType.feedForward(rnn.getSize());
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         //Assume mask array is 2d for time series (1 value per time step)
-        if(maskArray == null){
+        if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
-        } else if(maskArray.rank() == 2){
+        } else if (maskArray.rank() == 2) {
             //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
             return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
         } else {
-            throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank() + "; expected rank 2 mask array. Mask array shape: "
-                    + Arrays.toString(maskArray.shape()));
+            throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank()
+                            + "; expected rank 2 mask array. Mask array shape: " + Arrays.toString(maskArray.shape()));
         }
     }
 }

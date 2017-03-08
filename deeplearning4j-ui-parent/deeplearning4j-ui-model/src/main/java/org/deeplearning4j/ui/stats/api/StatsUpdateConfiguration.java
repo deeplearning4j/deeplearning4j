@@ -38,7 +38,7 @@ public interface StatsUpdateConfiguration extends Serializable {
     boolean collectGarbageCollectionStats();
 
     //TODO
-//    boolean collectDataSetMetaData();
+    //    boolean collectDataSetMetaData();
 
     //--- General ---
 

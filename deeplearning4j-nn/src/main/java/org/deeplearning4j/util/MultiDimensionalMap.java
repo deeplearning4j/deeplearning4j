@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,9 +28,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 /**
  * Multiple key map
  */
-public class MultiDimensionalMap<K,T,V>  implements Serializable  {
+public class MultiDimensionalMap<K, T, V> implements Serializable {
 
-    private Map<Pair<K,T>,V> backedMap;
+    private Map<Pair<K, T>, V> backedMap;
 
     /**
      * Thread safe sorted map implementation
@@ -39,8 +39,8 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @param <V>
      * @return
      */
-    public static <K,T,V>  MultiDimensionalMap<K,T,V> newThreadSafeTreeBackedMap() {
-        return new MultiDimensionalMap<>(new ConcurrentSkipListMap<Pair<K,T>,V>());
+    public static <K, T, V> MultiDimensionalMap<K, T, V> newThreadSafeTreeBackedMap() {
+        return new MultiDimensionalMap<>(new ConcurrentSkipListMap<Pair<K, T>, V>());
     }
 
     /**
@@ -50,8 +50,8 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @param <V>
      * @return
      */
-    public static <K,T,V>  MultiDimensionalMap<K,T,V> newThreadSafeHashBackedMap() {
-        return new MultiDimensionalMap<>(new ConcurrentHashMap<Pair<K,T>,V>());
+    public static <K, T, V> MultiDimensionalMap<K, T, V> newThreadSafeHashBackedMap() {
+        return new MultiDimensionalMap<>(new ConcurrentHashMap<Pair<K, T>, V>());
     }
 
     /**
@@ -61,8 +61,8 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @param <V>
      * @return
      */
-    public static <K,T,V>  MultiDimensionalMap<K,T,V> newHashBackedMap() {
-        return new MultiDimensionalMap<>(new HashMap<Pair<K,T>,V>());
+    public static <K, T, V> MultiDimensionalMap<K, T, V> newHashBackedMap() {
+        return new MultiDimensionalMap<>(new HashMap<Pair<K, T>, V>());
     }
 
     /**
@@ -72,8 +72,8 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @param <V>
      * @return
      */
-    public static <K,T,V>  MultiDimensionalMap<K,T,V> newTreeBackedMap() {
-        return new MultiDimensionalMap<>(new TreeMap<Pair<K,T>,V>());
+    public static <K, T, V> MultiDimensionalMap<K, T, V> newTreeBackedMap() {
+        return new MultiDimensionalMap<>(new TreeMap<Pair<K, T>, V>());
     }
 
     public MultiDimensionalMap(Map<Pair<K, T>, V> backedMap) {
@@ -87,7 +87,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *
      * @return the number of key-value mappings in this map
      */
-    
+
     public int size() {
         return backedMap.size();
     }
@@ -97,7 +97,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *
      * @return <tt>true</tt> if this map contains no key-value mappings
      */
-    
+
     public boolean isEmpty() {
         return backedMap.isEmpty();
     }
@@ -119,7 +119,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *                              does not permit null keys
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    
+
     public boolean containsKey(Object key) {
         return backedMap.containsKey(key);
     }
@@ -142,7 +142,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *                              map does not permit null values
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    
+
     public boolean containsValue(Object value) {
         return backedMap.containsValue(value);
     }
@@ -172,7 +172,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *                              does not permit null keys
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    
+
     public V get(Object key) {
         return backedMap.get(key);
     }
@@ -201,9 +201,9 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @throws IllegalArgumentException      if some property of the specified key
      *                                       or value prevents it from being stored in this map
      */
-    
+
     public V put(Pair<K, T> key, V value) {
-        return backedMap.put(key,value);
+        return backedMap.put(key, value);
     }
 
     /**
@@ -236,7 +236,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      *                                       map does not permit null keys
      *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    
+
     public V remove(Object key) {
         return backedMap.remove(key);
     }
@@ -260,7 +260,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @throws IllegalArgumentException      if some property of a key or value in
      *                                       the specified map prevents it from being stored in this map
      */
-    
+
     public void putAll(Map<? extends Pair<K, T>, ? extends V> m) {
         backedMap.putAll(m);
     }
@@ -272,7 +272,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @throws UnsupportedOperationException if the <tt>clear</tt> operation
      *                                       is not supported by this map
      */
-    
+
     public void clear() {
         backedMap.clear();
     }
@@ -334,26 +334,28 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
      * @return a applyTransformToDestination view of the mappings contained in this map
      */
 
-    public Set<Entry<K,T,V>> entrySet() {
-        Set<Entry<K,T,V>> ret  = new HashSet<>();
-        for(Pair<K,T> pair : backedMap.keySet()) {
-            ret.add(new Entry<>(pair.getFirst(),pair.getSecond(),backedMap.get(pair)));
+    public Set<Entry<K, T, V>> entrySet() {
+        Set<Entry<K, T, V>> ret = new HashSet<>();
+        for (Pair<K, T> pair : backedMap.keySet()) {
+            ret.add(new Entry<>(pair.getFirst(), pair.getSecond(), backedMap.get(pair)));
         }
         return ret;
     }
 
-    public V get(K k,T t) {
-        return get(new Pair<>(k,t));
+    public V get(K k, T t) {
+        return get(new Pair<>(k, t));
     }
 
-    public void put(K k,T t, V v) {
-        put(new Pair<>(k,t),v);
+    public void put(K k, T t, V v) {
+        put(new Pair<>(k, t), v);
     }
 
-    
+
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MultiDimensionalMap)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof MultiDimensionalMap))
+            return false;
 
         MultiDimensionalMap that = (MultiDimensionalMap) o;
 
@@ -361,25 +363,23 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
 
     }
 
-    
+
     public int hashCode() {
         return backedMap != null ? backedMap.hashCode() : 0;
     }
 
-    
+
     public String toString() {
-        return "MultiDimensionalMap{" +
-                "backedMap=" + backedMap +
-                '}';
+        return "MultiDimensionalMap{" + "backedMap=" + backedMap + '}';
     }
 
 
-    public boolean contains(K k ,T t) {
-        return containsKey(new Pair<>(k,t));
+    public boolean contains(K k, T t) {
+        return containsKey(new Pair<>(k, t));
     }
 
 
-    public static class Entry<K,T,V> implements Map.Entry<Pair<K,T>,V> {
+    public static class Entry<K, T, V> implements Map.Entry<Pair<K, T>, V> {
 
         private K firstKey;
         private T secondKey;
@@ -431,7 +431,7 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
          *                                       required to, throw this exception if the entry has been
          *                                       removed from the backing map.
          */
-        
+
         public V setValue(V value) {
             V old = this.value;
             this.value = value;
@@ -447,12 +447,11 @@ public class MultiDimensionalMap<K,T,V>  implements Serializable  {
          *                               required to, throw this exception if the entry has been
          *                               removed from the backing map.
          */
-        
+
         public Pair<K, T> getKey() {
-            return new Pair<>(firstKey,secondKey);
+            return new Pair<>(firstKey, secondKey);
         }
     }
-
 
 
 

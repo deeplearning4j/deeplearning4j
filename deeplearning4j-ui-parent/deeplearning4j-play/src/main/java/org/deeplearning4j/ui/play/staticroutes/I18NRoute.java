@@ -12,7 +12,7 @@ import static play.mvc.Results.ok;
  *
  * @author Alex Black
  */
-public class I18NRoute implements Function<String,Result> {
+public class I18NRoute implements Function<String, Result> {
     @Override
     public Result apply(String s) {
         I18NProvider.getInstance().setDefaultLanguage(s);

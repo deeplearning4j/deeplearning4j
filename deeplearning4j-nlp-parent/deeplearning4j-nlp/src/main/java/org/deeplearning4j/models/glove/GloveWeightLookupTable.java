@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -54,7 +54,8 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
     private double maxCount = 100;
 
 
-    public GloveWeightLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,double maxCount) {
+    public GloveWeightLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen,
+                    double negative, double xMax, double maxCount) {
         super(vocab, vectorLength, useAdaGrad, lr, gen, negative);
         this.xMax = xMax;
         this.maxCount = maxCount;
@@ -62,25 +63,25 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
 
     @Override
     public void resetWeights(boolean reset) {
-        if(rng == null)
+        if (rng == null)
             this.rng = Nd4j.getRandom();
 
         //note the +2 which is the unk vocab word and the bias
-        if(syn0 == null || reset) {
-            syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi((double) vectorLength);
-            INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
+        if (syn0 == null || reset) {
+            syn0 = Nd4j.rand(new int[] {vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi((double) vectorLength);
+            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
             putVector(Word2Vec.DEFAULT_UNK, randUnk);
         }
-        if(weightAdaGrad == null || reset) {
-            weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength}, lr.get());
+        if (weightAdaGrad == null || reset) {
+            weightAdaGrad = new AdaGrad(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
         }
 
 
         //right after unknown
-        if(bias == null || reset)
+        if (bias == null || reset)
             bias = Nd4j.create(syn0.rows());
 
-        if(biasAdaGrad == null || reset) {
+        if (biasAdaGrad == null || reset) {
             biasAdaGrad = new AdaGrad(bias.shape(), lr.get());
         }
 
@@ -102,34 +103,34 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
      * @param w2 the second word
      * @param score the weight learned for the particular co occurrences
      */
-    public   double iterateSample(T w1, T w2,double score) {
+    public double iterateSample(T w1, T w2, double score) {
         INDArray w1Vector = syn0.slice(w1.getIndex());
         INDArray w2Vector = syn0.slice(w2.getIndex());
         //prediction: input + bias
-        if(w1.getIndex() < 0 || w1.getIndex() >= syn0.rows())
+        if (w1.getIndex() < 0 || w1.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + w1.getLabel());
-        if(w2.getIndex() < 0 || w2.getIndex() >= syn0.rows())
+        if (w2.getIndex() < 0 || w2.getIndex() >= syn0.rows())
             throw new IllegalArgumentException("Illegal index for word " + w2.getLabel());
 
 
         //w1 * w2 + bias
-        double prediction = Nd4j.getBlasWrapper().dot(w1Vector,w2Vector);
-        prediction +=  bias.getDouble(w1.getIndex()) + bias.getDouble(w2.getIndex());
+        double prediction = Nd4j.getBlasWrapper().dot(w1Vector, w2Vector);
+        prediction += bias.getDouble(w1.getIndex()) + bias.getDouble(w2.getIndex());
 
-        double weight = Math.pow(Math.min(1.0,(score / maxCount)),xMax);
+        double weight = Math.pow(Math.min(1.0, (score / maxCount)), xMax);
 
-        double fDiff = score > xMax ? prediction :  weight * (prediction - Math.log(score));
-        if(Double.isNaN(fDiff))
+        double fDiff = score > xMax ? prediction : weight * (prediction - Math.log(score));
+        if (Double.isNaN(fDiff))
             fDiff = Nd4j.EPS_THRESHOLD;
         //amount of change
-        double gradient =  fDiff;
+        double gradient = fDiff;
 
         //note the update step here: the gradient is
         //the gradient of the OPPOSITE word
         //for adagrad we will use the index of the word passed in
         //for the gradient calculation we will use the context vector
-        update(w1,w1Vector,w2Vector,gradient);
-        update(w2,w2Vector,w1Vector,gradient);
+        update(w1, w1Vector, w2Vector, gradient);
+        update(w2, w2Vector, w1Vector, gradient);
         return fDiff;
 
 
@@ -137,18 +138,18 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
     }
 
 
-    private void update(T w1,INDArray wordVector,INDArray contextVector,double gradient) {
+    private void update(T w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
-        INDArray grad1 =  contextVector.mul(gradient);
-        INDArray update = weightAdaGrad.getGradient(grad1,w1.getIndex(),syn0.shape());
+        INDArray grad1 = contextVector.mul(gradient);
+        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), syn0.shape());
 
         //update vector
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(w1.getIndex());
-        double biasGradient = biasAdaGrad.getGradient(gradient,w1.getIndex(),bias.shape());
+        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), bias.shape());
         double update2 = w1Bias - biasGradient;
-        bias.putScalar(w1.getIndex(),update2);
+        bias.putScalar(w1.getIndex(), update2);
     }
 
     public AdaGrad getWeightAdaGrad() {
@@ -171,37 +172,36 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
      * @return the loaded model
      * @throws java.io.IOException if one occurs
      */
-    public static GloveWeightLookupTable load(InputStream is,VocabCache<? extends SequenceElement> vocab) throws IOException {
+    public static GloveWeightLookupTable load(InputStream is, VocabCache<? extends SequenceElement> vocab)
+                    throws IOException {
         LineIterator iter = IOUtils.lineIterator(is, "UTF-8");
         GloveWeightLookupTable glove = null;
-        Map<String,float[]> wordVectors = new HashMap<>();
-        while(iter.hasNext()) {
+        Map<String, float[]> wordVectors = new HashMap<>();
+        while (iter.hasNext()) {
             String line = iter.nextLine().trim();
-            if(line.isEmpty())
+            if (line.isEmpty())
                 continue;
             String[] split = line.split(" ");
             String word = split[0];
-            if(glove == null)
-                glove = new GloveWeightLookupTable.Builder()
-                        .cache(vocab).vectorLength(split.length - 1)
-                        .build();
+            if (glove == null)
+                glove = new GloveWeightLookupTable.Builder().cache(vocab).vectorLength(split.length - 1).build();
 
 
 
-            if(word.isEmpty())
+            if (word.isEmpty())
                 continue;
-            float[] read = read(split,glove.layerSize());
-            if(read.length < 1)
+            float[] read = read(split, glove.layerSize());
+            if (read.length < 1)
                 continue;
 
 
-            wordVectors.put(word,read);
+            wordVectors.put(word, read);
 
 
 
         }
 
-        glove.setSyn0(weights(glove,wordVectors,vocab));
+        glove.setSyn0(weights(glove, wordVectors, vocab));
         glove.resetWeights(false);
 
 
@@ -212,17 +212,17 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
 
     }
 
-    private static INDArray weights(GloveWeightLookupTable glove,Map<String,float[]> data,VocabCache vocab) {
-        INDArray ret = Nd4j.create(data.size(),glove.layerSize());
+    private static INDArray weights(GloveWeightLookupTable glove, Map<String, float[]> data, VocabCache vocab) {
+        INDArray ret = Nd4j.create(data.size(), glove.layerSize());
 
         for (Map.Entry<String, float[]> entry : data.entrySet()) {
             String key = entry.getKey();
             INDArray row = Nd4j.create(Nd4j.createBuffer(entry.getValue()));
-            if(row.length() != glove.layerSize())
+            if (row.length() != glove.layerSize())
                 continue;
-            if(vocab.indexOf(key) >= data.size())
+            if (vocab.indexOf(key) >= data.size())
                 continue;
-            if(vocab.indexOf(key) < 0)
+            if (vocab.indexOf(key) < 0)
                 continue;
             ret.putRow(vocab.indexOf(key), row);
         }
@@ -230,9 +230,9 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
     }
 
 
-    private static float[] read(String[] split,int length) {
+    private static float[] read(String[] split, int length) {
         float[] ret = new float[length];
-        for(int i = 1; i < split.length; i++) {
+        for (int i = 1; i < split.length; i++) {
             ret[i - 1] = Float.parseFloat(split[i]);
         }
         return ret;
@@ -269,7 +269,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
         this.bias = bias;
     }
 
-    public static class Builder<T extends SequenceElement> extends  InMemoryLookupTable.Builder<T> {
+    public static class Builder<T extends SequenceElement> extends InMemoryLookupTable.Builder<T> {
         private double xMax = 0.75;
         private double maxCount = 100;
 
@@ -328,7 +328,8 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
         }
 
         public GloveWeightLookupTable<T> build() {
-            return new GloveWeightLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, xMax, maxCount);
+            return new GloveWeightLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, xMax,
+                            maxCount);
         }
     }
 

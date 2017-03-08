@@ -40,67 +40,46 @@ public class ParallelWrapperMainTest {
         int iterations = 1;
         int seed = 123;
         int uiPort = new Random().nextInt(1000) + 9000;
-        System.setProperty("org.deeplearning4j.ui.port",String.valueOf(uiPort));
+        System.setProperty("org.deeplearning4j.ui.port", String.valueOf(uiPort));
         log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
-        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
+        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .iterations(iterations)
-                .regularization(true).l2(0.0005)
-                .learningRate(0.01)//.biasLearningRate(0.02)
-                //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.NESTEROVS).momentum(0.9)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5)
-                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-                        .nIn(nChannels)
-                        .stride(1, 1)
-                        .nOut(20)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(2, new ConvolutionLayer.Builder(5, 5)
-                        //Note that nIn needed be specified in later layers
-                        .stride(1, 1)
-                        .nOut(50)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(500).build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(outputNum)
-                        .activation(Activation.SOFTMAX)
-                        .build())
-                .backprop(true).pretrain(false);
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+                        .regularization(true).l2(0.0005).learningRate(0.01)//.biasLearningRate(0.02)
+                        //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
+                        .weightInit(WeightInit.XAVIER)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
+                        .momentum(0.9).list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
+                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build())
+                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                        //Note that nIn needed be specified in later layers
+                                        .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
+                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build())
+                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .nOut(outputNum).activation(Activation.SOFTMAX).build())
+                        .backprop(true).pretrain(false);
         // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
-        new ConvolutionLayerSetup(builder,28,28,1);
+        new ConvolutionLayerSetup(builder, 28, 28, 1);
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
         File tempModel = new File("tmpmodel.zip");
         tempModel.deleteOnExit();
-        ModelSerializer.writeModel(model,tempModel,false);
-        File tmp = new  File("tmpmodel.bin");
+        ModelSerializer.writeModel(model, tempModel, false);
+        File tmp = new File("tmpmodel.bin");
         tmp.deleteOnExit();
         ParallelWrapperMain parallelWrapperMain = new ParallelWrapperMain();
-        parallelWrapperMain.runMain(new String[]{
-                "--modelPath",tempModel.getAbsolutePath(),
-                "--dataSetIteratorFactoryClazz",MnistDataSetIteratorProviderFactory.class.getName(),
-                "--modelOutputPath",tmp.getAbsolutePath(),
-                "--uiUrl","localhost:" + uiPort
-        });
+        parallelWrapperMain.runMain(new String[] {"--modelPath", tempModel.getAbsolutePath(),
+                        "--dataSetIteratorFactoryClazz", MnistDataSetIteratorProviderFactory.class.getName(),
+                        "--modelOutputPath", tmp.getAbsolutePath(), "--uiUrl", "localhost:" + uiPort});
 
 
         Thread.sleep(30000);

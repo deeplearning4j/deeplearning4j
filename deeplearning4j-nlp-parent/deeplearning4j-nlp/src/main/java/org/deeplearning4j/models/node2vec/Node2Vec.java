@@ -47,196 +47,194 @@ public class Node2Vec<V extends SequenceElement, E extends Number> extends Seque
 
             // FIXME: this will cause transformer initialization
             GraphTransformer<V> transformer = new GraphTransformer.Builder<>(walker.getSourceGraph())
-                    .setGraphWalker(walker)
-                    .shuffleOnReset(true)
-                    .build();
+                            .setGraphWalker(walker).shuffleOnReset(true).build();
 
             this.iterator = new AbstractSequenceIterator.Builder<V>(transformer).build();
         }
 
 
         @Override
-        protected Builder<V,E> useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder<V, E> useExistingWordVectors(@NonNull WordVectors vec) {
             super.useExistingWordVectors(vec);
             return this;
         }
 
         @Override
-        public Builder<V,E> iterate(@NonNull SequenceIterator<V> iterator) {
+        public Builder<V, E> iterate(@NonNull SequenceIterator<V> iterator) {
             super.iterate(iterator);
             return this;
         }
 
         @Override
-        public Builder<V,E> sequenceLearningAlgorithm(@NonNull String algoName) {
+        public Builder<V, E> sequenceLearningAlgorithm(@NonNull String algoName) {
             super.sequenceLearningAlgorithm(algoName);
             return this;
         }
 
         @Override
-        public Builder<V,E> sequenceLearningAlgorithm(@NonNull SequenceLearningAlgorithm<V> algorithm) {
+        public Builder<V, E> sequenceLearningAlgorithm(@NonNull SequenceLearningAlgorithm<V> algorithm) {
             super.sequenceLearningAlgorithm(algorithm);
             return this;
         }
 
         @Override
-        public Builder<V,E> elementsLearningAlgorithm(@NonNull String algoName) {
+        public Builder<V, E> elementsLearningAlgorithm(@NonNull String algoName) {
             super.elementsLearningAlgorithm(algoName);
             return this;
         }
 
         @Override
-        public Builder<V,E> elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<V> algorithm) {
+        public Builder<V, E> elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<V> algorithm) {
             super.elementsLearningAlgorithm(algorithm);
             return this;
         }
 
         @Override
-        public Builder<V,E> iterations(int iterations) {
+        public Builder<V, E> iterations(int iterations) {
             super.iterations(iterations);
             return this;
         }
 
         @Override
-        public Builder<V,E> epochs(int numEpochs) {
+        public Builder<V, E> epochs(int numEpochs) {
             super.epochs(numEpochs);
             return this;
         }
 
         @Override
-        public Builder<V,E> workers(int numWorkers) {
+        public Builder<V, E> workers(int numWorkers) {
             super.workers(numWorkers);
             return this;
         }
 
         @Override
-        public Builder<V,E> useHierarchicSoftmax(boolean reallyUse) {
+        public Builder<V, E> useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
             return this;
         }
 
         @Override
-        public Builder<V,E> useAdaGrad(boolean reallyUse) {
+        public Builder<V, E> useAdaGrad(boolean reallyUse) {
             super.useAdaGrad(reallyUse);
             return this;
         }
 
         @Override
-        public Builder<V,E> layerSize(int layerSize) {
+        public Builder<V, E> layerSize(int layerSize) {
             super.layerSize(layerSize);
             return this;
         }
 
         @Override
-        public Builder<V,E> learningRate(double learningRate) {
+        public Builder<V, E> learningRate(double learningRate) {
             super.learningRate(learningRate);
             return this;
         }
 
         @Override
-        public Builder<V,E> minWordFrequency(int minWordFrequency) {
+        public Builder<V, E> minWordFrequency(int minWordFrequency) {
             super.minWordFrequency(minWordFrequency);
             return this;
         }
 
         @Override
-        public Builder<V,E> minLearningRate(double minLearningRate) {
+        public Builder<V, E> minLearningRate(double minLearningRate) {
             super.minLearningRate(minLearningRate);
             return this;
         }
 
         @Override
-        public Builder<V,E> resetModel(boolean reallyReset) {
+        public Builder<V, E> resetModel(boolean reallyReset) {
             super.resetModel(reallyReset);
             return this;
         }
 
         @Override
-        public Builder<V,E> vocabCache(@NonNull VocabCache<V> vocabCache) {
+        public Builder<V, E> vocabCache(@NonNull VocabCache<V> vocabCache) {
             super.vocabCache(vocabCache);
             return this;
         }
 
         @Override
-        public Builder<V,E> lookupTable(@NonNull WeightLookupTable<V> lookupTable) {
+        public Builder<V, E> lookupTable(@NonNull WeightLookupTable<V> lookupTable) {
             super.lookupTable(lookupTable);
             return this;
         }
 
         @Override
-        public Builder<V,E> sampling(double sampling) {
+        public Builder<V, E> sampling(double sampling) {
             super.sampling(sampling);
             return this;
         }
 
         @Override
-        public Builder<V,E> negativeSample(double negative) {
+        public Builder<V, E> negativeSample(double negative) {
             super.negativeSample(negative);
             return this;
         }
 
         @Override
-        public Builder<V,E> stopWords(@NonNull List<String> stopList) {
+        public Builder<V, E> stopWords(@NonNull List<String> stopList) {
             super.stopWords(stopList);
             return this;
         }
 
         @Override
-        public Builder<V,E> trainElementsRepresentation(boolean trainElements) {
+        public Builder<V, E> trainElementsRepresentation(boolean trainElements) {
             super.trainElementsRepresentation(trainElements);
             return this;
         }
 
         @Override
-        public Builder<V,E> trainSequencesRepresentation(boolean trainSequences) {
+        public Builder<V, E> trainSequencesRepresentation(boolean trainSequences) {
             super.trainSequencesRepresentation(trainSequences);
             return this;
         }
 
         @Override
-        public Builder<V,E> stopWords(@NonNull Collection<V> stopList) {
+        public Builder<V, E> stopWords(@NonNull Collection<V> stopList) {
             super.stopWords(stopList);
             return this;
         }
 
         @Override
-        public Builder<V,E> windowSize(int windowSize) {
+        public Builder<V, E> windowSize(int windowSize) {
             super.windowSize(windowSize);
             return this;
         }
 
         @Override
-        public Builder<V,E> seed(long randomSeed) {
+        public Builder<V, E> seed(long randomSeed) {
             super.seed(randomSeed);
             return this;
         }
 
         @Override
-        public Builder<V,E> modelUtils(@NonNull ModelUtils<V> modelUtils) {
+        public Builder<V, E> modelUtils(@NonNull ModelUtils<V> modelUtils) {
             super.modelUtils(modelUtils);
             return this;
         }
 
         @Override
-        public Builder<V,E> useUnknown(boolean reallyUse) {
+        public Builder<V, E> useUnknown(boolean reallyUse) {
             super.useUnknown(reallyUse);
             return this;
         }
 
         @Override
-        public Builder<V,E> unknownElement(@NonNull V element) {
+        public Builder<V, E> unknownElement(@NonNull V element) {
             super.unknownElement(element);
             return this;
         }
 
         @Override
-        public Builder<V,E> useVariableWindow(int... windows) {
+        public Builder<V, E> useVariableWindow(int... windows) {
             super.useVariableWindow(windows);
             return this;
         }
 
         @Override
-        public Builder<V,E> usePreciseWeightInit(boolean reallyUse) {
+        public Builder<V, E> usePreciseWeightInit(boolean reallyUse) {
             super.usePreciseWeightInit(reallyUse);
             return this;
         }
@@ -247,19 +245,19 @@ public class Node2Vec<V extends SequenceElement, E extends Number> extends Seque
         }
 
         @Override
-        public Builder<V,E> setVectorsListeners(@NonNull Collection<VectorsListener<V>> vectorsListeners) {
+        public Builder<V, E> setVectorsListeners(@NonNull Collection<VectorsListener<V>> vectorsListeners) {
             super.setVectorsListeners(vectorsListeners);
             return this;
         }
 
         @Override
-        public Builder<V,E> enableScavenger(boolean reallyEnable) {
+        public Builder<V, E> enableScavenger(boolean reallyEnable) {
             super.enableScavenger(reallyEnable);
             return this;
         }
 
-        public Node2Vec<V,E> build() {
-            Node2Vec<V,E> node2vec = new Node2Vec<>();
+        public Node2Vec<V, E> build() {
+            Node2Vec<V, E> node2vec = new Node2Vec<>();
             node2vec.iterator = this.iterator;
 
             return node2vec;

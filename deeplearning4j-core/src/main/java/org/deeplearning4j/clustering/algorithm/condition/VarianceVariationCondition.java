@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,40 +26,43 @@ import java.io.Serializable;
 
 public class VarianceVariationCondition implements ClusteringAlgorithmCondition, Serializable {
 
-	private Condition varianceVariationCondition;
-	private int	period;
+    private Condition varianceVariationCondition;
+    private int period;
 
-	protected VarianceVariationCondition() {
-		// no-op for serialization only
-	}
-	
-	protected VarianceVariationCondition(Condition varianceVariationCondition, int period) {
-		super();
-		this.varianceVariationCondition = varianceVariationCondition;
-		this.period = period;
-	}
+    protected VarianceVariationCondition() {
+        // no-op for serialization only
+    }
 
-	public static VarianceVariationCondition varianceVariationLessThan(double varianceVariation, int period) {
-		Condition condition = new LessThan(varianceVariation);
-		return new VarianceVariationCondition(condition, period);
-	}
+    protected VarianceVariationCondition(Condition varianceVariationCondition, int period) {
+        super();
+        this.varianceVariationCondition = varianceVariationCondition;
+        this.period = period;
+    }
 
-	
-	public boolean isSatisfied(IterationHistory iterationHistory) {
-		if( iterationHistory.getIterationCount()<=period )
-			return false;
-		
-		for( int i=0, j=iterationHistory.getIterationCount();i<period;i++) {
-			double variation = iterationHistory.getIterationInfo(j-i).getClusterSetInfo().getPointDistanceFromClusterVariance();
-			variation -= iterationHistory.getIterationInfo(j-i-1).getClusterSetInfo().getPointDistanceFromClusterVariance();
-			variation /= iterationHistory.getIterationInfo(j-i-1).getClusterSetInfo().getPointDistanceFromClusterVariance();
-			if( !varianceVariationCondition.apply(variation) )
-				return false;
-		}
-		
-		return true;
-	}
+    public static VarianceVariationCondition varianceVariationLessThan(double varianceVariation, int period) {
+        Condition condition = new LessThan(varianceVariation);
+        return new VarianceVariationCondition(condition, period);
+    }
 
-	
+
+    public boolean isSatisfied(IterationHistory iterationHistory) {
+        if (iterationHistory.getIterationCount() <= period)
+            return false;
+
+        for (int i = 0, j = iterationHistory.getIterationCount(); i < period; i++) {
+            double variation = iterationHistory.getIterationInfo(j - i).getClusterSetInfo()
+                            .getPointDistanceFromClusterVariance();
+            variation -= iterationHistory.getIterationInfo(j - i - 1).getClusterSetInfo()
+                            .getPointDistanceFromClusterVariance();
+            variation /= iterationHistory.getIterationInfo(j - i - 1).getClusterSetInfo()
+                            .getPointDistanceFromClusterVariance();
+            if (!varianceVariationCondition.apply(variation))
+                return false;
+        }
+
+        return true;
+    }
+
+
 
 }

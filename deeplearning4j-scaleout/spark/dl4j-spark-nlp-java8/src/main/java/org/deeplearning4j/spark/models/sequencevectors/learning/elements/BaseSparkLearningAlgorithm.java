@@ -30,7 +30,8 @@ public abstract class BaseSparkLearningAlgorithm implements SparkElementsLearnin
     }
 
     @Override
-    public void configure(VocabCache<ShallowSequenceElement> vocabCache, WeightLookupTable<ShallowSequenceElement> lookupTable, VectorsConfiguration configuration) {
+    public void configure(VocabCache<ShallowSequenceElement> vocabCache,
+                    WeightLookupTable<ShallowSequenceElement> lookupTable, VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.vectorsConfiguration = configuration;
     }
@@ -50,18 +51,22 @@ public abstract class BaseSparkLearningAlgorithm implements SparkElementsLearnin
         // no-op
     }
 
-    public static Sequence<ShallowSequenceElement> applySubsampling(@NonNull Sequence<ShallowSequenceElement> sequence, @NonNull AtomicLong nextRandom, long totalElementsCount, double prob) {
+    public static Sequence<ShallowSequenceElement> applySubsampling(@NonNull Sequence<ShallowSequenceElement> sequence,
+                    @NonNull AtomicLong nextRandom, long totalElementsCount, double prob) {
         Sequence<ShallowSequenceElement> result = new Sequence<>();
 
         // subsampling implementation, if subsampling threshold met, just continue to next element
         if (prob > 0) {
             result.setSequenceId(sequence.getSequenceId());
-            if (sequence.getSequenceLabels() != null) result.setSequenceLabels(sequence.getSequenceLabels());
-            if (sequence.getSequenceLabel() != null) result.setSequenceLabel(sequence.getSequenceLabel());
+            if (sequence.getSequenceLabels() != null)
+                result.setSequenceLabels(sequence.getSequenceLabels());
+            if (sequence.getSequenceLabel() != null)
+                result.setSequenceLabel(sequence.getSequenceLabel());
 
             for (ShallowSequenceElement element : sequence.getElements()) {
                 double numWords = (double) totalElementsCount;
-                double ran = (Math.sqrt(element.getElementFrequency() / (prob * numWords)) + 1) * (prob * numWords) / element.getElementFrequency();
+                double ran = (Math.sqrt(element.getElementFrequency() / (prob * numWords)) + 1) * (prob * numWords)
+                                / element.getElementFrequency();
 
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
@@ -71,6 +76,7 @@ public abstract class BaseSparkLearningAlgorithm implements SparkElementsLearnin
                 result.addElement(element);
             }
             return result;
-        } else return sequence;
+        } else
+            return sequence;
     }
 }

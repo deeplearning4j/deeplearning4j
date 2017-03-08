@@ -20,19 +20,17 @@ public class TestSetGetParameters {
         Nd4j.getRandom().setSeed(12345);
 
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(),"in")
-                .addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(),"in")
-                .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(),"in")
-                .addLayer("3", new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2).padding(2, 2).build(), "in")
-                .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(),"3")
-                .addLayer("5", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(),"0")
-                .addLayer("6", new RnnOutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "1","2")
-                .setOutputs("4","5","6")
-                .pretrain(false).backprop(true).build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+                        .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("3", new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
+                                        .padding(2, 2).build(), "in")
+                        .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "3")
+                        .addLayer("5", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "0")
+                        .addLayer("6", new RnnOutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "1",
+                                        "2")
+                        .setOutputs("4", "5", "6").pretrain(false).backprop(true).build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -48,8 +46,8 @@ public class TestSetGetParameters {
         assertEquals(params, net2.params());
         assertEquals(params, net3.params());
 
-        assertFalse(params == net2.params());    //Different objects due to clone
-        assertTrue(params == net3.params());    //Same object due to clone
+        assertFalse(params == net2.params()); //Different objects due to clone
+        assertTrue(params == net3.params()); //Same object due to clone
 
 
         Map<String, INDArray> paramsMap = net.paramTable();

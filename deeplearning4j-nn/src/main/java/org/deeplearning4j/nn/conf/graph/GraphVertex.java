@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -36,20 +36,18 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {
-        @JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),
-        @JsonSubTypes.Type(value = MergeVertex.class, name = "MergeVertex"),
-        @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
-        @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
-        @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
-        @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
-        @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
-        @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
-        @JsonSubTypes.Type(value = UnstackVertex.class, name = "UnstackVertex"),
-        @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
-        @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
-        @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")
-})
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),
+                @JsonSubTypes.Type(value = MergeVertex.class, name = "MergeVertex"),
+                @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
+                @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
+                @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
+                @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
+                @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
+                @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
+                @JsonSubTypes.Type(value = UnstackVertex.class, name = "UnstackVertex"),
+                @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
+                @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
+                @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
 public abstract class GraphVertex implements Cloneable, Serializable {
 
     @Override
@@ -74,8 +72,8 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array
      * @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
-    public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                               INDArray paramsView, boolean initializeParams);
+    public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name,
+                    int idx, INDArray paramsView, boolean initializeParams);
 
     /**
      * Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary

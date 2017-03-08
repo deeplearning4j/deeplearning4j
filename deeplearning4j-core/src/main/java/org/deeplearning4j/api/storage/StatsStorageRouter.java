@@ -10,7 +10,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-public interface StatsStorageRouter  {
+public interface StatsStorageRouter {
 
 
     /**
@@ -20,7 +20,7 @@ public interface StatsStorageRouter  {
      *
      * @param storageMetaData Storage metadata to store
      */
-    void putStorageMetaData(StorageMetaData storageMetaData);  //TODO error handling
+    void putStorageMetaData(StorageMetaData storageMetaData); //TODO error handling
 
     void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData);
 
@@ -29,7 +29,7 @@ public interface StatsStorageRouter  {
      *
      * @param staticInfo    Static info to store
      */
-    void putStaticInfo(Persistable staticInfo);    //TODO error handling
+    void putStaticInfo(Persistable staticInfo); //TODO error handling
 
     /**
      * Static info: reported once per session, upon initialization
@@ -43,7 +43,7 @@ public interface StatsStorageRouter  {
      *
      * @param update    Update info to store
      */
-    void putUpdate(Persistable update);        //TODO error handling
+    void putUpdate(Persistable update); //TODO error handling
 
     /**
      * Updates: stored multiple times per session (periodically, for example)

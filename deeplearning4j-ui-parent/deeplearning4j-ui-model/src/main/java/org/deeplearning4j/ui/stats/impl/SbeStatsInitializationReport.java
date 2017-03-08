@@ -42,7 +42,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
     private String swNd4jDataTypeName;
     private String swHostName;
     private String swJvmUID;
-    private Map<String,String> swEnvironmentInfo;
+    private Map<String, String> swEnvironmentInfo;
 
     private int hwJvmAvailableProcessors;
     private int hwNumDevices;
@@ -68,8 +68,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid,
-                                   Map<String,String> swEnvironmentInfo ) {
+                    String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid,
+                    Map<String, String> swEnvironmentInfo) {
         this.swArch = arch;
         this.swOsName = osName;
         this.swJvmName = jvmName;
@@ -85,7 +85,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
 
     @Override
     public void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory,
-                                   long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID) {
+                    long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID) {
         this.hwJvmAvailableProcessors = jvmAvailableProcessors;
         this.hwNumDevices = numDevices;
         this.hwJvmMaxMemory = jvmMaxMemory;
@@ -98,7 +98,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
 
     @Override
     public void reportModelInfo(String modelClassName, String modelConfigJson, String[] modelParamNames, int numLayers,
-                                long numParams) {
+                    long numParams) {
         this.modelClassName = modelClassName;
         this.modelConfigJson = modelConfigJson;
         this.modelParamNames = modelParamNames;
@@ -124,7 +124,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
 
 
 
-    private void clearHwFields(){
+    private void clearHwFields() {
         hwDeviceTotalMemory = null;
         hwDeviceDescription = null;
         hwHardwareUID = null;
@@ -211,7 +211,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
 
         bufferSize += bSessionId.length + bTypeId.length + bWorkerId.length;
 
-        bufferSize += 4;    //swEnvironmentInfo group header (always present)
+        bufferSize += 4; //swEnvironmentInfo group header (always present)
         if (hasSoftwareInfo) {
             bufferSize += SbeUtil.length(bswArch);
             bufferSize += SbeUtil.length(bswOsName);
@@ -228,11 +228,12 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
             bufferSize += SbeUtil.length(bswEnvInfo);
         }
         int nHWDeviceStats = hwNumDevices;
-        if (!hasHardwareInfo) nHWDeviceStats = 0;
+        if (!hasHardwareInfo)
+            nHWDeviceStats = 0;
         if (hasHardwareInfo) {
             //Device info group:
-            bufferSize += hwNumDevices * 8;     //fixed content in group: int64 -> 8 bytes. Encode an entry, even if hwDeviceTotalMemory is null
-            bufferSize += hwNumDevices * 4;     //uint32: 4 bytes per entry for var length header...; as above
+            bufferSize += hwNumDevices * 8; //fixed content in group: int64 -> 8 bytes. Encode an entry, even if hwDeviceTotalMemory is null
+            bufferSize += hwNumDevices * 4; //uint32: 4 bytes per entry for var length header...; as above
             bufferSize += SbeUtil.length(bhwDeviceDescription);
             bufferSize += SbeUtil.length(bHwHardwareUID);
         }
@@ -240,7 +241,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
             bufferSize += SbeUtil.length(bmodelConfigClass);
             bufferSize += SbeUtil.length(bmodelConfigJson);
             bufferSize += SbeUtil.length(bModelParamNames);
-            bufferSize += (bModelParamNames == null ? 0 : bModelParamNames.length * 4);   //uint32: 4 bytes per entry for var length header...
+            bufferSize += (bModelParamNames == null ? 0 : bModelParamNames.length * 4); //uint32: 4 bytes per entry for var length header...
         }
 
         return bufferSize;
@@ -286,45 +287,37 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         byte[][][] bswEnvInfo = SbeUtil.toBytes(swEnvironmentInfo);
         byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
 
-        enc.wrap(buffer, 0)
-                .blockLength(sie.sbeBlockLength())
-                .templateId(sie.sbeTemplateId())
-                .schemaId(sie.sbeSchemaId())
-                .version(sie.sbeSchemaVersion());
+        enc.wrap(buffer, 0).blockLength(sie.sbeBlockLength()).templateId(sie.sbeTemplateId())
+                        .schemaId(sie.sbeSchemaId()).version(sie.sbeSchemaVersion());
 
-        int offset = enc.encodedLength();   //Expect 8 bytes...
+        int offset = enc.encodedLength(); //Expect 8 bytes...
 
         //Fixed length fields: always encoded, whether present or not.
-        sie.wrap(buffer, offset)
-                .time(timeStamp)
-                .fieldsPresent()
-                .softwareInfo(hasSoftwareInfo)
-                .hardwareInfo(hasHardwareInfo)
-                .modelInfo(hasModelInfo);
-        sie.hwJvmProcessors(hwJvmAvailableProcessors)
-                .hwNumDevices((short) hwNumDevices)
-                .hwJvmMaxMemory(hwJvmMaxMemory)
-                .hwOffheapMaxMemory(hwOffHeapMaxMemory)
-                .modelNumLayers(modelNumLayers)
-                .modelNumParams(modelNumParams);
+        sie.wrap(buffer, offset).time(timeStamp).fieldsPresent().softwareInfo(hasSoftwareInfo)
+                        .hardwareInfo(hasHardwareInfo).modelInfo(hasModelInfo);
+        sie.hwJvmProcessors(hwJvmAvailableProcessors).hwNumDevices((short) hwNumDevices).hwJvmMaxMemory(hwJvmMaxMemory)
+                        .hwOffheapMaxMemory(hwOffHeapMaxMemory).modelNumLayers(modelNumLayers)
+                        .modelNumParams(modelNumParams);
         //Device info group...
         StaticInfoEncoder.HwDeviceInfoGroupEncoder hwdEnc = sie.hwDeviceInfoGroupCount(hwNumDevices);
         int nHWDeviceStats = (hasHardwareInfo ? hwNumDevices : 0);
         for (int i = 0; i < nHWDeviceStats; i++) {
             long maxMem = hwDeviceTotalMemory == null || hwDeviceTotalMemory.length <= i ? 0 : hwDeviceTotalMemory[i];
-            byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
-            if (descr == null) descr = SbeUtil.EMPTY_BYTES;
+            byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES
+                            : bhwDeviceDescription[i];
+            if (descr == null)
+                descr = SbeUtil.EMPTY_BYTES;
             hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr, 0, descr.length);
         }
 
         //Environment info group
         int numEnvValues = (hasSoftwareInfo && swEnvironmentInfo != null ? swEnvironmentInfo.size() : 0);
         StaticInfoEncoder.SwEnvironmentInfoEncoder swEnv = sie.swEnvironmentInfoCount(numEnvValues);
-        if(numEnvValues > 0){
+        if (numEnvValues > 0) {
             byte[][][] mapAsBytes = SbeUtil.toBytes(swEnvironmentInfo);
-            for(byte[][] entryBytes : mapAsBytes){
-                swEnv.next().putEnvKey(entryBytes[0],0,entryBytes[0].length)
-                        .putEnvValue(entryBytes[1],0,entryBytes[1].length);
+            for (byte[][] entryBytes : mapAsBytes) {
+                swEnv.next().putEnvKey(entryBytes[0], 0, entryBytes[0].length).putEnvValue(entryBytes[1], 0,
+                                entryBytes[1].length);
             }
         }
 
@@ -335,22 +328,18 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         }
 
         //In the case of !hasSoftwareInfo: these will all be empty byte arrays... still need to encode them (for 0 length) however
-        sie.putSessionID(bSessionId, 0, bSessionId.length)
-                .putTypeID(bTypeId, 0, bTypeId.length)
-                .putWorkerID(bWorkerId, 0, bWorkerId.length)
-                .putSwArch(bswArch, 0, bswArch.length)
-                .putSwOsName(bswOsName, 0, bswOsName.length)
-                .putSwJvmName(bswJvmName, 0, bswJvmName.length)
-                .putSwJvmVersion(bswJvmVersion, 0, bswJvmVersion.length)
-                .putSwJvmSpecVersion(bswJvmSpecVersion, 0, bswJvmSpecVersion.length)
-                .putSwNd4jBackendClass(bswNd4jBackendClass, 0, bswNd4jBackendClass.length)
-                .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length)
-                .putSwHostName(bswHostname, 0, bswHostname.length)
-                .putSwJvmUID(bswJvmUID, 0, bswJvmUID.length)
-                .putHwHardwareUID(bHwHardwareUID, 0, bHwHardwareUID.length);
+        sie.putSessionID(bSessionId, 0, bSessionId.length).putTypeID(bTypeId, 0, bTypeId.length)
+                        .putWorkerID(bWorkerId, 0, bWorkerId.length).putSwArch(bswArch, 0, bswArch.length)
+                        .putSwOsName(bswOsName, 0, bswOsName.length).putSwJvmName(bswJvmName, 0, bswJvmName.length)
+                        .putSwJvmVersion(bswJvmVersion, 0, bswJvmVersion.length)
+                        .putSwJvmSpecVersion(bswJvmSpecVersion, 0, bswJvmSpecVersion.length)
+                        .putSwNd4jBackendClass(bswNd4jBackendClass, 0, bswNd4jBackendClass.length)
+                        .putSwNd4jDataTypeName(bswNd4jDataTypeName, 0, bswNd4jDataTypeName.length)
+                        .putSwHostName(bswHostname, 0, bswHostname.length).putSwJvmUID(bswJvmUID, 0, bswJvmUID.length)
+                        .putHwHardwareUID(bHwHardwareUID, 0, bHwHardwareUID.length);
         //Similar: !hasModelInfo -> empty byte[]
-        sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length)
-                .putModelConfigJson(bmodelConfigJson, 0, bmodelConfigJson.length);
+        sie.putModelConfigClassName(bmodelConfigClass, 0, bmodelConfigClass.length).putModelConfigJson(bmodelConfigJson,
+                        0, bmodelConfigJson.length);
     }
 
     @Override
@@ -414,13 +403,13 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         //Environment info group
         i = 0;
         StaticInfoDecoder.SwEnvironmentInfoDecoder swEnvDecoder = sid.swEnvironmentInfo();
-        if(swEnvDecoder.count() > 0){
+        if (swEnvDecoder.count() > 0) {
             swEnvironmentInfo = new HashMap<>();
         }
-        for(StaticInfoDecoder.SwEnvironmentInfoDecoder env : swEnvDecoder ){
+        for (StaticInfoDecoder.SwEnvironmentInfoDecoder env : swEnvDecoder) {
             String key = env.envKey();
             String value = env.envValue();
-            swEnvironmentInfo.put(key,value);
+            swEnvironmentInfo.put(key, value);
         }
 
         i = 0;
@@ -444,12 +433,15 @@ public class SbeStatsInitializationReport implements StatsInitializationReport, 
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
         swHostName = sid.swHostName();
         swJvmUID = sid.swJvmUID();
-        if (!hasSoftwareInfo) clearSwFields();
+        if (!hasSoftwareInfo)
+            clearSwFields();
         hwHardwareUID = sid.hwHardwareUID();
-        if(!hasHardwareInfo) clearHwFields();
+        if (!hasHardwareInfo)
+            clearHwFields();
         modelClassName = sid.modelConfigClassName();
         modelConfigJson = sid.modelConfigJson();
-        if (!hasModelInfo) clearModelFields();
+        if (!hasModelInfo)
+            clearModelFields();
     }
 
     @Override

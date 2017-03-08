@@ -22,7 +22,8 @@ public class MultiDataSetIteratorAdapter implements MultiDataSetIterator {
     @Override
     public MultiDataSet next(int i) {
         MultiDataSet mds = ComputationGraphUtil.toMultiDataSet(iter.next(i));
-        if(preProcessor != null) preProcessor.preProcess(mds);
+        if (preProcessor != null)
+            preProcessor.preProcess(mds);
         return mds;
     }
 
@@ -32,7 +33,7 @@ public class MultiDataSetIteratorAdapter implements MultiDataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return iter.resetSupported();
     }
 
@@ -54,7 +55,8 @@ public class MultiDataSetIteratorAdapter implements MultiDataSetIterator {
     @Override
     public MultiDataSet next() {
         MultiDataSet mds = ComputationGraphUtil.toMultiDataSet(iter.next());
-        if(preProcessor != null) preProcessor.preProcess(mds);
+        if (preProcessor != null)
+            preProcessor.preProcess(mds);
         return mds;
     }
 

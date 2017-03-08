@@ -20,13 +20,13 @@ import static org.junit.Assert.assertEquals;
 public class TestShuffleExamples extends BaseSparkTest {
 
     @Test
-    public void testShuffle(){
+    public void testShuffle() {
         List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<10; i++ ){
-            INDArray f = Nd4j.valueArrayOf(new int[]{10,1}, i);
+        for (int i = 0; i < 10; i++) {
+            INDArray f = Nd4j.valueArrayOf(new int[] {10, 1}, i);
             INDArray l = f.dup();
 
-            DataSet ds = new DataSet(f,l);
+            DataSet ds = new DataSet(f, l);
             list.add(ds);
         }
 
@@ -37,7 +37,7 @@ public class TestShuffleExamples extends BaseSparkTest {
         List<DataSet> shuffledList = shuffled.collect();
 
         int totalExampleCount = 0;
-        for(DataSet ds : shuffledList){
+        for (DataSet ds : shuffledList) {
             totalExampleCount += ds.getFeatures().length();
             System.out.println(Arrays.toString(ds.getFeatures().data().asFloat()));
 

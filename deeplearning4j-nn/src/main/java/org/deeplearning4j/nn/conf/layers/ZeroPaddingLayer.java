@@ -24,16 +24,17 @@ public class ZeroPaddingLayer extends Layer {
 
     private int[] padding;
 
-    private ZeroPaddingLayer(Builder builder){
+    private ZeroPaddingLayer(Builder builder) {
         super(builder);
         this.padding = builder.padding;
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -52,19 +53,20 @@ public class ZeroPaddingLayer extends Layer {
         int inH;
         int inW;
         int inDepth;
-        if(inputType instanceof InputType.InputTypeConvolutional){
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional)inputType;
+        if (inputType instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
-        } else if( inputType instanceof InputType.InputTypeConvolutionalFlat ){
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat)inputType;
+        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
+            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
             inH = conv.getHeight();
             inW = conv.getWidth();
             inDepth = conv.getDepth();
         } else {
-            throw new IllegalStateException("Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
-                + " Got: " + inputType);
+            throw new IllegalStateException(
+                            "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
+                                            + " Got: " + inputType);
         }
 
         int outH = inH + padding[0] + padding[1];
@@ -80,9 +82,9 @@ public class ZeroPaddingLayer extends Layer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if(inputType == null ){
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input for ZeroPaddingLayer layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -105,32 +107,34 @@ public class ZeroPaddingLayer extends Layer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
-        private int[] padding = new int[]{0,0,0,0};     //Padding: top, bottom, left, right
+        private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         /**
          *
          * @param padHeight Padding for both the top and bottom
          * @param padWidth  Padding for both the left and right
          */
-        public Builder(int padHeight, int padWidth){
+        public Builder(int padHeight, int padWidth) {
             this(padHeight, padHeight, padWidth, padWidth);
         }
 
-        public Builder(int padTop, int padBottom, int padLeft, int padRight){
-            this(new int[]{padTop, padBottom, padLeft, padRight});
+        public Builder(int padTop, int padBottom, int padLeft, int padRight) {
+            this(new int[] {padTop, padBottom, padLeft, padRight});
         }
 
-        public Builder(int[] padding){
+        public Builder(int[] padding) {
             this.padding = padding;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public ZeroPaddingLayer build() {
-            for(int p : padding){
-                if(p < 0){
-                    throw new IllegalStateException("Invalid zero padding layer config: padding [top, bottom, left, right]" +
-                            " must be > 0 for all elements. Got: " + Arrays.toString(padding));
+            for (int p : padding) {
+                if (p < 0) {
+                    throw new IllegalStateException(
+                                    "Invalid zero padding layer config: padding [top, bottom, left, right]"
+                                                    + " must be > 0 for all elements. Got: "
+                                                    + Arrays.toString(padding));
                 }
             }
 

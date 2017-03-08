@@ -22,12 +22,14 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class VocabRddFunctionFlat<T extends SequenceElement> extends BaseFlatMapFunctionAdaptee<Sequence<T>, T> {
-    public VocabRddFunctionFlat(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
+    public VocabRddFunctionFlat(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                    @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         super(new VocabRddFunctionAdapter<T>(vectorsConfigurationBroadcast, paramServerConfigurationBroadcast));
     }
 
 
-    private static class VocabRddFunctionAdapter<T extends SequenceElement> implements FlatMapFunctionAdapter<Sequence<T>, T> {
+    private static class VocabRddFunctionAdapter<T extends SequenceElement>
+                    implements FlatMapFunctionAdapter<Sequence<T>, T> {
         protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
         protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
 
@@ -35,7 +37,8 @@ public class VocabRddFunctionFlat<T extends SequenceElement> extends BaseFlatMap
         protected transient SparkElementsLearningAlgorithm ela;
         protected transient TrainingDriver<? extends TrainingMessage> driver;
 
-        public VocabRddFunctionAdapter(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
+        public VocabRddFunctionAdapter(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                        @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
             this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
             this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
         }
@@ -47,7 +50,8 @@ public class VocabRddFunctionFlat<T extends SequenceElement> extends BaseFlatMap
 
             if (ela == null) {
                 try {
-                    ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm()).newInstance();
+                    ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm())
+                                    .newInstance();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -55,7 +59,8 @@ public class VocabRddFunctionFlat<T extends SequenceElement> extends BaseFlatMap
             driver = ela.getTrainingDriver();
 
             // we just silently initialize server
-            VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
+            VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(),
+                            driver);
 
             // TODO: call for initializeSeqVec here
 

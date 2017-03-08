@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -24,13 +24,13 @@ import java.io.InputStream;
 
 public class DataSetLoader {
 
-	private String bucket;
-	
-	
-	
-	public void onData(InputStream is) {
-		S3Downloader downloader = new S3Downloader();
-		
-	}
+    private String bucket;
+
+
+
+    public void onData(InputStream is) {
+        S3Downloader downloader = new S3Downloader();
+
+    }
 
 }

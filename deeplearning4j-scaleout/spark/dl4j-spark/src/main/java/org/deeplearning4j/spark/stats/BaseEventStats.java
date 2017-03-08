@@ -13,11 +13,12 @@ public class BaseEventStats implements EventStats {
     protected final long startTime;
     protected final long durationMs;
 
-    public BaseEventStats(long startTime, long durationMs){
-        this(UIDProvider.getHardwareUID(), UIDProvider.getJVMUID(), Thread.currentThread().getId(), startTime, durationMs);
+    public BaseEventStats(long startTime, long durationMs) {
+        this(UIDProvider.getHardwareUID(), UIDProvider.getJVMUID(), Thread.currentThread().getId(), startTime,
+                        durationMs);
     }
 
-    public BaseEventStats(String machineId, String jvmId, long threadId, long startTime, long durationMs){
+    public BaseEventStats(String machineId, String jvmId, long threadId, long startTime, long durationMs) {
         this.machineId = machineId;
         this.jvmId = jvmId;
         this.threadId = threadId;
@@ -57,6 +58,7 @@ public class BaseEventStats implements EventStats {
 
     @Override
     public String getStringHeader(String delimiter) {
-        return "machineId" + delimiter + "jvmId" + delimiter + "threadId" + delimiter + "startTime" + delimiter + "durationMs";
+        return "machineId" + delimiter + "jvmId" + delimiter + "threadId" + delimiter + "startTime" + delimiter
+                        + "durationMs";
     }
 }

@@ -1,4 +1,5 @@
 package org.deeplearning4j.spark.data;
+
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
 import org.nd4j.linalg.dataset.DataSet;

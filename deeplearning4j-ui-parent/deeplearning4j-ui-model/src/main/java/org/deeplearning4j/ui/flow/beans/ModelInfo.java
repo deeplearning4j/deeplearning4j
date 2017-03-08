@@ -23,7 +23,7 @@ public class ModelInfo implements Serializable {
 
     // PLEASE NOTE: Inverted coords here -> Y, X LayerInfo
     //private Table<Integer, Integer, LayerInfo> layers = HashBasedTable.create();
-   // private Map<Pair<Integer, Integer>, LayerInfo> layers = new LinkedHashMap<>();
+    // private Map<Pair<Integer, Integer>, LayerInfo> layers = new LinkedHashMap<>();
     private List<LayerInfo> layers = new ArrayList<>();
 
     /**
@@ -44,8 +44,9 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByName(String name) {
-        for (LayerInfo layerInfo: layers) {
-            if (layerInfo.getName().equalsIgnoreCase(name)) return layerInfo;
+        for (LayerInfo layerInfo : layers) {
+            if (layerInfo.getName().equalsIgnoreCase(name))
+                return layerInfo;
         }
         return null;
     }
@@ -57,8 +58,9 @@ public class ModelInfo implements Serializable {
      * @return
      */
     public LayerInfo getLayerInfoByCoords(int x, int y) {
-        for (LayerInfo layerInfo: layers) {
-            if (layerInfo.getX() == x && layerInfo.getY() == y) return layerInfo;
+        for (LayerInfo layerInfo : layers) {
+            if (layerInfo.getX() == x && layerInfo.getY() == y)
+                return layerInfo;
         }
 
         return null;
@@ -80,7 +82,7 @@ public class ModelInfo implements Serializable {
     public Set<String> getLayerTypes() {
         Set<String> set = new LinkedHashSet<>();
 
-        for (LayerInfo layerInfo: layers) {
+        for (LayerInfo layerInfo : layers) {
             set.add(layerInfo.getLayerType());
         }
         return set;
@@ -89,8 +91,9 @@ public class ModelInfo implements Serializable {
     public Set<LayerInfo> getLayersByType(String layerType) {
         Set<LayerInfo> set = new LinkedHashSet<>();
 
-        for (LayerInfo layerInfo: layers) {
-            if (layerInfo.getLayerType().equals(layerType)) set.add(layerInfo);
+        for (LayerInfo layerInfo : layers) {
+            if (layerInfo.getLayerType().equals(layerType))
+                set.add(layerInfo);
         }
 
         return set;

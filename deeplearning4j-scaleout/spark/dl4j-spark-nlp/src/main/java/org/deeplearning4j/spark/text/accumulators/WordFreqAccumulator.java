@@ -13,6 +13,7 @@ public class WordFreqAccumulator implements AccumulatorParam<Counter<String>> {
         c1.incrementAll(c2);
         return c1;
     }
+
     @Override
     public Counter<String> zero(Counter<String> initialCounter) {
         return new Counter<>();
