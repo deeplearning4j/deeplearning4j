@@ -19,6 +19,8 @@ public class BasicMemoryManager implements MemoryManager {
 
     protected AtomicBoolean periodicEnabled = new AtomicBoolean(true);
 
+    protected AtomicInteger averageLoopTime = new AtomicInteger(0);
+
     /**
      * This method returns
      * PLEASE NOTE: Cache options depend on specific implementations
@@ -70,8 +72,9 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public void invokeGcOccasionally() {
+        long currentTime = System.currentTimeMillis();
         if (frequency.get() > 0)
-            if (freqCounter.incrementAndGet() % frequency.get() == 0) {
+            if (freqCounter.incrementAndGet() % frequency.get() == 0 && currentTime > getLastGcTime() + getAutoGcWindow()) {
                 System.gc();
                 lastGcTime.set(System.currentTimeMillis());
             }
@@ -99,6 +102,11 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
     @Override
+    public int getAutoGcWindow() {
+        return 0;
+    }
+
+    @Override
     public int getOccasionalGcFrequency() {
         return frequency.get();
     }
@@ -111,5 +119,10 @@ public class BasicMemoryManager implements MemoryManager {
     @Override
     public void togglePeriodicGc(boolean enabled) {
         periodicEnabled.set(enabled);
+    }
+
+    @Override
+    public int getAverageLoopTime() {
+        return averageLoopTime.get();
     }
 }

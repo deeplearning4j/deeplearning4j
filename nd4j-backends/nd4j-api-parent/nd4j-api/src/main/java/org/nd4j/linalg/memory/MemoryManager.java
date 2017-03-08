@@ -67,12 +67,23 @@ public interface MemoryManager {
     int getOccasionalGcFrequency();
 
     /**
+     * This method returns average time between invokeGCOccasionally() calls
+     * @return
+     */
+    int getAverageLoopTime();
+
+    /**
      * This method enables/disables periodic System.gc() calls.
      * Set to 0 to disable this option.
      *
      * @param windowMillis minimal time milliseconds between calls.
      */
     void setAutoGcWindow(long windowMillis);
+
+    /**
+     * This method reutrns
+     */
+    int getAutoGcWindow();
 
     /**
      * This method returns
