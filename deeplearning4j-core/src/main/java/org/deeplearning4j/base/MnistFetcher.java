@@ -107,7 +107,7 @@ public class MnistFetcher {
 	private void tryDownloadingAFewTimes(int attempt, URL url, File f, String targetMD5) throws IOException {
 		int maxTries = 3;
 		boolean isCorrectFile = f.isFile() && checkMD5OfFile(targetMD5, f);
-		if (attempt < maxTries && !isCorrectFile) {
+		if (attempt < maxTries && isCorrectFile) {
 			FileUtils.copyURLToFile(url, f);
 		} else {
 			throw new IOException(
