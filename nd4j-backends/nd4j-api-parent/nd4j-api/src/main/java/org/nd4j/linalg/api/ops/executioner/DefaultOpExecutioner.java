@@ -462,7 +462,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC: {
-                if (op.z() != null && !(op instanceof MatchCondition) && !(op instanceof Col2Im) && !(op instanceof Im2col)) {
+                if (op.z() != null && !(op instanceof MatchCondition) && !(op instanceof Col2Im) && !(op instanceof Im2col) && op.opNum() != 37 && op.opNum() != 36) {
                     int match = 0;
                     if (!op.z().isScalar()) {
                         MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
