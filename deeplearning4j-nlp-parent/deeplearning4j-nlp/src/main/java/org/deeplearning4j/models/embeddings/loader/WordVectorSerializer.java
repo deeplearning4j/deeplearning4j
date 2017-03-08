@@ -232,6 +232,15 @@ public class WordVectorSerializer {
         VocabCache<VocabWord> cache;
         INDArray syn0;
         int words, size;
+
+        int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
+        boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
+
+        if (originalPeriodic)
+            Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(5000);
+
         try (BufferedInputStream bis = new BufferedInputStream(
                 GzipUtils.isCompressedFilename(modelFile.getName())
                         ? new GZIPInputStream(new FileInputStream(modelFile))
@@ -250,17 +259,15 @@ public class WordVectorSerializer {
                     .vectorLength(size).build();
 
             String word;
+            float[] vector = new float[size];
             for (int i = 0; i < words; i++) {
 
                 word = readString(dis);
                 log.trace("Loading " + word + " with word " + i);
 
-                float[] vector = new float[size];
-
                 for (int j = 0; j < size; j++) {
                     vector[j] = readFloat(dis);
                 }
-
 
                 syn0.putRow(i, normalize ? Transforms.unitVec(Nd4j.create(vector)) : Nd4j.create(vector));
 
@@ -275,7 +282,14 @@ public class WordVectorSerializer {
                 if (linebreaks) {
                     dis.readByte(); // line break
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
+        } finally {
+            if (originalPeriodic)
+                Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+            Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
         }
 
 
@@ -877,86 +891,100 @@ public class WordVectorSerializer {
         tmpFileC.deleteOnExit();
         tmpFileF.deleteOnExit();
 
+        int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
+        boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
 
-        ZipFile zipFile = new ZipFile(file);
-        ZipEntry syn0 = zipFile.getEntry("syn0.txt");
-        InputStream stream = zipFile.getInputStream(syn0);
+        if (originalPeriodic)
+            Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-        Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(5000);
 
-        ZipEntry syn1 = zipFile.getEntry("syn1.txt");
-        stream = zipFile.getInputStream(syn1);
+        try {
 
-        Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
-        ZipEntry codes = zipFile.getEntry("codes.txt");
-        stream = zipFile.getInputStream(codes);
+            ZipFile zipFile = new ZipFile(file);
+            ZipEntry syn0 = zipFile.getEntry("syn0.txt");
+            InputStream stream = zipFile.getInputStream(syn0);
 
-        Files.copy(stream, Paths.get(tmpFileC.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
-        ZipEntry huffman = zipFile.getEntry("huffman.txt");
-        stream = zipFile.getInputStream(huffman);
+            ZipEntry syn1 = zipFile.getEntry("syn1.txt");
+            stream = zipFile.getInputStream(syn1);
 
-        Files.copy(stream, Paths.get(tmpFileH.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
-        ZipEntry config = zipFile.getEntry("config.json");
-        stream = zipFile.getInputStream(config);
-        StringBuilder builder = new StringBuilder();
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
-            String line;
-            while((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-        }
+            ZipEntry codes = zipFile.getEntry("codes.txt");
+            stream = zipFile.getInputStream(codes);
 
-        VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
+            Files.copy(stream, Paths.get(tmpFileC.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
 
-        // we read first 4 files as w2v model
-        Word2Vec w2v = readWord2VecFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
+            ZipEntry huffman = zipFile.getEntry("huffman.txt");
+            stream = zipFile.getInputStream(huffman);
 
-        // we read frequencies from frequencies.txt, however it's possible that we might not have this file
-        ZipEntry frequencies = zipFile.getEntry("frequencies.txt");
-        if (frequencies != null) {
-            stream = zipFile.getInputStream(frequencies);
+            Files.copy(stream, Paths.get(tmpFileH.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+            ZipEntry config = zipFile.getEntry("config.json");
+            stream = zipFile.getInputStream(config);
+            StringBuilder builder = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    String[] split = line.split(" ");
-                    VocabWord word = w2v.getVocab().tokenFor(decodeB64(split[0]));
-                    word.setElementFrequency((long) Double.parseDouble(split[1]));
-                    word.setSequencesCount((long) Double.parseDouble(split[2]));
+                    builder.append(line);
                 }
             }
-        }
 
+            VectorsConfiguration configuration = VectorsConfiguration.fromJson(builder.toString().trim());
 
-        ZipEntry zsyn1Neg = zipFile.getEntry("syn1Neg.txt");
-        if (zsyn1Neg != null) {
-            stream = zipFile.getInputStream(zsyn1Neg);
+            // we read first 4 files as w2v model
+            Word2Vec w2v = readWord2VecFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
 
-            try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
-                String line = null;
-                List<INDArray> rows = new ArrayList<>();
-                while ((line = reader.readLine()) != null) {
-                    String[] split = line.split(" ");
-                    double array[] = new double[split.length];
-                    for (int i = 0; i < split.length; i++) {
-                        array[i] = Double.parseDouble(split[i]);
+            // we read frequencies from frequencies.txt, however it's possible that we might not have this file
+            ZipEntry frequencies = zipFile.getEntry("frequencies.txt");
+            if (frequencies != null) {
+                stream = zipFile.getInputStream(frequencies);
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String[] split = line.split(" ");
+                        VocabWord word = w2v.getVocab().tokenFor(decodeB64(split[0]));
+                        word.setElementFrequency((long) Double.parseDouble(split[1]));
+                        word.setSequencesCount((long) Double.parseDouble(split[2]));
                     }
-                    rows.add(Nd4j.create(array));
-                }
-
-                // it's possible to have full model without syn1Neg
-                if (rows.size() > 0) {
-                    INDArray syn1Neg = Nd4j.vstack(rows);
-                    ((InMemoryLookupTable)w2v.getLookupTable()).setSyn1Neg(syn1Neg);
                 }
             }
+
+
+            ZipEntry zsyn1Neg = zipFile.getEntry("syn1Neg.txt");
+            if (zsyn1Neg != null) {
+                stream = zipFile.getInputStream(zsyn1Neg);
+
+                try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
+                    String line = null;
+                    List<INDArray> rows = new ArrayList<>();
+                    while ((line = reader.readLine()) != null) {
+                        String[] split = line.split(" ");
+                        double array[] = new double[split.length];
+                        for (int i = 0; i < split.length; i++) {
+                            array[i] = Double.parseDouble(split[i]);
+                        }
+                        rows.add(Nd4j.create(array));
+                    }
+
+                    // it's possible to have full model without syn1Neg
+                    if (rows.size() > 0) {
+                        INDArray syn1Neg = Nd4j.vstack(rows);
+                        ((InMemoryLookupTable) w2v.getLookupTable()).setSyn1Neg(syn1Neg);
+                    }
+                }
+            }
+
+            return w2v;
+        } finally {
+            if (originalPeriodic)
+                Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+            Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
         }
-
-
-
-        return w2v;
     }
 
     /**
@@ -2318,11 +2346,25 @@ public class WordVectorSerializer {
         if (!file.exists() || !file.isFile())
             throw new ND4JIllegalStateException("File ["+ file.getAbsolutePath() + "] doesn't exist");
 
+        int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
+        boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
+
+        if (originalPeriodic)
+            Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(5000);
+
         // try to load zip format
         try {
             if (extendedModel) {
                 log.debug("Trying full model restoration...");
                 // this method just loads full compressed model
+
+                if (originalPeriodic)
+                    Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
                 return readWord2Vec(file);
             } else {
                 log.debug("Trying simplified model restoration...");
@@ -2368,6 +2410,8 @@ public class WordVectorSerializer {
 
                             vocabCache.addToken(word);
                             vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                            Nd4j.getMemoryManager().invokeGcOccasionally();
                         }
                     }
                 }
@@ -2392,15 +2436,20 @@ public class WordVectorSerializer {
                             vocabCache.addToken(word);
                             vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
                         }
+
+                        Nd4j.getMemoryManager().invokeGcOccasionally();
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
+                } finally {
+                    if (originalPeriodic)
+                        Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                    Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
                 }
 
                 if (syn0 == null && vocabCache.numWords() > 0)
                     syn0 = Nd4j.vstack(rows);
-
-
 
                 if (syn0 == null) {
                     log.error("Can't build syn0 table");
@@ -2439,11 +2488,21 @@ public class WordVectorSerializer {
                 try {
                     log.debug("Trying binary model restoration...");
 
+                    if (originalPeriodic)
+                        Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                    Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
                     vec = loadGoogleModel(file, true, true);
                     return vec;
                 } catch (Exception ey) {
                     // try to load without linebreaks
                     try {
+                        if (originalPeriodic)
+                            Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                        Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
                         vec = loadGoogleModel(file, true, false);
                         return vec;
                     } catch (Exception ez) {
@@ -2518,6 +2577,14 @@ public class WordVectorSerializer {
         if (!file.exists() || file.isDirectory())
             throw new RuntimeException(new FileNotFoundException("File ["+ file.getAbsolutePath() + "] was not found"));
 
+        int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
+        boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
+
+        if (originalPeriodic)
+            Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(5000);
+
         CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
                 .useInplaceCompression(false)
                 .setCompressor(new NoOp())
@@ -2548,9 +2615,16 @@ public class WordVectorSerializer {
 
                     vocabCache.addToken(word);
                     vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            } finally {
+                if (originalPeriodic)
+                    Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
             }
         } catch (Exception e) {
             //
@@ -2567,10 +2641,17 @@ public class WordVectorSerializer {
 
                         vocabCache.addToken(word);
                         vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                        Nd4j.getMemoryManager().invokeGcOccasionally();
                     }
                 } catch (Exception ef) {
                     // we throw away this exception, and trying to load data as binary model
                     throw new RuntimeException(ef);
+                } finally {
+                    if (originalPeriodic)
+                        Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                    Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
                 }
             } catch (Exception ex) {
                 // otherwise it's probably google model. which might be compressed or not
@@ -2586,10 +2667,22 @@ public class WordVectorSerializer {
 
                         vocabCache.addToken(word);
                         vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+                        Nd4j.getMemoryManager().invokeGcOccasionally();
                     }
                 } catch (Exception ez) {
                     throw new RuntimeException("Unable to guess input file format");
+                } finally {
+                    if (originalPeriodic)
+                        Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                    Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
                 }
+            } finally {
+                if (originalPeriodic)
+                    Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+                Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
             }
         }
 
