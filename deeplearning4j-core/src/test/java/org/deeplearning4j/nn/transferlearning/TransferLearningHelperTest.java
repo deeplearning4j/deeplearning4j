@@ -74,11 +74,8 @@ public class TransferLearningHelperTest {
 
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
-        modelToTune.getVertex("denseCentre1").setLayerAsFrozen();
-        modelToTune.getVertex("denseCentre2").setLayerAsFrozen();
 
-        TransferLearningHelper helper = new TransferLearningHelper(modelToTune);
+        TransferLearningHelper helper = new TransferLearningHelper(modelToTune,"denseCentre2");
 
         ComputationGraph modelSubset = helper.unfrozenGraph();
 
@@ -106,7 +103,7 @@ public class TransferLearningHelperTest {
     public void testFitUnFrozen() {
 
         NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
+                .learningRate(0.9)
                 .seed(124)
                 .activation(Activation.IDENTITY)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -133,9 +130,6 @@ public class TransferLearningHelperTest {
 
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
-        modelToTune.getVertex("denseCentre1").setLayerAsFrozen();
-        modelToTune.getVertex("denseCentre2").setLayerAsFrozen();
 
         INDArray inRight = Nd4j.rand(10, 2);
         INDArray inCentre = Nd4j.rand(10, 10);
@@ -144,10 +138,14 @@ public class TransferLearningHelperTest {
         INDArray outCentre = Nd4j.rand(10, 4);
         MultiDataSet origData = new MultiDataSet(new INDArray[]{inCentre, inRight}, new INDArray[]{outLeft, outCentre, outRight});
         ComputationGraph modelIdentical = modelToTune.clone();
+        modelIdentical.getVertex("denseCentre0").setLayerAsFrozen();
+        modelIdentical.getVertex("denseCentre1").setLayerAsFrozen();
+        modelIdentical.getVertex("denseCentre2").setLayerAsFrozen();
 
-        TransferLearningHelper helper = new TransferLearningHelper(modelToTune);
+        TransferLearningHelper helper = new TransferLearningHelper(modelToTune,"denseCentre2");
         MultiDataSet featurizedDataSet = helper.featurize(origData);
 
+        assertEquals(modelIdentical.getLayer("denseRight0").params(),modelToTune.getLayer("denseRight0").params());
         modelIdentical.fit(origData);
         helper.fitFeaturized(featurizedDataSet);
 
@@ -156,9 +154,12 @@ public class TransferLearningHelperTest {
         assertEquals(modelIdentical.getLayer("denseCentre2").params(), modelToTune.getLayer("denseCentre2").params());
         assertEquals(modelIdentical.getLayer("denseCentre3").params(), modelToTune.getLayer("denseCentre3").params());
         assertEquals(modelIdentical.getLayer("outCentre").params(), modelToTune.getLayer("outCentre").params());
+        assertEquals(modelIdentical.getLayer("denseRight").conf().toJson(), modelToTune.getLayer("denseRight").conf().toJson());
+        assertEquals(modelIdentical.getLayer("denseRight").params(),modelToTune.getLayer("denseRight").params());
+        assertEquals(modelIdentical.getLayer("denseRight0").conf().toJson(), modelToTune.getLayer("denseRight0").conf().toJson());
         //assertEquals(modelIdentical.getLayer("denseRight0").params(),modelToTune.getLayer("denseRight0").params());
-        //assertEquals(modelIdentical.getLayer("denseRight1").params(),modelToTune.getLayer("denseRight1").params());
-        //assertEquals(modelIdentical.getLayer("outRight").params(),modelToTune.getLayer("outRight").params());
+        assertEquals(modelIdentical.getLayer("denseRight1").params(),modelToTune.getLayer("denseRight1").params());
+        assertEquals(modelIdentical.getLayer("outRight").params(),modelToTune.getLayer("outRight").params());
         assertEquals(modelIdentical.getLayer("denseLeft0").params(), modelToTune.getLayer("denseLeft0").params());
         assertEquals(modelIdentical.getLayer("outLeft").params(), modelToTune.getLayer("outLeft").params());
 
@@ -193,12 +194,11 @@ public class TransferLearningHelperTest {
                         .build()).build());
 
         modelToFineTune.init();
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).setFeatureExtractor(1).build();
         List<INDArray> ff = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false);
         INDArray asFrozenFeatures = ff.get(2);
 
-        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
-                .setFeatureExtractor(1).build();
-        TransferLearningHelper helper = new TransferLearningHelper(modelNow);
+        TransferLearningHelper helper = new TransferLearningHelper(modelToFineTune,1);
 
         INDArray paramsLastTwoLayers = Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params());
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.clone().list()
@@ -216,6 +216,7 @@ public class TransferLearningHelperTest {
         for (int i = 0; i < 5; i++) {
             notFrozen.fit(new DataSet(asFrozenFeatures, randomData.getLabels()));
             helper.fitFeaturized(helper.featurize(randomData));
+            modelNow.fit(randomData);
         }
 
         INDArray expected = Nd4j.hstack(modelToFineTune.getLayer(0).params(), modelToFineTune.getLayer(1).params(), notFrozen.params());

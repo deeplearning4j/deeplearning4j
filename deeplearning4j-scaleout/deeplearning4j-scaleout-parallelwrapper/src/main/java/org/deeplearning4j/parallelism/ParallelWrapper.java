@@ -126,7 +126,7 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = new Trainer(cnt, model, true);
+                zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(), true);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -337,7 +337,7 @@ public class ParallelWrapper implements AutoCloseable {
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
-                zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -591,24 +591,31 @@ public class ParallelWrapper implements AutoCloseable {
         private Exception thrownException;
         private volatile boolean useMDS = false;
         private final String uuid = UUID.randomUUID().toString();
+        private boolean onRootModel = false;
 
 
-        public Trainer(int threadId, Model model, boolean useMDS) {
-            this(threadId, model);
+
+        public Trainer(int threadId, Model model, int rootDevice, boolean useMDS) {
+            this(threadId, model, rootDevice);
             this.useMDS = useMDS;
         }
 
-        public Trainer(int threadId, Model model) {
+        public Trainer(int threadId, Model model, int rootDevice) {
             this.threadId = threadId;
             this.setDaemon(true);
             this.setName("ParallelWrapper trainer " + threadId);
 
             this.originalModel = model;
-            if (model instanceof MultiLayerNetwork) {
-                this.replicatedModel = ((MultiLayerNetwork) model).clone();
+            if (rootDevice != threadId) {
+                if (model instanceof MultiLayerNetwork) {
+                    this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
-            } else if (model instanceof ComputationGraph) {
-                this.replicatedModel = ((ComputationGraph) model).clone();
+                } else if (model instanceof ComputationGraph) {
+                    this.replicatedModel = ((ComputationGraph) model).clone();
+                }
+            } else {
+                this.onRootModel = true;
+                this.replicatedModel = model;
             }
         }
 
@@ -684,46 +691,50 @@ public class ParallelWrapper implements AutoCloseable {
                 // we create fresh network, with the same configuration, as initially created by user
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
-                    MultiLayerConfiguration conf = ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
-                    this.replicatedModel = new MultiLayerNetwork(conf);
+                    if (!onRootModel) {
+                        MultiLayerConfiguration conf = ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
+                        this.replicatedModel = new MultiLayerNetwork(conf);
 
-                    ((MultiLayerNetwork) replicatedModel).init();
-                    Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+                        ((MultiLayerNetwork) replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                    for(IterationListener listener : oldListeners) {
-                        if(listener instanceof RoutingIterationListener) {
-                            RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
-                            routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
-                            routingListener.setWorkerID(uuid);
-                            routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                            replicatedListeners.add(routingListener);
-                        } else {
-                            replicatedListeners.add(listener);
+                        for (IterationListener listener : oldListeners) {
+                            if (listener instanceof RoutingIterationListener) {
+                                RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
+                                routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                                routingListener.setWorkerID(uuid);
+                                routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
+                                replicatedListeners.add(routingListener);
+                            } else {
+                                replicatedListeners.add(listener);
+                            }
                         }
-                    }
 
-                    ((MultiLayerNetwork)this.replicatedModel).setListeners(replicatedListeners);
+                        ((MultiLayerNetwork) this.replicatedModel).setListeners(replicatedListeners);
+                    }
                 } else if (originalModel instanceof ComputationGraph) {
-                    this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
+                    if (!onRootModel) {
+                        this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
 
-                    ((ComputationGraph) this.replicatedModel).init();
-                    Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+                        ((ComputationGraph) this.replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                    for(IterationListener listener : oldListeners) {
-                        if(listener instanceof RoutingIterationListener) {
-                            RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
-                            routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
-                            routingIterationListener.setWorkerID(uuid);
-                            routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                            replicatedListeners.add(routingIterationListener);
-                        } else {
-                            replicatedListeners.add(listener);
+                        for (IterationListener listener : oldListeners) {
+                            if (listener instanceof RoutingIterationListener) {
+                                RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
+                                routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                                routingIterationListener.setWorkerID(uuid);
+                                routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
+                                replicatedListeners.add(routingIterationListener);
+                            } else {
+                                replicatedListeners.add(listener);
+                            }
                         }
-                    }
 
-                    ((ComputationGraph)this.replicatedModel).setListeners(replicatedListeners);
+                        ((ComputationGraph) this.replicatedModel).setListeners(replicatedListeners);
+                    }
                 }
 
                 if (!useMDS) {
