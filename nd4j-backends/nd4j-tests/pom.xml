@@ -122,10 +122,10 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+        <!-- <dependency> -->
+        <!--     <groupId>org.nd4j</groupId> -->
+        <!--     <artifactId>nd4j-kafka_${scala.binary.version}</artifactId> -->
+        <!--     <version>${project.version}</version> -->
+        <!-- </dependency> -->
     </dependencies>
 </project>
