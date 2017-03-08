@@ -4,6 +4,9 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -15,13 +18,17 @@ public class BasicMemoryManager implements MemoryManager {
     protected AtomicInteger frequency = new AtomicInteger(0);
     protected AtomicLong freqCounter = new AtomicLong(0);
 
-    protected AtomicLong lastGcTime = new AtomicLong(0);
+    protected AtomicLong lastGcTime = new AtomicLong(System.currentTimeMillis());
 
     protected AtomicBoolean periodicEnabled = new AtomicBoolean(true);
 
     protected AtomicInteger averageLoopTime = new AtomicInteger(0);
 
     protected AtomicInteger noGcWindow = new AtomicInteger(100);
+
+    protected static final int intervalTail = 100;
+
+    protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
 
     /**
      * This method returns
@@ -76,12 +83,21 @@ public class BasicMemoryManager implements MemoryManager {
     public void invokeGcOccasionally() {
         long currentTime = System.currentTimeMillis();
 
+
+        intervals.add((int) (currentTime - lastGcTime.get()));
+
         // not sure if we want to conform autoGcWindow here...
         if (frequency.get() > 0)
             if (freqCounter.incrementAndGet() % frequency.get() == 0 && currentTime > getLastGcTime() + getAutoGcWindow()) {
                 System.gc();
                 lastGcTime.set(System.currentTimeMillis());
             }
+
+        if (intervals.size() > intervalTail)
+            intervals.remove();
+
+
+
     }
 
     @Override
@@ -127,6 +143,11 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public int getAverageLoopTime() {
-        return averageLoopTime.get();
+        int cnt = 0;
+        for (Integer value : intervals) {
+            cnt += value;
+        }
+        cnt /= intervals.size();
+        return cnt; //averageLoopTime.get();
     }
 }
