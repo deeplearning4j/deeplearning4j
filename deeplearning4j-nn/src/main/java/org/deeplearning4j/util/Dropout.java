@@ -14,8 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Dropout {
 
-    private Dropout() {
-    }
+    private Dropout() {}
 
     /**
      * Apply drop connect to the given variable
@@ -23,7 +22,7 @@ public class Dropout {
      * @param variable the variable to apply
      * @return the post applied drop connect
      */
-    public static INDArray applyDropConnect(Layer layer,String variable) {
+    public static INDArray applyDropConnect(Layer layer, String variable) {
         INDArray result = layer.getParam(variable).dup();
         if (Nd4j.getRandom().getStatePointer() != null) {
             Nd4j.getExecutioner().exec(new DropOut(result, result, layer.conf().getLayer().getDropOut()));
@@ -39,7 +38,7 @@ public class Dropout {
      * @param input the input to do drop out on
      * @param dropout the drop out probability
      */
-    public static void applyDropout(INDArray input,double dropout) {
+    public static void applyDropout(INDArray input, double dropout) {
         if (Nd4j.getRandom().getStatePointer() != null) {
             Nd4j.getExecutioner().exec(new DropOutInverted(input, dropout));
         } else {

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -51,9 +51,10 @@ public class KerasSequentialModel extends KerasModel {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasSequentialModel(ModelBuilder modelBuilder) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+    public KerasSequentialModel(ModelBuilder modelBuilder)
+                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.weightsArchive, modelBuilder.weightsRoot,
-                modelBuilder.trainingJson, modelBuilder.trainingArchive, modelBuilder.enforceTrainingConfig);
+                        modelBuilder.trainingJson, modelBuilder.trainingArchive, modelBuilder.enforceTrainingConfig);
     }
 
     /**
@@ -69,9 +70,9 @@ public class KerasSequentialModel extends KerasModel {
      * @throws IOException
      */
     public KerasSequentialModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
-                                String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
-            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String,Object> modelConfig;
+                    String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
+                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String, Object> modelConfig;
         if (modelJson != null)
             modelConfig = parseJsonString(modelJson);
         else if (modelYaml != null)
@@ -84,20 +85,23 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Determine model configuration type. */
         if (!modelConfig.containsKey(MODEL_FIELD_CLASS_NAME))
-            throw new InvalidKerasConfigurationException("Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
-        this.className = (String)modelConfig.get(MODEL_FIELD_CLASS_NAME);
+            throw new InvalidKerasConfigurationException(
+                            "Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
+        this.className = (String) modelConfig.get(MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
-            throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL + " (found " + this.className + ")");
+            throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL
+                            + " (found " + this.className + ")");
 
         /* Process layer configurations. */
         if (!modelConfig.containsKey(MODEL_FIELD_CONFIG))
-            throw new InvalidKerasConfigurationException("Could not find layer configurations (no " + MODEL_FIELD_CONFIG + " field found)");
-        helperPrepareLayers((List<Object>)modelConfig.get(MODEL_FIELD_CONFIG));
+            throw new InvalidKerasConfigurationException(
+                            "Could not find layer configurations (no " + MODEL_FIELD_CONFIG + " field found)");
+        helperPrepareLayers((List<Object>) modelConfig.get(MODEL_FIELD_CONFIG));
 
         KerasLayer inputLayer;
         if (this.layersOrdered.get(0) instanceof KerasInput) {
             inputLayer = this.layersOrdered.get(0);
-	    } else {
+        } else {
             /* Add placeholder input layer and update lists of input and output layers. */
             int[] inputShape = this.layersOrdered.get(0).getInputShape();
             inputLayer = new KerasInput("input1", inputShape);
@@ -106,7 +110,8 @@ public class KerasSequentialModel extends KerasModel {
             this.layersOrdered.add(0, inputLayer);
         }
         this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getLayerName()));
-        this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layersOrdered.get(this.layersOrdered.size()-1).getLayerName()));
+        this.outputLayerNames = new ArrayList<String>(
+                        Arrays.asList(this.layersOrdered.get(this.layersOrdered.size() - 1).getLayerName()));
 
         /* Update each layer's inbound layer list to include (only) previous layer. */
         KerasLayer prevLayer = null;
@@ -136,13 +141,16 @@ public class KerasSequentialModel extends KerasModel {
      * @return          MultiLayerConfiguration
      */
     public MultiLayerConfiguration getMultiLayerConfiguration()
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
-            throw new InvalidKerasConfigurationException("Keras model class name " + this.className + " incompatible with MultiLayerNetwork");
+            throw new InvalidKerasConfigurationException(
+                            "Keras model class name " + this.className + " incompatible with MultiLayerNetwork");
         if (this.inputLayerNames.size() != 1)
-            throw new InvalidKerasConfigurationException("MultiLayeNetwork expects only 1 input (found " + this.inputLayerNames.size() + ")");
+            throw new InvalidKerasConfigurationException(
+                            "MultiLayeNetwork expects only 1 input (found " + this.inputLayerNames.size() + ")");
         if (this.outputLayerNames.size() != 1)
-            throw new InvalidKerasConfigurationException("MultiLayeNetwork expects only 1 output (found " + this.outputLayerNames.size() + ")");
+            throw new InvalidKerasConfigurationException(
+                            "MultiLayeNetwork expects only 1 output (found " + this.outputLayerNames.size() + ")");
 
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
@@ -156,7 +164,9 @@ public class KerasSequentialModel extends KerasModel {
             if (layer.isLayer()) {
                 int nbInbound = layer.getInboundLayerNames().size();
                 if (nbInbound != 1)
-                    throw new InvalidKerasConfigurationException("Layers in MultiLayerConfiguration must have exactly one inbound layer (found " + nbInbound + " for layer " + layer.getLayerName() + ")");
+                    throw new InvalidKerasConfigurationException(
+                                    "Layers in MultiLayerConfiguration must have exactly one inbound layer (found "
+                                                    + nbInbound + " for layer " + layer.getLayerName() + ")");
                 if (prevLayer != null) {
                     InputType[] inputTypes = new InputType[1];
                     InputPreProcessor preprocessor = null;
@@ -172,10 +182,11 @@ public class KerasSequentialModel extends KerasModel {
                 }
                 listBuilder.layer(layerIndex++, layer.getLayer());
                 if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
-                    log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
-            }
-            else if (layer.getVertex() != null)
-                throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name " + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
+                    log.warn("Model cannot be trained: output layer " + layer.getLayerName()
+                                    + " is not an IOutputLayer (no loss function specified)");
+            } else if (layer.getVertex() != null)
+                throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name "
+                                + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
             prevLayer = layer;
         }
 
@@ -185,9 +196,8 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
         if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
-            listBuilder.backpropType(BackpropType.TruncatedBPTT)
-                    .tBPTTForwardLength(truncatedBPTT)
-                    .tBPTTBackwardLength(truncatedBPTT);
+            listBuilder.backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(truncatedBPTT)
+                            .tBPTTBackwardLength(truncatedBPTT);
         else
             listBuilder.backpropType(BackpropType.Standard);
         return listBuilder.build();
@@ -199,7 +209,7 @@ public class KerasSequentialModel extends KerasModel {
      * @return          MultiLayerNetwork
      */
     public MultiLayerNetwork getMultiLayerNetwork()
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         MultiLayerNetwork model = getMultiLayerNetwork(true);
         return model;
     }
@@ -210,11 +220,11 @@ public class KerasSequentialModel extends KerasModel {
      * @return          MultiLayerNetwork
      */
     public MultiLayerNetwork getMultiLayerNetwork(boolean importWeights)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         MultiLayerNetwork model = new MultiLayerNetwork(getMultiLayerConfiguration());
         model.init();
         if (importWeights)
-            model = (MultiLayerNetwork)helperCopyWeightsToModel(model);
+            model = (MultiLayerNetwork) helperCopyWeightsToModel(model);
         return model;
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -40,9 +40,7 @@ public class UnknownDictionaryCompiler implements Compiler {
     }
 
     public void readUnknownDefinition(InputStream input, String encoding) throws IOException {
-        LineNumberReader reader = new LineNumberReader(
-            new InputStreamReader(input, encoding)
-        );
+        LineNumberReader reader = new LineNumberReader(new InputStreamReader(input, encoding));
 
         UnknownDictionaryEntryParser parser = new UnknownDictionaryEntryParser();
         String line;
@@ -60,7 +58,7 @@ public class UnknownDictionaryCompiler implements Compiler {
         for (int i = 0; i < dictionaryEntries.size(); i++) {
             GenericDictionaryEntry entry = dictionaryEntries.get(i);
 
-            costs[i] = new int[]{entry.getLeftId(), entry.getRightId(), entry.getWordCost()};
+            costs[i] = new int[] {entry.getLeftId(), entry.getRightId(), entry.getWordCost()};
         }
 
         return costs;

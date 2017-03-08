@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,8 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
     private Broadcast<List<String>> stopWords;
     private Accumulator<Counter<String>> wordFreqAcc;
 
-    public UpdateWordFreqAccumulatorFunction(Broadcast<List<String>> stopWords, Accumulator<Counter<String>> wordFreqAcc) {
+    public UpdateWordFreqAccumulatorFunction(Broadcast<List<String>> stopWords,
+                    Accumulator<Counter<String>> wordFreqAcc) {
         this.wordFreqAcc = wordFreqAcc;
         this.stopWords = stopWords;
     }
@@ -47,7 +48,7 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
         Counter<String> counter = new Counter<>();
 
         for (String w : lstOfWords) {
-            if(w.isEmpty())
+            if (w.isEmpty())
                 continue;
 
             if (!stops.isEmpty()) {
@@ -56,7 +57,7 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
                 } else {
                     counter.incrementCount(w, 1.0);
                 }
-            }  else {
+            } else {
                 counter.incrementCount(w, 1.0);
             }
         }

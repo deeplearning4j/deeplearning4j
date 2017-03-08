@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,20 +20,23 @@ package org.deeplearning4j.berkeley;
 
 
 public interface Factory<T> {
-	T newInstance(Object... args);
-	class DefaultFactory<T> implements Factory<T> {
-		private final Class c;
-		public DefaultFactory(Class c) {
-      this.c = c;
-		}
-		public T newInstance(Object... args) {
-      try {
-        return (T) c.newInstance();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      return null;
+    T newInstance(Object... args);
+
+    class DefaultFactory<T> implements Factory<T> {
+        private final Class c;
+
+        public DefaultFactory(Class c) {
+            this.c = c;
+        }
+
+        public T newInstance(Object... args) {
+            try {
+                return (T) c.newInstance();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
-	}
-  
+
 }

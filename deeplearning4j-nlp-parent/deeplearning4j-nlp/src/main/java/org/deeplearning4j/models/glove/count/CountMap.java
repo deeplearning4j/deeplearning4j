@@ -44,22 +44,24 @@ public class CountMap<T extends SequenceElement> {
         Pair<T, T> tempEntry = new Pair<>(element1, element2);
         if (backingMap.containsKey(tempEntry)) {
             return backingMap.get(tempEntry).get();
-        } else return 0;
+        } else
+            return 0;
     }
 
     public double getCount(Pair<T, T> pair) {
         if (backingMap.containsKey(pair)) {
             return backingMap.get(pair).get();
-        } else return 0;
+        } else
+            return 0;
     }
 
     public Iterator<Pair<T, T>> getPairIterator() {
         return new Iterator<Pair<T, T>>() {
-            private  Iterator<Pair<T, T>> iterator = backingMap.keySet().iterator();
+            private Iterator<Pair<T, T>> iterator = backingMap.keySet().iterator();
 
             @Override
             public boolean hasNext() {
-                    return iterator.hasNext();
+                return iterator.hasNext();
             }
 
             @Override

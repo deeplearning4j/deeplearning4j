@@ -39,8 +39,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * <p>
  * Created by nyghtowl on 10/29/15.
  */
-public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
-    protected static final Logger log = LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
+public class LocalResponseNormalization
+                extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
+    protected static final Logger log =
+                    LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
     LocalResponseNormalizationHelper helper = null;
 
@@ -64,7 +66,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
-                    .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
+                            .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
             log.debug("CudnnLocalResponseNormalizationHelper successfully loaded");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
@@ -89,8 +91,7 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
     }
 
     @Override
-    public void fit(INDArray input) {
-    }
+    public void fit(INDArray input) {}
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (helper != null) {
@@ -108,41 +109,19 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
 
         // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
         for (int i = 1; i < halfN + 1; i++) {
-            tmp = sumPart.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(i, channel),
-                            NDArrayIndex.all(),
+            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
                             NDArrayIndex.all()});
-            addVal = reverse.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(0, channel - i),
-                            NDArrayIndex.all(),
+            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
                             NDArrayIndex.all()});
-            sumPart.put(new INDArrayIndex[]{
-                    NDArrayIndex.all(),
-                    interval(i, channel),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()}, tmp.addi(addVal));
+            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
+                            NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(0, channel - i),
-                            NDArrayIndex.all(),
+            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
                             NDArrayIndex.all()});
-            addVal = reverse.get(
-                    new INDArrayIndex[]{
-                            NDArrayIndex.all(),
-                            interval(i, channel),
-                            NDArrayIndex.all(),
+            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
                             NDArrayIndex.all()});
-            sumPart.put(new INDArrayIndex[]{
-                    NDArrayIndex.all(),
-                    interval(0, channel - i),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()}, tmp.addi(addVal));
+            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                            NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
@@ -174,20 +153,15 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
         for (int i = 1; i < halfN + 1; i++) {
             tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = activitySqr.get( NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[]{
-                    NDArrayIndex.all(),
-                    interval(i, channel),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()}, tmp.addi(addVal));
+            addVal = activitySqr.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                            NDArrayIndex.all());
+            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
+                            NDArrayIndex.all()}, tmp.addi(addVal));
 
             tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = activitySqr.get(  NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[]{
-                    NDArrayIndex.all(),
-                    interval(0, channel - i),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()}, tmp.addi(addVal));
+            addVal = activitySqr.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                            NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )

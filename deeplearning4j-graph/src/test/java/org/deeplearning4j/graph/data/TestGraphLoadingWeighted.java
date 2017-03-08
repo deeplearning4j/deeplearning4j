@@ -19,53 +19,38 @@ import static org.junit.Assert.assertEquals;
 public class TestGraphLoadingWeighted {
 
     @Test
-    public void testWeightedDirected() throws IOException{
+    public void testWeightedDirected() throws IOException {
 
         String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
-        String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
+        String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"
 
-        IGraph<String,Double> graph = GraphLoader.loadWeightedEdgeListFile(path,numVertices,delim,true,ignoreLinesStartingWith);
+        IGraph<String, Double> graph =
+                        GraphLoader.loadWeightedEdgeListFile(path, numVertices, delim, true, ignoreLinesStartingWith);
 
         assertEquals(numVertices, graph.numVertices());
 
-        int[] vertexOutDegrees = {2,2,1,2,2,1,1,1,1};
-        for( int i=0; i<numVertices; i++ ) assertEquals(vertexOutDegrees[i],graph.getVertexDegree(i));
-        int[][] edges = new int[][]{
-                {1, 3},     //0->1 and 1->3
-                {2, 4},     //1->2 and 1->4
-                {5},        //etc
-                {4, 6},
-                {5, 7},
-                {8},
-                {7},
-                {8},
-                {0}
-        };
-        double[][] edgeWeights = new double[][]{
-                {1, 3},
-                {12, 14},
-                {25},
-                {34, 36},
-                {45, 47},
-                {58},
-                {67},
-                {78},
-                {80}
-        };
+        int[] vertexOutDegrees = {2, 2, 1, 2, 2, 1, 1, 1, 1};
+        for (int i = 0; i < numVertices; i++)
+            assertEquals(vertexOutDegrees[i], graph.getVertexDegree(i));
+        int[][] edges = new int[][] {{1, 3}, //0->1 and 1->3
+                        {2, 4}, //1->2 and 1->4
+                        {5}, //etc
+                        {4, 6}, {5, 7}, {8}, {7}, {8}, {0}};
+        double[][] edgeWeights = new double[][] {{1, 3}, {12, 14}, {25}, {34, 36}, {45, 47}, {58}, {67}, {78}, {80}};
 
-        for( int i=0; i<numVertices; i++ ){
+        for (int i = 0; i < numVertices; i++) {
             List<Edge<Double>> edgeList = graph.getEdgesOut(i);
             assertEquals(edges[i].length, edgeList.size());
-            for(Edge<Double> e : edgeList){
+            for (Edge<Double> e : edgeList) {
                 int from = e.getFrom();
                 int to = e.getTo();
                 double weight = e.getValue();
-                assertEquals(i,from);
-                assertTrue(ArrayUtils.contains(edges[i],to));
-                int idx = ArrayUtils.indexOf(edges[i],to);
-                assertEquals(edgeWeights[i][idx],weight,0.0);
+                assertEquals(i, from);
+                assertTrue(ArrayUtils.contains(edges[i], to));
+                int idx = ArrayUtils.indexOf(edges[i], to);
+                assertEquals(edgeWeights[i][idx], weight, 0.0);
             }
         }
 
@@ -80,20 +65,23 @@ public class TestGraphLoadingWeighted {
         int numVertices = 9;
         String delim = ",";
         boolean directed = true;
-        String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
+        String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"
 
-        IGraph<String,Double> graph = GraphLoader.loadWeightedEdgeListFile(path,numVertices,delim,directed,false,ignoreLinesStartingWith);
+        IGraph<String, Double> graph = GraphLoader.loadWeightedEdgeListFile(path, numVertices, delim, directed, false,
+                        ignoreLinesStartingWith);
 
         assertEquals(numVertices, graph.numVertices());
 
         //EdgeLineProcessor: used to convert lines -> edges
-        EdgeLineProcessor<Double> edgeLineProcessor = new WeightedEdgeLineProcessor(delim,directed,ignoreLinesStartingWith);
+        EdgeLineProcessor<Double> edgeLineProcessor =
+                        new WeightedEdgeLineProcessor(delim, directed, ignoreLinesStartingWith);
         //Vertex factory: used to create vertex objects, given an index for the vertex
         VertexFactory<String> vertexFactory = new StringVertexFactory();
 
-        Graph<String,Double> graph2 = GraphLoader.loadGraph(path,edgeLineProcessor,vertexFactory,numVertices,false);
+        Graph<String, Double> graph2 =
+                        GraphLoader.loadGraph(path, edgeLineProcessor, vertexFactory, numVertices, false);
 
-        assertEquals(graph,graph2);
+        assertEquals(graph, graph2);
     }
 
 }

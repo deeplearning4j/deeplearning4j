@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -44,8 +44,7 @@ import java.util.List;
 public class TreeFactory {
 
 
-    private TreeFactory() {
-    }
+    private TreeFactory() {}
 
     /**
      * Builds a tree recursively
@@ -56,21 +55,23 @@ public class TreeFactory {
      * and childrens' children recursively
      * @throws Exception
      */
-    public static Tree buildTree(TreebankNode node,Pair<String,MultiDimensionalMap<Integer,Integer,String>> labels,List<String> possibleLabels) throws Exception {
-        if(node.getLeaf())
+    public static Tree buildTree(TreebankNode node, Pair<String, MultiDimensionalMap<Integer, Integer, String>> labels,
+                    List<String> possibleLabels) throws Exception {
+        if (node.getLeaf())
             return toTree(node);
         else {
             List<TreebankNode> preChildren = children(node);
             List<Tree> children = new ArrayList<>();
             Tree t = toTree(node);
-            for(Pair<Integer,Integer> interval : labels.getSecond().keySet()) {
-                if(inRange(interval.getFirst(),interval.getSecond(),t)) {
-                    t.setGoldLabel(possibleLabels.indexOf(labels.getSecond().get(interval.getFirst(),interval.getSecond())));
+            for (Pair<Integer, Integer> interval : labels.getSecond().keySet()) {
+                if (inRange(interval.getFirst(), interval.getSecond(), t)) {
+                    t.setGoldLabel(possibleLabels
+                                    .indexOf(labels.getSecond().get(interval.getFirst(), interval.getSecond())));
                     break;
                 }
             }
 
-            for(int i = 0; i < preChildren.size(); i++) {
+            for (int i = 0; i < preChildren.size(); i++) {
                 children.add(buildTree(preChildren.get(i)));
             }
 
@@ -88,7 +89,8 @@ public class TreeFactory {
      * the given tree bank node
      * @throws Exception
      */
-    public static Tree toTree(TreebankNode node,Pair<String,MultiDimensionalMap<Integer,Integer,String>> labels) throws Exception {
+    public static Tree toTree(TreebankNode node, Pair<String, MultiDimensionalMap<Integer, Integer, String>> labels)
+                    throws Exception {
         List<String> tokens = tokens(node);
         Tree ret = new Tree(tokens);
         ret.setValue(node.getNodeValue());
@@ -97,15 +99,12 @@ public class TreeFactory {
         ret.setBegin(node.getBegin());
         ret.setEnd(node.getEnd());
         ret.setParse(TreebankNodeUtil.toTreebankString(node));
-        if(node.getNodeTags() != null)
+        if (node.getNodeTags() != null)
             ret.setTags(tags(node));
         else
             ret.setTags(Arrays.asList(node.getNodeType()));
         return ret;
     }
-
-
-
 
 
 
@@ -118,13 +117,13 @@ public class TreeFactory {
      * @throws Exception
      */
     public static Tree buildTree(TreebankNode node) throws Exception {
-        if(node.getLeaf())
+        if (node.getLeaf())
             return toTree(node);
         else {
             List<TreebankNode> preChildren = children(node);
             List<Tree> children = new ArrayList<>();
             Tree t = toTree(node);
-            for(int i = 0; i < preChildren.size(); i++) {
+            for (int i = 0; i < preChildren.size(); i++) {
                 children.add(buildTree(preChildren.get(i)));
             }
 
@@ -132,7 +131,6 @@ public class TreeFactory {
             return t;
 
         }
-
 
 
 
@@ -154,7 +152,7 @@ public class TreeFactory {
         ret.setBegin(node.getBegin());
         ret.setEnd(node.getEnd());
         ret.setParse(TreebankNodeUtil.toTreebankString(node));
-        if(node.getNodeTags() != null)
+        if (node.getNodeTags() != null)
             ret.setTags(tags(node));
         else
             ret.setTags(Arrays.asList(node.getNodeType()));
@@ -164,25 +162,25 @@ public class TreeFactory {
 
     private static List<String> tags(TreebankNode node) {
         List<String> ret = new ArrayList<>();
-        for(int i = 0; i < node.getNodeTags().size(); i++)
+        for (int i = 0; i < node.getNodeTags().size(); i++)
             ret.add(node.getNodeTags(i));
         return ret;
     }
 
 
     private static List<TreebankNode> children(TreebankNode node) {
-        return new ArrayList<>(FSCollectionFactory.create(node.getChildren(),TreebankNode.class));
+        return new ArrayList<>(FSCollectionFactory.create(node.getChildren(), TreebankNode.class));
     }
 
     private static List<String> tokens(Annotation ann) throws Exception {
         List<String> ret = new ArrayList<>();
-        for(Token t : JCasUtil.select(ann.getCAS().getJCas(),Token.class)) {
+        for (Token t : JCasUtil.select(ann.getCAS().getJCas(), Token.class)) {
             ret.add(t.getCoveredText());
         }
         return ret;
     }
 
-    private static boolean inRange(int begin,int end,Tree tree) {
+    private static boolean inRange(int begin, int end, Tree tree) {
         return tree.getBegin() >= begin && tree.getEnd() <= end;
     }
 

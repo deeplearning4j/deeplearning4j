@@ -59,9 +59,7 @@ public class VectorsConfigurationTest {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
 
-        Word2Vec vec = new Word2Vec.Builder(configuration)
-                .iterate(iter)
-                .build();
+        Word2Vec vec = new Word2Vec.Builder(configuration).iterate(iter).build();
 
         VectorsConfiguration configuration2 = vec.getConfiguration();
 

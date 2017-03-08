@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -41,14 +41,16 @@ public class TreeIterator implements Iterator<List<Tree>> {
 
 
 
-    public TreeIterator(LabelAwareSentenceIterator sentenceIterator, List<String> labels, TreeVectorizer treeVectorizer, int batchSize) {
+    public TreeIterator(LabelAwareSentenceIterator sentenceIterator, List<String> labels, TreeVectorizer treeVectorizer,
+                    int batchSize) {
         this.sentenceIterator = sentenceIterator;
         this.labels = labels;
         this.treeVectorizer = treeVectorizer;
         this.batchSize = batchSize;
     }
 
-    public TreeIterator(LabelAwareSentenceIterator sentenceIterator, List<String> labels, TreeVectorizer treeVectorizer) {
+    public TreeIterator(LabelAwareSentenceIterator sentenceIterator, List<String> labels,
+                    TreeVectorizer treeVectorizer) {
         this.sentenceIterator = sentenceIterator;
         this.labels = labels;
         this.treeVectorizer = treeVectorizer;
@@ -56,7 +58,7 @@ public class TreeIterator implements Iterator<List<Tree>> {
     }
 
     public TreeIterator(LabelAwareSentenceIterator sentenceIterator, List<String> labels) throws Exception {
-        this(sentenceIterator,labels,new TreeVectorizer());
+        this(sentenceIterator, labels, new TreeVectorizer());
     }
 
 
@@ -81,9 +83,10 @@ public class TreeIterator implements Iterator<List<Tree>> {
     public List<Tree> next() {
         List<Tree> ret = new ArrayList<>();
         try {
-            for(int i = 0; i < batchSize; i++)
-                if(hasNext())
-                    ret.addAll(treeVectorizer.getTreesWithLabels(sentenceIterator.nextSentence(), sentenceIterator.currentLabel(), labels));
+            for (int i = 0; i < batchSize; i++)
+                if (hasNext())
+                    ret.addAll(treeVectorizer.getTreesWithLabels(sentenceIterator.nextSentence(),
+                                    sentenceIterator.currentLabel(), labels));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

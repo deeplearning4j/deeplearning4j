@@ -30,8 +30,7 @@ public class BinaryCoOccurrenceReaderTest {
         File tempFile = File.createTempFile("tmp", "tmp");
         tempFile.deleteOnExit();
 
-        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
         VocabWord word1 = new VocabWord(1.0, "human");
         VocabWord word2 = new VocabWord(2.0, "animal");
@@ -64,7 +63,7 @@ public class BinaryCoOccurrenceReaderTest {
 
         writer.finish();
 
-        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache ,null);
+        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache, null);
 
 
         CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
@@ -81,8 +80,7 @@ public class BinaryCoOccurrenceReaderTest {
         File tempFile = File.createTempFile("tmp", "tmp");
         tempFile.deleteOnExit();
 
-        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>()
-                .build();
+        VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
         VocabWord word1 = new VocabWord(1.0, "human");
         VocabWord word2 = new VocabWord(2.0, "animal");
@@ -122,12 +120,12 @@ public class BinaryCoOccurrenceReaderTest {
 
         writer.finish();
 
-        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache ,null);
+        BinaryCoOccurrenceReader<VocabWord> reader = new BinaryCoOccurrenceReader<>(tempFile, vocabCache, null);
 
 
         CoOccurrenceWeight<VocabWord> r1 = reader.nextObject();
         log.info("Object received: " + r1);
-       assertNotEquals(null, r1);
+        assertNotEquals(null, r1);
 
         r1 = reader.nextObject();
         log.info("Object received: " + r1);

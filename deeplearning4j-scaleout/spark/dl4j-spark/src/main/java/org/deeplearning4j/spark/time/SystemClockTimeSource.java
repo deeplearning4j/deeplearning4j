@@ -8,7 +8,7 @@ package org.deeplearning4j.spark.time;
  */
 public class SystemClockTimeSource implements TimeSource {
 
-    public static TimeSource getInstance(){
+    public static TimeSource getInstance() {
         return new SystemClockTimeSource();
     }
 

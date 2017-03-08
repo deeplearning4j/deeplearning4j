@@ -27,14 +27,15 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class EmbeddingLayer extends FeedForwardLayer {
 
-    private EmbeddingLayer(Builder builder){
+    private EmbeddingLayer(Builder builder) {
         super(builder);
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret
-                = new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -54,7 +55,7 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
         @Override
         @SuppressWarnings("unchecked")
-        public EmbeddingLayer build(){
+        public EmbeddingLayer build() {
             return new EmbeddingLayer(this);
         }
     }

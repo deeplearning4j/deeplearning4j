@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -99,7 +99,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param codeIndex
      * @param code
      */
-    void putCode(int codeIndex,INDArray code);
+    void putCode(int codeIndex, INDArray code);
 
     /**
      * Loads the co-occurrences for the given codes
@@ -114,7 +114,8 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param w2 the second word to iterate on
      */
     @Deprecated
-    void iterate(T w1,T w2);
+    void iterate(T w1, T w2);
+
     /**
      * Iterate on the given 2 vocab words
      * @param w1 the first word to iterate on
@@ -123,7 +124,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param alpha the alpha to use for learning
      */
     @Deprecated
-    void iterateSample(T w1,T w2,AtomicLong nextRandom,double alpha);
+    void iterateSample(T w1, T w2, AtomicLong nextRandom, double alpha);
 
 
     /**
@@ -131,7 +132,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      * @param word the word to insert
      * @param vector the vector to insert
      */
-    void putVector(String word,INDArray vector);
+    void putVector(String word, INDArray vector);
 
     /**
      *

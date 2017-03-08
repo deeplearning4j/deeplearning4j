@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,6 +40,6 @@ public class Word2VecSetup implements Function<Tuple2<List<VocabWord>, Long>, Wo
 
     @Override
     public Word2VecFuncCall call(Tuple2<List<VocabWord>, Long> listLongTuple2) throws Exception {
-        return new Word2VecFuncCall(param,listLongTuple2._2(),listLongTuple2._1());
+        return new Word2VecFuncCall(param, listLongTuple2._2(), listLongTuple2._1());
     }
 }

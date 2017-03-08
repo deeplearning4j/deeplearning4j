@@ -26,9 +26,7 @@ public class BasicLabelAwareIteratorTest {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
-        BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter)
-                .setLabelTemplate("DOCZ_")
-                .build();
+        BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter).setLabelTemplate("DOCZ_").build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {
@@ -50,9 +48,7 @@ public class BasicLabelAwareIteratorTest {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
-        BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter)
-                .setLabelTemplate("DOCZ_")
-                .build();
+        BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter).setLabelTemplate("DOCZ_").build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {

@@ -37,21 +37,23 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
     // on this machine, right now
     private byte[] extraMeta;
 
-    public SbeStorageMetaData(){
+    public SbeStorageMetaData() {
         //No arg constructor for serialization/deserialization
     }
 
-    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType,
+                    Class<?> updateType) {
         this(timeStamp, sessionID, typeID, workerID, (initType != null ? initType.getName() : null),
-                (updateType != null ? updateType.getName() : null));
+                        (updateType != null ? updateType.getName() : null));
     }
 
-    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ) {
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass,
+                    String updateTypeClass) {
         this(timeStamp, sessionID, typeID, workerID, initTypeClass, updateTypeClass, null);
     }
 
-    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass,
-                              Serializable extraMetaData ) {
+    public SbeStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass,
+                    String updateTypeClass, Serializable extraMetaData) {
         this.timeStamp = timeStamp;
         this.sessionID = sessionID;
         this.typeID = typeID;
@@ -61,7 +63,7 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
         this.extraMeta = (extraMetaData == null ? null : SbeUtil.toBytesSerializable(extraMetaData));
     }
 
-    public Serializable getExtraMetaData(){
+    public Serializable getExtraMetaData() {
         return SbeUtil.fromBytesSerializable(extraMeta);
     }
 
@@ -82,8 +84,8 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
         byte[] bUpdateTypeClass = SbeUtil.toBytes(true, updateTypeClass);
         byte[] bExtraMetaData = SbeUtil.toBytesSerializable(extraMeta);
 
-        bufferSize += bSessionID.length + bTypeID.length + bWorkerID.length + bInitTypeClass.length + bUpdateTypeClass.length
-                + bExtraMetaData.length;
+        bufferSize += bSessionID.length + bTypeID.length + bWorkerID.length + bInitTypeClass.length
+                        + bUpdateTypeClass.length + bExtraMetaData.length;
 
         return bufferSize;
     }
@@ -106,13 +108,10 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
         StorageMetaDataEncoder smde = new StorageMetaDataEncoder();
 
-        enc.wrap(buffer, 0)
-                .blockLength(smde.sbeBlockLength())
-                .templateId(smde.sbeTemplateId())
-                .schemaId(smde.sbeSchemaId())
-                .version(smde.sbeSchemaVersion());
+        enc.wrap(buffer, 0).blockLength(smde.sbeBlockLength()).templateId(smde.sbeTemplateId())
+                        .schemaId(smde.sbeSchemaId()).version(smde.sbeSchemaVersion());
 
-        int offset = enc.encodedLength();   //Expect 8 bytes
+        int offset = enc.encodedLength(); //Expect 8 bytes
 
         byte[] bSessionID = SbeUtil.toBytes(true, sessionID);
         byte[] bTypeID = SbeUtil.toBytes(true, typeID);
@@ -120,21 +119,20 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
         byte[] bInitTypeClass = SbeUtil.toBytes(true, initTypeClass);
         byte[] bUpdateTypeClass = SbeUtil.toBytes(true, updateTypeClass);
 
-        smde.wrap(buffer, offset)
-                .timeStamp(timeStamp);
+        smde.wrap(buffer, offset).timeStamp(timeStamp);
 
-        StorageMetaDataEncoder.ExtraMetaDataBytesEncoder ext = smde.extraMetaDataBytesCount(extraMeta == null ? 0 : extraMeta.length);
-        if(extraMeta != null) {
+        StorageMetaDataEncoder.ExtraMetaDataBytesEncoder ext =
+                        smde.extraMetaDataBytesCount(extraMeta == null ? 0 : extraMeta.length);
+        if (extraMeta != null) {
             for (byte b : extraMeta) {
                 ext.next().bytes(b);
             }
         }
 
-        smde.putSessionID(bSessionID, 0, bSessionID.length)
-                .putTypeID(bTypeID, 0, bTypeID.length)
-                .putWorkerID(bWorkerID, 0, bWorkerID.length)
-                .putInitTypeClass(bInitTypeClass, 0, bInitTypeClass.length)
-                .putUpdateTypeClass(bUpdateTypeClass, 0, bUpdateTypeClass.length);
+        smde.putSessionID(bSessionID, 0, bSessionID.length).putTypeID(bTypeID, 0, bTypeID.length)
+                        .putWorkerID(bWorkerID, 0, bWorkerID.length)
+                        .putInitTypeClass(bInitTypeClass, 0, bInitTypeClass.length)
+                        .putUpdateTypeClass(bUpdateTypeClass, 0, bUpdateTypeClass.length);
     }
 
     @Override
@@ -171,10 +169,10 @@ public class SbeStorageMetaData implements org.deeplearning4j.api.storage.Storag
 
         StorageMetaDataDecoder.ExtraMetaDataBytesDecoder ext = smdd.extraMetaDataBytes();
         int length = ext.count();
-        if(length > 0){
+        if (length > 0) {
             extraMeta = new byte[length];
             int i = 0;
-            for(StorageMetaDataDecoder.ExtraMetaDataBytesDecoder d : ext){
+            for (StorageMetaDataDecoder.ExtraMetaDataBytesDecoder d : ext) {
                 extraMeta[i++] = d.bytes();
             }
         }

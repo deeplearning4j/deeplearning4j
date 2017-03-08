@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExportContainer<T extends SequenceElement> implements Serializable{
+public class ExportContainer<T extends SequenceElement> implements Serializable {
     private T element;
     private INDArray array;
 

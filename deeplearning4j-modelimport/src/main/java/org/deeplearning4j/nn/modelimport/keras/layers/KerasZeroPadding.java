@@ -32,8 +32,8 @@ public class KerasZeroPadding extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasZeroPadding(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasZeroPadding(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -45,12 +45,11 @@ public class KerasZeroPadding extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasZeroPadding(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasZeroPadding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         ZeroPaddingLayer.Builder builder = new ZeroPaddingLayer.Builder(getPaddingFromConfig(layerConfig))
-                        .name(this.layerName)
-                        .dropOut(this.dropout);
+                        .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
@@ -61,7 +60,7 @@ public class KerasZeroPadding extends KerasLayer {
      * @return  SubsamplingLayer
      */
     public ZeroPaddingLayer getZeroPaddingLayer() {
-        return (ZeroPaddingLayer)this.layer;
+        return (ZeroPaddingLayer) this.layer;
     }
 
     /**
@@ -74,7 +73,8 @@ public class KerasZeroPadding extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras ZeroPadding layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras ZeroPadding layer accepts only one input (received " + inputType.length + ")");
         return this.getZeroPaddingLayer().getOutputType(-1, inputType[0]);
     }
 
@@ -85,25 +85,28 @@ public class KerasZeroPadding extends KerasLayer {
      * @return
      * @throws InvalidKerasConfigurationException
      */
-    public int[] getPaddingFromConfig(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public int[] getPaddingFromConfig(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_PADDING))
-            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_PADDING + " not found in Keras ZeroPadding layer");
-        List<Integer> paddingList = (List<Integer>)innerConfig.get(LAYER_FIELD_PADDING);
-        switch(this.className) {
+            throw new InvalidKerasConfigurationException(
+                            "Field " + LAYER_FIELD_PADDING + " not found in Keras ZeroPadding layer");
+        List<Integer> paddingList = (List<Integer>) innerConfig.get(LAYER_FIELD_PADDING);
+        switch (this.className) {
             case LAYER_CLASS_NAME_ZERO_PADDING_2D:
                 if (paddingList.size() == 2) {
                     paddingList.add(paddingList.get(1));
                     paddingList.add(1, paddingList.get(0));
                 }
                 if (paddingList.size() != 4)
-                    throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid " + paddingList.size() + "D padding.");
+                    throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
+                                    + paddingList.size() + "D padding.");
                 break;
             case LAYER_CLASS_NAME_ZERO_PADDING_1D:
                 throw new UnsupportedKerasConfigurationException("Keras ZeroPadding1D layer not supported");
             default:
-                throw new UnsupportedKerasConfigurationException("Keras " + this.className + " padding layer not supported");
+                throw new UnsupportedKerasConfigurationException(
+                                "Keras " + this.className + " padding layer not supported");
         }
 
         int[] padding = new int[paddingList.size()];

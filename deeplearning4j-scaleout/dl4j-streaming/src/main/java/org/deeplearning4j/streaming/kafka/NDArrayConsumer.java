@@ -32,7 +32,7 @@ public class NDArrayConsumer {
      * @throws Exception
      */
     public void start() throws Exception {
-        if(started)
+        if (started)
             return;
 
         camelContext.addRoutes(new RouteBuilder() {
@@ -43,11 +43,10 @@ public class NDArrayConsumer {
                     public void process(Exchange exchange) throws Exception {
                         byte[] message = (byte[]) exchange.getIn().getBody();
                         String base64 = new String(message);
-                        if(!Nd4jBase64.isMultiple(base64)) {
+                        if (!Nd4jBase64.isMultiple(base64)) {
                             INDArray get = Nd4jBase64.fromBase64(base64);
                             exchange.getIn().setBody(get);
-                        }
-                        else {
+                        } else {
                             INDArray[] arrs = Nd4jBase64.arraysFromBase64(exchange.getIn().getBody().toString());
                             exchange.getIn().setBody(arrs);
                         }
@@ -56,7 +55,7 @@ public class NDArrayConsumer {
             }
         });
 
-        if(consumerTemplate == null)
+        if (consumerTemplate == null)
             consumerTemplate = camelContext.createConsumerTemplate();
 
     }
@@ -68,20 +67,20 @@ public class NDArrayConsumer {
      * @throws Exception
      */
     public INDArray[] getArrays() throws Exception {
-        if(!started) {
+        if (!started) {
             start();
             started = true;
         }
-        return consumerTemplate.receiveBody(DIRECT_ROUTE,INDArray[].class);
+        return consumerTemplate.receiveBody(DIRECT_ROUTE, INDArray[].class);
 
     }
 
 
     public INDArray getINDArray() throws Exception {
-        if(!started) {
+        if (!started) {
             start();
             started = true;
         }
-        return consumerTemplate.receiveBody(DIRECT_ROUTE,INDArray.class);
+        return consumerTemplate.receiveBody(DIRECT_ROUTE, INDArray.class);
     }
 }

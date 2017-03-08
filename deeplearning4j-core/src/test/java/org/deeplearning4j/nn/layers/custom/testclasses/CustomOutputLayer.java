@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,8 @@ public class CustomOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);

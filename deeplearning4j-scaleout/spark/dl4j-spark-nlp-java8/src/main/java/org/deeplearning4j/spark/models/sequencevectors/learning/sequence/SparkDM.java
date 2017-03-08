@@ -28,14 +28,18 @@ public class SparkDM extends SparkCBOW {
     }
 
     @Override
-    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence,
+                    AtomicLong nextRandom, double learningRate) {
         if (vectorsConfiguration.getSampling() > 0)
-            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
+            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L,
+                            vectorsConfiguration.getSampling());
 
         int currentWindow = vectorsConfiguration.getWindow();
 
-        if (vectorsConfiguration.getVariableWindows() != null && vectorsConfiguration.getVariableWindows().length != 0) {
-            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils.nextInt(vectorsConfiguration.getVariableWindows().length)];
+        if (vectorsConfiguration.getVariableWindows() != null
+                        && vectorsConfiguration.getVariableWindows().length != 0) {
+            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
+                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {
@@ -51,15 +55,15 @@ public class SparkDM extends SparkCBOW {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             int b = (int) nextRandom.get() % currentWindow;
 
-            int end =  currentWindow * 2 + 1 - b;
+            int end = currentWindow * 2 + 1 - b;
 
             ShallowSequenceElement currentWord = sequence.getElementByIndex(i);
 
             List<Integer> intsList = new ArrayList<>();
-            for(int a = b; a < end; a++) {
-                if(a != currentWindow) {
+            for (int a = b; a < end; a++) {
+                if (a != currentWindow) {
                     int c = i - currentWindow + a;
-                    if(c >= 0 && c < sequence.size()) {
+                    if (c >= 0 && c < sequence.size()) {
                         ShallowSequenceElement lastWord = sequence.getElementByIndex(c);
 
                         intsList.add(lastWord.getIndex());
@@ -73,7 +77,8 @@ public class SparkDM extends SparkCBOW {
                     intsList.add(label.getIndex());
                 }
             } else // FIXME: we probably should throw this exception earlier?
-                throw new DL4JInvalidInputException("Sequence passed via RDD has no labels within, nothing to learn here");
+                throw new DL4JInvalidInputException(
+                                "Sequence passed via RDD has no labels within, nothing to learn here");
 
 
             // just converting values to int

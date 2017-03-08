@@ -14,7 +14,7 @@ public class NodeReport implements Serializable {
     private final static long serialVersionUID = 119L;
     /*
         TODO: to be implemented
-
+    
         Basic idea: categorized distribution for weights/gradients built from INDArray, suitable for concurrent generation
      */
 }

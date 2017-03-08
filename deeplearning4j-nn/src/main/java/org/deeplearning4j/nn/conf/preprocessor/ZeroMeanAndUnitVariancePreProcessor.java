@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,11 +30,12 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adam Gibson
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
 
-	@Override
+    @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         INDArray columnMeans = input.mean(0);
         INDArray columnStds = input.std(0);
@@ -46,12 +47,13 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output;	//no-op
+        return output; //no-op
     }
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;
     }
 

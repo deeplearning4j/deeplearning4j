@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -55,8 +55,8 @@ public class StringGrid extends ArrayList<List<String>> {
         fillOut();
     }
 
-    public StringGrid(String sep,int numColumns) {
-        this(sep,new ArrayList<String>());
+    public StringGrid(String sep, int numColumns) {
+        this(sep, new ArrayList<String>());
         this.numColumns = numColumns;
         fillOut();
     }
@@ -66,10 +66,10 @@ public class StringGrid extends ArrayList<List<String>> {
     }
 
     private void fillOut() {
-        for(List<String> list : this) {
-            if(list.size() < numColumns) {
+        for (List<String> list : this) {
+            if (list.size() < numColumns) {
                 int diff = numColumns - list.size();
-                for(int i = 0; i< diff;i++) {
+                for (int i = 0; i < diff; i++) {
                     list.add(NONE);
                 }
             }
@@ -78,21 +78,21 @@ public class StringGrid extends ArrayList<List<String>> {
 
 
 
-    public static StringGrid fromFile(String file,String sep) throws IOException {
+    public static StringGrid fromFile(String file, String sep) throws IOException {
         List<String> read = FileUtils.readLines(new File(file));
-        if(read.isEmpty())
+        if (read.isEmpty())
             throw new IllegalStateException("Nothing to read; file is empty");
 
-        return new StringGrid(sep,read);
+        return new StringGrid(sep, read);
 
     }
 
-    public static StringGrid fromInput(InputStream from,String sep) throws IOException {
+    public static StringGrid fromInput(InputStream from, String sep) throws IOException {
         List<String> read = IOUtils.readLines(from);
-        if(read.isEmpty())
+        if (read.isEmpty())
             throw new IllegalStateException("Nothing to read; file is empty");
 
-        return new StringGrid(sep,read);
+        return new StringGrid(sep, read);
 
     }
 
@@ -102,33 +102,33 @@ public class StringGrid extends ArrayList<List<String>> {
         super();
         this.sep = sep;
         List<String> list = new ArrayList<>(data);
-        for(int i = 0;i< list.size(); i++) {
+        for (int i = 0; i < list.size(); i++) {
             String line = list.get(i).trim();
             //text delimiter
-            if(line.indexOf('\"') > 0) {
+            if (line.indexOf('\"') > 0) {
                 Counter<Character> counter = new Counter<>();
-                for(int j = 0; j <  line.length(); j++) {
-                    counter.incrementCount(line.charAt(j),1.0);
+                for (int j = 0; j < line.length(); j++) {
+                    counter.incrementCount(line.charAt(j), 1.0);
                 }
-                if(counter.getCount('"') > 1) {
+                if (counter.getCount('"') > 1) {
                     String[] split = splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\');
                     add(new ArrayList<>(Arrays.asList(split)));
-                }
-                else {
-                    List<String> row = new ArrayList<>(Arrays.asList(splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
-                    if(numColumns < 0)
+                } else {
+                    List<String> row = new ArrayList<>(
+                                    Arrays.asList(splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
+                    if (numColumns < 0)
                         numColumns = row.size();
-                    else if(row.size() != numColumns)
+                    else if (row.size() != numColumns)
                         log.warn("Row " + i + " had invalid number of columns  line was " + line);
                     add(row);
                 }
 
-            }
-            else {
-                List<String> row = new ArrayList<>(Arrays.asList(splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
-                if(numColumns < 0)
+            } else {
+                List<String> row =
+                                new ArrayList<>(Arrays.asList(splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
+                if (numColumns < 0)
                     numColumns = row.size();
-                else if(row.size() != numColumns) {
+                else if (row.size() != numColumns) {
                     log.warn("Could not add " + line);
                 }
                 add(row);
@@ -144,8 +144,8 @@ public class StringGrid extends ArrayList<List<String>> {
      */
     public void removeRowsWithEmptyColumn(int column) {
         List<List<String>> remove = new ArrayList<>();
-        for(List<String> list : this) {
-            if(list.get(column).equals(NONE))
+        for (List<String> list : this) {
+            if (list.get(column).equals(NONE))
                 remove.add(list);
         }
         removeAll(remove);
@@ -153,10 +153,10 @@ public class StringGrid extends ArrayList<List<String>> {
 
 
     public void head(int num) {
-        if(num >= size())
+        if (num >= size())
             num = size();
         StringBuilder builder = new StringBuilder();
-        for(int i = 0; i < num; i++)  {
+        for (int i = 0; i < num; i++) {
             builder.append(get(i) + "\n");
         }
 
@@ -167,15 +167,15 @@ public class StringGrid extends ArrayList<List<String>> {
      * Removes the specified columns from the grid
      * @param columns the columns to remove
      */
-    public void removeColumns(Integer...columns) {
-        if(columns.length < 1)
+    public void removeColumns(Integer... columns) {
+        if (columns.length < 1)
             throw new IllegalArgumentException("Columns must contain at least one column");
         List<Integer> removeOrder = Arrays.asList(columns);
         //put them in the right order for removing
         Collections.sort(removeOrder);
-        for(List<String> list : this) {
+        for (List<String> list : this) {
             List<String> remove = new ArrayList<>();
-            for(int i = 0; i < columns.length; i++) {
+            for (int i = 0; i < columns.length; i++) {
                 remove.add(list.get(columns[i]));
             }
             list.removeAll(remove);
@@ -188,19 +188,19 @@ public class StringGrid extends ArrayList<List<String>> {
      * @param column he column to remove by
      * @param missingValue the missingValue sentinel value
      */
-    public void removeRowsWithEmptyColumn(int column,String missingValue) {
+    public void removeRowsWithEmptyColumn(int column, String missingValue) {
         List<List<String>> remove = new ArrayList<>();
-        for(List<String> list : this) {
-            if(list.get(column).equals(missingValue))
+        for (List<String> list : this) {
+            if (list.get(column).equals(missingValue))
                 remove.add(list);
         }
         removeAll(remove);
     }
 
-    public List<List<String>> getRowsWithColumnValues(Collection<String> values,int column) {
+    public List<List<String>> getRowsWithColumnValues(Collection<String> values, int column) {
         List<List<String>> ret = new ArrayList<>();
-        for(List<String> val : this) {
-            if(values.contains(val.get(column)))
+        for (List<String> val : this) {
+            if (values.contains(val.get(column)))
                 ret.add(val);
         }
         return ret;
@@ -212,14 +212,14 @@ public class StringGrid extends ArrayList<List<String>> {
 
 
 
-        for(String s : col) {
+        for (String s : col) {
             StringTokenizer tokenizer = new StringTokenizer(s);
-            while(tokenizer.hasMoreTokens()) {
-                counter.incrementCount(tokenizer.nextToken(),1.0);
+            while (tokenizer.hasMoreTokens()) {
+                counter.incrementCount(tokenizer.nextToken(), 1.0);
             }
         }
 
-        if(counter.totalCount() <= 0.0) {
+        if (counter.totalCount() <= 0.0) {
             log.warn("Unable to calculate probability; nothing found");
             return;
         }
@@ -227,10 +227,10 @@ public class StringGrid extends ArrayList<List<String>> {
         //laplace smoothing
         counter.incrementAll(counter.keySet(), 1.0);
         Set<String> remove = new HashSet<>();
-        for(String key : counter.keySet())
-            if(key.length() < 2 || key.matches("[a-z]+"))
+        for (String key : counter.keySet())
+            if (key.length() < 2 || key.matches("[a-z]+"))
                 remove.add(key);
-        for(String key : remove)
+        for (String key : remove)
             counter.removeKey(key);
 
         counter.pruneKeysBelowThreshold(4.0);
@@ -238,12 +238,12 @@ public class StringGrid extends ArrayList<List<String>> {
 
         final double totalCount = counter.totalCount();
 
-        Collections.sort(this,new Comparator<List<String>>() {
+        Collections.sort(this, new Comparator<List<String>>() {
 
             @Override
             public int compare(List<String> o1, List<String> o2) {
-                double c1 = sumOverTokens(counter,o1.get(column),totalCount);
-                double c2 = sumOverTokens(counter,o2.get(column),totalCount);
+                double c1 = sumOverTokens(counter, o1.get(column), totalCount);
+                double c2 = sumOverTokens(counter, o2.get(column), totalCount);
                 return Double.compare(c1, c2);
             }
 
@@ -251,11 +251,11 @@ public class StringGrid extends ArrayList<List<String>> {
     }
 
     /* Return the log sum of the column relative to the word frequencies (equivalent to the probability in log space */
-    private double sumOverTokens(Counter<String> counter,String column,double totalCount) {
+    private double sumOverTokens(Counter<String> counter, String column, double totalCount) {
         StringTokenizer tokenizer = new StringTokenizer(column);
         double count = 0;
-        while(tokenizer.hasMoreTokens())
-            count += Math.log(counter.getCount(column)/totalCount);
+        while (tokenizer.hasMoreTokens())
+            count += Math.log(counter.getCount(column) / totalCount);
 
 
         return count;
@@ -269,7 +269,7 @@ public class StringGrid extends ArrayList<List<String>> {
     }
 
     public void dedupeByClusterAll() {
-        for(int i = 0; i< size(); i++)
+        for (int i = 0; i < size(); i++)
             dedupeByCluster(i);
     }
 
@@ -281,22 +281,22 @@ public class StringGrid extends ArrayList<List<String>> {
         StringCluster cluster = clusterColumn(column);
         System.out.println(cluster.get("family mcdonalds restaurant"));
         System.out.println(cluster.get("family mcdonalds restaurants"));
-        List<Map<String,Integer>> list2 = cluster.getClusters();
-        for(int i = 0; i < list2.size(); i++) {
-            if(list2.get(i).size() > 1) {
+        List<Map<String, Integer>> list2 = cluster.getClusters();
+        for (int i = 0; i < list2.size(); i++) {
+            if (list2.get(i).size() > 1) {
                 System.out.println(list2.get(i));
             }
         }
         FingerPrintKeyer keyer = new FingerPrintKeyer();
         Set<Integer> alreadyDeDupped = new HashSet<>();
-        for(int i = 0; i< size(); i++) {
+        for (int i = 0; i < size(); i++) {
             String key = keyer.key(get(i).get(column));
-            Map<String,Integer> map = cluster.get(key);
-            if(map != null && map.size() > 1) {
-                List<Integer> list = filterRowsByColumn(column,map.keySet());
+            Map<String, Integer> map = cluster.get(key);
+            if (map != null && map.size() > 1) {
+                List<Integer> list = filterRowsByColumn(column, map.keySet());
                 //deduplication to do
-                if(list.size() > 1)
-                    modifyRows(alreadyDeDupped,column,list,map);
+                if (list.size() > 1)
+                    modifyRows(alreadyDeDupped, column, list, map);
             }
 
 
@@ -310,7 +310,8 @@ public class StringGrid extends ArrayList<List<String>> {
      * @param rows the rows to preProcess
      * @param cluster the cluster of values
      */
-    private void modifyRows(Set<Integer> alreadyDeDupped,Integer column,List<Integer> rows,Map<String,Integer> cluster) {
+    private void modifyRows(Set<Integer> alreadyDeDupped, Integer column, List<Integer> rows,
+                    Map<String, Integer> cluster) {
         String chosenKey = null;
         Integer max = null;
         for (Map.Entry<String, Integer> entry : cluster.entrySet()) {
@@ -320,44 +321,44 @@ public class StringGrid extends ArrayList<List<String>> {
             List<String> list = new ArrayList<>();
             boolean allLower = true;
 
-            outer: while(val.hasMoreTokens()) {
+            outer: while (val.hasMoreTokens()) {
                 String token = val.nextToken();
                 //weird capitalization
-                if(token.length() >= 3 && token.matches("[A-Z]+")) {
+                if (token.length() >= 3 && token.matches("[A-Z]+")) {
                     continue outer;
                 }
                 list.add(token);
             }
 
-            for(String  s : list) {
+            for (String s : list) {
                 allLower = allLower && s.matches("[a-z]+");
 
             }
-            if(allLower) {
+            if (allLower) {
                 continue;
             }
 
             //not a proper name
-            if(list.get(list.size() -1).toLowerCase().equals("the")) {
+            if (list.get(list.size() - 1).toLowerCase().equals("the")) {
                 continue;
             }
             //first selection that's valid or count is higher
-            if(max == null || (!allLower && value > max)) {
+            if (max == null || (!allLower && value > max)) {
                 max = value;
                 chosenKey = key;
             }
         }
 
         //wtf is wrong with you people?
-        if(chosenKey == null) {
+        if (chosenKey == null) {
             //getFromOrigin the max value of the cluster
             String max2 = maximalValue(cluster);
             StringTokenizer val = new StringTokenizer(max2);
             List<String> list = new ArrayList<>();
-            while(val.hasMoreTokens()) {
+            while (val.hasMoreTokens()) {
                 String token = val.nextToken();
                 //weird capitalization
-                if(token.length() >= 3 && token.matches("[A-Z]+")) {
+                if (token.length() >= 3 && token.matches("[A-Z]+")) {
                     token = token.charAt(0) + token.substring(1).toLowerCase();
                 }
                 list.add(token);
@@ -366,13 +367,13 @@ public class StringGrid extends ArrayList<List<String>> {
 
 
             boolean allLower = true;
-            for(String  s : list)
+            for (String s : list)
                 allLower = allLower && s.matches("[a-z]+");
-            if(list.get(list.size() -1).toLowerCase().equals("the")) {
-                max2 = max2.replaceAll("^[Tt]he","");
+            if (list.get(list.size() - 1).toLowerCase().equals("the")) {
+                max2 = max2.replaceAll("^[Tt]he", "");
 
             }
-            if(allLower)
+            if (allLower)
                 max2 = StringUtils.capitalize(max2);
             chosenKey = max2;
 
@@ -381,16 +382,16 @@ public class StringGrid extends ArrayList<List<String>> {
         }
 
 
-        for(Integer i2 : rows) {
+        for (Integer i2 : rows) {
             //row already processed
-            if(!alreadyDeDupped.contains(i2)) {
-                disambiguateRow(i2,column,chosenKey);
+            if (!alreadyDeDupped.contains(i2)) {
+                disambiguateRow(i2, column, chosenKey);
 
             }
         }
     }
 
-    private String maximalValue(Map<String,Integer> map) {
+    private String maximalValue(Map<String, Integer> map) {
         Counter<String> counter = new Counter<>();
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             counter.incrementCount(entry.getKey(), entry.getValue());
@@ -398,17 +399,17 @@ public class StringGrid extends ArrayList<List<String>> {
         return counter.argMax();
     }
 
-    private void disambiguateRow(Integer row,Integer column,String chosenValue) {
+    private void disambiguateRow(Integer row, Integer column, String chosenValue) {
         System.out.println("SETTING " + row + " column " + column + " to " + chosenValue);
         get(row).set(column, chosenValue);
     }
 
 
 
-    public List<Integer> filterRowsByColumn(int column,Collection<String> values) {
+    public List<Integer> filterRowsByColumn(int column, Collection<String> values) {
         List<Integer> list = new ArrayList<>();
-        for(int i = 0; i< size(); i++) {
-            if(values.contains(get(i).get(column)))
+        for (int i = 0; i < size(); i++) {
+            if (values.contains(get(i).get(column)))
                 list.add(i);
         }
         return list;
@@ -420,7 +421,7 @@ public class StringGrid extends ArrayList<List<String>> {
         Collections.sort(this, new Comparator<List<String>>() {
 
             @Override
-            public int compare(List<String> o1,List<String> o2) {
+            public int compare(List<String> o1, List<String> o2) {
                 return o1.get(column).compareTo(o2.get(column));
             }
 
@@ -429,10 +430,10 @@ public class StringGrid extends ArrayList<List<String>> {
 
     public List<String> toLines() {
         List<String> lines = new ArrayList<>();
-        for(List<String> list : this) {
+        for (List<String> list : this) {
             StringBuilder sb = new StringBuilder();
-            for(String s : list) {
-                sb.append(s.replaceAll(sep," "));
+            for (String s : list) {
+                sb.append(s.replaceAll(sep, " "));
                 sb.append(sep);
             }
 
@@ -442,38 +443,38 @@ public class StringGrid extends ArrayList<List<String>> {
     }
 
 
-    public void swap(int column1,int column2) {
+    public void swap(int column1, int column2) {
         List<String> col1 = getColumn(column1);
         List<String> col2 = getColumn(column2);
-        for(int i = 0; i< size(); i++) {
-            get(i).set(column1,col2.get(i));
-            get(i).set(column2,col1.get(i));
+        for (int i = 0; i < size(); i++) {
+            get(i).set(column1, col2.get(i));
+            get(i).set(column2, col1.get(i));
         }
     }
 
-    public void merge(int column1,int column2) {
+    public void merge(int column1, int column2) {
         checkInvalidColumn(column1);
         checkInvalidColumn(column2);
 
-        if(column1 != column2)
-            for(List<String> list : this) {
+        if (column1 != column2)
+            for (List<String> list : this) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(list.get(column1));
                 sb.append(list.get(column2));
-                list.set(Math.min(column1,column2),sb.toString().replaceAll("\"","").replace(sep," "));
-                list.remove(Math.max(column1,column2));
+                list.set(Math.min(column1, column2), sb.toString().replaceAll("\"", "").replace(sep, " "));
+                list.remove(Math.max(column1, column2));
             }
         numColumns--;
     }
 
 
-    public StringGrid getAllWithSimilarity(double threshold,int firstColumn,int secondColumn) {
-        for(int column : new int[]{firstColumn,secondColumn})
+    public StringGrid getAllWithSimilarity(double threshold, int firstColumn, int secondColumn) {
+        for (int column : new int[] {firstColumn, secondColumn})
             checkInvalidColumn(column);
-        StringGrid grid = new StringGrid(sep,numColumns);
-        for(List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn),list.get(secondColumn));
-            if(sim >= threshold)
+        StringGrid grid = new StringGrid(sep, numColumns);
+        for (List<String> list : this) {
+            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            if (sim >= threshold)
                 grid.addRow(list);
         }
         return grid;
@@ -481,22 +482,22 @@ public class StringGrid extends ArrayList<List<String>> {
     }
 
     public void writeLinesTo(String path) throws IOException {
-        FileUtils.writeLines(new File(path),toLines());
+        FileUtils.writeLines(new File(path), toLines());
     }
 
 
-    public void fillDown(String value,int column) {
+    public void fillDown(String value, int column) {
         checkInvalidColumn(column);
-        for(List<String> list : this)
-            list.set(column,value);
+        for (List<String> list : this)
+            list.set(column, value);
     }
 
 
-    public StringGrid select(int column,String value) {
-        StringGrid grid = new StringGrid(sep,numColumns);
-        for(int i = 0; i< size(); i++) {
+    public StringGrid select(int column, String value) {
+        StringGrid grid = new StringGrid(sep, numColumns);
+        for (int i = 0; i < size(); i++) {
             List<String> row = get(i);
-            if(row.get(column).equals(value)) {
+            if (row.get(column).equals(value)) {
                 grid.addRow(row);
             }
 
@@ -504,41 +505,41 @@ public class StringGrid extends ArrayList<List<String>> {
         return grid;
     }
 
-    public void split(int column,String sepBy) {
+    public void split(int column, String sepBy) {
         List<String> col = getColumn(column);
         int validate = -1;
         Set<String> remove = new HashSet<>();
-        for(int i = 0; i< col.size(); i++) {
+        for (int i = 0; i < col.size(); i++) {
             String s = col.get(i);
             String[] split2 = StringUtils.splitOnCharWithQuoting(s, sepBy.charAt(0), '"', '\\');
-            if(validate < 0)
+            if (validate < 0)
                 validate = split2.length;
-            else if(validate != split2.length) {
+            else if (validate != split2.length) {
                 log.warn("Row " + get(i) + " will be invalid after split; removing");
                 remove.add(s);
             }
         }
 
-        for(String s : remove) {
-            StringGrid grid = select(column,s);
+        for (String s : remove) {
+            StringGrid grid = select(column, s);
             removeAll(grid);
         }
-        Map<Integer,List<String>> replace = new HashMap<>();
-        for(int i = 0; i< size(); i++) {
+        Map<Integer, List<String>> replace = new HashMap<>();
+        for (int i = 0; i < size(); i++) {
             List<String> list = get(i);
             List<String> newList = new ArrayList<>();
             String split = list.get(column);
             String[] split2 = StringUtils.splitOnCharWithQuoting(split, sepBy.charAt(0), '"', '\\');
             //add right next to where column was split
-            for(int j = 0; j< list.size(); j++) {
-                if(j == column)
-                    for(String s : split2)
+            for (int j = 0; j < list.size(); j++) {
+                if (j == column)
+                    for (String s : split2)
                         newList.add(s);
 
                 else
                     newList.add(list.get(j));
             }
-            replace.put(i,newList);
+            replace.put(i, newList);
 
 
         }
@@ -549,35 +550,36 @@ public class StringGrid extends ArrayList<List<String>> {
         }
     }
 
-    public void filterBySimilarity(double threshold,int firstColumn,int secondColumn) {
-        for(int column : new int[]{firstColumn,secondColumn})
+    public void filterBySimilarity(double threshold, int firstColumn, int secondColumn) {
+        for (int column : new int[] {firstColumn, secondColumn})
             checkInvalidColumn(column);
         List<List<String>> remove = new ArrayList<>();
-        for(List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn),list.get(secondColumn));
-            if(sim < threshold)
+        for (List<String> list : this) {
+            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            if (sim < threshold)
                 remove.add(list);
         }
         removeAll(remove);
     }
 
     public void prependToEach(String prepend, int toColumn) {
-        for(List<String> row : this) {
+        for (List<String> row : this) {
             String currVal = row.get(toColumn);
-            row.set(toColumn,prepend + currVal);
+            row.set(toColumn, prepend + currVal);
         }
     }
 
     public void appendToEach(String append, int toColumn) {
-        for(List<String> row : this) {
+        for (List<String> row : this) {
             String currVal = row.get(toColumn);
             row.set(toColumn, currVal + append);
         }
     }
+
     public void addColumn(List<String> column) {
-        if(column.size() != this.size())
+        if (column.size() != this.size())
             throw new IllegalArgumentException("Unable to add column; not enough rows");
-        for(int i = 0; i< size();i++) {
+        for (int i = 0; i < size(); i++) {
             get(i).add(column.get(i));
         }
     }
@@ -589,14 +591,15 @@ public class StringGrid extends ArrayList<List<String>> {
      * @param templateColumn the column with the template ( uses printf style templating)
      * @param paramColumns the columns with template variables
      */
-    public void combineColumns(int templateColumn,Integer[] paramColumns) {
-        for(List<String> list : this) {
+    public void combineColumns(int templateColumn, Integer[] paramColumns) {
+        for (List<String> list : this) {
             List<String> format = new ArrayList<>();
-            for(int j : paramColumns)
+            for (int j : paramColumns)
                 format.add(list.get(j));
 
 
-            list.set(templateColumn,String.format(list.get(templateColumn), (Object[]) format.toArray(new String[]{})));
+            list.set(templateColumn,
+                            String.format(list.get(templateColumn), (Object[]) format.toArray(new String[] {})));
             //collapse columns
             list.removeAll(format);
         }
@@ -609,38 +612,39 @@ public class StringGrid extends ArrayList<List<String>> {
      * @param templateColumn the column with the template ( uses printf style templating)
      * @param paramColumns the columns with template variables
      */
-    public void combineColumns(int templateColumn,int[] paramColumns) {
-        for(List<String> list : this) {
+    public void combineColumns(int templateColumn, int[] paramColumns) {
+        for (List<String> list : this) {
             List<String> format = new ArrayList<>();
-            for(int j : paramColumns)
+            for (int j : paramColumns)
                 format.add(list.get(j));
 
 
-            list.set(templateColumn,String.format(list.get(templateColumn), (Object[]) format.toArray(new String[]{})));
+            list.set(templateColumn,
+                            String.format(list.get(templateColumn), (Object[]) format.toArray(new String[] {})));
             //collapse columns
             list.removeAll(format);
         }
     }
+
     public void addRow(List<String> row) {
-        if(row.isEmpty()) {
+        if (row.isEmpty()) {
             log.warn("Unable to add empty row");
         }
 
-        else if(!isEmpty() && row.size() != get(0).size()) {
+        else if (!isEmpty() && row.size() != get(0).size()) {
             log.warn("Unable to add row; not the same number of columns");
-        }
-        else
+        } else
             add(row);
     }
 
-    public Map<String,List<List<String>>> mapByPrimaryKey(int columnKey) {
-        Map<String,List<List<String>>> map = new HashMap<>();
-        for(List<String> line : this) {
+    public Map<String, List<List<String>>> mapByPrimaryKey(int columnKey) {
+        Map<String, List<List<String>>> map = new HashMap<>();
+        for (List<String> line : this) {
             String val = line.get(columnKey);
             List<List<String>> get = map.get(val);
-            if(get == null) {
+            if (get == null) {
                 get = new ArrayList<>();
-                map.put(val,get);
+                map.put(val, get);
             }
             get.add(new ArrayList<>(Arrays.asList(sep)));
 
@@ -656,34 +660,35 @@ public class StringGrid extends ArrayList<List<String>> {
     public List<String> getColumn(int column) {
         checkInvalidColumn(column);
         List<String> ret = new ArrayList<>();
-        for(List<String> list : this) {
+        for (List<String> list : this) {
             ret.add(list.get(column));
         }
         return ret;
     }
+
     private void checkInvalidRow(int row) {
-        if(row < 0 || row >= size())
+        if (row < 0 || row >= size())
             throw new IllegalArgumentException("Row does not exist");
     }
 
     private void checkInvalidColumn(int column) {
-        if(column < 0 || column >= numColumns)
+        if (column < 0 || column >= numColumns)
             throw new IllegalArgumentException("Invalid column " + column);
     }
 
 
     public StringGrid getRowsWithDuplicateValuesInColumn(int column) {
         checkInvalidColumn(column);
-        StringGrid grid = new StringGrid(sep,numColumns);
+        StringGrid grid = new StringGrid(sep, numColumns);
         List<String> columns = getColumn(column);
         Counter<String> counter = new Counter<>();
-        for(String val : columns)
-            counter.incrementCount(val,1.0);
+        for (String val : columns)
+            counter.incrementCount(val, 1.0);
         counter.pruneKeysBelowThreshold(2.0);
         Set<String> keys = counter.keySet();
-        for(List<String> row : this) {
-            for(String key : keys)
-                if(row.get(column).equals(key))
+        for (List<String> row : this) {
+            for (String key : keys)
+                if (row.get(column).equals(key))
                     grid.addRow(row);
 
         }
@@ -692,22 +697,22 @@ public class StringGrid extends ArrayList<List<String>> {
 
     public StringGrid getRowWithOnlyOneOccurrence(int column) {
         checkInvalidColumn(column);
-        StringGrid grid = new StringGrid(sep,numColumns);
+        StringGrid grid = new StringGrid(sep, numColumns);
         List<String> columns = getColumn(column);
         Counter<String> counter = new Counter<>();
-        for(String val : columns)
-            counter.incrementCount(val,1.0);
+        for (String val : columns)
+            counter.incrementCount(val, 1.0);
 
         Set<String> keys = new HashSet<>(counter.keySet());
-        for(String key : keys) {
-            if(counter.getCount(key) > 1) {
+        for (String key : keys) {
+            if (counter.getCount(key) > 1) {
                 counter.removeKey(key);
             }
         }
 
-        for(List<String> row : this) {
-            for(String key : keys)
-                if(row.get(column).equals(key))
+        for (List<String> row : this) {
+            for (String key : keys)
+                if (row.get(column).equals(key))
                     grid.addRow(row);
 
         }
@@ -727,8 +732,6 @@ public class StringGrid extends ArrayList<List<String>> {
         clear();
         addAll(set);
     }
-
-
 
 
 

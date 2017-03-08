@@ -23,10 +23,9 @@ public class DeepLearning4jEntryPoint {
         try {
             MultiLayerNetwork multiLayerNetwork = neuralNetworkReader.readNeuralNetwork(entryPointFitParameters);
 
-            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                    entryPointFitParameters.getTrainFeaturesDirectory(),
-                    entryPointFitParameters.getTrainLabelsDirectory()
-            );
+            DataSetIterator dataSetIterator =
+                            new HDF5MiniBatchDataSetIterator(entryPointFitParameters.getTrainFeaturesDirectory(),
+                                            entryPointFitParameters.getTrainLabelsDirectory());
 
             for (int i = 0; i < entryPointFitParameters.getNbEpoch(); i++) {
                 log.info("Fitting: " + i);

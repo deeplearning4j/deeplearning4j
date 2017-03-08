@@ -23,8 +23,8 @@ public abstract class BaseVaeReconstructionProbWithKeyFunctionAdapter<K> extends
      * @param batchSize              Batch size to use when scoring
      * @param numSamples             Number of samples to use when calling {@link VariationalAutoencoder#reconstructionLogProbability(INDArray, int)}
      */
-    public BaseVaeReconstructionProbWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean useLogProbability,
-                                                           int batchSize, int numSamples){
+    public BaseVaeReconstructionProbWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    boolean useLogProbability, int batchSize, int numSamples) {
         super(params, jsonConfig, batchSize);
         this.useLogProbability = useLogProbability;
         this.numSamples = numSamples;
@@ -32,7 +32,7 @@ public abstract class BaseVaeReconstructionProbWithKeyFunctionAdapter<K> extends
 
     @Override
     public INDArray computeScore(VariationalAutoencoder vae, INDArray toScore) {
-        if(useLogProbability){
+        if (useLogProbability) {
             return vae.reconstructionLogProbability(toScore, numSamples);
         } else {
             return vae.reconstructionProbability(toScore, numSamples);

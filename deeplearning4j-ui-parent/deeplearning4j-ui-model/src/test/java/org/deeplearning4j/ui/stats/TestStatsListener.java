@@ -24,26 +24,26 @@ import static org.junit.Assert.assertNotNull;
 public class TestStatsListener {
 
     @Test
-    public void testListenerBasic(){
+    public void testListenerBasic() {
 
-        for(boolean useJ7 : new boolean[]{false,true}) {
+        for (boolean useJ7 : new boolean[] {false, true}) {
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                    .list()
-                    .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                            .nIn(4).nOut(3).build())
-                    .pretrain(false).backprop(true)
-                    .build();
+            MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder().iterations(1)
+                                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                            .list().layer(0,
+                                                            new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                                            .nIn(4).nOut(3).build())
+                                            .pretrain(false).backprop(true).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            StatsStorage ss = new MapDBStatsStorage();  //in-memory
+            StatsStorage ss = new MapDBStatsStorage(); //in-memory
 
-            if(useJ7){
+            if (useJ7) {
                 net.setListeners(new J7StatsListener(ss));
             } else {
                 net.setListeners(new StatsListener(ss));

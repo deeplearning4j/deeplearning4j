@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,7 +42,8 @@ public class BinomialDistribution extends Distribution {
      * @param probabilityOfSuccess the probability of success
      */
     @JsonCreator
-    public BinomialDistribution(@JsonProperty("numberOfTrials") int numberOfTrials, @JsonProperty("probabilityOfSuccess") double probabilityOfSuccess) {
+    public BinomialDistribution(@JsonProperty("numberOfTrials") int numberOfTrials,
+                    @JsonProperty("probabilityOfSuccess") double probabilityOfSuccess) {
         this.numberOfTrials = numberOfTrials;
         this.probabilityOfSuccess = probabilityOfSuccess;
     }
@@ -81,16 +82,13 @@ public class BinomialDistribution extends Distribution {
         BinomialDistribution other = (BinomialDistribution) obj;
         if (numberOfTrials != other.numberOfTrials)
             return false;
-        if (Double.doubleToLongBits(probabilityOfSuccess) != Double
-                .doubleToLongBits(other.probabilityOfSuccess))
+        if (Double.doubleToLongBits(probabilityOfSuccess) != Double.doubleToLongBits(other.probabilityOfSuccess))
             return false;
         return true;
     }
-    
+
     public String toString() {
-        return "BinomialDistribution{" +
-                "numberOfTrials=" + numberOfTrials +
-                ", probabilityOfSuccess=" + probabilityOfSuccess +
-                '}';
+        return "BinomialDistribution{" + "numberOfTrials=" + numberOfTrials + ", probabilityOfSuccess="
+                        + probabilityOfSuccess + '}';
     }
 }

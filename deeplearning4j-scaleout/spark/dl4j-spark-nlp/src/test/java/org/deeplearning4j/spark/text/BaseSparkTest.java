@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,12 +30,13 @@ import java.io.Serializable;
  * Created by agibsonccc on 1/23/15.
  */
 public abstract class BaseSparkTest implements Serializable {
-    protected transient  JavaSparkContext sc;
+    protected transient JavaSparkContext sc;
 
     @Before
-    public void before()throws Exception {
+    public void before() throws Exception {
         sc = getContext();
     }
+
     @After
     public void after() {
         sc.close();
@@ -47,13 +48,11 @@ public abstract class BaseSparkTest implements Serializable {
      * @return
      */
     public JavaSparkContext getContext() {
-        if(sc != null)
+        if (sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[4]")
-                .setAppName("sparktest")
-                .set(Word2VecVariables.NUM_WORDS, String.valueOf(1));
+        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest")
+                        .set(Word2VecVariables.NUM_WORDS, String.valueOf(1));
 
 
         sc = new JavaSparkContext(sparkConf);

@@ -13,6 +13,7 @@ import org.tartarus.snowball.SnowballProgram;
  */
 public class CustomStemmingPreprocessor extends CommonPreprocessor {
     private SnowballProgram stemmer;
+
     public CustomStemmingPreprocessor(@NonNull SnowballProgram stemmer) {
         this.stemmer = stemmer;
     }

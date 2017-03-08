@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,12 +32,12 @@ public class KDTreeTest {
     @Test
     public void testTree() {
         KDTree tree = new KDTree(2);
-        INDArray half = Nd4j.create(Nd4j.createBuffer(new double[]{0.5, 0.5}));
-        INDArray one = Nd4j.create(Nd4j.createBuffer(new double[]{1, 1}));
+        INDArray half = Nd4j.create(Nd4j.createBuffer(new double[] {0.5, 0.5}));
+        INDArray one = Nd4j.create(Nd4j.createBuffer(new double[] {1, 1}));
         tree.insert(half);
         tree.insert(one);
-        Pair<Double,INDArray> pair = tree.nn(Nd4j.create(Nd4j.createBuffer(new double[]{0.5,0.5})));
-        assertEquals(half,pair.getSecond());
+        Pair<Double, INDArray> pair = tree.nn(Nd4j.create(Nd4j.createBuffer(new double[] {0.5, 0.5})));
+        assertEquals(half, pair.getSecond());
     }
 
 

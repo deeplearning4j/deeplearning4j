@@ -38,12 +38,14 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this(iterator, transformer, true);
     }
 
-    public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer, boolean allowMultithreading) {
+    public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer,
+                    boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>(512);
 
-        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2) : 1];
+        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2)
+                        : 1];
 
         try {
             int cnt = 0;
@@ -65,7 +67,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         }
 
         for (int x = 0; x < threads.length; x++) {
-            threads[x] = new TokenizerThread(x, transformer,stringBuffer, buffer, processing);
+            threads[x] = new TokenizerThread(x, transformer, stringBuffer, buffer, processing);
             threads[x].setDaemon(true);
             threads[x].setName("ParallelTransformer thread " + x);
             threads[x].start();
@@ -121,7 +123,9 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         protected AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected AtomicInteger processing;
 
-        public TokenizerThread(int threadIdx, SentenceTransformer transformer, BlockingQueue<LabelledDocument> stringsBuffer, BlockingQueue<Sequence<VocabWord>> sequencesBuffer, AtomicInteger processing) {
+        public TokenizerThread(int threadIdx, SentenceTransformer transformer,
+                        BlockingQueue<LabelledDocument> stringsBuffer,
+                        BlockingQueue<Sequence<VocabWord>> sequencesBuffer, AtomicInteger processing) {
             this.stringsBuffer = stringsBuffer;
             this.sequencesBuffer = sequencesBuffer;
             this.sentenceTransformer = transformer;
@@ -145,7 +149,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
                     if (document.getLabels() != null)
-                        for (String label: document.getLabels()) {
+                        for (String label : document.getLabels()) {
                             if (label != null && !label.isEmpty())
                                 sequence.addSequenceLabel(new VocabWord(1.0, label));
                         }

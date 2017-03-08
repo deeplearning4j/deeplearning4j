@@ -25,14 +25,18 @@ public class SparkDBOW extends SparkSkipGram {
 
 
     @Override
-    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence,
+                    AtomicLong nextRandom, double learningRate) {
         if (vectorsConfiguration.getSampling() > 0)
-            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
+            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L,
+                            vectorsConfiguration.getSampling());
 
         int currentWindow = vectorsConfiguration.getWindow();
 
-        if (vectorsConfiguration.getVariableWindows() != null && vectorsConfiguration.getVariableWindows().length != 0) {
-            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils.nextInt(vectorsConfiguration.getVariableWindows().length)];
+        if (vectorsConfiguration.getVariableWindows() != null
+                        && vectorsConfiguration.getVariableWindows().length != 0) {
+            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
+                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {
@@ -43,9 +47,9 @@ public class SparkDBOW extends SparkSkipGram {
         if (frame.get() == null)
             frame.set(new Frame<SkipGramRequestMessage>(BasicSequenceProvider.getInstance().getNextValue()));
 
-        for (ShallowSequenceElement lastWord: sequence.getSequenceLabels()) {
-            for (ShallowSequenceElement word: sequence.getElements()) {
-                iterateSample(word,lastWord,nextRandom, learningRate);
+        for (ShallowSequenceElement lastWord : sequence.getSequenceLabels()) {
+            for (ShallowSequenceElement word : sequence.getElements()) {
+                iterateSample(word, lastWord, nextRandom, learningRate);
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             }
         }

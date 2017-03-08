@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,7 +42,8 @@ import java.util.Map;
 public class CenterLossParamInitializer extends DefaultParamInitializer {
 
     private static final CenterLossParamInitializer INSTANCE = new CenterLossParamInitializer();
-    public static CenterLossParamInitializer getInstance(){
+
+    public static CenterLossParamInitializer getInstance() {
         return INSTANCE;
     }
 
@@ -53,29 +54,30 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     @Override
     public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-            (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
-        return nIn*nOut + nOut + nIn*nOut;     //weights + bias + embeddings
+        return nIn * nOut + nOut + nIn * nOut; //weights + bias + embeddings
     }
 
     @Override
-    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
 
-        int wEndOffset = nIn*nOut;
+        int wEndOffset = nIn * nOut;
         int bEndOffset = wEndOffset + nOut;
-        int cEndOffset = bEndOffset + nIn*nOut;
+        int cEndOffset = bEndOffset + nIn * nOut;
 
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,wEndOffset));
+        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset));
-        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset)).reshape('c', nOut, nIn);
+        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset))
+                        .reshape('c', nOut, nIn);
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
@@ -90,20 +92,22 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-            (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
 
-        int wEndOffset = nIn*nOut;
+        int wEndOffset = nIn * nOut;
         int bEndOffset = wEndOffset + nOut;
-        int cEndOffset = bEndOffset + nIn*nOut; // note: numClasses == nOut
+        int cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,wEndOffset)).reshape('f',nIn,nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset));    //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset)).reshape('c',nOut,nIn);
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset))
+                        .reshape('f', nIn, nOut);
+        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset)); //Already a row vector
+        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset))
+                        .reshape('c', nOut, nIn);
 
-        Map<String,INDArray> out = new LinkedHashMap<>();
+        Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
         out.put(BIAS_KEY, biasView);
         out.put(CENTER_KEY, centerLossView);
@@ -112,11 +116,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     }
 
 
-    protected INDArray createCenterLossMatrix(NeuralNetConfiguration conf, INDArray centerLossView, boolean initializeParameters) {
+    protected INDArray createCenterLossMatrix(NeuralNetConfiguration conf, INDArray centerLossView,
+                    boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-            (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
-        if(initializeParameters) {
+        if (initializeParameters) {
             centerLossView.assign(0.0);
         }
         return centerLossView;

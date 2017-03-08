@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,12 +28,13 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adma Gibson
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class UnitVarianceProcessor extends BaseInputPreProcessor {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-	INDArray columnStds;
+    INDArray columnStds;
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
@@ -45,19 +46,21 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output;	//no-op
+        return output; //no-op
     }
 
     @Override
     public UnitVarianceProcessor clone() {
         UnitVarianceProcessor clone = (UnitVarianceProcessor) super.clone();
-        if(clone.columnStds != null) clone.columnStds = clone.columnStds.dup();
+        if (clone.columnStds != null)
+            clone.columnStds = clone.columnStds.dup();
         return clone;
     }
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;
     }
 }

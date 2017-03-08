@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -25,12 +25,8 @@ public class CommonCornerCasesTest {
     public static void testPunctuation(TokenizerBase tokenizer) {
         String gerryNoHanaNoHanashi = "僕の鼻はちょっと\r\n長いよ。";
 
-        assertTokenSurfacesEquals(
-            Arrays.asList(
-                "僕", "の", "鼻", "は", "ちょっと", "\r", "\n", "長い", "よ", "。"
-            ),
+        assertTokenSurfacesEquals(Arrays.asList("僕", "の", "鼻", "は", "ちょっと", "\r", "\n", "長い", "よ", "。"),
 
-            tokenizer.tokenize(gerryNoHanaNoHanashi)
-        );
+                        tokenizer.tokenize(gerryNoHanaNoHanashi));
     }
 }

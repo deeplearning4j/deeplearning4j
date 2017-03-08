@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,56 +29,56 @@ import java.util.List;
 
 public class WordConverter {
 
-	private List<String> sentences = new ArrayList<>();
-	private Word2Vec vec;
-	private List<Window> windows;
+    private List<String> sentences = new ArrayList<>();
+    private Word2Vec vec;
+    private List<Window> windows;
 
-	public WordConverter(List<String> sentences,Word2Vec vec) {
-		this.sentences = sentences;
-		this.vec = vec;
-	}
+    public WordConverter(List<String> sentences, Word2Vec vec) {
+        this.sentences = sentences;
+        this.vec = vec;
+    }
 
-	public static INDArray toInputMatrix(List<Window> windows,Word2Vec vec) {
-		int columns = vec.lookupTable().layerSize() * vec.getWindow();
-		int rows = windows.size();
-		INDArray ret = Nd4j.create(rows,columns);
-		for(int i = 0; i < rows; i++) {
-			ret.putRow(i, WindowConverter.asExampleMatrix(windows.get(i),vec));
-		}
-		return ret;
-	}
-	
-	
-	public INDArray toInputMatrix() {
-		List<Window> windows = allWindowsForAllSentences();
-		return toInputMatrix(windows,vec);
-	}
+    public static INDArray toInputMatrix(List<Window> windows, Word2Vec vec) {
+        int columns = vec.lookupTable().layerSize() * vec.getWindow();
+        int rows = windows.size();
+        INDArray ret = Nd4j.create(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            ret.putRow(i, WindowConverter.asExampleMatrix(windows.get(i), vec));
+        }
+        return ret;
+    }
 
-	
 
-	public static INDArray toLabelMatrix(List<String> labels,List<Window> windows) {
-		int columns = labels.size();
-		INDArray ret = Nd4j.create(windows.size(),columns);
-		for(int i = 0; i < ret.rows(); i++) {
-			ret.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(windows.get(i).getLabel()), labels.size()));
-		}
-		return ret;
-	}
-	
-	public INDArray toLabelMatrix(List<String> labels) {
-		List<Window> windows = allWindowsForAllSentences();
-		return toLabelMatrix(labels,windows);
-	}
+    public INDArray toInputMatrix() {
+        List<Window> windows = allWindowsForAllSentences();
+        return toInputMatrix(windows, vec);
+    }
 
-	private List<Window> allWindowsForAllSentences() {
-		if(windows != null)
-			return windows;
-		windows = new ArrayList<>();
-		for(String s : sentences)
-			if(!s.isEmpty())
-				windows.addAll(Windows.windows(s));
-		return windows;
-	}
+
+
+    public static INDArray toLabelMatrix(List<String> labels, List<Window> windows) {
+        int columns = labels.size();
+        INDArray ret = Nd4j.create(windows.size(), columns);
+        for (int i = 0; i < ret.rows(); i++) {
+            ret.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(windows.get(i).getLabel()), labels.size()));
+        }
+        return ret;
+    }
+
+    public INDArray toLabelMatrix(List<String> labels) {
+        List<Window> windows = allWindowsForAllSentences();
+        return toLabelMatrix(labels, windows);
+    }
+
+    private List<Window> allWindowsForAllSentences() {
+        if (windows != null)
+            return windows;
+        windows = new ArrayList<>();
+        for (String s : sentences)
+            if (!s.isEmpty())
+                windows.addAll(Windows.windows(s));
+        return windows;
+    }
 
 
 

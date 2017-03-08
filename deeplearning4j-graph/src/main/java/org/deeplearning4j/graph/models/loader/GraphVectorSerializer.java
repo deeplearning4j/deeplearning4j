@@ -22,20 +22,19 @@ public class GraphVectorSerializer {
     private static final Logger log = LoggerFactory.getLogger(GraphVectorSerializer.class);
     private static final String DELIM = "\t";
 
-    private GraphVectorSerializer() {
-    }
+    private GraphVectorSerializer() {}
 
     public static void writeGraphVectors(DeepWalk deepWalk, String path) throws IOException {
 
         int nVertices = deepWalk.numVertices();
         int vectorSize = deepWalk.getVectorSize();
 
-        try( BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false)) ){
-            for( int i=0; i<nVertices; i++ ){
+        try (BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false))) {
+            for (int i = 0; i < nVertices; i++) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(i);
                 INDArray vec = deepWalk.getVertexVector(i);
-                for( int j=0; j<vectorSize; j++ ){
+                for (int j = 0; j < vectorSize; j++) {
                     double d = vec.getDouble(j);
                     sb.append(DELIM).append(d);
                 }
@@ -44,22 +43,22 @@ public class GraphVectorSerializer {
             }
         }
 
-        log.info("Wrote {} vectors of length {} to: {}",nVertices,vectorSize,path);
+        log.info("Wrote {} vectors of length {} to: {}", nVertices, vectorSize, path);
     }
 
     public static GraphVectors loadTxtVectors(File file) throws IOException {
 
         List<double[]> vectorList = new ArrayList<>();
 
-        try(BufferedReader reader = new BufferedReader(new FileReader(file))){
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             LineIterator iter = IOUtils.lineIterator(reader);
 
-            while(iter.hasNext()){
+            while (iter.hasNext()) {
                 String line = iter.next();
                 String[] split = line.split(DELIM);
-                double[] vec = new double[split.length-1];
-                for( int i=1; i<split.length; i++ ){
-                    vec[i-1] = Double.parseDouble(split[i]);
+                double[] vec = new double[split.length - 1];
+                for (int i = 1; i < split.length; i++) {
+                    vec[i - 1] = Double.parseDouble(split[i]);
                 }
                 vectorList.add(vec);
             }
@@ -69,14 +68,14 @@ public class GraphVectorSerializer {
         int nVertices = vectorList.size();
 
         INDArray vectors = Nd4j.create(nVertices, vecSize);
-        for( int i=0; i<vectorList.size(); i++ ){
+        for (int i = 0; i < vectorList.size(); i++) {
             double[] vec = vectorList.get(i);
-            for( int j=0; j<vec.length; j++ ){
-                vectors.put(i,j,vec[j]);
+            for (int j = 0; j < vec.length; j++) {
+                vectors.put(i, j, vec[j]);
             }
         }
 
-        InMemoryGraphLookupTable table = new InMemoryGraphLookupTable(nVertices,vecSize,null,0.01);
+        InMemoryGraphLookupTable table = new InMemoryGraphLookupTable(nVertices, vecSize, null, 0.01);
         table.setVertexVectors(vectors);
 
         return new GraphVectorsImpl<>(null, table);

@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -26,7 +26,8 @@ import java.util.List;
 
 public abstract class DictionaryCompilerBase {
 
-    public void build(String inputDirname, String outputDirname, String encoding, boolean compactTries) throws IOException {
+    public void build(String inputDirname, String outputDirname, String encoding, boolean compactTries)
+                    throws IOException {
         File outputDir = new File(outputDirname);
         outputDir.mkdirs();
         buildTokenInfoDictionary(inputDirname, outputDirname, encoding, compactTries);
@@ -34,18 +35,15 @@ public abstract class DictionaryCompilerBase {
         buildConnectionCosts(inputDirname, outputDirname);
     }
 
-    private void buildTokenInfoDictionary(String inputDirname, String outputDirname, String encoding, boolean compactTrie) throws IOException {
+    private void buildTokenInfoDictionary(String inputDirname, String outputDirname, String encoding,
+                    boolean compactTrie) throws IOException {
         ProgressLog.begin("compiling tokeninfo dict");
         TokenInfoDictionaryCompilerBase tokenInfoCompiler = getTokenInfoDictionaryCompiler(encoding);
 
         ProgressLog.println("analyzing dictionary features");
-        tokenInfoCompiler.analyzeTokenInfo(
-            tokenInfoCompiler.combinedSequentialFileInputStream(new File(inputDirname))
-        );
+        tokenInfoCompiler.analyzeTokenInfo(tokenInfoCompiler.combinedSequentialFileInputStream(new File(inputDirname)));
         ProgressLog.println("reading tokeninfo");
-        tokenInfoCompiler.readTokenInfo(
-            tokenInfoCompiler.combinedSequentialFileInputStream(new File(inputDirname))
-        );
+        tokenInfoCompiler.readTokenInfo(tokenInfoCompiler.combinedSequentialFileInputStream(new File(inputDirname)));
         tokenInfoCompiler.compile();
 
         @SuppressWarnings("unchecked")
@@ -54,14 +52,14 @@ public abstract class DictionaryCompilerBase {
         ProgressLog.begin("compiling double array trie");
         DoubleArrayTrie trie = DoubleArrayTrieCompiler.build(surfaces, compactTrie);
         OutputStream daTrieOutput = new FileOutputStream(
-            outputDirname + File.separator + DoubleArrayTrie.DOUBLE_ARRAY_TRIE_FILENAME
-        );
+                        outputDirname + File.separator + DoubleArrayTrie.DOUBLE_ARRAY_TRIE_FILENAME);
         trie.write(daTrieOutput);
         daTrieOutput.close();
 
         try {
             ProgressLog.println("validating saved double array trie");
-            DoubleArrayTrie daTrie = DoubleArrayTrie.read(new FileInputStream(outputDirname + File.separator + DoubleArrayTrie.DOUBLE_ARRAY_TRIE_FILENAME));
+            DoubleArrayTrie daTrie = DoubleArrayTrie.read(new FileInputStream(
+                            outputDirname + File.separator + DoubleArrayTrie.DOUBLE_ARRAY_TRIE_FILENAME));
             for (String surface : surfaces) {
                 if (daTrie.lookup(surface) < 0) {
                     ProgressLog.println("failed to look up [" + surface + "]");
@@ -86,41 +84,23 @@ public abstract class DictionaryCompilerBase {
 
     abstract protected TokenInfoDictionaryCompilerBase getTokenInfoDictionaryCompiler(String encoding);
 
-    protected void buildUnknownWordDictionary(String inputDirname, String outputDirname, String encoding) throws IOException {
+    protected void buildUnknownWordDictionary(String inputDirname, String outputDirname, String encoding)
+                    throws IOException {
         ProgressLog.begin("compiling unknown word dict");
 
-        CharacterDefinitionsCompiler charDefCompiler = new CharacterDefinitionsCompiler(
-            new BufferedOutputStream(
-                new FileOutputStream(
-                    new File(outputDirname, CharacterDefinitions.CHARACTER_DEFINITIONS_FILENAME)
-                )
-            )
-        );
+        CharacterDefinitionsCompiler charDefCompiler =
+                        new CharacterDefinitionsCompiler(new BufferedOutputStream(new FileOutputStream(
+                                        new File(outputDirname, CharacterDefinitions.CHARACTER_DEFINITIONS_FILENAME))));
         charDefCompiler.readCharacterDefinition(
-            new BufferedInputStream(
-                new FileInputStream(
-                    new File(inputDirname, "char.def")
-                )
-            ),
-            encoding
-        );
+                        new BufferedInputStream(new FileInputStream(new File(inputDirname, "char.def"))), encoding);
         charDefCompiler.compile();
 
         UnknownDictionaryCompiler unkDefCompiler = new UnknownDictionaryCompiler(
-            charDefCompiler.makeCharacterCategoryMap(),
-            new FileOutputStream(
-                new File(outputDirname, UnknownDictionary.UNKNOWN_DICTIONARY_FILENAME)
-            )
-        );
+                        charDefCompiler.makeCharacterCategoryMap(),
+                        new FileOutputStream(new File(outputDirname, UnknownDictionary.UNKNOWN_DICTIONARY_FILENAME)));
 
         unkDefCompiler.readUnknownDefinition(
-            new BufferedInputStream(
-                new FileInputStream(
-                    new File(inputDirname, "unk.def")
-                )
-            ),
-            encoding
-        );
+                        new BufferedInputStream(new FileInputStream(new File(inputDirname, "unk.def"))), encoding);
 
         unkDefCompiler.compile();
 
@@ -130,11 +110,8 @@ public abstract class DictionaryCompilerBase {
     private void buildConnectionCosts(String inputDirname, String outputDirname) throws IOException {
         ProgressLog.begin("compiling connection costs");
         ConnectionCostsCompiler connectionCostsCompiler = new ConnectionCostsCompiler(
-            new FileOutputStream(new File(outputDirname, ConnectionCosts.CONNECTION_COSTS_FILENAME))
-        );
-        connectionCostsCompiler.readCosts(
-            new FileInputStream(new File(inputDirname, "matrix.def"))
-        );
+                        new FileOutputStream(new File(outputDirname, ConnectionCosts.CONNECTION_COSTS_FILENAME)));
+        connectionCostsCompiler.readCosts(new FileInputStream(new File(inputDirname, "matrix.def")));
         connectionCostsCompiler.compile();
 
         ProgressLog.end();

@@ -20,14 +20,15 @@ public class IteratorDataSetIterator implements DataSetIterator {
     private final Iterator<DataSet> iterator;
     private final int batchSize;
     private final LinkedList<DataSet> queued; //Used when splitting larger examples than we want to return in a batch
-    @Getter private DataSetPreProcessor preProcessor;
+    @Getter
+    private DataSetPreProcessor preProcessor;
 
     private int inputColumns = -1;
     private int totalOutcomes = -1;
 
     private int cursor = 0;
 
-    public IteratorDataSetIterator(Iterator<DataSet> iterator, int batchSize){
+    public IteratorDataSetIterator(Iterator<DataSet> iterator, int batchSize) {
         this.iterator = iterator;
         this.batchSize = batchSize;
         this.queued = new LinkedList<>();
@@ -45,25 +46,26 @@ public class IteratorDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next(int num) {
-        if(!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
 
         List<DataSet> list = new ArrayList<>();
         int countSoFar = 0;
-        while((!queued.isEmpty() || iterator.hasNext()) && countSoFar < batchSize){
+        while ((!queued.isEmpty() || iterator.hasNext()) && countSoFar < batchSize) {
             DataSet next;
-            if(!queued.isEmpty()){
+            if (!queued.isEmpty()) {
                 next = queued.removeFirst();
             } else {
                 next = iterator.next();
             }
             int nExamples = next.numExamples();
-            if( countSoFar + nExamples <= batchSize ){
+            if (countSoFar + nExamples <= batchSize) {
                 //Add the entire DataSet as-is
                 list.add(next);
             } else {
                 //Otherwise, split it
-                DataSet toKeep = (DataSet)next.getRange(0,batchSize-countSoFar);
-                DataSet toCache = (DataSet)next.getRange(batchSize-countSoFar, nExamples);
+                DataSet toKeep = (DataSet) next.getRange(0, batchSize - countSoFar);
+                DataSet toCache = (DataSet) next.getRange(batchSize - countSoFar, nExamples);
                 list.add(toKeep);
                 queued.add(toCache);
             }
@@ -71,21 +73,21 @@ public class IteratorDataSetIterator implements DataSetIterator {
             countSoFar += nExamples;
         }
 
-        if(inputColumns == -1){
+        if (inputColumns == -1) {
             //Set columns etc for later use
             DataSet temp = list.get(0);
             inputColumns = temp.getFeatureMatrix().size(1);
-            totalOutcomes = temp.getLabels() == null ? 0 : temp.getLabels().size(1);    //May be null for layerwise pretraining
+            totalOutcomes = temp.getLabels() == null ? 0 : temp.getLabels().size(1); //May be null for layerwise pretraining
         }
 
         DataSet out;
-        if(list.size() == 1){
+        if (list.size() == 1) {
             out = list.get(0);
         } else {
             out = DataSet.merge(list);
         }
 
-        if(preProcessor != null) {
+        if (preProcessor != null) {
             if (!out.isPreProcessed()) {
                 preProcessor.preProcess(out);
                 out.markAsPreProcessed();
@@ -102,20 +104,22 @@ public class IteratorDataSetIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        if(inputColumns != -1) return inputColumns;
+        if (inputColumns != -1)
+            return inputColumns;
         prefetchBatchSetInputOutputValues();
         return inputColumns;
     }
 
     @Override
     public int totalOutcomes() {
-        if(totalOutcomes != -1) return totalOutcomes;
+        if (totalOutcomes != -1)
+            return totalOutcomes;
         prefetchBatchSetInputOutputValues();
         return totalOutcomes;
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return false;
     }
 
@@ -159,8 +163,9 @@ public class IteratorDataSetIterator implements DataSetIterator {
         throw new UnsupportedOperationException("Not supported");
     }
 
-    private void prefetchBatchSetInputOutputValues(){
-        if(!iterator.hasNext()) return;
+    private void prefetchBatchSetInputOutputValues() {
+        if (!iterator.hasNext())
+            return;
         DataSet next = iterator.next();
         inputColumns = next.getFeatureMatrix().size(1);
         totalOutcomes = next.getLabels().size(1);

@@ -24,8 +24,8 @@ public class KerasDropout extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDropout(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasDropout(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -37,13 +37,10 @@ public class KerasDropout extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDropout(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.layer = new DropoutLayer.Builder()
-            .name(this.layerName)
-            .dropOut(this.dropout)
-            .build();
+        this.layer = new DropoutLayer.Builder().name(this.layerName).dropOut(this.dropout).build();
     }
 
     /**
@@ -56,7 +53,8 @@ public class KerasDropout extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Dropout layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Dropout layer accepts only one input (received " + inputType.length + ")");
         return this.getDropoutLayer().getOutputType(-1, inputType[0]);
     }
 
@@ -66,6 +64,6 @@ public class KerasDropout extends KerasLayer {
      * @return  DropoutLayer
      */
     public DropoutLayer getDropoutLayer() {
-        return (DropoutLayer)this.layer;
+        return (DropoutLayer) this.layer;
     }
 }

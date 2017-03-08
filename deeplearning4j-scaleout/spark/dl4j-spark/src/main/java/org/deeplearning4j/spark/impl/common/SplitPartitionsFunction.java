@@ -27,17 +27,19 @@ public class SplitPartitionsFunction<T> implements Function2<Integer, Iterator<T
 
         Random r = new Random(thisRngSeed);
         List<Integer> list = new ArrayList<>();
-        for( int i=0; i<numSplits; i++ ){
+        for (int i = 0; i < numSplits; i++) {
             list.add(i);
         }
 
         List<T> outputList = new ArrayList<>();
-        int i=0;
-        while(iter.hasNext()){
-            if(i%numSplits == 0) Collections.shuffle(list, r);
+        int i = 0;
+        while (iter.hasNext()) {
+            if (i % numSplits == 0)
+                Collections.shuffle(list, r);
 
             T next = iter.next();
-            if(list.get(i%numSplits) == splitIndex) outputList.add(next);
+            if (list.get(i % numSplits) == splitIndex)
+                outputList.add(next);
             i++;
         }
 

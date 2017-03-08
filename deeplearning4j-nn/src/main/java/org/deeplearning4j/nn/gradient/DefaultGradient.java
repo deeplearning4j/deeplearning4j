@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,13 +35,13 @@ import java.util.Map;
 
 public class DefaultGradient implements Gradient {
     public static final char DEFAULT_FLATTENING_ORDER = 'f';
-    private Map<String,INDArray> gradients = new LinkedHashMap<>();
-    private Map<String,Character> flatteningOrders;
+    private Map<String, INDArray> gradients = new LinkedHashMap<>();
+    private Map<String, Character> flatteningOrders;
     private INDArray flattenedGradient;
 
-    public DefaultGradient(){ }
+    public DefaultGradient() {}
 
-    public DefaultGradient(INDArray flattenedGradient){
+    public DefaultGradient(INDArray flattenedGradient) {
         this.flattenedGradient = flattenedGradient;
     }
 
@@ -53,18 +53,20 @@ public class DefaultGradient implements Gradient {
     @Override
     public INDArray gradient(List<String> order) {
         List<INDArray> toFlatten = new ArrayList<>();
-        if(flatteningOrders == null) {
+        if (flatteningOrders == null) {
             for (String s : order) {
-                if (!gradients.containsKey(s)) continue;
+                if (!gradients.containsKey(s))
+                    continue;
                 toFlatten.add(gradients.get(s));
             }
         } else {
-            for(String s : order){
-                if (!gradients.containsKey(s)) continue;
+            for (String s : order) {
+                if (!gradients.containsKey(s))
+                    continue;
                 if (flatteningOrders.containsKey(s) && flatteningOrders.get(s) != DEFAULT_FLATTENING_ORDER) {
                     //Arrays with non-default order get flattened to row vector first, then everything is flattened to f order
                     //TODO revisit this, and make more efficient
-                    toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(s),gradients.get(s)));
+                    toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(s), gradients.get(s)));
                 } else {
                     toFlatten.add(gradients.get(s));
                 }
@@ -73,15 +75,16 @@ public class DefaultGradient implements Gradient {
         return Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
     }
 
-    private void flattenGradient(){
-        if(flatteningOrders != null){
+    private void flattenGradient() {
+        if (flatteningOrders != null) {
             //Arrays with non-default order get flattened to row vector first, then everything is flattened to f order
             //TODO revisit this, and make more efficient
             List<INDArray> toFlatten = new ArrayList<>();
-            for(Map.Entry<String,INDArray> entry : gradients.entrySet()){
-                if(flatteningOrders.containsKey(entry.getKey()) && flatteningOrders.get(entry.getKey()) != DEFAULT_FLATTENING_ORDER){
+            for (Map.Entry<String, INDArray> entry : gradients.entrySet()) {
+                if (flatteningOrders.containsKey(entry.getKey())
+                                && flatteningOrders.get(entry.getKey()) != DEFAULT_FLATTENING_ORDER) {
                     //Specific flattening order for this array, that isn't the default
-                    toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(entry.getKey()),entry.getValue()));
+                    toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(entry.getKey()), entry.getValue()));
                 } else {
                     //default flattening order for this array
                     toFlatten.add(entry.getValue());
@@ -96,7 +99,8 @@ public class DefaultGradient implements Gradient {
 
     @Override
     public INDArray gradient() {
-        if(flattenedGradient != null) return flattenedGradient;
+        if (flattenedGradient != null)
+            return flattenedGradient;
         flattenGradient();
         return flattenedGradient;
     }
@@ -116,33 +120,32 @@ public class DefaultGradient implements Gradient {
         INDArray last = gradients.put(variable, newGradient);
         // TODO revisit whether setGradientFor should update the gradient that can be pulled from this object in any form - currently does not update flattened
         // use of unitialized var for flattengradient in backprop is generating an error in gradient calc if bellow is used
-//        flattenGradient();
+        //        flattenGradient();
         return last;
     }
 
     @Override
     public INDArray setGradientFor(String variable, INDArray gradient, Character flatteningOrder) {
-        INDArray last = setGradientFor(variable,gradient);
+        INDArray last = setGradientFor(variable, gradient);
 
-        if(flatteningOrder != null){
-            if(flatteningOrders == null) flatteningOrders = new LinkedHashMap<>();
-            flatteningOrders.put(variable,flatteningOrder);
+        if (flatteningOrder != null) {
+            if (flatteningOrders == null)
+                flatteningOrders = new LinkedHashMap<>();
+            flatteningOrders.put(variable, flatteningOrder);
         }
         return last;
     }
 
     @Override
     public Character flatteningOrderForVariable(String variable) {
-        if(flatteningOrders == null) return null;
+        if (flatteningOrders == null)
+            return null;
         return flatteningOrders.get(variable);
     }
 
 
     @Override
     public String toString() {
-        return "DefaultGradient{" +
-                "gradients=" + gradients +
-                (flatteningOrders != null ? flatteningOrders : "") +
-                '}';
+        return "DefaultGradient{" + "gradients=" + gradients + (flatteningOrders != null ? flatteningOrders : "") + '}';
     }
 }

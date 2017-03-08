@@ -17,6 +17,5 @@ package org.deeplearning4j.nn.api;
  * @author Alex Black
  */
 public enum MaskState {
-    Active,
-    Passthrough
+    Active, Passthrough
 }

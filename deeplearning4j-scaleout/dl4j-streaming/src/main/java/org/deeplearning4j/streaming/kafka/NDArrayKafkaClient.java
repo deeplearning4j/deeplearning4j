@@ -16,13 +16,11 @@ public class NDArrayKafkaClient {
 
 
     public NDArrayPublisher createPublisher() {
-        return NDArrayPublisher.builder().kafkaUri(kafkaUri)
-                .topicName(kafkaTopic).camelContext(camelContext).build();
+        return NDArrayPublisher.builder().kafkaUri(kafkaUri).topicName(kafkaTopic).camelContext(camelContext).build();
     }
 
     public NDArrayConsumer createConsumer() {
-        return NDArrayConsumer.builder().camelContext(camelContext)
-                .kafkaUri(kafkaUri).topicName(kafkaTopic).build();
+        return NDArrayConsumer.builder().camelContext(camelContext).kafkaUri(kafkaUri).topicName(kafkaTopic).build();
     }
 
 }

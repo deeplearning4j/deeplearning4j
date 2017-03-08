@@ -14,15 +14,15 @@ public class AsyncIteratorTest {
     @Test
     public void hasNext() throws Exception {
         ArrayList<Integer> integers = new ArrayList<>();
-        for (int x = 0; x < 100000; x++ ) {
+        for (int x = 0; x < 100000; x++) {
             integers.add(x);
         }
 
         AsyncIterator<Integer> iterator = new AsyncIterator<>(integers.iterator(), 512);
         int cnt = 0;
-        Integer val= null;
+        Integer val = null;
         while (iterator.hasNext()) {
-             val = iterator.next();
+            val = iterator.next();
             assertEquals(cnt, val.intValue());
             cnt++;
         }
