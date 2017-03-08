@@ -53,7 +53,7 @@ public class SimpleLabelAwareIterator implements LabelAwareIterator {
     @Override
     public LabelledDocument nextDocument() {
         LabelledDocument document = currentIterator.next();
-        for (String label: document.getLabels()) {
+        for (String label : document.getLabels()) {
             labels.storeLabel(label);
         }
 
@@ -87,7 +87,9 @@ public class SimpleLabelAwareIterator implements LabelAwareIterator {
     public void reset() {
         if (underlyingIterable != null)
             this.currentIterator = this.underlyingIterable.iterator();
-        else throw new UnsupportedOperationException("You can't use reset() method for Iterator<> based instance, please provide Iterable<> instead, or avoid reset()");
+        else
+            throw new UnsupportedOperationException(
+                            "You can't use reset() method for Iterator<> based instance, please provide Iterable<> instead, or avoid reset()");
     }
 
     /**

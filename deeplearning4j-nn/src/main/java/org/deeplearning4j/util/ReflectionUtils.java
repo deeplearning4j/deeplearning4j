@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,23 +33,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ReflectionUtils {
 
-    private static final Class<?>[] EMPTY_ARRAY = new Class[]{};
+    private static final Class<?>[] EMPTY_ARRAY = new Class[] {};
 
     /**
      * Cache of constructors for each class. Pins the classes so they
      * can't be garbage collected until ReflectionUtils can be collected.
      */
-    private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
-            new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<>();
 
-    private ReflectionUtils() {
-    }
+    private ReflectionUtils() {}
 
 
 
-
-    static private ThreadMXBean threadBean =
-            ManagementFactory.getThreadMXBean();
+    static private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
     public static void setContentionTracing(boolean val) {
         threadBean.setThreadContentionMonitoringEnabled(val);
@@ -68,22 +64,19 @@ public class ReflectionUtils {
      * @param stream the stream to
      * @param title a string title for the stack trace
      */
-    public static void printThreadInfo(PrintWriter stream,
-                                       String title) {
+    public static void printThreadInfo(PrintWriter stream, String title) {
         final int STACK_DEPTH = 20;
         boolean contention = threadBean.isThreadContentionMonitoringEnabled();
         long[] threadIds = threadBean.getAllThreadIds();
         stream.println("Process Thread Dump: " + title);
         stream.println(threadIds.length + " active threads");
-        for (long tid: threadIds) {
+        for (long tid : threadIds) {
             ThreadInfo info = threadBean.getThreadInfo(tid, STACK_DEPTH);
             if (info == null) {
                 stream.println("  Inactive");
                 continue;
             }
-            stream.println("Thread " +
-                    getTaskName(info.getThreadId(),
-                            info.getThreadName()) + ":");
+            stream.println("Thread " + getTaskName(info.getThreadId(), info.getThreadName()) + ":");
             Thread.State state = info.getThreadState();
             stream.println("  State: " + state);
             stream.println("  Blocked count: " + info.getBlockedCount());
@@ -94,14 +87,12 @@ public class ReflectionUtils {
             }
             if (state == Thread.State.WAITING) {
                 stream.println("  Waiting on " + info.getLockName());
-            } else  if (state == Thread.State.BLOCKED) {
+            } else if (state == Thread.State.BLOCKED) {
                 stream.println("  Blocked on " + info.getLockName());
-                stream.println("  Blocked by " +
-                        getTaskName(info.getLockOwnerId(),
-                                info.getLockOwnerName()));
+                stream.println("  Blocked by " + getTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
             }
             stream.println("  Stack:");
-            for (StackTraceElement frame: info.getStackTrace()) {
+            for (StackTraceElement frame : info.getStackTrace()) {
                 stream.println("    " + frame.toString());
             }
         }
@@ -119,7 +110,7 @@ public class ReflectionUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> Class<T> getClass(T o) {
-        return (Class<T>)o.getClass();
+        return (Class<T>) o.getClass();
     }
 
     // methods to support testing
@@ -130,7 +121,6 @@ public class ReflectionUtils {
     static int getCacheSize() {
         return CONSTRUCTOR_CACHE.size();
     }
-
 
 
 

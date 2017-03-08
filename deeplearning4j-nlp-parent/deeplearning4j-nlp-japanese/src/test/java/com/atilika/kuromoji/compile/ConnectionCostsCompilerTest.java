@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -36,33 +36,16 @@ public class ConnectionCostsCompilerTest {
         File costsFile = File.createTempFile("kuromoji-connectioncosts-", ".bin");
         costsFile.deleteOnExit();
 
-        String costs = "" +
-            "3 3\n" +
-            "0 0 1\n" +
-            "0 1 2\n" +
-            "0 2 3\n" +
-            "1 0 4\n" +
-            "1 1 5\n" +
-            "1 2 6\n" +
-            "2 0 7\n" +
-            "2 1 8\n" +
-            "2 2 9\n";
+        String costs = "" + "3 3\n" + "0 0 1\n" + "0 1 2\n" + "0 2 3\n" + "1 0 4\n" + "1 1 5\n" + "1 2 6\n" + "2 0 7\n"
+                        + "2 1 8\n" + "2 2 9\n";
 
-        ConnectionCostsCompiler compiler = new ConnectionCostsCompiler(
-            new FileOutputStream(costsFile)
-        );
+        ConnectionCostsCompiler compiler = new ConnectionCostsCompiler(new FileOutputStream(costsFile));
 
-        compiler.readCosts(
-            new ByteArrayInputStream(
-                costs.getBytes(StandardCharsets.UTF_8)
-            )
-        );
+        compiler.readCosts(new ByteArrayInputStream(costs.getBytes(StandardCharsets.UTF_8)));
 
         compiler.compile();
 
-        DataInputStream dataInput = new DataInputStream(
-            new FileInputStream(costsFile)
-        );
+        DataInputStream dataInput = new DataInputStream(new FileInputStream(costsFile));
 
         int size = dataInput.readInt();
         ShortBuffer costsBuffer = ByteBufferIO.read(dataInput).asShortBuffer();

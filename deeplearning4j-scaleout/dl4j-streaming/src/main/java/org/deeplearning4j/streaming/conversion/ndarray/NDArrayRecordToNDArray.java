@@ -22,10 +22,10 @@ public class NDArrayRecordToNDArray implements RecordToNDArray {
     public INDArray convert(Collection<Collection<Writable>> records) {
         INDArray[] concat = new INDArray[records.size()];
         int count = 0;
-        for(Collection<Writable> record : records) {
+        for (Collection<Writable> record : records) {
             NDArrayWritable writable = (NDArrayWritable) record.iterator().next();
             concat[count++] = writable.get();
         }
-        return Nd4j.concat(0,concat);
+        return Nd4j.concat(0, concat);
     }
 }

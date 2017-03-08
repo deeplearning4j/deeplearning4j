@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -47,7 +47,8 @@ public interface GraphBuilderModule {
      *
      * @return An instance of GraphBuilder with appended layers.
      */
-    ComputationGraphConfiguration.GraphBuilder updateBuilder(ComputationGraphConfiguration.GraphBuilder graph, String layerName, int inputSize, int[][] config, String inputLayer);
+    ComputationGraphConfiguration.GraphBuilder updateBuilder(ComputationGraphConfiguration.GraphBuilder graph,
+                    String layerName, int inputSize, int[][] config, String inputLayer);
 
 
 }

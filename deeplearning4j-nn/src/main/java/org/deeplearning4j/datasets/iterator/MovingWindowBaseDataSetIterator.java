@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,8 +28,9 @@ import org.nd4j.linalg.dataset.DataSet;
  * @author Adam Gibson
  */
 public class MovingWindowBaseDataSetIterator extends BaseDatasetIterator {
-    public MovingWindowBaseDataSetIterator(int batch, int numExamples, DataSet data,int windowRows,int windowColumns) {
-        super(batch, numExamples, new MovingWindowDataSetFetcher(data,windowRows,windowColumns));
+    public MovingWindowBaseDataSetIterator(int batch, int numExamples, DataSet data, int windowRows,
+                    int windowColumns) {
+        super(batch, numExamples, new MovingWindowDataSetFetcher(data, windowRows, windowColumns));
     }
 
 

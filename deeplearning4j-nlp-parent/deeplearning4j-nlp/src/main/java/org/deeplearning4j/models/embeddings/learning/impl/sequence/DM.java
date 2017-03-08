@@ -57,7 +57,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     }
 
     @Override
-    public void configure(@NonNull VocabCache<T> vocabCache,@NonNull WeightLookupTable<T> lookupTable,@NonNull VectorsConfiguration configuration) {
+    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
+                    @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -91,28 +92,29 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
 
-        if(seq.isEmpty() || labels.isEmpty())
+        if (seq.isEmpty() || labels.isEmpty())
             return 0;
 
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labels, false, null);
+            dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels, false, null);
         }
 
         return 0;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels, boolean isInference, INDArray inferenceVector) {
-        int end =  window * 2 + 1 - b;
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
+                    boolean isInference, INDArray inferenceVector) {
+        int end = window * 2 + 1 - b;
 
         T currentWord = sequence.getElementByIndex(i);
 
         List<Integer> intsList = new ArrayList<>();
-        for(int a = b; a < end; a++) {
-            if(a != window) {
+        for (int a = b; a < end; a++) {
+            if (a != window) {
                 int c = i - window + a;
-                if(c >= 0 && c < sequence.size()) {
+                if (c >= 0 && c < sequence.size()) {
                     T lastWord = sequence.getElementByIndex(c);
 
                     intsList.add(lastWord.getIndex());
@@ -122,7 +124,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         // appending labels indexes
         if (labels != null)
-            for (T label: labels) {
+            for (T label : labels) {
                 intsList.add(label.getIndex());
             }
 
@@ -132,9 +134,10 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         }
 
         // pass for underlying
-        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(), configuration.isTrainElementsVectors(), inferenceVector);
+        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
+                        configuration.isTrainElementsVectors(), inferenceVector);
 
-        if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()){
+        if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
@@ -154,18 +157,21 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
      * @return
      */
     @Override
-    public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate, double minLearningRate, int iterations) {
+    public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate, double minLearningRate,
+                    int iterations) {
         AtomicLong nextRandom = new AtomicLong(nr);
 
         // we probably don't want subsampling here
         // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
         // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
-        if(sequence.isEmpty())
+        if (sequence.isEmpty())
             return null;
 
-        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(), lookupTable.layerSize() + 1);
-        INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
+        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
+                        lookupTable.layerSize() + 1);
+        INDArray ret = Nd4j.rand(new int[] {1, lookupTable.layerSize()}, random).subi(0.5)
+                        .divi(lookupTable.layerSize());
 
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
@@ -183,7 +189,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
     @Override
     public void finish() {
-        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0){
+        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0) {
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }

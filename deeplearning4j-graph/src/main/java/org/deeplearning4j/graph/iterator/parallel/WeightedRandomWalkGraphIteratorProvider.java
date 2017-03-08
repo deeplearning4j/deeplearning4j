@@ -19,17 +19,17 @@ import java.util.Random;
  */
 public class WeightedRandomWalkGraphIteratorProvider<V> implements GraphWalkIteratorProvider<V> {
 
-    private IGraph<V,? extends Number> graph;
+    private IGraph<V, ? extends Number> graph;
     private int walkLength;
     private Random rng;
     private NoEdgeHandling mode;
 
-    public WeightedRandomWalkGraphIteratorProvider(IGraph<V, ? extends Number> graph, int walkLength){
+    public WeightedRandomWalkGraphIteratorProvider(IGraph<V, ? extends Number> graph, int walkLength) {
         this(graph, walkLength, System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
     public WeightedRandomWalkGraphIteratorProvider(IGraph<V, ? extends Number> graph, int walkLength, long seed,
-                                                   NoEdgeHandling mode){
+                    NoEdgeHandling mode) {
         this.graph = graph;
         this.walkLength = walkLength;
         this.rng = new Random(seed);
@@ -40,18 +40,21 @@ public class WeightedRandomWalkGraphIteratorProvider<V> implements GraphWalkIter
     @Override
     public List<GraphWalkIterator<V>> getGraphWalkIterators(int numIterators) {
         int nVertices = graph.numVertices();
-        if(numIterators > nVertices) numIterators = nVertices;
+        if (numIterators > nVertices)
+            numIterators = nVertices;
 
         int verticesPerIter = nVertices / numIterators;
 
         List<GraphWalkIterator<V>> list = new ArrayList<>(numIterators);
         int last = 0;
-        for( int i=0; i<numIterators; i++ ){
+        for (int i = 0; i < numIterators; i++) {
             int from = last;
-            int to = Math.min(nVertices,from+verticesPerIter);
-            if(i == numIterators - 1) to = nVertices;
+            int to = Math.min(nVertices, from + verticesPerIter);
+            if (i == numIterators - 1)
+                to = nVertices;
 
-            GraphWalkIterator<V> iter = new WeightedRandomWalkIterator<>(graph, walkLength, rng.nextLong(), mode, from, to);
+            GraphWalkIterator<V> iter =
+                            new WeightedRandomWalkIterator<>(graph, walkLength, rng.nextLong(), mode, from, to);
             list.add(iter);
             last = to;
         }

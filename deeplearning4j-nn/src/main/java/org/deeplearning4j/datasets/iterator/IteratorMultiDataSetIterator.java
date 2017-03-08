@@ -23,7 +23,7 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
     private final LinkedList<MultiDataSet> queued; //Used when splitting larger examples than we want to return in a batch
     private MultiDataSetPreProcessor preProcessor;
 
-    public IteratorMultiDataSetIterator(Iterator<MultiDataSet> iterator, int batchSize){
+    public IteratorMultiDataSetIterator(Iterator<MultiDataSet> iterator, int batchSize) {
         this.iterator = iterator;
         this.batchSize = batchSize;
         this.queued = new LinkedList<>();
@@ -41,19 +41,20 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next(int num) {
-        if(!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
 
         List<MultiDataSet> list = new ArrayList<>();
         int countSoFar = 0;
-        while((!queued.isEmpty() || iterator.hasNext()) && countSoFar < batchSize){
+        while ((!queued.isEmpty() || iterator.hasNext()) && countSoFar < batchSize) {
             MultiDataSet next;
-            if(!queued.isEmpty()){
+            if (!queued.isEmpty()) {
                 next = queued.removeFirst();
             } else {
                 next = iterator.next();
             }
             int nExamples = next.getFeatures(0).size(0);
-            if( countSoFar + nExamples <= batchSize ){
+            if (countSoFar + nExamples <= batchSize) {
                 //Add the entire MultiDataSet as-is
                 list.add(next);
             } else {
@@ -71,32 +72,34 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
                 INDArray[] fMaskToCache = (next.getFeaturesMaskArrays() != null ? new INDArray[nFeatures] : null);
                 INDArray[] lMaskToCache = (next.getLabelsMaskArrays() != null ? new INDArray[nLabels] : null);
 
-                for( int i=0; i<nFeatures; i++ ){
+                for (int i = 0; i < nFeatures; i++) {
                     INDArray fi = next.getFeatures(i);
-                    fToKeep[i] = getRange(fi,0,batchSize-countSoFar);
-                    fToCache[i] = getRange(fi,batchSize-countSoFar, nExamples);
+                    fToKeep[i] = getRange(fi, 0, batchSize - countSoFar);
+                    fToCache[i] = getRange(fi, batchSize - countSoFar, nExamples);
 
-                    if(fMaskToKeep != null){
+                    if (fMaskToKeep != null) {
                         INDArray fmi = next.getFeaturesMaskArray(i);
-                        fMaskToKeep[i] = getRange(fmi,0,batchSize-countSoFar);
-                        fMaskToCache[i] = getRange(fmi,batchSize-countSoFar, nExamples);
+                        fMaskToKeep[i] = getRange(fmi, 0, batchSize - countSoFar);
+                        fMaskToCache[i] = getRange(fmi, batchSize - countSoFar, nExamples);
                     }
                 }
 
-                for( int i=0; i<nLabels; i++ ){
+                for (int i = 0; i < nLabels; i++) {
                     INDArray li = next.getLabels(i);
-                    lToKeep[i] = getRange(li,0,batchSize-countSoFar);
-                    lToCache[i] = getRange(li,batchSize-countSoFar, nExamples);
+                    lToKeep[i] = getRange(li, 0, batchSize - countSoFar);
+                    lToCache[i] = getRange(li, batchSize - countSoFar, nExamples);
 
-                    if(lMaskToKeep != null){
+                    if (lMaskToKeep != null) {
                         INDArray lmi = next.getLabelsMaskArray(i);
-                        lMaskToKeep[i] = getRange(lmi,0,batchSize-countSoFar);
-                        lMaskToCache[i] = getRange(lmi,batchSize-countSoFar, nExamples);
+                        lMaskToKeep[i] = getRange(lmi, 0, batchSize - countSoFar);
+                        lMaskToCache[i] = getRange(lmi, batchSize - countSoFar, nExamples);
                     }
                 }
 
-                MultiDataSet toKeep = new org.nd4j.linalg.dataset.MultiDataSet(fToKeep,lToKeep, fMaskToKeep, lMaskToKeep);
-                MultiDataSet toCache = new org.nd4j.linalg.dataset.MultiDataSet(fToCache,lToCache, fMaskToCache, lMaskToCache);
+                MultiDataSet toKeep =
+                                new org.nd4j.linalg.dataset.MultiDataSet(fToKeep, lToKeep, fMaskToKeep, lMaskToKeep);
+                MultiDataSet toCache = new org.nd4j.linalg.dataset.MultiDataSet(fToCache, lToCache, fMaskToCache,
+                                lMaskToCache);
                 list.add(toKeep);
                 queued.add(toCache);
             }
@@ -105,34 +108,38 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
         }
 
         MultiDataSet out;
-        if(list.size() == 1){
+        if (list.size() == 1) {
             out = list.get(0);
         } else {
             out = org.nd4j.linalg.dataset.MultiDataSet.merge(list);
         }
 
-        if(preProcessor != null) preProcessor.preProcess(out);
+        if (preProcessor != null)
+            preProcessor.preProcess(out);
         return out;
     }
 
-    private static INDArray getRange(INDArray arr, int exampleFrom, int exampleToExclusive){
-        if(arr == null) return null;
+    private static INDArray getRange(INDArray arr, int exampleFrom, int exampleToExclusive) {
+        if (arr == null)
+            return null;
 
         int rank = arr.rank();
-        switch(rank){
+        switch (rank) {
             case 2:
                 return arr.get(NDArrayIndex.interval(exampleFrom, exampleToExclusive), NDArrayIndex.all());
             case 3:
-                return arr.get(NDArrayIndex.interval(exampleFrom, exampleToExclusive), NDArrayIndex.all(), NDArrayIndex.all());
+                return arr.get(NDArrayIndex.interval(exampleFrom, exampleToExclusive), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             case 4:
-                return arr.get(NDArrayIndex.interval(exampleFrom, exampleToExclusive), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return arr.get(NDArrayIndex.interval(exampleFrom, exampleToExclusive), NDArrayIndex.all(),
+                                NDArrayIndex.all(), NDArrayIndex.all());
             default:
                 throw new RuntimeException("Invalid rank: " + rank);
         }
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return false;
     }
 

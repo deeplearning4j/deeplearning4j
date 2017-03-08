@@ -43,7 +43,9 @@ import java.util.*;
 public abstract class BaseStatsListener implements RoutingIterationListener {
     public static final String TYPE_ID = "StatsListener";
 
-    private enum StatType {Mean, Stdev, MeanMagnitude}
+    private enum StatType {
+        Mean, Stdev, MeanMagnitude
+    }
 
     private StatsStorageRouter router;
     private final StatsInitializationConfiguration initConfig;
@@ -73,20 +75,20 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         private int iterCount = 0;
 
-        private ModelInfo(Model model){
+        private ModelInfo(Model model) {
             this.model = model;
         }
     }
 
-    private ModelInfo getModelInfo(Model model){
+    private ModelInfo getModelInfo(Model model) {
         ModelInfo mi = null;
-        for(ModelInfo m : modelInfos){
-            if(m.model == model){
+        for (ModelInfo m : modelInfos) {
+            if (m.model == model) {
                 mi = m;
                 break;
             }
         }
-        if(mi == null){
+        if (mi == null) {
             mi = new ModelInfo(model);
             modelInfos.add(mi);
         }
@@ -112,11 +114,12 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
      * @param listenerFrequency Frequency with which to collect stats information
      */
     public BaseStatsListener(StatsStorageRouter router, int listenerFrequency) {
-        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(), null, null);
+        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(),
+                        null, null);
     }
 
-    public BaseStatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
-                             String sessionID, String workerID) {
+    public BaseStatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig,
+                    StatsUpdateConfiguration updateConfig, String sessionID, String workerID) {
         this.router = router;
         if (initConfig == null) {
             this.initConfig = new DefaultStatsInitializationConfiguration(true, true, true);
@@ -145,18 +148,24 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
     public abstract StatsReport getNewStatsReport();
 
-//    public abstract StorageMetaData getNewStorageMetaData();
+    //    public abstract StorageMetaData getNewStorageMetaData();
     public abstract StorageMetaData getNewStorageMetaData(long initTime, String sessionID, String workerID);
-//                                                          Class<? extends StatsInitializationReport> initializationReportClass,
-//                                                          Class<? extends StatsReport> statsReportClass);
+    //                                                          Class<? extends StatsInitializationReport> initializationReportClass,
+    //                                                          Class<? extends StatsReport> statsReportClass);
     //new SbeStorageMetaData(initTime, getSessionID(model), TYPE_ID, workerID, SbeStatsInitializationReport.class, SbeStatsReport.class);
 
 
-    public StatsInitializationConfiguration getInitConfig() { return initConfig; }
+    public StatsInitializationConfiguration getInitConfig() {
+        return initConfig;
+    }
 
-    public StatsUpdateConfiguration getUpdateConfig() { return updateConfig; }
+    public StatsUpdateConfiguration getUpdateConfig() {
+        return updateConfig;
+    }
 
-    public void setUpdateConfig(StatsUpdateConfiguration newConfig) { this.updateConfig = newConfig; }
+    public void setUpdateConfig(StatsUpdateConfiguration newConfig) {
+        this.updateConfig = newConfig;
+    }
 
     @Override
     public void setStorageRouter(StatsStorageRouter router) {
@@ -188,15 +197,16 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         return sessionID;
     }
 
-    private String getSessionID(Model model){
-        if(model instanceof MultiLayerNetwork || model instanceof ComputationGraph) return sessionID;
-        if(model instanceof Layer){
+    private String getSessionID(Model model) {
+        if (model instanceof MultiLayerNetwork || model instanceof ComputationGraph)
+            return sessionID;
+        if (model instanceof Layer) {
             //Keep in mind MultiLayerNetwork implements Layer also...
-            Layer l = (Layer)model;
+            Layer l = (Layer) model;
             int layerIdx = l.getIndex();
             return sessionID + "_layer" + layerIdx;
         }
-        return sessionID;   //Should never happen
+        return sessionID; //Should never happen
     }
 
     @Override
@@ -237,7 +247,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     @Override
     public void onForwardPass(Model model, Map<String, INDArray> activations) {
         int iterCount = getModelInfo(model).iterCount;
-        if (storeActivations() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
+        if (storeActivations() && updateConfig.reportingFrequency() > 0
+                        && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             activationsMap = activations;
         }
     }
@@ -245,23 +256,26 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     @Override
     public void onGradientCalculation(Model model) {
         int iterCount = getModelInfo(model).iterCount;
-        if (storeGradients() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
+        if (storeGradients() && updateConfig.reportingFrequency() > 0
+                        && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             Gradient g = model.gradient();
             gradientsPreUpdateMap.clear();
             for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
-                gradientsPreUpdateMap.put(entry.getKey(), entry.getValue().dup());    //Need to clone: will be modified (updated) in-place soon...
+                gradientsPreUpdateMap.put(entry.getKey(), entry.getValue().dup()); //Need to clone: will be modified (updated) in-place soon...
             }
         }
     }
 
     private boolean storeActivations() {
         return updateConfig.collectMean(StatsType.Activations) || updateConfig.collectStdev(StatsType.Activations)
-                || updateConfig.collectMeanMagnitudes(StatsType.Activations) || updateConfig.collectHistograms(StatsType.Activations);
+                        || updateConfig.collectMeanMagnitudes(StatsType.Activations)
+                        || updateConfig.collectHistograms(StatsType.Activations);
     }
 
     private boolean storeGradients() {
         return updateConfig.collectMean(StatsType.Gradients) || updateConfig.collectStdev(StatsType.Gradients)
-                || updateConfig.collectMeanMagnitudes(StatsType.Gradients) || updateConfig.collectHistograms(StatsType.Gradients);
+                        || updateConfig.collectMeanMagnitudes(StatsType.Gradients)
+                        || updateConfig.collectHistograms(StatsType.Gradients);
     }
 
     @Override
@@ -309,7 +323,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 minibatchesPerSecond = 1000.0 * modelInfo.minibatchesSinceLastReport / deltaTimeMS;
             }
             long totalRuntimeMS = currentTime - modelInfo.initTime;
-            report.reportPerformance(totalRuntimeMS, modelInfo.totalExamples, modelInfo.totalMinibatches, examplesPerSecond, minibatchesPerSecond);
+            report.reportPerformance(totalRuntimeMS, modelInfo.totalExamples, modelInfo.totalMinibatches,
+                            examplesPerSecond, minibatchesPerSecond);
 
             modelInfo.examplesSinceLastReport = 0;
             modelInfo.minibatchesSinceLastReport = 0;
@@ -378,7 +393,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
 
         //--- General ---
-        report.reportScore(model.score());  //Always report score
+        report.reportScore(model.score()); //Always report score
 
         if (config.collectLearningRates()) {
             Map<String, Double> lrs = new HashMap<>();
@@ -390,7 +405,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     Map<String, Double> layerLrs = conf.getLearningRateByParam();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
-                        if(!backpropParams.contains(entry.getKey())) continue;  //Skip pretrain params
+                        if (!backpropParams.contains(entry.getKey()))
+                            continue; //Skip pretrain params
                         lrs.put(layerIdx + "_" + entry.getKey(), entry.getValue());
                     }
                     layerIdx++;
@@ -403,13 +419,14 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     String layerName = conf.getLayer().getLayerName();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
-                        if(!backpropParams.contains(entry.getKey())) continue;  //Skip pretrain params
+                        if (!backpropParams.contains(entry.getKey()))
+                            continue; //Skip pretrain params
                         lrs.put(layerName + "_" + entry.getKey(), entry.getValue());
                     }
                 }
-            } else if(model instanceof Layer){
-                Layer l = (Layer)model;
-                Map<String,Double> map = l.conf().getLearningRateByParam();
+            } else if (model instanceof Layer) {
+                Layer l = (Layer) model;
+                Map<String, Double> map = l.conf().getLearningRateByParam();
                 lrs.putAll(map);
             }
             report.reportLearningRates(lrs);
@@ -419,22 +436,26 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         //--- Histograms ---
 
         if (config.collectHistograms(StatsType.Parameters)) {
-            Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(backpropParamsOnly), config.numHistogramBins(StatsType.Parameters));
+            Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(backpropParamsOnly),
+                            config.numHistogramBins(StatsType.Parameters));
             report.reportHistograms(StatsType.Parameters, paramHistograms);
         }
 
         if (config.collectHistograms(StatsType.Gradients)) {
-            Map<String, Histogram> gradientHistograms = getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
+            Map<String, Histogram> gradientHistograms =
+                            getHistograms(gradientsPreUpdateMap, config.numHistogramBins(StatsType.Gradients));
             report.reportHistograms(StatsType.Gradients, gradientHistograms);
         }
 
         if (config.collectHistograms(StatsType.Updates)) {
-            Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(), config.numHistogramBins(StatsType.Updates));
+            Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(),
+                            config.numHistogramBins(StatsType.Updates));
             report.reportHistograms(StatsType.Updates, updateHistograms);
         }
 
         if (config.collectHistograms(StatsType.Activations)) {
-            Map<String, Histogram> activationHistograms = getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
+            Map<String, Histogram> activationHistograms =
+                            getHistograms(activationsMap, config.numHistogramBins(StatsType.Activations));
             report.reportHistograms(StatsType.Activations, activationHistograms);
         }
 
@@ -452,7 +473,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
 
         if (config.collectMean(StatsType.Updates)) {
-            Map<String, Double> meanUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Mean);
+            Map<String, Double> meanUpdates =
+                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Mean);
             report.reportMean(StatsType.Updates, meanUpdates);
         }
 
@@ -463,7 +485,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
 
         if (config.collectStdev(StatsType.Parameters)) {
-            Map<String, Double> stdevParams = calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
+            Map<String, Double> stdevParams =
+                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
             report.reportStdev(StatsType.Parameters, stdevParams);
         }
 
@@ -473,7 +496,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
 
         if (config.collectStdev(StatsType.Updates)) {
-            Map<String, Double> stdevUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Stdev);
+            Map<String, Double> stdevUpdates =
+                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Stdev);
             report.reportStdev(StatsType.Updates, stdevUpdates);
         }
 
@@ -484,7 +508,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
 
         if (config.collectMeanMagnitudes(StatsType.Parameters)) {
-            Map<String, Double> meanMagParams = calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
+            Map<String, Double> meanMagParams =
+                            calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Parameters, meanMagParams);
         }
 
@@ -494,7 +519,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
 
         if (config.collectMeanMagnitudes(StatsType.Updates)) {
-            Map<String, Double> meanMagUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.MeanMagnitude);
+            Map<String, Double> meanMagUpdates =
+                            calculateSummaryStats(model.gradient().gradientForVariable(), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Updates, meanMagUpdates);
         }
 
@@ -505,7 +531,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
 
         long endTime = getTime();
-        report.reportStatsCollectionDurationMS((int) (endTime - currentTime));    //Amount of time required to alculate all histograms, means etc.
+        report.reportStatsCollectionDurationMS((int) (endTime - currentTime)); //Amount of time required to alculate all histograms, means etc.
         modelInfo.lastReportTime = currentTime;
         modelInfo.lastReportIteration = iteration;
         report.reportIterationCount(iteration);
@@ -559,8 +585,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 envInfo.put(e.getKey().toString(), value);
             }
 
-            initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion,
-                    nd4jBackendClass, nd4jDataTypeName, hostname, UIDProvider.getJVMUID(), envInfo);
+            initReport.reportSoftwareInfo(arch, osName, jvmName, jvmVersion, jvmSpecVersion, nd4jBackendClass,
+                            nd4jDataTypeName, hostname, UIDProvider.getJVMUID(), envInfo);
         }
 
         if (initConfig.collectHardwareInfo()) {
@@ -569,7 +595,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             int nDevices = nativeOps.getAvailableDevices();
 
             long[] deviceTotalMem = null;
-            String[] deviceDescription = null;  //TODO
+            String[] deviceDescription = null; //TODO
             if (nDevices > 0) {
                 deviceTotalMem = new long[nDevices];
                 deviceDescription = new String[nDevices];
@@ -595,7 +621,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             long offheapMaxMemory = Pointer.maxBytes();
 
             initReport.reportHardwareInfo(availableProcessors, nDevices, jvmMaxMemory, offheapMaxMemory, deviceTotalMem,
-                    deviceDescription, UIDProvider.getHardwareUID());
+                            deviceDescription, UIDProvider.getHardwareUID());
         }
 
         if (initConfig.collectModelInfo()) {
@@ -612,20 +638,20 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 jsonConf = cg.getConfiguration().toJson();
                 numLayers = cg.getNumLayers();
                 numParams = cg.numParams();
-            } else if (model instanceof Layer ){
-                Layer l = (Layer)model;
+            } else if (model instanceof Layer) {
+                Layer l = (Layer) model;
                 jsonConf = l.conf().toJson();
                 numLayers = 1;
                 numParams = l.numParams();
             } else {
                 throw new RuntimeException("Invalid model: Expected MultiLayerNetwork or ComputationGraph. Got: "
-                        + (model == null ? null : model.getClass()));
+                                + (model == null ? null : model.getClass()));
             }
 
             Map<String, INDArray> paramMap = model.paramTable(backpropParamsOnly);
             String[] paramNames = new String[paramMap.size()];
             int i = 0;
-            for (String s : paramMap.keySet()) {      //Assuming sensible iteration order - LinkedHashMaps are used in MLN/CG for example
+            for (String s : paramMap.keySet()) { //Assuming sensible iteration order - LinkedHashMaps are used in MLN/CG for example
                 paramNames[i++] = s;
             }
 
@@ -635,7 +661,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         StorageMetaData meta = getNewStorageMetaData(initTime, getSessionID(model), workerID);
 
         router.putStorageMetaData(meta);
-        router.putStaticInfo(initReport);   //TODO error handling
+        router.putStaticInfo(initReport); //TODO error handling
     }
 
     private Map<Integer, Pointer> devPointers = new HashMap<>();
@@ -651,7 +677,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             devPointers.put(device, p);
             return p;
         } catch (Throwable t) {
-            devPointers.put(device, null);  //Stops attempting the failure again later...
+            devPointers.put(device, null); //Stops attempting the failure again later...
             return null;
         }
     }
@@ -672,7 +698,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         modelInfo.totalMinibatches++;
     }
 
-    private boolean backpropParamsOnly(Model model){
+    private boolean backpropParamsOnly(Model model) {
         //For pretrain layers (VAE, RBM) we *do* want pretrain params also; for MLN and CG we only want backprop params
         // as we only have backprop gradients
         return model instanceof MultiLayerNetwork || model instanceof ComputationGraph;
@@ -681,7 +707,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     private static Map<String, Double> calculateSummaryStats(Map<String, INDArray> source, StatType statType) {
         Map<String, Double> out = new LinkedHashMap<>();
 
-        if(source == null) return out;
+        if (source == null)
+            return out;
 
         for (Map.Entry<String, INDArray> entry : source.entrySet()) {
             String name = entry.getKey();
@@ -697,7 +724,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     value = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
                     break;
                 default:
-                    throw new RuntimeException();   //Should never happen
+                    throw new RuntimeException(); //Should never happen
             }
             out.put(name, value);
         }
@@ -707,11 +734,13 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     private static Map<String, Histogram> getHistograms(Map<String, INDArray> map, int nBins) {
         Map<String, Histogram> out = new LinkedHashMap<>();
 
-        if(map == null) return out;
+        if (map == null)
+            return out;
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
 
-            org.nd4j.linalg.api.ops.impl.transforms.Histogram hOp = new org.nd4j.linalg.api.ops.impl.transforms.Histogram(entry.getValue(), nBins);
+            org.nd4j.linalg.api.ops.impl.transforms.Histogram hOp =
+                            new org.nd4j.linalg.api.ops.impl.transforms.Histogram(entry.getValue(), nBins);
             Nd4j.getExecutioner().exec(hOp);
 
             INDArray bins = hOp.z();

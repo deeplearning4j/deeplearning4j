@@ -88,7 +88,8 @@ public class TestGraph {
         }
 
         int walkLength = 4;
-        RandomWalkIterator<String> iter = new RandomWalkIterator<>(graph, walkLength, 1235, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
+        RandomWalkIterator<String> iter =
+                        new RandomWalkIterator<>(graph, walkLength, 1235, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
 
         int count = 0;
         Set<Integer> startIdxSet = new HashSet<>();
@@ -103,12 +104,13 @@ public class TestGraph {
                 int left = (previous - 1 + 10) % 10;
                 int right = (previous + 1) % 10;
                 int current = sequence.next().vertexID();
-                assertTrue("expected: " + left + " or " + right + ", got " + current, current == left || current == right);
+                assertTrue("expected: " + left + " or " + right + ", got " + current,
+                                current == left || current == right);
                 seqCount++;
                 previous = current;
             }
-            assertEquals(seqCount, walkLength + 1);    //walk of 0 -> 1 element, walk of 2 -> 3 elements etc
-            assertFalse(startIdxSet.contains(first));   //Expect to see each node exactly once
+            assertEquals(seqCount, walkLength + 1); //walk of 0 -> 1 element, walk of 2 -> 3 elements etc
+            assertFalse(startIdxSet.contains(first)); //Expect to see each node exactly once
             startIdxSet.add(first);
         }
         assertEquals(10, count); //Expect exactly 10 starting nodes
@@ -122,42 +124,29 @@ public class TestGraph {
         String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
-        String[] ignoreLinesStartingWith = new String[]{"//"};  //Comment lines start with "//"
+        String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"
 
-        IGraph<String, Double> graph = GraphLoader.loadWeightedEdgeListFile(path, numVertices, delim, true, ignoreLinesStartingWith);
+        IGraph<String, Double> graph =
+                        GraphLoader.loadWeightedEdgeListFile(path, numVertices, delim, true, ignoreLinesStartingWith);
 
         assertEquals(numVertices, graph.numVertices());
 
         int[] vertexOutDegrees = {2, 2, 1, 2, 2, 1, 1, 1, 1};
-        for (int i = 0; i < numVertices; i++) assertEquals(vertexOutDegrees[i], graph.getVertexDegree(i));
-        int[][] edges = new int[][]{
-                {1, 3},     //0->1 and 1->3
-                {2, 4},     //1->2 and 1->4
-                {5},        //etc
-                {4, 6},
-                {5, 7},
-                {8},
-                {7},
-                {8},
-                {0}
-        };
-        double[][] edgeWeights = new double[][]{
-                {1, 3},
-                {12, 14},
-                {25},
-                {34, 36},
-                {45, 47},
-                {58},
-                {67},
-                {78},
-                {80}
-        };
+        for (int i = 0; i < numVertices; i++)
+            assertEquals(vertexOutDegrees[i], graph.getVertexDegree(i));
+        int[][] edges = new int[][] {{1, 3}, //0->1 and 1->3
+                        {2, 4}, //1->2 and 1->4
+                        {5}, //etc
+                        {4, 6}, {5, 7}, {8}, {7}, {8}, {0}};
+        double[][] edgeWeights = new double[][] {{1, 3}, {12, 14}, {25}, {34, 36}, {45, 47}, {58}, {67}, {78}, {80}};
         double[][] edgeWeightsNormalized = new double[edgeWeights.length][0];
-        for( int i=0; i<edgeWeights.length; i++ ){
+        for (int i = 0; i < edgeWeights.length; i++) {
             double sum = 0.0;
-            for( int j=0; j<edgeWeights[i].length; j++ ) sum += edgeWeights[i][j];
+            for (int j = 0; j < edgeWeights[i].length; j++)
+                sum += edgeWeights[i][j];
             edgeWeightsNormalized[i] = new double[edgeWeights[i].length];
-            for( int j=0; j<edgeWeights[i].length; j++ ) edgeWeightsNormalized[i][j] = edgeWeights[i][j] / sum;
+            for (int j = 0; j < edgeWeights[i].length; j++)
+                edgeWeightsNormalized[i][j] = edgeWeights[i][j] / sum;
         }
 
         int walkLength = 5;
@@ -167,7 +156,7 @@ public class TestGraph {
         Set<Integer> set = new HashSet<>();
         while (iterator.hasNext()) {
             IVertexSequence<String> walk = iterator.next();
-            assertEquals(walkLength + 1, walk.sequenceLength());  //Walk length of 5 -> 6 vertices (inc starting point)
+            assertEquals(walkLength + 1, walk.sequenceLength()); //Walk length of 5 -> 6 vertices (inc starting point)
 
             int thisWalkCount = 0;
             boolean first = true;
@@ -188,47 +177,50 @@ public class TestGraph {
 
                 thisWalkCount++;
             }
-            assertEquals(walkLength + 1, thisWalkCount);   //Walk length of 5 -> 6 vertices (inc starting point)
+            assertEquals(walkLength + 1, thisWalkCount); //Walk length of 5 -> 6 vertices (inc starting point)
             walkCount++;
         }
 
         double[][] transitionProb = new double[numVertices][numVertices];
         int nWalks = 2000;
-        for( int i=0; i<nWalks; i++ ) {
+        for (int i = 0; i < nWalks; i++) {
             iterator.reset();
             while (iterator.hasNext()) {
                 IVertexSequence<String> seq = iterator.next();
                 int last = -1;
                 while (seq.hasNext()) {
                     int curr = seq.next().vertexID();
-                    if(last != -1) {
+                    if (last != -1) {
                         transitionProb[last][curr] += 1.0;
                     }
                     last = curr;
                 }
             }
         }
-        for(int i=0; i<transitionProb.length; i++ ){
+        for (int i = 0; i < transitionProb.length; i++) {
             double sum = 0.0;
-            for( int j=0; j<transitionProb[i].length; j++ ) sum += transitionProb[i][j];
-            for( int j=0; j<transitionProb[i].length; j++ ) transitionProb[i][j] /= sum;
+            for (int j = 0; j < transitionProb[i].length; j++)
+                sum += transitionProb[i][j];
+            for (int j = 0; j < transitionProb[i].length; j++)
+                transitionProb[i][j] /= sum;
             System.out.println(Arrays.toString(transitionProb[i]));
         }
 
         //Check that transition probs are essentially correct (within bounds of random variation)
-        for( int i=0; i<numVertices; i++ ){
-            for( int j=0; j<numVertices; j++ ){
-                if(!ArrayUtils.contains(edges[i],j)){
-                    assertEquals(0.0,transitionProb[i][j],0.0);
+        for (int i = 0; i < numVertices; i++) {
+            for (int j = 0; j < numVertices; j++) {
+                if (!ArrayUtils.contains(edges[i], j)) {
+                    assertEquals(0.0, transitionProb[i][j], 0.0);
                 } else {
-                    int idx = ArrayUtils.indexOf(edges[i],j);
-                    assertEquals(edgeWeightsNormalized[i][idx],transitionProb[i][j],0.01);
+                    int idx = ArrayUtils.indexOf(edges[i], j);
+                    assertEquals(edgeWeightsNormalized[i][idx], transitionProb[i][j], 0.01);
                 }
             }
         }
 
 
-        for (int i = 0; i < numVertices; i++) assertTrue(set.contains(i));
+        for (int i = 0; i < numVertices; i++)
+            assertTrue(set.contains(i));
         assertEquals(numVertices, walkCount);
     }
 }

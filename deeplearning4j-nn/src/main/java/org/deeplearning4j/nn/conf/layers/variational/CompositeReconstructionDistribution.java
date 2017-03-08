@@ -31,18 +31,18 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
     private final int totalSize;
 
     public CompositeReconstructionDistribution(@JsonProperty("distributionSizes") int[] distributionSizes,
-                                               @JsonProperty("reconstructionDistributions") ReconstructionDistribution[] reconstructionDistributions,
-                                               @JsonProperty("totalSize") int totalSize){
+                    @JsonProperty("reconstructionDistributions") ReconstructionDistribution[] reconstructionDistributions,
+                    @JsonProperty("totalSize") int totalSize) {
         this.distributionSizes = distributionSizes;
         this.reconstructionDistributions = reconstructionDistributions;
         this.totalSize = totalSize;
     }
 
-    private CompositeReconstructionDistribution(Builder builder){
+    private CompositeReconstructionDistribution(Builder builder) {
         distributionSizes = new int[builder.distributionSizes.size()];
         reconstructionDistributions = new ReconstructionDistribution[distributionSizes.length];
         int sizeCount = 0;
-        for( int i=0; i< distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             distributionSizes[i] = builder.distributionSizes.get(i);
             reconstructionDistributions[i] = builder.reconstructionDistributions.get(i);
             sizeCount += distributionSizes[i];
@@ -50,8 +50,8 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         totalSize = sizeCount;
     }
 
-    public INDArray computeLossFunctionScoreArray(INDArray data, INDArray reconstruction){
-        if(!hasLossFunction()){
+    public INDArray computeLossFunctionScoreArray(INDArray data, INDArray reconstruction) {
+        if (!hasLossFunction()) {
             throw new IllegalStateException("Cannot compute score array unless hasLossFunction() == true");
         }
 
@@ -59,18 +59,21 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         int inputSoFar = 0;
         int paramsSoFar = 0;
         INDArray reconstructionScores = null;
-        for( int i=0; i<distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             int thisInputSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
 
 
-            INDArray dataSubset = data.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
-            INDArray reconstructionSubset = reconstruction.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+            INDArray dataSubset =
+                            data.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray reconstructionSubset = reconstruction.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
-            if(i == 0){
+            if (i == 0) {
                 reconstructionScores = getScoreArray(reconstructionDistributions[i], dataSubset, reconstructionSubset);
             } else {
-                reconstructionScores.addi(getScoreArray(reconstructionDistributions[i], dataSubset, reconstructionSubset));
+                reconstructionScores
+                                .addi(getScoreArray(reconstructionDistributions[i], dataSubset, reconstructionSubset));
             }
 
             inputSoFar += thisInputSize;
@@ -80,14 +83,16 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         return reconstructionScores;
     }
 
-    private INDArray getScoreArray(ReconstructionDistribution reconstructionDistribution, INDArray dataSubset, INDArray reconstructionSubset){
-        if(reconstructionDistribution instanceof LossFunctionWrapper){
+    private INDArray getScoreArray(ReconstructionDistribution reconstructionDistribution, INDArray dataSubset,
+                    INDArray reconstructionSubset) {
+        if (reconstructionDistribution instanceof LossFunctionWrapper) {
             ILossFunction lossFunction = ((LossFunctionWrapper) reconstructionDistribution).getLossFunction();
             //Re: the activation identity here - the reconstruction array already has the activation function applied,
             // so we don't want to apply it again. i.e., we are passing the output, not the pre-output.
             return lossFunction.computeScoreArray(dataSubset, reconstructionSubset, new ActivationIdentity(), null);
-        } else if(reconstructionDistribution instanceof CompositeReconstructionDistribution){
-            return ((CompositeReconstructionDistribution)reconstructionDistribution).computeLossFunctionScoreArray(dataSubset, reconstructionSubset);
+        } else if (reconstructionDistribution instanceof CompositeReconstructionDistribution) {
+            return ((CompositeReconstructionDistribution) reconstructionDistribution)
+                            .computeLossFunctionScoreArray(dataSubset, reconstructionSubset);
         } else {
             throw new UnsupportedOperationException("Cannot calculate composite reconstruction distribution");
         }
@@ -95,21 +100,23 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
 
     @Override
     public boolean hasLossFunction() {
-        for(ReconstructionDistribution rd : reconstructionDistributions){
-            if(!rd.hasLossFunction()) return false;
+        for (ReconstructionDistribution rd : reconstructionDistributions) {
+            if (!rd.hasLossFunction())
+                return false;
         }
         return true;
     }
 
     @Override
     public int distributionInputSize(int dataSize) {
-        if(dataSize != totalSize){
-            throw new IllegalStateException("Invalid input size: Got input size " + dataSize + " for data, but expected input" +
-                    " size for all distributions is " + totalSize + ". Distribution sizes: " + Arrays.toString(distributionSizes));
+        if (dataSize != totalSize) {
+            throw new IllegalStateException("Invalid input size: Got input size " + dataSize
+                            + " for data, but expected input" + " size for all distributions is " + totalSize
+                            + ". Distribution sizes: " + Arrays.toString(distributionSizes));
         }
 
         int sum = 0;
-        for( int i=0; i<distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             sum += reconstructionDistributions[i].distributionInputSize(distributionSizes[i]);
         }
 
@@ -122,13 +129,15 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         int inputSoFar = 0;
         int paramsSoFar = 0;
         double logProbSum = 0.0;
-        for( int i=0; i<distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             int thisInputSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
 
 
-            INDArray inputSubset = x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
-            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+            INDArray inputSubset =
+                            x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
             logProbSum += reconstructionDistributions[i].negLogProbability(inputSubset, paramsSubset, average);
 
@@ -145,18 +154,21 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         int inputSoFar = 0;
         int paramsSoFar = 0;
         INDArray exampleLogProbSum = null;
-        for( int i=0; i<distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             int thisInputSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
 
 
-            INDArray inputSubset = x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
-            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+            INDArray inputSubset =
+                            x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
-            if(i == 0){
+            if (i == 0) {
                 exampleLogProbSum = reconstructionDistributions[i].exampleNegLogProbability(inputSubset, paramsSubset);
             } else {
-                exampleLogProbSum.addi(reconstructionDistributions[i].exampleNegLogProbability(inputSubset, paramsSubset));
+                exampleLogProbSum.addi(
+                                reconstructionDistributions[i].exampleNegLogProbability(inputSubset, paramsSubset));
             }
 
             inputSoFar += thisInputSize;
@@ -171,16 +183,19 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         int inputSoFar = 0;
         int paramsSoFar = 0;
         INDArray gradient = Nd4j.createUninitialized(preOutDistributionParams.shape());
-        for( int i=0; i<distributionSizes.length; i++ ){
+        for (int i = 0; i < distributionSizes.length; i++) {
             int thisInputSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
 
 
-            INDArray inputSubset = x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
-            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+            INDArray inputSubset =
+                            x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
             INDArray grad = reconstructionDistributions[i].gradient(inputSubset, paramsSubset);
-            gradient.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize)}, grad);
+            gradient.put(new INDArrayIndex[] {NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize)}, grad);
 
             inputSoFar += thisInputSize;
             paramsSoFar += thisParamsSize;
@@ -199,24 +214,26 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         return randomSample(preOutDistributionParams, true);
     }
 
-    private INDArray randomSample(INDArray preOutDistributionParams, boolean isMean){
+    private INDArray randomSample(INDArray preOutDistributionParams, boolean isMean) {
         int inputSoFar = 0;
         int paramsSoFar = 0;
-        INDArray out = Nd4j.createUninitialized(new int[]{preOutDistributionParams.size(0), totalSize});
-        for( int i=0; i<distributionSizes.length; i++ ){
+        INDArray out = Nd4j.createUninitialized(new int[] {preOutDistributionParams.size(0), totalSize});
+        for (int i = 0; i < distributionSizes.length; i++) {
             int thisDataSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisDataSize);
 
-            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
             INDArray thisRandomSample;
-            if(isMean){
+            if (isMean) {
                 thisRandomSample = reconstructionDistributions[i].generateAtMean(paramsSubset);
             } else {
                 thisRandomSample = reconstructionDistributions[i].generateRandom(paramsSubset);
             }
 
-            out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisDataSize)}, thisRandomSample);
+            out.put(new INDArrayIndex[] {NDArrayIndex.all(),
+                            NDArrayIndex.interval(inputSoFar, inputSoFar + thisDataSize)}, thisRandomSample);
 
             inputSoFar += thisDataSize;
             paramsSoFar += thisParamsSize;
@@ -240,13 +257,13 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
          * @param distributionSize    Number of values to model with the specified distribution
          * @param distribution        Distribution to model data with
          */
-        public Builder addDistribution(int distributionSize, ReconstructionDistribution distribution){
+        public Builder addDistribution(int distributionSize, ReconstructionDistribution distribution) {
             distributionSizes.add(distributionSize);
             reconstructionDistributions.add(distribution);
             return this;
         }
 
-        public CompositeReconstructionDistribution build(){
+        public CompositeReconstructionDistribution build() {
             return new CompositeReconstructionDistribution(this);
         }
     }

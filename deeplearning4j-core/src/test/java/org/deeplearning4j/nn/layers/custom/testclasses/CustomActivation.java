@@ -18,6 +18,6 @@ public class CustomActivation extends BaseActivationFunction implements IActivat
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
-        return new Pair<>(in.muli(epsilon),null);
+        return new Pair<>(in.muli(epsilon), null);
     }
 }

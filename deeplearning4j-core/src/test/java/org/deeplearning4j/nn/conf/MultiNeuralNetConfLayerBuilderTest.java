@@ -31,12 +31,12 @@ public class MultiNeuralNetConfLayerBuilderTest {
     double drop = 0.3;
     String act = "softmax";
     PoolingType poolType = PoolingType.MAX;
-    int[] filterSize = new int[]{2, 2};
+    int[] filterSize = new int[] {2, 2};
     int filterDepth = 6;
-    int[] stride = new int[]{2, 2};
+    int[] stride = new int[] {2, 2};
     HiddenUnit hidden = HiddenUnit.RECTIFIED;
     VisibleUnit visible = VisibleUnit.GAUSSIAN;
-    int k  = 1;
+    int k = 1;
     Convolution.Type convType = Convolution.Type.FULL;
     LossFunction loss = LossFunction.MCXENT;
     WeightInit weight = WeightInit.XAVIER;
@@ -50,9 +50,9 @@ public class MultiNeuralNetConfLayerBuilderTest {
         int newNumOut = numOut + 1;
         WeightInit newWeight = WeightInit.UNIFORM;
         double newDrop = 0.5;
-        int[] newFS = new int[]{3, 3};
+        int[] newFS = new int[] {3, 3};
         int newFD = 7;
-        int[] newStride = new int[]{3, 3};
+        int[] newStride = new int[] {3, 3};
         Convolution.Type newConvType = Convolution.Type.SAME;
         PoolingType newPoolType = PoolingType.AVG;
         double newCorrupt = 0.5;
@@ -60,11 +60,13 @@ public class MultiNeuralNetConfLayerBuilderTest {
         HiddenUnit newHidden = HiddenUnit.BINARY;
         VisibleUnit newVisible = VisibleUnit.BINARY;
 
-        MultiLayerConfiguration multiConf1 = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).activation(act).build())
-                .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).activation(act).build())
-                .build();
+        MultiLayerConfiguration multiConf1 =
+                        new NeuralNetConfiguration.Builder().list()
+                                        .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).activation(act)
+                                                        .build())
+                                        .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1)
+                                                        .activation(act).build())
+                                        .build();
         NeuralNetConfiguration firstLayer = multiConf1.getConf(0);
         NeuralNetConfiguration secondLayer = multiConf1.getConf(1);
 
@@ -73,63 +75,58 @@ public class MultiNeuralNetConfLayerBuilderTest {
 
     @Test
     public void testRbmSetup() throws Exception {
-        MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .seed(123)
-                .iterations(5)
-                .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
-                .regularization(true)
-                .list()
-                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(784).nOut(1000).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
-                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(1000).nOut(500).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
-                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(500).nOut(250).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                        .nIn(250).nOut(10).build())
-                        // Pretrain is unsupervised pretraining and finetuning on output layer
-                        // Backward is full propagation on ALL layers.
-                .pretrain(false).backprop(true)
-                .build();
+        MultiLayerConfiguration multiLayerConfiguration =
+                        new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                        .seed(123).iterations(5).maxNumLineSearchIterations(10) // Magical Optimisation Stuff
+                                        .regularization(true)
+                                        .list().layer(0,
+                                                        new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
+                                                                        RBM.VisibleUnit.GAUSSIAN).nIn(784).nOut(1000)
+                                                                                        .weightInit(WeightInit.XAVIER)
+                                                                                        .activation(Activation.RELU)
+                                                                                        .build())
+                                        .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                                                        .nIn(1000).nOut(500).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.RELU).build())
+                                        .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                                                        .nIn(500).nOut(250).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.RELU).build())
+                                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
+                                                        .nIn(250).nOut(10).build())
+                                        // Pretrain is unsupervised pretraining and finetuning on output layer
+                                        // Backward is full propagation on ALL layers.
+                                        .pretrain(false).backprop(true).build();
         MultiLayerNetwork network = new MultiLayerNetwork(multiLayerConfiguration);
         network.init();
-        DataSet d = new MnistDataSetIterator(2,2).next();
+        DataSet d = new MnistDataSetIterator(2, 2).next();
         org.deeplearning4j.nn.api.Layer firstRbm = network.getLayer(0);
         org.deeplearning4j.nn.api.Layer secondRbm = network.getLayer(1);
         org.deeplearning4j.nn.api.Layer thirdRbm = network.getLayer(2);
         org.deeplearning4j.nn.api.Layer fourthRbm = network.getLayer(3);
-        INDArray[] weightMatrices = new INDArray[] {
-                firstRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
-                secondRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
-                thirdRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
-                fourthRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+        INDArray[] weightMatrices = new INDArray[] {firstRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        secondRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        thirdRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        fourthRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
 
         };
-        INDArray[] hiddenBiases = new INDArray[] {
-                firstRbm.getParam(DefaultParamInitializer.BIAS_KEY),
-                secondRbm.getParam(DefaultParamInitializer.BIAS_KEY),
-                thirdRbm.getParam(DefaultParamInitializer.BIAS_KEY),
-                fourthRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+        INDArray[] hiddenBiases = new INDArray[] {firstRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                        secondRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                        thirdRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                        fourthRbm.getParam(DefaultParamInitializer.BIAS_KEY),
 
         };
 
 
-        int[][] shapeAssertions = new int[][]{
-                {784,1000},
-                {1000,500},
-                {500,250},
-                {250,10},
-        };
+        int[][] shapeAssertions = new int[][] {{784, 1000}, {1000, 500}, {500, 250}, {250, 10},};
 
-        int[][] biasAssertions = new int[][] {
-                {1,1000},
-                {1,500},
-                {1,250},
-                {1,10},
+        int[][] biasAssertions = new int[][] {{1, 1000}, {1, 500}, {1, 250}, {1, 10},
 
         };
 
-        for(int i = 0; i < shapeAssertions.length; i++) {
-            assertArrayEquals(shapeAssertions[i],weightMatrices[i].shape());
-            assertArrayEquals(biasAssertions[i],hiddenBiases[i].shape());
+        for (int i = 0; i < shapeAssertions.length; i++) {
+            assertArrayEquals(shapeAssertions[i], weightMatrices[i].shape());
+            assertArrayEquals(biasAssertions[i], hiddenBiases[i].shape());
         }
 
         network.fit(d);

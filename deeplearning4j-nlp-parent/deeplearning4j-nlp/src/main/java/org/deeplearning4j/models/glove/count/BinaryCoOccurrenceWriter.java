@@ -23,7 +23,8 @@ public class BinaryCoOccurrenceWriter<T extends SequenceElement> implements CoOc
         this.file = file;
 
         try {
-            outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file), 100 * 1024 * 1024));
+            outputStream = new DataOutputStream(
+                            new BufferedOutputStream(new FileOutputStream(file), 100 * 1024 * 1024));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -32,7 +33,7 @@ public class BinaryCoOccurrenceWriter<T extends SequenceElement> implements CoOc
     @Override
     public void writeObject(@NonNull CoOccurrenceWeight<T> object) {
         try {
-//            log.info("Saving objects: { [" +object.getElement1().getIndex() +"], [" + object.getElement2().getIndex() + "]  }");
+            //            log.info("Saving objects: { [" +object.getElement1().getIndex() +"], [" + object.getElement2().getIndex() + "]  }");
             outputStream.writeInt(object.getElement1().getIndex());
             outputStream.writeInt(object.getElement2().getIndex());
             outputStream.writeDouble(object.getWeight());

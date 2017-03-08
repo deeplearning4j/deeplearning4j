@@ -16,12 +16,15 @@ public class CoOccurrenceWeight<T extends SequenceElement> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         CoOccurrenceWeight<?> that = (CoOccurrenceWeight<?>) o;
 
-        if (element1 != null ? !element1.equals(that.element1) : that.element1 != null) return false;
+        if (element1 != null ? !element1.equals(that.element1) : that.element1 != null)
+            return false;
         return element2 != null ? element2.equals(that.element2) : that.element2 == null;
 
     }

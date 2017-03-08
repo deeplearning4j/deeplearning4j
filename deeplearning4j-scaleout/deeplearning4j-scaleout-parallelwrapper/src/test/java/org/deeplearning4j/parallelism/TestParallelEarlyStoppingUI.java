@@ -29,19 +29,18 @@ import static org.junit.Assert.*;
 
 public class TestParallelEarlyStoppingUI {
 
-    @Test @Ignore   //To be run manually
+    @Test
+    @Ignore //To be run manually
     public void testParallelStatsListenerCompatibility() throws Exception {
         UIServer uiServer = UIServer.getInstance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-            .updater(Updater.SGD)
-            .weightInit(WeightInit.XAVIER)
-            .list()
-            .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
-            .layer(1,new OutputLayer.Builder().nIn(3).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
-            .pretrain(false).backprop(true)
-            .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(1, new OutputLayer.Builder().nIn(3).nOut(3)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .pretrain(false).backprop(true).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         // it's important that the UI can report results from parallel training
@@ -50,16 +49,16 @@ public class TestParallelEarlyStoppingUI {
         net.setListeners(new StatsListener(statsStorage));
         uiServer.attach(statsStorage);
 
-        DataSetIterator irisIter = new IrisDataSetIterator(50,500);
+        DataSetIterator irisIter = new IrisDataSetIterator(50, 500);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
-        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-            .epochTerminationConditions(new MaxEpochsTerminationCondition(500))
-            .scoreCalculator(new DataSetLossCalculator(irisIter,true))
-            .evaluateEveryNEpochs(2)
-            .modelSaver(saver)
-            .build();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(500))
+                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
+                                        .evaluateEveryNEpochs(2).modelSaver(saver).build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingParallelTrainer<>(esConf,net,irisIter,null,3,6,2);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer =
+                        new EarlyStoppingParallelTrainer<>(esConf, net, irisIter, null, 3, 6, 2);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);

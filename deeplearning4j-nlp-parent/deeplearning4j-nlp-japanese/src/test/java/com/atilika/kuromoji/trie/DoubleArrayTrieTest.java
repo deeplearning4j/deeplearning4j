@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -47,9 +47,7 @@ public class DoubleArrayTrieTest {
         doubleArrayTrie.write(output);
         output.close();
 
-        doubleArrayTrie = DoubleArrayTrie.read(
-            new FileInputStream(costsFile)
-        );
+        doubleArrayTrie = DoubleArrayTrie.read(new FileInputStream(costsFile));
 
         assertEquals(0, doubleArrayTrie.lookup("a"));
         assertTrue(doubleArrayTrie.lookup("abc") > 0);

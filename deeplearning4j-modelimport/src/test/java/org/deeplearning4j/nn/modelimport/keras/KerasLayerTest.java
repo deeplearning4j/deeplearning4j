@@ -31,25 +31,25 @@ public class KerasLayerTest {
     public static final double L1_REGULARIZATION = 0.01;
     public static final double L2_REGULARIZATION = 0.02;
     public static final double DROPOUT_KERAS = 0.3;
-    public static final double DROPOUT_DL4J = 1-DROPOUT_KERAS;
-    public static final int[] KERNEL_SIZE = new int[]{1, 2};
-    public static final int[] STRIDE = new int[]{3, 4};
+    public static final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
+    public static final int[] KERNEL_SIZE = new int[] {1, 2};
+    public static final int[] STRIDE = new int[] {3, 4};
     public static final PoolingType POOLING_TYPE = PoolingType.MAX;
     public static final double LSTM_FORGET_BIAS_DOUBLE = 1.0;
     public static final String LSTM_FORGET_BIAS_STR = "one";
     public static final boolean LSTM_UNROLL = true;
     public static final int N_OUT = 13;
     public static final String BORDER_MODE_VALID = "valid";
-    public static final int[] VALID_PADDING = new int[]{0, 0};
+    public static final int[] VALID_PADDING = new int[] {0, 0};
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     public static final double EPSILON = 1E-5;
     public static final double MOMENTUM = 0.99;
 
     @Test
     public void testBuildActivationLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_ACTIVATION);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
@@ -61,9 +61,9 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildDropoutLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_DROPOUT);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
@@ -75,13 +75,13 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildDenseLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_DENSE);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
-        Map<String,Object> W_reg = new HashMap<String,Object>();
+        Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
@@ -101,13 +101,13 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildConvolutionLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_CONVOLUTION_2D);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
-        Map<String,Object> W_reg = new HashMap<String,Object>();
+        Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
@@ -138,9 +138,9 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildSubsamplingLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_MAX_POOLING_2D);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
@@ -164,15 +164,15 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildGravesLstmLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_LSTM);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
-        Map<String,Object> W_reg = new HashMap<String,Object>();
+        Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
@@ -196,9 +196,9 @@ public class KerasLayerTest {
 
     @Test
     public void testBuildBatchNormalizationLayer() throws Exception {
-        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_BATCHNORMALIZATION);
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_EPSILON, EPSILON);
         config.put(LAYER_FIELD_MOMENTUM, MOMENTUM);

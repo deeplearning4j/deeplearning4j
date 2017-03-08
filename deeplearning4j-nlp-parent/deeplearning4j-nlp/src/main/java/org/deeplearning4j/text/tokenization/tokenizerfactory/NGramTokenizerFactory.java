@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,7 +33,7 @@ public class NGramTokenizerFactory implements TokenizerFactory {
     private Integer maxN = 1;
     private TokenizerFactory tokenizerFactory;
 
-    public NGramTokenizerFactory(TokenizerFactory tokenizerFactory,Integer minN, Integer maxN) {
+    public NGramTokenizerFactory(TokenizerFactory tokenizerFactory, Integer minN, Integer maxN) {
         this.tokenizerFactory = tokenizerFactory;
         this.minN = minN;
         this.maxN = maxN;

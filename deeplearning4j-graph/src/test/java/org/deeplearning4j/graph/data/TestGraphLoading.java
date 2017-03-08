@@ -22,38 +22,31 @@ public class TestGraphLoading {
     public void testEdgeListGraphLoading() throws IOException {
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
-        IGraph<String,String> graph = GraphLoader.loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(),7,",");
+        IGraph<String, String> graph = GraphLoader
+                        .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
         System.out.println(graph);
 
-        assertEquals(graph.numVertices(),7);
-        int[][] edges = {
-                {1,2},
-                {0,2,4},
-                {0,1,3,4},
-                {2,4,5},
-                {1,2,3,5,6},
-                {3,4,6},
-                {4,5}
-        };
+        assertEquals(graph.numVertices(), 7);
+        int[][] edges = {{1, 2}, {0, 2, 4}, {0, 1, 3, 4}, {2, 4, 5}, {1, 2, 3, 5, 6}, {3, 4, 6}, {4, 5}};
 
-        for( int i=0; i<7; i++ ){
-            assertEquals(edges[i].length,graph.getVertexDegree(i));
+        for (int i = 0; i < 7; i++) {
+            assertEquals(edges[i].length, graph.getVertexDegree(i));
             int[] connectedVertices = graph.getConnectedVertexIndices(i);
-            for( int j=0; j<edges[i].length; j++ ){
-                assertTrue(ArrayUtils.contains(connectedVertices,edges[i][j]));
+            for (int j = 0; j < edges[i].length; j++) {
+                assertTrue(ArrayUtils.contains(connectedVertices, edges[i][j]));
             }
         }
     }
 
     @Test
-    public void testGraphLoading() throws IOException{
+    public void testGraphLoading() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("simplegraph.txt");
 
-        EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
+        EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",", false, "//");
         VertexFactory<String> vertexFactory = new StringVertexFactory("v_%d");
-        Graph<String,String> graph = GraphLoader.loadGraph(cpr.getTempFileFromArchive().getAbsolutePath(),
-                edgeLineProcessor,vertexFactory,10,false);
+        Graph<String, String> graph = GraphLoader.loadGraph(cpr.getTempFileFromArchive().getAbsolutePath(),
+                        edgeLineProcessor, vertexFactory, 10, false);
 
 
         System.out.println(graph);
@@ -75,7 +68,7 @@ public class TestGraphLoading {
             }
 
             Edge<String> second = edges.get(1);
-            assertNotEquals(first.getFrom(),second.getFrom());
+            assertNotEquals(first.getFrom(), second.getFrom());
             if (second.getFrom() == i) {
                 //undirected edge: i -> i+1 (or 9 -> 0)
                 assertEquals(i, second.getFrom());
@@ -95,11 +88,11 @@ public class TestGraphLoading {
         ClassPathResource edgesCPR = new ClassPathResource("test_graph_edges.txt");
 
 
-        EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",",false,"//");
-        VertexLoader<String> vertexLoader = new DelimitedVertexLoader(":","//");
+        EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",", false, "//");
+        VertexLoader<String> vertexLoader = new DelimitedVertexLoader(":", "//");
 
-        Graph<String,String> graph = GraphLoader.loadGraph(verticesCPR.getTempFileFromArchive().getAbsolutePath(),
-                edgesCPR.getTempFileFromArchive().getAbsolutePath(),vertexLoader,edgeLineProcessor,false);
+        Graph<String, String> graph = GraphLoader.loadGraph(verticesCPR.getTempFileFromArchive().getAbsolutePath(),
+                        edgesCPR.getTempFileFromArchive().getAbsolutePath(), vertexLoader, edgeLineProcessor, false);
 
         System.out.println(graph);
 
@@ -120,7 +113,7 @@ public class TestGraphLoading {
             }
 
             Edge<String> second = edges.get(1);
-            assertNotEquals(first.getFrom(),second.getFrom());
+            assertNotEquals(first.getFrom(), second.getFrom());
             if (second.getFrom() == i) {
                 //undirected edge: i -> i+1 (or 9 -> 0)
                 assertEquals(i, second.getFrom());

@@ -49,9 +49,10 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.normalization.BatchNormalization ret
-                = new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
+                        new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -69,8 +70,10 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType == null){
-            throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, got null for layer \"" + getLayerName() + "\"");
+        if (inputType == null) {
+            throw new IllegalStateException(
+                            "Invalid input type: Batch norm layer expected input of type CNN, got null for layer \""
+                                            + getLayerName() + "\"");
         }
 
         //Can handle CNN, flat CNN or FF input formats only
@@ -80,8 +83,10 @@ public class BatchNormalization extends FeedForwardLayer {
             case CNNFlat:
                 return inputType; //OK
             default:
-                throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
-                        + inputType + " for layer index " + layerIndex + ", layer name = " + getLayerName() );
+                throw new IllegalStateException(
+                                "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
+                                                + inputType + " for layer index " + layerIndex + ", layer name = "
+                                                + getLayerName());
         }
     }
 
@@ -98,7 +103,9 @@ public class BatchNormalization extends FeedForwardLayer {
                 case CNNFlat:
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
                 default:
-                    throw new IllegalStateException("Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got " + inputType + " for layer " + getLayerName() + "\"");
+                    throw new IllegalStateException(
+                                    "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
+                                                    + inputType + " for layer " + getLayerName() + "\"");
             }
             nOut = nIn;
         }
@@ -128,7 +135,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch(paramName){
+        switch (paramName) {
             case BatchNormalizationParamInitializer.BETA:
             case BatchNormalizationParamInitializer.GAMMA:
                 return learningRate;
@@ -141,8 +148,8 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public Updater getUpdaterByParam(String paramName){
-        switch(paramName){
+    public Updater getUpdaterByParam(String paramName) {
+        switch (paramName) {
             case BatchNormalizationParamInitializer.BETA:
             case BatchNormalizationParamInitializer.GAMMA:
                 return updater;
@@ -183,8 +190,7 @@ public class BatchNormalization extends FeedForwardLayer {
             this.lockGammaBeta = lockGammaBeta;
         }
 
-        public Builder() {
-        }
+        public Builder() {}
 
         /**
          * If doing minibatch training or not. Default: true.
@@ -194,7 +200,7 @@ public class BatchNormalization extends FeedForwardLayer {
          *
          * @param minibatch    Minibatch parameter
          */
-        public Builder minibatch(boolean minibatch){
+        public Builder minibatch(boolean minibatch) {
             this.isMinibatch = minibatch;
             return this;
         }

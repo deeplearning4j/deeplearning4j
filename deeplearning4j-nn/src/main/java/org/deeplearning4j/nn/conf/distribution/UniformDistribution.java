@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -41,11 +41,10 @@ public class UniformDistribution extends Distribution {
      */
     @JsonCreator
     public UniformDistribution(@JsonProperty("lower") double lower, @JsonProperty("upper") double upper)
-            throws NumberIsTooLargeException {
+                    throws NumberIsTooLargeException {
         if (lower >= upper) {
-            throw new NumberIsTooLargeException(
-                    LocalizedFormats.LOWER_BOUND_NOT_BELOW_UPPER_BOUND,
-                    lower, upper, false);
+            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_BOUND_NOT_BELOW_UPPER_BOUND, lower, upper,
+                            false);
         }
         this.lower = lower;
         this.upper = upper;
@@ -88,19 +87,14 @@ public class UniformDistribution extends Distribution {
         if (getClass() != obj.getClass())
             return false;
         UniformDistribution other = (UniformDistribution) obj;
-        if (Double.doubleToLongBits(lower) != Double
-                .doubleToLongBits(other.lower))
+        if (Double.doubleToLongBits(lower) != Double.doubleToLongBits(other.lower))
             return false;
-        if (Double.doubleToLongBits(upper) != Double
-                .doubleToLongBits(other.upper))
+        if (Double.doubleToLongBits(upper) != Double.doubleToLongBits(other.upper))
             return false;
         return true;
     }
 
     public String toString() {
-        return "UniformDistribution{" +
-                "lower=" + lower +
-                ", upper=" + upper +
-                '}';
+        return "UniformDistribution{" + "lower=" + lower + ", upper=" + upper + '}';
     }
 }

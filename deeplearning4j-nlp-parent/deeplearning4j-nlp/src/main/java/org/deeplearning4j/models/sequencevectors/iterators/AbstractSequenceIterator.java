@@ -43,7 +43,7 @@ public class AbstractSequenceIterator<T extends SequenceElement> implements Sequ
     public Sequence<T> nextSequence() {
         Sequence<T> sequence = currentIterator.next();
         sequence.setSequenceId(tagger.getAndIncrement());
-        return  sequence;
+        return sequence;
     }
 
     /**

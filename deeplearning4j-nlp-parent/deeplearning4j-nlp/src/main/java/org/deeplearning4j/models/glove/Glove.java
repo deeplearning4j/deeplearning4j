@@ -39,7 +39,7 @@ public class Glove extends SequenceVectors<VocabWord> {
         private boolean shuffle;
         private boolean symmetric;
         protected double alpha = 0.75d;
-        private int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 /1024 / 1024);
+        private int maxmemory = (int) (Runtime.getRuntime().totalMemory() / 1024 / 1024 / 1024);
 
         protected TokenizerFactory tokenFactory;
         protected SentenceIterator sentenceIterator;
@@ -293,9 +293,7 @@ public class Glove extends SequenceVectors<VocabWord> {
         }
 
         public Builder iterate(@NonNull DocumentIterator iterator) {
-            this.sentenceIterator = new StreamLineIterator.Builder(iterator)
-                    .setFetchSize(100)
-                    .build();
+            this.sentenceIterator = new StreamLineIterator.Builder(iterator).setFetchSize(100).build();
             return this;
         }
 
@@ -373,10 +371,8 @@ public class Glove extends SequenceVectors<VocabWord> {
             // hardcoded value for glove
 
             if (sentenceIterator != null) {
-                SentenceTransformer transformer = new SentenceTransformer.Builder()
-                        .iterator(sentenceIterator)
-                        .tokenizerFactory(tokenFactory)
-                        .build();
+                SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIterator)
+                                .tokenizerFactory(tokenFactory).build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
@@ -423,14 +419,9 @@ public class Glove extends SequenceVectors<VocabWord> {
             ret.eventListeners = this.vectorsListeners;
 
 
-            ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()
-                    .learningRate(this.learningRate)
-                    .shuffle(this.shuffle)
-                    .symmetric(this.symmetric)
-                    .xMax(this.xMax)
-                    .alpha(this.alpha)
-                    .maxMemory(maxmemory)
-                    .build();
+            ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>().learningRate(this.learningRate)
+                            .shuffle(this.shuffle).symmetric(this.symmetric).xMax(this.xMax).alpha(this.alpha)
+                            .maxMemory(maxmemory).build();
 
             return ret;
         }

@@ -26,18 +26,19 @@ public class NetBroadcastTuple implements Serializable {
         this(configuration, null, parameters, updaterState);
     }
 
-    public NetBroadcastTuple(ComputationGraphConfiguration graphConfiguration, INDArray parameters, INDArray updaterState) {
+    public NetBroadcastTuple(ComputationGraphConfiguration graphConfiguration, INDArray parameters,
+                    INDArray updaterState) {
         this(null, graphConfiguration, parameters, updaterState);
 
     }
 
     public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
-                             INDArray parameters, INDArray updaterState) {
+                    INDArray parameters, INDArray updaterState) {
         this(configuration, graphConfiguration, parameters, updaterState, new AtomicInteger(0));
     }
 
     public NetBroadcastTuple(MultiLayerConfiguration configuration, ComputationGraphConfiguration graphConfiguration,
-                             INDArray parameters, INDArray updaterState, AtomicInteger counter) {
+                    INDArray parameters, INDArray updaterState, AtomicInteger counter) {
         this.configuration = configuration;
         this.graphConfiguration = graphConfiguration;
         this.parameters = parameters;

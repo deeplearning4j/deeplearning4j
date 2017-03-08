@@ -38,7 +38,8 @@ public class GraphHuffman implements BinaryTree {
      */
     public void buildTree(int[] vertexDegree) {
         PriorityQueue<Node> pq = new PriorityQueue<>();
-        for (int i = 0; i < vertexDegree.length; i++) pq.add(new Node(i, vertexDegree[i], null, null));
+        for (int i = 0; i < vertexDegree.length; i++)
+            pq.add(new Node(i, vertexDegree[i], null, null));
 
         while (pq.size() > 1) {
             Node left = pq.remove();
@@ -69,13 +70,14 @@ public class GraphHuffman implements BinaryTree {
     }
 
     private int traverse(Node node, long codeSoFar, byte codeLengthSoFar, int innerNodeCount, int[] innerNodePath,
-                         int currDepth ) {
-        if (codeLengthSoFar >= MAX_CODE_LENGTH) throw new RuntimeException("Cannot generate code: code length exceeds "+ MAX_CODE_LENGTH+" bits");
+                    int currDepth) {
+        if (codeLengthSoFar >= MAX_CODE_LENGTH)
+            throw new RuntimeException("Cannot generate code: code length exceeds " + MAX_CODE_LENGTH + " bits");
         if (node.left == null && node.right == null) {
             //Leaf node
             codes[node.vertexIdx] = codeSoFar;
             codeLength[node.vertexIdx] = codeLengthSoFar;
-            innerNodePathToLeaf[node.vertexIdx] = Arrays.copyOf(innerNodePath,currDepth);
+            innerNodePathToLeaf[node.vertexIdx] = Arrays.copyOf(innerNodePath, currDepth);
             return innerNodeCount;
         }
 
@@ -84,18 +86,20 @@ public class GraphHuffman implements BinaryTree {
         innerNodePath[currDepth] = innerNodeCount;
 
         long codeLeft = setBit(codeSoFar, codeLengthSoFar, false);
-        innerNodeCount = traverse(node.left, codeLeft, (byte) (codeLengthSoFar + 1), innerNodeCount,
-                innerNodePath, currDepth+1);
+        innerNodeCount = traverse(node.left, codeLeft, (byte) (codeLengthSoFar + 1), innerNodeCount, innerNodePath,
+                        currDepth + 1);
 
         long codeRight = setBit(codeSoFar, codeLengthSoFar, true);
-        innerNodeCount = traverse(node.right, codeRight, (byte) (codeLengthSoFar + 1), innerNodeCount,
-                innerNodePath, currDepth+1);
+        innerNodeCount = traverse(node.right, codeRight, (byte) (codeLengthSoFar + 1), innerNodeCount, innerNodePath,
+                        currDepth + 1);
         return innerNodeCount;
     }
 
     private static long setBit(long in, int bitNum, boolean value) {
-        if (value) return (in | 1L << bitNum);  //Bit mask |: 00010000
-        else return (in & ~(1 << bitNum));     //Bit mask &: 11101111
+        if (value)
+            return (in | 1L << bitNum); //Bit mask |: 00010000
+        else
+            return (in & ~(1 << bitNum)); //Bit mask &: 11101111
     }
 
     private static boolean getBit(long in, int bitNum) {
@@ -118,13 +122,14 @@ public class GraphHuffman implements BinaryTree {
         long code = codes[vertexNum];
         int len = codeLength[vertexNum];
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < len; i++) sb.append(getBit(code, i) ? "1" : "0");
+        for (int i = 0; i < len; i++)
+            sb.append(getBit(code, i) ? "1" : "0");
 
         return sb.toString();
     }
 
     @Override
-    public int[] getPathInnerNodes(int vertexNum){
+    public int[] getPathInnerNodes(int vertexNum) {
         return innerNodePathToLeaf[vertexNum];
     }
 }

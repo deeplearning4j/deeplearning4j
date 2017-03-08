@@ -13,10 +13,10 @@ public class SamplingTest {
 
     @Test
     public void testSample() throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(10,10);
+        DataSetIterator iter = new MnistDataSetIterator(10, 10);
         //batch size and total
-        DataSetIterator sampling = new SamplingDataSetIterator(iter.next(),10,10);
-        assertEquals(sampling.next().numExamples(),10);
+        DataSetIterator sampling = new SamplingDataSetIterator(iter.next(), 10, 10);
+        assertEquals(sampling.next().numExamples(), 10);
     }
 
 }
