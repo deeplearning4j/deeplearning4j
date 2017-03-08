@@ -61,8 +61,9 @@ public class StochasticGradientDescent extends BaseOptimizer {
             //But setParams should be a no-op for MLN and CG
             model.setParams(params);
 
+            int iterationCount = BaseOptimizer.getIterationCount(model);
             for(IterationListener listener : iterationListeners)
-                listener.iterationDone(model, BaseOptimizer.getIterationCount(model));
+                listener.iterationDone(model, iterationCount);
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
 
