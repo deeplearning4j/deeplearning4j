@@ -24,18 +24,20 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     protected List<StatsStorageListener> listeners = new ArrayList<>();
 
-    protected BaseCollectionStatsStorage(){
+    protected BaseCollectionStatsStorage() {
 
     }
 
-    protected abstract Map<Long, Persistable> getUpdateMap(String sessionID, String typeID, String workerID, boolean createIfRequired);
+    protected abstract Map<Long, Persistable> getUpdateMap(String sessionID, String typeID, String workerID,
+                    boolean createIfRequired);
 
     //Return any relevant storage events
     //We want to return these so they can be logged later. Can't be logged immediately, as this may case a race
     //condition with whatever is receiving the events: i.e., might get the event before the contents are actually
     //available in the DB
     protected List<StatsStorageEvent> checkStorageEvents(Persistable p) {
-        if (listeners.size() == 0) return null;
+        if (listeners.size() == 0)
+            return null;
 
         int count = 0;
         StatsStorageEvent newSID = null;
@@ -44,8 +46,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
         //Is this a new session ID?
         if (!sessionIDs.contains(p.getSessionID())) {
-            newSID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewSessionID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newSID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewSessionID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
 
@@ -68,7 +70,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
             if (!foundWorkerId && wid.equals(stw.getWorkerID())) {
                 foundWorkerId = true;
             }
-            if (foundTypeId && foundWorkerId) break;
+            if (foundTypeId && foundWorkerId)
+                break;
         }
         if (!foundTypeId || !foundWorkerId) {
             for (SessionTypeWorkerId stw : updates.keySet()) {
@@ -78,31 +81,37 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
                 if (!foundWorkerId && wid.equals(stw.getWorkerID())) {
                     foundWorkerId = true;
                 }
-                if (foundTypeId && foundWorkerId) break;
+                if (foundTypeId && foundWorkerId)
+                    break;
             }
         }
         if (!foundTypeId) {
             //New type ID
-            newTID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewTypeID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newTID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewTypeID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
         if (!foundWorkerId) {
             //New worker ID
-            newWID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewWorkerID,
-                    p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
+            newWID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewWorkerID, p.getSessionID(),
+                            p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
-        if (count == 0) return null;
+        if (count == 0)
+            return null;
         List<StatsStorageEvent> sses = new ArrayList<>(count);
-        if (newSID != null) sses.add(newSID);
-        if (newTID != null) sses.add(newTID);
-        if (newWID != null) sses.add(newWID);
+        if (newSID != null)
+            sses.add(newSID);
+        if (newTID != null)
+            sses.add(newTID);
+        if (newWID != null)
+            sses.add(newWID);
         return sses;
     }
 
     protected void notifyListeners(List<StatsStorageEvent> sses) {
-        if (sses == null || sses.size() == 0 || listeners.size() == 0) return;
+        if (sses == null || sses.size() == 0 || listeners.size() == 0)
+            return;
         for (StatsStorageListener l : listeners) {
             for (StatsStorageEvent e : sses) {
                 l.notify(e);
@@ -129,8 +138,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     @Override
     public List<Persistable> getAllStaticInfos(String sessionID, String typeID) {
         List<Persistable> out = new ArrayList<>();
-        for(SessionTypeWorkerId key : staticInfo.keySet()){
-            if(sessionID.equals(key.getSessionID()) && typeID.equals(key.getTypeID())){
+        for (SessionTypeWorkerId key : staticInfo.keySet()) {
+            if (sessionID.equals(key.getSessionID()) && typeID.equals(key.getTypeID())) {
                 out.add(staticInfo.get(key));
             }
         }
@@ -141,16 +150,19 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     public List<String> listTypeIDsForSession(String sessionID) {
         Set<String> typeIDs = new HashSet<>();
         for (SessionTypeId st : storageMetaData.keySet()) {
-            if (!sessionID.equals(st.getSessionID())) continue;
+            if (!sessionID.equals(st.getSessionID()))
+                continue;
             typeIDs.add(st.getTypeID());
         }
 
         for (SessionTypeWorkerId stw : staticInfo.keySet()) {
-            if (!sessionID.equals(stw.getSessionID())) continue;
+            if (!sessionID.equals(stw.getSessionID()))
+                continue;
             typeIDs.add(stw.getTypeID());
         }
         for (SessionTypeWorkerId stw : updates.keySet()) {
-            if (!sessionID.equals(stw.getSessionID())) continue;
+            if (!sessionID.equals(stw.getSessionID()))
+                continue;
             typeIDs.add(stw.getTypeID());
         }
 
@@ -185,7 +197,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         for (SessionTypeWorkerId id : updates.keySet()) {
             if (sessionID.equals(id.getSessionID())) {
                 Map<Long, Persistable> map = updates.get(id);
-                if (map != null) count += map.size();
+                if (map != null)
+                    count += map.size();
             }
         }
         return count;
@@ -195,7 +208,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     public int getNumUpdateRecordsFor(String sessionID, String typeID, String workerID) {
         SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         Map<Long, Persistable> map = updates.get(id);
-        if (map != null) return map.size();
+        if (map != null)
+            return map.size();
         return 0;
     }
 
@@ -203,7 +217,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     public Persistable getLatestUpdate(String sessionID, String typeID, String workerID) {
         SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         Map<Long, Persistable> map = updates.get(id);
-        if (map == null || map.isEmpty()) return null;
+        if (map == null || map.isEmpty())
+            return null;
         long maxTime = Long.MIN_VALUE;
         for (Long l : map.keySet()) {
             maxTime = Math.max(maxTime, l);
@@ -215,7 +230,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     public Persistable getUpdate(String sessionID, String typeID, String workerID, long timestamp) {
         SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         Map<Long, Persistable> map = updates.get(id);
-        if (map == null) return null;
+        if (map == null)
+            return null;
 
         return map.get(timestamp);
     }
@@ -241,7 +257,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         List<Persistable> list = new ArrayList<>();
 
         Map<Long, Persistable> map = getUpdateMap(sessionID, typeID, workerID, false);
-        if (map == null) return list;
+        if (map == null)
+            return list;
 
         for (Long time : map.keySet()) {
             if (time > timestamp) {
@@ -263,12 +280,13 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp) {
         List<Persistable> list = new ArrayList<>();
 
-        for(SessionTypeWorkerId stw : staticInfo.keySet()){
-            if(stw.getSessionID().equals(sessionID) && stw.getTypeID().equals(typeID)){
-                Map<Long,Persistable> u = updates.get(stw);
-                if(u == null) continue;
-                for(long l : u.keySet()){
-                    if(l > timestamp){
+        for (SessionTypeWorkerId stw : staticInfo.keySet()) {
+            if (stw.getSessionID().equals(sessionID) && stw.getTypeID().equals(typeID)) {
+                Map<Long, Persistable> u = updates.get(stw);
+                if (u == null)
+                    continue;
+                for (long l : u.keySet()) {
+                    if (l > timestamp) {
                         list.add(u.get(l));
                     }
                 }
@@ -298,7 +316,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
-        for(Persistable p : staticInfo){
+        for (Persistable p : staticInfo) {
             putStaticInfo(p);
         }
     }
@@ -308,7 +326,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public void putUpdate(Collection<? extends Persistable> updates) {
-        for(Persistable p : updates){
+        for (Persistable p : updates) {
             putUpdate(p);
         }
     }
@@ -318,7 +336,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
-        for(StorageMetaData m : storageMetaData){
+        for (StorageMetaData m : storageMetaData) {
             putStorageMetaData(m);
         }
     }
@@ -363,9 +381,11 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         @Override
         public int compareTo(SessionTypeWorkerId o) {
             int c = sessionID.compareTo(o.sessionID);
-            if (c != 0) return c;
+            if (c != 0)
+                return c;
             c = typeID.compareTo(o.typeID);
-            if (c != 0) return c;
+            if (c != 0)
+                return c;
             return workerID.compareTo(workerID);
         }
 
@@ -384,7 +404,8 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         @Override
         public int compareTo(SessionTypeId o) {
             int c = sessionID.compareTo(o.sessionID);
-            if (c != 0) return c;
+            if (c != 0)
+                return c;
             return typeID.compareTo(o.typeID);
         }
 

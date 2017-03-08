@@ -12,7 +12,5 @@ package org.deeplearning4j.spark.api;
  * @author Alex Black
  */
 public enum Repartition {
-    Never,
-    Always,
-    NumPartitionsWorkersDiffers
+    Never, Always, NumPartitionsWorkersDiffers
 }

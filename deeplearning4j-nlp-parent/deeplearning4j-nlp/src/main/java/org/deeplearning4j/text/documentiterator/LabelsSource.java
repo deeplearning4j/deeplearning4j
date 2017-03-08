@@ -17,7 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LabelsSource implements Serializable {
     private AtomicLong counter = new AtomicLong(0);
-    @Setter private String template;
+    @Setter
+    private String template;
     private boolean useFormatter = false;
     private List<String> labels;
     private long maxCount = 0;
@@ -39,7 +40,8 @@ public class LabelsSource implements Serializable {
      */
     public LabelsSource(@NonNull String template) {
         this.template = template;
-        if (this.template.contains("%d")) useFormatter = true;
+        if (this.template.contains("%d"))
+            useFormatter = true;
     }
 
     public int indexOf(String label) {
@@ -76,8 +78,10 @@ public class LabelsSource implements Serializable {
     }
 
     private String formatLabel(long value) {
-        if (useFormatter) return String.format(template, value);
-        else return template + value;
+        if (useFormatter)
+            return String.format(template, value);
+        else
+            return template + value;
     }
 
     /**
@@ -87,11 +91,13 @@ public class LabelsSource implements Serializable {
      * @return list of labels
      */
     public List<String> getLabels() {
-        if (labels != null && !labels.isEmpty()) return labels;
-            else {
-                List<String> result = new ArrayList<>();
-                for (long x = 0; x< counter.get(); x++) result.add(formatLabel(x));
-                return result;
+        if (labels != null && !labels.isEmpty())
+            return labels;
+        else {
+            List<String> result = new ArrayList<>();
+            for (long x = 0; x < counter.get(); x++)
+                result.add(formatLabel(x));
+            return result;
         }
     }
 
@@ -101,7 +107,8 @@ public class LabelsSource implements Serializable {
      * @param label
      */
     public void storeLabel(String label) {
-        if (labels == null) labels = new ArrayList<>();
+        if (labels == null)
+            labels = new ArrayList<>();
 
         if (!uniq.contains(label)) {
             uniq.add(label);
@@ -122,7 +129,9 @@ public class LabelsSource implements Serializable {
      * @return
      */
     public int getNumberOfLabelsUsed() {
-        if (labels != null && !labels.isEmpty()) return labels.size();
-            else return ((Long) (maxCount + 1)).intValue();
+        if (labels != null && !labels.isEmpty())
+            return labels.size();
+        else
+            return ((Long) (maxCount + 1)).intValue();
     }
 }

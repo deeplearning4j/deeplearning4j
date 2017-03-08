@@ -21,17 +21,20 @@ import java.util.Map;
 /**
  * @author Adam Gibson
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
-//    protected Convolution.Type convolutionType;
-    protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;       //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
+    //    protected Convolution.Type convolutionType;
+    protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
 
-    public enum AlgoMode { NO_WORKSPACE, PREFER_FASTEST }
+    public enum AlgoMode {
+        NO_WORKSPACE, PREFER_FASTEST
+    }
 
     /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
     protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
@@ -44,16 +47,16 @@ public class ConvolutionLayer extends FeedForwardLayer {
     * The pooling layer takes the kernel size
     */
     private ConvolutionLayer(Builder builder) {
-    	super(builder);
-//        this.convolutionType = builder.convolutionType;
+        super(builder);
+        //        this.convolutionType = builder.convolutionType;
         this.convolutionMode = builder.convolutionMode;
-        if(builder.kernelSize.length != 2)
+        if (builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
-        if(builder.stride.length != 2)
+        if (builder.stride.length != 2)
             throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
         this.stride = builder.stride;
-        if(builder.padding.length != 2)
+        if (builder.padding.length != 2)
             throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
         this.cudnnAlgoMode = builder.cudnnAlgoMode;
@@ -62,18 +65,22 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @Override
     public ConvolutionLayer clone() {
         ConvolutionLayer clone = (ConvolutionLayer) super.clone();
-        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
-        if(clone.stride != null) clone.stride = clone.stride.clone();
-        if(clone.padding != null) clone.padding = clone.padding.clone();
+        if (clone.kernelSize != null)
+            clone.kernelSize = clone.kernelSize.clone();
+        if (clone.stride != null)
+            clone.stride = clone.stride.clone();
+        if (clone.padding != null)
+            clone.padding = clone.padding.clone();
         return clone;
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret
-                = new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+        org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
+                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -90,30 +97,33 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.CNN){
-            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
+                            + "\"): Expected CNN input, got " + inputType);
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, convolutionMode, nOut,
-                layerIndex, getLayerName(), ConvolutionLayer.class);
+                        layerIndex, getLayerName(), ConvolutionLayer.class);
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override){
-        if(inputType == null || inputType.getType() != InputType.Type.CNN){
-            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
+                            + "\"): Expected CNN input, got " + inputType);
         }
 
-        if(nIn <= 0 || override){
-            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        if (nIn <= 0 || override) {
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             this.nIn = c.getDepth();
         }
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if(inputType == null ){
-            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): input is null");
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -121,7 +131,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l1;
             case ConvolutionParamInitializer.BIAS_KEY:
@@ -133,7 +143,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public double getL2ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return l2;
             case ConvolutionParamInitializer.BIAS_KEY:
@@ -145,11 +155,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case ConvolutionParamInitializer.WEIGHT_KEY:
                 return learningRate;
             case ConvolutionParamInitializer.BIAS_KEY:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {
@@ -163,8 +173,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private ConvolutionMode convolutionMode = null;
-        private int[] kernelSize = new int[] {5,5};
-        private int[] stride = new int[] {1,1};
+        private int[] kernelSize = new int[] {5, 5};
+        private int[] stride = new int[] {1, 1};
         private int[] padding = new int[] {0, 0};
         private AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
@@ -200,7 +210,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *
          * @param convolutionMode    Convolution mode for layer
          */
-        public Builder convolutionMode(ConvolutionMode convolutionMode){
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
             return this;
         }
@@ -212,23 +222,23 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *                   kernel
          * @return
          */
-        public Builder kernelSize(int... kernelSize){
+        public Builder kernelSize(int... kernelSize) {
             this.kernelSize = kernelSize;
             return this;
         }
 
-        public Builder stride(int... stride){
+        public Builder stride(int... stride) {
             this.stride = stride;
             return this;
         }
 
-        public Builder padding(int... padding){
+        public Builder padding(int... padding) {
             this.padding = padding;
             return this;
         }
 
         /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
-        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode){
+        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }

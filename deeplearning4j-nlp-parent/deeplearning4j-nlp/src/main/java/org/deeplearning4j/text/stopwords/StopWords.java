@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,21 +31,20 @@ import java.util.List;
  */
 public class StopWords {
 
-	private static List<String> stopWords;
+    private static List<String> stopWords;
 
-	private StopWords() {
-	}
+    private StopWords() {}
 
-	@SuppressWarnings("unchecked")
-	public static List<String> getStopWords() {
+    @SuppressWarnings("unchecked")
+    public static List<String> getStopWords() {
 
-		try {
-			if(stopWords == null)
-				stopWords =  IOUtils.readLines(new ClassPathResource("/stopwords.txt").getInputStream());
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return stopWords;
-	}
+        try {
+            if (stopWords == null)
+                stopWords = IOUtils.readLines(new ClassPathResource("/stopwords.txt").getInputStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return stopWords;
+    }
 
 }

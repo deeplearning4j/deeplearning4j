@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -40,14 +40,8 @@ public class UnknownDictionaryEntryParser extends DictionaryEntryLineParser {
         List<String> features = new ArrayList<>();
         features.addAll(Arrays.asList(fields).subList(10, fields.length));
 
-        GenericDictionaryEntry dictionaryEntry = new GenericDictionaryEntry.Builder()
-            .surface(surface)
-            .leftId(leftId)
-            .rightId(rightId)
-            .wordCost(wordCost)
-            .pos(pos)
-            .features(features)
-            .build();
+        GenericDictionaryEntry dictionaryEntry = new GenericDictionaryEntry.Builder().surface(surface).leftId(leftId)
+                        .rightId(rightId).wordCost(wordCost).pos(pos).features(features).build();
 
         return dictionaryEntry;
     }

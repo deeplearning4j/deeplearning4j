@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorithm<T>{
+public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
     private VocabCache<T> vocabCache;
     private WeightLookupTable<T> lookupTable;
     private VectorsConfiguration configuration;
@@ -43,7 +43,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double sampling;
     protected int[] variableWindows;
 
-    @Getter @Setter protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
+    @Getter
+    @Setter
+    protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
@@ -57,7 +59,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     @Override
-    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
+    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
+                    @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -97,7 +100,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     @Override
     public void finish() {
-        if (batches != null && batches.get() != null && batches.get().size() > 0){
+        if (batches != null && batches.get() != null && batches.get().size() > 0) {
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
@@ -106,7 +109,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
-        if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
+        if (sampling > 0)
+            tempSequence = applySubsampling(sequence, nextRandom);
 
         int currentWindow = window;
 
@@ -116,7 +120,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            cbow(i, tempSequence.getElements(),  (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
+            cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
+                            currentWindow);
         }
 
         return 0;
@@ -127,9 +132,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-    public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha, boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
-        int [] idxSyn1 = null;
-        int [] codes = null;
+    public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha,
+                    boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
+        int[] idxSyn1 = null;
+        int[] codes = null;
 
         if (configuration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[currentWord.getCodeLength()];
@@ -157,7 +163,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(), lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords, inferenceVector);
+        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
+                        currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
+                        lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
+                        inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
         if (!isInference)
@@ -168,15 +177,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
-        int end =  window * 2 + 1 - b;
+        int end = window * 2 + 1 - b;
 
         T currentWord = sentence.get(i);
 
         List<Integer> intsList = new ArrayList<>();
-        for(int a = b; a < end; a++) {
-            if(a != currentWindow) {
+        for (int a = b; a < end; a++) {
+            if (a != currentWindow) {
                 int c = i - currentWindow + a;
-                if(c >= 0 && c < sentence.size()) {
+                if (c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
 
                     intsList.add(lastWord.getIndex());
@@ -192,7 +201,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         // we don't allow inference from main loop here
         iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
 
-        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()){
+        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
@@ -204,12 +213,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         // subsampling implementation, if subsampling threshold met, just continue to next element
         if (sampling > 0) {
             result.setSequenceId(sequence.getSequenceId());
-            if (sequence.getSequenceLabels() != null) result.setSequenceLabels(sequence.getSequenceLabels());
-            if (sequence.getSequenceLabel() != null) result.setSequenceLabel(sequence.getSequenceLabel());
+            if (sequence.getSequenceLabels() != null)
+                result.setSequenceLabels(sequence.getSequenceLabels());
+            if (sequence.getSequenceLabel() != null)
+                result.setSequenceLabel(sequence.getSequenceLabel());
 
             for (T element : sequence.getElements()) {
                 double numWords = vocabCache.totalWordOccurrences();
-                double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1) * (sampling * numWords) / element.getElementFrequency();
+                double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
+                                * (sampling * numWords) / element.getElementFrequency();
 
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
@@ -219,6 +231,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 result.addElement(element);
             }
             return result;
-        } else return sequence;
+        } else
+            return sequence;
     }
 }

@@ -36,7 +36,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     private List<String> stopWords = new ArrayList<>();
 
     // this variable defines how often scavenger will be activated
-    private int scavengerThreshold  = 3000000;
+    private int scavengerThreshold = 3000000;
     private int retentionDelay = 3;
 
     // for scavenger mechanics we need to know the actual number of words being added
@@ -182,7 +182,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     public int indexOf(String label) {
         if (containsWord(label)) {
             return tokenFor(label).getIndex();
-        } else return -2;
+        } else
+            return -2;
     }
 
     /**
@@ -269,7 +270,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     public int docAppearedIn(String word) {
         if (extendedVocabulary.containsKey(word)) {
             return (int) extendedVocabulary.get(word).getSequencesCount();
-        } else return -1;
+        } else
+            return -1;
     }
 
     /**
@@ -354,7 +356,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
                         extendedVocabulary.put(element.getLabel(), element);
                 } else {
                     vocabulary.get(element.getStorageId()).incrementSequencesCount(element.getSequencesCount());
-                    vocabulary.get(element.getStorageId()).increaseElementFrequency((int) element.getElementFrequency());
+                    vocabulary.get(element.getStorageId())
+                                    .increaseElementFrequency((int) element.getElementFrequency());
                 }
             }
         } else {
@@ -399,7 +402,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param vocabCache
      */
     public void importVocabulary(@NonNull VocabCache<T> vocabCache) {
-        for (T element: vocabCache.vocabWords()) {
+        for (T element : vocabCache.vocabWords()) {
             this.addToken(element);
         }
         //logger.info("Current state: {}; Adding value: {}", this.documentsCounter.get(), vocabCache.totalNumberOfDocs());
@@ -409,14 +412,14 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public void updateWordsOccurencies() {
         totalWordCount.set(0);
-        for (T element: vocabulary.values()) {
+        for (T element : vocabulary.values()) {
             long value = (long) element.getElementFrequency();
 
             if (value > 0) {
                 totalWordCount.addAndGet(value);
             }
         }
-        logger.info("Updated counter: ["+ totalWordCount.get()+"]");
+        logger.info("Updated counter: [" + totalWordCount.get() + "]");
     }
 
     @Override
@@ -427,7 +430,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             idxMap.remove(element.getIndex());
             extendedVocabulary.remove(label);
             vocabulary.remove(element.getStorageId());
-        } else throw new IllegalStateException("Can't get label: '" + label + "'");
+        } else
+            throw new IllegalStateException("Can't get label: '" + label + "'");
     }
 
     @Override
@@ -436,7 +440,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     }
 
     public static class Builder<T extends SequenceElement> {
-        protected int scavengerThreshold  = 3000000;
+        protected int scavengerThreshold = 3000000;
         protected int retentionDelay = 3;
         protected int minElementFrequency;
         protected boolean hugeModelExpected = false;

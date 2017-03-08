@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class RoundCount {
 
-    private  int limit = 0;
+    private int limit = 0;
     private int lower = 0;
     private int value = 0;
 
@@ -38,8 +38,10 @@ public class RoundCount {
     public int previous() {
         try {
             lock.readLock().lock();
-            if (value == lower) return limit;
-                else return value - 1;
+            if (value == lower)
+                return limit;
+            else
+                return value - 1;
         } finally {
             lock.readLock().unlock();
         }
@@ -57,8 +59,10 @@ public class RoundCount {
     public void tick() {
         try {
             lock.writeLock().lock();
-            if (value == limit) value = lower;
-                else value++;
+            if (value == limit)
+                value = lower;
+            else
+                value++;
         } finally {
             lock.writeLock().unlock();
         }

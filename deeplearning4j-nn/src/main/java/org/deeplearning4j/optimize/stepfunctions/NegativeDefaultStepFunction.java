@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,7 @@ public class NegativeDefaultStepFunction implements StepFunction {
 
     @Override
     public void step(INDArray x, INDArray line) {
-        step(x,line,1.0);
+        step(x, line, 1.0);
     }
 
     @Override

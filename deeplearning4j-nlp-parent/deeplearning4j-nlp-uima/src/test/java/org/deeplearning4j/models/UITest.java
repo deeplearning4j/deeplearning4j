@@ -25,26 +25,18 @@ import java.util.ArrayList;
 public class UITest {
 
     @Test
-    public void testPosting() throws Exception{
+    public void testPosting() throws Exception {
 
-//        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        //        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         File inputFile = new ClassPathResource("/basic/word2vec_advance.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(1)
-                .iterations(1)
-                .epochs(1)
-                .layerSize(20)
-                .stopWords(new ArrayList<String>())
-                .useAdaGrad(false)
-                .negativeSample(5)
-                .seed(42)
-                .windowSize(5)
-                .iterate(iter).tokenizerFactory(t).build();
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).epochs(1).layerSize(20)
+                        .stopWords(new ArrayList<String>()).useAdaGrad(false).negativeSample(5).seed(42).windowSize(5)
+                        .iterate(iter).tokenizerFactory(t).build();
 
         vec.fit();
 
@@ -57,14 +49,11 @@ public class UITest {
 
         UIServer.getInstance(); //Initialize
 
-        UiConnectionInfo uiConnectionInfo = new UiConnectionInfo.Builder()
-                .setAddress("localhost")
-                .setPort(9000)
-                .build();
+        UiConnectionInfo uiConnectionInfo =
+                        new UiConnectionInfo.Builder().setAddress("localhost").setPort(9000).build();
 
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .normalize(false).setFinalMomentum(0.8f)
-                .numDimension(2).setMaxIter(10).build();
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder().normalize(false).setFinalMomentum(0.8f).numDimension(2)
+                        .setMaxIter(10).build();
 
         vectors.lookupTable().plotVocab(tsne, vectors.lookupTable().getVocabCache().numWords(), uiConnectionInfo);
 

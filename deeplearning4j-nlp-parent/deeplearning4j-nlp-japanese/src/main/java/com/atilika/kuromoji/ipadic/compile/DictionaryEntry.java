@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -48,11 +48,8 @@ public class DictionaryEntry extends DictionaryEntryBase {
     private final String pronunciation;
 
     public DictionaryEntry(String[] fields) {
-        super(fields[SURFACE],
-            Short.parseShort(fields[LEFT_ID]),
-            Short.parseShort(fields[RIGHT_ID]),
-            Short.parseShort(fields[WORD_COST])
-        );
+        super(fields[SURFACE], Short.parseShort(fields[LEFT_ID]), Short.parseShort(fields[RIGHT_ID]),
+                        Short.parseShort(fields[WORD_COST]));
 
         posLevel1 = fields[PART_OF_SPEECH_LEVEL_1];
         posLevel2 = fields[PART_OF_SPEECH_LEVEL_2];

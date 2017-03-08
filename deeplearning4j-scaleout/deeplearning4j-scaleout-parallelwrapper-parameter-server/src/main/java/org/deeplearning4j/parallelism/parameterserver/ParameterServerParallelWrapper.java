@@ -55,15 +55,16 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
     private int numUpdatesPerEpoch;
     private int numEpochs;
     private int statusServerPort = 33000;
+
     public void fit(DataSetIterator source) {
-        if(!init)
+        if (!init)
             init(source);
         DataSetIterator iterator;
-        if(preFetchSize > 0 && source.asyncSupported())
-            iterator = new AsyncDataSetIterator(source,preFetchSize);
+        if (preFetchSize > 0 && source.asyncSupported())
+            iterator = new AsyncDataSetIterator(source, preFetchSize);
         else
             iterator = source;
-        for(int i = 0; i < numEpochs; i++) {
+        for (int i = 0; i < numEpochs; i++) {
             while (iterator.hasNext()) {
                 DataSet next = iterator.next();
                 addObject(next);
@@ -71,24 +72,24 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
             iterator.reset();
 
-            log.info(String.format("Completed epoch %d",i));
+            log.info(String.format("Completed epoch %d", i));
         }
 
     }
 
 
 
-
     public void fit(MultiDataSetIterator multiDataSetIterator) {
-        if(!init)
+        if (!init)
             init(multiDataSetIterator);
 
         MultiDataSetIterator iterator = null;
         if (preFetchSize > 0 && multiDataSetIterator.asyncSupported()) {
             iterator = new AsyncMultiDataSetIterator(multiDataSetIterator, preFetchSize);
-        } else iterator = multiDataSetIterator;
+        } else
+            iterator = multiDataSetIterator;
 
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             org.nd4j.linalg.dataset.api.MultiDataSet next = iterator.next();
             addObject(next);
         }
@@ -97,7 +98,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
     //poll when workers are at capacity
     private void addObject(Object next) {
         try {
-            while(!linkedBlockingQueue.offer(next,1,TimeUnit.SECONDS))
+            while (!linkedBlockingQueue.offer(next, 1, TimeUnit.SECONDS))
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -110,10 +111,10 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
 
     private int numUpdatesPerEpoch(MultiDataSetIterator iterator) {
-        if(!iterator.resetSupported())
+        if (!iterator.resetSupported())
             throw new IllegalStateException("Iterator must support reset()");
         int ret = 0;
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             iterator.next();
             ret++;
         }
@@ -125,10 +126,10 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
 
     private int numUpdatesPerEpoch(DataSetIterator iterator) {
-        if(!iterator.resetSupported())
+        if (!iterator.resetSupported())
             throw new IllegalStateException("Iterator must support reset()");
         int ret = 0;
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             iterator.next();
             ret++;
         }
@@ -139,49 +140,41 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
     }
 
 
-    private void  init(Object iterator) {
-        if(numEpochs < 1)
+    private void init(Object iterator) {
+        if (numEpochs < 1)
             throw new IllegalStateException("numEpochs must be >= 1");
         //determine the number of updates per epoch (number of minibatches total for this iterator)
         //TODO: make this efficient
-        if(iterator instanceof DataSetIterator) {
+        if (iterator instanceof DataSetIterator) {
             DataSetIterator dataSetIterator = (DataSetIterator) iterator;
             numUpdatesPerEpoch = numUpdatesPerEpoch(dataSetIterator);
-        }
-        else if(iterator instanceof MultiDataSetIterator){
+        } else if (iterator instanceof MultiDataSetIterator) {
             MultiDataSetIterator iterator1 = (MultiDataSetIterator) iterator;
             numUpdatesPerEpoch = numUpdatesPerEpoch(iterator1);
 
-        }
-        else
-            throw new IllegalArgumentException("Illegal type of object passed in for initialization. Must be of type DataSetIterator or MultiDataSetIterator");
+        } else
+            throw new IllegalArgumentException(
+                            "Illegal type of object passed in for initialization. Must be of type DataSetIterator or MultiDataSetIterator");
 
         mediaDriverContext = new MediaDriver.Context();
         mediaDriver = MediaDriver.launchEmbedded(mediaDriverContext);
-        parameterServerNode = new ParameterServerNode(mediaDriver,statusServerPort,numWorkers);
+        parameterServerNode = new ParameterServerNode(mediaDriver, statusServerPort, numWorkers);
         running = new AtomicBoolean(true);
-        if(parameterServerArgs == null)
-            parameterServerArgs = new String[] {
-                    "-m","true",
-                    "-s","1," + String.valueOf(model.numParams()),
-                    "-p","40323",
-                    "-h","localhost",
-                    "-id","11",
-                    "-md", mediaDriver.aeronDirectoryName(),
-                    "-sh", "localhost",
-                    "-sp", String.valueOf(statusServerPort),
-                    "-u",String.valueOf(numUpdatesPerEpoch)
-            };
+        if (parameterServerArgs == null)
+            parameterServerArgs = new String[] {"-m", "true", "-s", "1," + String.valueOf(model.numParams()), "-p",
+                            "40323", "-h", "localhost", "-id", "11", "-md", mediaDriver.aeronDirectoryName(), "-sh",
+                            "localhost", "-sp", String.valueOf(statusServerPort), "-u",
+                            String.valueOf(numUpdatesPerEpoch)};
 
-        if(numWorkers == 0)
-            numWorkers =Runtime.getRuntime().availableProcessors();
+        if (numWorkers == 0)
+            numWorkers = Runtime.getRuntime().availableProcessors();
 
         linkedBlockingQueue = new LinkedBlockingQueue<>(numWorkers);
 
         //pass through args for the parameter server subscriber
         parameterServerNode.runMain(parameterServerArgs);
 
-        while(!parameterServerNode.subscriberLaunched()) {
+        while (!parameterServerNode.subscriberLaunched()) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -202,23 +195,25 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
         parameterServerClient = new Trainer[numWorkers];
         executorService = Executors.newFixedThreadPool(numWorkers);
 
-        for(int i = 0; i < numWorkers; i++) {
+        for (int i = 0; i < numWorkers; i++) {
             Model model = null;
-            if(this.model instanceof ComputationGraph) {
+            if (this.model instanceof ComputationGraph) {
                 ComputationGraph computationGraph = (ComputationGraph) this.model;
                 model = computationGraph.clone();
-            }
-            else if(this.model instanceof MultiLayerNetwork) {
+            } else if (this.model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork) this.model;
                 model = multiLayerNetwork.clone();
             }
-            parameterServerClient[i] = new Trainer(ParameterServerClient.builder()
-                    .aeron(parameterServerNode.getAeron())
-                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
-                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
-                    .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(statusServerPort)
-                    .subscriberPort(40625 + i)
-                    .subscriberStream(12 + i).build(),running,linkedBlockingQueue,model);
+            parameterServerClient[i] = new Trainer(
+                            ParameterServerClient.builder().aeron(parameterServerNode.getAeron())
+                                            .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder()
+                                                            .connectionUrl())
+                                            .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber()
+                                                            .connectionUrl())
+                                            .subscriberHost("localhost").masterStatusHost("localhost")
+                                            .masterStatusPort(statusServerPort).subscriberPort(40625 + i)
+                                            .subscriberStream(12 + i).build(),
+                            running, linkedBlockingQueue, model);
             final int j = i;
             executorService.submit(() -> parameterServerClient[j].start());
 
@@ -275,11 +270,11 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(executorService != null)
+        if (executorService != null)
             executorService.shutdown();
-        if(mediaDriver != null)
+        if (mediaDriver != null)
             CloseHelper.close(mediaDriver);
-        if(parameterServerNode != null)
+        if (parameterServerNode != null)
             parameterServerNode.close();
     }
 
@@ -293,30 +288,28 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
         public void start() {
             log.info("Begin polling running queue");
-            while(running.get()) {
+            while (running.get()) {
                 try {
                     Object next = work.poll(1, TimeUnit.SECONDS);
-                    if(next == null)
+                    if (next == null)
                         continue;
                     //send new parameters
-                    if(parameterServerClient.isReadyForNext()) {
+                    if (parameterServerClient.isReadyForNext()) {
                         log.info("Retrieving new array");
                         //get the new parameters from the server
                         INDArray newParams = parameterServerClient.getArray();
                         model.setParams(newParams);
                         log.info("Set new params");
-                    }
-                    else
+                    } else
                         log.debug("Continuing training");
 
 
-                    if(next instanceof DataSet) {
+                    if (next instanceof DataSet) {
                         DataSet dataSet = (DataSet) next;
-                        if(model instanceof ComputationGraph) {
+                        if (model instanceof ComputationGraph) {
                             ComputationGraph computationGraph = (ComputationGraph) model;
                             computationGraph.fit(dataSet);
-                        }
-                        else {
+                        } else {
                             MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork) model;
                             log.info("Calling fit on multi layer network");
                             multiLayerNetwork.fit(dataSet);
@@ -328,14 +321,12 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
                         parameterServerClient.pushNDArray(model.params());
                         log.info("Sent params");
 
-                    }
-                    else {
+                    } else {
                         MultiDataSet dataSet = (MultiDataSet) next;
-                        if(model instanceof ComputationGraph) {
+                        if (model instanceof ComputationGraph) {
                             ComputationGraph computationGraph = (ComputationGraph) model;
                             computationGraph.fit(dataSet);
-                        }
-                        else {
+                        } else {
                             throw new IllegalArgumentException("MultiLayerNetworks can't fit multi datasets");
                         }
 
@@ -399,8 +390,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
          * @throws Exception if this resource cannot be closed
          */
         @Override
-        public void close() throws Exception {
-        }
+        public void close() throws Exception {}
     }
 
 

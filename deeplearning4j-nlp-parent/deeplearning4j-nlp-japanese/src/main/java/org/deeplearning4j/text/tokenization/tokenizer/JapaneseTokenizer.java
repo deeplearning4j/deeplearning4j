@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,52 +39,52 @@ import java.util.NoSuchElementException;
  */
 public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.tokenizer.Tokenizer {
 
-  private Iterator<String> tokenIter;
-  private List<String> tokens;
+    private Iterator<String> tokenIter;
+    private List<String> tokens;
 
-  private TokenPreProcess preProcess;
+    private TokenPreProcess preProcess;
 
-  public JapaneseTokenizer(String toTokenize) {
-    Tokenizer tokenizer = new Tokenizer();
-    Iterator<Token> iter = tokenizer.tokenize(toTokenize).iterator();
+    public JapaneseTokenizer(String toTokenize) {
+        Tokenizer tokenizer = new Tokenizer();
+        Iterator<Token> iter = tokenizer.tokenize(toTokenize).iterator();
 
-    tokens = new ArrayList<String>();
+        tokens = new ArrayList<String>();
 
-    while(iter.hasNext()){
-//      tokens.add(iter.next().getBaseForm());
-      tokens.add(iter.next().getSurface());
+        while (iter.hasNext()) {
+            //      tokens.add(iter.next().getBaseForm());
+            tokens.add(iter.next().getSurface());
+        }
+
+        tokenIter = this.tokens.iterator();
     }
 
-    tokenIter = this.tokens.iterator();
-  }
-
-  @Override
-  public boolean hasMoreTokens() {
-    return tokenIter.hasNext();
-  }
-
-  @Override
-  public int countTokens() {
-    return tokens.size();
-  }
-
-  @Override
-  public String nextToken() {
-    if(hasMoreTokens() == false){
-      throw new NoSuchElementException();
+    @Override
+    public boolean hasMoreTokens() {
+        return tokenIter.hasNext();
     }
-    return this.preProcess != null ? this.preProcess.preProcess(tokenIter.next()) : tokenIter.next();
-  }
 
-  @Override
-  public List<String> getTokens() {
-    return tokens;
-  }
+    @Override
+    public int countTokens() {
+        return tokens.size();
+    }
 
-  @Override
-  public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-    this.preProcess = tokenPreProcessor;
-  }
+    @Override
+    public String nextToken() {
+        if (hasMoreTokens() == false) {
+            throw new NoSuchElementException();
+        }
+        return this.preProcess != null ? this.preProcess.preProcess(tokenIter.next()) : tokenIter.next();
+    }
+
+    @Override
+    public List<String> getTokens() {
+        return tokens;
+    }
+
+    @Override
+    public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
+        this.preProcess = tokenPreProcessor;
+    }
 
 }
 

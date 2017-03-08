@@ -35,7 +35,7 @@ public class TestStatsStorage {
     @Test
     public void testStatsStorage() throws IOException {
 
-        for(boolean useJ7Storage : new boolean[]{false, true}) {
+        for (boolean useJ7Storage : new boolean[] {false, true}) {
             for (int i = 0; i < 3; i++) {
 
                 StatsStorage ss;
@@ -43,9 +43,7 @@ public class TestStatsStorage {
                     case 0:
                         File f = Files.createTempFile("TestMapDbStatsStore", ".db").toFile();
                         f.delete(); //Don't want file to exist...
-                        ss = new MapDBStatsStorage.Builder()
-                                .file(f)
-                                .build();
+                        ss = new MapDBStatsStorage.Builder().file(f).build();
                         break;
                     case 1:
                         File f2 = Files.createTempFile("TestJ7FileStatsStore", ".db").toFile();
@@ -99,7 +97,8 @@ public class TestStatsStorage {
                 assertEquals(Collections.singletonList("tid0"), ss.listTypeIDsForSession("sid0"));
                 assertEquals(Collections.singletonList("wid0"), ss.listWorkerIDsForSession("sid0"));
                 assertEquals(Collections.singletonList("wid0"), ss.listWorkerIDsForSessionAndType("sid0", "tid0"));
-                assertEquals(Collections.singletonList(getReport(0, 0, 0, 12345, useJ7Storage)), ss.getAllUpdatesAfter("sid0", "tid0", "wid0", 0));
+                assertEquals(Collections.singletonList(getReport(0, 0, 0, 12345, useJ7Storage)),
+                                ss.getAllUpdatesAfter("sid0", "tid0", "wid0", 0));
                 assertEquals(1, ss.getNumUpdateRecordsFor("sid0"));
                 assertEquals(1, ss.getNumUpdateRecordsFor("sid0", "tid0", "wid0"));
 
@@ -136,14 +135,18 @@ public class TestStatsStorage {
                 assertEquals(2, ss.getLatestUpdateAllWorkers("sid0", "tid0").size());
 
                 ss.putUpdate(getReport(100, 200, 300, 12346, useJ7Storage));
-                assertEquals(Collections.singletonList(getReport(100, 200, 300, 12346, useJ7Storage)), ss.getLatestUpdateAllWorkers("sid100", "tid200"));
+                assertEquals(Collections.singletonList(getReport(100, 200, 300, 12346, useJ7Storage)),
+                                ss.getLatestUpdateAllWorkers("sid100", "tid200"));
                 assertEquals(Collections.singletonList("tid200"), ss.listTypeIDsForSession("sid100"));
                 List<String> temp = ss.listWorkerIDsForSession("sid100");
                 System.out.println("temp: " + temp);
                 assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSession("sid100"));
-                assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getLatestUpdate("sid100", "tid200", "wid300"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getUpdate("sid100", "tid200", "wid300", 12346));
+                assertEquals(Collections.singletonList("wid300"),
+                                ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getLatestUpdate("sid100", "tid200", "wid300"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getUpdate("sid100", "tid200", "wid300", 12346));
 
                 assertEquals(2, l.countNewSession);
                 assertEquals(3, l.countNewWorkerId);
@@ -157,7 +160,7 @@ public class TestStatsStorage {
     @Test
     public void testFileStatsStore() throws IOException {
 
-        for(boolean useJ7Storage : new boolean[]{false, true}) {
+        for (boolean useJ7Storage : new boolean[] {false, true}) {
             for (int i = 0; i < 2; i++) {
                 File f;
                 if (i == 0) {
@@ -169,9 +172,7 @@ public class TestStatsStorage {
                 f.delete(); //Don't want file to exist...
                 StatsStorage ss;
                 if (i == 0) {
-                    ss = new MapDBStatsStorage.Builder()
-                            .file(f)
-                            .build();
+                    ss = new MapDBStatsStorage.Builder().file(f).build();
                 } else {
                     ss = new J7FileStatsStorage(f);
                 }
@@ -216,7 +217,8 @@ public class TestStatsStorage {
                 assertEquals(Collections.singletonList("tid0"), ss.listTypeIDsForSession("sid0"));
                 assertEquals(Collections.singletonList("wid0"), ss.listWorkerIDsForSession("sid0"));
                 assertEquals(Collections.singletonList("wid0"), ss.listWorkerIDsForSessionAndType("sid0", "tid0"));
-                assertEquals(Collections.singletonList(getReport(0, 0, 0, 12345, useJ7Storage)), ss.getAllUpdatesAfter("sid0", "tid0", "wid0", 0));
+                assertEquals(Collections.singletonList(getReport(0, 0, 0, 12345, useJ7Storage)),
+                                ss.getAllUpdatesAfter("sid0", "tid0", "wid0", 0));
                 assertEquals(1, ss.getNumUpdateRecordsFor("sid0"));
                 assertEquals(1, ss.getNumUpdateRecordsFor("sid0", "tid0", "wid0"));
 
@@ -253,14 +255,18 @@ public class TestStatsStorage {
                 assertEquals(2, ss.getLatestUpdateAllWorkers("sid0", "tid0").size());
 
                 ss.putUpdate(getReport(100, 200, 300, 12346, useJ7Storage));
-                assertEquals(Collections.singletonList(getReport(100, 200, 300, 12346, useJ7Storage)), ss.getLatestUpdateAllWorkers("sid100", "tid200"));
+                assertEquals(Collections.singletonList(getReport(100, 200, 300, 12346, useJ7Storage)),
+                                ss.getLatestUpdateAllWorkers("sid100", "tid200"));
                 assertEquals(Collections.singletonList("tid200"), ss.listTypeIDsForSession("sid100"));
                 List<String> temp = ss.listWorkerIDsForSession("sid100");
                 System.out.println("temp: " + temp);
                 assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSession("sid100"));
-                assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getLatestUpdate("sid100", "tid200", "wid300"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getUpdate("sid100", "tid200", "wid300", 12346));
+                assertEquals(Collections.singletonList("wid300"),
+                                ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getLatestUpdate("sid100", "tid200", "wid300"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getUpdate("sid100", "tid200", "wid300", 12346));
 
                 assertEquals(2, l.countNewSession);
                 assertEquals(3, l.countNewWorkerId);
@@ -273,9 +279,7 @@ public class TestStatsStorage {
                 assertTrue(ss.isClosed());
 
                 if (i == 0) {
-                    ss = new MapDBStatsStorage.Builder()
-                            .file(f)
-                            .build();
+                    ss = new MapDBStatsStorage.Builder().file(f).build();
                 } else {
                     ss = new J7FileStatsStorage(f);
                 }
@@ -292,46 +296,51 @@ public class TestStatsStorage {
                 assertEquals(1, ss.getLatestUpdateAllWorkers("sid100", "tid200").size());
                 assertEquals(Collections.singletonList("tid200"), ss.listTypeIDsForSession("sid100"));
                 assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSession("sid100"));
-                assertEquals(Collections.singletonList("wid300"), ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getLatestUpdate("sid100", "tid200", "wid300"));
-                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage), ss.getUpdate("sid100", "tid200", "wid300", 12346));
+                assertEquals(Collections.singletonList("wid300"),
+                                ss.listWorkerIDsForSessionAndType("sid100", "tid200"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getLatestUpdate("sid100", "tid200", "wid300"));
+                assertEquals(getReport(100, 200, 300, 12346, useJ7Storage),
+                                ss.getUpdate("sid100", "tid200", "wid300", 12346));
             }
         }
     }
 
-    private static StatsInitializationReport getInitReport(int idNumber, int tid, int wid, boolean useJ7Storage){
+    private static StatsInitializationReport getInitReport(int idNumber, int tid, int wid, boolean useJ7Storage) {
         StatsInitializationReport rep;
-        if(useJ7Storage){
+        if (useJ7Storage) {
             rep = new JavaStatsInitializationReport();
         } else {
             rep = new SbeStatsInitializationReport();
         }
 
-        rep.reportModelInfo("classname","jsonconfig",new String[]{"p0","p1"},1,10);
-        rep.reportIDs("sid"+idNumber,"tid"+tid,"wid"+wid,12345);
-        rep.reportHardwareInfo(0,2,1000,2000,new long[]{3000,4000},new String[]{"dev0","dev1"},"hardwareuid");
-        Map<String,String> envInfo = new HashMap<>();
-        envInfo.put("envInfo0","value0");
+        rep.reportModelInfo("classname", "jsonconfig", new String[] {"p0", "p1"}, 1, 10);
+        rep.reportIDs("sid" + idNumber, "tid" + tid, "wid" + wid, 12345);
+        rep.reportHardwareInfo(0, 2, 1000, 2000, new long[] {3000, 4000}, new String[] {"dev0", "dev1"}, "hardwareuid");
+        Map<String, String> envInfo = new HashMap<>();
+        envInfo.put("envInfo0", "value0");
         envInfo.put("envInfo1", "value1");
-        rep.reportSoftwareInfo("arch","osName","jvmName","jvmVersion","1.8","backend","dtype","hostname","jvmuid", envInfo);
+        rep.reportSoftwareInfo("arch", "osName", "jvmName", "jvmVersion", "1.8", "backend", "dtype", "hostname",
+                        "jvmuid", envInfo);
         return rep;
     }
 
-    private static StatsReport getReport(int sid, int tid, int wid, long time, boolean useJ7Storage ){
+    private static StatsReport getReport(int sid, int tid, int wid, long time, boolean useJ7Storage) {
         StatsReport rep;
-        if(useJ7Storage){
+        if (useJ7Storage) {
             rep = new JavaStatsReport();
         } else {
             rep = new SbeStatsReport();
         }
 
-        rep.reportIDs("sid"+sid,"tid"+tid,"wid"+wid,time);
+        rep.reportIDs("sid" + sid, "tid" + tid, "wid" + wid, time);
         rep.reportScore(100.0);
-        rep.reportPerformance(1000,1001,1002,1003.0,1004.0);
+        rep.reportPerformance(1000, 1001, 1002, 1003.0, 1004.0);
         return rep;
     }
 
-    @NoArgsConstructor @Data
+    @NoArgsConstructor
+    @Data
     private static class CountingListener implements StatsStorageListener {
 
         private int countNewSession;
@@ -344,7 +353,7 @@ public class TestStatsStorage {
         @Override
         public void notify(StatsStorageEvent event) {
             System.out.println("Event: " + event);
-            switch (event.getEventType()){
+            switch (event.getEventType()) {
                 case NewSessionID:
                     countNewSession++;
                     break;

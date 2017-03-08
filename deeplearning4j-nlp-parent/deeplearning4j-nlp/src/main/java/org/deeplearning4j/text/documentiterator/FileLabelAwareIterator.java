@@ -51,7 +51,8 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
             BufferedReader reader = new BufferedReader(new FileReader(fileToRead));
             StringBuilder builder = new StringBuilder();
             String line = "";
-            while ((line = reader.readLine()) != null) builder.append(line).append(" ");
+            while ((line = reader.readLine()) != null)
+                builder.append(line).append(" ");
 
             reader.close();
 
@@ -124,26 +125,31 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
             List<File> fileList = new ArrayList<>();
             List<String> labels = new ArrayList<>();
 
-            for (File file: foldersToScan) {
-                if (!file.isDirectory()) continue;
-
+            for (File file : foldersToScan) {
+                if (!file.isDirectory())
+                    continue;
 
 
 
                 File[] files = file.listFiles();
-                if (files == null || files.length ==0 ) continue;
+                if (files == null || files.length == 0)
+                    continue;
 
 
-                for (File fileLabel: files) {
-                    if (!fileLabel.isDirectory()) continue;
+                for (File fileLabel : files) {
+                    if (!fileLabel.isDirectory())
+                        continue;
 
-                    if (!labels.contains(fileLabel.getName())) labels.add(fileLabel.getName());
+                    if (!labels.contains(fileLabel.getName()))
+                        labels.add(fileLabel.getName());
 
                     File[] docs = fileLabel.listFiles();
-                    if (docs == null || docs.length == 0) continue;
+                    if (docs == null || docs.length == 0)
+                        continue;
 
-                    for (File fileDoc: docs) {
-                        if (!fileDoc.isDirectory()) fileList.add(fileDoc);
+                    for (File fileDoc : docs) {
+                        if (!fileDoc.isDirectory())
+                            fileList.add(fileDoc);
                     }
                 }
             }

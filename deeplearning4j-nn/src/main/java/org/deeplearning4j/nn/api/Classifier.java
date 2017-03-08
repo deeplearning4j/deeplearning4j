@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,7 +31,6 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface Classifier extends Model {
-
 
 
 
@@ -106,7 +105,6 @@ public interface Classifier extends Model {
 
 
 
-
     /**
      * Fit the model
      * @param examples the examples to classify (one example in each row)
@@ -114,7 +112,6 @@ public interface Classifier extends Model {
      *               the number of rows in the example
      */
     void fit(INDArray examples, int[] labels);
-
 
 
 

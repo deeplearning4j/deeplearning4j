@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -31,11 +31,8 @@ import static org.junit.Assert.assertEquals;
 
 public class UserDictionaryTokenizerTest {
 
-    private String userDictionary = "" +
-        "クロ,クロ,クロ,カスタム名詞\n" +
-        "真救世主,真救世主,シンキュウセイシュ,カスタム名詞\n" +
-        "真救世主伝説,真救世主伝説,シンキュウセイシュデンセツ,カスタム名詞\n" +
-        "北斗の拳,北斗の拳,ホクトノケン,カスタム名詞";
+    private String userDictionary = "" + "クロ,クロ,クロ,カスタム名詞\n" + "真救世主,真救世主,シンキュウセイシュ,カスタム名詞\n"
+                    + "真救世主伝説,真救世主伝説,シンキュウセイシュデンセツ,カスタム名詞\n" + "北斗の拳,北斗の拳,ホクトノケン,カスタム名詞";
 
     @Test
     public void testWhitespace() throws IOException {
@@ -43,10 +40,7 @@ public class UserDictionaryTokenizerTest {
         Tokenizer tokenizer = makeTokenizer(userDictionary);
         String input = "iPhone4 S";
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("iPhone4 S"),
-            tokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList("iPhone4 S"), tokenizer.tokenize(input));
     }
 
     @Test(expected = RuntimeException.class)
@@ -62,10 +56,7 @@ public class UserDictionaryTokenizerTest {
 
         String input = "アクロポリス";
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("ア", "クロ", "ポリス"),
-            tokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList("ア", "クロ", "ポリス"), tokenizer.tokenize(input));
     }
 
     @Test
@@ -89,10 +80,8 @@ public class UserDictionaryTokenizerTest {
 
         String input = "この丘はアクロポリスと呼ばれている。";
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("この", "丘", "は", "ア", "クロ", "ポリス", "と", "呼ば", "れ", "て", "いる", "。"),
-            tokenizer.tokenize(input)
-        );
+        assertTokenSurfacesEquals(Arrays.asList("この", "丘", "は", "ア", "クロ", "ポリス", "と", "呼ば", "れ", "て", "いる", "。"),
+                        tokenizer.tokenize(input));
     }
 
     @Test
@@ -102,11 +91,7 @@ public class UserDictionaryTokenizerTest {
 
         String input = "アクロア";
         String[] surfaces = {"ア", "クロ", "ア"};
-        String[] features = {
-            "*,*,*,*,*,*,*,*,*",
-            "カスタム名詞,*,*,*,*,*,*,クロ,*",
-            "*,*,*,*,*,*,*,*,*"
-        };
+        String[] features = {"*,*,*,*,*,*,*,*,*", "カスタム名詞,*,*,*,*,*,*,クロ,*", "*,*,*,*,*,*,*,*,*"};
         List<Token> tokens = tokenizer.tokenize(input);
 
         for (int i = 0; i < tokens.size(); i++) {
@@ -122,18 +107,10 @@ public class UserDictionaryTokenizerTest {
 
         String input = "この丘の名前はアクロアだ。";
         String[] surfaces = {"この", "丘", "の", "名前", "は", "ア", "クロ", "ア", "だ", "。"};
-        String[] features = {
-            "連体詞,*,*,*,*,*,この,コノ,コノ",
-            "名詞,一般,*,*,*,*,丘,オカ,オカ",
-            "助詞,連体化,*,*,*,*,の,ノ,ノ",
-            "名詞,一般,*,*,*,*,名前,ナマエ,ナマエ",
-            "助詞,係助詞,*,*,*,*,は,ハ,ワ",
-            "*,*,*,*,*,*,*,*,*",
-            "カスタム名詞,*,*,*,*,*,*,クロ,*",
-            "*,*,*,*,*,*,*,*,*",
-            "助動詞,*,*,*,特殊・ダ,基本形,だ,ダ,ダ",
-            "記号,句点,*,*,*,*,。,。,。"
-        };
+        String[] features = {"連体詞,*,*,*,*,*,この,コノ,コノ", "名詞,一般,*,*,*,*,丘,オカ,オカ", "助詞,連体化,*,*,*,*,の,ノ,ノ",
+                        "名詞,一般,*,*,*,*,名前,ナマエ,ナマエ", "助詞,係助詞,*,*,*,*,は,ハ,ワ", "*,*,*,*,*,*,*,*,*",
+                        "カスタム名詞,*,*,*,*,*,*,クロ,*", "*,*,*,*,*,*,*,*,*", "助動詞,*,*,*,特殊・ダ,基本形,だ,ダ,ダ",
+                        "記号,句点,*,*,*,*,。,。,。"};
         List<Token> tokens = tokenizer.tokenize(input);
 
         for (int i = 0; i < tokens.size(); i++) {
@@ -175,24 +152,18 @@ public class UserDictionaryTokenizerTest {
         String userDictionary = "竜宮の乙姫の元結の切り外し,竜宮の乙姫の元結の切り外し,リュウグウノオトヒメノモトユイノキリハズシ,カスタム名詞";
         Tokenizer tokenizer = makeTokenizer(userDictionary);
 
-        assertEquals(
-            "リュウグウノオトヒメノモトユイノキリハズシ",
-            tokenizer.tokenize("竜宮の乙姫の元結の切り外し").get(0).getReading()
-        );
+        assertEquals("リュウグウノオトヒメノモトユイノキリハズシ", tokenizer.tokenize("竜宮の乙姫の元結の切り外し").get(0).getReading());
     }
 
     @Test
     public void testLongestMovieTitle() throws IOException {
         String userDictionary = "マルキ・ド・サドの演出のもとにシャラントン精神病院患者たちによって演じられたジャン＝ポール・マラーの迫害と暗殺,"
-            + "マルキ・ド・サドの演出のもとにシャラントン精神病院患者たちによって演じられたジャン＝ポール・マラーの迫害と暗殺,"
-            + "マルキ・ド・サドノエンシュツノモトニシャラントンセイシンビョウインカンジャタチニヨッテエンジラレタジャン＝ポール・マラーノハクガイトアンサツ,"
-            + "カスタム名詞";
+                        + "マルキ・ド・サドの演出のもとにシャラントン精神病院患者たちによって演じられたジャン＝ポール・マラーの迫害と暗殺,"
+                        + "マルキ・ド・サドノエンシュツノモトニシャラントンセイシンビョウインカンジャタチニヨッテエンジラレタジャン＝ポール・マラーノハクガイトアンサツ," + "カスタム名詞";
         Tokenizer tokenizer = makeTokenizer(userDictionary);
 
-        assertEquals(
-            "マルキ・ド・サドノエンシュツノモトニシャラントンセイシンビョウインカンジャタチニヨッテエンジラレタジャン＝ポール・マラーノハクガイトアンサツ",
-            tokenizer.tokenize("マルキ・ド・サドの演出のもとにシャラントン精神病院患者たちによって演じられたジャン＝ポール・マラーの迫害と暗殺").get(0).getReading()
-        );
+        assertEquals("マルキ・ド・サドノエンシュツノモトニシャラントンセイシンビョウインカンジャタチニヨッテエンジラレタジャン＝ポール・マラーノハクガイトアンサツ", tokenizer
+                        .tokenize("マルキ・ド・サドの演出のもとにシャラントン精神病院患者たちによって演じられたジャン＝ポール・マラーの迫害と暗殺").get(0).getReading());
     }
 
     @Test
@@ -200,17 +171,13 @@ public class UserDictionaryTokenizerTest {
         String userDictionary = "引,引,引,カスタム品詞\n";
         Tokenizer tokenizer = makeTokenizer(userDictionary);
 
-        assertTokenSurfacesEquals(
-            Arrays.asList("引", "く", "。"),
-            tokenizer.tokenize("引く。")
-        );
+        assertTokenSurfacesEquals(Arrays.asList("引", "く", "。"), tokenizer.tokenize("引く。"));
     }
 
     @Ignore("Doesn't segment properly - Viterbi lattice looks funny")
     @Test
     public void testTsunk() throws IOException {
-        String userDictionary = "" +
-            "シャ乱Q つんく♂,シャ乱Q つんく ♂,シャランキュー ツンク ボーイ,カスタムアーティスト名";
+        String userDictionary = "" + "シャ乱Q つんく♂,シャ乱Q つんく ♂,シャランキュー ツンク ボーイ,カスタムアーティスト名";
         Tokenizer tokenizer = makeTokenizer(userDictionary);
 
         FileOutputStream output = new FileOutputStream("tsunk.gv");
@@ -219,16 +186,10 @@ public class UserDictionaryTokenizerTest {
     }
 
     private Tokenizer makeTokenizer(String userDictionaryEntry) throws IOException {
-        return new Tokenizer.Builder()
-            .userDictionary(
-                makeUserDictionaryStream(userDictionaryEntry)
-            )
-            .build();
+        return new Tokenizer.Builder().userDictionary(makeUserDictionaryStream(userDictionaryEntry)).build();
     }
 
     private ByteArrayInputStream makeUserDictionaryStream(String userDictionary) {
-        return new ByteArrayInputStream(
-            userDictionary.getBytes(StandardCharsets.UTF_8)
-        );
+        return new ByteArrayInputStream(userDictionary.getBytes(StandardCharsets.UTF_8));
     }
 }

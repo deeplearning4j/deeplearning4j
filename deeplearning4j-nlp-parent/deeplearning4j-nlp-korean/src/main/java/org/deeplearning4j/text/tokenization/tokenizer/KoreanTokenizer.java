@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,22 +31,23 @@ import java.util.NoSuchElementException;
  * Created by kepricon on 16. 10. 20.
  * KoreanTokenizer using KoreanTwitterText (https://github.com/twitter/twitter-korean-text)
  */
-public class KoreanTokenizer implements Tokenizer{
+public class KoreanTokenizer implements Tokenizer {
     private Iterator<String> tokenIter;
     private List<String> tokenList;
 
     private TokenPreProcess preProcess;
 
-    public KoreanTokenizer(String toTokenize){
+    public KoreanTokenizer(String toTokenize) {
 
         // need normalize?
 
         // Tokenize
-        Seq<com.twitter.penguin.korean.tokenizer.KoreanTokenizer.KoreanToken> tokens = TwitterKoreanProcessorJava.tokenize(toTokenize);
-        tokenList  = new ArrayList<String>();
-        Iterator<KoreanTokenJava> iter =  TwitterKoreanProcessorJava.tokensToJavaKoreanTokenList(tokens).iterator();
+        Seq<com.twitter.penguin.korean.tokenizer.KoreanTokenizer.KoreanToken> tokens =
+                        TwitterKoreanProcessorJava.tokenize(toTokenize);
+        tokenList = new ArrayList<String>();
+        Iterator<KoreanTokenJava> iter = TwitterKoreanProcessorJava.tokensToJavaKoreanTokenList(tokens).iterator();
 
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             tokenList.add(iter.next().getText());
         }
         tokenIter = tokenList.iterator();
@@ -64,7 +65,7 @@ public class KoreanTokenizer implements Tokenizer{
 
     @Override
     public String nextToken() {
-        if(hasMoreTokens() == false){
+        if (hasMoreTokens() == false) {
             throw new NoSuchElementException();
         }
         return this.preProcess != null ? this.preProcess.preProcess(tokenIter.next()) : tokenIter.next();

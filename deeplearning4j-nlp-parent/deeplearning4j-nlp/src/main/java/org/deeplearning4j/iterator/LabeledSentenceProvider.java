@@ -23,7 +23,7 @@ public interface LabeledSentenceProvider {
      *
      * @return Pair: sentence/document text and label
      */
-    Pair<String,String> nextSentence();
+    Pair<String, String> nextSentence();
 
     /**
      * Reset the iterator - including shuffling the order, if necessary/appropriate

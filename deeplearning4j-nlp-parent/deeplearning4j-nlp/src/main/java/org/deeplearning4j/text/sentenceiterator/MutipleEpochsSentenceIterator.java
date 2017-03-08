@@ -36,7 +36,8 @@ public class MutipleEpochsSentenceIterator implements SentenceIterator {
                 counter.incrementAndGet();
                 iterator.reset();
                 return true;
-            } else return false;
+            } else
+                return false;
         }
         return true;
     }

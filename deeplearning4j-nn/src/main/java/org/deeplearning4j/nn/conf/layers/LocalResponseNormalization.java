@@ -42,9 +42,11 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret
-                = new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
+        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret =
+                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -63,8 +65,9 @@ public class LocalResponseNormalization extends Layer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input type for LRN layer (layer index = " + layerIndex +
-                    ", layer name = \"" + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
+            throw new IllegalStateException(
+                            "Invalid input type for LRN layer (layer index = " + layerIndex + ", layer name = \""
+                                            + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
         }
         return inputType;
     }
@@ -76,8 +79,9 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null ) {
-            throw new IllegalStateException("Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): null");
+        if (inputType == null) {
+            throw new IllegalStateException(
+                            "Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -115,8 +119,7 @@ public class LocalResponseNormalization extends Layer {
             this.beta = beta;
         }
 
-        public Builder() {
-        }
+        public Builder() {}
 
         /**
          * LRN scaling constant k. Default: 2

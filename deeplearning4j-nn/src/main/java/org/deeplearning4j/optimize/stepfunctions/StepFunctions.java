@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -24,23 +24,25 @@ public class StepFunctions {
 
     private static final DefaultStepFunction DEFAULT_STEP_FUNCTION_INSTANCE = new DefaultStepFunction();
     private static final GradientStepFunction GRADIENT_STEP_FUNCTION_INSTANCE = new GradientStepFunction();
-    private static final NegativeDefaultStepFunction NEGATIVE_DEFAULT_STEP_FUNCTION_INSTANCE = new NegativeDefaultStepFunction();
-    private static final NegativeGradientStepFunction NEGATIVE_GRADIENT_STEP_FUNCTION_INSTANCE = new NegativeGradientStepFunction();
+    private static final NegativeDefaultStepFunction NEGATIVE_DEFAULT_STEP_FUNCTION_INSTANCE =
+                    new NegativeDefaultStepFunction();
+    private static final NegativeGradientStepFunction NEGATIVE_GRADIENT_STEP_FUNCTION_INSTANCE =
+                    new NegativeGradientStepFunction();
 
-    private StepFunctions() {
-    }
+    private StepFunctions() {}
 
     public static StepFunction createStepFunction(org.deeplearning4j.nn.conf.stepfunctions.StepFunction stepFunction) {
-    	if(stepFunction == null ) return null;
-        if(stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction)
+        if (stepFunction == null)
+            return null;
+        if (stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction)
             return DEFAULT_STEP_FUNCTION_INSTANCE;
-        if(stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction)
+        if (stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction)
             return GRADIENT_STEP_FUNCTION_INSTANCE;
-        if(stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction)
+        if (stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction)
             return NEGATIVE_DEFAULT_STEP_FUNCTION_INSTANCE;
-        if(stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.NegativeGradientStepFunction)
+        if (stepFunction instanceof org.deeplearning4j.nn.conf.stepfunctions.NegativeGradientStepFunction)
             return NEGATIVE_GRADIENT_STEP_FUNCTION_INSTANCE;
-        
+
         throw new RuntimeException("unknown step function: " + stepFunction);
     }
 }

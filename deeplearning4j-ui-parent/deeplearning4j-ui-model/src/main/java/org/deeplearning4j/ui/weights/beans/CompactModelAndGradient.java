@@ -15,12 +15,12 @@ import java.util.Map;
 
 public class CompactModelAndGradient implements Serializable {
     private long lastUpdateTime = -1L;
-    private Map<String,Map> parameters;
-    private Map<String,Map> gradients;
+    private Map<String, Map> parameters;
+    private Map<String, Map> gradients;
     private double score;
     private List<Double> scores = new ArrayList<>();
-    private List<Map<String,List<Double>>> updateMagnitudes = new ArrayList<>();
-    private List<Map<String,List<Double>>> paramMagnitudes = new ArrayList<>();
+    private List<Map<String, List<Double>>> updateMagnitudes = new ArrayList<>();
+    private List<Map<String, List<Double>>> paramMagnitudes = new ArrayList<>();
     private List<String> layerNames = new ArrayList<>();
     private String path;
 
@@ -31,11 +31,11 @@ public class CompactModelAndGradient implements Serializable {
     }
 
 
-    public void setLastUpdateTime(long lastUpdateTime){
+    public void setLastUpdateTime(long lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
     }
 
-    public long getLastUpdateTime(){
+    public long getLastUpdateTime() {
         return lastUpdateTime;
     }
 
@@ -65,55 +65,59 @@ public class CompactModelAndGradient implements Serializable {
         this.gradients = gradients;
     }
 
-    public void setScores(List<Double> scores){
+    public void setScores(List<Double> scores) {
         this.scores = scores;
     }
 
-    public void setPath(String path){
+    public void setPath(String path) {
         this.path = path;
     }
 
-    public String getPath(){
+    public String getPath() {
         return path;
     }
 
-    public List<Double> getScores(){
+    public List<Double> getScores() {
         return scores;
     }
 
-    public void setUpdateMagnitudes(List<Map<String,List<Double>>> updateMagnitudes ){
+    public void setUpdateMagnitudes(List<Map<String, List<Double>>> updateMagnitudes) {
         this.updateMagnitudes = updateMagnitudes;
     }
 
-    public List<Map<String,List<Double>>> getUpdateMagnitudes(){
+    public List<Map<String, List<Double>>> getUpdateMagnitudes() {
         return updateMagnitudes;
     }
 
-    public void setParamMagnitudes(List<Map<String,List<Double>>> paramMagnitudes){
+    public void setParamMagnitudes(List<Map<String, List<Double>>> paramMagnitudes) {
         this.paramMagnitudes = paramMagnitudes;
     }
 
-    public List<Map<String,List<Double>>> getParamMagnitudes(){
+    public List<Map<String, List<Double>>> getParamMagnitudes() {
         return paramMagnitudes;
     }
 
-    public void setLayerNames(List<String> layerNames){
+    public void setLayerNames(List<String> layerNames) {
         this.layerNames = layerNames;
     }
 
-    public List<String> getLayerNames(){
+    public List<String> getLayerNames() {
         return layerNames;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         CompactModelAndGradient that = (CompactModelAndGradient) o;
 
-        if (Double.compare(that.score, score) != 0) return false;
-        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
+        if (Double.compare(that.score, score) != 0)
+            return false;
+        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null)
+            return false;
         return !(gradients != null ? !gradients.equals(that.gradients) : that.gradients != null);
     }
 

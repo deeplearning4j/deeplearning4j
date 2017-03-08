@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,109 +35,109 @@ import java.util.List;
  *
  */
 public abstract class BaseDataFetcher implements DataSetFetcher {
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -859588773699432365L;
-	protected int cursor = 0;
-	protected int numOutcomes = -1;
-	protected int inputColumns = -1;
-	protected DataSet curr;
-	protected int totalExamples;
-	protected static final Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
-	
-	/**
-	 * Creates a feature vector
-	 * @param numRows the number of examples
- 	 * @return a feature vector
-	 */
-	protected INDArray createInputMatrix(int numRows) {
-		return Nd4j.create(numRows, inputColumns);
-	}
-	
-	/**
-	 * Creates an output label matrix
-	 * @param outcomeLabel the outcome label to use
-	 * @return a binary vector where 1 is transform to the
-	 * index specified by outcomeLabel
-	 */
-	protected INDArray createOutputVector(int outcomeLabel) {
-		return FeatureUtil.toOutcomeVector(outcomeLabel, numOutcomes);
-	}
-	
-	protected INDArray createOutputMatrix(int numRows) {
-		return Nd4j.create(numRows,numOutcomes);
-	}
-	
-	/**
-	 * Initializes this data transform fetcher from the passed in datasets
-	 * @param examples the examples to use
-	 */
-	protected void initializeCurrFromList(List<DataSet> examples) {
-		
-		if(examples.isEmpty())
-			log.warn("Warning: empty dataset from the fetcher");
-		curr = null;
-		INDArray inputs = createInputMatrix(examples.size());
-		INDArray labels = createOutputMatrix(examples.size());
-		for(int i = 0; i < examples.size(); i++) {
-			INDArray data = examples.get(i).getFeatureMatrix();
-			INDArray label = examples.get(i).getLabels();
-			inputs.putRow(i, data);
-			labels.putRow(i,label);
-		}
-		curr = new DataSet(inputs,labels);
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -859588773699432365L;
+    protected int cursor = 0;
+    protected int numOutcomes = -1;
+    protected int inputColumns = -1;
+    protected DataSet curr;
+    protected int totalExamples;
+    protected static final Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
+
+    /**
+     * Creates a feature vector
+     * @param numRows the number of examples
+     * @return a feature vector
+     */
+    protected INDArray createInputMatrix(int numRows) {
+        return Nd4j.create(numRows, inputColumns);
+    }
+
+    /**
+     * Creates an output label matrix
+     * @param outcomeLabel the outcome label to use
+     * @return a binary vector where 1 is transform to the
+     * index specified by outcomeLabel
+     */
+    protected INDArray createOutputVector(int outcomeLabel) {
+        return FeatureUtil.toOutcomeVector(outcomeLabel, numOutcomes);
+    }
+
+    protected INDArray createOutputMatrix(int numRows) {
+        return Nd4j.create(numRows, numOutcomes);
+    }
+
+    /**
+     * Initializes this data transform fetcher from the passed in datasets
+     * @param examples the examples to use
+     */
+    protected void initializeCurrFromList(List<DataSet> examples) {
+
+        if (examples.isEmpty())
+            log.warn("Warning: empty dataset from the fetcher");
+        curr = null;
+        INDArray inputs = createInputMatrix(examples.size());
+        INDArray labels = createOutputMatrix(examples.size());
+        for (int i = 0; i < examples.size(); i++) {
+            INDArray data = examples.get(i).getFeatureMatrix();
+            INDArray label = examples.get(i).getLabels();
+            inputs.putRow(i, data);
+            labels.putRow(i, label);
+        }
+        curr = new DataSet(inputs, labels);
         examples.clear();
 
-	}
+    }
 
-	/**
-	 * Sets a list of label names to the curr dataset
-	 */
-	public void setLabelNames(List<String > names) {
-		curr.setLabelNames(names);
-	}
+    /**
+     * Sets a list of label names to the curr dataset
+     */
+    public void setLabelNames(List<String> names) {
+        curr.setLabelNames(names);
+    }
 
-	public String getLabelName(int i) {
-		return curr.getLabelNames().get(i);
-	}
-	@Override
-	public boolean hasMore() {
-		return cursor < totalExamples;
-	}
+    public String getLabelName(int i) {
+        return curr.getLabelNames().get(i);
+    }
 
-	@Override
-	public DataSet next() {
-		return curr;
-	}
+    @Override
+    public boolean hasMore() {
+        return cursor < totalExamples;
+    }
 
-	@Override
-	public int totalOutcomes() {
-		return numOutcomes;
-	}
+    @Override
+    public DataSet next() {
+        return curr;
+    }
 
-	@Override
-	public int inputColumns() {
-		return inputColumns;
-	}
+    @Override
+    public int totalOutcomes() {
+        return numOutcomes;
+    }
 
-	@Override
-	public int totalExamples() {
-		return totalExamples;
-	}
+    @Override
+    public int inputColumns() {
+        return inputColumns;
+    }
 
-	@Override
-	public void reset() {
-		cursor = 0;
-	}
+    @Override
+    public int totalExamples() {
+        return totalExamples;
+    }
 
-	@Override
-	public int cursor() {
-		return cursor;
-	}
-	
-	
+    @Override
+    public void reset() {
+        cursor = 0;
+    }
 
-	
+    @Override
+    public int cursor() {
+        return cursor;
+    }
+
+
+
 }

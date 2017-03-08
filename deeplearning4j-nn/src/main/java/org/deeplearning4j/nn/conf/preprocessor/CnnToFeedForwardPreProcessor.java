@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -60,8 +60,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @JsonCreator
     public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                                        @JsonProperty("inputWidth") int inputWidth,
-                                        @JsonProperty("numChannels") int numChannels) {
+                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
@@ -73,33 +72,38 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         this.numChannels = 1;
     }
 
-    public CnnToFeedForwardPreProcessor(){}
+    public CnnToFeedForwardPreProcessor() {}
 
     @Override
     // return 2 dimensions
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if(input.rank() == 2) return input; //Should usually never happen
+        if (input.rank() == 2)
+            return input; //Should usually never happen
 
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
-        if(input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
+        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
+            input = input.dup('c');
 
-        int[] inShape = input.shape();  //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[]{inShape[0], inShape[1]*inShape[2]*inShape[3]};
+        int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return input.reshape('c',outShape);
+        return input.reshape('c', outShape);
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize){
+    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
         //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
-        if(epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
+        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+            epsilons = epsilons.dup('c');
 
-        if(epsilons.rank() == 4) return epsilons;   //Should never happen
+        if (epsilons.rank() == 4)
+            return epsilons; //Should never happen
 
-        if(epsilons.columns() != inputWidth * inputHeight * numChannels )
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
-                    + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(epsilons.shape()));
+        if (epsilons.columns() != inputWidth * inputHeight * numChannels)
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
+                            + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
+                            + Arrays.toString(epsilons.shape()));
 
         return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
     }
@@ -116,18 +120,19 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }
 
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
         return new Pair<>(maskArray, currentMaskState);
     }

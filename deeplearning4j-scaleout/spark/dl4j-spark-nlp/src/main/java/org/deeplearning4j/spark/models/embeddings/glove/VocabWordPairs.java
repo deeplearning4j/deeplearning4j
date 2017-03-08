@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,7 +29,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
  *
  * @author Adam Gibson
  */
-public class VocabWordPairs implements Function<Triple<String,String,Double>,Triple<VocabWord,VocabWord,Double>> {
+public class VocabWordPairs implements Function<Triple<String, String, Double>, Triple<VocabWord, VocabWord, Double>> {
     private Broadcast<VocabCache<VocabWord>> vocab;
 
     public VocabWordPairs(Broadcast<VocabCache<VocabWord>> vocab) {
@@ -38,6 +38,7 @@ public class VocabWordPairs implements Function<Triple<String,String,Double>,Tri
 
     @Override
     public Triple<VocabWord, VocabWord, Double> call(Triple<String, String, Double> v1) throws Exception {
-        return new Triple<>((VocabWord) vocab.getValue().wordFor(v1.getFirst()),(VocabWord) vocab.getValue().wordFor(v1.getSecond()),v1.getThird());
+        return new Triple<>((VocabWord) vocab.getValue().wordFor(v1.getFirst()),
+                        (VocabWord) vocab.getValue().wordFor(v1.getSecond()), v1.getThird());
     }
 }

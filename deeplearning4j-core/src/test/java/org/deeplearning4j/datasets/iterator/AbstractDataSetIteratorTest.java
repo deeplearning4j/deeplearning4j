@@ -36,7 +36,7 @@ public class AbstractDataSetIteratorTest {
             cnt.incrementAndGet();
         }
 
-        assertEquals(numRows/batchSize, cnt.get());
+        assertEquals(numRows / batchSize, cnt.get());
     }
 
 

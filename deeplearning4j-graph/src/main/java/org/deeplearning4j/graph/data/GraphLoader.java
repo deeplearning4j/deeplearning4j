@@ -19,8 +19,7 @@ import java.util.List;
  */
 public class GraphLoader {
 
-    private GraphLoader() {
-    }
+    private GraphLoader() {}
 
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
      * per line with a delimiter in between<br>
@@ -32,8 +31,9 @@ public class GraphLoader {
      * @return graph
      * @throws IOException if file cannot be read
      */
-    public static Graph<String,String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim) throws IOException {
-        return loadUndirectedGraphEdgeListFile(path,numVertices,delim,true);
+    public static Graph<String, String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim)
+                    throws IOException {
+        return loadUndirectedGraphEdgeListFile(path, numVertices, delim, true);
     }
 
     /** Simple method for loading an undirected graph, where the graph is represented by a edge list with one edge
@@ -48,15 +48,16 @@ public class GraphLoader {
      * @return graph
      * @throws IOException if file cannot be read
      */
-    public static Graph<String,String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim, boolean allowMultipleEdges) throws IOException {
-        Graph<String,String> graph = new Graph<>(numVertices,allowMultipleEdges,new StringVertexFactory());
-        EdgeLineProcessor<String> lineProcessor = new DelimitedEdgeLineProcessor(delim,false);
+    public static Graph<String, String> loadUndirectedGraphEdgeListFile(String path, int numVertices, String delim,
+                    boolean allowMultipleEdges) throws IOException {
+        Graph<String, String> graph = new Graph<>(numVertices, allowMultipleEdges, new StringVertexFactory());
+        EdgeLineProcessor<String> lineProcessor = new DelimitedEdgeLineProcessor(delim, false);
 
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
             String line;
-            while( (line = br.readLine()) != null ) {
+            while ((line = br.readLine()) != null) {
                 Edge<String> edge = lineProcessor.processLine(line);
-                if(edge != null){
+                if (edge != null) {
                     graph.addEdge(edge);
                 }
             }
@@ -77,9 +78,9 @@ public class GraphLoader {
      * @return The graph
      * @throws IOException
      */
-    public static Graph<String,Double> loadWeightedEdgeListFile(String path, int numVertices, String delim, boolean directed,
-                                                                String... ignoreLinesStartingWith) throws IOException {
-        return loadWeightedEdgeListFile(path,numVertices,delim,directed,true,ignoreLinesStartingWith);
+    public static Graph<String, Double> loadWeightedEdgeListFile(String path, int numVertices, String delim,
+                    boolean directed, String... ignoreLinesStartingWith) throws IOException {
+        return loadWeightedEdgeListFile(path, numVertices, delim, directed, true, ignoreLinesStartingWith);
     }
 
     /**Method for loading a weighted graph from an edge list file, where each edge (inc. weight) is represented by a
@@ -97,16 +98,18 @@ public class GraphLoader {
      * @return The graph
      * @throws IOException
      */
-    public static Graph<String,Double> loadWeightedEdgeListFile(String path, int numVertices, String delim, boolean directed,
-                                                                boolean allowMultipleEdges, String... ignoreLinesStartingWith) throws IOException {
-        Graph<String,Double> graph = new Graph<>(numVertices,allowMultipleEdges,new StringVertexFactory());
-        EdgeLineProcessor<Double> lineProcessor = new WeightedEdgeLineProcessor(delim,directed,ignoreLinesStartingWith);
+    public static Graph<String, Double> loadWeightedEdgeListFile(String path, int numVertices, String delim,
+                    boolean directed, boolean allowMultipleEdges, String... ignoreLinesStartingWith)
+                    throws IOException {
+        Graph<String, Double> graph = new Graph<>(numVertices, allowMultipleEdges, new StringVertexFactory());
+        EdgeLineProcessor<Double> lineProcessor =
+                        new WeightedEdgeLineProcessor(delim, directed, ignoreLinesStartingWith);
 
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
             String line;
-            while( (line = br.readLine()) != null ) {
+            while ((line = br.readLine()) != null) {
                 Edge<Double> edge = lineProcessor.processLine(line);
-                if(edge != null){
+                if (edge != null) {
                     graph.addEdge(edge);
                 }
             }
@@ -123,16 +126,15 @@ public class GraphLoader {
      * @param allowMultipleEdges whether the graph should allow multiple edges between a given pair of vertices or not
      * @return IGraph
      */
-    public static <V,E> Graph<V,E> loadGraph(String path, EdgeLineProcessor<E> lineProcessor,
-                                                   VertexFactory<V> vertexFactory, int numVertices,
-                                                   boolean allowMultipleEdges) throws IOException {
-        Graph<V,E> graph = new Graph<>(numVertices,allowMultipleEdges,vertexFactory);
+    public static <V, E> Graph<V, E> loadGraph(String path, EdgeLineProcessor<E> lineProcessor,
+                    VertexFactory<V> vertexFactory, int numVertices, boolean allowMultipleEdges) throws IOException {
+        Graph<V, E> graph = new Graph<>(numVertices, allowMultipleEdges, vertexFactory);
 
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(path)))){
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(path)))) {
             String line;
-            while( (line = br.readLine()) != null ) {
+            while ((line = br.readLine()) != null) {
                 Edge<E> edge = lineProcessor.processLine(line);
-                if(edge != null){
+                if (edge != null) {
                     graph.addEdge(edge);
                 }
             }
@@ -150,19 +152,19 @@ public class GraphLoader {
      * @param allowMultipleEdges whether the graph should allow (or filter out) multiple edges
      * @return IGraph loaded from files
      */
-    public static <V,E> Graph<V,E> loadGraph(String vertexFilePath, String edgeFilePath, VertexLoader<V> vertexLoader,
-                                                   EdgeLineProcessor<E> edgeLineProcessor, boolean allowMultipleEdges ) throws IOException {
+    public static <V, E> Graph<V, E> loadGraph(String vertexFilePath, String edgeFilePath, VertexLoader<V> vertexLoader,
+                    EdgeLineProcessor<E> edgeLineProcessor, boolean allowMultipleEdges) throws IOException {
         //Assume vertices are in one file
         //And edges are in another file
 
         List<Vertex<V>> vertices = vertexLoader.loadVertices(vertexFilePath);
-        Graph<V,E> graph = new Graph<>(vertices,allowMultipleEdges);
+        Graph<V, E> graph = new Graph<>(vertices, allowMultipleEdges);
 
-        try(BufferedReader br = new BufferedReader(new FileReader(new File(edgeFilePath)))){
+        try (BufferedReader br = new BufferedReader(new FileReader(new File(edgeFilePath)))) {
             String line;
-            while( (line = br.readLine()) != null ) {
+            while ((line = br.readLine()) != null) {
                 Edge<E> edge = edgeLineProcessor.processLine(line);
-                if(edge != null){
+                if (edge != null) {
                     graph.addEdge(edge);
                 }
             }

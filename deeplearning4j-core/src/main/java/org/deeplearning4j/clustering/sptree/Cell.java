@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -25,9 +25,9 @@ import java.io.Serializable;
 /**
  * @author Adam Gibson
  */
-public class Cell  implements Serializable {
+public class Cell implements Serializable {
     private int dimension;
-    private INDArray corner,width;
+    private INDArray corner, width;
 
     public Cell(int dimension) {
         this.dimension = dimension;
@@ -41,12 +41,12 @@ public class Cell  implements Serializable {
         return width.getDouble(d);
     }
 
-    public void setCorner(int d,double corner) {
-        this.corner.putScalar(d,corner);
+    public void setCorner(int d, double corner) {
+        this.corner.putScalar(d, corner);
     }
 
-    public void setWidth(int d,double width) {
-        this.width.putScalar(d,width);
+    public void setWidth(int d, double width) {
+        this.width.putScalar(d, width);
     }
 
     public void setWidth(INDArray width) {
@@ -61,10 +61,10 @@ public class Cell  implements Serializable {
     public boolean contains(INDArray point) {
         INDArray cornerMinusWidth = corner.sub(width);
         INDArray cornerPlusWidth = corner.add(width);
-        for(int d = 0; d < dimension; d++) {
-            if(cornerMinusWidth.getDouble(d) > point.getDouble(d))
+        for (int d = 0; d < dimension; d++) {
+            if (cornerMinusWidth.getDouble(d) > point.getDouble(d))
                 return false;
-            if(cornerPlusWidth.getDouble(d) < point.getDouble(d))
+            if (cornerPlusWidth.getDouble(d) < point.getDouble(d))
                 return false;
         }
         return true;
@@ -78,8 +78,6 @@ public class Cell  implements Serializable {
     public INDArray corner() {
         return corner;
     }
-
-
 
 
 

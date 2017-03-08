@@ -17,10 +17,10 @@ public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSa
     @Override
     @SuppressWarnings("unchecked")
     public void saveBestModel(T net, double score) throws IOException {
-        try{
+        try {
             //Necessary because close is protected :S
-            bestModel = (T)(net.getClass().getDeclaredMethod("clone")).invoke(net);
-        }catch(Exception e){
+            bestModel = (T) (net.getClass().getDeclaredMethod("clone")).invoke(net);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -28,10 +28,10 @@ public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSa
     @Override
     @SuppressWarnings("unchecked")
     public void saveLatestModel(T net, double score) throws IOException {
-        try{
+        try {
             //Necessary because close is protected :S
-            latestModel = (T)(net.getClass().getDeclaredMethod("clone")).invoke(net);
-        }catch(Exception e){
+            latestModel = (T) (net.getClass().getDeclaredMethod("clone")).invoke(net);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -47,7 +47,7 @@ public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSa
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "InMemoryModelSaver()";
     }
 }
