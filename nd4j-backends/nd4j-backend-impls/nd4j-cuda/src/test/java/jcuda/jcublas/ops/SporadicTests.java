@@ -599,6 +599,34 @@ public class SporadicTests {
         Nd4j.getExecutioner().printEnvironmentInformation();
     }
 
+    @Test
+    public void testReduceX() throws Exception {
+        CudaEnvironment.getInstance().getConfiguration().setMaximumGridSize(11);
+        INDArray x = Nd4j.create(500, 500);
+        INDArray exp_0 = Nd4j.linspace(1, 500, 500);
+        INDArray exp_1 = Nd4j.create(500).assign(250.5);
+
+        x.addiRowVector(Nd4j.linspace(1, 500, 500));
+
+        assertEquals(exp_0, x.mean(0));
+        assertEquals(exp_1, x.mean(1));
+
+        assertEquals(250.5, x.meanNumber().doubleValue(), 1e-5);
+    }
+
+    @Test
+    public void testIndexReduceX() throws Exception {
+        CudaEnvironment.getInstance().getConfiguration().setMaximumGridSize(11);
+        INDArray x = Nd4j.create(500, 500);
+        INDArray exp_0 = Nd4j.create(500).assign(0);
+        INDArray exp_1 = Nd4j.create(500).assign(499);
+
+        x.addiRowVector(Nd4j.linspace(1, 500, 500));
+
+        assertEquals(exp_0, Nd4j.argMax(x, 0));
+        assertEquals(exp_1, Nd4j.argMax(x, 1));
+    }
+
     public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
         List<INDArray> inp = new ArrayList<>();
         List<INDArray> lab = new ArrayList<>();
