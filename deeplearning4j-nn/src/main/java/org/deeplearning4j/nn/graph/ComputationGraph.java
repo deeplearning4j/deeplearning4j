@@ -727,6 +727,8 @@ public class ComputationGraph implements Serializable, Model {
                 if (hasMaskArrays) {
                     clearLayerMaskArrays();
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         }
 
@@ -788,6 +790,8 @@ public class ComputationGraph implements Serializable, Model {
                         clearLayerMaskArrays();
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         }
     }
