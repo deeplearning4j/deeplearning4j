@@ -25,7 +25,7 @@ import static junit.framework.TestCase.fail;
 public class TestRecordReaders {
 
     @Test
-    public void testClassIndexOutsideOfRangeRRDSI(){
+    public void testClassIndexOutsideOfRangeRRDSI() {
 
         Collection<Collection<Writable>> c = new ArrayList<>();
         c.add(Arrays.<Writable>asList(new DoubleWritable(0.0), new IntWritable(0)));
@@ -35,19 +35,19 @@ public class TestRecordReaders {
 
         RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(crr, 2, 1, 2);
 
-        try{
+        try {
             DataSet ds = iter.next();
             fail("Expected exception");
-        } catch (DL4JException e){
+        } catch (DL4JException e) {
             System.out.println("testClassIndexOutsideOfRange(): " + e.getMessage());
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             fail();
         }
     }
 
     @Test
-    public void testClassIndexOutsideOfRangeRRMDSI(){
+    public void testClassIndexOutsideOfRangeRRMDSI() {
 
         Collection<Collection<Collection<Writable>>> c = new ArrayList<>();
         Collection<Collection<Writable>> seq1 = new ArrayList<>();
@@ -63,19 +63,19 @@ public class TestRecordReaders {
         CollectionSequenceRecordReader csrr = new CollectionSequenceRecordReader(c);
         DataSetIterator dsi = new SequenceRecordReaderDataSetIterator(csrr, 2, 2, 1);
 
-        try{
+        try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e){
+        } catch (DL4JException e) {
             System.out.println("testClassIndexOutsideOfRangeRRMDSI(): " + e.getMessage());
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             fail();
         }
     }
 
     @Test
-    public void testClassIndexOutsideOfRangeRRMDSI_MultipleReaders(){
+    public void testClassIndexOutsideOfRangeRRMDSI_MultipleReaders() {
 
         Collection<Collection<Collection<Writable>>> c1 = new ArrayList<>();
         Collection<Collection<Writable>> seq1 = new ArrayList<>();
@@ -103,12 +103,12 @@ public class TestRecordReaders {
         CollectionSequenceRecordReader csrrLabels = new CollectionSequenceRecordReader(c2);
         DataSetIterator dsi = new SequenceRecordReaderDataSetIterator(csrr, csrrLabels, 2, 2);
 
-        try{
+        try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e){
+        } catch (DL4JException e) {
             System.out.println("testClassIndexOutsideOfRangeRRMDSI_MultipleReaders(): " + e.getMessage());
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             fail();
         }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,32 +26,31 @@ import java.io.IOException;
 
 public class DataSets {
 
-	private DataSets() {
-	}
+    private DataSets() {}
 
-	public static DataSet mnist() {
-		return mnist(60000);
-	}
-	
-	public static DataSet mnist(int num) {
-		try {
-			MnistDataFetcher fetcher = new MnistDataFetcher();
-			fetcher.fetch(num);
-			return fetcher.next();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    public static DataSet mnist() {
+        return mnist(60000);
+    }
 
-	
-	public static DataSet iris() {
-		return iris(150);
-	}
+    public static DataSet mnist(int num) {
+        try {
+            MnistDataFetcher fetcher = new MnistDataFetcher();
+            fetcher.fetch(num);
+            return fetcher.next();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public static DataSet iris(int num) {
-		IrisDataFetcher fetcher = new IrisDataFetcher();
-		fetcher.fetch(num);
-		return fetcher.next();
-	}
+
+    public static DataSet iris() {
+        return iris(150);
+    }
+
+    public static DataSet iris(int num) {
+        IrisDataFetcher fetcher = new IrisDataFetcher();
+        fetcher.fetch(num);
+        return fetcher.next();
+    }
 
 }

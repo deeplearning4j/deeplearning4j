@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -48,7 +48,7 @@ public class InputVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean isInputVertex(){
+    public boolean isInputVertex() {
         return true;
     }
 
@@ -69,13 +69,15 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //No op
-        if(maskArrays == null || maskArrays.length == 0){
+        if (maskArrays == null || maskArrays.length == 0) {
             return null;
         }
 
@@ -83,7 +85,7 @@ public class InputVertex extends BaseGraphVertex {
     }
 
     @Override
-    public String toString(){
-        return "InputVertex(id="+vertexIndex+",name=\""+vertexName+"\")";
+    public String toString() {
+        return "InputVertex(id=" + vertexIndex + ",name=\"" + vertexName + "\")";
     }
 }

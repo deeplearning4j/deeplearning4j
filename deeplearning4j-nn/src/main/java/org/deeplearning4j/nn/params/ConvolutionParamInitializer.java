@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,7 +39,8 @@ import java.util.Map;
 public class ConvolutionParamInitializer implements ParamInitializer {
 
     private static final ConvolutionParamInitializer INSTANCE = new ConvolutionParamInitializer();
-    public static ConvolutionParamInitializer getInstance(){
+
+    public static ConvolutionParamInitializer getInstance() {
         return INSTANCE;
     }
 
@@ -50,7 +51,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     @Override
     public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
@@ -59,14 +60,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length != 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
-        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
@@ -87,17 +88,18 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
 
         INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf)))
-                .reshape('c',nOut, nIn, kernel[0], kernel[1]);
+        INDArray weightGradientView =
+                        gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf)))
+                                        .reshape('c', nOut, nIn, kernel[0], kernel[1]);
 
-        Map<String,INDArray> out = new LinkedHashMap<>();
+        Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(BIAS_KEY, biasGradientView);
         out.put(WEIGHT_KEY, weightGradientView);
         return out;
@@ -107,8 +109,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
         //the bias is a 1D tensor -- one bias per output feature map
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
-        if(initializeParams) biasView.assign(layerConf.getBiasInit());
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        if (initializeParams)
+            biasView.assign(layerConf.getBiasInit());
         return biasView;
     }
 
@@ -122,8 +125,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          (batch size, num input feature maps, image height, image width)
          */
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
-        if(initializeParams) {
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        if (initializeParams) {
             Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
@@ -134,13 +137,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            int[] weightsShape = new int[]{outputDepth, inputDepth, kernel[0], kernel[1]};
+            int[] weightsShape = new int[] {outputDepth, inputDepth, kernel[0], kernel[1]};
 
-            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape,
-                    layerConf.getWeightInit(), dist, 'c', weightView);
+            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
+                            weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
-            return WeightInitUtil.reshapeWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+            return WeightInitUtil.reshapeWeights(
+                            new int[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
         }
     }
 }

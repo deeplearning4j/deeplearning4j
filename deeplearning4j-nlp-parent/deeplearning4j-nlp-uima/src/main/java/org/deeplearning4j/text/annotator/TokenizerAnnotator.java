@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,46 +40,27 @@ public class TokenizerAnnotator extends Tokenizer {
         //UIMA logging
         Util.disableLogging();
     }
-	
-	public static AnalysisEngineDescription getDescription(String languageCode)
-		      throws ResourceInitializationException {
-		    String modelPath = String.format("/models/%s-token.bin", languageCode);
-		    return createEngineDescription(
-                    ConcurrentTokenizer.class,
-                    opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
-                    ExternalResourceFactory.createExternalResourceDescription(
-                            TokenizerModelResourceImpl.class,
-                            ConcurrentTokenizer.class.getResource(modelPath).toString()),
-                    opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER,
-                    Sentence.class.getName(),
-                    opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER,
-                    Token.class.getName());
-		  }
 
-	
-	
-	public static AnalysisEngineDescription getDescription()
-		      throws ResourceInitializationException {
-		    String modelPath = String.format("/models/%s-token.bin", "en");
-		    return createEngineDescription(
-                    ConcurrentTokenizer.class,
-                    opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
-                    ExternalResourceFactory.createExternalResourceDescription(
-                            TokenizerModelResourceImpl.class,
-                            ConcurrentTokenizer.class.getResource(modelPath).toString()),
-                    opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER,
-                    Sentence.class.getName(),
-                    opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER,
-                    Token.class.getName());
-		  }
+    public static AnalysisEngineDescription getDescription(String languageCode) throws ResourceInitializationException {
+        String modelPath = String.format("/models/%s-token.bin", languageCode);
+        return createEngineDescription(ConcurrentTokenizer.class, opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
+                        ExternalResourceFactory.createExternalResourceDescription(TokenizerModelResourceImpl.class,
+                                        ConcurrentTokenizer.class.getResource(modelPath).toString()),
+                        opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER, Sentence.class.getName(),
+                        opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER, Token.class.getName());
+    }
 
-	
 
-	
-	
-	
-	
-	
-	
-	 
+
+    public static AnalysisEngineDescription getDescription() throws ResourceInitializationException {
+        String modelPath = String.format("/models/%s-token.bin", "en");
+        return createEngineDescription(ConcurrentTokenizer.class, opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
+                        ExternalResourceFactory.createExternalResourceDescription(TokenizerModelResourceImpl.class,
+                                        ConcurrentTokenizer.class.getResource(modelPath).toString()),
+                        opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER, Sentence.class.getName(),
+                        opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER, Token.class.getName());
+    }
+
+
+
 }

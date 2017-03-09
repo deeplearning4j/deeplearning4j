@@ -17,13 +17,11 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {
-        @JsonSubTypes.Type(value = GaussianReconstructionDistribution.class, name = "Gaussian"),
-        @JsonSubTypes.Type(value = BernoulliReconstructionDistribution.class, name = "Bernoulli"),
-        @JsonSubTypes.Type(value = ExponentialReconstructionDistribution.class, name = "Exponential"),
-        @JsonSubTypes.Type(value = CompositeReconstructionDistribution.class, name = "Composite"),
-        @JsonSubTypes.Type(value = LossFunctionWrapper.class, name = "LossWrapper")
-})
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = GaussianReconstructionDistribution.class, name = "Gaussian"),
+                @JsonSubTypes.Type(value = BernoulliReconstructionDistribution.class, name = "Bernoulli"),
+                @JsonSubTypes.Type(value = ExponentialReconstructionDistribution.class, name = "Exponential"),
+                @JsonSubTypes.Type(value = CompositeReconstructionDistribution.class, name = "Composite"),
+                @JsonSubTypes.Type(value = LossFunctionWrapper.class, name = "LossWrapper")})
 public interface ReconstructionDistribution extends Serializable {
 
     /**

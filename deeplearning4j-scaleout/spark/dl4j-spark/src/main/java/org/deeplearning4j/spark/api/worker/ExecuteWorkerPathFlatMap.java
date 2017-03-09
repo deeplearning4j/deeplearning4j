@@ -19,12 +19,14 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPathFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
+public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
     public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker) {
         super(new ExecuteWorkerPathFlatMapAdapter<>(worker));
     }
 }
+
 
 /**
  * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
@@ -37,7 +39,7 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
     private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
     private final int maxDataSetObjects;
 
-    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker){
+    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker) {
         this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
@@ -49,11 +51,12 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
         int workerMinibatchSize = conf.getBatchSizePerWorker();
         int maxMinibatches = (conf.getMaxBatchesPerWorker() > 0 ? conf.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
 
-        if(maxMinibatches == Integer.MAX_VALUE){
+        if (maxMinibatches == Integer.MAX_VALUE) {
             maxDataSetObjects = Integer.MAX_VALUE;
         } else {
             //Required: total number of examples / examples per dataset object
-            maxDataSetObjects = (int)Math.ceil(maxMinibatches * workerMinibatchSize / ((double)dataSetObjectNumExamples));
+            maxDataSetObjects =
+                            (int) Math.ceil(maxMinibatches * workerMinibatchSize / ((double) dataSetObjectNumExamples));
         }
     }
 
@@ -61,7 +64,7 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
     public Iterable<R> call(Iterator<String> iter) throws Exception {
         List<String> list = new ArrayList<>();
         int count = 0;
-        while(iter.hasNext() && count++ < maxDataSetObjects){
+        while (iter.hasNext() && count++ < maxDataSetObjects) {
             list.add(iter.next());
         }
 

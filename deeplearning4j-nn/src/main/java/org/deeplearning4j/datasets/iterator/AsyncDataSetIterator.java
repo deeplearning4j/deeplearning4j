@@ -63,7 +63,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
             queueSize = 2;
 
         this.baseIterator = iterator;
-        if (this.baseIterator.resetSupported()) this.baseIterator.reset();
+        if (this.baseIterator.resetSupported())
+            this.baseIterator.reset();
         blockingQueue = queue;
         runnable = new IteratorRunnable(baseIterator.hasNext());
         thread = runnable;
@@ -124,7 +125,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     @Override
     public synchronized void reset() {
         if (!resetSupported())
-            throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
+            throw new UnsupportedOperationException(
+                            "Cannot reset Async iterator wrapping iterator that does not support reset");
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if (runnable.isAlive.get()) {
@@ -196,7 +198,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             return runnable.hasLatch();
         } else {
             if (!runnable.killRunnable && runnable.exception != null) {
-                throw runnable.exception;   //Something went wrong
+                throw runnable.exception; //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
             return runnable.hasLatch();
@@ -216,7 +218,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         if (!blockingQueue.isEmpty()) {
             runnable.feeder.decrementAndGet();
             try {
-                return blockingQueue.poll(2, TimeUnit.SECONDS);    //non-blocking, but returns null if empty
+                return blockingQueue.poll(2, TimeUnit.SECONDS); //non-blocking, but returns null if empty
             } catch (InterruptedException e) {
                 //
             }
@@ -243,13 +245,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 if (!runnable.isAlive.get() && blockingQueue.isEmpty()) {
                     if (runnable.exception != null)
                         throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
-                    throw new IllegalStateException("Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                    throw new IllegalStateException(
+                                    "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);  //Shouldn't happen under normal circumstances
+            throw new RuntimeException(e); //Shouldn't happen under normal circumstances
         }
     }
 
@@ -286,7 +289,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             This method was added to address possible race condition within runnable loop.
             Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
             and if it's already locked within main runnable loop - we get fast TRUE.
-         */
+            */
 
             // this is added just to avoid expensive lock
             if (feeder.get() > 0 || !blockingQueue.isEmpty())
@@ -297,11 +300,13 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 boolean result = baseIterator.hasNext() || feeder.get() != 0 || !blockingQueue.isEmpty();
                 if (!isAlive.get())
                     return result;
-                else while (isAlive.get()) {
-                    // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
-                    result = feeder.get() != 0 || !blockingQueue.isEmpty() || baseIterator.hasNext();
-                    if (result) return true;
-                }
+                else
+                    while (isAlive.get()) {
+                        // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
+                        result = feeder.get() != 0 || !blockingQueue.isEmpty() || baseIterator.hasNext();
+                        if (result)
+                            return true;
+                    }
                 return result;
             } finally {
                 lock.readLock().unlock();
@@ -345,7 +350,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public void remove() {
-    }
+    public void remove() {}
 
 }

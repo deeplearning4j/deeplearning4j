@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,8 +42,7 @@ public class StringUtils {
         decimalFormat.applyPattern("#.##");
     }
 
-    private StringUtils() {
-    }
+    private StringUtils() {}
 
     /**
      * Make a string representation of the exception.
@@ -107,7 +106,7 @@ public class StringUtils {
      */
     public static String formatPercent(double done, int digits) {
         DecimalFormat percentFormat = new DecimalFormat("0.00%");
-        double scale = Math.pow(10.0, digits+2);
+        double scale = Math.pow(10.0, digits + 2);
         double rounded = Math.floor(done * scale);
         percentFormat.setDecimalSeparatorAlwaysShown(false);
         percentFormat.setMinimumFractionDigits(digits);
@@ -123,7 +122,9 @@ public class StringUtils {
      */
 
     public static String arrayToString(String[] strs) {
-        if (strs.length == 0) { return ""; }
+        if (strs.length == 0) {
+            return "";
+        }
         StringBuilder sbuf = new StringBuilder();
         sbuf.append(strs[0]);
         for (int idx = 1; idx < strs.length; idx++) {
@@ -146,7 +147,7 @@ public class StringUtils {
             throw new IllegalArgumentException("bytes == null");
         }
         StringBuilder s = new StringBuilder();
-        for(int i = start; i < end; i++) {
+        for (int i = start; i < end; i++) {
             s.append(String.format("%02x", bytes[i]));
         }
         return s.toString();
@@ -171,16 +172,17 @@ public class StringUtils {
         }
         return bts;
     }
+
     /**
      *
      * @param uris
      */
-    public static String uriToString(URI[] uris){
+    public static String uriToString(URI[] uris) {
         if (uris == null) {
             return null;
         }
         StringBuilder ret = new StringBuilder(uris[0].toString());
-        for(int i = 1; i < uris.length;i++){
+        for (int i = 1; i < uris.length; i++) {
             ret.append(",");
             ret.append(uris[i].toString());
         }
@@ -191,14 +193,14 @@ public class StringUtils {
      *
      * @param str
      */
-    public static URI[] stringToURI(String[] str){
+    public static URI[] stringToURI(String[] str) {
         if (str == null)
             return null;
         URI[] uris = new URI[str.length];
-        for (int i = 0; i < str.length;i++){
-            try{
+        for (int i = 0; i < str.length; i++) {
+            try {
                 uris[i] = new URI(str[i]);
-            }catch(URISyntaxException ur){
+            } catch (URISyntaxException ur) {
                 System.out.println("Exception in specified URI's " + StringUtils.stringifyException(ur));
                 //making sure its assigned to null in case of an error
                 uris[i] = null;
@@ -217,7 +219,7 @@ public class StringUtils {
      * @param finishTime finish time
      * @param startTime start time
      */
-    public static String formatTimeDiff(long finishTime, long startTime){
+    public static String formatTimeDiff(long finishTime, long startTime) {
         long timeDiff = finishTime - startTime;
         return formatTime(timeDiff);
     }
@@ -229,19 +231,19 @@ public class StringUtils {
      *
      * @param timeDiff The time difference to format
      */
-    public static String formatTime(long timeDiff){
+    public static String formatTime(long timeDiff) {
         StringBuilder buf = new StringBuilder();
-        long hours = timeDiff / (60*60*1000);
-        long rem = (timeDiff % (60*60*1000));
-        long minutes =  rem / (60*1000);
-        rem = rem % (60*1000);
+        long hours = timeDiff / (60 * 60 * 1000);
+        long rem = (timeDiff % (60 * 60 * 1000));
+        long minutes = rem / (60 * 1000);
+        rem = rem % (60 * 1000);
         long seconds = rem / 1000;
 
-        if (hours != 0){
+        if (hours != 0) {
             buf.append(hours);
             buf.append("hrs, ");
         }
-        if (minutes != 0){
+        if (minutes != 0) {
             buf.append(minutes);
             buf.append("mins, ");
         }
@@ -250,6 +252,7 @@ public class StringUtils {
         buf.append("sec");
         return buf.toString();
     }
+
     /**
      * Formats time in ms and appends difference (finishTime - startTime)
      * as returned by formatTimeDiff().
@@ -260,13 +263,12 @@ public class StringUtils {
      * @param startTime start time
      * @return formatted value.
      */
-    public static String getFormattedTimeWithDiff(DateFormat dateFormat,
-                                                  long finishTime, long startTime){
+    public static String getFormattedTimeWithDiff(DateFormat dateFormat, long finishTime, long startTime) {
         StringBuilder buf = new StringBuilder();
         if (0 != finishTime) {
             buf.append(dateFormat.format(new Date(finishTime)));
-            if (0 != startTime){
-                buf.append(" (" + formatTimeDiff(finishTime , startTime) + ")");
+            if (0 != startTime) {
+                buf.append(" (" + formatTimeDiff(finishTime, startTime) + ")");
             }
         }
         return buf.toString();
@@ -277,9 +279,9 @@ public class StringUtils {
      * @param str the comma separated string values
      * @return the arraylist of the comma separated string values
      */
-    public static String[] getStrings(String str){
+    public static String[] getStrings(String str) {
         Collection<String> values = getStringCollection(str);
-        if(values.isEmpty()) {
+        if (values.isEmpty()) {
             return null;
         }
         return values.toArray(new String[values.size()]);
@@ -290,11 +292,11 @@ public class StringUtils {
      * @param str comma separated string values
      * @return an <code>ArrayList</code> of string values
      */
-    public static Collection<String> getStringCollection(String str){
+    public static Collection<String> getStringCollection(String str) {
         List<String> values = new ArrayList<>();
         if (str == null)
             return values;
-        StringTokenizer tokenizer = new StringTokenizer (str,",");
+        StringTokenizer tokenizer = new StringTokenizer(str, ",");
         while (tokenizer.hasMoreTokens()) {
             values.add(tokenizer.nextToken());
         }
@@ -306,7 +308,7 @@ public class StringUtils {
      * @param str a comma separated <String> with values
      * @return a <code>Collection</code> of <code>String</code> values
      */
-    public static Collection<String> getTrimmedStringCollection(String str){
+    public static Collection<String> getTrimmedStringCollection(String str) {
         return Arrays.asList(getTrimmedStrings(str));
     }
 
@@ -315,7 +317,7 @@ public class StringUtils {
      * @param str a comma separated <String> with values
      * @return an array of <code>String</code> values
      */
-    public static String[] getTrimmedStrings(String str){
+    public static String[] getTrimmedStrings(String str) {
         if (null == str || "".equals(str.trim())) {
             return emptyStringArray;
         }
@@ -343,9 +345,8 @@ public class StringUtils {
      * @param separator a separator char
      * @return an array of strings
      */
-    public static String[] split(
-            String str, char escapeChar, char separator) {
-        if (str==null) {
+    public static String[] split(String str, char escapeChar, char separator) {
+        if (str == null) {
             return null;
         }
         ArrayList<String> strList = new ArrayList<>();
@@ -359,7 +360,7 @@ public class StringUtils {
         strList.add(split.toString());
         // remove trailing empty split(s)
         int last = strList.size(); // last split
-        while (--last>=0 && "".equals(strList.get(last))) {
+        while (--last >= 0 && "".equals(strList.get(last))) {
             strList.remove(last);
         }
         return strList.toArray(new String[strList.size()]);
@@ -375,8 +376,7 @@ public class StringUtils {
      * @param start from where to search
      * @param split used to pass back the extracted string
      */
-    public static int findNext(String str, char separator, char escapeChar,
-                               int start, StringBuilder split) {
+    public static int findNext(String str, char separator, char escapeChar, int start, StringBuilder split) {
         int numPreEscapes = 0;
         for (int i = start; i < str.length(); i++) {
             char curChar = str.charAt(i);
@@ -384,9 +384,7 @@ public class StringUtils {
                 return i;
             } else {
                 split.append(curChar);
-                numPreEscapes = (curChar == escapeChar)
-                        ? (++numPreEscapes) % 2
-                        : 0;
+                numPreEscapes = (curChar == escapeChar) ? (++numPreEscapes) % 2 : 0;
             }
         }
         return -1;
@@ -410,8 +408,7 @@ public class StringUtils {
      * @param charToEscape the char to be escaped
      * @return an escaped string
      */
-    public static String escapeString(
-            String str, char escapeChar, char charToEscape) {
+    public static String escapeString(String str, char escapeChar, char charToEscape) {
         return escapeString(str, escapeChar, new char[] {charToEscape});
     }
 
@@ -428,13 +425,12 @@ public class StringUtils {
     /**
      * @param charsToEscape array of characters to be escaped
      */
-    public static String escapeString(String str, char escapeChar,
-                                      char[] charsToEscape) {
+    public static String escapeString(String str, char escapeChar, char[] charsToEscape) {
         if (str == null) {
             return null;
         }
         StringBuilder result = new StringBuilder();
-        for (int i=0; i<str.length(); i++) {
+        for (int i = 0; i < str.length(); i++) {
             char curChar = str.charAt(i);
             if (curChar == escapeChar || hasChar(charsToEscape, curChar)) {
                 // special char
@@ -463,36 +459,34 @@ public class StringUtils {
      * @param charToEscape the escaped char
      * @return an unescaped string
      */
-    public static String unEscapeString(
-            String str, char escapeChar, char charToEscape) {
+    public static String unEscapeString(String str, char escapeChar, char charToEscape) {
         return unEscapeString(str, escapeChar, new char[] {charToEscape});
     }
 
     /**
      * @param charsToEscape array of characters to unescape
      */
-    public static String unEscapeString(String str, char escapeChar,
-                                        char[] charsToEscape) {
+    public static String unEscapeString(String str, char escapeChar, char[] charsToEscape) {
         if (str == null) {
             return null;
         }
         StringBuilder result = new StringBuilder(str.length());
         boolean hasPreEscape = false;
-        for (int i=0; i<str.length(); i++) {
+        for (int i = 0; i < str.length(); i++) {
             char curChar = str.charAt(i);
             if (hasPreEscape) {
                 if (curChar != escapeChar && !hasChar(charsToEscape, curChar)) {
                     // no special char
-                    throw new IllegalArgumentException("Illegal escaped string " + str +
-                            " unescaped " + escapeChar + " at " + (i-1));
+                    throw new IllegalArgumentException(
+                                    "Illegal escaped string " + str + " unescaped " + escapeChar + " at " + (i - 1));
                 }
                 // otherwise discard the escape char
                 result.append(curChar);
                 hasPreEscape = false;
             } else {
                 if (hasChar(charsToEscape, curChar)) {
-                    throw new IllegalArgumentException("Illegal escaped string " + str +
-                            " unescaped " + curChar + " at " + i);
+                    throw new IllegalArgumentException(
+                                    "Illegal escaped string " + str + " unescaped " + curChar + " at " + i);
                 } else if (curChar == escapeChar) {
                     hasPreEscape = true;
                 } else {
@@ -500,9 +494,9 @@ public class StringUtils {
                 }
             }
         }
-        if (hasPreEscape ) {
-            throw new IllegalArgumentException("Illegal escaped string " + str +
-                    ", not expecting " + escapeChar + " in the end." );
+        if (hasPreEscape) {
+            throw new IllegalArgumentException(
+                            "Illegal escaped string " + str + ", not expecting " + escapeChar + " in the end.");
         }
         return result.toString();
     }
@@ -512,8 +506,11 @@ public class StringUtils {
      * @return hostname
      */
     public static String getHostname() {
-        try {return "" + InetAddress.getLocalHost();}
-        catch(UnknownHostException uhe) {return "" + uhe;}
+        try {
+            return "" + InetAddress.getLocalHost();
+        } catch (UnknownHostException uhe) {
+            return "" + uhe;
+        }
     }
 
     /**
@@ -522,10 +519,10 @@ public class StringUtils {
      * @param msg content of the message
      * @return a message for logging
      */
-    private static String toStartupShutdownString(String prefix, String [] msg) {
+    private static String toStartupShutdownString(String prefix, String[] msg) {
         StringBuilder b = new StringBuilder(prefix);
         b.append("\n/************************************************************");
-        for(String s : msg)
+        for (String s : msg)
             b.append("\n" + prefix + s);
         b.append("\n************************************************************/");
         return b.toString();
@@ -539,12 +536,8 @@ public class StringUtils {
      * TraditionalBinaryPrefix symbol are case insensitive.
      */
     public enum TraditionalBinaryPrefix {
-        KILO(1024),
-        MEGA(KILO.value << 10),
-        GIGA(MEGA.value << 10),
-        TERA(GIGA.value << 10),
-        PETA(TERA.value << 10),
-        EXA(PETA.value << 10);
+        KILO(1024), MEGA(KILO.value << 10), GIGA(MEGA.value << 10), TERA(GIGA.value << 10), PETA(TERA.value << 10), EXA(
+                        PETA.value << 10);
 
         public final long value;
         public final char symbol;
@@ -559,7 +552,7 @@ public class StringUtils {
          */
         public static TraditionalBinaryPrefix valueOf(char symbol) {
             symbol = Character.toUpperCase(symbol);
-            for(TraditionalBinaryPrefix prefix : TraditionalBinaryPrefix.values()) {
+            for (TraditionalBinaryPrefix prefix : TraditionalBinaryPrefix.values()) {
                 if (symbol == prefix.symbol) {
                     return prefix;
                 }
@@ -588,7 +581,7 @@ public class StringUtils {
             else {
                 long prefix = TraditionalBinaryPrefix.valueOf(lastchar).value;
                 long num = Long.parseLong(s.substring(0, lastpos));
-                if (num > (Long.MAX_VALUE/prefix) || num < (Long.MIN_VALUE/prefix)) {
+                if (num > (Long.MAX_VALUE / prefix) || num < (Long.MIN_VALUE / prefix)) {
                     throw new IllegalArgumentException(s + " does not fit in a Long");
                 }
                 return num * prefix;
@@ -602,29 +595,39 @@ public class StringUtils {
      * @return HTML Escaped String representation
      */
     public static String escapeHTML(String string) {
-        if(string == null) {
+        if (string == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         boolean lastCharacterWasSpace = false;
         char[] chars = string.toCharArray();
-        for(char c : chars) {
-            if(c == ' ') {
-                if(lastCharacterWasSpace){
+        for (char c : chars) {
+            if (c == ' ') {
+                if (lastCharacterWasSpace) {
                     lastCharacterWasSpace = false;
                     sb.append("&nbsp;");
-                }else {
-                    lastCharacterWasSpace=true;
+                } else {
+                    lastCharacterWasSpace = true;
                     sb.append(" ");
                 }
-            }else {
+            } else {
                 lastCharacterWasSpace = false;
-                switch(c) {
-                    case '<': sb.append("&lt;"); break;
-                    case '>': sb.append("&gt;"); break;
-                    case '&': sb.append("&amp;"); break;
-                    case '"': sb.append("&quot;"); break;
-                    default : sb.append(c);break;
+                switch (c) {
+                    case '<':
+                        sb.append("&lt;");
+                        break;
+                    case '>':
+                        sb.append("&gt;");
+                        break;
+                    case '&':
+                        sb.append("&amp;");
+                        break;
+                    case '"':
+                        sb.append("&quot;");
+                        break;
+                    default:
+                        sb.append(c);
+                        break;
                 }
             }
         }
@@ -687,8 +690,7 @@ public class StringUtils {
      * @param separator Separator to join with.
      * @param objects Objects to join.
      */
-    public static String joinObjects(
-            CharSequence separator, Iterable<? extends Object> objects) {
+    public static String joinObjects(CharSequence separator, Iterable<? extends Object> objects) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (Object o : objects) {

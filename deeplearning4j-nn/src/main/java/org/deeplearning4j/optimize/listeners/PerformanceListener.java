@@ -62,7 +62,7 @@ public class PerformanceListener implements IterationListener {
         if (iterationCount.getAndIncrement() % frequency == 0) {
             long currentTime = System.currentTimeMillis();
 
-            long timeSpent = currentTime - lastTime ;
+            long timeSpent = currentTime - lastTime;
             float timeSec = timeSpent / 1000f;
 
             INDArray input;

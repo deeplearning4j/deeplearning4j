@@ -58,7 +58,8 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
         try {
             if (backendStream instanceof FileInputStream) {
                 ((FileInputStream) backendStream).getChannel().position(0);
-            } else backendStream.reset();
+            } else
+                backendStream.reset();
             reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(backendStream, 10 * 10 * 1024)));
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -68,8 +69,10 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
     @Override
     public void finish() {
         try {
-            if (this.internal && backendStream != null) backendStream.close();
-            if (reader != null) reader.close();
+            if (this.internal && backendStream != null)
+                backendStream.close();
+            if (reader != null)
+                reader.close();
         } catch (Exception e) {
             // do nothing here
         }
@@ -88,8 +91,10 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
     @Override
     protected void finalize() throws Throwable {
         try {
-            if (this.internal && backendStream != null) backendStream.close();
-            if (reader != null) reader.close();
+            if (this.internal && backendStream != null)
+                backendStream.close();
+            if (reader != null)
+                reader.close();
         } catch (Exception e) {
             // do nothing here
             e.printStackTrace();
@@ -106,7 +111,7 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
     @Override
     public Iterator<String> iterator() {
         this.reset();
-        Iterator<String> ret =  new Iterator<String>() {
+        Iterator<String> ret = new Iterator<String>() {
             @Override
             public boolean hasNext() {
                 return BasicLineIterator.this.hasNext();

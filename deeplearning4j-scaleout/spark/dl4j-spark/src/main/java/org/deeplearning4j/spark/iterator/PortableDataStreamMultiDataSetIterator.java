@@ -23,12 +23,12 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     private MultiDataSetPreProcessor preprocessor;
     private Iterator<PortableDataStream> iter;
 
-    public PortableDataStreamMultiDataSetIterator(Iterator<PortableDataStream> iter){
+    public PortableDataStreamMultiDataSetIterator(Iterator<PortableDataStream> iter) {
         this.dataSetStreams = null;
         this.iter = iter;
     }
 
-    public PortableDataStreamMultiDataSetIterator(Collection<PortableDataStream> dataSetStreams){
+    public PortableDataStreamMultiDataSetIterator(Collection<PortableDataStream> dataSetStreams) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
     }
@@ -39,7 +39,7 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return dataSetStreams != null;
     }
 
@@ -50,7 +50,8 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
 
     @Override
     public void reset() {
-        if(dataSetStreams == null) throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
+        if (dataSetStreams == null)
+            throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
         iter = dataSetStreams.iterator();
     }
 
@@ -68,13 +69,14 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     public MultiDataSet next() {
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
         PortableDataStream pds = iter.next();
-        try(InputStream is = pds.open()) {
+        try (InputStream is = pds.open()) {
             ds.load(is);
-        } catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        if(preprocessor != null) preprocessor.preProcess(ds);
+        if (preprocessor != null)
+            preprocessor.preProcess(ds);
         return ds;
     }
 

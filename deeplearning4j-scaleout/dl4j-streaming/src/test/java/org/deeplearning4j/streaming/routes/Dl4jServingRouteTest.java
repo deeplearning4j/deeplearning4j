@@ -75,23 +75,21 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 final String kafkaUri = String.format("kafka:%s?topic=%s&groupId=dl4j-serving",
-                        kafkaCluster.getBrokerList(),
-                        topicName);
-                from("direct:start")
-                        .process(new Processor() {
-                            @Override
-                            public void process(Exchange exchange) throws Exception {
-                                final INDArray arr = next.getFeatureMatrix();
-                                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                                DataOutputStream dos = new DataOutputStream(bos);
-                                Nd4j.write(arr, dos);
-                                byte[] bytes = bos.toByteArray();
-                                String base64 = Base64.encodeBase64String(bytes);
-                                exchange.getIn().setBody(base64, String.class);
-                                exchange.getIn().setHeader(KafkaConstants.KEY,UUID.randomUUID().toString());
-                                exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY,"1");
-                            }
-                        }).to(kafkaUri);
+                                kafkaCluster.getBrokerList(), topicName);
+                from("direct:start").process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        final INDArray arr = next.getFeatureMatrix();
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        DataOutputStream dos = new DataOutputStream(bos);
+                        Nd4j.write(arr, dos);
+                        byte[] bytes = bos.toByteArray();
+                        String base64 = Base64.encodeBase64String(bytes);
+                        exchange.getIn().setBody(base64, String.class);
+                        exchange.getIn().setHeader(KafkaConstants.KEY, UUID.randomUUID().toString());
+                        exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY, "1");
+                    }
+                }).to(kafkaUri);
             }
         };
     }
@@ -105,8 +103,8 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
 
 
     @Override
-    protected void debugBefore(Exchange exchange, Processor processor,
-                               ProcessorDefinition<?> definition, String id, String shortName) {
+    protected void debugBefore(Exchange exchange, Processor processor, ProcessorDefinition<?> definition, String id,
+                    String shortName) {
         // this method is invoked before we are about to enter the given processor
         // from your Java editor you can just add a breakpoint in the code line below
         log.info("Before " + definition + " with body " + exchange.getIn().getBody());
@@ -120,17 +118,15 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
     @Test
     public void testServingRoute() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(5)
-                .seed(123)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build())
-                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation(Activation.TANH).build())
-                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(2).nOut(3).build())
-                .backprop(true).pretrain(false).build();
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(5).seed(123).list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.TANH).build())
+                        .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
+                        .backprop(true).pretrain(false).build();
 
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -148,24 +144,23 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
         ModelSerializer.writeModel(network, outputPath, false);
         final boolean computationGraph = false;
         final String uri = String.format("file://%s?fileName=tmp.txt", dir.getAbsolutePath());
-        context.addRoutes(DL4jServeRouteBuilder.builder()
-                .computationGraph(computationGraph).zooKeeperPort(zookeeper.getPort())
-                .kafkaBroker(kafkaCluster.getBrokerList()).consumingTopic(topicName)
-                .modelUri(outputPath).outputUri(uri).finalProcessor(new Processor() {
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        exchange.getIn().setBody(exchange.getIn().getBody().toString());
+        context.addRoutes(DL4jServeRouteBuilder.builder().computationGraph(computationGraph)
+                        .zooKeeperPort(zookeeper.getPort()).kafkaBroker(kafkaCluster.getBrokerList())
+                        .consumingTopic(topicName).modelUri(outputPath).outputUri(uri).finalProcessor(new Processor() {
+                            @Override
+                            public void process(Exchange exchange) throws Exception {
+                                exchange.getIn().setBody(exchange.getIn().getBody().toString());
 
-                    }
-                }).build());
+                            }
+                        }).build());
         context.startAllRoutes();
 
         Endpoint endpoint = context.getRoutes().get(1).getConsumer().getEndpoint();
         ConsumerTemplate consumerTemplate = context.createConsumerTemplate();
         ProducerTemplate producerTemplate = context.createProducerTemplate();
-        producerTemplate.sendBody("direct:start","hello");
-        consumerTemplate.receiveBody(endpoint,3000,String.class);
-        String contents = FileUtils.readFileToString(new File(dir,"tmp.txt"));
+        producerTemplate.sendBody("direct:start", "hello");
+        consumerTemplate.receiveBody(endpoint, 3000, String.class);
+        String contents = FileUtils.readFileToString(new File(dir, "tmp.txt"));
     }
 
 }

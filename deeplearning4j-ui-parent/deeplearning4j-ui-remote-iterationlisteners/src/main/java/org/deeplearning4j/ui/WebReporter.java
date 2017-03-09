@@ -50,11 +50,12 @@ public class WebReporter {
      */
     public void postReport(WebTarget target, Entity entity) {
         Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(entity);
-        log.debug("{}",resp);
+        log.debug("{}", resp);
     }
 
     private class ReporterThread extends Thread implements Runnable {
         private LinkedBlockingQueue<Pair<WebTarget, Entity>> queue;
+
         public ReporterThread(@NonNull LinkedBlockingQueue<Pair<WebTarget, Entity>> queue) {
             this.queue = queue;
             this.setName("DL4j Ui WebReporter thread");

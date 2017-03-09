@@ -60,8 +60,8 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid,
-                                   Map<String, String> swEnvironmentInfo) {
+                    String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid,
+                    Map<String, String> swEnvironmentInfo) {
         this.swArch = arch;
         this.swOsName = osName;
         this.swJvmName = jvmName;
@@ -77,7 +77,7 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
 
     @Override
     public void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory,
-                                   long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID) {
+                    long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID) {
         this.hwJvmAvailableProcessors = jvmAvailableProcessors;
         this.hwNumDevices = numDevices;
         this.hwJvmMaxMemory = jvmMaxMemory;
@@ -90,7 +90,7 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
 
     @Override
     public void reportModelInfo(String modelClassName, String modelConfigJson, String[] modelParamNames, int numLayers,
-                                long numParams) {
+                    long numParams) {
         this.modelClassName = modelClassName;
         this.modelConfigJson = modelConfigJson;
         this.modelParamNames = modelParamNames;
@@ -128,7 +128,7 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(this);
         } catch (IOException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
         return baos.toByteArray();
     }
@@ -151,7 +151,7 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
             r = (JavaStatsInitializationReport) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
 
         Field[] fields = JavaStatsInitializationReport.class.getDeclaredFields();
@@ -160,7 +160,7 @@ public class JavaStatsInitializationReport implements StatsInitializationReport 
             try {
                 f.set(this, f.get(r));
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);  //Should never happen
+                throw new RuntimeException(e); //Should never happen
             }
         }
     }

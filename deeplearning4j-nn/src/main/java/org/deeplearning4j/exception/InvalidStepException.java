@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -85,7 +85,8 @@ public class InvalidStepException extends Exception {
      *                           be writable
      * @since 1.7
      */
-    protected InvalidStepException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    protected InvalidStepException(String message, Throwable cause, boolean enableSuppression,
+                    boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

@@ -18,13 +18,5 @@ package org.deeplearning4j.nn.conf;
 // TODO provide options using epochs in addition to iterations
 
 public enum LearningRatePolicy {
-    None,
-    Exponential,
-    Inverse,
-    Poly,
-    Sigmoid,
-    Step,
-    TorchStep,
-    Schedule,
-    Score
+    None, Exponential, Inverse, Poly, Sigmoid, Step, TorchStep, Schedule, Score
 }

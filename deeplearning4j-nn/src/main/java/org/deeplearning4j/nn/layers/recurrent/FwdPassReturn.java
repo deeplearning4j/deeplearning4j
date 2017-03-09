@@ -10,8 +10,8 @@ public class FwdPassReturn {
     public INDArray fwdPassOutput;
     //Arrays: Needed for backpropGradient only
     public INDArray[] fwdPassOutputAsArrays;
-    public INDArray[] memCellState;        //Pre nonlinearity
-    public INDArray[] memCellActivations;    //Post nonlinearity
+    public INDArray[] memCellState; //Pre nonlinearity
+    public INDArray[] memCellActivations; //Post nonlinearity
     public INDArray[] iz;
     public INDArray[] ia;
     public INDArray[] fa;

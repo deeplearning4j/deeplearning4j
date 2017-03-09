@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,7 +42,6 @@ public class NegativeDefaultStepFunction extends StepFunction {
     }
 
     public String toString() {
-        return "NegativeDefaultStepFunction{" +
-                '}';
+        return "NegativeDefaultStepFunction{" + '}';
     }
 }

@@ -13,6 +13,6 @@ public interface GraphWalkIteratorProvider<V> {
      * (for example, for small networks) but never more than it
      * @param numIterators Number of iterators to return
      */
-    List<GraphWalkIterator<V>> getGraphWalkIterators( int numIterators );
+    List<GraphWalkIterator<V>> getGraphWalkIterators(int numIterators);
 
 }

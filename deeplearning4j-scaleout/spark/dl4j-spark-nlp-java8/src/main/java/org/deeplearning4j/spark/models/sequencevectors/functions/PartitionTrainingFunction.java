@@ -43,7 +43,9 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
 
     protected transient TrainingDriver<? extends TrainingMessage> driver;
 
-    public PartitionTrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
+    public PartitionTrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast,
+                    @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                    @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
@@ -63,7 +65,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
 
             if (elementsLearningAlgorithm == null) {
                 try {
-                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
+                                    .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -81,7 +84,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
         if (elementsLearningAlgorithm == null && vectorsConfiguration.getElementsLearningAlgorithm() != null) {
             // TODO: do ELA initialization
             try {
-                elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
+                                .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -93,7 +97,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
         if (sequenceLearningAlgorithm == null && vectorsConfiguration.getSequenceLearningAlgorithm() != null) {
             // TODO: do SLA initialization
             try {
-                sequenceLearningAlgorithm = (SparkSequenceLearningAlgorithm) Class.forName(vectorsConfiguration.getSequenceLearningAlgorithm()).newInstance();
+                sequenceLearningAlgorithm = (SparkSequenceLearningAlgorithm) Class
+                                .forName(vectorsConfiguration.getSequenceLearningAlgorithm()).newInstance();
                 sequenceLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -114,7 +119,7 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
             Sequence<T> sequence = sequenceIterator.next();
 
             Sequence<ShallowSequenceElement> mergedSequence = new Sequence<>();
-            for (T element: sequence.getElements()) {
+            for (T element : sequence.getElements()) {
                 // it's possible to get null here, i.e. if frequency for this element is below minWordFrequency threshold
                 ShallowSequenceElement reduced = shallowVocabCache.tokenFor(element.getStorageId());
 
@@ -123,8 +128,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
             }
 
             // do the same with labels, transfer them, if any
-            if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()){
-                for (T label: sequence.getSequenceLabels()) {
+            if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()) {
+                for (T label : sequence.getSequenceLabels()) {
                     ShallowSequenceElement reduced = shallowVocabCache.tokenFor(label.getStorageId());
 
                     if (reduced != null)
@@ -150,7 +155,7 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
     protected void trainAllAtOnce(List<Sequence<ShallowSequenceElement>> sequences) {
         Frame bigFrame = new Frame(BasicSequenceProvider.getInstance().getNextValue());
 
-        for (Sequence<ShallowSequenceElement> sequence: sequences) {
+        for (Sequence<ShallowSequenceElement> sequence : sequences) {
             Frame frame = elementsLearningAlgorithm.frameSequence(sequence, new AtomicLong(119L), 25e-3f);
             bigFrame.stackMessages(frame.getMessages());
         }

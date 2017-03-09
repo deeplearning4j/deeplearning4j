@@ -33,15 +33,12 @@ public class ModelSerializerTest {
         int nIn = 5;
         int nOut = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
-                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
-                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
+                        .l2(0.01).learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -63,15 +60,12 @@ public class ModelSerializerTest {
         int nIn = 5;
         int nOut = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
-                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
-                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
+                        .l2(0.01).learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -110,15 +104,13 @@ public class ModelSerializerTest {
     @Test
     public void testWriteCGModel() throws Exception {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.1)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("dense",new DenseLayer.Builder().nIn(4).nOut(2).build(),"in")
-                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(),"dense")
-                .setOutputs("out")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
+                                                        .build(),
+                                        "dense")
+                        .setOutputs("out").pretrain(false).backprop(true).build();
 
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
@@ -138,15 +130,13 @@ public class ModelSerializerTest {
     @Test
     public void testWriteCGModelInputStream() throws Exception {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.1)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("dense",new DenseLayer.Builder().nIn(4).nOut(2).build(),"in")
-                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(),"dense")
-                .setOutputs("out")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
+                                                        .build(),
+                                        "dense")
+                        .setOutputs("out").pretrain(false).backprop(true).build();
 
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();

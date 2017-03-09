@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -91,25 +91,27 @@ public class ChartStackedArea extends Chart {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartStackedArea(x=");
-        if(x != null) {
+        if (x != null) {
             sb.append(Arrays.toString(x));
         } else {
             sb.append("[]");
         }
         sb.append(",y=[");
         boolean first = true;
-        if(y != null) {
+        if (y != null) {
             for (double[] d : y) {
-                if (!first) sb.append(",");
+                if (!first)
+                    sb.append(",");
                 sb.append(Arrays.toString(d));
                 first = false;
             }
         }
         sb.append("],labels=");
-        if(labels != null) sb.append(labels);
+        if (labels != null)
+            sb.append(labels);
         sb.append(")");
         return sb.toString();
     }

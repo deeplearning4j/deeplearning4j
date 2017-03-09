@@ -41,82 +41,89 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
 
     @JsonCreator
     public CnnToRnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                                @JsonProperty("inputWidth") int inputWidth,
-                                @JsonProperty("numChannels") int numChannels) {
+                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
-        this.product = inputHeight*inputWidth*numChannels;
+        this.product = inputHeight * inputWidth * numChannels;
     }
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if(input.rank() != 4) throw new IllegalArgumentException("Invalid input: expect CNN activations with rank 4 (received input with shape "
-            + Arrays.toString(input.shape())+")");
+        if (input.rank() != 4)
+            throw new IllegalArgumentException(
+                            "Invalid input: expect CNN activations with rank 4 (received input with shape "
+                                            + Arrays.toString(input.shape()) + ")");
         //Input: 4d activations (CNN)
         //Output: 3d activations (RNN)
 
-        if(input.ordering() != 'c') input = input.dup('c');
+        if (input.ordering() != 'c')
+            input = input.dup('c');
 
-        int[] shape = input.shape();    //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
+        int[] shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
 
         //First: reshape 4d to 2d, as per CnnToFeedForwardPreProcessor
-        INDArray twod = input.reshape('c',input.size(0), ArrayUtil.prod(input.shape())/input.size(0));
+        INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
         //Second: reshape 2d to 3d, as per FeedForwardToRnnPreProcessor
-        INDArray reshaped = twod.dup('f').reshape('f',miniBatchSize,shape[0]/miniBatchSize,product);
-        return reshaped.permute(0,2,1);
+        INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        return reshaped.permute(0, 2, 1);
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        if(output.ordering() == 'c') output = output.dup('f');
+        if (output.ordering() == 'c')
+            output = output.dup('f');
 
         int[] shape = output.shape();
         INDArray output2d;
-        if(shape[0]==1){
+        if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
-            output2d = output.tensorAlongDimension(0,1,2).permutei(1,0);
-        } else if(shape[2]==1){
+            output2d = output.tensorAlongDimension(0, 1, 2).permutei(1, 0);
+        } else if (shape[2] == 1) {
             //Edge case: timeSeriesLength = 1
-            output2d = output.tensorAlongDimension(0,1,0);
+            output2d = output.tensorAlongDimension(0, 1, 0);
         } else {
             //As per FeedForwardToRnnPreprocessor
             INDArray permuted3d = output.permute(0, 2, 1);
-            output2d = permuted3d.reshape('f',shape[0]*shape[2],shape[1]);
+            output2d = permuted3d.reshape('f', shape[0] * shape[2], shape[1]);
         }
 
-        if(shape[1] != product)
-            throw new IllegalArgumentException("Invalid input: expected output size(1)="+shape[1]+" must be equal to "
-                + inputHeight + " x columns " + inputWidth + " x depth " + numChannels +" = " + product + ", received: " + shape[1]);
-        return output2d.dup('c').reshape('c',output2d.size(0), numChannels, inputHeight, inputWidth);
+        if (shape[1] != product)
+            throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
+                            + " must be equal to " + inputHeight + " x columns " + inputWidth + " x depth "
+                            + numChannels + " = " + product + ", received: " + shape[1]);
+        return output2d.dup('c').reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
     }
 
     @Override
     public CnnToRnnPreProcessor clone() {
-        return new CnnToRnnPreProcessor(inputHeight,inputWidth,numChannels);
+        return new CnnToRnnPreProcessor(inputHeight, inputWidth, numChannels);
     }
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.CNN){
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input type: Expected input of type CNN, got " + inputType);
         }
 
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize);
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
-        if(maskArray == null){
+        if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
-        } else if(maskArray.isVector()){
+        } else if (maskArray.isVector()) {
             //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
-            return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize), currentMaskState);
+            return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize),
+                            currentMaskState);
         } else {
-            throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape()) + "; expected vector.");
+            throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape())
+                            + "; expected vector.");
         }
     }
 }

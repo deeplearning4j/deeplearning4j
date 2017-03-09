@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,13 +33,13 @@ import java.util.regex.Pattern;
  * @author Adam Gibson
  *
  */
-public class FingerPrintKeyer  {
+public class FingerPrintKeyer {
 
     // Punctuation and control characters (except for TAB which we need for split to work)
     static final Pattern punctctrl = Pattern.compile("\\p{Punct}|[\\x00-\\x08\\x0A-\\x1F\\x7F]");
 
     public String key(String s, Object... o) {
-        if (s == null || o !=null && o.length > 0) {
+        if (s == null || o != null && o.length > 0) {
             throw new IllegalArgumentException("Fingerprint keyer accepts a single string parameter");
         }
         s = s.trim(); // first off, remove whitespace around the string
@@ -50,7 +50,7 @@ public class FingerPrintKeyer  {
         Collections.addAll(set, frags);
         StringBuilder b = new StringBuilder();
         Iterator<String> i = set.iterator();
-        while (i.hasNext()) {  // join ordered fragments back together
+        while (i.hasNext()) { // join ordered fragments back together
             b.append(i.next());
             if (i.hasNext()) {
                 b.append(' ');
@@ -73,7 +73,7 @@ public class FingerPrintKeyer  {
      * NOTE: this function deals only with latin-1 supplement and latin-1 extended code charts
      */
     private char translate(char c) {
-        switch(c) {
+        switch (c) {
             case '\u00C0':
             case '\u00C1':
             case '\u00C2':

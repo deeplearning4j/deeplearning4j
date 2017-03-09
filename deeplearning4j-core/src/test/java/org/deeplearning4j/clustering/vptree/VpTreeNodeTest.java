@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,15 +35,15 @@ public class VpTreeNodeTest {
     @Test
     public void vpTreeTest() {
         List<DataPoint> points = new ArrayList<>();
-        points.add(new DataPoint(0,Nd4j.create(new double[]{55,55})));
-        points.add(new DataPoint(1,Nd4j.create(new double[]{60,60})));
-        points.add(new DataPoint(2,Nd4j.create(new double[]{65,65})));
+        points.add(new DataPoint(0, Nd4j.create(new double[] {55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[] {60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[] {65, 65})));
         VPTree tree = new VPTree(points);
         List<DataPoint> add = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
-        tree.search(new DataPoint(0,Nd4j.create(new double[]{50,50})),1,add,distances);
+        tree.search(new DataPoint(0, Nd4j.create(new double[] {50, 50})), 1, add, distances);
         DataPoint assertion = add.get(0);
-        assertEquals(new DataPoint(0,Nd4j.create(new double[]{55,55})),assertion);
+        assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55})), assertion);
 
 
     }

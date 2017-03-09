@@ -20,7 +20,7 @@ public class LayerInfo implements Serializable {
 
     private String color;
 
-     //   grid coordinates. row & column
+    //   grid coordinates. row & column
     private int x = 0;
     private int y = 0;
 

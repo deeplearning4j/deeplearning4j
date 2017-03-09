@@ -18,12 +18,11 @@ public class WordsListToVocabWordsFunction implements Function<Pair<List<String>
     Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
 
     public WordsListToVocabWordsFunction(Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
-        this. vocabCacheBroadcast = vocabCacheBroadcast;
+        this.vocabCacheBroadcast = vocabCacheBroadcast;
     }
 
     @Override
-    public List<VocabWord> call(Pair<List<String>, AtomicLong> pair)
-            throws Exception {
+    public List<VocabWord> call(Pair<List<String>, AtomicLong> pair) throws Exception {
         List<String> wordsList = pair.getFirst();
         List<VocabWord> vocabWordsList = new ArrayList<>();
         VocabCache<VocabWord> vocabCache = vocabCacheBroadcast.getValue();
