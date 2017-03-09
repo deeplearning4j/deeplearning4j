@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 /**Utility functions for the DefaultOpExecutioner
  * @author Alex Black
  */
+@Slf4j
 public class OpExecutionerUtil {
 
     private OpExecutionerUtil() {}
@@ -74,6 +76,9 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(INDArray z){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
