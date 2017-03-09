@@ -627,6 +627,15 @@ public class SporadicTests {
         assertEquals(exp_1, Nd4j.argMax(x, 1));
     }
 
+    @Test
+    public void testInf() {
+        INDArray x = Nd4j.create(10).assign(0.0);
+
+        x.muli(0.0);
+
+        log.error("X: {}", x);
+    }
+
     public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
         List<INDArray> inp = new ArrayList<>();
         List<INDArray> lab = new ArrayList<>();
