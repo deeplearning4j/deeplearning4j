@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
@@ -54,6 +55,8 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             parameters.getA(), parameters.getLda(), parameters.getX(), parameters.getIncx(),
                             (float) beta, parameters.getY(), parameters.getIncy());
         }
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -121,6 +124,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             (float) beta, Y, Y.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -176,6 +180,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sger(order, A.rows(), A.columns(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(A);
     }
 
 
@@ -345,6 +350,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             Y, Y.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -369,6 +375,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspmv(order, Uplo, X.length(), (float) alpha, Ap, X, Ap.majorStride(), (float) beta, Y, Y.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -394,6 +401,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Ap);
         }
 
+        OpExecutionerUtil.checkForAny(Ap);
     }
 
     /**
@@ -420,6 +428,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             sspr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A);
         }
 
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -449,6 +458,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                             Y.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     /**
@@ -475,6 +485,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             ssyr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), A, A.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -498,6 +509,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             ssyr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(A);
     }
 
     /**
@@ -523,7 +535,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             stbmv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
         }
-
     }
 
     /**
@@ -574,6 +585,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             stpmv(order, Uplo, TransA, Diag, Ap.length(), Ap, X, X.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -599,6 +611,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             stpsv(order, Uplo, TransA, Diag, X.length(), Ap, X, X.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -624,6 +637,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             strmv(order, Uplo, TransA, Diag, X.length(), A, A.size(0), X, X.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /**
@@ -649,6 +663,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             strsv(order, Uplo, TransA, Diag, A.length(), A, A.size(0), X, X.majorStride());
         }
 
+        OpExecutionerUtil.checkForAny(X);
     }
 
     /*

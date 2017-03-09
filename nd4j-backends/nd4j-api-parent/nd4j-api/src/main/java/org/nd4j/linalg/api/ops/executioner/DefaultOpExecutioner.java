@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -38,6 +40,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -460,84 +463,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC: {
-                if (op.z() != null && !(op instanceof MatchCondition)) {
-                    int match = 0;
-                    if (!op.z().isScalar()) {
-                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
-                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-                    } else {
-                        if (op.z().data().dataType() == DataBuffer.Type.DOUBLE) {
-                            if (Double.isNaN(op.z().getDouble(0)))
-                                match = 1;
-                        } else {
-                            if (Float.isNaN(op.z().getFloat(0)))
-                                match = 1;
-                        }
-                    }
-
-                    if (match > 0)
-                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
-                }
+                OpExecutionerUtil.checkForNaN(op);
             }
                 break;
             case INF_PANIC: {
-                if (op.z() != null && !(op instanceof MatchCondition)) {
-                    int match = 0;
-                    if (!op.z().isScalar()) {
-                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isInfinite());
-                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-                    } else {
-                        if (op.z().data().dataType() == DataBuffer.Type.DOUBLE) {
-                            if (Double.isInfinite(op.z().getDouble(0)))
-                                match = 1;
-                        } else {
-                            if (Float.isInfinite(op.z().getFloat(0)))
-                                match = 1;
-                        }
-                    }
-
-
-                    if (match > 0)
-                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
-
-                }
+                OpExecutionerUtil.checkForInf(op);
             }
                 break;
             case ANY_PANIC: {
-                if (op.z() != null && !(op instanceof MatchCondition)) {
-                    int match = 0;
-                    if (!op.z().isScalar()) {
-                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
-                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-                    } else {
-                        if (op.z().data().dataType() == DataBuffer.Type.DOUBLE) {
-                            if (Double.isNaN(op.z().getDouble(0)))
-                                match = 1;
-                        } else {
-                            if (Float.isNaN(op.z().getFloat(0)))
-                                match = 1;
-                        }
-                    }
-
-                    if (match > 0)
-                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
-
-                    if (!op.z().isScalar()) {
-                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isInfinite());
-                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-                    } else {
-                        if (op.z().data().dataType() == DataBuffer.Type.DOUBLE) {
-                            if (Double.isInfinite(op.z().getDouble(0)))
-                                match = 1;
-                        } else {
-                            if (Float.isInfinite(op.z().getFloat(0)))
-                                match = 1;
-                        }
-                    }
-
-                    if (match > 0)
-                        throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
-                }
+                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForInf(op);
             }
                 break;
             case DISABLED:

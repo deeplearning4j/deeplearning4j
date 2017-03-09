@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -61,6 +62,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                             params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
         }
 
+        OpExecutionerUtil.checkForAny(C);
     }
 
     /**{@inheritDoc}
@@ -88,6 +90,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                             (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
                             C, params.getLdc());
         }
+
+        OpExecutionerUtil.checkForAny(C);
     }
 
 
@@ -121,6 +125,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                             C.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(C);
     }
 
     /**
@@ -151,6 +156,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             ssyrk(Order, Uplo, Trans, C.rows(), 1, (float) alpha, A, A.size(0), (float) beta, C, C.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(C);
     }
 
     /**
@@ -184,6 +190,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                             C, C.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(C);
     }
 
     /**
@@ -217,6 +224,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(C);
     }
 
     /**
@@ -249,6 +257,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             strsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
         }
 
+        OpExecutionerUtil.checkForAny(B);
     }
 
     /**
@@ -311,7 +320,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         else
             chemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(),
                             C, C.size(0));
-
     }
 
     /**
