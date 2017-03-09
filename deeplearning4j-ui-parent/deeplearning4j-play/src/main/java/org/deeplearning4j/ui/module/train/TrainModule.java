@@ -486,8 +486,8 @@ public class TrainModule implements UIModule {
                 if (updateMM != null && paramMM != null && updateMM.size() > 0 && paramMM.size() > 0) {
                     for (String s : updateRatios.keySet()) {
                         List<Double> ratioHistory = updateRatios.get(s);
-                        double currUpdate = updateMM.get(s);
-                        double currParam = paramMM.get(s);
+                        double currUpdate = updateMM.getOrDefault(s, 0.0);
+                        double currParam = paramMM.getOrDefault(s, 0.0);
                         double ratio = currUpdate / currParam;
                         if (Double.isFinite(ratio)) {
                             ratioHistory.add(ratio);
@@ -504,19 +504,19 @@ public class TrainModule implements UIModule {
 
                 if (stdGrad != null) {
                     for (String s : stdevGradients.keySet()) {
-                        double d = stdGrad.get(s);
+                        double d = stdGrad.getOrDefault(s, 0.0);
                         stdevGradients.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdUpd != null) {
                     for (String s : stdevUpdates.keySet()) {
-                        double d = stdUpd.get(s);
+                        double d = stdUpd.getOrDefault(s, 0.0);
                         stdevUpdates.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
-                        double d = stdAct.get(s);
+                        double d = stdAct.getOrDefault(s,0.0);
                         stdevActivations.get(s).add(fixNaN(d));
                     }
                 }
@@ -1027,9 +1027,8 @@ public class TrainModule implements UIModule {
                     if (s.startsWith(prefix)) {
                         //Relevant parameter for this layer...
                         String layerParam = s.substring(prefix.length());
-                        //TODO check and handle not collected case...
-                        double pmm = paramMM.get(s);
-                        double umm = updateMM.get(s);
+                        double pmm = paramMM.getOrDefault(s, 0.0);
+                        double umm = updateMM.getOrDefault(s, 0.0);
                         if (!Double.isFinite(pmm)) {
                             pmm = NAN_REPLACEMENT_VALUE;
                         }
