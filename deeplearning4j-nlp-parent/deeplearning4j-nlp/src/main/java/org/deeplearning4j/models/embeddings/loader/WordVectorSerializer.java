@@ -237,7 +237,7 @@ public class WordVectorSerializer {
         if (originalPeriodic)
             Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-        Nd4j.getMemoryManager().setOccasionalGcFrequency(10000);
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         try (BufferedInputStream bis = new BufferedInputStream(
                 GzipUtils.isCompressedFilename(modelFile.getName())
@@ -885,7 +885,7 @@ public class WordVectorSerializer {
         if (originalPeriodic)
             Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-        Nd4j.getMemoryManager().setOccasionalGcFrequency(10000);
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         try {
 
@@ -2328,7 +2328,7 @@ public class WordVectorSerializer {
         if (originalPeriodic)
             Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-        Nd4j.getMemoryManager().setOccasionalGcFrequency(10000);
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         // try to load zip format
         try {
@@ -2555,7 +2555,7 @@ public class WordVectorSerializer {
         if (originalPeriodic)
             Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-        Nd4j.getMemoryManager().setOccasionalGcFrequency(10000);
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
                 .useInplaceCompression(false)
