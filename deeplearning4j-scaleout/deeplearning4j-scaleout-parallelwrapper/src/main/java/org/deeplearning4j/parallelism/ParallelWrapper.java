@@ -621,17 +621,17 @@ public class ParallelWrapper implements AutoCloseable {
             this.setName("ParallelWrapper trainer " + threadId);
 
             this.originalModel = model;
-            if (rootDevice != threadId) {
+            //if (rootDevice != threadId) {
                 if (model instanceof MultiLayerNetwork) {
                     this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
                 } else if (model instanceof ComputationGraph) {
                     this.replicatedModel = ((ComputationGraph) model).clone();
                 }
-            } else {
+            /*} else {
                 this.onRootModel = true;
                 this.replicatedModel = model;
-            }
+            }*/
         }
 
         public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
