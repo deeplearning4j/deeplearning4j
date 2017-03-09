@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,9 @@ public class PerformanceListener implements IterationListener {
 
 
             StringBuilder builder = new StringBuilder();
+
+            if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
+                builder.append("Device: [").append(Nd4j.getAffinityManager().getDeviceForCurrentThread()).append("]; ");
 
             if (reportIteration)
                 builder.append("iteration ").append(iterationCount.get().get()).append("; ");
