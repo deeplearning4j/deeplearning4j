@@ -163,11 +163,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
+        /*
         this.wrappedBuffer = this.pointer.asByteBuffer();
 
         if (this.wrappedBuffer == null) {
             throw new IllegalStateException("WrappedBuffer is NULL");
         }
+        */
     }
 
     /**
@@ -221,7 +223,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             indexer = HalfIndexer.create((ShortPointer) pointer);
         }
 
-        this.wrappedBuffer = this.pointer.asByteBuffer();
+        //this.wrappedBuffer = this.pointer.asByteBuffer();
     }
 
     public BaseCudaDataBuffer(long length) {
@@ -436,10 +438,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void setNioBuffer() {
         throw new UnsupportedOperationException("setNioBuffer() is not supported for CUDA backend");
-        /*
-        wrappedBuffer = ByteBuffer.allocateDirect(elementSize * length);
-        wrappedBuffer.order(ByteOrder.nativeOrder());
-        */
     }
 
     @Override
@@ -456,7 +454,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public ByteBuffer getHostBuffer() {
-        return wrappedBuffer;
+        return pointer.asByteBuffer();
     }
 
     @Override
@@ -799,8 +797,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             } else
                 throw new IllegalStateException("Unknown dataType: [" + t.toString() + "]");
 
+            /*
             this.wrappedBuffer = this.pointer.asByteBuffer();
             this.wrappedBuffer.order(ByteOrder.nativeOrder());
+            */
 
         } catch (Exception e) {
             throw new RuntimeException(e);
