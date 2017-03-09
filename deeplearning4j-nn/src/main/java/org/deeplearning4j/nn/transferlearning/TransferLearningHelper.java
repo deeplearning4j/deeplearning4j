@@ -251,7 +251,7 @@ public class TransferLearningHelper {
         }
         unFrozenSubsetGraph = builder.build();
         copyOrigParamsToSubsetGraph();
-        unFrozenSubsetGraph.setListeners(origGraph.getListeners());
+        //unFrozenSubsetGraph.setListeners(origGraph.getListeners());
 
         if (frozenInputVertices.isEmpty()) {
             throw new IllegalArgumentException("No frozen layers found");
@@ -289,7 +289,7 @@ public class TransferLearningHelper {
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
             unFrozenSubsetMLN.getLayer(i - frozenInputLayer - 1).setParams(origMLN.getLayer(i).params());
         }
-        unFrozenSubsetMLN.setListeners(origMLN.getListeners());
+        //unFrozenSubsetMLN.setListeners(origMLN.getListeners());
     }
 
     /**
