@@ -203,7 +203,7 @@ public class ModelSerializer {
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
-                DataInputStream dis = new DataInputStream(stream);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
                 updaterState = Nd4j.read(dis);
 
                 dis.close();
@@ -394,7 +394,7 @@ public class ModelSerializer {
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
         if (coefficients != null) {
             InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(stream);
+            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
             params = Nd4j.read(dis);
 
             dis.close();
@@ -420,7 +420,7 @@ public class ModelSerializer {
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
-                DataInputStream dis = new DataInputStream(stream);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
                 updaterState = Nd4j.read(dis);
 
                 dis.close();
