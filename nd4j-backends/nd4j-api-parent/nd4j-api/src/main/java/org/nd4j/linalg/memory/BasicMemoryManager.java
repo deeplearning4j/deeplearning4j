@@ -26,6 +26,8 @@ public class BasicMemoryManager implements MemoryManager {
 
     protected AtomicInteger noGcWindow = new AtomicInteger(100);
 
+    protected AtomicBoolean averagingEnabled = new AtomicBoolean(false);
+
     protected static final int intervalTail = 100;
 
     protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
@@ -52,6 +54,11 @@ public class BasicMemoryManager implements MemoryManager {
     @Override
     public void collect(INDArray... arrays) {
         throw new UnsupportedOperationException("This method isn't implemented yet");
+    }
+
+    @Override
+    public void toggleAveraging(boolean enabled) {
+        averagingEnabled.set(enabled);
     }
 
     /**
@@ -83,8 +90,8 @@ public class BasicMemoryManager implements MemoryManager {
     public void invokeGcOccasionally() {
         long currentTime = System.currentTimeMillis();
 
-
-        intervals.add((int) (currentTime - lastGcTime.get()));
+        if (averagingEnabled.get())
+            intervals.add((int) (currentTime - lastGcTime.get()));
 
         // not sure if we want to conform autoGcWindow here...
         if (frequency.get() > 0)
@@ -93,11 +100,9 @@ public class BasicMemoryManager implements MemoryManager {
                 lastGcTime.set(System.currentTimeMillis());
             }
 
-        if (intervals.size() > intervalTail)
-            intervals.remove();
-
-
-
+        if (averagingEnabled.get())
+            if (intervals.size() > intervalTail)
+                intervals.remove();
     }
 
     @Override
@@ -143,11 +148,14 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public int getAverageLoopTime() {
-        int cnt = 0;
-        for (Integer value : intervals) {
-            cnt += value;
-        }
-        cnt /= intervals.size();
-        return cnt; //averageLoopTime.get();
+        if (averagingEnabled.get()) {
+            int cnt = 0;
+            for (Integer value : intervals) {
+                cnt += value;
+            }
+            cnt /= intervals.size();
+            return cnt;
+        } else return 0;
+
     }
 }

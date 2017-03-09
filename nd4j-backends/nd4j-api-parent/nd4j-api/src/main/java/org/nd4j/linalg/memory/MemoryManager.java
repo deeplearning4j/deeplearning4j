@@ -38,6 +38,15 @@ public interface MemoryManager {
     void togglePeriodicGc(boolean enabled);
 
     /**
+     * This method enables/disables calculation of average time spent within loops
+     *
+     * Default: false
+     *
+     * @param enabled
+     */
+    void toggleAveraging(boolean enabled);
+
+    /**
      * This method returns true, if periodic GC is active. False otherwise.
      *
      * @return
