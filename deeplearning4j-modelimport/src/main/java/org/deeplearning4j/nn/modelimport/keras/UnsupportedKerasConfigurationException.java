@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -30,13 +30,17 @@ package org.deeplearning4j.nn.modelimport.keras;
  */
 public class UnsupportedKerasConfigurationException extends Exception {
 
-    public UnsupportedKerasConfigurationException(String message) { super(appendDocumentationURL(message)); }
+    public UnsupportedKerasConfigurationException(String message) {
+        super(appendDocumentationURL(message));
+    }
 
     public UnsupportedKerasConfigurationException(String message, Throwable cause) {
         super(appendDocumentationURL(message), cause);
     }
 
-    public UnsupportedKerasConfigurationException(Throwable cause) { super(cause); }
+    public UnsupportedKerasConfigurationException(Throwable cause) {
+        super(cause);
+    }
 
     private static String appendDocumentationURL(String message) {
         return message + ". Please file an issue at http://github.com/deeplearning4j/deeplearning4j/issues.";

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -48,14 +48,14 @@ public class SentenceIteratorTest {
     public void before() throws Exception {
         File test = new File("dir");
         test.mkdir();
-        File testFile = new File(test,"test.txt");
+        File testFile = new File(test, "test.txt");
         FileUtils.writeLines(testFile, Arrays.asList("Hello", "My", "Name"));
 
 
         File multiDir = new File("multidir");
-        for(int i = 0; i < 2; i++) {
-            File newTestFile = new File(multiDir,"testfile-" + i);
-            FileUtils.writeLines(newTestFile, Arrays.asList("Sentence 1.","Sentence 2.","Sentence 3."));
+        for (int i = 0; i < 2; i++) {
+            File newTestFile = new File(multiDir, "testfile-" + i);
+            FileUtils.writeLines(newTestFile, Arrays.asList("Sentence 1.", "Sentence 2.", "Sentence 3."));
 
         }
 
@@ -66,16 +66,16 @@ public class SentenceIteratorTest {
     public void testUimaSentenceIterator() throws Exception {
         SentenceIterator multiIter = UimaSentenceIterator.createWithPath("multidir");
         SentenceIterator iter = UimaSentenceIterator.createWithPath("dir");
-        testMulti(multiIter,1);
+        testMulti(multiIter, 1);
 
     }
 
     @Test
     public void testFileSentenceIterator() throws Exception {
-        SentenceIterator iter =  new FileSentenceIterator(new File("dir"));
+        SentenceIterator iter = new FileSentenceIterator(new File("dir"));
         SentenceIterator multiIter = new FileSentenceIterator(new File("multidir"));
         testSingle(iter);
-        testMulti(multiIter,3);
+        testMulti(multiIter, 3);
 
     }
 
@@ -83,27 +83,27 @@ public class SentenceIteratorTest {
     public void testLabelAware() throws Exception {
         String s = "1; hello";
         ByteArrayInputStream bis = new ByteArrayInputStream(s.getBytes());
-        LabelAwareSentenceIterator labelAwareSentenceIterator = new LabelAwareListSentenceIterator(bis,";",0,1);
+        LabelAwareSentenceIterator labelAwareSentenceIterator = new LabelAwareListSentenceIterator(bis, ";", 0, 1);
         assertTrue(labelAwareSentenceIterator.hasNext());
         labelAwareSentenceIterator.nextSentence();
-        assertEquals("1",labelAwareSentenceIterator.currentLabel());
+        assertEquals("1", labelAwareSentenceIterator.currentLabel());
 
         InputStream is2 = new ClassPathResource("labelawaresentenceiterator.txt").getInputStream();
-        LabelAwareSentenceIterator labelAwareSentenceIterator2 = new LabelAwareListSentenceIterator(is2,";",0,1);
+        LabelAwareSentenceIterator labelAwareSentenceIterator2 = new LabelAwareListSentenceIterator(is2, ";", 0, 1);
         int count = 0;
-        Map<Integer,String> labels = new HashMap<>();
-        while(labelAwareSentenceIterator2.hasNext()) {
+        Map<Integer, String> labels = new HashMap<>();
+        while (labelAwareSentenceIterator2.hasNext()) {
             String sentence = labelAwareSentenceIterator2.nextSentence();
-            labels.put(count,labelAwareSentenceIterator2.currentLabel());
+            labels.put(count, labelAwareSentenceIterator2.currentLabel());
             count++;
         }
 
-        assertEquals("SENT37",labels.get(0));
-        assertEquals("SENT38",labels.get(1));
-        assertEquals("SENT39",labels.get(2));
-        assertEquals("SENT42",labels.get(3));
+        assertEquals("SENT37", labels.get(0));
+        assertEquals("SENT38", labels.get(1));
+        assertEquals("SENT39", labels.get(2));
+        assertEquals("SENT42", labels.get(3));
 
-        assertEquals(4,count);
+        assertEquals(4, count);
 
 
 
@@ -116,16 +116,16 @@ public class SentenceIteratorTest {
 
         String sentence = iter.nextSentence();
         assertTrue(iter.hasNext());
-        assertEquals("Hello",sentence);
-        assertEquals("My",iter.nextSentence());
-        assertEquals("Name",iter.nextSentence());
+        assertEquals("Hello", sentence);
+        assertEquals("My", iter.nextSentence());
+        assertEquals("Name", iter.nextSentence());
         assertFalse(iter.hasNext());
 
     }
 
-    public void testMulti(SentenceIterator iter,int expectedSentences) {
+    public void testMulti(SentenceIterator iter, int expectedSentences) {
         assertTrue(iter.hasNext());
-        for(int i = 0; i < expectedSentences * 2; i++) {
+        for (int i = 0; i < expectedSentences * 2; i++) {
             iter.nextSentence();
         }
 
@@ -140,7 +140,6 @@ public class SentenceIteratorTest {
         FileUtils.deleteQuietly(test);
         FileUtils.deleteQuietly(new File("multidir"));
     }
-
 
 
 

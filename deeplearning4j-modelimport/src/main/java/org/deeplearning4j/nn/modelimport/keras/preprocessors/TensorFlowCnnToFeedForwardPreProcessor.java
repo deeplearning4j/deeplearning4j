@@ -18,8 +18,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
 
     @JsonCreator
     public TensorFlowCnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                                                  @JsonProperty("inputWidth") int inputWidth,
-                                                  @JsonProperty("numChannels") int numChannels) {
+                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
         super(inputHeight, inputWidth, numChannels);
     }
 
@@ -33,7 +32,8 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if(input.rank() == 2) return input; //Should usually never happen
+        if (input.rank() == 2)
+            return input; //Should usually never happen
         /* DL4J convolutional input:       # channels, # rows, # cols
          * TensorFlow convolutional input: # rows, # cols, # channels
          * Theano convolutional input:     # channels, # rows, # cols

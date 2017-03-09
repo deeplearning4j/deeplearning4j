@@ -65,8 +65,10 @@ public class VocabularyWord implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         VocabularyWord word1 = (VocabularyWord) o;
 
@@ -109,7 +111,7 @@ public class VocabularyWord implements Serializable {
     public static VocabularyWord fromJson(String json) {
         ObjectMapper mapper = mapper();
         try {
-            VocabularyWord ret =  mapper.readValue(json, VocabularyWord.class);
+            VocabularyWord ret = mapper.readValue(json, VocabularyWord.class);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);

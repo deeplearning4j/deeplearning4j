@@ -15,7 +15,7 @@ import java.util.Random;
  * @author Alex Black
  */
 public class BalancedPartitioner extends Partitioner {
-    private final int numPartitions;            //Total number of partitions
+    private final int numPartitions; //Total number of partitions
     private final int elementsPerPartition;
     private final int remainder;
     private Random r;
@@ -40,21 +40,21 @@ public class BalancedPartitioner extends Partitioner {
         // of the number of cores in the cluster
 
         //Work out: which partition it belongs to...
-        if(elementIdx <= (elementsPerPartition+1) * remainder){
+        if (elementIdx <= (elementsPerPartition + 1) * remainder) {
             //This goes into one of the larger partitions (of size elementsPerPartition+1)
-            int outputPartition = elementIdx / (elementsPerPartition+1);
-            if(outputPartition >= numPartitions){
+            int outputPartition = elementIdx / (elementsPerPartition + 1);
+            if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
             }
             return outputPartition;
         } else {
             //This goes into one of the standard size partitions (of size elementsPerPartition)
-            int numValsInLargerPartitions = remainder * (elementsPerPartition+1);
+            int numValsInLargerPartitions = remainder * (elementsPerPartition + 1);
             int idxInSmallerPartitions = elementIdx - numValsInLargerPartitions;
             int smallPartitionIdx = idxInSmallerPartitions / elementsPerPartition;
             int outputPartition = remainder + smallPartitionIdx;
-            if(outputPartition >= numPartitions){
+            if (outputPartition >= numPartitions) {
                 //Should never happen, unless there's some up-stream problem with calculating elementsPerPartition
                 outputPartition = getRandom().nextInt(numPartitions);
             }
@@ -62,8 +62,9 @@ public class BalancedPartitioner extends Partitioner {
         }
     }
 
-    private synchronized Random getRandom(){
-        if(r == null) r = new Random();
+    private synchronized Random getRandom() {
+        if (r == null)
+            r = new Random();
         return r;
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -30,7 +30,9 @@ import java.awt.*;
 /**
  * Style for text
  */
-@Data @NoArgsConstructor @EqualsAndHashCode(callSuper=true)
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleText extends Style {
 
@@ -39,7 +41,7 @@ public class StyleText extends Style {
     private Boolean underline;
     private String color;
 
-    private StyleText(Builder builder){
+    private StyleText(Builder builder) {
         super(builder);
         this.font = builder.font;
         this.fontSize = builder.fontSize;
@@ -48,7 +50,7 @@ public class StyleText extends Style {
     }
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
         private String font;
         private Double fontSize;
@@ -56,35 +58,35 @@ public class StyleText extends Style {
         private String color;
 
         /** Specify the font to be used for the text */
-        public Builder font(String font){
+        public Builder font(String font) {
             this.font = font;
             return this;
         }
 
         /** Size of the font (pt) */
-        public Builder fontSize(double size){
+        public Builder fontSize(double size) {
             this.fontSize = size;
             return this;
         }
 
         /** If true: text should be underlined (default: not) */
-        public Builder underline(boolean underline){
+        public Builder underline(boolean underline) {
             this.underline = underline;
             return this;
         }
 
         /** Color for the text */
-        public Builder color(Color color){
+        public Builder color(Color color) {
             return color(Utils.colorToHex(color));
         }
 
         /** Color for the text */
-        public Builder color(String color){
+        public Builder color(String color) {
             this.color = color;
             return this;
         }
 
-        public StyleText build(){
+        public StyleText build() {
             return new StyleText(this);
         }
 

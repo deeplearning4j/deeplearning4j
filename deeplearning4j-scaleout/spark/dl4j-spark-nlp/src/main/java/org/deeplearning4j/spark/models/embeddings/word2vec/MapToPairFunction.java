@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
-public class MapToPairFunction implements Function< Map.Entry<VocabWord, INDArray>, Pair<VocabWord, INDArray> > {
+public class MapToPairFunction implements Function<Map.Entry<VocabWord, INDArray>, Pair<VocabWord, INDArray>> {
 
     @Override
     public Pair<VocabWord, INDArray> call(Map.Entry<VocabWord, INDArray> pair) {

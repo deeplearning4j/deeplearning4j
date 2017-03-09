@@ -29,7 +29,9 @@ public class Sequence<T extends SequenceElement> implements Serializable {
     protected int hash = 0;
     protected boolean hashCached = false;
 
-    @Getter @Setter protected int sequenceId;
+    @Getter
+    @Setter
+    protected int sequenceId;
 
     /**
      * Creates new empty sequence
@@ -77,7 +79,7 @@ public class Sequence<T extends SequenceElement> implements Serializable {
      */
     public List<String> asLabels() {
         List<String> labels = new ArrayList<>();
-        for(T element: getElements()) {
+        for (T element : getElements()) {
             labels.add(element.getLabel());
         }
         return labels;
@@ -135,7 +137,8 @@ public class Sequence<T extends SequenceElement> implements Serializable {
      */
     public void setSequenceLabel(@NonNull T label) {
         this.label = label;
-        if (!labels.contains(label)) labels.add(label);
+        if (!labels.contains(label))
+            labels.add(label);
     }
 
     /**
@@ -145,7 +148,8 @@ public class Sequence<T extends SequenceElement> implements Serializable {
      */
     public void addSequenceLabel(@NonNull T label) {
         this.labels.add(label);
-        if (this.label == null) this.label = label;
+        if (this.label == null)
+            this.label = label;
     }
 
     /**
@@ -178,8 +182,10 @@ public class Sequence<T extends SequenceElement> implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         Sequence<?> sequence = (Sequence<?>) o;
 
@@ -192,7 +198,7 @@ public class Sequence<T extends SequenceElement> implements Serializable {
         if (hashCached)
             return hash;
 
-        for (T element: elements) {
+        for (T element : elements) {
             hash += 31 * element.hashCode();
         }
 

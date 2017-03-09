@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -65,13 +65,13 @@ public class DataSetOrdering implements Ordering<DataSet> {
 
     @Override
     public DataSet max(DataSet dataSet, DataSet t1) {
-       return gt(dataSet, t1) ? dataSet : t1;
-     }
+        return gt(dataSet, t1) ? dataSet : t1;
+    }
 
     @Override
     public DataSet min(DataSet dataSet, DataSet t1) {
         return max(dataSet, t1) == dataSet ? t1 : dataSet;
-     }
+    }
 
     @Override
     public Ordering<DataSet> reverse() {

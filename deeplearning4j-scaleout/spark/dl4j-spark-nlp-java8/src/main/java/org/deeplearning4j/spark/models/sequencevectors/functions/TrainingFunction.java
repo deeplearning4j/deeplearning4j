@@ -42,7 +42,9 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
 
     protected transient TrainingDriver<? extends TrainingMessage> driver;
 
-    public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
+    public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast,
+                    @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                    @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
@@ -62,7 +64,8 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
 
             if (elementsLearningAlgorithm == null) {
                 try {
-                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
+                                    .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -84,7 +87,8 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         if (elementsLearningAlgorithm == null && vectorsConfiguration.getElementsLearningAlgorithm() != null) {
             // TODO: do ELA initialization
             try {
-                elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
+                                .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
                 elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -94,7 +98,8 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         if (sequenceLearningAlgorithm == null && vectorsConfiguration.getSequenceLearningAlgorithm() != null) {
             // TODO: do SLA initialization
             try {
-                sequenceLearningAlgorithm = (SparkSequenceLearningAlgorithm) Class.forName(vectorsConfiguration.getSequenceLearningAlgorithm()).newInstance();
+                sequenceLearningAlgorithm = (SparkSequenceLearningAlgorithm) Class
+                                .forName(vectorsConfiguration.getSequenceLearningAlgorithm()).newInstance();
                 sequenceLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -111,7 +116,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
          the only limitation we have - our sequence is detached from actual vocabulary, so we need to merge it back virtually
         */
         Sequence<ShallowSequenceElement> mergedSequence = new Sequence<>();
-        for (T element: sequence.getElements()) {
+        for (T element : sequence.getElements()) {
             // it's possible to get null here, i.e. if frequency for this element is below minWordFrequency threshold
             ShallowSequenceElement reduced = shallowVocabCache.tokenFor(element.getStorageId());
 
@@ -121,7 +126,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
 
         // do the same with labels, transfer them, if any
         if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()) {
-            for (T label: sequence.getSequenceLabels()) {
+            for (T label : sequence.getSequenceLabels()) {
                 ShallowSequenceElement reduced = shallowVocabCache.tokenFor(label.getStorageId());
 
                 if (reduced != null)
@@ -137,7 +142,8 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
          */
         // FIXME: temporary hook
         if (sequence.size() > 0)
-            paramServer.execDistributed(elementsLearningAlgorithm.frameSequence(mergedSequence, new AtomicLong(119), 25e-3));
+            paramServer.execDistributed(
+                            elementsLearningAlgorithm.frameSequence(mergedSequence, new AtomicLong(119), 25e-3));
         else
             log.warn("Skipping empty sequence...");
 

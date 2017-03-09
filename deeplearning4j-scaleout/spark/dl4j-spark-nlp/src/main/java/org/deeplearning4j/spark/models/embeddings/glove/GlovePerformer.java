@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,7 +29,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
  *
  * @author Adam Gibson
  */
-public class GlovePerformer implements Function<Triple<VocabWord,VocabWord,Double>,GloveChange> {
+public class GlovePerformer implements Function<Triple<VocabWord, VocabWord, Double>, GloveChange> {
 
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.glove";
@@ -44,7 +44,7 @@ public class GlovePerformer implements Function<Triple<VocabWord,VocabWord,Doubl
     }
 
     @Override
-    public GloveChange call(Triple<VocabWord, VocabWord,Double> pair) throws Exception {
+    public GloveChange call(Triple<VocabWord, VocabWord, Double> pair) throws Exception {
         return null;
     }
 }

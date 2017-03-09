@@ -36,7 +36,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     private long[] countActualPositive;
     private long[] countActualNegative;
 
-    private final Map<Integer,Map<Double, ROC.CountsForThreshold>> counts = new LinkedHashMap<>();
+    private final Map<Integer, Map<Double, ROC.CountsForThreshold>> counts = new LinkedHashMap<>();
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation
@@ -59,20 +59,21 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             evalTimeSeries(labels, predictions);
         }
         if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)) {
-            throw new IllegalArgumentException("Invalid input data shape: labels shape = " + Arrays.toString(labels.shape()) +
-                    ", predictions shape = " + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
+            throw new IllegalArgumentException("Invalid input data shape: labels shape = "
+                            + Arrays.toString(labels.shape()) + ", predictions shape = "
+                            + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
         double step = 1.0 / thresholdSteps;
 
-        if(countActualPositive == null){
+        if (countActualPositive == null) {
             //This must be the first time eval has been called...
             int size = labels.size(1);
             countActualPositive = new long[size];
             countActualNegative = new long[size];
 
-            for( int i=0; i<size; i++ ){
-                Map<Double,ROC.CountsForThreshold> map = new LinkedHashMap<Double, ROC.CountsForThreshold>();
+            for (int i = 0; i < size; i++) {
+                Map<Double, ROC.CountsForThreshold> map = new LinkedHashMap<Double, ROC.CountsForThreshold>();
                 counts.put(i, map);
 
                 for (int j = 0; j <= thresholdSteps; j++) {
@@ -82,13 +83,15 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             }
         }
 
-        if(countActualPositive.length != labels.size(1)){
-            throw new IllegalArgumentException("Cannot evaluate data: number of label classes does not match previous call. " +
-                    "Got " + labels.size(1) + " labels (from array shape " + Arrays.toString(labels.shape()) + ")" +
-                    " vs. expected number of label classes = " + countActualPositive.length);
+        if (countActualPositive.length != labels.size(1)) {
+            throw new IllegalArgumentException(
+                            "Cannot evaluate data: number of label classes does not match previous call. " + "Got "
+                                            + labels.size(1) + " labels (from array shape "
+                                            + Arrays.toString(labels.shape()) + ")"
+                                            + " vs. expected number of label classes = " + countActualPositive.length);
         }
 
-        for( int i=0; i<countActualPositive.length; i++ ){
+        for (int i = 0; i < countActualPositive.length; i++) {
             //Iterate over each class
             INDArray positiveActualColumn = labels.getColumn(i);
             INDArray positivePredictedColumn = predictions.getColumn(i);
@@ -115,9 +118,9 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
                 //True positives: occur when positive predicted class and actual positive actual class...
                 //False positive occurs when positive predicted class, but negative actual class
-                INDArray isTruePositive = predictedClass1.mul(positiveActualColumn);       //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
+                INDArray isTruePositive = predictedClass1.mul(positiveActualColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
                 INDArray negativeActualColumn = positiveActualColumn.rsub(1.0);
-                INDArray isFalsePositive = predictedClass1.mul(negativeActualColumn);      //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+                INDArray isFalsePositive = predictedClass1.mul(negativeActualColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
 
                 //Counts for this batch:
                 int truePositiveCount = isTruePositive.sumNumber().intValue();
@@ -166,7 +169,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     public double[][] getResultsAsArray(int classIdx) {
         assertHasBeenFit(classIdx);
 
-        double[][] out = new double[2][thresholdSteps+1];
+        double[][] out = new double[2][thresholdSteps + 1];
         int i = 0;
         for (Map.Entry<Double, ROC.CountsForThreshold> entry : counts.get(classIdx).entrySet()) {
             ROC.CountsForThreshold c = entry.getValue();
@@ -200,7 +203,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
             //y axis: TPR
             //x axis: FPR
-            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate());   //Iterating in threshold order, so FPR decreases as threshold increases
+            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate()); //Iterating in threshold order, so FPR decreases as threshold increases
             double avg = (left.getTruePositiveRate() + right.getTruePositiveRate()) / 2.0;
 
             auc += deltaX * avg;
@@ -211,18 +214,18 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     /**
      * Calculate the average (one-vs-all) AUC for all classes
      */
-    public double calculateAverageAUC(){
+    public double calculateAverageAUC() {
         assertHasBeenFit(0);
 
         double sum = 0.0;
-        for( int i=0; i<countActualPositive.length; i++ ){
+        for (int i = 0; i < countActualPositive.length; i++) {
             sum += calculateAUC(i);
         }
 
         return sum / countActualPositive.length;
     }
 
-    public List<ROC.PrecisionRecallPoint> getPrecisionRecallCurve(int classIndex){
+    public List<ROC.PrecisionRecallPoint> getPrecisionRecallCurve(int classIndex) {
         //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
         //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
 
@@ -237,15 +240,15 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             //precision == 1 when FP = 0 -> no incorrect positive predictions
             //recall == 1 when no dataset positives are present (got all 0 of 0 positives)
             double precision;
-            if(tpCount == 0 && fpCount == 0){
+            if (tpCount == 0 && fpCount == 0) {
                 //At this threshold: no predicted positive cases
                 precision = 1.0;
             } else {
-                precision = tpCount / (double)(tpCount + fpCount);
+                precision = tpCount / (double) (tpCount + fpCount);
             }
 
             double recall;
-            if(countActualPositive[classIndex] == 0){
+            if (countActualPositive[classIndex] == 0) {
                 recall = 1.0;
             } else {
                 recall = tpCount / ((double) countActualPositive[classIndex]);
@@ -265,33 +268,33 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
      * @param other ROCMultiClass instance to combine with this one
      */
     @Override
-    public void merge(ROCMultiClass other){
-        if(other.countActualPositive == null){
+    public void merge(ROCMultiClass other) {
+        if (other.countActualPositive == null) {
             //Other has no data
             return;
-        } else if(countActualPositive == null){
+        } else if (countActualPositive == null) {
             //This instance has no data
             this.countActualPositive = Arrays.copyOf(other.countActualPositive, other.countActualPositive.length);
             this.countActualNegative = Arrays.copyOf(other.countActualNegative, other.countActualNegative.length);
-            for(Map.Entry<Integer,Map<Double, ROC.CountsForThreshold>> e : other.counts.entrySet()){
-                Map<Double,ROC.CountsForThreshold> m = e.getValue();
-                Map<Double,ROC.CountsForThreshold> mClone = new LinkedHashMap<>();
-                for(Map.Entry<Double,ROC.CountsForThreshold> e2 : m.entrySet()){
+            for (Map.Entry<Integer, Map<Double, ROC.CountsForThreshold>> e : other.counts.entrySet()) {
+                Map<Double, ROC.CountsForThreshold> m = e.getValue();
+                Map<Double, ROC.CountsForThreshold> mClone = new LinkedHashMap<>();
+                for (Map.Entry<Double, ROC.CountsForThreshold> e2 : m.entrySet()) {
                     mClone.put(e2.getKey(), e2.getValue().clone());
                 }
                 this.counts.put(e.getKey(), mClone);
             }
         } else {
-            for( int i=0; i<countActualPositive.length; i++ ){
+            for (int i = 0; i < countActualPositive.length; i++) {
                 this.countActualPositive[i] += other.countActualPositive[i];
                 this.countActualNegative[i] += other.countActualNegative[i];
             }
 
-            for(Integer i : counts.keySet()){
-                Map<Double,ROC.CountsForThreshold> thisMap = counts.get(i);
-                Map<Double,ROC.CountsForThreshold> otherMap = other.counts.get(i);
+            for (Integer i : counts.keySet()) {
+                Map<Double, ROC.CountsForThreshold> thisMap = counts.get(i);
+                Map<Double, ROC.CountsForThreshold> otherMap = other.counts.get(i);
 
-                for(Double d : thisMap.keySet()){
+                for (Double d : thisMap.keySet()) {
                     ROC.CountsForThreshold thisC = thisMap.get(d);
                     ROC.CountsForThreshold otherC = otherMap.get(d);
                     thisC.incrementTruePositive(otherC.getCountTruePositive());
@@ -302,12 +305,13 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     }
 
 
-    private void assertHasBeenFit(int classIdx){
-        if(countActualPositive == null){
+    private void assertHasBeenFit(int classIdx) {
+        if (countActualPositive == null) {
             throw new IllegalStateException("Cannot get results: no data has been collected");
         }
-        if(classIdx < 0 || classIdx >= countActualPositive.length){
-            throw new IllegalArgumentException("Invalid class index (" + classIdx + "): must be in range 0 to numClasses = " + countActualPositive.length);
+        if (classIdx < 0 || classIdx >= countActualPositive.length) {
+            throw new IllegalArgumentException("Invalid class index (" + classIdx
+                            + "): must be in range 0 to numClasses = " + countActualPositive.length);
         }
     }
 }

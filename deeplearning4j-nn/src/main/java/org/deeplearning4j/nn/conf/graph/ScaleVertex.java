@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -47,33 +47,35 @@ public class ScaleVertex extends GraphVertex {
     }
 
     @Override
-    public boolean equals(Object o){
-        if(!(o instanceof ScaleVertex)) return false;
-        return ((ScaleVertex)o).scaleFactor == scaleFactor;
+    public boolean equals(Object o) {
+        if (!(o instanceof ScaleVertex))
+            return false;
+        return ((ScaleVertex) o).scaleFactor == scaleFactor;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return 123073088;
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph,name,idx,scaleFactor);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph, name, idx, scaleFactor);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if(vertexInputs.length == 1) return vertexInputs[0];
+        if (vertexInputs.length == 1)
+            return vertexInputs[0];
         InputType first = vertexInputs[0];
 
-        return first;   //Same output shape/size as
+        return first; //Same output shape/size as
     }
 }

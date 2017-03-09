@@ -18,7 +18,7 @@ import java.util.Queue;
 public class QueuePairStatsStorageListener implements StatsStorageListener {
 
     private final StatsStorage statsStorage;
-    private final Queue<Pair<StatsStorage,StatsStorageEvent>> queue;
+    private final Queue<Pair<StatsStorage, StatsStorageEvent>> queue;
 
     @Override
     public void notify(StatsStorageEvent event) {

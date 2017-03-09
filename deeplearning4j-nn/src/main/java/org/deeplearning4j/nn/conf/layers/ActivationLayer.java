@@ -15,14 +15,15 @@ import java.util.Map;
 
 /**
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ActivationLayer extends FeedForwardLayer {
 
 
     private ActivationLayer(Builder builder) {
-    	super(builder);
+        super(builder);
     }
 
     @Override
@@ -32,7 +33,8 @@ public class ActivationLayer extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
@@ -50,7 +52,8 @@ public class ActivationLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
         return inputType;
     }
 

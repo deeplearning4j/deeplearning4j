@@ -40,8 +40,10 @@ public class HistogramModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/weights", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.histogram.Histogram.apply()));
-        Route r2 = new Route("/weights/listSessions", HttpMethod.GET, FunctionType.Supplier, () -> ok(Json.toJson(knownSessionIDs.keySet())));
+        Route r = new Route("/weights", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(org.deeplearning4j.ui.views.html.histogram.Histogram.apply()));
+        Route r2 = new Route("/weights/listSessions", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(Json.toJson(knownSessionIDs.keySet())));
         Route r3 = new Route("/weights/updated/:sid", HttpMethod.GET, FunctionType.Function, this::getLastUpdateTime);
         Route r4 = new Route("/weights/data/:sid", HttpMethod.GET, FunctionType.Function, this::processRequest);
 
@@ -64,7 +66,8 @@ public class HistogramModule implements UIModule {
     public void onAttach(StatsStorage statsStorage) {
         for (String sessionID : statsStorage.listSessionIDs()) {
             for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
-                if (!StatsListener.TYPE_ID.equals(typeID)) continue;
+                if (!StatsListener.TYPE_ID.equals(typeID))
+                    continue;
                 knownSessionIDs.put(sessionID, statsStorage);
             }
         }
@@ -92,8 +95,10 @@ public class HistogramModule implements UIModule {
         List<String> workerIDs = ss.listWorkerIDsForSession(sessionId);
 
         //TODO checks
-        StatsInitializationReport initReport = (StatsInitializationReport) ss.getStaticInfo(sessionId, StatsListener.TYPE_ID, workerIDs.get(0));
-        if (initReport == null) return Results.ok(Json.toJson(Collections.EMPTY_MAP));
+        StatsInitializationReport initReport = (StatsInitializationReport) ss.getStaticInfo(sessionId,
+                        StatsListener.TYPE_ID, workerIDs.get(0));
+        if (initReport == null)
+            return Results.ok(Json.toJson(Collections.EMPTY_MAP));
 
         String[] paramNames = initReport.getModelParamNames();
         //Infer layer names from param names...
@@ -110,8 +115,8 @@ public class HistogramModule implements UIModule {
         Collections.sort(list, (a, b) -> Long.compare(a.getTimeStamp(), b.getTimeStamp()));
 
         List<Double> scoreList = new ArrayList<>(list.size());
-        List<Map<String, List<Double>>> meanMagHistoryParams = new ArrayList<>();    //List.get(i) -> layer i. Maps: parameter for the given layer
-        List<Map<String, List<Double>>> meanMagHistoryUpdates = new ArrayList<>();    //List.get(i) -> layer i. Maps: updates for the given layer
+        List<Map<String, List<Double>>> meanMagHistoryParams = new ArrayList<>(); //List.get(i) -> layer i. Maps: parameter for the given layer
+        List<Map<String, List<Double>>> meanMagHistoryUpdates = new ArrayList<>(); //List.get(i) -> layer i. Maps: updates for the given layer
         for (int i = 0; i < layerNameList.size(); i++) {
             meanMagHistoryParams.add(new HashMap<>());
             meanMagHistoryUpdates.add(new HashMap<>());
@@ -128,7 +133,8 @@ public class HistogramModule implements UIModule {
 
             //Mean magnitudes
             if (sp.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes)) {
-                updateMeanMagnitudeMaps(sp.getMeanMagnitudes(StatsType.Parameters), layerNameList, meanMagHistoryParams);
+                updateMeanMagnitudeMaps(sp.getMeanMagnitudes(StatsType.Parameters), layerNameList,
+                                meanMagHistoryParams);
             }
 
             if (sp.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes)) {
@@ -148,16 +154,17 @@ public class HistogramModule implements UIModule {
         g.setParameters(newParams);
         g.setScore(lastScore);
         g.setScores(scoreList);
-//        g.setPath(subPath);
+        //        g.setPath(subPath);
         g.setUpdateMagnitudes(meanMagHistoryUpdates);
         g.setParamMagnitudes(meanMagHistoryParams);
-//        g.setLayerNames(layerNames);
+        //        g.setLayerNames(layerNames);
         g.setLastUpdateTime(last.getTimeStamp());
 
         return Results.ok(Json.toJson(g));
     }
 
-    private void updateMeanMagnitudeMaps(Map<String, Double> current, List<String> layerNames, List<Map<String, List<Double>>> history) {
+    private void updateMeanMagnitudeMaps(Map<String, Double> current, List<String> layerNames,
+                    List<Map<String, List<Double>>> history) {
         for (Map.Entry<String, Double> entry : current.entrySet()) {
             String key = entry.getKey();
             String[] split = key.split("_");
@@ -177,8 +184,10 @@ public class HistogramModule implements UIModule {
         for (String s : histograms.keySet()) {
             org.deeplearning4j.ui.stats.api.Histogram h = histograms.get(s);
             String newName;
-            if (Character.isDigit(s.charAt(0))) newName = "param_" + s;
-            else newName = s;
+            if (Character.isDigit(s.charAt(0)))
+                newName = "param_" + s;
+            else
+                newName = s;
 
             Map<Number, Number> temp = new LinkedHashMap<>();
             double min = h.getMin();

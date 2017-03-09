@@ -34,8 +34,8 @@ public class KerasDense extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDense(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasDense(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -47,19 +47,13 @@ public class KerasDense extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasDense(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasDense(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.layer = new DenseLayer.Builder()
-            .name(this.layerName)
-            .nOut(getNOutFromConfig(layerConfig))
-            .dropOut(this.dropout)
-            .activation(getActivationFromConfig(layerConfig))
-            .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig))
-            .biasInit(0.0)
-            .l1(this.weightL1Regularization)
-            .l2(this.weightL2Regularization)
-            .build();
+        this.layer = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig))
+                        .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig))
+                        .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
+                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
     }
 
     /**
@@ -68,7 +62,7 @@ public class KerasDense extends KerasLayer {
      * @return  DenseLayer
      */
     public DenseLayer getDenseLayer() {
-        return (DenseLayer)this.layer;
+        return (DenseLayer) this.layer;
     }
 
     /**
@@ -105,21 +99,24 @@ public class KerasDense extends KerasLayer {
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String,INDArray>();
+        this.weights = new HashMap<String, INDArray>();
         if (weights.containsKey(KERAS_PARAM_NAME_W))
             this.weights.put(DefaultParamInitializer.WEIGHT_KEY, weights.get(KERAS_PARAM_NAME_W));
         else
-            throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
+            throw new InvalidKerasConfigurationException(
+                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
         if (weights.containsKey(KERAS_PARAM_NAME_B))
             this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
         else
-            throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
+            throw new InvalidKerasConfigurationException(
+                            "Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(KERAS_PARAM_NAME_W);
             paramNames.remove(KERAS_PARAM_NAME_B);
             String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: " + unknownParamNames.substring(1, unknownParamNames.length()-1));
+            log.warn("Attemping to set weights for unknown parameters: "
+                            + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
 }

@@ -43,11 +43,12 @@ public class J7StatsListener extends BaseStatsListener {
      * @param listenerFrequency Frequency with which to collect stats information
      */
     public J7StatsListener(StatsStorageRouter router, int listenerFrequency) {
-        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(), null, null);
+        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(),
+                        null, null);
     }
 
-    public J7StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
-                           String sessionID, String workerID) {
+    public J7StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig,
+                    StatsUpdateConfiguration updateConfig, String sessionID, String workerID) {
         super(router, initConfig, updateConfig, sessionID, workerID);
     }
 
@@ -63,8 +64,8 @@ public class J7StatsListener extends BaseStatsListener {
 
     @Override
     public StorageMetaData getNewStorageMetaData(long initTime, String sessionID, String workerID) {
-        return new JavaStorageMetaData(initTime, sessionID, BaseStatsListener.TYPE_ID, workerID, JavaStatsInitializationReport.class,
-                JavaStatsReport.class);
+        return new JavaStorageMetaData(initTime, sessionID, BaseStatsListener.TYPE_ID, workerID,
+                        JavaStatsInitializationReport.class, JavaStatsReport.class);
     }
 
     @Override

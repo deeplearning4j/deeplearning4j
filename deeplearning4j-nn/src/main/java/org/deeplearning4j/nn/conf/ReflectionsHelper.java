@@ -25,7 +25,7 @@ public class ReflectionsHelper {
         final List<Vfs.UrlType> urlTypes = Lists.newArrayList();
 
         // include a list of file extensions / filenames to be recognized
-        urlTypes.add(new EmptyIfFileEndingsUrlType(".mar", ".jnilib",".so",".dll"));
+        urlTypes.add(new EmptyIfFileEndingsUrlType(".mar", ".jnilib", ".so", ".dll"));
 
         urlTypes.addAll(Arrays.asList(Vfs.DefaultUrlTypes.values()));
 

@@ -22,7 +22,7 @@ import java.util.Random;
  * @author raver119@gmail.com
  * Based on Alex Black WeightedWalkIterator implementation
  */
-public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
+public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T> implements GraphWalker<T> {
 
     protected WeightedWalker() {
 
@@ -69,7 +69,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
 
             List<? extends Edge<? extends Number>> edges = sourceGraph.getEdgesOut(currentPoint);
 
-            if (edges == null ||edges.isEmpty()) {
+            if (edges == null || edges.isEmpty()) {
                 switch (noEdgeHandling) {
                     case CUTOFF_ON_DISCONNECTED:
                         // we just break this sequence
@@ -128,7 +128,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
         super.reset(shuffle);
     }
 
-    public static class Builder<T extends SequenceElement> extends RandomWalker.Builder<T>  {
+    public static class Builder<T extends SequenceElement> extends RandomWalker.Builder<T> {
 
         public Builder(IGraph<T, ? extends Number> sourceGraph) {
             super(sourceGraph);
@@ -205,7 +205,7 @@ public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  
             walker.alpha = this.alpha;
 
             walker.order = new int[sourceGraph.numVertices()];
-            for (int i =0; i <walker.order.length; i++) {
+            for (int i = 0; i < walker.order.length; i++) {
                 walker.order[i] = i;
             }
 

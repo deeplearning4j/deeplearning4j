@@ -51,9 +51,10 @@ public class VocabConstructorTest {
         int cnt = 0;
         while (iter.hasNext()) {
             Tokenizer tok = t.create(iter.nextSentence());
-            for (String token: tok.getTokens()) {
-                if (token == null || token.isEmpty() || token.trim().isEmpty()) continue;
-                    cnt++;
+            for (String token : tok.getTokens()) {
+                if (token == null || token.isEmpty() || token.trim().isEmpty())
+                    continue;
+                cnt++;
 
                 if (!set.contains(token))
                     set.add(token);
@@ -62,7 +63,7 @@ public class VocabConstructorTest {
             lines++;
         }
 
-        log.info("Total number of tokens: [" + cnt + "], lines: [" + lines+"], set size: ["+ set.size() +"]");
+        log.info("Total number of tokens: [" + cnt + "], lines: [" + lines + "], set size: [" + set.size() + "]");
         log.info("Set:\n" + set);
     }
 
@@ -74,23 +75,17 @@ public class VocabConstructorTest {
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(iter)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
 
 
         /*
             And we pack that transformer into AbstractSequenceIterator
          */
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 0)
-                .useAdaGrad(false)
-                .setTargetVocabCache(cache)
-                .build();
+                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(cache).build();
 
         constructor.buildJointVocabulary(true, false);
 
@@ -108,24 +103,18 @@ public class VocabConstructorTest {
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(iter)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
 
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 5)
-                .useAdaGrad(false)
-                .setTargetVocabCache(cache)
-                .build();
+                        .addSource(sequenceIterator, 5).useAdaGrad(false).setTargetVocabCache(cache).build();
 
         constructor.buildJointVocabulary(false, true);
 
-//        assertFalse(cache.hasToken("including"));
+        //        assertFalse(cache.hasToken("including"));
 
         assertEquals(242, cache.numWords());
 
@@ -152,6 +141,7 @@ public class VocabConstructorTest {
 
                 return new Iterator<Sequence<VocabWord>>() {
                     private AtomicBoolean switcher = new AtomicBoolean(true);
+
                     @Override
                     public boolean hasNext() {
                         return switcher.getAndSet(false);
@@ -175,10 +165,7 @@ public class VocabConstructorTest {
         SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 0)
-                .useAdaGrad(false)
-                .setTargetVocabCache(vocabCache)
-                .build();
+                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -203,6 +190,7 @@ public class VocabConstructorTest {
 
                 return new Iterator<Sequence<VocabWord>>() {
                     private AtomicBoolean switcher = new AtomicBoolean(true);
+
                     @Override
                     public boolean hasNext() {
                         return switcher.getAndSet(false);
@@ -226,10 +214,7 @@ public class VocabConstructorTest {
         SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 0)
-                .useAdaGrad(false)
-                .setTargetVocabCache(vocabCache)
-                .build();
+                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -244,29 +229,23 @@ public class VocabConstructorTest {
      */
     @Test
     public void testMergedVocab1() throws Exception {
-        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
-        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
 
         BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheSource)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
@@ -275,9 +254,7 @@ public class VocabConstructorTest {
 
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheTarget)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
 
         vocabTransfer.buildMergedVocabulary(cacheSource, false);
 
@@ -286,29 +263,23 @@ public class VocabConstructorTest {
 
     @Test
     public void testMergedVocabWithLabels1() throws Exception {
-        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
-        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
 
         BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheSource)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
@@ -316,21 +287,14 @@ public class VocabConstructorTest {
         log.info("Source Vocab size: " + sourceSize);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile())
-                .build();
+                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
 
-        transformer = new SentenceTransformer.Builder()
-                .iterator(labelAwareIterator)
-                .tokenizerFactory(t)
-                .build();
+        transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
 
-        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheTarget)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
 
         vocabTransfer.buildMergedVocabulary(cacheSource, true);
 

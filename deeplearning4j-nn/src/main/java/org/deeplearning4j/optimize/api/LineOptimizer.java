@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,7 +38,6 @@ public interface LineOptimizer extends Serializable {
      * @throws InvalidStepException
      */
     double optimize(INDArray parameters, INDArray gradient, INDArray searchDirection) throws InvalidStepException;
-
 
 
 

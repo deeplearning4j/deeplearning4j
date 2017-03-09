@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class DefaultI18N implements I18N {
 
     public static final String DEFAULT_LANGUAGE = "en";
-    public static final String FALLBACK_LANGUAGE = "en";    //use this if the specified language doesn't have the requested message
+    public static final String FALLBACK_LANGUAGE = "en"; //use this if the specified language doesn't have the requested message
     public static final String DEFAULT_I8N_RESOURCES_DIR = "dl4j_i18n";
 
     private static DefaultI18N instance;
@@ -46,7 +46,8 @@ public class DefaultI18N implements I18N {
     private Map<String, Map<String, String>> messagesByLanguage = new HashMap<>();
 
     public static synchronized I18N getInstance() {
-        if (instance == null) instance = new DefaultI18N();
+        if (instance == null)
+            instance = new DefaultI18N();
         return instance;
     }
 
@@ -61,15 +62,13 @@ public class DefaultI18N implements I18N {
     }
 
     private synchronized void loadLanguageResources(String languageCode) {
-        if (loadedLanguages.contains(languageCode)) return;
+        if (loadedLanguages.contains(languageCode))
+            return;
 
         //Scan classpath for resources in the /dl4j_i18n/ directory...
         URL url = this.getClass().getResource("/" + DEFAULT_I8N_RESOURCES_DIR + "/");
-        Reflections reflections = new Reflections(
-                new ConfigurationBuilder()
-                        .setScanners(new ResourcesScanner())
-                        .setUrls(url)
-        );
+        Reflections reflections =
+                        new Reflections(new ConfigurationBuilder().setScanners(new ResourcesScanner()).setUrls(url));
 
         String pattern = ".*" + languageCode;
         Set<String> resources = reflections.getResources(Pattern.compile(pattern));
@@ -77,7 +76,8 @@ public class DefaultI18N implements I18N {
         Map<String, String> messages = new HashMap<>();
 
         for (String s : resources) {
-            if (!s.endsWith(languageCode)) continue;
+            if (!s.endsWith(languageCode))
+                continue;
 
             log.trace("Attempting to parse file: {}", s);
             parseFile(s, messages);

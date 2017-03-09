@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -45,12 +45,12 @@ public class SubsetVertex extends BaseGraphVertex {
     private int to; //inclusive
     private int[] forwardShape;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to){
-        this(graph,name,vertexIndex,null,null,from,to);
+    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to) {
+        this(graph, name, vertexIndex, null, null, from, to);
     }
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
-                        int from, int to) {
+    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                    VertexIndices[] outputVertices, int from, int to) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.from = from;
         this.to = to;
@@ -73,7 +73,8 @@ public class SubsetVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: input not set");
 
         forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
 
@@ -83,47 +84,55 @@ public class SubsetVertex extends BaseGraphVertex {
             case 3:
                 return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
             case 4:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             default:
-                throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
+                throw new UnsupportedOperationException(
+                                "Cannot get subset for activations of rank " + inputs[0].rank());
         }
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
+        if (!canDoBackward())
+            throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true),
+                                NDArrayIndex.all()}, epsilon);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true),
+                                NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             default:
-                throw new RuntimeException("Invalid activation rank");  //Should never happen
+                throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null,new INDArray[]{out});
+        return new Pair<>(null, new INDArray[] {out});
     }
 
     @Override
     public String toString() {
-        return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",toIdx=" + to + ")";
+        return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+                        + ",toIdx=" + to + ")";
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //No op: subset just provides part of the activations for each example (or time step)
-        if(maskArrays == null || maskArrays.length == 0){
+        if (maskArrays == null || maskArrays.length == 0) {
             return null;
         }
 

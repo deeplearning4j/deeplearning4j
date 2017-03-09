@@ -13,6 +13,7 @@ public class MaxPerPartitionAccumulator implements AccumulatorParam<Counter<Inte
         c1.incrementAll(c2);
         return c1;
     }
+
     @Override
     public Counter<Integer> zero(Counter<Integer> initialCounter) {
         return new Counter<>();

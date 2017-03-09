@@ -18,9 +18,6 @@ public class KafkaUriBuilder {
     private int zooKeeperPort;
 
     public String uri() {
-        return String.format("kafka://%s?topic=%s&groupId=%s",
-                kafkaBroker,
-                consumingTopic
-                ,groupId);
+        return String.format("kafka://%s?topic=%s&groupId=%s", kafkaBroker, consumingTopic, groupId);
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -41,12 +41,12 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class StackVertex extends BaseGraphVertex {
 
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex){
+    public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
         this(graph, name, vertexIndex, null, null);
     }
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                       VertexIndices[] outputVertices) {
+                    VertexIndices[] outputVertices) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
     }
 
@@ -75,9 +75,11 @@ public class StackVertex extends BaseGraphVertex {
         int[] outShape = new int[inShape.length];
 
         // create the new shape
-        for ( int i=0; i<inShape.length; i++ ) {
-            if(i==0) outShape[0] = nStack * inShape[0];
-            else outShape[i] = inShape[i];
+        for (int i = 0; i < inShape.length; i++) {
+            if (i == 0)
+                outShape[0] = nStack * inShape[0];
+            else
+                outShape[i] = inShape[i];
         }
 
         INDArray out = Nd4j.create(outShape);
@@ -85,7 +87,7 @@ public class StackVertex extends BaseGraphVertex {
         //Simplest case: no masking arrays, all same length
         // loop through indexes for 2D, 3D, 4D...
         INDArrayIndex[] indexes = new INDArrayIndex[inShape.length];
-        for (int i=0; i<inShape.length; i++) {
+        for (int i = 0; i < inShape.length; i++) {
             indexes[i] = NDArrayIndex.all();
         }
 
@@ -103,41 +105,47 @@ public class StackVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         // this is basically doForward on UnstackVertex
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: input not set");
 
         int nStack = inputs.length;
         INDArray[] out = new INDArray[nStack];
 
-        int step = epsilon.size(0)/nStack;
+        int step = epsilon.size(0) / nStack;
 
-        for(int i=0; i<nStack; i++ ) {
+        for (int i = 0; i < nStack; i++) {
             switch (epsilon.rank()) {
                 case 2:
-                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all());
                     break;
                 case 3:
-                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
+                                    NDArrayIndex.all());
                     break;
                 case 4:
-                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
+                                    NDArrayIndex.all(), NDArrayIndex.all());
                     break;
                 default:
-                    throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
+                    throw new UnsupportedOperationException(
+                                    "Cannot get subset for activations of rank " + inputs[0].rank());
             }
         }
 
-        return new Pair<>(null,out);
+        return new Pair<>(null, out);
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //Cases here: no mask arrays, or all mask arrays - all of the same size
-        if(maskArrays == null ){
+        if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
         }
 
@@ -148,7 +156,7 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "StackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 }

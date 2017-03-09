@@ -19,17 +19,16 @@ public class TestSetGetParameters {
     @Test
     public void testSetParameters() {
         //Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(9).nOut(10)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
-                .layer(1, new RBM.Builder().nIn(10).nOut(11)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
-                .layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
-                .layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).build())
+                        .layer(1, new RBM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).build())
+                        .layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
+                        .layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -59,15 +58,14 @@ public class TestSetGetParameters {
     public void testSetParametersRNN() {
         //Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new GravesLSTM.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 1)).build())
-                .layer(1, new GravesLSTM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 1)).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 1)).nIn(11).nOut(12).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new GravesLSTM.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).build())
+                        .layer(1, new GravesLSTM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE).weightInit(WeightInit.DISTRIBUTION)
+                                        .dist(new NormalDistribution(0, 1)).nIn(11).nOut(12).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -99,15 +97,14 @@ public class TestSetGetParameters {
         Nd4j.getRandom().setSeed(12345);
 
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2).padding(2, 2).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
-                .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build())
-                .pretrain(false).backprop(true).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
+                        .layer(0, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
+                                        .padding(2, 2).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
+                        .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
+                        .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build()).pretrain(false)
+                        .backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -123,8 +120,8 @@ public class TestSetGetParameters {
         assertEquals(params, net2.params());
         assertEquals(params, net3.params());
 
-        assertFalse(params == net2.params());    //Different objects due to clone
-        assertTrue(params == net3.params());    //Same object due to clone
+        assertFalse(params == net2.params()); //Different objects due to clone
+        assertTrue(params == net3.params()); //Same object due to clone
 
 
         Map<String, INDArray> paramsMap = net.paramTable();

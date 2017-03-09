@@ -27,8 +27,8 @@ public class KerasInput extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasInput(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasInput(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -40,11 +40,12 @@ public class KerasInput extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasInput(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasInput(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         if (this.inputShape.length < 0 || this.inputShape.length > 3)
-            throw new UnsupportedKerasConfigurationException("Inputs with " + this.inputShape.length + " dimensions not supported");
+            throw new UnsupportedKerasConfigurationException(
+                            "Inputs with " + this.inputShape.length + " dimensions not supported");
     }
 
     /**
@@ -69,7 +70,7 @@ public class KerasInput extends KerasLayer {
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasInput(String layerName, int[] inputShape, boolean enforceTrainingConfig)
-            throws UnsupportedKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException {
         this.className = LAYER_CLASS_NAME_INPUT;
         this.layerName = layerName;
         this.inputShape = inputShape;
@@ -77,7 +78,8 @@ public class KerasInput extends KerasLayer {
         this.layer = null;
         this.vertex = null;
         if (this.inputShape.length < 0 || this.inputShape.length > 3)
-            throw new UnsupportedKerasConfigurationException("Inputs with " + this.inputShape.length + " dimensions not supported");
+            throw new UnsupportedKerasConfigurationException(
+                            "Inputs with " + this.inputShape.length + " dimensions not supported");
     }
 
     /**
@@ -90,11 +92,11 @@ public class KerasInput extends KerasLayer {
      */
     @Override
     public InputType getOutputType(InputType... inputType)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         if (inputType.length > 0)
             log.warn("Keras Input layer does not accept inputs (received " + inputType.length + "). Ignoring.");
         InputType myInputType;
-        switch(this.inputShape.length) {
+        switch (this.inputShape.length) {
             case 1:
                 myInputType = new InputType.InputTypeFeedForward(this.inputShape[0]);
                 break;
@@ -105,18 +107,23 @@ public class KerasInput extends KerasLayer {
                 switch (this.dimOrder) {
                     case TENSORFLOW:
                         /* TensorFlow convolutional input: # rows, # cols, # channels */
-                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[0], this.inputShape[1], this.inputShape[2]);
+                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[0], this.inputShape[1],
+                                        this.inputShape[2]);
                         break;
                     case THEANO:
                         /* Theano convolutional input:     # channels, # rows, # cols */
-                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2], this.inputShape[0]);
+                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
+                                        this.inputShape[0]);
                         break;
                     default:
-                        throw new UnsupportedKerasConfigurationException("3D (convolutional) inputs with unknown dimension ordering " + this.dimOrder + " are not supported.");
+                        throw new UnsupportedKerasConfigurationException(
+                                        "3D (convolutional) inputs with unknown dimension ordering " + this.dimOrder
+                                                        + " are not supported.");
                 }
                 break;
             default:
-                throw new UnsupportedKerasConfigurationException("Inputs with " + this.inputShape.length + " dimensions not supported");
+                throw new UnsupportedKerasConfigurationException(
+                                "Inputs with " + this.inputShape.length + " dimensions not supported");
         }
         return myInputType;
     }

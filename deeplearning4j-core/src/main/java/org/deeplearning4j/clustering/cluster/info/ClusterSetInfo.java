@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,95 +32,95 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClusterSetInfo implements Serializable {
 
-	private Map<String, ClusterInfo> clustersInfos	= new HashMap<>();
-	private Table<String, String, Double>	distancesBetweenClustersCenters	= HashBasedTable.create();
-	private AtomicInteger	pointLocationChange;
-	private boolean	threadSafe;
+    private Map<String, ClusterInfo> clustersInfos = new HashMap<>();
+    private Table<String, String, Double> distancesBetweenClustersCenters = HashBasedTable.create();
+    private AtomicInteger pointLocationChange;
+    private boolean threadSafe;
 
-	public ClusterSetInfo() {
-		this(false);
-	}
+    public ClusterSetInfo() {
+        this(false);
+    }
 
-	public ClusterSetInfo(boolean threadSafe) {
-		this.pointLocationChange = new AtomicInteger(0);
-		this.threadSafe = threadSafe;
-		if (threadSafe) {
-			clustersInfos = Collections.synchronizedMap(clustersInfos);
-		}
-	}
-	
-	public static ClusterSetInfo initialize(ClusterSet clusterSet, boolean threadSafe) {
-		ClusterSetInfo info = new ClusterSetInfo();
-		for(int i=0,j=clusterSet.getClusterCount();i<j;i++)
-			info.addClusterInfo(clusterSet.getClusters().get(i).getId());
-		return info;
-	}
-	
-	public void removeClusterInfos(List<Cluster> clusters) {
-		for( Cluster cluster : clusters ) {
-			clustersInfos.remove(cluster.getId());
-		}
-	}
-	
-	public ClusterInfo addClusterInfo(String clusterId) {
-		ClusterInfo clusterInfo = new ClusterInfo(threadSafe);
-		clustersInfos.put(clusterId, clusterInfo);
-		return clusterInfo;
-	}
+    public ClusterSetInfo(boolean threadSafe) {
+        this.pointLocationChange = new AtomicInteger(0);
+        this.threadSafe = threadSafe;
+        if (threadSafe) {
+            clustersInfos = Collections.synchronizedMap(clustersInfos);
+        }
+    }
 
-	public ClusterInfo getClusterInfo(String clusterId) {
-		return clustersInfos.get(clusterId);
-	}
+    public static ClusterSetInfo initialize(ClusterSet clusterSet, boolean threadSafe) {
+        ClusterSetInfo info = new ClusterSetInfo();
+        for (int i = 0, j = clusterSet.getClusterCount(); i < j; i++)
+            info.addClusterInfo(clusterSet.getClusters().get(i).getId());
+        return info;
+    }
 
-	public double getAveragePointDistanceFromClusterCenter() {
-		if (clustersInfos == null || clustersInfos.isEmpty())
-			return 0;
+    public void removeClusterInfos(List<Cluster> clusters) {
+        for (Cluster cluster : clusters) {
+            clustersInfos.remove(cluster.getId());
+        }
+    }
 
-		double average = 0;
-		for (ClusterInfo info : clustersInfos.values())
-			average += info.getAveragePointDistanceFromCenter();
-		return average / clustersInfos.size();
-	}
-	
-	public double getPointDistanceFromClusterVariance() {
-		if (clustersInfos == null || clustersInfos.isEmpty())
-			return 0;
+    public ClusterInfo addClusterInfo(String clusterId) {
+        ClusterInfo clusterInfo = new ClusterInfo(threadSafe);
+        clustersInfos.put(clusterId, clusterInfo);
+        return clusterInfo;
+    }
 
-		double average = 0;
-		for (ClusterInfo info : clustersInfos.values())
-			average += info.getPointDistanceFromCenterVariance();
-		return average / clustersInfos.size();
-	}
-	
-	public int getPointsCount() {
-		int count = 0;
-		for(ClusterInfo clusterInfo : clustersInfos.values())
-			count += clusterInfo.getPointDistancesFromCenter().size();
-		return count;
-	}
+    public ClusterInfo getClusterInfo(String clusterId) {
+        return clustersInfos.get(clusterId);
+    }
 
-	public Map<String, ClusterInfo> getClustersInfos() {
-		return clustersInfos;
-	}
+    public double getAveragePointDistanceFromClusterCenter() {
+        if (clustersInfos == null || clustersInfos.isEmpty())
+            return 0;
 
-	public void setClustersInfos(Map<String, ClusterInfo> clustersInfos) {
-		this.clustersInfos = clustersInfos;
-	}
+        double average = 0;
+        for (ClusterInfo info : clustersInfos.values())
+            average += info.getAveragePointDistanceFromCenter();
+        return average / clustersInfos.size();
+    }
 
-	public Table<String, String, Double> getDistancesBetweenClustersCenters() {
-		return distancesBetweenClustersCenters;
-	}
+    public double getPointDistanceFromClusterVariance() {
+        if (clustersInfos == null || clustersInfos.isEmpty())
+            return 0;
 
-	public void setDistancesBetweenClustersCenters(Table<String, String, Double> interClusterDistances) {
-		this.distancesBetweenClustersCenters = interClusterDistances;
-	}
+        double average = 0;
+        for (ClusterInfo info : clustersInfos.values())
+            average += info.getPointDistanceFromCenterVariance();
+        return average / clustersInfos.size();
+    }
 
-	public AtomicInteger getPointLocationChange() {
-		return pointLocationChange;
-	}
+    public int getPointsCount() {
+        int count = 0;
+        for (ClusterInfo clusterInfo : clustersInfos.values())
+            count += clusterInfo.getPointDistancesFromCenter().size();
+        return count;
+    }
 
-	public void setPointLocationChange(AtomicInteger pointLocationChange) {
-		this.pointLocationChange = pointLocationChange;
-	}
+    public Map<String, ClusterInfo> getClustersInfos() {
+        return clustersInfos;
+    }
+
+    public void setClustersInfos(Map<String, ClusterInfo> clustersInfos) {
+        this.clustersInfos = clustersInfos;
+    }
+
+    public Table<String, String, Double> getDistancesBetweenClustersCenters() {
+        return distancesBetweenClustersCenters;
+    }
+
+    public void setDistancesBetweenClustersCenters(Table<String, String, Double> interClusterDistances) {
+        this.distancesBetweenClustersCenters = interClusterDistances;
+    }
+
+    public AtomicInteger getPointLocationChange() {
+        return pointLocationChange;
+    }
+
+    public void setPointLocationChange(AtomicInteger pointLocationChange) {
+        this.pointLocationChange = pointLocationChange;
+    }
 
 }

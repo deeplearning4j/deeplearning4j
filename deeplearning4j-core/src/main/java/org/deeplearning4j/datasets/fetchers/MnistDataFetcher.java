@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -57,16 +57,16 @@ public class MnistDataFetcher extends BaseDataFetcher {
      * @throws IOException
      */
     public MnistDataFetcher(boolean binarize) throws IOException {
-        this(binarize,true,true,System.currentTimeMillis());
+        this(binarize, true, true, System.currentTimeMillis());
     }
 
     public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
-        if(!mnistExists()) {
+        if (!mnistExists()) {
             new MnistFetcher().downloadAndUntar();
         }
         String images;
         String labels;
-        if(train){
+        if (train) {
             images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
             labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
             totalExamples = NUM_EXAMPLES;
@@ -78,7 +78,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
         try {
             man = new MnistManager(images, labels, train);
-        }catch(Exception e) {
+        } catch (Exception e) {
             FileUtils.deleteDirectory(new File(MNIST_ROOT));
             new MnistFetcher().downloadAndUntar();
             man = new MnistManager(images, labels, train);
@@ -91,26 +91,31 @@ public class MnistDataFetcher extends BaseDataFetcher {
         this.train = train;
         this.shuffle = shuffle;
 
-        if(train){
+        if (train) {
             order = new int[NUM_EXAMPLES];
         } else {
             order = new int[NUM_EXAMPLES_TEST];
         }
-        for( int i=0; i<order.length; i++ ) order[i] = i;
+        for (int i = 0; i < order.length; i++)
+            order[i] = i;
         rng = new Random(rngSeed);
-        reset();    //Shuffle order
+        reset(); //Shuffle order
     }
 
-    private boolean mnistExists(){
+    private boolean mnistExists() {
         //Check 4 files:
-        File f = new File(MNIST_ROOT,MnistFetcher.trainingFilesFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.trainingFileLabelsFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFilesFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFileLabelsFilename_unzipped);
-        if(!f.exists()) return false;
+        File f = new File(MNIST_ROOT, MnistFetcher.trainingFilesFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.trainingFileLabelsFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.testFilesFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.testFileLabelsFilename_unzipped);
+        if (!f.exists())
+            return false;
         return true;
     }
 
@@ -120,7 +125,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     @Override
     public void fetch(int numExamples) {
-        if(!hasMore()) {
+        if (!hasMore()) {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
 
@@ -129,8 +134,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
         float[][] labelData = new float[numExamples][0];
 
         int actualExamples = 0;
-        for( int i=0; i<numExamples; i++, cursor++ ){
-            if(!hasMore()) break;
+        for (int i = 0; i < numExamples; i++, cursor++) {
+            if (!hasMore())
+                break;
 
             byte[] img = man.readImageUnsafe(order[cursor]);
             int label = man.readLabel(order[cursor]);
@@ -140,34 +146,37 @@ public class MnistDataFetcher extends BaseDataFetcher {
             labelData[actualExamples] = new float[10];
             labelData[actualExamples][label] = 1.0f;
 
-            for( int j=0; j<img.length; j++ ){
-                float v = ((int)img[j]) & 0xFF; //byte is loaded as signed -> convert to unsigned
-                if(binarize){
-                    if(v > 30.0f) featureVec[j] = 1.0f;
-                    else featureVec[j] = 0.0f;
+            for (int j = 0; j < img.length; j++) {
+                float v = ((int) img[j]) & 0xFF; //byte is loaded as signed -> convert to unsigned
+                if (binarize) {
+                    if (v > 30.0f)
+                        featureVec[j] = 1.0f;
+                    else
+                        featureVec[j] = 0.0f;
                 } else {
-                    featureVec[j] = v/255.0f;
+                    featureVec[j] = v / 255.0f;
                 }
             }
 
             actualExamples++;
         }
 
-        if(actualExamples < numExamples){
-            featureData = Arrays.copyOfRange(featureData,0,actualExamples);
-            labelData = Arrays.copyOfRange(labelData,0,actualExamples);
+        if (actualExamples < numExamples) {
+            featureData = Arrays.copyOfRange(featureData, 0, actualExamples);
+            labelData = Arrays.copyOfRange(labelData, 0, actualExamples);
         }
 
         INDArray features = Nd4j.create(featureData);
         INDArray labels = Nd4j.create(labelData);
-        curr = new DataSet(features,labels);
+        curr = new DataSet(features, labels);
     }
 
     @Override
     public void reset() {
         cursor = 0;
         curr = null;
-        if(shuffle) MathUtils.shuffleArray(order, rng);
+        if (shuffle)
+            MathUtils.shuffleArray(order, rng);
     }
 
     @Override

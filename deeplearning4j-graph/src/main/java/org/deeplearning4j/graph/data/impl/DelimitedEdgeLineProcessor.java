@@ -12,11 +12,11 @@ public class DelimitedEdgeLineProcessor implements EdgeLineProcessor<String> {
     private final String[] skipLinesStartingWith;
     private final boolean directed;
 
-    public DelimitedEdgeLineProcessor(String delimiter, boolean directed){
-        this(delimiter,directed,null);
+    public DelimitedEdgeLineProcessor(String delimiter, boolean directed) {
+        this(delimiter, directed, null);
     }
 
-    public DelimitedEdgeLineProcessor(String delimiter, boolean directed, String... skipLinesStartingWith){
+    public DelimitedEdgeLineProcessor(String delimiter, boolean directed, String... skipLinesStartingWith) {
         this.delimiter = delimiter;
         this.skipLinesStartingWith = skipLinesStartingWith;
         this.directed = directed;
@@ -24,19 +24,21 @@ public class DelimitedEdgeLineProcessor implements EdgeLineProcessor<String> {
 
     @Override
     public Edge<String> processLine(String line) {
-        if(skipLinesStartingWith != null){
+        if (skipLinesStartingWith != null) {
             for (String s : skipLinesStartingWith) {
-                if (line.startsWith(s)) return null;
+                if (line.startsWith(s))
+                    return null;
             }
         }
 
         String[] split = line.split(delimiter);
-        if(split.length != 2) throw new IllegalArgumentException("Invalid line: expected format \"" + 0 + delimiter +
-            1 + "\"; received \"" + line + "\"");
+        if (split.length != 2)
+            throw new IllegalArgumentException(
+                            "Invalid line: expected format \"" + 0 + delimiter + 1 + "\"; received \"" + line + "\"");
 
         int from = Integer.parseInt(split[0]);
         int to = Integer.parseInt(split[1]);
         String edgeName = from + (directed ? "->" : "--") + to;
-        return new Edge<>(from,to,edgeName,directed);
+        return new Edge<>(from, to, edgeName, directed);
     }
 }

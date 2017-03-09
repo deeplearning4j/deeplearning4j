@@ -19,7 +19,8 @@ import java.util.List;
 @Data
 public class VanillaStatsStorageRouter implements StatsStorageRouter {
 
-    private final List<StorageMetaData> storageMetaData = Collections.synchronizedList(new ArrayList<StorageMetaData>());
+    private final List<StorageMetaData> storageMetaData =
+                    Collections.synchronizedList(new ArrayList<StorageMetaData>());
     private final List<Persistable> staticInfo = Collections.synchronizedList(new ArrayList<Persistable>());
     private final List<Persistable> updates = Collections.synchronizedList(new ArrayList<Persistable>());
 
@@ -54,19 +55,19 @@ public class VanillaStatsStorageRouter implements StatsStorageRouter {
     }
 
 
-    public List<StorageMetaData> getStorageMetaData(){
+    public List<StorageMetaData> getStorageMetaData() {
         //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
         // synchronized lists, throwing an obscure null pointer exception
         return new ArrayList<>(storageMetaData);
     }
 
-    public List<Persistable> getStaticInfo(){
+    public List<Persistable> getStaticInfo() {
         //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
         // synchronized lists, throwing an obscure null pointer exception
         return new ArrayList<>(staticInfo);
     }
 
-    public List<Persistable> getUpdates(){
+    public List<Persistable> getUpdates() {
         //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
         // synchronized lists, throwing an obscure null pointer exception
         return new ArrayList<>(updates);

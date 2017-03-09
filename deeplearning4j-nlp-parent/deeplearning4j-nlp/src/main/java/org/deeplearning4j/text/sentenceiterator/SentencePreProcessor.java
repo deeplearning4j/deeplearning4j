@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,6 +33,6 @@ public interface SentencePreProcessor extends Serializable {
      * @param sentence the sentence to pre process
      * @return the pre processed sentence
      */
-	String preProcess(String sentence);
-	
+    String preProcess(String sentence);
+
 }

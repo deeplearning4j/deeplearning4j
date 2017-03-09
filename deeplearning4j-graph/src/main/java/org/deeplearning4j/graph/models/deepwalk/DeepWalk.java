@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * search, etc on the graph<br>
  * @author Alex Black
  */
-public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
+public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
     public static final int STATUS_UPDATE_FREQUENCY = 1000;
     private Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
@@ -41,32 +41,34 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
     private int nThreads = Runtime.getRuntime().availableProcessors();
     private transient AtomicLong walkCounter = new AtomicLong(0);
 
-    public DeepWalk(){
+    public DeepWalk() {
 
     }
 
-    public int getVectorSize(){
+    public int getVectorSize() {
         return vectorSize;
     }
 
-    public int getWindowSize(){
+    public int getWindowSize() {
         return windowSize;
     }
 
-    public double getLearningRate(){
+    public double getLearningRate() {
         return learningRate;
     }
 
-    public void setLearningRate(double learningRate){
+    public void setLearningRate(double learningRate) {
         this.learningRate = learningRate;
-        if(lookupTable != null) lookupTable.setLearningRate(learningRate);
+        if (lookupTable != null)
+            lookupTable.setLearningRate(learningRate);
     }
 
     /** Initialize the DeepWalk model with a given graph. */
-    public void initialize(IGraph<V,E> graph){
+    public void initialize(IGraph<V, E> graph) {
         int nVertices = graph.numVertices();
         int[] degrees = new int[nVertices];
-        for( int i=0; i<nVertices; i++ ) degrees[i] = graph.getVertexDegree(i);
+        for (int i = 0; i < nVertices; i++)
+            degrees[i] = graph.getVertexDegree(i);
         initialize(degrees);
     }
 
@@ -76,11 +78,11 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
      * the hierarchical softmax implementation
      * @param graphVertexDegrees degrees of each vertex
      */
-    public void initialize(int[] graphVertexDegrees){
+    public void initialize(int[] graphVertexDegrees) {
         log.info("Initializing: Creating Huffman tree and lookup table...");
         GraphHuffman gh = new GraphHuffman(graphVertexDegrees.length);
         gh.buildTree(graphVertexDegrees);
-        lookupTable = new InMemoryGraphLookupTable(graphVertexDegrees.length,vectorSize,gh,learningRate);
+        lookupTable = new InMemoryGraphLookupTable(graphVertexDegrees.length, vectorSize, gh, learningRate);
         initCalled = true;
         log.info("Initialization complete");
     }
@@ -90,12 +92,13 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
      * @param graph Graph to fit
      * @param walkLength Length of rangom walks to generate
      */
-    public void fit( IGraph<V,E> graph, int walkLength ){
-        if(!initCalled) initialize(graph);
+    public void fit(IGraph<V, E> graph, int walkLength) {
+        if (!initCalled)
+            initialize(graph);
         //First: create iterators, one for each thread
 
         GraphWalkIteratorProvider<V> iteratorProvider = new RandomWalkGraphIteratorProvider<>(graph, walkLength, seed,
-                NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED);
+                        NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED);
 
         fit(iteratorProvider);
     }
@@ -108,8 +111,9 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
      * @param iteratorProvider GraphWalkIteratorProvider
      * @see #fit(IGraph, int)
      */
-    public void fit(GraphWalkIteratorProvider<V> iteratorProvider){
-        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
+    public void fit(GraphWalkIteratorProvider<V> iteratorProvider) {
+        if (!initCalled)
+            throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
         List<GraphWalkIterator<V>> iteratorList = iteratorProvider.getGraphWalkIterators(nThreads);
 
         executorService = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
@@ -123,23 +127,23 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
 
         List<Future<Void>> list = new ArrayList<>(iteratorList.size());
         //log.info("Fitting Graph with {} threads", Math.max(nThreads,iteratorList.size()));
-        for( GraphWalkIterator<V> iter : iteratorList ){
+        for (GraphWalkIterator<V> iter : iteratorList) {
             LearningCallable c = new LearningCallable(iter);
             list.add(executorService.submit(c));
         }
 
         executorService.shutdown();
-        try{
+        try {
             executorService.awaitTermination(999, TimeUnit.DAYS);
-        }catch(InterruptedException e){
-            throw new RuntimeException("ExecutorService interrupted",e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("ExecutorService interrupted", e);
         }
 
         //Don't need to block on futures to get a value out, but we want to re-throw any exceptions encountered
-        for(Future<Void> f : list){
-            try{
+        for (Future<Void> f : list) {
+            try {
                 f.get();
-            }catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -151,63 +155,66 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
      *
      * @param iterator iterator for graph walks
      */
-    public void fit(GraphWalkIterator<V> iterator){
-        if(!initCalled) throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
+    public void fit(GraphWalkIterator<V> iterator) {
+        if (!initCalled)
+            throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
         int walkLength = iterator.walkLength();
 
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             IVertexSequence<V> sequence = iterator.next();
 
             //Skipgram model:
-            int[] walk = new int[walkLength+1];
-            int i=0;
-            while(sequence.hasNext()) walk[i++] = sequence.next().vertexID();
+            int[] walk = new int[walkLength + 1];
+            int i = 0;
+            while (sequence.hasNext())
+                walk[i++] = sequence.next().vertexID();
 
             skipGram(walk);
 
             long iter = walkCounter.incrementAndGet();
-            if(iter % STATUS_UPDATE_FREQUENCY == 0 ){
-                log.info("Processed {} random walks on graph",iter);
+            if (iter % STATUS_UPDATE_FREQUENCY == 0) {
+                log.info("Processed {} random walks on graph", iter);
             }
         }
     }
 
-    private void skipGram(int[] walk){
-        for(int mid = windowSize; mid < walk.length-windowSize; mid++ ){
-            for( int pos=mid-windowSize; pos<=mid+windowSize; pos++ ){
-                if(pos == mid) continue;
+    private void skipGram(int[] walk) {
+        for (int mid = windowSize; mid < walk.length - windowSize; mid++) {
+            for (int pos = mid - windowSize; pos <= mid + windowSize; pos++) {
+                if (pos == mid)
+                    continue;
 
                 //pair of vertices: walk[mid] -> walk[pos]
-                lookupTable.iterate(walk[mid],walk[pos]);
+                lookupTable.iterate(walk[mid], walk[pos]);
             }
         }
     }
 
-    public GraphVectorLookupTable lookupTable(){
+    public GraphVectorLookupTable lookupTable() {
         return lookupTable;
     }
 
 
-    public static class Builder<V,E> {
+    public static class Builder<V, E> {
         private int vectorSize = 100;
         private long seed = System.currentTimeMillis();
         private double learningRate = 0.01;
         private int windowSize = 2;
 
         /** Sets the size of the vectors to be learned for each vertex in the graph */
-        public Builder<V,E> vectorSize(int vectorSize){
+        public Builder<V, E> vectorSize(int vectorSize) {
             this.vectorSize = vectorSize;
             return this;
         }
 
         /** Set the learning rate */
-        public Builder<V,E> learningRate(double learningRate){
+        public Builder<V, E> learningRate(double learningRate) {
             this.learningRate = learningRate;
             return this;
         }
 
         /** Sets the window size used in skipgram model */
-        public Builder<V,E> windowSize(int windowSize){
+        public Builder<V, E> windowSize(int windowSize) {
             this.windowSize = windowSize;
             return this;
         }
@@ -216,13 +223,13 @@ public class DeepWalk<V,E> extends GraphVectorsImpl<V,E> {
          * Note however that parallel/async gradient descent might result in behaviour that
          * is not repeatable, in spite of setting seed
          */
-        public Builder<V,E> seed(long seed){
+        public Builder<V, E> seed(long seed) {
             this.seed = seed;
             return this;
         }
 
-        public DeepWalk<V,E> build(){
-            DeepWalk<V,E> dw = new DeepWalk<>();
+        public DeepWalk<V, E> build() {
+            DeepWalk<V, E> dw = new DeepWalk<>();
             dw.vectorSize = vectorSize;
             dw.windowSize = windowSize;
             dw.learningRate = learningRate;
