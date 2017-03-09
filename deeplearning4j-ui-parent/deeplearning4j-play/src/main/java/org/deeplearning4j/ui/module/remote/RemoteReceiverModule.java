@@ -36,16 +36,16 @@ public class RemoteReceiverModule implements UIModule {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
-        if(!enabled){
+        if (!enabled) {
             this.statsStorage = null;
         }
     }
 
-    public boolean isEnabled(){
+    public boolean isEnabled() {
         return enabled.get() && this.statsStorage != null;
     }
 
-    public void setStatsStorage(StatsStorageRouter statsStorage){
+    public void setStatsStorage(StatsStorageRouter statsStorage) {
         this.statsStorage = statsStorage;
     }
 
@@ -76,13 +76,15 @@ public class RemoteReceiverModule implements UIModule {
         //No op
     }
 
-    private Result receiveData(){
-        if(!enabled.get()){
-            return Results.forbidden("UI server remote listening is currently disabled. Use UIServer.getInstance().enableRemoteListener()");
+    private Result receiveData() {
+        if (!enabled.get()) {
+            return Results.forbidden(
+                            "UI server remote listening is currently disabled. Use UIServer.getInstance().enableRemoteListener()");
         }
 
-        if(statsStorage == null){
-            return Results.internalServerError("UI Server remote listener: no StatsStorage instance is set/available to store results");
+        if (statsStorage == null) {
+            return Results.internalServerError(
+                            "UI Server remote listener: no StatsStorage instance is set/available to store results");
         }
 
         JsonNode jn = request().body().asJson();
@@ -90,32 +92,32 @@ public class RemoteReceiverModule implements UIModule {
         JsonNode dataClass = jn.get("class");
         JsonNode data = jn.get("data");
 
-        if(type == null || dataClass == null || data == null){
+        if (type == null || dataClass == null || data == null) {
 
             log.warn("Received incorrectly formatted data from remote listener (has type = " + (type != null)
-            + ", has data class = " + (dataClass != null) + ", has data = " + (data != null) + ")");
+                            + ", has data class = " + (dataClass != null) + ", has data = " + (data != null) + ")");
             return Results.badRequest("Received incorrectly formatted data");
         }
 
         String dc = dataClass.asText();
         String content = data.asText();
 
-        switch(type.asText().toLowerCase()){
+        switch (type.asText().toLowerCase()) {
             case "metadata":
-                StorageMetaData meta = getMetaData(dc,content);
-                if(meta != null){
+                StorageMetaData meta = getMetaData(dc, content);
+                if (meta != null) {
                     statsStorage.putStorageMetaData(meta);
                 }
                 break;
             case "staticinfo":
                 Persistable staticInfo = getPersistable(dc, content);
-                if(staticInfo != null){
+                if (staticInfo != null) {
                     statsStorage.putStaticInfo(staticInfo);
                 }
                 break;
             case "update":
                 Persistable update = getPersistable(dc, content);
-                if(update != null){
+                if (update != null) {
                     statsStorage.putUpdate(update);
                 }
                 break;
@@ -126,26 +128,27 @@ public class RemoteReceiverModule implements UIModule {
         return Results.ok("Receiver got data: ");
     }
 
-    private StorageMetaData getMetaData(String dataClass, String content){
+    private StorageMetaData getMetaData(String dataClass, String content) {
 
         StorageMetaData meta;
-        try{
+        try {
             Class<?> c = Class.forName(dataClass);
-            if(StorageMetaData.class.isAssignableFrom(c)){
-                meta = (StorageMetaData)c.newInstance();
+            if (StorageMetaData.class.isAssignableFrom(c)) {
+                meta = (StorageMetaData) c.newInstance();
             } else {
-                log.warn("Skipping invalid remote data: class {} in not an instance of {}",dataClass, StorageMetaData.class.getName());
+                log.warn("Skipping invalid remote data: class {} in not an instance of {}", dataClass,
+                                StorageMetaData.class.getName());
                 return null;
             }
-        } catch (Exception e){
-            log.warn("Skipping invalid remote data: exception encountered for class {}",dataClass, e);
+        } catch (Exception e) {
+            log.warn("Skipping invalid remote data: exception encountered for class {}", dataClass, e);
             return null;
         }
 
         try {
             byte[] bytes = DatatypeConverter.parseBase64Binary(content);
             meta.decode(bytes);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.warn("Skipping invalid remote UI data: exception encountered when deserializing data", e);
             return null;
         }
@@ -153,25 +156,26 @@ public class RemoteReceiverModule implements UIModule {
         return meta;
     }
 
-    private Persistable getPersistable(String dataClass, String content){
+    private Persistable getPersistable(String dataClass, String content) {
         Persistable p;
-        try{
+        try {
             Class<?> c = Class.forName(dataClass);
-            if(Persistable.class.isAssignableFrom(c)){
-                p = (Persistable)c.newInstance();
+            if (Persistable.class.isAssignableFrom(c)) {
+                p = (Persistable) c.newInstance();
             } else {
-                log.warn("Skipping invalid remote data: class {} in not an instance of {}",dataClass, Persistable.class.getName());
+                log.warn("Skipping invalid remote data: class {} in not an instance of {}", dataClass,
+                                Persistable.class.getName());
                 return null;
             }
-        } catch (Exception e){
-            log.warn("Skipping invalid remote UI data: exception encountered for class {}",dataClass, e);
+        } catch (Exception e) {
+            log.warn("Skipping invalid remote UI data: exception encountered for class {}", dataClass, e);
             return null;
         }
 
         try {
             byte[] bytes = DatatypeConverter.parseBase64Binary(content);
             p.decode(bytes);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.warn("Skipping invalid remote data: exception encountered when deserializing data", e);
             return null;
         }

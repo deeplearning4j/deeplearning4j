@@ -21,8 +21,7 @@ public class TimeSourceProvider {
      */
     public static final String TIMESOURCE_CLASSNAME_PROPERTY = "org.deeplearning4j.spark.time.TimeSource";
 
-    private TimeSourceProvider() {
-    }
+    private TimeSourceProvider() {}
 
     /**
      * Get a TimeSource

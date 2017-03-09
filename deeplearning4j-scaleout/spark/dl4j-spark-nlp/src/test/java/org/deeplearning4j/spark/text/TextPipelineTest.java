@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -66,39 +66,25 @@ public class TextPipelineTest extends BaseSparkTest {
 
     @Before
     public void before() throws Exception {
-        conf = new SparkConf().setMaster("local[4]")
-                .setAppName("sparktest");
+        conf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
 
         // All the avaliable options. These are default values
-        word2vec = new Word2Vec.Builder()
-                .minWordFrequency(1)
-                .setNGrams(1)
-                .tokenizerFactory("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
-                .tokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-    //            .setRemoveStop(true)
-                .stopWords(StopWords.getStopWords())
-                .seed(42L)
-                .negative(0)
-                .useAdaGrad(false)
-                .layerSize(100)
-                .windowSize(5)
-                .learningRate(0.025).minLearningRate(0.0001)
-                .iterations(1)
-                .build();
+        word2vec = new Word2Vec.Builder().minWordFrequency(1).setNGrams(1)
+                        .tokenizerFactory(
+                                        "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                        .tokenPreprocessor(
+                                        "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                        //            .setRemoveStop(true)
+                        .stopWords(StopWords.getStopWords()).seed(42L).negative(0).useAdaGrad(false).layerSize(100)
+                        .windowSize(5).learningRate(0.025).minLearningRate(0.0001).iterations(1).build();
 
-        word2vecNoStop = new Word2Vec.Builder()
-                .minWordFrequency(1)
-                .setNGrams(1)
-                .tokenizerFactory("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
-                .tokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-                .seed(42L)
-                .negative(0)
-                .useAdaGrad(false)
-                .layerSize(100)
-                .windowSize(5)
-                .learningRate(0.025).minLearningRate(0.0001)
-                .iterations(1)
-                .build();
+        word2vecNoStop = new Word2Vec.Builder().minWordFrequency(1).setNGrams(1)
+                        .tokenizerFactory(
+                                        "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                        .tokenPreprocessor(
+                                        "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                        .seed(42L).negative(0).useAdaGrad(false).layerSize(100).windowSize(5).learningRate(0.025)
+                        .minLearningRate(0.0001).iterations(1).build();
 
         sentenceList = Arrays.asList("This is a strange strange world.", "Flowers are red.");
     }
@@ -129,7 +115,7 @@ public class TextPipelineTest extends BaseSparkTest {
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD =
-                pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
+                        pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
 
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
         assertEquals(wordFreqCounter.getCount("STOP"), 4, 0);
@@ -152,7 +138,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testWordFreqAccNotIdentifyingStopWords() throws Exception {
 
         JavaSparkContext sc = getContext();
-      //  word2vec.setRemoveStop(false);
+        //  word2vec.setRemoveStop(false);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vecNoStop.getTokenizerVarMap());
 
@@ -237,7 +223,7 @@ public class TextPipelineTest extends BaseSparkTest {
     }
 
     @Test
-    public void testBuildVocabCache() throws  Exception{
+    public void testBuildVocabCache() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
@@ -278,7 +264,7 @@ public class TextPipelineTest extends BaseSparkTest {
     }
 
     @Test
-    public void testBuildVocabWordListRDD() throws Exception{
+    public void testBuildVocabWordListRDD() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
@@ -314,7 +300,7 @@ public class TextPipelineTest extends BaseSparkTest {
         assertTrue(secondSentenceTokenList.containsAll(Arrays.asList("flowers", "red")));
 
         sc.stop();
-     }
+    }
 
     @Test
     public void testHuffman() throws Exception {
@@ -371,7 +357,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testZipFunction1() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-      //  word2vec.setRemoveStop(false);
+        //  word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
@@ -383,7 +369,8 @@ public class TextPipelineTest extends BaseSparkTest {
         CountCumSum countCumSum = new CountCumSum(sentenceCountRDD);
         JavaRDD<Long> sentenceCountCumSumRDD = countCumSum.buildCumSum();
 
-        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCountCumSumRDD);
+        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD =
+                        vocabWordListRDD.zip(sentenceCountCumSumRDD);
         List<Tuple2<List<VocabWord>, Long>> lst = vocabWordListSentenceCumSumRDD.collect();
 
         List<VocabWord> vocabWordsList1 = lst.get(0)._1();
@@ -420,7 +407,8 @@ public class TextPipelineTest extends BaseSparkTest {
         CountCumSum countCumSum = new CountCumSum(sentenceCountRDD);
         JavaRDD<Long> sentenceCountCumSumRDD = countCumSum.buildCumSum();
 
-        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCountCumSumRDD);
+        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD =
+                        vocabWordListRDD.zip(sentenceCountCumSumRDD);
         List<Tuple2<List<VocabWord>, Long>> lst = vocabWordListSentenceCumSumRDD.collect();
 
         List<VocabWord> vocabWordsList1 = lst.get(0)._1();
@@ -449,17 +437,17 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testFirstIteration() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-       // word2vec.setRemoveStop(false);
+        // word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
         VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
-/*        Huffman huffman = new Huffman(vocabCache.vocabWords());
+        /*        Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
         huffman.applyIndexes(vocabCache);
-*/
+        */
         VocabWord token = vocabCache.tokenFor("strange");
         VocabWord word = vocabCache.wordFor("strange");
         log.info("Strange token: " + token);
@@ -476,15 +464,16 @@ public class TextPipelineTest extends BaseSparkTest {
         CountCumSum countCumSum = new CountCumSum(sentenceCountRDD);
         JavaRDD<Long> sentenceCountCumSumRDD = countCumSum.buildCumSum();
 
-        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCountCumSumRDD);
+        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD =
+                        vocabWordListRDD.zip(sentenceCountCumSumRDD);
 
         Broadcast<Map<String, Object>> word2vecVarMapBroadcast = sc.broadcast(word2vecVarMap);
         Broadcast<double[]> expTableBroadcast = sc.broadcast(expTable);
 
         Iterator<Tuple2<List<VocabWord>, Long>> iterator = vocabWordListSentenceCumSumRDD.collect().iterator();
 
-        FirstIterationFunctionAdapter firstIterationFunction =
-                new FirstIterationFunctionAdapter(word2vecVarMapBroadcast, expTableBroadcast, pipeline.getBroadCastVocabCache());
+        FirstIterationFunctionAdapter firstIterationFunction = new FirstIterationFunctionAdapter(
+                        word2vecVarMapBroadcast, expTableBroadcast, pipeline.getBroadCastVocabCache());
 
         Iterable<Map.Entry<VocabWord, INDArray>> ret = firstIterationFunction.call(iterator);
         assertTrue(ret.iterator().hasNext());
@@ -494,7 +483,7 @@ public class TextPipelineTest extends BaseSparkTest {
     public void testSyn0AfterFirstIteration() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-      //  word2vec.setRemoveStop(false);
+        //  word2vec.setRemoveStop(false);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());
 
         TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
@@ -515,15 +504,16 @@ public class TextPipelineTest extends BaseSparkTest {
         CountCumSum countCumSum = new CountCumSum(sentenceCountRDD);
         JavaRDD<Long> sentenceCountCumSumRDD = countCumSum.buildCumSum();
 
-        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCountCumSumRDD);
+        JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD =
+                        vocabWordListRDD.zip(sentenceCountCumSumRDD);
 
         Broadcast<Map<String, Object>> word2vecVarMapBroadcast = sc.broadcast(word2vecVarMap);
         Broadcast<double[]> expTableBroadcast = sc.broadcast(expTable);
 
-        FirstIterationFunction firstIterationFunction =
-                new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast,pipeline.getBroadCastVocabCache());
-        JavaRDD< Pair<VocabWord, INDArray> > pointSyn0Vec =
-                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterationFunction).map(new MapToPairFunction());
+        FirstIterationFunction firstIterationFunction = new FirstIterationFunction(word2vecVarMapBroadcast,
+                        expTableBroadcast, pipeline.getBroadCastVocabCache());
+        JavaRDD<Pair<VocabWord, INDArray>> pointSyn0Vec = vocabWordListSentenceCumSumRDD
+                        .mapPartitions(firstIterationFunction).map(new MapToPairFunction());
     }
 
 }

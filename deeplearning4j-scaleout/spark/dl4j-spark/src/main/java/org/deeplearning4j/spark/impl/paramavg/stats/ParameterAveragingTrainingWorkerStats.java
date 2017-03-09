@@ -31,18 +31,17 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     private List<EventStats> parameterAveragingWorkerInitTimeMs;
     private List<EventStats> parameterAveragingWorkerFitTimesMs;
 
-    public static final String PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS = "ParameterAveragingWorkerBroadcastGetValueTimeMs";
+    public static final String PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS =
+                    "ParameterAveragingWorkerBroadcastGetValueTimeMs";
     public static final String PARAMETER_AVERAGING_WORKER_INIT_TIME_MS = "ParameterAveragingWorkerInitTimeMs";
     public static final String PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS = "ParameterAveragingWorkerFitTimesMs";
     private static Set<String> columnNames = Collections.unmodifiableSet(
-            new LinkedHashSet<>(Arrays.asList(
-                    PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS,
-                    PARAMETER_AVERAGING_WORKER_INIT_TIME_MS,
-                    PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS
-            )));
+                    new LinkedHashSet<>(Arrays.asList(PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS,
+                                    PARAMETER_AVERAGING_WORKER_INIT_TIME_MS, PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS)));
 
-    public ParameterAveragingTrainingWorkerStats(List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs, List<EventStats> parameterAveragingWorkerInitTimeMs,
-                                                 List<EventStats> parameterAveragingWorkerFitTimesMs) {
+    public ParameterAveragingTrainingWorkerStats(List<EventStats> parameterAveragingWorkerBroadcastGetValueTimeMs,
+                    List<EventStats> parameterAveragingWorkerInitTimeMs,
+                    List<EventStats> parameterAveragingWorkerFitTimesMs) {
         this.parameterAveragingWorkerBroadcastGetValueTimeMs = parameterAveragingWorkerBroadcastGetValueTimeMs;
         this.parameterAveragingWorkerInitTimeMs = parameterAveragingWorkerInitTimeMs;
         this.parameterAveragingWorkerFitTimesMs = parameterAveragingWorkerFitTimesMs;
@@ -96,7 +95,8 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
     @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
         if (!(other instanceof ParameterAveragingTrainingWorkerStats))
-            throw new IllegalArgumentException("Cannot merge ParameterAveragingTrainingWorkerStats with " + (other != null ? other.getClass() : null));
+            throw new IllegalArgumentException("Cannot merge ParameterAveragingTrainingWorkerStats with "
+                            + (other != null ? other.getClass() : null));
 
         ParameterAveragingTrainingWorkerStats o = (ParameterAveragingTrainingWorkerStats) other;
 
@@ -116,17 +116,23 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
         sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_BROADCAST_GET_VALUE_TIME_MS));
-        if (parameterAveragingWorkerBroadcastGetValueTimeMs == null) sb.append("-\n");
+        if (parameterAveragingWorkerBroadcastGetValueTimeMs == null)
+            sb.append("-\n");
         else
-            sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerBroadcastGetValueTimeMs, ",")).append("\n");
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerBroadcastGetValueTimeMs, ","))
+                            .append("\n");
 
         sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_INIT_TIME_MS));
-        if (parameterAveragingWorkerInitTimeMs == null) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerInitTimeMs, ",")).append("\n");
+        if (parameterAveragingWorkerInitTimeMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerInitTimeMs, ",")).append("\n");
 
         sb.append(String.format(f, PARAMETER_AVERAGING_WORKER_FIT_TIMES_MS));
-        if (parameterAveragingWorkerFitTimesMs == null) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerFitTimesMs, ",")).append("\n");
+        if (parameterAveragingWorkerFitTimesMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(parameterAveragingWorkerFitTimesMs, ",")).append("\n");
 
         return sb.toString();
     }
@@ -136,7 +142,8 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
         String d = DEFAULT_DELIMITER;
 
         //Broadcast get time:
-        StatsUtils.exportStats(parameterAveragingWorkerBroadcastGetValueTimeMs, outputPath, FILENAME_BROADCAST_GET_STATS, d, sc);
+        StatsUtils.exportStats(parameterAveragingWorkerBroadcastGetValueTimeMs, outputPath,
+                        FILENAME_BROADCAST_GET_STATS, d, sc);
 
         //Network init time:
         StatsUtils.exportStats(parameterAveragingWorkerInitTimeMs, outputPath, FILENAME_INIT_STATS, d, sc);
@@ -182,7 +189,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
             List<EventStats> bList = new ArrayList<>();
             bList.add(new BaseEventStats(broadcastStartTime, broadcastEndTime - broadcastStartTime));
             List<EventStats> initList = new ArrayList<>();
-            initList.add(new BaseEventStats(broadcastEndTime, initEndTime - broadcastEndTime));    //Init starts at same time that broadcast ends
+            initList.add(new BaseEventStats(broadcastEndTime, initEndTime - broadcastEndTime)); //Init starts at same time that broadcast ends
 
             return new ParameterAveragingTrainingWorkerStats(bList, initList, fitTimes);
         }

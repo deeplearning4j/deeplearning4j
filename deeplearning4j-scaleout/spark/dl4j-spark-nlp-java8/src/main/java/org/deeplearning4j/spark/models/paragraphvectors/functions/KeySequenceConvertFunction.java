@@ -14,7 +14,8 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class KeySequenceConvertFunction extends BaseTokenizerFunction implements Function<Tuple2<String, String>, Sequence<VocabWord>> {
+public class KeySequenceConvertFunction extends BaseTokenizerFunction
+                implements Function<Tuple2<String, String>, Sequence<VocabWord>> {
 
     public KeySequenceConvertFunction(@NonNull Broadcast<VectorsConfiguration> configurationBroadcast) {
         super(configurationBroadcast);
@@ -24,13 +25,13 @@ public class KeySequenceConvertFunction extends BaseTokenizerFunction implements
     public Sequence<VocabWord> call(Tuple2<String, String> pair) throws Exception {
         Sequence<VocabWord> sequence = new Sequence<>();
 
-        sequence.addSequenceLabel(new VocabWord(1.0, pair._1() ));
+        sequence.addSequenceLabel(new VocabWord(1.0, pair._1()));
 
         if (tokenizerFactory == null)
             instantiateTokenizerFactory();
 
         List<String> tokens = tokenizerFactory.create(pair._2()).getTokens();
-        for (String token: tokens) {
+        for (String token : tokens) {
             if (token == null || token.isEmpty())
                 continue;
 

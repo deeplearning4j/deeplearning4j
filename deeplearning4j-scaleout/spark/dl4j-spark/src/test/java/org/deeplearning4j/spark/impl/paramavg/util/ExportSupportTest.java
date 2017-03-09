@@ -31,20 +31,14 @@ public class ExportSupportTest {
 
     @Test
     public void testClusterWithRemoteFSSupported() throws IOException, URISyntaxException {
-        assertSupported(
-            "spark://localhost:7077",
-            FileSystem.get(new URI("hdfs://localhost:9000"), new Configuration()),
-            true
-        );
+        assertSupported("spark://localhost:7077", FileSystem.get(new URI("hdfs://localhost:9000"), new Configuration()),
+                        true);
     }
 
     @Test
     public void testClusterWithLocalFSNotSupported() throws IOException, URISyntaxException {
-        assertSupported(
-            "spark://localhost:7077",
-            FileSystem.get(new URI("file:///home/test"), new Configuration()),
-            false
-        );
+        assertSupported("spark://localhost:7077", FileSystem.get(new URI("file:///home/test"), new Configuration()),
+                        false);
     }
 
     private void assertSupported(SparkConf conf) throws IOException {

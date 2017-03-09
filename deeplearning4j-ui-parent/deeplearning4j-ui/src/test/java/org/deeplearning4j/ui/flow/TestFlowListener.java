@@ -35,52 +35,33 @@ public class TestFlowListener {
         int outputNum = 10; // The number of possible outcomes
         int batchSize = 64; // Test batch size
 
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .iterations(1) // Training iterations as above
-                .regularization(true).l2(0.0005)
-                .learningRate(0.01)
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.NESTEROVS).momentum(0.9)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5)
-                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-                        .nIn(nChannels)
-                        .stride(1, 1)
-                        .nOut(20)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(2, new ConvolutionLayer.Builder(5, 5)
-                        //Note that nIn need not be specified in later layers
-                        .stride(1, 1)
-                        .nOut(50)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(500).build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(outputNum)
-                        .activation(Activation.SOFTMAX)
-                        .build())
-                .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
-                .backprop(true).pretrain(false).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1) // Training iterations as above
+                        .regularization(true).l2(0.0005).learningRate(0.01).weightInit(WeightInit.XAVIER)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
+                        .momentum(0.9).list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
+                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build())
+                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                        //Note that nIn need not be specified in later layers
+                                        .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
+                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build())
+                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .nOut(outputNum).activation(Activation.SOFTMAX).build())
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
+                        .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new FlowIterationListener(1), new ScoreIterationListener(1));
 
-        for( int i=0; i<50; i++ ){
+        for (int i = 0; i < 50; i++) {
             net.fit(mnistTrain.next());
             Thread.sleep(1000);
         }
@@ -96,54 +77,34 @@ public class TestFlowListener {
         int outputNum = 10; // The number of possible outcomes
         int batchSize = 64; // Test batch size
 
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .iterations(1) // Training iterations as above
-                .regularization(true).l2(0.0005)
-                .learningRate(0.01)
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.NESTEROVS).momentum(0.9)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new ConvolutionLayer.Builder(5, 5)
-                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-                        .nIn(nChannels)
-                        .stride(1, 1)
-                        .nOut(20)
-                        .activation(Activation.IDENTITY)
-                        .build(), "in")
-                .addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build(), "0")
-                .addLayer("2", new ConvolutionLayer.Builder(5, 5)
-                        //Note that nIn need not be specified in later layers
-                        .stride(1, 1)
-                        .nOut(50)
-                        .activation(Activation.IDENTITY)
-                        .build(), "1")
-                .addLayer("3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build(), "2")
-                .addLayer("4", new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(500).build(), "3")
-                .addLayer("5", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(outputNum)
-                        .activation(Activation.SOFTMAX)
-                        .build(), "4")
-                .setOutputs("5")
-                .setInputTypes(InputType.convolutionalFlat(28,28,1))
-                .backprop(true).pretrain(false).build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1) // Training iterations as above
+                        .regularization(true).l2(0.0005).learningRate(0.01).weightInit(WeightInit.XAVIER)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
+                        .momentum(0.9).graphBuilder().addInputs("in")
+                        .addLayer("0", new ConvolutionLayer.Builder(5, 5)
+                                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build(),
+                                        "in")
+                        .addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build(), "0")
+                        .addLayer("2", new ConvolutionLayer.Builder(5, 5)
+                                        //Note that nIn need not be specified in later layers
+                                        .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build(), "1")
+                        .addLayer("3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                                        .stride(2, 2).build(), "2")
+                        .addLayer("4", new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build(), "3")
+                        .addLayer("5", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .nOut(outputNum).activation(Activation.SOFTMAX).build(), "4")
+                        .setOutputs("5").setInputTypes(InputType.convolutionalFlat(28, 28, 1)).backprop(true)
+                        .pretrain(false).build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
         net.setListeners(new FlowIterationListener(1), new ScoreIterationListener(1));
 
-        for( int i=0; i<50; i++ ){
+        for (int i = 0; i < 50; i++) {
             net.fit(mnistTrain.next());
             Thread.sleep(1000);
         }

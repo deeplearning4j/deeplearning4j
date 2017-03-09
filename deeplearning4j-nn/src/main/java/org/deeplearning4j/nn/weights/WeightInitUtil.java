@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,8 +39,8 @@ public class WeightInitUtil {
      */
     public static final char DEFAULT_WEIGHT_INIT_ORDER = 'f';
 
-    private WeightInitUtil() {
-    }
+    private WeightInitUtil() {}
+
     public static INDArray initWeights(int[] shape, float min, float max) {
         return Nd4j.rand(shape, min, max, Nd4j.getRandom());
     }
@@ -56,11 +56,13 @@ public class WeightInitUtil {
      * @return a matrix of the specified dimensions with the specified
      * distribution based on the initialization scheme
      */
-    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme, Distribution dist, INDArray paramView) {
+    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
+                    Distribution dist, INDArray paramView) {
         return initWeights(fanIn, fanOut, shape, initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER, paramView);
     }
 
-    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme, Distribution dist, char order, INDArray paramView) {
+    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
+                    Distribution dist, char order, INDArray paramView) {
         //Note: using f order here as params get flattened to f order
 
         INDArray ret;
@@ -69,10 +71,10 @@ public class WeightInitUtil {
                 ret = dist.sample(shape);
                 break;
             case RELU:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn));   //N(0, 2/nIn)
+                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
                 break;
             case RELU_UNIFORM:
-                double u = Math.sqrt(6.0/fanIn);
+                double u = Math.sqrt(6.0 / fanIn);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
                 break;
             case SIGMOID_UNIFORM:
@@ -109,7 +111,8 @@ public class WeightInitUtil {
         INDArray flat = Nd4j.toFlattened(order, ret);
         if (flat.length() != paramView.length())
             throw new RuntimeException("ParamView length does not match initialized weights length (view length: "
-                    + paramView.length() + ", view shape: " + Arrays.toString(paramView.shape()) + "; flattened length: " + flat.length());
+                            + paramView.length() + ", view shape: " + Arrays.toString(paramView.shape())
+                            + "; flattened length: " + flat.length());
 
         paramView.assign(flat);
 

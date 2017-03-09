@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -27,7 +27,7 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 public class Cell implements Serializable {
-    private double x,y,hw,hh;
+    private double x, y, hw, hh;
 
     public Cell(double x, double y, double hw, double hh) {
         this.x = x;
@@ -44,22 +44,24 @@ public class Cell implements Serializable {
      */
     public boolean containsPoint(INDArray point) {
         double first = point.getDouble(0), second = point.getDouble(1);
-        return x - hw <= first
-            && x + hw >= first
-            && y - hh <= second
-            && y + hh >= second;
+        return x - hw <= first && x + hw >= first && y - hh <= second && y + hh >= second;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Cell)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Cell))
+            return false;
 
         Cell cell = (Cell) o;
 
-        if (Double.compare(cell.hh, hh) != 0) return false;
-        if (Double.compare(cell.hw, hw) != 0) return false;
-        if (Double.compare(cell.x, x) != 0) return false;
+        if (Double.compare(cell.hh, hh) != 0)
+            return false;
+        if (Double.compare(cell.hw, hw) != 0)
+            return false;
+        if (Double.compare(cell.x, x) != 0)
+            return false;
         return Double.compare(cell.y, y) == 0;
 
     }

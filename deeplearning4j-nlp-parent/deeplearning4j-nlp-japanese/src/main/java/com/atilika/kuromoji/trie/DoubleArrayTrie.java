@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -31,8 +31,9 @@ import java.util.List;
 
 public class DoubleArrayTrie {
 
-//    public static final String DOUBLE_ARRAY_TRIE_FILENAME = "doubleArrayTrie.bin";
-    public static final String DOUBLE_ARRAY_TRIE_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "doubleArrayTrie.bin";
+    //    public static final String DOUBLE_ARRAY_TRIE_FILENAME = "doubleArrayTrie.bin";
+    public static final String DOUBLE_ARRAY_TRIE_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "doubleArrayTrie.bin";
     public static final char TERMINATING_CHARACTER = '\u0001';
 
     private static final int BASE_CHECK_INITIAL_SIZE = 2800000;
@@ -67,9 +68,7 @@ public class DoubleArrayTrie {
         int baseCheckSize = Math.min(maxBaseCheckIndex + 64, baseBuffer.capacity());
         int tailSize = Math.min(tailIndex - TAIL_OFFSET + 64, tailBuffer.capacity());
 
-        DataOutputStream dataOutput = new DataOutputStream(
-            new BufferedOutputStream(output)
-        );
+        DataOutputStream dataOutput = new DataOutputStream(new BufferedOutputStream(output));
 
         dataOutput.writeBoolean(compact);
         dataOutput.writeInt(baseCheckSize);
@@ -114,8 +113,8 @@ public class DoubleArrayTrie {
         DataInputStream dis = new DataInputStream(new BufferedInputStream(input));
 
         trie.compact = dis.readBoolean();
-        int baseCheckSize = dis.readInt();    // Read size of baseArr and checkArr
-        int tailSize = dis.readInt();        // Read size of tailArr
+        int baseCheckSize = dis.readInt(); // Read size of baseArr and checkArr
+        int tailSize = dis.readInt(); // Read size of tailArr
         ReadableByteChannel channel = Channels.newChannel(dis);
 
         ByteBuffer tmpBaseBuffer = ByteBuffer.allocate(baseCheckSize * 4);
@@ -160,7 +159,8 @@ public class DoubleArrayTrie {
                 zeros++;
             }
         }
-        ProgressLog.println("trie memory utilization ratio (" + (!compact ? "not " : "") + "compacted): " + ((maxBaseCheckIndex - zeros) / (float) maxBaseCheckIndex));
+        ProgressLog.println("trie memory utilization ratio (" + (!compact ? "not " : "") + "compacted): "
+                        + ((maxBaseCheckIndex - zeros) / (float) maxBaseCheckIndex));
     }
 
     /**
@@ -172,11 +172,12 @@ public class DoubleArrayTrie {
      */
     private void add(int previous, int index, Trie.Node node) {
 
-        if (!node.getChildren().isEmpty() && node.hasSinglePath() && node.getChildren().get(0).getKey() != TERMINATING_CHARACTER) {    // If node has only one path, put the rest in tail array
-            baseBuffer.put(index, tailIndex);    // current index of tail array
+        if (!node.getChildren().isEmpty() && node.hasSinglePath()
+                        && node.getChildren().get(0).getKey() != TERMINATING_CHARACTER) { // If node has only one path, put the rest in tail array
+            baseBuffer.put(index, tailIndex); // current index of tail array
             addToTail(node.getChildren().get(0));
             checkBuffer.put(index, previous);
-            return;    // No more child to process
+            return; // No more child to process
         }
 
         int startIndex = (compact ? 0 : index);
@@ -185,10 +186,10 @@ public class DoubleArrayTrie {
         baseBuffer.put(index, base);
 
         if (previous >= 0) {
-            checkBuffer.put(index, previous);    // Set check value
+            checkBuffer.put(index, previous); // Set check value
         }
 
-        for (Trie.Node child : node.getChildren()) {    // For each child to double array trie
+        for (Trie.Node child : node.getChildren()) { // For each child to double array trie
             if (compact) {
                 add(index, base + child.getKey(), child);
             } else {
@@ -231,11 +232,11 @@ public class DoubleArrayTrie {
                 return -1;
             }
 
-            if (checkBuffer.get(index) != previous) {    // check doesn't match
+            if (checkBuffer.get(index) != previous) { // check doesn't match
                 return -1;
             }
 
-            if (base >= TAIL_OFFSET) {    // If base is bigger than TAIL_OFFSET, start processing "tail"
+            if (base >= TAIL_OFFSET) { // If base is bigger than TAIL_OFFSET, start processing "tail"
                 return matchTail(base, index, key.substring(i + 1));
             }
 
@@ -287,7 +288,7 @@ public class DoubleArrayTrie {
         }
 
         while (true) {
-            boolean collision = false;    // already taken?
+            boolean collision = false; // already taken?
             for (Trie.Node node : nodes) {
                 int nextIndex = index + base + node.getKey();
                 maxBaseCheckIndex = Math.max(maxBaseCheckIndex, nextIndex);
@@ -296,21 +297,21 @@ public class DoubleArrayTrie {
                     extendBuffers(nextIndex);
                 }
 
-                if (baseBuffer.get(nextIndex) != 0) {    // already taken
-                    base++;    // check next base value
+                if (baseBuffer.get(nextIndex) != 0) { // already taken
+                    base++; // check next base value
                     collision = true;
                     break;
                 }
             }
 
             if (!collision) {
-                break;    // if there is no collision, found proper base value. Break the while loop.
+                break; // if there is no collision, found proper base value. Break the while loop.
             }
 
         }
 
         for (Trie.Node node : nodes) {
-            baseBuffer.put(index + base + node.getKey(), node.getKey() == TERMINATING_CHARACTER ? -1 : 1);    // Set -1 if key is terminating character. Set default base value 1 if not.
+            baseBuffer.put(index + base + node.getKey(), node.getKey() == TERMINATING_CHARACTER ? -1 : 1); // Set -1 if key is terminating character. Set default base value 1 if not.
         }
 
         return base;
@@ -318,7 +319,7 @@ public class DoubleArrayTrie {
 
     private void extendBuffers(int nextIndex) {
         int newLength = nextIndex + (int) (baseBuffer.capacity() * BUFFER_GROWTH_PERCENTAGE);
-        ProgressLog.println("Buffers extended to " + baseBuffer.capacity() + " entries" );
+        ProgressLog.println("Buffers extended to " + baseBuffer.capacity() + " entries");
 
         IntBuffer newBaseBuffer = IntBuffer.allocate(newLength);
         baseBuffer.rewind();
@@ -339,8 +340,8 @@ public class DoubleArrayTrie {
     private void addToTail(Trie.Node node) {
         while (true) {
             if (tailBuffer.capacity() < tailIndex - TAIL_OFFSET + 1) {
-                CharBuffer newTailBuffer = CharBuffer.allocate(tailBuffer.capacity() +
-                    (int) (tailBuffer.capacity() * BUFFER_GROWTH_PERCENTAGE));
+                CharBuffer newTailBuffer = CharBuffer.allocate(
+                                tailBuffer.capacity() + (int) (tailBuffer.capacity() * BUFFER_GROWTH_PERCENTAGE));
                 tailBuffer.rewind();
                 newTailBuffer.put(tailBuffer);
                 tailBuffer = newTailBuffer;

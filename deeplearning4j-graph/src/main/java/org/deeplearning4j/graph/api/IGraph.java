@@ -14,7 +14,7 @@ import java.util.Random;
  * @param <E> type for edge objects
  * @author Alex Black
  */
-public interface IGraph<V,E> {
+public interface IGraph<V, E> {
 
     /** Number of vertices in the graph */
     public int numVertices();

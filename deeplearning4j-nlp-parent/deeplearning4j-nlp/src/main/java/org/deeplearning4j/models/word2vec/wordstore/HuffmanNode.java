@@ -14,7 +14,7 @@ public class HuffmanNode {
     @NonNull
     private byte[] code;
     @NonNull
-    private  int[] point;
+    private int[] point;
     private int idx;
     private byte length;
 

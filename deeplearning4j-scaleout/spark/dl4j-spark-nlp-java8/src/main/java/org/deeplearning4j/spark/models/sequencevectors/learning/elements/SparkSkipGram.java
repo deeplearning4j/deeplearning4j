@@ -30,16 +30,20 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     protected TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
 
     @Override
-    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence,
+                    AtomicLong nextRandom, double learningRate) {
 
         // FIXME: totalElementsCount should have real value
         if (vectorsConfiguration.getSampling() > 0)
-            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
+            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L,
+                            vectorsConfiguration.getSampling());
 
         int currentWindow = vectorsConfiguration.getWindow();
 
-        if (vectorsConfiguration.getVariableWindows() != null && vectorsConfiguration.getVariableWindows().length != 0) {
-            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils.nextInt(vectorsConfiguration.getVariableWindows().length)];
+        if (vectorsConfiguration.getVariableWindows() != null
+                        && vectorsConfiguration.getVariableWindows().length != 0) {
+            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
+                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {
@@ -54,17 +58,17 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
             ShallowSequenceElement word = sequence.getElementByIndex(i);
-            if(word == null)
+            if (word == null)
                 continue;
 
             int b = (int) (nextRandom.get() % currentWindow);
-            int end =  currentWindow * 2 + 1 - b;
-            for(int a = b; a < end; a++) {
-                if(a != currentWindow) {
+            int end = currentWindow * 2 + 1 - b;
+            for (int a = b; a < end; a++) {
+                if (a != currentWindow) {
                     int c = i - currentWindow + a;
-                    if(c >= 0 && c < sequence.size()) {
+                    if (c >= 0 && c < sequence.size()) {
                         ShallowSequenceElement lastWord = sequence.getElementByIndex(c);
-                        iterateSample(word,lastWord,nextRandom, learningRate);
+                        iterateSample(word, lastWord, nextRandom, learningRate);
                         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     }
                 }
@@ -81,17 +85,18 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
 
 
 
-    protected void iterateSample(ShallowSequenceElement word, ShallowSequenceElement lastWord, AtomicLong nextRandom, double lr) {
-        if(word == null || lastWord == null || lastWord.getIndex() < 0 || word.getIndex() == lastWord.getIndex())
+    protected void iterateSample(ShallowSequenceElement word, ShallowSequenceElement lastWord, AtomicLong nextRandom,
+                    double lr) {
+        if (word == null || lastWord == null || lastWord.getIndex() < 0 || word.getIndex() == lastWord.getIndex())
             return;
         /**
          * all we want here, is actually very simple:
          * we just build simple SkipGram frame, and send it over network
          */
 
-        int [] idxSyn1 = new int[0];
-        byte [] codes = new byte[0];
-        if (vectorsConfiguration.isUseHierarchicSoftmax()){
+        int[] idxSyn1 = new int[0];
+        byte[] codes = new byte[0];
+        if (vectorsConfiguration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[word.getCodeLength()];
             codes = new byte[word.getCodeLength()];
             for (int i = 0; i < word.getCodeLength(); i++) {
@@ -106,14 +111,15 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
         }
 
         short neg = (short) vectorsConfiguration.getNegative();
-        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(word.getIndex(), lastWord.getIndex(), idxSyn1, codes, neg, lr, nextRandom.get());
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(word.getIndex(), lastWord.getIndex(), idxSyn1, codes,
+                        neg, lr, nextRandom.get());
 
         // we just stackfor now
         frame.get().stackMessage(sgrm);
     }
 
     @Override
-    public TrainingDriver<? extends TrainingMessage>  getTrainingDriver() {
+    public TrainingDriver<? extends TrainingMessage> getTrainingDriver() {
         return driver;
     }
 }

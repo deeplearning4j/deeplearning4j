@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -41,12 +41,10 @@ public class SPTreeTest {
 
     @Test
     public void testStructure() {
-        INDArray data = Nd4j.create(new double[][]{
-                {1,2,3},{4,5,6}
-        });
+        INDArray data = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
 
         SpTree tree = new SpTree(data);
-        assertEquals(Nd4j.create(new double[]{2.5,3.5,4.5}),tree.getCenterOfMass());
+        assertEquals(Nd4j.create(new double[] {2.5, 3.5, 4.5}), tree.getCenterOfMass());
         assertEquals(2, tree.getCumSize());
         assertEquals(8, tree.getNumChildren());
         assertTrue(tree.isCorrect());
@@ -57,7 +55,7 @@ public class SPTreeTest {
     @Ignore
     public void testLargeTree() {
         int num = 100000;
-        INDArray arr = Nd4j.linspace(1,num,num).reshape(num,1);
+        INDArray arr = Nd4j.linspace(1, num, num).reshape(num, 1);
         SpTree tree = new SpTree(arr);
     }
 

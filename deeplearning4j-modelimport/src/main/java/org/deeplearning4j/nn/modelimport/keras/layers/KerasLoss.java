@@ -31,7 +31,7 @@ public class KerasLoss extends KerasLayer {
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasLoss(String layerName, String inboundLayerName, String kerasLoss)
-            throws UnsupportedKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException {
         this(layerName, inboundLayerName, kerasLoss, true);
     }
 
@@ -46,7 +46,7 @@ public class KerasLoss extends KerasLayer {
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasLoss(String layerName, String inboundLayerName, String kerasLoss, boolean enforceTrainingConfig)
-            throws UnsupportedKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException {
         this.className = KERAS_CLASS_NAME_LOSS;
         this.layerName = layerName;
         this.inputShape = null;
@@ -65,15 +65,18 @@ public class KerasLoss extends KerasLayer {
         this.layer = new LossLayer.Builder(loss).name(layerName).build();
     }
 
-    private KerasLoss(Map<String,Object> layerConfig) {}
-    private KerasLoss(Map<String,Object> layerConfig, boolean enforceTrainingConfig) {}
+    private KerasLoss(Map<String, Object> layerConfig) {}
+
+    private KerasLoss(Map<String, Object> layerConfig, boolean enforceTrainingConfig) {}
 
     /**
      * Get DL4J LossLayer.
      *
      * @return  LossLayer
      */
-    public LossLayer getLossLayer() { return (LossLayer)this.layer; }
+    public LossLayer getLossLayer() {
+        return (LossLayer) this.layer;
+    }
 
     /**
      * Get layer output type.
@@ -85,7 +88,8 @@ public class KerasLoss extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Loss layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Loss layer accepts only one input (received " + inputType.length + ")");
         return this.getLossLayer().getOutputType(-1, inputType[0]);
     }
 }

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>>{
+public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>> {
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences
      */
@@ -50,10 +50,11 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         Tokenizer tokenizer = tokenizerFactory.create(object);
         List<String> list = tokenizer.getTokens();
 
-        for (String token: list) {
-            if (token == null || token.isEmpty() || token.trim().isEmpty()) continue;
+        for (String token : list) {
+            if (token == null || token.isEmpty() || token.trim().isEmpty())
+                continue;
 
-           VocabWord word = new VocabWord(1.0, token);
+            VocabWord word = new VocabWord(1.0, token);
             sequence.addElement(word);
         }
 

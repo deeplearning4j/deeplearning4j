@@ -113,7 +113,7 @@ public class VectorsConfiguration implements Serializable {
     public static VectorsConfiguration fromJson(String json) {
         ObjectMapper mapper = mapper();
         try {
-            VectorsConfiguration ret =  mapper.readValue(json, VectorsConfiguration.class);
+            VectorsConfiguration ret = mapper.readValue(json, VectorsConfiguration.class);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);

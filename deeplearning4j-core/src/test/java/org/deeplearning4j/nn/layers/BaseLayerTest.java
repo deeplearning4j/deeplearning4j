@@ -23,14 +23,12 @@ import static org.junit.Assert.assertNotEquals;
  */
 public class BaseLayerTest {
 
-    protected INDArray weight =  Nd4j.create(new double[]{0.10, -0.20, -0.15, 0.05},
-            new int[]{2, 2});
-    protected INDArray bias = Nd4j.create(new double[] {0.5,0.5},
-            new int[] {1,2});
+    protected INDArray weight = Nd4j.create(new double[] {0.10, -0.20, -0.15, 0.05}, new int[] {2, 2});
+    protected INDArray bias = Nd4j.create(new double[] {0.5, 0.5}, new int[] {1, 2});
     protected Map<String, INDArray> paramTable;
 
     @Before
-    public void doBefore(){
+    public void doBefore() {
         paramTable = new HashMap<>();
         paramTable.put("W", weight);
         paramTable.put("b", bias);
@@ -51,7 +49,7 @@ public class BaseLayerTest {
     public void testSetExistingParamsDenseMultiLayer() {
         MultiLayerNetwork net = configureMultiLayer();
 
-        for(Layer layer: net.getLayers()) {
+        for (Layer layer : net.getLayers()) {
             assertNotEquals(paramTable, layer.paramTable());
             layer.setParamTable(paramTable);
             assertEquals(paramTable, layer.paramTable());
@@ -59,15 +57,12 @@ public class BaseLayerTest {
     }
 
 
-    public Layer configureSingleLayer(){
+    public Layer configureSingleLayer() {
         int nIn = 2;
         int nOut = 2;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new ConvolutionLayer.Builder()
-                        .nIn(nIn).nOut(nOut)
-                        .build())
-                .build();
+                        .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -75,19 +70,13 @@ public class BaseLayerTest {
     }
 
 
-    public MultiLayerNetwork configureMultiLayer(){
+    public MultiLayerNetwork configureMultiLayer() {
         int nIn = 2;
         int nOut = 2;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(nIn).nOut(nOut)
-                        .build())
-                .layer(1, new OutputLayer.Builder()
-                        .nIn(nIn).nOut(nOut)
-                        .build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
+                        .layer(1, new OutputLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -50,8 +50,9 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     private LabelAwareSentenceIterator iter;
     private List<Window> cachedWindow;
     private List<String> labels;
-   private int batch = 10;
-    @Getter private DataSetPreProcessor preProcessor;
+    private int batch = 10;
+    @Getter
+    private DataSetPreProcessor preProcessor;
 
     /**
      * Allows for customization of all of the params of the iterator
@@ -62,24 +63,26 @@ public class Word2VecDataSetIterator implements DataSetIterator {
      * @param homogenization whether to homogenize the sentences or not
      * @param addLabels whether to add labels for windows
      */
-    public Word2VecDataSetIterator(Word2Vec vec,LabelAwareSentenceIterator iter,List<String> labels,int batch,boolean homogenization,boolean addLabels) {
+    public Word2VecDataSetIterator(Word2Vec vec, LabelAwareSentenceIterator iter, List<String> labels, int batch,
+                    boolean homogenization, boolean addLabels) {
         this.vec = vec;
         this.iter = iter;
         this.labels = labels;
         this.batch = batch;
         cachedWindow = new CopyOnWriteArrayList<>();
 
-        if(addLabels && homogenization)
+        if (addLabels && homogenization)
             iter.setPreProcessor(new SentencePreProcessor() {
                 @Override
                 public String preProcess(String sentence) {
                     String label = Word2VecDataSetIterator.this.iter.currentLabel();
-                    String ret = "<" + label + "> " + new InputHomogenization(sentence).transform() + " </" + label + ">";
+                    String ret = "<" + label + "> " + new InputHomogenization(sentence).transform() + " </" + label
+                                    + ">";
                     return ret;
                 }
             });
 
-        else if(addLabels)
+        else if (addLabels)
             iter.setPreProcessor(new SentencePreProcessor() {
                 @Override
                 public String preProcess(String sentence) {
@@ -89,7 +92,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
                 }
             });
 
-        else if(homogenization)
+        else if (homogenization)
             iter.setPreProcessor(new SentencePreProcessor() {
                 @Override
                 public String preProcess(String sentence) {
@@ -107,9 +110,10 @@ public class Word2VecDataSetIterator implements DataSetIterator {
      * @param iter the sentence iterator to use
      * @param labels the possible labels
      */
-    public Word2VecDataSetIterator(Word2Vec vec,LabelAwareSentenceIterator iter,List<String> labels ) {
-        this(vec,iter,labels,10);
+    public Word2VecDataSetIterator(Word2Vec vec, LabelAwareSentenceIterator iter, List<String> labels) {
+        this(vec, iter, labels, 10);
     }
+
     /**
      * Initializes this iterator with homogenization and adding labels
      * @param vec the vector model to use
@@ -117,11 +121,12 @@ public class Word2VecDataSetIterator implements DataSetIterator {
      * @param labels the possible labels
      * @param batch the batch size
      */
-    public Word2VecDataSetIterator(Word2Vec vec,LabelAwareSentenceIterator iter,List<String> labels,int batch) {
-        this(vec,iter,labels,batch,true,true);
+    public Word2VecDataSetIterator(Word2Vec vec, LabelAwareSentenceIterator iter, List<String> labels, int batch) {
+        this(vec, iter, labels, batch, true, true);
 
 
     }
+
     /**
      * Like the standard next method but allows a
      * customizable number of examples returned
@@ -131,22 +136,22 @@ public class Word2VecDataSetIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
-        if(num <= cachedWindow.size())
+        if (num <= cachedWindow.size())
             return fromCached(num);
-            //no more sentences, return the left over
-        else if(num >= cachedWindow.size() && !iter.hasNext())
+        //no more sentences, return the left over
+        else if (num >= cachedWindow.size() && !iter.hasNext())
             return fromCached(cachedWindow.size());
 
-            //need the next sentence
+        //need the next sentence
         else {
-            while(cachedWindow.size() < num && iter.hasNext()) {
+            while (cachedWindow.size() < num && iter.hasNext()) {
                 String sentence = iter.nextSentence();
-                if(sentence.isEmpty())
+                if (sentence.isEmpty())
                     continue;
-                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow(), vec);
-                if(windows.isEmpty() && !sentence.isEmpty())
+                List<Window> windows = Windows.windows(sentence, vec.getTokenizerFactory(), vec.getWindow(), vec);
+                if (windows.isEmpty() && !sentence.isEmpty())
                     throw new IllegalStateException("Empty window on sentence");
-                for(Window w : windows)
+                for (Window w : windows)
                     w.setLabel(iter.currentLabel());
                 cachedWindow.addAll(windows);
             }
@@ -157,13 +162,13 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     }
 
     private DataSet fromCached(int num) {
-        if(cachedWindow.isEmpty()) {
-            while(cachedWindow.size() < num && iter.hasNext()) {
+        if (cachedWindow.isEmpty()) {
+            while (cachedWindow.size() < num && iter.hasNext()) {
                 String sentence = iter.nextSentence();
-                if(sentence.isEmpty())
+                if (sentence.isEmpty())
                     continue;
-                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow(), vec);
-                for(Window w : windows)
+                List<Window> windows = Windows.windows(sentence, vec.getTokenizerFactory(), vec.getWindow(), vec);
+                for (Window w : windows)
                     w.setLabel(iter.currentLabel());
                 cachedWindow.addAll(windows);
             }
@@ -172,30 +177,30 @@ public class Word2VecDataSetIterator implements DataSetIterator {
 
         List<Window> windows = new ArrayList<>(num);
 
-        for(int i = 0; i < num; i++) {
-            if(cachedWindow.isEmpty())
+        for (int i = 0; i < num; i++) {
+            if (cachedWindow.isEmpty())
                 break;
             windows.add(cachedWindow.remove(0));
         }
 
-        if(windows.isEmpty())
+        if (windows.isEmpty())
             return null;
 
 
 
         INDArray inputs = Nd4j.create(num, inputColumns());
-        for(int i = 0; i < inputs.rows(); i++) {
-            inputs.putRow(i, WindowConverter.asExampleMatrix(windows.get(i),vec));
+        for (int i = 0; i < inputs.rows(); i++) {
+            inputs.putRow(i, WindowConverter.asExampleMatrix(windows.get(i), vec));
         }
 
-        INDArray labelOutput =  Nd4j.create(num,labels.size());
-        for(int i = 0; i < labelOutput.rows(); i++) {
+        INDArray labelOutput = Nd4j.create(num, labels.size());
+        for (int i = 0; i < labelOutput.rows(); i++) {
             String label = windows.get(i).getLabel();
             labelOutput.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size()));
         }
 
-        DataSet ret =  new DataSet(inputs,labelOutput);
-        if(preProcessor != null)
+        DataSet ret = new DataSet(inputs, labelOutput);
+        if (preProcessor != null)
             preProcessor.preProcess(ret);
 
         return ret;
@@ -219,7 +224,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 

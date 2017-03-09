@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -51,7 +51,10 @@ public class Word2VecParam implements Serializable {
     private AtomicLong wordsSeen = new AtomicLong(0);
     private AtomicLong lastWords = new AtomicLong(0);
 
-    public Word2VecParam(boolean useAdaGrad, double negative, int numWords, INDArray table, int window, AtomicLong nextRandom, double alpha, double minAlpha, int totalWords, int lastChecked, Broadcast<AtomicLong> wordCount, InMemoryLookupTable weights, int vectorLength,Broadcast<double[]> expTable) {
+    public Word2VecParam(boolean useAdaGrad, double negative, int numWords, INDArray table, int window,
+                    AtomicLong nextRandom, double alpha, double minAlpha, int totalWords, int lastChecked,
+                    Broadcast<AtomicLong> wordCount, InMemoryLookupTable weights, int vectorLength,
+                    Broadcast<double[]> expTable) {
         this.useAdaGrad = useAdaGrad;
         this.negative = negative;
         this.numWords = numWords;
@@ -290,7 +293,8 @@ public class Word2VecParam implements Serializable {
         }
 
         public Word2VecParam build() {
-            return new Word2VecParam(useAdaGrad, negative, numWords, table, window, nextRandom, alpha, minAlpha, totalWords, lastChecked, wordCount, weights, vectorLength,expTable);
+            return new Word2VecParam(useAdaGrad, negative, numWords, table, window, nextRandom, alpha, minAlpha,
+                            totalWords, lastChecked, wordCount, weights, vectorLength, expTable);
         }
     }
 }

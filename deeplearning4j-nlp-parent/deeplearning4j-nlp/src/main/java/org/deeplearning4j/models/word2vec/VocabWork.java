@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,17 +37,17 @@ public class VocabWork implements Serializable {
     private List<String> label;
 
 
-    public VocabWork(AtomicInteger count,String work,boolean stem) {
-        this(count,work,stem,"");
+    public VocabWork(AtomicInteger count, String work, boolean stem) {
+        this(count, work, stem, "");
     }
 
 
 
-    public VocabWork(AtomicInteger count,String work,boolean stem,String label) {
-        this(count,work,stem, Arrays.asList(label));
+    public VocabWork(AtomicInteger count, String work, boolean stem, String label) {
+        this(count, work, stem, Arrays.asList(label));
     }
 
-    public VocabWork(AtomicInteger count,String work,boolean stem,List<String> label) {
+    public VocabWork(AtomicInteger count, String work, boolean stem, List<String> label) {
         this.count = count;
         this.work = work;
         this.stem = stem;
@@ -92,14 +92,19 @@ public class VocabWork implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof VocabWork)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof VocabWork))
+            return false;
 
         VocabWork vocabWork = (VocabWork) o;
 
-        if (stem != vocabWork.stem) return false;
-        if (count != null ? !count.equals(vocabWork.count) : vocabWork.count != null) return false;
-        if (label != null ? !label.equals(vocabWork.label) : vocabWork.label != null) return false;
+        if (stem != vocabWork.stem)
+            return false;
+        if (count != null ? !count.equals(vocabWork.count) : vocabWork.count != null)
+            return false;
+        if (label != null ? !label.equals(vocabWork.label) : vocabWork.label != null)
+            return false;
         return !(work != null ? !work.equals(vocabWork.work) : vocabWork.work != null);
 
     }

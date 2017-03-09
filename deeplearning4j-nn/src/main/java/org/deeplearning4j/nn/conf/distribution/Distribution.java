@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,13 +29,11 @@ import java.io.Serializable;
  * An abstract distribution.
  *
  */
-@JsonTypeInfo(use=Id.NAME, include=As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = BinomialDistribution.class, name = "binomial"),
-        @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
-        @JsonSubTypes.Type(value = GaussianDistribution.class, name = "gaussian"),
-        @JsonSubTypes.Type(value = UniformDistribution.class, name = "uniform"),
-        })
+@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = BinomialDistribution.class, name = "binomial"),
+                @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
+                @JsonSubTypes.Type(value = GaussianDistribution.class, name = "gaussian"),
+                @JsonSubTypes.Type(value = UniformDistribution.class, name = "uniform"),})
 public abstract class Distribution implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 5401741214954998498L;

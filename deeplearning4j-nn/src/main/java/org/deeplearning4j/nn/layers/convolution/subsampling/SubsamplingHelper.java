@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -29,8 +29,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface SubsamplingHelper {
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,
-                                              int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode);
-    INDArray activate(INDArray input, boolean training,
-                      int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
+                    PoolingType poolingType, ConvolutionMode convolutionMode);
+
+    INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad, PoolingType poolingType,
+                    ConvolutionMode convolutionMode);
 }

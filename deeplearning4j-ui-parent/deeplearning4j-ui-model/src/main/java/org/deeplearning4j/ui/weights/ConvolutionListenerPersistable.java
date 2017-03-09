@@ -13,7 +13,8 @@ import java.nio.ByteBuffer;
 /**
  * Created by Alex on 24/10/2016.
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 public class ConvolutionListenerPersistable implements Persistable {
 
     private static final String TYPE_ID = "ConvolutionalListener";
@@ -23,7 +24,7 @@ public class ConvolutionListenerPersistable implements Persistable {
     private long timestamp;
     private transient BufferedImage img;
 
-    public ConvolutionListenerPersistable(){ }
+    public ConvolutionListenerPersistable() {}
 
     @Override
     public String getSessionID() {
@@ -54,10 +55,10 @@ public class ConvolutionListenerPersistable implements Persistable {
     public byte[] encode() {
         //Not the most efficient: but it's easy to implement...
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(this);
-        } catch (IOException e){
-            throw new RuntimeException(e);  //Shouldn't normally happen
+        } catch (IOException e) {
+            throw new RuntimeException(e); //Shouldn't normally happen
         }
 
         return baos.toByteArray();
@@ -75,14 +76,14 @@ public class ConvolutionListenerPersistable implements Persistable {
 
     @Override
     public void decode(byte[] decode) {
-        try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))){
-            ConvolutionListenerPersistable p = (ConvolutionListenerPersistable)ois.readObject();
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
+            ConvolutionListenerPersistable p = (ConvolutionListenerPersistable) ois.readObject();
             this.sessionID = p.sessionID;
             this.workerID = p.workerID;
             this.timestamp = p.getTimeStamp();
             this.img = p.img;
-        }catch (IOException | ClassNotFoundException e){
-            throw new RuntimeException(e);  //Shouldn't normally happen
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e); //Shouldn't normally happen
         }
     }
 
@@ -101,10 +102,10 @@ public class ConvolutionListenerPersistable implements Persistable {
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.defaultWriteObject();
-        ImageIO.write(img,"png",oos);
+        ImageIO.write(img, "png", oos);
     }
 
-    private void readObject(ObjectInputStream ois ) throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         img = ImageIO.read(ois);
     }

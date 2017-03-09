@@ -18,9 +18,9 @@ public class EvaluationUtils {
         int[] labelsShape = labels.shape();
         INDArray labels2d;
         if (labelsShape[0] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
+            labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
         } else if (labelsShape[2] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
+            labels2d = labels.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         } else {
             labels2d = labels.permute(0, 2, 1);
             labels2d = labels2d.reshape('f', labelsShape[0] * labelsShape[2], labelsShape[1]);
@@ -28,10 +28,11 @@ public class EvaluationUtils {
         return labels2d;
     }
 
-    public static Pair<INDArray,INDArray> extractNonMaskedTimeSteps(INDArray labels, INDArray predicted, INDArray outputMask){
+    public static Pair<INDArray, INDArray> extractNonMaskedTimeSteps(INDArray labels, INDArray predicted,
+                    INDArray outputMask) {
         if (labels.rank() != 3 || predicted.rank() != 3) {
-            throw new IllegalArgumentException("Invalid data: expect rank 3 arrays. Got arrays with shapes labels=" +
-                    Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
+            throw new IllegalArgumentException("Invalid data: expect rank 3 arrays. Got arrays with shapes labels="
+                            + Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
         }
 
         //Reshaping here: basically RnnToFeedForwardPreProcessor...

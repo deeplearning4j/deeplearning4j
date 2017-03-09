@@ -19,12 +19,14 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
+public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
     public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker) {
         super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker));
     }
 }
+
 
 /**
  * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
@@ -33,11 +35,12 @@ public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult> extends BaseF
  *
  * @author Alex Black
  */
-class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
+class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<String>, R> {
     private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
     private final int maxDataSetObjects;
 
-    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker){
+    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker) {
         this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
@@ -49,11 +52,12 @@ class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult> implements Fl
         int workerMinibatchSize = conf.getBatchSizePerWorker();
         int maxMinibatches = (conf.getMaxBatchesPerWorker() > 0 ? conf.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
 
-        if(maxMinibatches == Integer.MAX_VALUE){
+        if (maxMinibatches == Integer.MAX_VALUE) {
             maxDataSetObjects = Integer.MAX_VALUE;
         } else {
             //Required: total number of examples / examples per dataset object
-            maxDataSetObjects = (int)Math.ceil(maxMinibatches * workerMinibatchSize / ((double)dataSetObjectNumExamples));
+            maxDataSetObjects =
+                            (int) Math.ceil(maxMinibatches * workerMinibatchSize / ((double) dataSetObjectNumExamples));
         }
     }
 
@@ -61,7 +65,7 @@ class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult> implements Fl
     public Iterable<R> call(Iterator<String> iter) throws Exception {
         List<String> list = new ArrayList<>();
         int count = 0;
-        while(iter.hasNext() && count++ < maxDataSetObjects){
+        while (iter.hasNext() && count++ < maxDataSetObjects) {
             list.add(iter.next());
         }
 

@@ -25,12 +25,13 @@ public class LossFunctionWrapper implements ReconstructionDistribution {
     private final IActivation activationFn;
     private final ILossFunction lossFunction;
 
-    public LossFunctionWrapper(@JsonProperty("activationFn") IActivation activationFn, @JsonProperty("lossFunction") ILossFunction lossFunction){
+    public LossFunctionWrapper(@JsonProperty("activationFn") IActivation activationFn,
+                    @JsonProperty("lossFunction") ILossFunction lossFunction) {
         this.activationFn = activationFn;
         this.lossFunction = lossFunction;
     }
 
-    public LossFunctionWrapper(Activation activation, ILossFunction lossFunction){
+    public LossFunctionWrapper(Activation activation, ILossFunction lossFunction) {
         this(activation.getActivationFunction(), lossFunction);
     }
 
@@ -73,11 +74,11 @@ public class LossFunctionWrapper implements ReconstructionDistribution {
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
         //Loss functions: not probabilistic -> not random
         INDArray out = preOutDistributionParams.dup();
-        return activationFn.getActivation(out,true);
+        return activationFn.getActivation(out, true);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossFunctionWrapper(afn=" + activationFn + "," + lossFunction + ")";
     }
 }

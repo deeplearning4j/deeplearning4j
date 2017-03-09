@@ -33,8 +33,8 @@ public interface StatsInitializationReport extends Persistable {
      * @param swEnvironmentInfo Environment information: Usually from Nd4j.getExecutioner().getEnvironmentInformation()
      */
     void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                            String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUID,
-                            Map<String,String> swEnvironmentInfo);
+                    String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUID,
+                    Map<String, String> swEnvironmentInfo);
 
     /**
      * @param jvmAvailableProcessors Number of available processor cores according to the JVM
@@ -48,7 +48,7 @@ public interface StatsInitializationReport extends Persistable {
      *
      */
     void reportHardwareInfo(int jvmAvailableProcessors, int numDevices, long jvmMaxMemory, long offHeapMaxMemory,
-                            long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID);
+                    long[] deviceTotalMemory, String[] deviceDescription, String hardwareUID);
 
 
     /**
@@ -59,7 +59,8 @@ public interface StatsInitializationReport extends Persistable {
      * @param numLayers       Number of layers in the model
      * @param numParams       Number of parameters in the model
      */
-    void reportModelInfo(String modelClassName, String modelConfigJson, String[] paramNames, int numLayers, long numParams);
+    void reportModelInfo(String modelClassName, String modelConfigJson, String[] paramNames, int numLayers,
+                    long numParams);
 
 
     boolean hasSoftwareInfo();
@@ -86,7 +87,7 @@ public interface StatsInitializationReport extends Persistable {
 
     String getSwJvmUID();
 
-    Map<String,String> getSwEnvironmentInfo();
+    Map<String, String> getSwEnvironmentInfo();
 
     int getHwJvmAvailableProcessors();
 

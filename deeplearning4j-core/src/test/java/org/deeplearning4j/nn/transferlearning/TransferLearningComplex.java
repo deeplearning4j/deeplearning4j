@@ -34,19 +34,14 @@ public class TransferLearningComplex {
         // (b) Test global override (should be selective)
 
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(Updater.ADAM)
-                .learningRate(1e-4)
-                .activation(Activation.LEAKYRELU)
-                .graphBuilder()
-                .addInputs("in1", "in2")
-                .addLayer("A", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in1")
-                .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
-                .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
-                .addLayer("D", new DenseLayer.Builder().nIn(8 + 7).nOut(5).build(), "B", "C")
-                .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D")
-                .setOutputs("out")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM)
+                        .learningRate(1e-4).activation(Activation.LEAKYRELU).graphBuilder().addInputs("in1", "in2")
+                        .addLayer("A", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in1")
+                        .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
+                        .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
+                        .addLayer("D", new DenseLayer.Builder().nIn(8 + 7).nOut(5).build(), "B", "C")
+                        .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D").setOutputs("out")
+                        .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -60,11 +55,11 @@ public class TransferLearningComplex {
             log.info(i + "\t" + v.getVertexName());
         }
 
-        ComputationGraph graph2 = new TransferLearning.GraphBuilder(graph)
-                .fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                        .learningRate(2e-2).build())
-                .setFeatureExtractor("C")
-                .build();
+        ComputationGraph graph2 =
+                        new TransferLearning.GraphBuilder(graph)
+                                        .fineTuneConfiguration(
+                                                        new FineTuneConfiguration.Builder().learningRate(2e-2).build())
+                                        .setFeatureExtractor("C").build();
 
         boolean cFound = false;
         Layer[] layers = graph2.getLayers();
@@ -92,11 +87,9 @@ public class TransferLearningComplex {
     @Test
     public void testSimplerMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.9)
-                .activation(Activation.IDENTITY)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
+                        .activation(Activation.IDENTITY)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
 
         /*
                 inCentre                inRight
@@ -106,58 +99,68 @@ public class TransferLearningComplex {
                    |------ mergeRight ------|
                                 |
                               outRight
-
+        
         */
 
-        ComputationGraphConfiguration conf = overallConf.graphBuilder()
-                .addInputs("inCentre", "inRight")
-                .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inCentre")
-                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
-                .addVertex("mergeRight", new MergeVertex(),"denseCentre0","denseRight0")
-                .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
-                .setOutputs("outRight")
-                .build();
+        ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
+                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
+                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .addLayer("outRight",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
+                                        "mergeRight")
+                        .setOutputs("outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
 
-        MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,2)}, new INDArray[] {Nd4j.rand(2,2)});
-        INDArray denseCentre0 = modelToTune.feedForward(randData.getFeatures(),false).get("denseCentre0");
-        MultiDataSet otherRandData = new MultiDataSet(new INDArray[] {denseCentre0,randData.getFeatures(1)}, randData.getLabels());
+        MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)},
+                        new INDArray[] {Nd4j.rand(2, 2)});
+        INDArray denseCentre0 = modelToTune.feedForward(randData.getFeatures(), false).get("denseCentre0");
+        MultiDataSet otherRandData =
+                        new MultiDataSet(new INDArray[] {denseCentre0, randData.getFeatures(1)}, randData.getLabels());
 
-        ComputationGraphConfiguration otherConf = overallConf.graphBuilder()
-                .addInputs("denseCentre0","inRight")
-                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
-                .addVertex("mergeRight", new MergeVertex(),"denseCentre0","denseRight0")
-                .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
-                .setOutputs("outRight")
-                .build();
+        ComputationGraphConfiguration otherConf =
+                        overallConf.graphBuilder().addInputs("denseCentre0", "inRight")
+                                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),
+                                                        "inRight")
+                                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                                        .addLayer("outRight",
+                                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4)
+                                                                        .nOut(2).build(),
+                                                        "mergeRight")
+                                        .setOutputs("outRight").build();
         ComputationGraph modelOther = new ComputationGraph(otherConf);
         modelOther.init();
         modelOther.getLayer("denseRight0").setParams(modelToTune.getLayer("denseRight0").params());
         modelOther.getLayer("outRight").setParams(modelToTune.getLayer("outRight").params());
 
         modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
-        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
+        ComputationGraph modelNow =
+                        new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         int n = 0;
         while (n < 5) {
             if (n == 0) {
                 //confirm activations out of the merge are equivalent
-                assertEquals(modelToTune.feedForward(randData.getFeatures(),false).get("mergeRight"), modelOther.feedForward(otherRandData.getFeatures(),false).get("mergeRight"));
-                assertEquals(modelNow.feedForward(randData.getFeatures(),false).get("mergeRight"), modelOther.feedForward(otherRandData.getFeatures(),false).get("mergeRight"));
+                assertEquals(modelToTune.feedForward(randData.getFeatures(), false).get("mergeRight"),
+                                modelOther.feedForward(otherRandData.getFeatures(), false).get("mergeRight"));
+                assertEquals(modelNow.feedForward(randData.getFeatures(), false).get("mergeRight"),
+                                modelOther.feedForward(otherRandData.getFeatures(), false).get("mergeRight"));
             }
             //confirm activations out of frozen vertex is the same as the input to the other model
             modelOther.fit(otherRandData);
             modelToTune.fit(randData);
             modelNow.fit(randData);
 
-            assertEquals(otherRandData.getFeatures(0),modelNow.feedForward(randData.getFeatures(),false).get("denseCentre0"));
-            assertEquals(otherRandData.getFeatures(0),modelToTune.feedForward(randData.getFeatures(),false).get("denseCentre0"));
+            assertEquals(otherRandData.getFeatures(0),
+                            modelNow.feedForward(randData.getFeatures(), false).get("denseCentre0"));
+            assertEquals(otherRandData.getFeatures(0),
+                            modelToTune.feedForward(randData.getFeatures(), false).get("denseCentre0"));
 
-            assertEquals(modelOther.getLayer("denseRight0").params(),modelNow.getLayer("denseRight0").params());
-            assertEquals(modelOther.getLayer("denseRight0").params(),modelToTune.getLayer("denseRight0").params());
+            assertEquals(modelOther.getLayer("denseRight0").params(), modelNow.getLayer("denseRight0").params());
+            assertEquals(modelOther.getLayer("denseRight0").params(), modelToTune.getLayer("denseRight0").params());
 
-            assertEquals(modelOther.getLayer("outRight").params(),modelNow.getLayer("outRight").params());
-            assertEquals(modelOther.getLayer("outRight").params(),modelToTune.getLayer("outRight").params());
+            assertEquals(modelOther.getLayer("outRight").params(), modelNow.getLayer("outRight").params());
+            assertEquals(modelOther.getLayer("outRight").params(), modelToTune.getLayer("outRight").params());
             n++;
         }
 
@@ -166,11 +169,9 @@ public class TransferLearningComplex {
     @Test
     public void testLessSimpleMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.9)
-                .activation(Activation.IDENTITY)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
+                        .activation(Activation.IDENTITY)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
 
         /*
                 inCentre                inRight
@@ -180,47 +181,54 @@ public class TransferLearningComplex {
                    |------ mergeRight ------|
                    |            |
                  outCentre     outRight
-
+        
         */
 
-        ComputationGraphConfiguration conf = overallConf.graphBuilder()
-                .addInputs("inCentre", "inRight")
-                .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inCentre")
-                .addLayer("outCentre", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),"denseCentre0")
-                .addLayer("denseRight0", new DenseLayer.Builder().nIn(3).nOut(2).build(),"inRight")
-                .addVertex("mergeRight", new MergeVertex(),"denseCentre0","denseRight0")
-                .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
-                .setOutputs("outRight")
-                .setOutputs("outCentre")
-                .build();
+        ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
+                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("outCentre",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),
+                                        "denseCentre0")
+                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(3).nOut(2).build(), "inRight")
+                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .addLayer("outRight",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
+                                        "mergeRight")
+                        .setOutputs("outRight").setOutputs("outCentre").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
         modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
 
-        MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,3)}, new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,2)});
-        INDArray denseCentre0 = modelToTune.feedForward(randData.getFeatures(),false).get("denseCentre0");
-        MultiDataSet otherRandData = new MultiDataSet(new INDArray[] {denseCentre0,randData.getFeatures(1)}, randData.getLabels());
+        MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)},
+                        new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)});
+        INDArray denseCentre0 = modelToTune.feedForward(randData.getFeatures(), false).get("denseCentre0");
+        MultiDataSet otherRandData =
+                        new MultiDataSet(new INDArray[] {denseCentre0, randData.getFeatures(1)}, randData.getLabels());
 
-        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
+        ComputationGraph modelNow =
+                        new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         assertTrue(modelNow.getLayer("denseCentre0") instanceof FrozenLayer);
         int n = 0;
         while (n < 5) {
             if (n == 0) {
                 //confirm activations out of the merge are equivalent
-                assertEquals(modelToTune.feedForward(randData.getFeatures(),false).get("mergeRight"), modelNow.feedForward(otherRandData.getFeatures(),false).get("mergeRight"));
+                assertEquals(modelToTune.feedForward(randData.getFeatures(), false).get("mergeRight"),
+                                modelNow.feedForward(otherRandData.getFeatures(), false).get("mergeRight"));
             }
             //confirm activations out of frozen vertex is the same as the input to the other model
             modelToTune.fit(randData);
             modelNow.fit(randData);
 
-            assertEquals(otherRandData.getFeatures(0),modelNow.feedForward(randData.getFeatures(),false).get("denseCentre0"));
-            assertEquals(otherRandData.getFeatures(0),modelToTune.feedForward(randData.getFeatures(),false).get("denseCentre0"));
+            assertEquals(otherRandData.getFeatures(0),
+                            modelNow.feedForward(randData.getFeatures(), false).get("denseCentre0"));
+            assertEquals(otherRandData.getFeatures(0),
+                            modelToTune.feedForward(randData.getFeatures(), false).get("denseCentre0"));
 
-            assertEquals(modelToTune.getLayer("denseRight0").params(),modelNow.getLayer("denseRight0").params());
+            assertEquals(modelToTune.getLayer("denseRight0").params(), modelNow.getLayer("denseRight0").params());
 
-            assertEquals(modelToTune.getLayer("outRight").params(),modelNow.getLayer("outRight").params());
+            assertEquals(modelToTune.getLayer("outRight").params(), modelNow.getLayer("outRight").params());
 
-            assertEquals(modelToTune.getLayer("outCentre").params(),modelNow.getLayer("outCentre").params());
+            assertEquals(modelToTune.getLayer("outCentre").params(), modelNow.getLayer("outCentre").params());
             n++;
         }
 
@@ -228,30 +236,32 @@ public class TransferLearningComplex {
 
     @Test
     public void testAddOutput() {
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.9)
-                .activation(Activation.IDENTITY)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
+                        .activation(Activation.IDENTITY)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
 
-        ComputationGraphConfiguration conf = overallConf.graphBuilder()
-                .addInputs("inCentre", "inRight")
-                .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inCentre")
-                .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(),"inRight")
-                .addVertex("mergeRight", new MergeVertex(),"denseCentre0","denseRight0")
-                .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
-                .setOutputs("outRight")
-                .build();
+        ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
+                        .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
+                        .addLayer("denseRight0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inRight")
+                        .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
+                        .addLayer("outRight",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
+                                        "mergeRight")
+                        .setOutputs("outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
 
-        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToTune)
-                .addLayer("outCentre", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(3).build(),"denseCentre0")
-                .setOutputs("outCentre")
-                .build();
+        ComputationGraph modelNow =
+                        new TransferLearning.GraphBuilder(modelToTune)
+                                        .addLayer("outCentre",
+                                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2)
+                                                                        .nOut(3).build(),
+                                                        "denseCentre0")
+                                        .setOutputs("outCentre").build();
 
-        assertEquals(2,modelNow.getNumOutputArrays());
-        MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,2)},new INDArray[] {Nd4j.rand(2,2),Nd4j.rand(2,3)});
+        assertEquals(2, modelNow.getNumOutputArrays());
+        MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)},
+                        new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)});
         modelNow.fit(rand);
         log.info(modelNow.summary());
 

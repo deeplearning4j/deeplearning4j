@@ -38,11 +38,11 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         this(Activation.fromString(activationFn).getActivationFunction());
     }
 
-    public ExponentialReconstructionDistribution(Activation activation){
+    public ExponentialReconstructionDistribution(Activation activation) {
         this(activation.getActivationFunction());
     }
 
-    public ExponentialReconstructionDistribution(IActivation activationFn){
+    public ExponentialReconstructionDistribution(IActivation activationFn) {
         this.activationFn = activationFn;
     }
 
@@ -66,7 +66,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
 
         INDArray lambda = Transforms.exp(gamma, true);
         double negLogProbSum = -lambda.muli(x).rsubi(gamma).sumNumber().doubleValue();
-        if(average){
+        if (average) {
             return negLogProbSum / x.size(0);
         } else {
             return negLogProbSum;
@@ -110,7 +110,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         INDArray u = Nd4j.rand(preOutDistributionParams.shape());
 
         //Note here: if u ~ U(0,1) then 1-u ~ U(0,1)
-        return Transforms.log(u,false).divi(lambda).negi();
+        return Transforms.log(u, false).divi(lambda).negi();
     }
 
     @Override
@@ -121,7 +121,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         INDArray gamma = activationFn.getActivation(preOutDistributionParams.dup(), false);
 
         INDArray lambda = Transforms.exp(gamma, true);
-        return lambda.rdivi(1.0);   //mean = 1.0 / lambda
+        return lambda.rdivi(1.0); //mean = 1.0 / lambda
     }
 
     @Override

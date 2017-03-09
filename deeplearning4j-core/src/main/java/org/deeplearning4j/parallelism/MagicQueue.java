@@ -6,7 +6,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,8 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class MagicQueue implements BlockingQueue<DataSet> {
     public enum Mode {
-        THREADED,
-        SEQUENTIAL,
+        THREADED, SEQUENTIAL,
     }
 
     protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
@@ -82,7 +80,8 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 }
 
                 return (int) Math.floor(cnt / numberOfBuckets);
-            } else return backingQueues.get(0).size();
+            } else
+                return backingQueues.get(0).size();
         } else {
             return (int) (cntPut.get() - cntGet.get());
         }
@@ -188,7 +187,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public boolean addAll(Collection<? extends DataSet> c) {
-        for (DataSet ds: c) {
+        for (DataSet ds : c) {
             boolean result = add(ds);
 
             if (!result)
@@ -220,7 +219,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public void clear() {
-        for(Queue<DataSet> queue: backingQueues) {
+        for (Queue<DataSet> queue : backingQueues) {
             queue.clear();
         }
 
@@ -292,7 +291,8 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 if (numberOfBuckets > 1) {
                     int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                     return backingQueues.get(deviceId).take();
-                } else return backingQueues.get(0).take();
+                } else
+                    return backingQueues.get(0).take();
             } else {
                 DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).take();
                 if (interleavedCounter.get() >= backingQueues.size())
@@ -349,7 +349,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
-            if (ds!=null)
+            if (ds != null)
                 cntGet.incrementAndGet();
 
             return ds;
@@ -392,7 +392,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
-            if (ds!=null)
+            if (ds != null)
                 cntGet.incrementAndGet();
 
             return ds;

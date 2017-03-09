@@ -31,16 +31,16 @@ public class AssertWeightsDifferentIerationListener implements IterationListener
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(lastWeights == null)
+        if (lastWeights == null)
             lastWeights = model.getParam(param).dup();
         else {
             count++;
 
-            if(count < 2)
+            if (count < 2)
                 return;
 
-            if(count > 2)
-                assertNotEquals(lastWeights,model.getParam(param));
+            if (count > 2)
+                assertNotEquals(lastWeights, model.getParam(param));
             lastWeights = model.getParam(param).dup();
         }
     }

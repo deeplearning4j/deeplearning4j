@@ -19,16 +19,14 @@ public class ExportSupport {
      */
     public static void assertExportSupported(@NonNull JavaSparkContext sc) {
         if (!exportSupported(sc)) {
-            throw new RuntimeException(
-                "Export training approach is not supported in the current environment. " +
-                    "This means that the default Hadoop file system is the local file system and Spark is running " +
-                    "in a non-local mode. You can fix this by either adding hadoop configuration to your environment " +
-                    "or using the Direct training approach. Configuring Hadoop can be done by adding config files (" +
-                    "https://spark.apache.org/docs/1.6.3/configuration.html#inheriting-hadoop-cluster-configuration" +
-                    ") or adding a setting to your SparkConf object with " +
-                    "`sparkConf.set(\"spark.hadoop.fs.defaultFS\", \"hdfs://my-hdfs-host:9000\");`. Alternatively, " +
-                    "you can use some other non-local storage like S3."
-            );
+            throw new RuntimeException("Export training approach is not supported in the current environment. "
+                            + "This means that the default Hadoop file system is the local file system and Spark is running "
+                            + "in a non-local mode. You can fix this by either adding hadoop configuration to your environment "
+                            + "or using the Direct training approach. Configuring Hadoop can be done by adding config files ("
+                            + "https://spark.apache.org/docs/1.6.3/configuration.html#inheriting-hadoop-cluster-configuration"
+                            + ") or adding a setting to your SparkConf object with "
+                            + "`sparkConf.set(\"spark.hadoop.fs.defaultFS\", \"hdfs://my-hdfs-host:9000\");`. Alternatively, "
+                            + "you can use some other non-local storage like S3.");
         }
     }
 
@@ -42,10 +40,7 @@ public class ExportSupport {
      */
     public static boolean exportSupported(@NonNull JavaSparkContext sc) {
         try {
-            return exportSupported(
-                sc.master(),
-                FileSystem.get(sc.hadoopConfiguration())
-            );
+            return exportSupported(sc.master(), FileSystem.get(sc.hadoopConfiguration()));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

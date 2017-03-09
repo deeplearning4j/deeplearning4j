@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * @author raver119@gmail.com
  */
-public class VocabWordFactory  implements SequenceElementFactory<VocabWord>{
+public class VocabWordFactory implements SequenceElementFactory<VocabWord> {
 
     /**
      * This method builds object from provided JSON
@@ -22,7 +22,7 @@ public class VocabWordFactory  implements SequenceElementFactory<VocabWord>{
     public VocabWord deserialize(String json) {
         ObjectMapper mapper = SequenceElement.mapper();
         try {
-            VocabWord ret =  mapper.readValue(json, VocabWord.class);
+            VocabWord ret = mapper.readValue(json, VocabWord.class);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -26,7 +26,9 @@ public class DistributedFunction<T extends SequenceElement> implements Function<
 
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
-    public DistributedFunction(@NonNull Broadcast<VoidConfiguration> configurationBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VocabCache<ShallowSequenceElement>> shallowVocabBroadcast) {
+    public DistributedFunction(@NonNull Broadcast<VoidConfiguration> configurationBroadcast,
+                    @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast,
+                    @NonNull Broadcast<VocabCache<ShallowSequenceElement>> shallowVocabBroadcast) {
         this.configurationBroadcast = configurationBroadcast;
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
         this.shallowVocabBroadcast = shallowVocabBroadcast;

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,7 +42,7 @@ public class LineSentenceIterator extends BaseSentenceIterator {
         try {
             this.f = f;
             this.file = new BufferedInputStream(new FileInputStream(f));
-            iter = IOUtils.lineIterator(this.file,"UTF-8");
+            iter = IOUtils.lineIterator(this.file, "UTF-8");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -65,12 +65,12 @@ public class LineSentenceIterator extends BaseSentenceIterator {
     @Override
     public void reset() {
         try {
-            if(file != null)
+            if (file != null)
                 file.close();
-            if(iter != null)
+            if (iter != null)
                 iter.close();
             this.file = new BufferedInputStream(new FileInputStream(f));
-            iter = IOUtils.lineIterator(this.file,"UTF-8");
+            iter = IOUtils.lineIterator(this.file, "UTF-8");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

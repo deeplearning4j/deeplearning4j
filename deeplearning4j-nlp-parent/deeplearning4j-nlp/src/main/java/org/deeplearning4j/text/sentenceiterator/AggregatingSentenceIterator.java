@@ -27,12 +27,13 @@ public class AggregatingSentenceIterator implements SentenceIterator {
             position.incrementAndGet();
         }
 
-        return (preProcessor == null) ? backendIterators.get(position.get()).nextSentence() : preProcessor.preProcess(backendIterators.get(position.get()).nextSentence());
+        return (preProcessor == null) ? backendIterators.get(position.get()).nextSentence()
+                        : preProcessor.preProcess(backendIterators.get(position.get()).nextSentence());
     }
 
     @Override
     public boolean hasNext() {
-        for (SentenceIterator iterator: backendIterators) {
+        for (SentenceIterator iterator : backendIterators) {
             if (iterator.hasNext()) {
                 return true;
             }
@@ -42,7 +43,7 @@ public class AggregatingSentenceIterator implements SentenceIterator {
 
     @Override
     public void reset() {
-        for (SentenceIterator iterator: backendIterators) {
+        for (SentenceIterator iterator : backendIterators) {
             iterator.reset();
         }
         this.position.set(0);
@@ -50,7 +51,7 @@ public class AggregatingSentenceIterator implements SentenceIterator {
 
     @Override
     public void finish() {
-        for (SentenceIterator iterator: backendIterators) {
+        for (SentenceIterator iterator : backendIterators) {
             iterator.finish();
         }
     }
@@ -69,7 +70,7 @@ public class AggregatingSentenceIterator implements SentenceIterator {
         private List<SentenceIterator> backendIterators = new ArrayList<>();
         private SentencePreProcessor preProcessor;
 
-        public Builder () {
+        public Builder() {
 
         }
 

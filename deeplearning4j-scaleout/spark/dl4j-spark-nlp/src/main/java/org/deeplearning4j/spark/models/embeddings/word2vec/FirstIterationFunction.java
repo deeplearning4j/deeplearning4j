@@ -18,11 +18,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author jeffreytang
  * @author raver119@gmail.com
  */
-public class FirstIterationFunction
-        extends BaseFlatMapFunctionAdaptee< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray> > {
+public class FirstIterationFunction extends
+                BaseFlatMapFunctionAdaptee<Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray>> {
 
     public FirstIterationFunction(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
-                                  Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
+                    Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
         super(new FirstIterationFunctionAdapter(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast));
     }
 }

@@ -27,8 +27,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
 
     private Semaphore locker = new Semaphore(1);
 
-    protected SerializingListener() {
-    }
+    protected SerializingListener() {}
 
     /**
      * This method is called prior each processEvent call, to check if this specific VectorsListener implementation is viable for specific event
@@ -47,7 +46,8 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
 
             if (event == targetEvent && argument % targetFrequency == 0) {
                 return true;
-            } else return false;
+            } else
+                return false;
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -126,7 +126,8 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
          * @return
          */
         public Builder<T> setTargetFolder(@NonNull File folder) {
-            if (!folder.exists() || !folder.isDirectory()) throw new IllegalStateException("Target folder must exist!");
+            if (!folder.exists() || !folder.isDirectory())
+                throw new IllegalStateException("Target folder must exist!");
             this.targetFolder = folder;
             return this;
         }

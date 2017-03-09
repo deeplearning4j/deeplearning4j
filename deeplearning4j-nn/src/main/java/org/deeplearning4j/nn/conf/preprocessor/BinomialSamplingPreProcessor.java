@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,10 +29,11 @@ import org.nd4j.linalg.factory.Nd4j;
  * Binomial sampling pre processor
  * @author Adam Gibson
  */
-@Data  @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
-	@Override
+    @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
     }
@@ -40,12 +41,13 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output;	//No op?
+        return output; //No op?
     }
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        if(inputType == null) throw new IllegalStateException("Invalid input type: cannot be null");
+        if (inputType == null)
+            throw new IllegalStateException("Invalid input type: cannot be null");
         return inputType;
     }
 }
