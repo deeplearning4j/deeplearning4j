@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * @author raver119@gmail.com
@@ -203,11 +204,7 @@ public class LimitedContextPool extends BasicContextPool {
                     pool.get(deviceId).add(context);
                     acquired.remove(threadId);
                 } else {
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-                        // no-op
-                    }
+                    LockSupport.parkNanos(500000L);
                 }
             }
         }

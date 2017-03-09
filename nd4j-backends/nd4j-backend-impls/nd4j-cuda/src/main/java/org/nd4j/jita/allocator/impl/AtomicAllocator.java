@@ -621,14 +621,16 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            long ct = System.currentTimeMillis();
-                            if (Nd4j.getMemoryManager().isPeriodicGcActive())
+                            if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
+                                long ct = System.currentTimeMillis();
                                 if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
-
                                     Nd4j.getMemoryManager().invokeGc();
                                 } else {
                                     LockSupport.parkNanos(50000L);
                                 }
+                            } else {
+                                LockSupport.parkNanos(50000L);
+                            }
                         } else
                             LockSupport.parkNanos(500000L);
                     } catch (Exception e) {

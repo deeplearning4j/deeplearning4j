@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Since NativeRandom assumes some native resources, we have to track their use, and deallocate them as soon they are released by JVM GC
@@ -79,12 +80,7 @@ public class NativeRandomDeallocator {
                         NativeOpsHolder.getInstance().getDeviceNativeOps().destroyRandom(reference.getStatePointer());
                     }
                 } else {
-                    try {
-                        // state buffer size is very small, so we don't really care if we'll sleep for 5 seconds
-                        Thread.sleep(5000);
-                    } catch (Exception e) {
-                        //
-                    }
+                    LockSupport.parkNanos(5000000L);
                 }
             }
         }
