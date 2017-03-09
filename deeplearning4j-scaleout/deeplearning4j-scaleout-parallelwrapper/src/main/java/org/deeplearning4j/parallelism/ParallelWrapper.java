@@ -345,6 +345,11 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+                // if if we're using MQ here - we'd like
+                if (isMQ)
+                    Nd4j.getAffinityManager().attachThreadToDevice(zoo[cnt], cnt % Nd4j.getAffinityManager().getNumberOfDevices());
+
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -622,12 +627,13 @@ public class ParallelWrapper implements AutoCloseable {
 
             this.originalModel = model;
             //if (rootDevice != threadId) {
-                if (model instanceof MultiLayerNetwork) {
+                /*if (model instanceof MultiLayerNetwork) {
                     this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
                 } else if (model instanceof ComputationGraph) {
                     this.replicatedModel = ((ComputationGraph) model).clone();
                 }
+                */
             /*} else {
                 this.onRootModel = true;
                 this.replicatedModel = model;
@@ -761,6 +767,10 @@ public class ParallelWrapper implements AutoCloseable {
                     while (!shouldStop.get()) {
                         DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
+
+                            //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
+                            //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
+
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                             } else if (replicatedModel instanceof ComputationGraph) {
