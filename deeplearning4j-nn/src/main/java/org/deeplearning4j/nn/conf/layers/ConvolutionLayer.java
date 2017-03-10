@@ -233,14 +233,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected BaseConvBuilder() {}
 
         /**
-         * @deprecated Use {@link #convolutionMode}
-         */
-        @Deprecated
-        public T convolutionType(Convolution.Type convolutionType) {
-            return (T)this;
-        }
-
-        /**
          * Set the convolution mode for the Convolution layer.
          * See {@link ConvolutionMode} for more details
          *
