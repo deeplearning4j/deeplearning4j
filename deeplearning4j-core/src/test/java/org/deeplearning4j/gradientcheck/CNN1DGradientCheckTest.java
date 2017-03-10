@@ -56,17 +56,17 @@ public class CNN1DGradientCheckTest {
         int padding = 0;
         int pnorm = 2;
 
-        String[] activations = {"sigmoid","tanh"};
+        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
-        for(String afn : activations) {
+        for(Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, convNIn*length).reshape(minibatchSize, convNIn, length);
                     INDArray labels = Nd4j.zeros(minibatchSize, finalNOut*length).reshape(minibatchSize, finalNOut, length);
                     for (int i = 0; i < minibatchSize; i++) {
                         for (int j = 0; j < length; j++) {
-                            labels.putScalar(new int[]{i, i % convNOut, j}, 1.0);
+                            labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
                         }
                     }
 
@@ -83,6 +83,7 @@ public class CNN1DGradientCheckTest {
                                     .nIn(convNIn)
                                     .nOut(convNOut)
                                     .convolutionMode(ConvolutionMode.Same)
+                                    .activation(afn)
                                     .build())
 //                            .layer(1, new Subsampling1DLayer.Builder(poolingType)
 //                                    .kernelSize(kernel)
