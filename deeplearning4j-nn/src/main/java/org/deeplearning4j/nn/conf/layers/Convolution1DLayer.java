@@ -107,7 +107,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param kernelSize the length of the kernel
          */
         public Builder kernelSize(int kernelSize){
-            this.kernelSize[0] = kernelSize;
+            this.kernelSize = new int[]{kernelSize,1};
             return this;
         }
 
