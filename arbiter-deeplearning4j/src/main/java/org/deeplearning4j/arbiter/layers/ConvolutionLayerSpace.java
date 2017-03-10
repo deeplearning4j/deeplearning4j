@@ -39,8 +39,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLayer> {
-
-    protected ParameterSpace<Convolution.Type> convolutionType;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
     protected ParameterSpace<int[]> padding;
@@ -48,7 +46,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     private ConvolutionLayerSpace(Builder builder) {
         super(builder);
-        this.convolutionType = builder.convolutionType;
         this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
         this.padding = builder.padding;
@@ -76,7 +73,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (convolutionType != null) builder.convolutionType(convolutionType.getValue(values));
         if (kernelSize != null) builder.kernelSize(kernelSize.getValue(values));
         if (stride != null) builder.stride(stride.getValue(values));
         if (padding != null) builder.padding(padding.getValue(values));
@@ -91,7 +87,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("ConvolutionLayerSpace(");
-        if (convolutionType != null) sb.append("poolingType: ").append(convolutionType).append(delim);
         if (kernelSize != null) sb.append("kernelSize: ").append(kernelSize).append(delim);
         if (stride != null) sb.append("stride: ").append(stride).append(delim);
         if (padding != null) sb.append("padding: ").append(padding).append(delim);
@@ -102,22 +97,10 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
 
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
-
-        protected ParameterSpace<Convolution.Type> convolutionType;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
         protected ParameterSpace<int[]> padding;
         protected ParameterSpace<ConvolutionMode> convolutionMode;
-
-        public Builder convolutionType(Convolution.Type convolutionType) {
-            return convolutionType(new FixedValue<>(convolutionType));
-        }
-
-        @Deprecated
-        public Builder convolutionType(ParameterSpace<Convolution.Type> convolutionType) {
-            this.convolutionType = convolutionType;
-            return this;
-        }
 
         public Builder kernelSize(int... kernelSize) {
             return kernelSize(new FixedValue<>(kernelSize));
