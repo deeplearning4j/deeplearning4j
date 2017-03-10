@@ -59,6 +59,11 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
+    protected INDArray preOutput4d(boolean training){
+        return super.preOutput(true);
+    }
+
+    @Override
     public INDArray preOutput(boolean training) {
         // This is a bit of a hack due to the fact that we cache the layer input
         // and calls to backpropGradient (which also reshape the input) result
