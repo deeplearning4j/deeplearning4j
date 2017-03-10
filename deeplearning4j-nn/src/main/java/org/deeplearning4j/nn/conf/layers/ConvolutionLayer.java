@@ -36,14 +36,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
     /**
-    * ConvolutionLayer
-    * nIn in the input layer is the number of channels
-    * nOut is the number of filters to be used in the net or in other words the depth
-    * The builder specifies the filter/kernel size, the stride and padding
-    * The pooling layer takes the kernel size
-    */
+     * ConvolutionLayer
+     * nIn in the input layer is the number of channels
+     * nOut is the number of filters to be used in the net or in other words the depth
+     * The builder specifies the filter/kernel size, the stride and padding
+     * The pooling layer takes the kernel size
+     */
     protected ConvolutionLayer(BaseConvBuilder<?> builder) {
-    	super(builder);
+        super(builder);
         this.convolutionMode = builder.convolutionMode;
         if(builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");

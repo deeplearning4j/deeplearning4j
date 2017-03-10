@@ -50,7 +50,8 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
             BufferedReader reader = new BufferedReader(new FileReader(fileToRead));
             StringBuilder builder = new StringBuilder();
             String line = "";
-            while ((line = reader.readLine()) != null) builder.append(line);
+            while ((line = reader.readLine()) != null)
+                builder.append(line);
 
             document.setContent(builder.toString());
             document.addLabel(label);
@@ -127,10 +128,11 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
 
         private void scanFolder(File folderToScan) {
             File[] files = folderToScan.listFiles();
-            if (files == null || files.length ==0 ) return;
+            if (files == null || files.length == 0)
+                return;
 
 
-            for (File fileLabel: files) {
+            for (File fileLabel : files) {
                 if (fileLabel.isDirectory()) {
                     scanFolder(fileLabel);
                 } else {
@@ -143,8 +145,9 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
             // search for all files in all folders provided
 
 
-            for (File file: foldersToScan) {
-                if (!file.isDirectory()) continue;
+            for (File file : foldersToScan) {
+                if (!file.isDirectory())
+                    continue;
                 scanFolder(file);
             }
 

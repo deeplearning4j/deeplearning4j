@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public class IEvaluationReduceFunction<T extends IEvaluation> implements Function2<T, T, T> {
-    public IEvaluationReduceFunction(){}
+    public IEvaluationReduceFunction() {}
 
     @Override
     public T call(T eval1, T eval2) throws Exception {

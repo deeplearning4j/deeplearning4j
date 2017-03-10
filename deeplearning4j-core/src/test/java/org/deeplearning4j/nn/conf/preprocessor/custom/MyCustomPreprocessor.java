@@ -34,7 +34,8 @@ public class MyCustomPreprocessor implements InputPreProcessor {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         throw new UnsupportedOperationException();
     }
 }

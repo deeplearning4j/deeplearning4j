@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,8 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
         return outputPaths.iterator();
     }
 
-    private Pair<Integer, List<String>> processList(LinkedList<DataSet> tempList, int partitionIdx, int countBefore, boolean finalExport) throws Exception {
+    private Pair<Integer, List<String>> processList(LinkedList<DataSet> tempList, int partitionIdx, int countBefore,
+                    boolean finalExport) throws Exception {
         //Go through the list. If we have enough examples: remove the DataSet objects, merge and export them. Otherwise: do nothing
         int numExamples = 0;
         for (DataSet ds : tempList) {
@@ -133,7 +134,9 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
     private String export(DataSet dataSet, int partitionIdx, int outputCount) throws Exception {
         String filename = "dataset_" + partitionIdx + jvmuid + "_" + outputCount + ".bin";
 
-        URI uri = new URI(exportBaseDirectory + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/") + filename);
+        URI uri = new URI(exportBaseDirectory
+                        + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/")
+                        + filename);
         FileSystem file = FileSystem.get(uri, conf);
         try (FSDataOutputStream out = file.create(new Path(uri))) {
             dataSet.save(out);

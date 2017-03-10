@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -96,7 +96,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double adamMeanDecay;
     protected double adamVarDecay;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
-    protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
+    protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
 
     public Layer(Builder builder) {
@@ -157,18 +157,21 @@ public abstract class Layer implements Serializable, Cloneable {
     public Layer clone() {
         try {
             Layer clone = (Layer) super.clone();
-            if (clone.dist != null) clone.dist = clone.dist.clone();
+            if (clone.dist != null)
+                clone.dist = clone.dist.clone();
             if (clone.learningRateSchedule != null)
                 clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
-            if (clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
+            if (clone.momentumSchedule != null)
+                clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
-                                                                INDArray layerParamsView, boolean initializeParams);
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams);
 
     public abstract ParamInitializer initializer();
 
@@ -241,7 +244,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             Updater for the parameter
      */
-    public Updater getUpdaterByParam(String paramName){
+    public Updater getUpdaterByParam(String paramName) {
         return updater;
     }
 
@@ -373,7 +376,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
-        public T l1Bias(double l1Bias){
+        public T l1Bias(double l1Bias) {
             this.l1Bias = l1Bias;
             return (T) this;
         }
@@ -381,7 +384,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
          */
-        public T l2Bias(double l2Bias){
+        public T l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
             return (T) this;
         }
@@ -445,9 +448,9 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param epsilon    Epsilon value to use for adagrad and adadelta
          */
-        public T epsilon(double epsilon){
+        public T epsilon(double epsilon) {
             this.epsilon = epsilon;
-            return (T)this;
+            return (T) this;
         }
 
         /**

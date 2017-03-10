@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -51,7 +51,8 @@ public class PreprocessorVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof PreprocessorVertex)) return false;
+        if (!(o instanceof PreprocessorVertex))
+            return false;
         return ((PreprocessorVertex) o).preProcessor.equals(preProcessor);
     }
 
@@ -61,20 +62,20 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.PreprocessorVertex(graph, name, idx, preProcessor);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if (vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects "
-                + "exactly one input");
+        if (vertexInputs.length != 1)
+            throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects " + "exactly one input");
 
         return preProcessor.getOutputType(vertexInputs[0]);
     }

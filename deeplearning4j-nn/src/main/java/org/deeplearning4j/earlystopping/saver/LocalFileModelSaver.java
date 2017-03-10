@@ -40,21 +40,21 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
      * @param directory Directory to save networks
      * @param encoding Character encoding for configuration (json)
      */
-    public LocalFileModelSaver(String directory, Charset encoding){
+    public LocalFileModelSaver(String directory, Charset encoding) {
         this.directory = directory;
         this.encoding = encoding;
     }
 
     @Override
     public void saveBestModel(MultiLayerNetwork net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileName);
-        save(net,confOut);
+        String confOut = FilenameUtils.concat(directory, bestFileName);
+        save(net, confOut);
     }
 
     @Override
     public void saveLatestModel(MultiLayerNetwork net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,latestFileName);
-        save(net,confOut);
+        String confOut = FilenameUtils.concat(directory, latestFileName);
+        save(net, confOut);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
         return load(confOut);
     }
 
-    private void save(MultiLayerNetwork net, String modelName) throws IOException{
+    private void save(MultiLayerNetwork net, String modelName) throws IOException {
         ModelSerializer.writeModel(net, modelName, true);
     }
 
@@ -79,7 +79,7 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LocalFileModelSaver(dir=" + directory + ")";
     }
 }

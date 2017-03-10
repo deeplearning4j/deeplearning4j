@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -189,9 +189,8 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         // Header Row
         builder.append("<table>\n");
         builder.append("<tr><th class=\"empty-space\" colspan=\"2\" rowspan=\"2\">");
-        builder.append(String.format(
-                "<th class=\"predicted-class-header\" colspan=\"%d\">Predicted Class</th></tr>%n",
-                numClasses + 1));
+        builder.append(String.format("<th class=\"predicted-class-header\" colspan=\"%d\">Predicted Class</th></tr>%n",
+                        numClasses + 1));
 
         // Predicted Classes Header Row
         builder.append("<tr>");
@@ -206,8 +205,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
 
         // Data Rows
         String firstColumnLabel = String.format(
-                "<tr><th class=\"actual-class-header\" rowspan=\"%d\">Actual Class</th>",
-                numClasses + 1);
+                        "<tr><th class=\"actual-class-header\" rowspan=\"%d\">Actual Class</th>", numClasses + 1);
         for (T actual : classes) {
             builder.append(firstColumnLabel);
             firstColumnLabel = "<tr>";
@@ -241,17 +239,18 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
     }
 
     @Override
-    public boolean equals(Object o){
-        if( !(o instanceof ConfusionMatrix) ) return false;
-        ConfusionMatrix<?> c = (ConfusionMatrix<?>)o;
+    public boolean equals(Object o) {
+        if (!(o instanceof ConfusionMatrix))
+            return false;
+        ConfusionMatrix<?> c = (ConfusionMatrix<?>) o;
         return matrix.equals(c.matrix) && classes.equals(c.classes);
     }
 
     @Override
     public int hashCode() {
         int result = 17;
-        result = 31 * result + (matrix == null? 0 : matrix.hashCode());
-        result = 31 * result + (classes == null? 0 : classes.hashCode());
+        result = 31 * result + (matrix == null ? 0 : matrix.hashCode());
+        result = 31 * result + (classes == null ? 0 : classes.hashCode());
         return result;
     }
 

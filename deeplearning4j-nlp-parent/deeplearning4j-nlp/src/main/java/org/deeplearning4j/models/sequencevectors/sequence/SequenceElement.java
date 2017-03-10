@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
 import lombok.NonNull;
+import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -37,7 +38,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected short codeLength = 0;
 
     // this var defines, if this token can't be truncated with minWordFrequency threshold
-    @Getter @Setter protected boolean special;
+    @Getter
+    @Setter
+    protected boolean special;
 
     // this var defines that we have label here
     protected boolean isLabel;
@@ -47,12 +50,15 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
 
     // this var is used as state for preciseWeightInit routine, to avoid multiple initializations for the same data
-    @Getter @Setter protected boolean init;
+    @Getter
+    @Setter
+    protected boolean init;
 
     /*
             Reserved for Joint/Distributed vocabs mechanics
     */
-    @Setter protected Long storageId;
+    @Setter
+    protected Long storageId;
 
     /**
      * This method should return string representation of this SequenceElement, so it can be used for
@@ -152,13 +158,16 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @param object
      * @return
      */
-     public boolean equals(Object object) {
-         if (this == object) return true;
-         if (object == null) return false;
-         if (!(object instanceof SequenceElement)) return false;
+    public boolean equals(Object object) {
+        if (this == object)
+            return true;
+        if (object == null)
+            return false;
+        if (!(object instanceof SequenceElement))
+            return false;
 
-         return this.getLabel().equals(((SequenceElement) object).getLabel());
-     }
+        return this.getLabel().equals(((SequenceElement) object).getLabel());
+    }
 
     /**
      *  Returns index in Huffman tree
@@ -243,24 +252,20 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      */
     public void setCodeLength(short codeLength) {
         this.codeLength = codeLength;
-        if(codes.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                codes.add((byte)0);
+        if (codes.size() < codeLength) {
+            for (int i = 0; i < codeLength; i++)
+                codes.add((byte) 0);
         }
 
-        if(points.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
+        if (points.size() < codeLength) {
+            for (int i = 0; i < codeLength; i++)
                 points.add(0);
         }
     }
 
+
     public static final long getLongHash(@NonNull String string) {
-        long p = 2045584067;
-        int l = string.length();
-        for (int e = 0; e < l; e++) {
-            p = 31 * p + string.charAt(e);
-        }
-        return p;
+        return HashUtil.getLongHash(string);
     }
 
     /**
@@ -275,7 +280,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), lr);
-
+        
         return adaGrad.getGradient(g, index, new int[]{1, getCodeLength()});
         */
         return 0.0;
@@ -286,7 +291,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
-
+        
         adaGrad.setHistoricalGradient(gradient);
         */
     }
@@ -307,7 +312,8 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return hashCode for this SequenceElement
      */
     public int hashCode() {
-        if (this.getLabel() == null) throw new IllegalStateException("Label should not be null");
+        if (this.getLabel() == null)
+            throw new IllegalStateException("Label should not be null");
         return this.getLabel().hashCode();
     }
 
@@ -318,11 +324,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
     @Override
     public String toString() {
-        return "SequenceElement: {label: '"+ this.getLabel() +"'," +
-                                                                  " freq: '"+ elementFrequency.get()+"'," +
-                                                                   " codes: " + codes.toString() +
-                                                                    " points: " + points.toString() +
-                                                                    " index: '"+this.index+"'}";
+        return "SequenceElement: {label: '" + this.getLabel() + "'," + " freq: '" + elementFrequency.get() + "',"
+                        + " codes: " + codes.toString() + " points: " + points.toString() + " index: '" + this.index
+                        + "'}";
     }
 
     /**

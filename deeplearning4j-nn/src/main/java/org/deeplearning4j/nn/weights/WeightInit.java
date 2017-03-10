@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -45,7 +45,5 @@ package org.deeplearning4j.nn.weights;
  * @author Adam Gibson
  */
 public enum WeightInit {
-    DISTRIBUTION, ZERO,
-    SIGMOID_UNIFORM, UNIFORM,
-    XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM
+    DISTRIBUTION, ZERO, SIGMOID_UNIFORM, UNIFORM, XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM
 }

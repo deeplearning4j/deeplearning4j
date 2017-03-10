@@ -28,8 +28,8 @@ public class KerasFlatten extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasFlatten(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasFlatten(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -41,8 +41,8 @@ public class KerasFlatten extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasFlatten(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasFlatten(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
     }
 
@@ -52,7 +52,9 @@ public class KerasFlatten extends KerasLayer {
      * @return      true
      */
     @Override
-    public boolean isInputPreProcessor() { return true; }
+    public boolean isInputPreProcessor() {
+        return true;
+    }
 
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.
@@ -65,17 +67,19 @@ public class KerasFlatten extends KerasLayer {
     @Override
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputTypeConvolutional) {
-            InputTypeConvolutional it = (InputTypeConvolutional)inputType[0];
+            InputTypeConvolutional it = (InputTypeConvolutional) inputType[0];
             switch (this.getDimOrder()) {
                 case NONE:
                 case THEANO:
                     preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getDepth());
                     break;
                 case TENSORFLOW:
-                    preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getDepth());
+                    preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(),
+                                    it.getDepth());
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
@@ -96,7 +100,8 @@ public class KerasFlatten extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
         return getInputPreprocessor(inputType).getOutputType(inputType[0]);
     }
 }

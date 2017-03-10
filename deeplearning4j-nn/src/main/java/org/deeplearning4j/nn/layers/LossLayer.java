@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -47,7 +47,7 @@ import java.util.List;
  * @author Justin Long (crockpotveggies)
  */
 public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
-    implements Serializable, IOutputLayer {
+                implements Serializable, IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -73,8 +73,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return score (loss function)
      */
     @Override
-    public double computeScore( double fullNetworkL1, double fullNetworkL2, boolean training) {
-        if( input == null || labels == null )
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+        if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
@@ -83,7 +83,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         ILossFunction lossFunction = layerConf().getLossFn();
 
         //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
+        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
+                        false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
 
@@ -99,15 +100,16 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2){
-        if( input == null || labels == null )
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+        if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels");
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
+        INDArray scoreArray =
+                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
-        if(l1l2 != 0.0){
+        if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
         return scoreArray;
@@ -115,14 +117,14 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public void computeGradientAndScore() {
-        if(input == null || labels == null)
+        if (input == null || labels == null)
             return;
 
         INDArray preOut = input;
-        Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOut);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1,fullNetworkL2,true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true);
     }
 
     @Override
@@ -132,20 +134,20 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(),score());
+        return new Pair<>(gradient(), score());
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return getGradientsAndDelta(input);
     }
 
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFn(), maskArray);
+        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -163,7 +165,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {return 0; }
+    public double calcL2(boolean backpropParamsOnly) {
+        return 0;
+    }
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
@@ -185,9 +189,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         INDArray z = input;
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
         //    conf.getLayer().getActivationFunction(), z.dup(), conf.getExtraArgs() ));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(z.dup(),training);
+        INDArray ret = conf.getLayer().getActivationFn().getActivation(z.dup(), training);
 
-        if(maskArray != null){
+        if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }
 
@@ -211,7 +215,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return output(false);
     }
 
-    public  INDArray output(INDArray input, boolean training) {
+    public INDArray output(INDArray input, boolean training) {
         setInput(input);
         return output(training);
     }
@@ -231,13 +235,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return a probability distribution for each row
      */
     public INDArray output(boolean training) {
-        if(input == null)
+        if (input == null)
             throw new IllegalArgumentException("No null input allowed");
         return activate(training);
     }
 
     @Override
-    public Layer transpose(){
+    public Layer transpose() {
         throw new UnsupportedOperationException("Not applicable");
     }
 
@@ -258,10 +262,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public INDArray params(){
+    public INDArray params() {
         return null;
     }
-
 
 
 
@@ -290,8 +293,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
-        eval.eval(labels,labelProbabilities(examples));
-        return  eval.f1();
+        eval.eval(labels, labelProbabilities(examples));
+        return eval.f1();
     }
 
     /**
@@ -318,7 +321,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public int[] predict(INDArray input) {
         INDArray output = output(input);
         int[] ret = new int[input.rows()];
-        for(int i = 0; i < ret.length; i++)
+        for (int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
         return ret;
     }
@@ -333,8 +336,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public List<String> predict(DataSet dataSet) {
         int[] intRet = predict(dataSet.getFeatures());
         List<String> ret = new ArrayList<>();
-        for(int i: intRet) {
-            ret.add(i,dataSet.getLabelName(i));
+        for (int i : intRet) {
+            ret.add(i, dataSet.getLabelName(i));
         }
         return ret;
     }
@@ -362,15 +365,14 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         setInput(input);
         setLabels(labels);
         applyDropOutIfNecessary(true);
-        if( solver == null ){
-            solver = new Solver.Builder()
-                .configure(conf())
-                .listeners(getListeners())
-                .model(this).build();
+        if (solver == null) {
+            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
             int updaterStateSize = updater.stateSizeForLayer(this);
-            if(updaterStateSize > 0) updater.setStateViewArray(this, Nd4j.createUninitialized(new int[]{1,updaterStateSize},Nd4j.order()), true);
+            if (updaterStateSize > 0)
+                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
+                                true);
         }
         solver.optimize();
     }
@@ -394,14 +396,14 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public void fit(INDArray examples, int[] labels) {
         INDArray outcomeMatrix = FeatureUtil.toOutcomeMatrix(labels, numLabels());
-        fit(examples,outcomeMatrix);
+        fit(examples, outcomeMatrix);
 
     }
 
     @Override
     public void clear() {
         super.clear();
-        if(labels != null) {
+        if (labels != null) {
             labels.data().destroy();
             labels = null;
         }
@@ -422,9 +424,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         this.labels = labels;
     }
 
-    protected INDArray getLabels2d(){
-        if(labels.rank() > 2) {
-            return labels.reshape(labels.size(2),labels.size(1));
+    protected INDArray getLabels2d() {
+        if (labels.rank() > 2) {
+            return labels.reshape(labels.size(2), labels.size(1));
         }
         return labels;
     }

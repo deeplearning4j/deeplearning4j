@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,7 +32,7 @@ public class EndingPreProcessorTest {
     public void testPreProcessor() {
         TokenPreProcess preProcess = new EndingPreProcessor();
         String endingTest = "ending";
-        assertEquals("end",preProcess.preProcess(endingTest));
+        assertEquals("end", preProcess.preProcess(endingTest));
 
     }
 

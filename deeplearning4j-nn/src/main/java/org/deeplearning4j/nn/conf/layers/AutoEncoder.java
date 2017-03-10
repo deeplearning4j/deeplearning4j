@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,8 @@ import java.util.Map;
  * a reconstruction function.
  *
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class AutoEncoder extends BasePretrainNetwork {
@@ -44,15 +45,16 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     // Builder
     private AutoEncoder(Builder builder) {
-    	super(builder);
+        super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder ret
-                = new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder ret =
+                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -77,15 +79,15 @@ public class AutoEncoder extends BasePretrainNetwork {
         public Builder(double corruptionLevel) {
             this.corruptionLevel = corruptionLevel;
         }
-        
-        public Builder corruptionLevel(double corruptionLevel){
-        	this.corruptionLevel = corruptionLevel;
-        	return this;
+
+        public Builder corruptionLevel(double corruptionLevel) {
+            this.corruptionLevel = corruptionLevel;
+            return this;
         }
-        
-        public Builder sparsity(double sparsity){
-        	this.sparsity = sparsity;
-        	return this;
+
+        public Builder sparsity(double sparsity) {
+            this.sparsity = sparsity;
+            return this;
         }
 
         @Override

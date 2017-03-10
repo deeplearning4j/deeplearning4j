@@ -6,11 +6,5 @@ package org.deeplearning4j.ui.api;
  * @author Alex Black
  */
 public enum HttpMethod {
-    GET,
-    PUT,
-    POST,
-    DELETE,
-    HEAD,
-    OPTIONS,
-    PATCH
+    GET, PUT, POST, DELETE, HEAD, OPTIONS, PATCH
 }

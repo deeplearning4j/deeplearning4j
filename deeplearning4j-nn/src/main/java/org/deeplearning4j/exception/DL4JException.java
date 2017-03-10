@@ -7,8 +7,7 @@ package org.deeplearning4j.exception;
  */
 public class DL4JException extends RuntimeException {
 
-    public DL4JException() {
-    }
+    public DL4JException() {}
 
     public DL4JException(String message) {
         super(message);

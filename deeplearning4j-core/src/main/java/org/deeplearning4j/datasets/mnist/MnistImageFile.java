@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -43,7 +43,7 @@ public class MnistImageFile extends MnistDbFile {
      * @throws IOException
      * @throws FileNotFoundException
      */
-    public MnistImageFile(String name, String mode) throws  IOException {
+    public MnistImageFile(String name, String mode) throws IOException {
         super(name, mode);
 
         // read header information
@@ -72,10 +72,10 @@ public class MnistImageFile extends MnistDbFile {
      * (i.e., same bits, but requires conversion before use)
      * @param nImages Number of images
      */
-    public byte[][] readImagesUnsafe(int nImages) throws IOException{
+    public byte[][] readImagesUnsafe(int nImages) throws IOException {
         byte[][] out = new byte[nImages][0];
-        for( int i=0; i<nImages; i++){
-            out[i] = new byte[rows*cols];
+        for (int i = 0; i < nImages; i++) {
+            out[i] = new byte[rows * cols];
             read(out[i]);
         }
         return out;

@@ -37,34 +37,28 @@ public class LRNGradientCheckTests {
 
 
     @Test
-    public void testGradientLRNSimple(){
+    public void testGradientLRNSimple() {
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;
         int depth = 6;
         int hw = 5;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
-        for( int i=0; i<minibatch; i++ ){
-            labels.putScalar(i,r.nextInt(nOut),1.0);
+        for (int i = 0; i < minibatch; i++) {
+            labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .learningRate(1.0)
-                .regularization(false)
-                .updater(Updater.NONE)
-                .seed(12345L)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2,2).stride(1,1).activation(Activation.TANH).build())
-                .layer(1, new LocalResponseNormalization.Builder().build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nOut(nOut)
-                        .build())
-                .setInputType(InputType.convolutional(hw,hw,depth))
-                .pretrain(false).backprop(true);
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new LocalResponseNormalization.Builder().build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(nOut).build())
+                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -74,8 +68,8 @@ public class LRNGradientCheckTests {
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
     }

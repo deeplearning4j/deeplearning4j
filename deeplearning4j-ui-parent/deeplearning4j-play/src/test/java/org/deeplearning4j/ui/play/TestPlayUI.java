@@ -40,39 +40,37 @@ public class TestPlayUI {
         StatsStorage ss = new InMemoryStatsStorage();
 
         PlayUIServer uiServer = (PlayUIServer) UIServer.getInstance();
-        assertEquals(9000,uiServer.getPort());
+        assertEquals(9000, uiServer.getPort());
         uiServer.stop();
         PlayUIServer playUIServer = new PlayUIServer();
-        playUIServer.runMain(new String[]{
-                "--uiPort","9100","-r","true"
-        });
+        playUIServer.runMain(new String[] {"--uiPort", "9100", "-r", "true"});
 
-        assertEquals(9100,playUIServer.getPort());
+        assertEquals(9100, playUIServer.getPort());
         playUIServer.stop();
 
 
-//        uiServer.attach(ss);
-//
-//        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-//                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-//                .list()
-//                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-//                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-//                .pretrain(false).backprop(true).build();
-//
-//        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-//        net.init();
-//        net.setListeners(new StatsListener(ss, 3), new ScoreIterationListener(1));
-//
-//        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-//
-//        for (int i = 0; i < 500; i++) {
-//            net.fit(iter);
-////            Thread.sleep(100);
-//            Thread.sleep(100);
-//        }
-//
-////        uiServer.stop();
+        //        uiServer.attach(ss);
+        //
+        //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+        //                .list()
+        //                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+        //                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+        //                .pretrain(false).backprop(true).build();
+        //
+        //        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        //        net.init();
+        //        net.setListeners(new StatsListener(ss, 3), new ScoreIterationListener(1));
+        //
+        //        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        //
+        //        for (int i = 0; i < 500; i++) {
+        //            net.fit(iter);
+        ////            Thread.sleep(100);
+        //            Thread.sleep(100);
+        //        }
+        //
+        ////        uiServer.stop();
 
         Thread.sleep(100000);
     }
@@ -88,31 +86,22 @@ public class TestPlayUI {
         uiServer.attach(ss);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .learningRate(1e-5)
-                .list()
-                .layer(0, new VariationalAutoencoder.Builder()
-                        .nIn(4).nOut(3)
-                        .encoderLayerSizes(10,11)
-                        .decoderLayerSizes(12,13)
-                        .weightInit(WeightInit.XAVIER)
-                        .pzxActivationFunction("identity")
-                        .reconstructionDistribution(new GaussianReconstructionDistribution())
-                        .activation(Activation.LEAKYRELU)
-                        .updater(Updater.SGD)
-                        .build())
-                .layer(1, new VariationalAutoencoder.Builder()
-                        .nIn(3).nOut(3)
-                        .encoderLayerSizes(7)
-                        .decoderLayerSizes(8)
-                        .weightInit(WeightInit.XAVIER)
-                        .pzxActivationFunction("identity")
-                        .reconstructionDistribution(new GaussianReconstructionDistribution())
-                        .activation(Activation.LEAKYRELU)
-                        .updater(Updater.SGD)
-                        .build())
-                .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
-                .pretrain(true).backprop(true).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .learningRate(1e-5)
+                        .list().layer(0,
+                                        new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(10, 11)
+                                                        .decoderLayerSizes(12, 13).weightInit(WeightInit.XAVIER)
+                                                        .pzxActivationFunction("identity")
+                                                        .reconstructionDistribution(
+                                                                        new GaussianReconstructionDistribution())
+                                                        .activation(Activation.LEAKYRELU).updater(Updater.SGD).build())
+                        .layer(1, new VariationalAutoencoder.Builder().nIn(3).nOut(3).encoderLayerSizes(7)
+                                        .decoderLayerSizes(8).weightInit(WeightInit.XAVIER)
+                                        .pzxActivationFunction("identity")
+                                        .reconstructionDistribution(new GaussianReconstructionDistribution())
+                                        .activation(Activation.LEAKYRELU).updater(Updater.SGD).build())
+                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -140,13 +129,11 @@ public class TestPlayUI {
         uiServer.attach(ss);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .learningRate(1e-5)
-                .list()
-                .layer(0, new RBM.Builder().nIn(4).nOut(3).build())
-                .layer(1, new RBM.Builder().nIn(3).nOut(3).build())
-                .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
-                .pretrain(true).backprop(true).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .learningRate(1e-5).list().layer(0, new RBM.Builder().nIn(4).nOut(3).build())
+                        .layer(1, new RBM.Builder().nIn(3).nOut(3).build())
+                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -176,11 +163,11 @@ public class TestPlayUI {
             uiServer.attach(ss);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                    .list()
-                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-                    .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                    .pretrain(false).backprop(true).build();
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                            .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                            .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                            .pretrain(false).backprop(true).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -207,14 +194,12 @@ public class TestPlayUI {
         UIServer uiServer = UIServer.getInstance();
         uiServer.attach(ss);
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("L0", new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build(), "in")
-                .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build(), "L0")
-                .pretrain(false).backprop(true)
-                .setOutputs("L1")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .addLayer("L0", new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build(),
+                                        "in")
+                        .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(4).nOut(3).build(), "L0")
+                        .pretrain(false).backprop(true).setOutputs("L1").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();

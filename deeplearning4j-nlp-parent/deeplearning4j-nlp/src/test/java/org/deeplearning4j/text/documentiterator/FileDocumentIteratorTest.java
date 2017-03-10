@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 @Ignore
 public class FileDocumentIteratorTest {
 
-    private static final Logger log  = LoggerFactory.getLogger(FileDocumentIteratorTest.class);
+    private static final Logger log = LoggerFactory.getLogger(FileDocumentIteratorTest.class);
 
     @Before
     public void setUp() throws Exception {

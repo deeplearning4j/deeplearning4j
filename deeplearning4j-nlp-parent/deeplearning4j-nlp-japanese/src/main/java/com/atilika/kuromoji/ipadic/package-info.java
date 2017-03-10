@@ -1,4 +1,4 @@
-/**
+/*-*
  * A Japanese morphological analyzer based on the IPADIC dictionary.
  * <p>
  * This dictionary provides a basic set of features and suits many tasks.

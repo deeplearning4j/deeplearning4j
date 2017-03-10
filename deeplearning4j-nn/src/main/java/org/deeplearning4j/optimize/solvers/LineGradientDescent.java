@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,13 +34,16 @@ import java.util.Collection;
  *
  */
 public class LineGradientDescent extends BaseOptimizer {
-	private static final long serialVersionUID = 6336124657542062284L;
+    private static final long serialVersionUID = 6336124657542062284L;
 
-	public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners,
+                    Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
@@ -53,11 +56,11 @@ public class LineGradientDescent extends BaseOptimizer {
     @Override
     public void postStep(INDArray gradient) {
         double norm2 = Nd4j.getBlasWrapper().level1().nrm2(gradient);
-        if(norm2 > stepMax)
-            searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2));
+        if (norm2 > stepMax)
+            searchState.put(SEARCH_DIR, gradient.dup().muli(stepMax / norm2));
         else
             searchState.put(SEARCH_DIR, gradient.dup());
-        searchState.put(GRADIENT_KEY,gradient.dup());
+        searchState.put(GRADIENT_KEY, gradient.dup());
     }
 
 }

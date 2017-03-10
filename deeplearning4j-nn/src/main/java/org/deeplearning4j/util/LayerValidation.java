@@ -16,11 +16,12 @@ public class LayerValidation {
      * @param nIn           nIn value
      * @param nOut          nOut value
      */
-    public static void assertNInNOutSet(String layerType, String layerName, int layerIndex, int nIn, int nOut){
+    public static void assertNInNOutSet(String layerType, String layerName, int layerIndex, int nIn, int nOut) {
         if (nIn <= 0 || nOut <= 0) {
-            if(layerName == null) layerName = "(name not set)";
-            throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName +
-                    ") nIn=" + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
+            if (layerName == null)
+                layerName = "(name not set)";
+            throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nIn="
+                            + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
         }
     }
 }

@@ -25,7 +25,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -114,7 +113,9 @@ public class ParallelWrapper implements AutoCloseable {
     /**
      * Will stop a fit operation from continuing to iterate.
      */
-    public void stopFit() { stopFit.set(true); }
+    public void stopFit() {
+        stopFit.set(true);
+    }
 
     /**
      *
@@ -126,7 +127,7 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = new Trainer(cnt, model, true);
+                zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(), true);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -140,7 +141,8 @@ public class ParallelWrapper implements AutoCloseable {
         MultiDataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
             iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
-        } else iterator = source;
+        } else
+            iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
 
@@ -162,13 +164,15 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers || !iterator.hasNext()) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                     try {
                         zoo[cnt].waitTillRunning();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
 
                 /*
                     average model, and propagate it to whole
@@ -179,9 +183,10 @@ public class ParallelWrapper implements AutoCloseable {
                     // averaging updaters state
                     if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
-                    } else throw new RuntimeException("MultiDataSet must only be used with ComputationGraph model");
+                    } else
+                        throw new RuntimeException("MultiDataSet must only be used with ComputationGraph model");
 
-                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
+                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }
@@ -192,12 +197,12 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         // sanity checks, or the dataset may never average
-        if(!wasAveraged)
+        if (!wasAveraged)
             log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
-//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+        //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         log.debug("Iterations passed: {}", iterationsCounter.get());
-//        iterationsCounter.set(0);
+        //        iterationsCounter.set(0);
     }
 
     private double getScore(AtomicInteger locker) {
@@ -280,7 +285,7 @@ public class ParallelWrapper implements AutoCloseable {
      *
      * @param listeners    Listeners to set
      */
-    public void setListeners(@NonNull IterationListener... listeners){
+    public void setListeners(@NonNull IterationListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
 
@@ -305,15 +310,17 @@ public class ParallelWrapper implements AutoCloseable {
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
-        if(listeners != null) {
-            for(IterationListener l : listeners) {
-                if(l instanceof RoutingIterationListener) {
+        if (listeners != null) {
+            for (IterationListener l : listeners) {
+                if (l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
-                    if(rl.getStorageRouter() == null) {
-                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
-                    } else if(!(rl.getStorageRouter() instanceof Serializable)) {
+                    if (rl.getStorageRouter() == null) {
+                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
+                                        l);
+                    } else if (!(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
-                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
+                        throw new IllegalStateException(
+                                        "RoutingIterationListener provided with non-serializable storage router");
                     }
 
                 }
@@ -337,7 +344,12 @@ public class ParallelWrapper implements AutoCloseable {
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
-                zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+                // if if we're using MQ here - we'd like
+                if (isMQ)
+                    Nd4j.getAffinityManager().attachThreadToDevice(zoo[cnt], cnt % Nd4j.getAffinityManager().getNumberOfDevices());
+
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -348,12 +360,16 @@ public class ParallelWrapper implements AutoCloseable {
         if (prefetchSize > 0 && source.asyncSupported()) {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
-                    log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers, Nd4j.getAffinityManager().getNumberOfDevices());
+                    log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
+                                    Nd4j.getAffinityManager().getNumberOfDevices());
 
-                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL).setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL)
+                                .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
                 iterator = new AsyncDataSetIterator(source, prefetchSize, queue);
-            } else iterator = new AsyncDataSetIterator(source, prefetchSize);
-        } else iterator = source;
+            } else
+                iterator = new AsyncDataSetIterator(source, prefetchSize);
+        } else
+            iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
         int whiles = 0;
@@ -368,7 +384,9 @@ public class ParallelWrapper implements AutoCloseable {
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
-            if(zoo == null) throw new IllegalStateException("ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+            if (zoo == null)
+                throw new IllegalStateException(
+                                "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
             zoo[pos].feedDataSet(dataSet);
 
             /*
@@ -377,13 +395,15 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers || !iterator.hasNext()) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                     try {
                         zoo[cnt].waitTillRunning();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
 
                 /*
                     average model, and propagate it to whole
@@ -425,7 +445,7 @@ public class ParallelWrapper implements AutoCloseable {
                         averageUpdatersState(locker, score);
                     }
 
-                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
+                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }
@@ -436,12 +456,12 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         // sanity checks, or the dataset may never average
-        if(!wasAveraged)
+        if (!wasAveraged)
             log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
-//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+        //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         log.debug("Iterations passed: {}", iterationsCounter.get());
-//        iterationsCounter.set(0);
+        //        iterationsCounter.set(0);
     }
 
     public static class Builder<T extends Model> {
@@ -579,7 +599,7 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
-    private  class Trainer extends Thread implements Runnable {
+    private class Trainer extends Thread implements Runnable {
         private Model originalModel;
         private Model replicatedModel;
         private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
@@ -591,25 +611,33 @@ public class ParallelWrapper implements AutoCloseable {
         private Exception thrownException;
         private volatile boolean useMDS = false;
         private final String uuid = UUID.randomUUID().toString();
+        private boolean onRootModel = false;
 
 
-        public Trainer(int threadId, Model model, boolean useMDS) {
-            this(threadId, model);
+
+        public Trainer(int threadId, Model model, int rootDevice, boolean useMDS) {
+            this(threadId, model, rootDevice);
             this.useMDS = useMDS;
         }
 
-        public Trainer(int threadId, Model model) {
+        public Trainer(int threadId, Model model, int rootDevice) {
             this.threadId = threadId;
             this.setDaemon(true);
             this.setName("ParallelWrapper trainer " + threadId);
 
             this.originalModel = model;
-            if (model instanceof MultiLayerNetwork) {
-                this.replicatedModel = ((MultiLayerNetwork) model).clone();
+            //if (rootDevice != threadId) {
+                /*if (model instanceof MultiLayerNetwork) {
+                    this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
-            } else if (model instanceof ComputationGraph) {
-                this.replicatedModel = ((ComputationGraph) model).clone();
-            }
+                } else if (model instanceof ComputationGraph) {
+                    this.replicatedModel = ((ComputationGraph) model).clone();
+                }
+                */
+            /*} else {
+                this.onRootModel = true;
+                this.replicatedModel = model;
+            }*/
         }
 
         public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
@@ -645,7 +673,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     updater.setStateViewArray((MultiLayerNetwork) replicatedModel, viewD, false);
                 }
-            } else if (replicatedModel instanceof  ComputationGraph) {
+            } else if (replicatedModel instanceof ComputationGraph) {
                 replicatedModel.setParams(model.params().dup());
 
                 ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
@@ -666,7 +694,7 @@ public class ParallelWrapper implements AutoCloseable {
                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
 
-        public boolean isRunning(){
+        public boolean isRunning() {
             // if Trainer thread got exception during training - rethrow it here
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
@@ -684,52 +712,65 @@ public class ParallelWrapper implements AutoCloseable {
                 // we create fresh network, with the same configuration, as initially created by user
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
-                    MultiLayerConfiguration conf = ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
-                    this.replicatedModel = new MultiLayerNetwork(conf);
+                    if (!onRootModel) {
+                        MultiLayerConfiguration conf =
+                                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
+                        this.replicatedModel = new MultiLayerNetwork(conf);
 
-                    ((MultiLayerNetwork) replicatedModel).init();
-                    Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+                        ((MultiLayerNetwork) replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                    for(IterationListener listener : oldListeners) {
-                        if(listener instanceof RoutingIterationListener) {
-                            RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
-                            routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
-                            routingListener.setWorkerID(uuid);
-                            routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                            replicatedListeners.add(routingListener);
-                        } else {
-                            replicatedListeners.add(listener);
+                        for (IterationListener listener : oldListeners) {
+                            if (listener instanceof RoutingIterationListener) {
+                                RoutingIterationListener routingListener =
+                                                ((RoutingIterationListener) listener).clone();
+                                routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                                routingListener.setWorkerID(uuid);
+                                routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
+                                replicatedListeners.add(routingListener);
+                            } else {
+                                replicatedListeners.add(listener);
+                            }
                         }
-                    }
 
-                    ((MultiLayerNetwork)this.replicatedModel).setListeners(replicatedListeners);
+                        ((MultiLayerNetwork) this.replicatedModel).setListeners(replicatedListeners);
+                    }
                 } else if (originalModel instanceof ComputationGraph) {
-                    this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
+                    if (!onRootModel) {
+                        this.replicatedModel = new ComputationGraph(
+                                        ((ComputationGraph) originalModel).getConfiguration().clone());
 
-                    ((ComputationGraph) this.replicatedModel).init();
-                    Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+                        ((ComputationGraph) this.replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                    for(IterationListener listener : oldListeners) {
-                        if(listener instanceof RoutingIterationListener) {
-                            RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
-                            routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
-                            routingIterationListener.setWorkerID(uuid);
-                            routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                            replicatedListeners.add(routingIterationListener);
-                        } else {
-                            replicatedListeners.add(listener);
+                        for (IterationListener listener : oldListeners) {
+                            if (listener instanceof RoutingIterationListener) {
+                                RoutingIterationListener routingIterationListener =
+                                                ((RoutingIterationListener) listener).clone();
+                                routingIterationListener
+                                                .setSessionID(((RoutingIterationListener) listener).getSessionID());
+                                routingIterationListener.setWorkerID(uuid);
+                                routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
+                                replicatedListeners.add(routingIterationListener);
+                            } else {
+                                replicatedListeners.add(listener);
+                            }
                         }
-                    }
 
-                    ((ComputationGraph)this.replicatedModel).setListeners(replicatedListeners);
+                        ((ComputationGraph) this.replicatedModel).setListeners(replicatedListeners);
+                    }
                 }
 
                 if (!useMDS) {
                     while (!shouldStop.get()) {
                         DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
+
+                            //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
+                            //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
+
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                             } else if (replicatedModel instanceof ComputationGraph) {
@@ -749,7 +790,8 @@ public class ParallelWrapper implements AutoCloseable {
                         if (dataSet != null) {
                             if (replicatedModel instanceof ComputationGraph) {
                                 ((ComputationGraph) replicatedModel).fit(dataSet);
-                            } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
+                            } else
+                                throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
                             if (Nd4j.getExecutioner() instanceof GridExecutioner)
                                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

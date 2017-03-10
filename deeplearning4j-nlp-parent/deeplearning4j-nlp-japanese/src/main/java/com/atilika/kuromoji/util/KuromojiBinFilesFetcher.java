@@ -35,8 +35,8 @@ public class KuromojiBinFilesFetcher {
         binFileList.add(new File(KUROMOJI_BIN_ROOT, "tokenInfoTargetMap.bin"));
         binFileList.add(new File(KUROMOJI_BIN_ROOT, "unknownDictionary.bin"));
 
-        for(File f : binFileList){
-            if( f.exists() == false ){
+        for (File f : binFileList) {
+            if (f.exists() == false) {
                 return false;
             }
         }
@@ -45,17 +45,19 @@ public class KuromojiBinFilesFetcher {
 
     public static File downloadAndUntar() throws IOException {
         File rootFile = new File(KUROMOJI_BIN_ROOT);
-        if(rootFile.exists()){
+        if (rootFile.exists()) {
             throw new IOException("remove exist directory : " + KUROMOJI_BIN_ROOT);
-        }else{
+        } else {
             rootFile.mkdir();
 
             log.info("Downloading Kuromoji bin files...");
 
             // download kuromoji bin file from azure blob
             File tarFile = new File(KUROMOJI_BIN_ROOT, "kuromoji_bin_files.tar.gz");
-            if(!tarFile.isFile()) {
-                FileUtils.copyURLToFile(new URL("https://dhkuromoji.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"), tarFile);
+            if (!tarFile.isFile()) {
+                FileUtils.copyURLToFile(
+                                new URL("https://dhkuromoji.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"),
+                                tarFile);
             }
             ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootFile.getAbsolutePath());
         }
@@ -64,7 +66,7 @@ public class KuromojiBinFilesFetcher {
         return null;
     }
 
-    public static String getRootPath(){
+    public static String getRootPath() {
         return KUROMOJI_BIN_ROOT;
     }
 }

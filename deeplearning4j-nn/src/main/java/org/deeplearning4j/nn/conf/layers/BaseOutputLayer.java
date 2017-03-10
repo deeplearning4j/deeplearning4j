@@ -8,14 +8,15 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
 
     protected BaseOutputLayer(Builder builder) {
-    	super(builder);
+        super(builder);
         this.lossFn = builder.lossFn;
     }
 
@@ -60,7 +61,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
         public T lossFunction(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
-            return (T)this;
+            return (T) this;
         }
     }
 }

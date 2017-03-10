@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,20 +38,22 @@ import java.util.List;
 public class MovingWindowDataSetFetcher extends BaseDataFetcher {
 
     private DataSet data;
-    private int windowRows = 28,windowColumns = 28;
+    private int windowRows = 28, windowColumns = 28;
     private int cursor = 0;
 
-    public MovingWindowDataSetFetcher(DataSet data,int windowRows,int windowColumns) {
+    public MovingWindowDataSetFetcher(DataSet data, int windowRows, int windowColumns) {
         this.data = data;
         this.windowRows = windowRows;
         this.windowColumns = windowColumns;
         List<DataSet> list = data.asList();
         List<DataSet> flipped = new ArrayList<>();
-        for(int i = 0; i < list.size(); i++) {
+        for (int i = 0; i < list.size(); i++) {
             INDArray label = list.get(i).getLabels();
-            List<INDArray> windows = new MovingWindowMatrix(list.get(i).getFeatureMatrix(),windowRows,windowColumns,true).windows(true);
-            for(int j = 0; j < windows.size(); j++) {
-                flipped.add(new DataSet(windows.get(i),label));
+            List<INDArray> windows =
+                            new MovingWindowMatrix(list.get(i).getFeatureMatrix(), windowRows, windowColumns, true)
+                                            .windows(true);
+            for (int j = 0; j < windows.size(); j++) {
+                flipped.add(new DataSet(windows.get(i), label));
             }
             flipped.add(list.get(i));
         }
@@ -69,7 +71,7 @@ public class MovingWindowDataSetFetcher extends BaseDataFetcher {
      */
     @Override
     public void fetch(int numExamples) {
-          initializeCurrFromList(data.get(ArrayUtil.range(cursor, cursor + numExamples)).asList());
+        initializeCurrFromList(data.get(ArrayUtil.range(cursor, cursor + numExamples)).asList());
 
     }
 }

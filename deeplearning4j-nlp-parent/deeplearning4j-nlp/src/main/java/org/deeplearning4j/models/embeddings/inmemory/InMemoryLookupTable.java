@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -56,7 +56,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     private static final Logger log = LoggerFactory.getLogger(InMemoryLookupTable.class);
 
-    protected INDArray syn0,syn1;
+    protected INDArray syn0, syn1;
     protected int vectorLength;
     protected transient Random rng = Nd4j.getRandom();
     protected AtomicDouble lr = new AtomicDouble(25e-3);
@@ -64,29 +64,31 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected static double MAX_EXP = 6;
     protected long seed = 123;
     //negative sampling table
-    protected INDArray table,syn1Neg;
+    protected INDArray table, syn1Neg;
     protected boolean useAdaGrad;
     protected double negative = 0;
     protected boolean useHS = true;
     protected VocabCache<T> vocab;
-    protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
+    protected Map<Integer, INDArray> codes = new ConcurrentHashMap<>();
 
 
 
     protected AdaGrad adaGrad;
 
-    @Getter @Setter protected Long tableId;
+    @Getter
+    @Setter
+    protected Long tableId;
 
     public InMemoryLookupTable() {}
 
-    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
-                               double lr, Random gen, double negative, boolean useHS) {
+    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen,
+                    double negative, boolean useHS) {
         this(vocab, vectorLength, useAdaGrad, lr, gen, negative);
         this.useHS = useHS;
     }
 
-    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
-                               double lr, Random gen, double negative) {
+    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen,
+                    double negative) {
         this.vocab = vocab;
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
@@ -101,7 +103,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     protected void initAdaGrad() {
-        adaGrad = new AdaGrad(new int[] {vocab.numWords()+1, vectorLength} , lr.get());
+        adaGrad = new AdaGrad(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
     }
 
     public double[] getExpTable() {
@@ -115,7 +117,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public double getGradient(int column, double gradient) {
         if (adaGrad == null)
             initAdaGrad();
-        return  adaGrad.getGradient(gradient, column, syn0.shape());
+        return adaGrad.getGradient(gradient, column, syn0.shape());
     }
 
     @Override
@@ -125,17 +127,17 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     @Override
     public void resetWeights(boolean reset) {
-        if(this.rng == null)
+        if (this.rng == null)
             this.rng = Nd4j.getRandom();
 
         this.rng.setSeed(seed);
 
-        if(syn0 == null || reset) {
-            syn0 = Nd4j.rand(new int[]{vocab.numWords(), vectorLength}, rng).subi(0.5).divi(vectorLength);
-//            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
-//            putVector(Word2Vec.UNK, randUnk);
+        if (syn0 == null || reset) {
+            syn0 = Nd4j.rand(new int[] {vocab.numWords(), vectorLength}, rng).subi(0.5).divi(vectorLength);
+            //            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
+            //            putVector(Word2Vec.UNK, randUnk);
         }
-        if((syn1 == null || reset) && useHS) {
+        if ((syn1 == null || reset) && useHS) {
             log.info("Initializing syn1...");
             syn1 = Nd4j.create(syn0.shape());
         }
@@ -146,7 +148,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     private List<String> fitTnseAndGetLabels(final BarnesHutTsne tsne, final int numWords) {
         INDArray array = Nd4j.create(numWords, vectorLength);
         List<String> labels = new ArrayList<>();
-        for (int i = 0; i < numWords && i <vocab.numWords(); i++) {
+        for (int i = 0; i < numWords && i < vocab.numWords(); i++) {
             labels.add(vocab.wordAtIndex(i));
             array.putRow(i, syn0.slice(i));
         }
@@ -170,9 +172,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void plotVocab(int numWords, File file) {
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .normalize(false).setFinalMomentum(0.8f)
-                .numDimension(2).setMaxIter(1000).build();
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder().normalize(false).setFinalMomentum(0.8f).numDimension(2)
+                        .setMaxIter(1000).build();
         plotVocab(tsne, numWords, file);
     }
 
@@ -181,9 +182,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void plotVocab(int numWords, UiConnectionInfo connectionInfo) {
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .normalize(false).setFinalMomentum(0.8f)
-                .numDimension(2).setMaxIter(1000).build();
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder().normalize(false).setFinalMomentum(0.8f).numDimension(2)
+                        .setMaxIter(1000).build();
         plotVocab(tsne, numWords, connectionInfo);
     }
 
@@ -210,13 +210,13 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             }
 
             String address = connectionInfo.getFirstPart() + "/tsne/post/" + connectionInfo.getSessionId();
-//            System.out.println("ADDRESS: " + address);
+            //            System.out.println("ADDRESS: " + address);
             URI uri = new URI(address);
 
             HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-//            connection.setRequestProperty("Content-Type", "application/json");
+            //            connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Content-Type", "multipart/form-data");
             connection.setDoOutput(true);
 
@@ -239,9 +239,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                     }
                     in.close();
 
-                    log.warn("Error posting to remote UI - received response code {}\tContent: {}", response, response.toString());
+                    log.warn("Error posting to remote UI - received response code {}\tContent: {}", response,
+                                    response.toString());
                 }
-            } catch (IOException e){
+            } catch (IOException e) {
                 log.warn("Error posting to remote UI at {}", uri, e);
             }
         } catch (Exception e) {
@@ -255,7 +256,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void putCode(int codeIndex, INDArray code) {
-        codes.put(codeIndex,code);
+        codes.put(codeIndex, code);
     }
 
     /**
@@ -271,9 +272,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
     public synchronized void initNegative() {
-        if(negative > 0 && syn1Neg == null) {
+        if (negative > 0 && syn1Neg == null) {
             syn1Neg = Nd4j.zeros(syn0.shape());
-            makeTable(Math.max(expTable.length, 100000),0.75);
+            makeTable(Math.max(expTable.length, 100000), 0.75);
         }
     }
 
@@ -281,12 +282,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected void initExpTable() {
         expTable = new double[100000];
         for (int i = 0; i < expTable.length; i++) {
-            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
-            expTable[i]  = tmp / (tmp + 1.0);
+            double tmp = FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i] = tmp / (tmp + 1.0);
         }
     }
-
-
 
 
 
@@ -299,8 +298,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     @Deprecated
-    public  void iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
+    public void iterateSample(T w1, T w2, AtomicLong nextRandom, double alpha) {
+        if (w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP")
+                        || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
             return;
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -310,30 +310,30 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         INDArray neu1e = Nd4j.create(vectorLength);
 
 
-        for(int i = 0; i < w1.getCodeLength(); i++) {
+        for (int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
-            if(point >= syn0.rows() || point < 0)
+            if (point >= syn0.rows() || point < 0)
                 throw new IllegalStateException("Illegal point " + point);
             //other word vector
 
             INDArray syn1 = this.syn1.slice(point);
 
 
-            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
+            double dot = Nd4j.getBlasWrapper().dot(l1, syn1);
 
-            if(dot < -MAX_EXP || dot >= MAX_EXP)
+            if (dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
 
 
             int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if(idx >= expTable.length)
+            if (idx >= expTable.length)
                 continue;
 
             //score
-            double f =  expTable[idx];
+            double f = expTable[idx];
             //gradient
-            double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), lr.get()) : (1 - code - f) * alpha;
+            double g = useAdaGrad ? w1.getGradient(i, (1 - code - f), lr.get()) : (1 - code - f) * alpha;
 
             Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
             Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
@@ -344,7 +344,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         int target = w1.getIndex();
         int label;
         //negative sampling
-        if(negative > 0)
+        if (negative > 0)
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)
                     label = 1;
@@ -362,33 +362,39 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 }
 
 
-                if(target >= syn1Neg.rows() || target < 0)
+                if (target >= syn1Neg.rows() || target < 0)
                     continue;
 
-                double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
+                double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg.slice(target));
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), alpha) : (label - 1) * alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, alpha) : alpha);
+                    g = label * (useAdaGrad ? w1.getGradient(target, alpha, alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))], alpha) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
-                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
+                    g = useAdaGrad ? w1
+                                    .getGradient(target,
+                                                    label - expTable[(int) ((f + MAX_EXP)
+                                                                    * (expTable.length / MAX_EXP / 2))],
+                                                    alpha)
+                                    : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
+                                                    * alpha;
+                if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, syn1Neg.slice(target), neu1e);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),neu1e);
+                    Nd4j.getBlasWrapper().axpy((float) g, syn1Neg.slice(target), neu1e);
 
-                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,l1,syn1Neg.slice(target));
+                if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, l1, syn1Neg.slice(target));
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,l1,syn1Neg.slice(target));
+                    Nd4j.getBlasWrapper().axpy((float) g, l1, syn1Neg.slice(target));
             }
 
-        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+        if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+            Nd4j.getBlasWrapper().axpy(1.0, neu1e, l1);
 
         else
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+            Nd4j.getBlasWrapper().axpy(1.0f, neu1e, l1);
 
     }
 
@@ -420,7 +426,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Deprecated
     @Override
-    public  void iterate(T w1, T w2) {
+    public void iterate(T w1, T w2) {
 
     }
 
@@ -434,31 +440,32 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
 
-    protected void makeTable(int tableSize,double power) {
+    protected void makeTable(int tableSize, double power) {
         int vocabSize = syn0.rows();
         table = Nd4j.create(tableSize);
         double trainWordsPow = 0.0;
-        for(String word : vocab.words()) {
+        for (String word : vocab.words()) {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
         int wordIdx = 0;
         String word = vocab.wordAtIndex(wordIdx);
-        double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
-        for(int i = 0; i < tableSize; i++) {
-            table.putScalar(i,wordIdx);
+        double d1 = Math.pow(vocab.wordFrequency(word), power) / trainWordsPow;
+        for (int i = 0; i < tableSize; i++) {
+            table.putScalar(i, wordIdx);
             double mul = i * 1.0 / (double) tableSize;
-            if(mul > d1) {
-                if( wordIdx < vocabSize-1 )
+            if (mul > d1) {
+                if (wordIdx < vocabSize - 1)
                     wordIdx++;
                 word = vocab.wordAtIndex(wordIdx);
                 String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                if(word == null)
+                if (word == null)
                     continue;
-                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
+                d1 += Math.pow(vocab.wordFrequency(wordAtIndex), power) / trainWordsPow;
             }
         }
     }
+
     /**
      * Inserts a word vector
      *
@@ -467,9 +474,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void putVector(String word, INDArray vector) {
-        if(word == null)
+        if (word == null)
             throw new IllegalArgumentException("No null words allowed");
-        if(vector == null)
+        if (vector == null)
             throw new IllegalArgumentException("No null vectors allowed");
         int idx = vocab.indexOf(word);
         syn0.slice(idx).assign(vector);
@@ -498,10 +505,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public INDArray vector(String word) {
-        if(word == null)
+        if (word == null)
             return null;
         int idx = vocab.indexOf(word);
-        if(idx < 0) {
+        if (idx < 0) {
             idx = vocab.indexOf(Word2Vec.DEFAULT_UNK);
             if (idx < 0)
                 return null;
@@ -525,7 +532,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
 
-    protected  class WeightIterator implements Iterator<INDArray> {
+    protected class WeightIterator implements Iterator<INDArray> {
         protected int currIndex = 0;
 
         @Override
@@ -613,7 +620,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-
         public Builder<T> useHierarchicSoftmax(boolean reallyUse) {
             this.useHS = reallyUse;
             return this;
@@ -663,10 +669,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
         public InMemoryLookupTable<T> build() {
-            if(vocabCache == null)
+            if (vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            InMemoryLookupTable<T> table = new InMemoryLookupTable<>(vocabCache,vectorLength,useAdaGrad,lr,gen,negative, useHS);
+            InMemoryLookupTable<T> table =
+                            new InMemoryLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, useHS);
             table.seed = seed;
 
             return table;
@@ -675,21 +682,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     @Override
     public String toString() {
-        return "InMemoryLookupTable{" +
-                "syn0=" + syn0 +
-                ", syn1=" + syn1 +
-                ", vectorLength=" + vectorLength +
-                ", rng=" + rng +
-                ", lr=" + lr +
-                ", expTable=" + Arrays.toString(expTable) +
-                ", seed=" + seed +
-                ", table=" + table +
-                ", syn1Neg=" + syn1Neg +
-                ", useAdaGrad=" + useAdaGrad +
-                ", negative=" + negative +
-                ", vocab=" + vocab +
-                ", codes=" + codes +
-                '}';
+        return "InMemoryLookupTable{" + "syn0=" + syn0 + ", syn1=" + syn1 + ", vectorLength=" + vectorLength + ", rng="
+                        + rng + ", lr=" + lr + ", expTable=" + Arrays.toString(expTable) + ", seed=" + seed + ", table="
+                        + table + ", syn1Neg=" + syn1Neg + ", useAdaGrad=" + useAdaGrad + ", negative=" + negative
+                        + ", vocab=" + vocab + ", codes=" + codes + '}';
     }
 
     /**
@@ -712,20 +708,21 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         AtomicInteger cntNg = new AtomicInteger(0);
 
         if (srcTable.syn0.rows() > this.syn0.rows())
-            throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
+            throw new IllegalStateException(
+                            "You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
             this.syn0.putRow(x, srcTable.syn0.getRow(x));
 
             if (this.syn1 != null && srcTable.syn1 != null)
                 this.syn1.putRow(x, srcTable.syn1.getRow(x));
-            else
-                if (cntHs.incrementAndGet() == 1) log.info("Skipping syn1 merge");
+            else if (cntHs.incrementAndGet() == 1)
+                log.info("Skipping syn1 merge");
 
             if (this.syn1Neg != null && srcTable.syn1Neg != null) {
                 this.syn1Neg.putRow(x, srcTable.syn1Neg.getRow(x));
-            } else
-                if (cntNg.incrementAndGet() == 1) log.info("Skipping syn1Neg merge");
+            } else if (cntNg.incrementAndGet() == 1)
+                log.info("Skipping syn1Neg merge");
 
             if (cntHs.get() > 0 && cntNg.get() > 0)
                 throw new ND4JIllegalStateException("srcTable has no syn1/syn1neg");

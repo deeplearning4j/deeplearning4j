@@ -16,7 +16,8 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class ExistingDataSetIterator implements DataSetIterator {
-    @Getter private DataSetPreProcessor preProcessor;
+    @Getter
+    private DataSetPreProcessor preProcessor;
 
     private transient Iterable<DataSet> iterable;
     private transient Iterator<DataSet> iterator;
@@ -46,7 +47,8 @@ public class ExistingDataSetIterator implements DataSetIterator {
     }
 
 
-    public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable, int totalExamples, int numFeatures, int numLabels) {
+    public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable, int totalExamples, int numFeatures,
+                    int numLabels) {
         this(iterable);
 
         this.totalExamples = totalExamples;
@@ -79,7 +81,7 @@ public class ExistingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return iterable != null;
     }
 
@@ -93,7 +95,9 @@ public class ExistingDataSetIterator implements DataSetIterator {
     public void reset() {
         if (iterable != null)
             this.iterator = iterable.iterator();
-        else throw new IllegalStateException("To use reset() method you need to provide Iterable<DataSet>, not Iterator");
+        else
+            throw new IllegalStateException(
+                            "To use reset() method you need to provide Iterable<DataSet>, not Iterator");
     }
 
     @Override
@@ -138,7 +142,8 @@ public class ExistingDataSetIterator implements DataSetIterator {
                 ds.markAsPreProcessed();
             }
             return ds;
-        } else return iterator.next();
+        } else
+            return iterator.next();
     }
 
     @Override

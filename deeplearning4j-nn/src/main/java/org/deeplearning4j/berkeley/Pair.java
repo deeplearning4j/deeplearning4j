@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,59 +26,60 @@ import java.util.Comparator;
  * A generic-typed pair of objects.
  * @author Dan Klein
  */
-public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
-	static final long serialVersionUID = 42;
+public class Pair<F, S> implements Serializable, Comparable<Pair<F, S>> {
+    static final long serialVersionUID = 42;
 
-	F first;
-	S second;
+    F first;
+    S second;
 
-	public F getFirst() {
-		return first;
-	}
+    public F getFirst() {
+        return first;
+    }
 
-	public S getSecond() {
-		return second;
-	}
+    public S getSecond() {
+        return second;
+    }
 
-	public void setFirst(F pFirst) {
-		first = pFirst;
-	}
+    public void setFirst(F pFirst) {
+        first = pFirst;
+    }
 
-	public void setSecond(S pSecond) {
-		second = pSecond;
-	}
+    public void setSecond(S pSecond) {
+        second = pSecond;
+    }
 
-	public Pair<S, F> reverse() {
-		return new Pair<>(second, first);
-	}
+    public Pair<S, F> reverse() {
+        return new Pair<>(second, first);
+    }
 
-	public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!(o instanceof Pair))
-      return false;
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Pair))
+            return false;
 
-    final Pair pair = (Pair) o;
+        final Pair pair = (Pair) o;
 
-    return !(first != null ? !first.equals(pair.first) : pair.first != null) && !(second != null ? !second.equals(pair.second) : pair.second != null);
+        return !(first != null ? !first.equals(pair.first) : pair.first != null)
+                        && !(second != null ? !second.equals(pair.second) : pair.second != null);
 
-  }
+    }
 
-	public int hashCode() {
-		int result;
-		result = (first != null ? first.hashCode() : 0);
-		result = 29 * result + (second != null ? second.hashCode() : 0);
-		return result;
-	}
+    public int hashCode() {
+        int result;
+        result = (first != null ? first.hashCode() : 0);
+        result = 29 * result + (second != null ? second.hashCode() : 0);
+        return result;
+    }
 
-	public String toString() {
-		return "(" + getFirst() + ", " + getSecond() + ")";
-	}
+    public String toString() {
+        return "(" + getFirst() + ", " + getSecond() + ")";
+    }
 
-	public Pair(F first, S second) {
-		this.first = first;
-		this.second = second;
-	}
+    public Pair(F first, S second) {
+        this.first = first;
+        this.second = second;
+    }
 
     /**
      * Compares this object with the specified object for order.  Returns a
@@ -119,78 +120,75 @@ public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
      *                              from being compared to this object.
      */
     @Override
-    public int compareTo(Pair<F,S> o) {
-        return new DefaultLexicographicPairComparator().compare(this,o);
+    public int compareTo(Pair<F, S> o) {
+        return new DefaultLexicographicPairComparator().compare(this, o);
     }
 
     // Compares only first values
-	public static class FirstComparator<S extends Comparable<? super S>, T>
-	implements Comparator<Pair<S, T>> {
-		public int compare(Pair<S, T> p1, Pair<S, T> p2) {
-			return p1.getFirst().compareTo(p2.getFirst());
-		}
-	}
+    public static class FirstComparator<S extends Comparable<? super S>, T> implements Comparator<Pair<S, T>> {
+        public int compare(Pair<S, T> p1, Pair<S, T> p2) {
+            return p1.getFirst().compareTo(p2.getFirst());
+        }
+    }
 
-	public static class ReverseFirstComparator<S extends Comparable<? super S>, T>
-	implements Comparator<Pair<S, T>> {
-		public int compare(Pair<S, T> p1, Pair<S, T> p2) {
-			return p2.getFirst().compareTo(p1.getFirst());
-		}
-	}
+    public static class ReverseFirstComparator<S extends Comparable<? super S>, T> implements Comparator<Pair<S, T>> {
+        public int compare(Pair<S, T> p1, Pair<S, T> p2) {
+            return p2.getFirst().compareTo(p1.getFirst());
+        }
+    }
 
-	// Compares only second values
-	public static class SecondComparator<S, T extends Comparable<? super T>>
-	implements Comparator<Pair<S, T>> {
-		public int compare(Pair<S, T> p1, Pair<S, T> p2) {
-			return p1.getSecond().compareTo(p2.getSecond());
-		}
-	}
+    // Compares only second values
+    public static class SecondComparator<S, T extends Comparable<? super T>> implements Comparator<Pair<S, T>> {
+        public int compare(Pair<S, T> p1, Pair<S, T> p2) {
+            return p1.getSecond().compareTo(p2.getSecond());
+        }
+    }
 
-	public static class ReverseSecondComparator<S, T extends Comparable<? super T>>
-	implements Comparator<Pair<S, T>> {
-		public int compare(Pair<S, T> p1, Pair<S, T> p2) {
-			return p2.getSecond().compareTo(p1.getSecond());
-		}
-	}
+    public static class ReverseSecondComparator<S, T extends Comparable<? super T>> implements Comparator<Pair<S, T>> {
+        public int compare(Pair<S, T> p1, Pair<S, T> p2) {
+            return p2.getSecond().compareTo(p1.getSecond());
+        }
+    }
 
-	public static <S, T> Pair<S, T> newPair(S first, T second) {
-		return new Pair<>(first, second);
-	}
-	// Duplicate method to faccilitate backwards compatibility
-	// - aria42
-	public static <S, T> Pair<S, T> makePair(S first, T second) {
-		return new Pair<>(first, second);
-	}
+    public static <S, T> Pair<S, T> newPair(S first, T second) {
+        return new Pair<>(first, second);
+    }
 
-	public static class LexicographicPairComparator<F,S>  implements Comparator<Pair<F,S>> {
-		Comparator<F> firstComparator;
-		Comparator<S> secondComparator;
+    // Duplicate method to faccilitate backwards compatibility
+    // - aria42
+    public static <S, T> Pair<S, T> makePair(S first, T second) {
+        return new Pair<>(first, second);
+    }
 
-		public int compare(Pair<F, S> pair1, Pair<F, S> pair2) {
-			int firstCompare = firstComparator.compare(pair1.getFirst(), pair2.getFirst());
-			if (firstCompare != 0)
-				return firstCompare;
-			return secondComparator.compare(pair1.getSecond(), pair2.getSecond());
-		}
+    public static class LexicographicPairComparator<F, S> implements Comparator<Pair<F, S>> {
+        Comparator<F> firstComparator;
+        Comparator<S> secondComparator;
 
-		public LexicographicPairComparator(Comparator<F> firstComparator, Comparator<S> secondComparator) {
-			this.firstComparator = firstComparator;
-			this.secondComparator = secondComparator;
-		}
-	}
+        public int compare(Pair<F, S> pair1, Pair<F, S> pair2) {
+            int firstCompare = firstComparator.compare(pair1.getFirst(), pair2.getFirst());
+            if (firstCompare != 0)
+                return firstCompare;
+            return secondComparator.compare(pair1.getSecond(), pair2.getSecond());
+        }
 
-	public static class DefaultLexicographicPairComparator<F extends Comparable<F>,S extends Comparable<S>>  
-	implements Comparator<Pair<F,S>> {
+        public LexicographicPairComparator(Comparator<F> firstComparator, Comparator<S> secondComparator) {
+            this.firstComparator = firstComparator;
+            this.secondComparator = secondComparator;
+        }
+    }
 
-		public int compare(Pair<F, S> o1, Pair<F, S> o2) {
-			int firstCompare = o1.getFirst().compareTo(o2.getFirst());
-			if (firstCompare != 0) {
-				return firstCompare;
-			}
-			return o1.getSecond().compareTo(o2.getSecond());
-		}
+    public static class DefaultLexicographicPairComparator<F extends Comparable<F>, S extends Comparable<S>>
+                    implements Comparator<Pair<F, S>> {
 
-	}
+        public int compare(Pair<F, S> o1, Pair<F, S> o2) {
+            int firstCompare = o1.getFirst().compareTo(o2.getFirst());
+            if (firstCompare != 0) {
+                return firstCompare;
+            }
+            return o1.getSecond().compareTo(o2.getSecond());
+        }
+
+    }
 
 
 }

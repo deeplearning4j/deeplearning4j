@@ -11,21 +11,16 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 
 
-public class Word2VecTestsSmall
-{
+public class Word2VecTestsSmall {
     WordVectors word2vec;
 
     @Before
-    public void setUp()
-        throws Exception
-    {
-        word2vec = WordVectorSerializer.loadGoogleModel(
-                new ClassPathResource("vec.bin").getFile(), true,true);
+    public void setUp() throws Exception {
+        word2vec = WordVectorSerializer.loadGoogleModel(new ClassPathResource("vec.bin").getFile(), true, true);
     }
 
     @Test
-    public void testWordsNearest2VecTxt()
-    {
+    public void testWordsNearest2VecTxt() {
         String word = "Adam";
         String expectedNeighbour = "is";
         int neighbours = 1;
@@ -36,8 +31,7 @@ public class Word2VecTestsSmall
     }
 
     @Test
-    public void testWordsNearest2NNeighbours()
-    {
+    public void testWordsNearest2NNeighbours() {
         String word = "Adam";
         int neighbours = 2;
 
@@ -48,8 +42,7 @@ public class Word2VecTestsSmall
     }
 
     @Test
-    public void testPlot()
-    {
+    public void testPlot() {
         //word2vec.lookupTable().plotVocab();
     }
 }

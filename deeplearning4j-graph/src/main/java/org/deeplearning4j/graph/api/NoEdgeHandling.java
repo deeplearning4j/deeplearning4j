@@ -4,7 +4,6 @@ package org.deeplearning4j.graph.api;
  * i.e., those without any outgoing (directed) or undirected edges
  */
 public enum NoEdgeHandling {
-    SELF_LOOP_ON_DISCONNECTED,
-    EXCEPTION_ON_DISCONNECTED
+    SELF_LOOP_ON_DISCONNECTED, EXCEPTION_ON_DISCONNECTED
 
 }
