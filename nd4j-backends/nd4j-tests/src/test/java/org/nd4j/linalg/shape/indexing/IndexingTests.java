@@ -8,6 +8,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
@@ -22,6 +23,63 @@ public class IndexingTests extends BaseNd4jTest {
 
     public IndexingTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testGet() {
+        System.out.println( "Testing sub-array put and get with a 3D array ..." );
+
+        INDArray arr = Nd4j.linspace( 0, 124, 125 ).reshape( 5, 5, 5 );
+
+      /*
+       * Extract elements with the following indices:
+       *
+       * (2,1,1) (2,1,2) (2,1,3)
+       * (2,2,1) (2,2,2) (2,2,3)
+       * (2,3,1) (2,3,2) (2,3,3)
+       */
+
+        int slice = 2;
+
+        int iStart = 1;
+        int jStart = 1;
+
+        int iEnd = 4;
+        int jEnd = 4;
+
+        // Method A: Element-wise.
+
+        INDArray subArr_A = Nd4j.create( new int[]{ 3, 3 } );
+
+        for ( int i = iStart; i < iEnd; i++ ){
+            for ( int j = jStart; j < jEnd; j++ ){
+
+                double val = arr.getDouble( slice, i,j );
+                int[] sub = new int[]{ i - iStart ,j - jStart};
+
+                subArr_A.putScalar( sub, val );
+            }
+        }
+
+        // Method B: Using NDArray get and put with index classes.
+
+        INDArray subArr_B = Nd4j.create( new int[]{ 3, 3 } );
+
+        INDArrayIndex ndi_Slice = NDArrayIndex.point( slice );
+        INDArrayIndex ndi_J     = NDArrayIndex.interval( iStart, iEnd );
+        INDArrayIndex ndi_I     = NDArrayIndex.interval( iStart, iEnd );
+
+        INDArrayIndex[] whereToGet = new INDArrayIndex[]{ ndi_Slice, ndi_J, ndi_I };
+
+        INDArray whatToPut = arr.get( whereToGet );
+        System.out.println(whatToPut);
+        INDArrayIndex[] whereToPut = new INDArrayIndex[]{ NDArrayIndex.all(), NDArrayIndex.all() };
+
+        subArr_B.put( whereToPut, whatToPut );
+
+        assertEquals( subArr_A, subArr_B );
+
+        System.out.println( "... done" );
     }
 
 
