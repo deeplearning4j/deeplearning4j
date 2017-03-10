@@ -30,24 +30,22 @@ import static org.junit.Assert.assertTrue;
 public class TestListenerSetting {
 
     @Test
-    public void testSettingListenersUnsupervised(){
+    public void testSettingListenersUnsupervised() {
         //Pretrain layers should get copies of the listeners, in addition to the
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new RBM.Builder().nIn(10).nOut(10).build())
-                .layer(1, new AutoEncoder.Builder().nIn(10).nOut(10).build())
-                .layer(2, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new RBM.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new AutoEncoder.Builder().nIn(10).nOut(10).build())
+                        .layer(2, new VariationalAutoencoder.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
         net.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
-        for(Layer l : net.getLayers()){
+        for (Layer l : net.getLayers()) {
             Collection<IterationListener> layerListeners = l.getListeners();
-            assertEquals(l.getClass().toString(),2, layerListeners.size());
+            assertEquals(l.getClass().toString(), 2, layerListeners.size());
             IterationListener[] lArr = layerListeners.toArray(new IterationListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
             assertTrue(lArr[1] instanceof TestRoutingListener);
@@ -60,20 +58,17 @@ public class TestListenerSetting {
         assertTrue(lArr[1] instanceof TestRoutingListener);
 
 
-        ComputationGraphConfiguration gConf = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new RBM.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("1", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "0")
-                .addLayer("2", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "1")
-                .setOutputs("2")
-                .build();
+        ComputationGraphConfiguration gConf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .addLayer("0", new RBM.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new AutoEncoder.Builder().nIn(10).nOut(10).build(), "0")
+                        .addLayer("2", new VariationalAutoencoder.Builder().nIn(10).nOut(10).build(), "1")
+                        .setOutputs("2").build();
         ComputationGraph cg = new ComputationGraph(gConf);
         cg.init();
 
         cg.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
-        for(Layer l : cg.getLayers()){
+        for (Layer l : cg.getLayers()) {
             Collection<IterationListener> layerListeners = l.getListeners();
             assertEquals(2, layerListeners.size());
             lArr = layerListeners.toArray(new IterationListener[2]);
@@ -91,52 +86,62 @@ public class TestListenerSetting {
     private static class TestRoutingListener implements RoutingIterationListener {
 
         @Override
-        public void onEpochStart(Model model) { }
+        public void onEpochStart(Model model) {}
 
         @Override
-        public void onEpochEnd(Model model) { }
+        public void onEpochEnd(Model model) {}
 
         @Override
-        public void onForwardPass(Model model, List<INDArray> activations) { }
+        public void onForwardPass(Model model, List<INDArray> activations) {}
 
         @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) { }
+        public void onForwardPass(Model model, Map<String, INDArray> activations) {}
 
         @Override
-        public void onGradientCalculation(Model model) { }
+        public void onGradientCalculation(Model model) {}
 
         @Override
-        public void onBackwardPass(Model model) { }
+        public void onBackwardPass(Model model) {}
 
         @Override
-        public void setStorageRouter(StatsStorageRouter router) { }
+        public void setStorageRouter(StatsStorageRouter router) {}
 
         @Override
-        public StatsStorageRouter getStorageRouter() { return null; }
+        public StatsStorageRouter getStorageRouter() {
+            return null;
+        }
 
         @Override
-        public void setWorkerID(String workerID) { }
+        public void setWorkerID(String workerID) {}
 
         @Override
-        public String getWorkerID() { return null; }
+        public String getWorkerID() {
+            return null;
+        }
 
         @Override
-        public void setSessionID(String sessionID) { }
+        public void setSessionID(String sessionID) {}
 
         @Override
-        public String getSessionID() { return null; }
+        public String getSessionID() {
+            return null;
+        }
 
         @Override
-        public RoutingIterationListener clone() { return null; }
+        public RoutingIterationListener clone() {
+            return null;
+        }
 
         @Override
-        public boolean invoked() { return false; }
+        public boolean invoked() {
+            return false;
+        }
 
         @Override
-        public void invoke() { }
+        public void invoke() {}
 
         @Override
-        public void iterationDone(Model model, int iteration) { }
+        public void iterationDone(Model model, int iteration) {}
     }
 
 }

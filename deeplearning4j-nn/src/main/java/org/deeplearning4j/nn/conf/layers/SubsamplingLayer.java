@@ -57,7 +57,7 @@ public class SubsamplingLayer extends Layer {
         }
     }
 
-    private SubsamplingLayer(Builder builder) {
+    protected SubsamplingLayer(BaseSubsamplingBuilder<?> builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if(builder.kernelSize.length != 2)
@@ -148,94 +148,46 @@ public class SubsamplingLayer extends Layer {
 
     public double getEps() { return eps; }
 
-    @AllArgsConstructor
-    public static class Builder extends Layer.Builder<Builder> {
-        private org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
-        private int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
-        private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
-        private int[] padding = new int[] {0, 0};
-        private ConvolutionMode convolutionMode = null;
-        private int pnorm;
-        private double eps = 1e-8;
-
+    @NoArgsConstructor
+    public static class Builder extends BaseSubsamplingBuilder<Builder> {
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            super(poolingType, kernelSize, stride);
         }
 
         public Builder(PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
+            super(poolingType, kernelSize);
         }
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            super(poolingType, kernelSize, stride, padding);
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
+            super(poolingType, kernelSize);
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            super(poolingType, kernelSize, stride, padding);
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            super(kernelSize, stride, padding);
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            super(kernelSize, stride);
         }
 
         public Builder(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            super(kernelSize);
         }
 
         public Builder(PoolingType poolingType) {
-            this.poolingType = poolingType.toPoolingType();
+            super(poolingType);
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
-            this.poolingType = poolingType;
-        }
-
-        /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
-         *
-         * @param convolutionMode    Convolution mode for layer
-         */
-        public Builder convolutionMode(ConvolutionMode convolutionMode){
-            this.convolutionMode = convolutionMode;
-            return this;
-        }
-
-        public Builder() {}
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public SubsamplingLayer build() {
-            if(poolingType==org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
-            ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
-
-            return new SubsamplingLayer(this);
-        }
-
-        public Builder poolingType(PoolingType poolingType){
-            this.poolingType = poolingType.toPoolingType();
-            return this;
+            super(poolingType);
         }
 
         /**
@@ -271,16 +223,106 @@ public class SubsamplingLayer extends Layer {
             return this;
         }
 
-        public Builder pnorm(int pnorm){
-            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
-            this.pnorm = pnorm;
-            return this;
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public SubsamplingLayer build() {
+            if(poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
+
+            return new SubsamplingLayer(this);
+        }
+    }
+
+    @NoArgsConstructor
+    protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>> extends Layer.Builder<T> {
+        protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+        protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
+        protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
+        protected int[] padding = new int[] {0, 0};
+        protected ConvolutionMode convolutionMode = null;
+        protected int pnorm;
+        protected double eps = 1e-8;
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
+            this.poolingType = poolingType.toPoolingType();
+            this.kernelSize = kernelSize;
+            this.stride = stride;
         }
 
-        public Builder eps(double eps){
+        protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize) {
+            this.poolingType = poolingType.toPoolingType();
+            this.kernelSize = kernelSize;
+        }
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
+            this.poolingType = poolingType.toPoolingType();
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+        }
+
+        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
+            this.poolingType = poolingType;
+            this.kernelSize = kernelSize;
+        }
+
+        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
+            this.poolingType = poolingType;
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+        }
+
+        protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride, int[] padding) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+        }
+
+        protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+        }
+
+        protected BaseSubsamplingBuilder(int... kernelSize) {
+            this.kernelSize = kernelSize;
+        }
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType) {
+            this.poolingType = poolingType.toPoolingType();
+        }
+
+        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
+            this.poolingType = poolingType;
+        }
+
+        /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode    Convolution mode for layer
+         */
+        public T convolutionMode(ConvolutionMode convolutionMode){
+            this.convolutionMode = convolutionMode;
+            return (T)this;
+        }
+
+        public T poolingType(PoolingType poolingType){
+            this.poolingType = poolingType.toPoolingType();
+            return (T)this;
+        }
+
+        public T pnorm(int pnorm){
+            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
+            this.pnorm = pnorm;
+            return (T)this;
+        }
+
+        public T eps(double eps){
             if(eps <= 0) throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
             this.eps = eps;
-            return this;
+            return (T)this;
         }
     }
 

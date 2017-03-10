@@ -43,7 +43,8 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
      * @param learningRate
      * @return
      */
-    INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations);
+    INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate,
+                    int iterations);
 
     ElementsLearningAlgorithm<T> getElementsLearningAlgorithm();
 

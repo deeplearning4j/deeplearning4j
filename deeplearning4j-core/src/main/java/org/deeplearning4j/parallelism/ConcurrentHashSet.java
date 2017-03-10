@@ -55,6 +55,7 @@ public class ConcurrentHashSet<E> implements Set<E>, Serializable {
     public Iterator<E> iterator() {
         return new Iterator<E>() {
             private Iterator<Map.Entry<E, Boolean>> iterator = backingMap.entrySet().iterator();
+
             @Override
             public boolean hasNext() {
                 return iterator.hasNext();
@@ -96,7 +97,7 @@ public class ConcurrentHashSet<E> implements Set<E>, Serializable {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        for (Object o: c) {
+        for (Object o : c) {
             if (!contains(o))
                 return false;
         }
@@ -105,7 +106,7 @@ public class ConcurrentHashSet<E> implements Set<E>, Serializable {
 
     @Override
     public boolean addAll(Collection<? extends E> c) {
-        for (E e: c)
+        for (E e : c)
             add(e);
 
         return true;
@@ -118,7 +119,7 @@ public class ConcurrentHashSet<E> implements Set<E>, Serializable {
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        for (Object o: c)
+        for (Object o : c)
             remove(o);
 
         return true;

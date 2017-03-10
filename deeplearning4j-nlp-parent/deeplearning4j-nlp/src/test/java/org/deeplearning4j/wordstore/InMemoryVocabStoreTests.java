@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,10 +37,10 @@ public class InMemoryVocabStoreTests {
     public void testStorePut() {
         VocabCache<VocabWord> cache = new InMemoryLookupCache();
         assertFalse(cache.containsWord("hello"));
-        cache.addWordToIndex(0,"hello");
+        cache.addWordToIndex(0, "hello");
         assertTrue(cache.containsWord("hello"));
-        assertEquals(1,cache.numWords());
-        assertEquals("hello",cache.wordAtIndex(0));
+        assertEquals(1, cache.numWords());
+        assertEquals("hello", cache.wordAtIndex(0));
     }
 
 

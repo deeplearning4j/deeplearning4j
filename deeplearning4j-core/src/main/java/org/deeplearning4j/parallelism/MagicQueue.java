@@ -6,7 +6,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,8 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class MagicQueue implements BlockingQueue<DataSet> {
     public enum Mode {
-        THREADED,
-        SEQUENTIAL,
+        THREADED, SEQUENTIAL,
     }
 
     protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
@@ -50,10 +48,10 @@ public class MagicQueue implements BlockingQueue<DataSet> {
         handlers = new ArrayList<>();
         if (numberOfFlows > 1) {
             for (int i = 0; i < numberOfFlows; i++) {
-                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(capacity);
                 backingQueues.add(queue);
 
-                QueueHandler handler = new QueueHandler(queue);
+                QueueHandler handler = new QueueHandler(queue, capacity);
 
                 Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
 
@@ -82,7 +80,8 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 }
 
                 return (int) Math.floor(cnt / numberOfBuckets);
-            } else return backingQueues.get(0).size();
+            } else
+                return backingQueues.get(0).size();
         } else {
             return (int) (cntPut.get() - cntGet.get());
         }
@@ -188,7 +187,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public boolean addAll(Collection<? extends DataSet> c) {
-        for (DataSet ds: c) {
+        for (DataSet ds : c) {
             boolean result = add(ds);
 
             if (!result)
@@ -220,7 +219,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
     @Override
     public void clear() {
-        for(Queue<DataSet> queue: backingQueues) {
+        for (Queue<DataSet> queue : backingQueues) {
             queue.clear();
         }
 
@@ -256,6 +255,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 if (nextBucket.get() >= backingQueues.size())
                     nextBucket.set(0);
             }
+
             handlers.get(nextBucket.getAndIncrement()).put(dataSet);
         } else {
             backingQueues.get(0).add(dataSet);
@@ -291,7 +291,8 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 if (numberOfBuckets > 1) {
                     int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                     return backingQueues.get(deviceId).take();
-                } else return backingQueues.get(0).take();
+                } else
+                    return backingQueues.get(0).take();
             } else {
                 DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).take();
                 if (interleavedCounter.get() >= backingQueues.size())
@@ -348,7 +349,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
-            if (ds!=null)
+            if (ds != null)
                 cntGet.incrementAndGet();
 
             return ds;
@@ -391,7 +392,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             if (interleavedCounter.get() >= backingQueues.size())
                 interleavedCounter.set(0);
 
-            if (ds!=null)
+            if (ds != null)
                 cntGet.incrementAndGet();
 
             return ds;
@@ -465,19 +466,23 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     }
 
     private static class QueueHandler extends Thread implements Runnable {
-        private final Queue<DataSet> targetQueue;
+        private final BlockingQueue<DataSet> targetQueue;
         private final LinkedBlockingQueue<DataSet> bufferQueue;
 
-        public QueueHandler(Queue<DataSet> queue) {
+        public QueueHandler(BlockingQueue<DataSet> queue, int capacity) {
             this.targetQueue = queue;
-            this.bufferQueue = new LinkedBlockingQueue<DataSet>();
+            this.bufferQueue = new LinkedBlockingQueue<DataSet>(capacity);
 
             this.setDaemon(true);
         }
 
 
         public void put(DataSet dataSet) {
-            bufferQueue.add(dataSet);
+            try {
+                bufferQueue.put(dataSet);
+            } catch (InterruptedException e) {
+                //
+            }
         }
 
         @Override
@@ -498,10 +503,11 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
                         //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
 
-                        targetQueue.add(ds);
+                        targetQueue.put(ds);
                     }
-                } catch (Exception e) {
-                    //
+                } catch (InterruptedException e) {
+                    log.warn("Got InterruptedException...");
+                    break;
                 }
             }
         }

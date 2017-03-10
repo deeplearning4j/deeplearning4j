@@ -153,7 +153,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray delta;
         IActivation afn = conf.getLayer().getActivationFn();
 
-        delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
+        delta = conf().getLayer().getActivationFn().backprop(preOutput4d(true), epsilon).getFirst();  //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
@@ -210,6 +210,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
         return new Pair<>(retGradient,epsNext);
+    }
+
+    /**
+     * preOutput4d: Used so that ConvolutionLayer subclasses (such as Convolution1DLayer) can maintain their standard
+     * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
+     * the public API
+     */
+    protected INDArray preOutput4d(boolean training){
+        return preOutput(training);
     }
 
     public INDArray preOutput(boolean training) {

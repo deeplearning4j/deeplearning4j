@@ -40,8 +40,8 @@ public class KerasMerge extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasMerge(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasMerge(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -53,8 +53,8 @@ public class KerasMerge extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasMerge(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasMerge(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = getMergeMode(layerConfig);
         if (this.mergeMode == null)
@@ -63,13 +63,14 @@ public class KerasMerge extends KerasLayer {
             this.vertex = new ElementWiseVertex(mergeMode);
     }
 
-    public ElementWiseVertex.Op getMergeMode(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_MODE))
-            throw new InvalidKerasConfigurationException("Keras Merge layer config missing " + LAYER_FIELD_MODE + " field");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Merge layer config missing " + LAYER_FIELD_MODE + " field");
         ElementWiseVertex.Op op = null;
-        String mergeMode = (String)innerConfig.get(LAYER_FIELD_MODE);
+        String mergeMode = (String) innerConfig.get(LAYER_FIELD_MODE);
         switch (mergeMode) {
             case LAYER_MERGE_MODE_SUM:
                 op = ElementWiseVertex.Op.Add;
@@ -85,7 +86,8 @@ public class KerasMerge extends KerasLayer {
             case LAYER_MERGE_MODE_DOT:
             case LAYER_MERGE_MODE_MAX:
             default:
-                throw new UnsupportedKerasConfigurationException("Keras Merge layer mode " + mergeMode + " not supported");
+                throw new UnsupportedKerasConfigurationException(
+                                "Keras Merge layer mode " + mergeMode + " not supported");
         }
         return op;
     }

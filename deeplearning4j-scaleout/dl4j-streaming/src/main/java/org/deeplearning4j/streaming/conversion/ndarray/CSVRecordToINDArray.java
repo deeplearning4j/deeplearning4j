@@ -16,9 +16,9 @@ import java.util.Collection;
 public class CSVRecordToINDArray implements RecordToNDArray {
     @Override
     public INDArray convert(Collection<Collection<Writable>> records) {
-        INDArray ret = Nd4j.create(records.size(),records.iterator().next().size());
+        INDArray ret = Nd4j.create(records.size(), records.iterator().next().size());
         int count = 0;
-        for(Collection<Writable> record : records) {
+        for (Collection<Writable> record : records) {
             ret.putRow(count++, RecordConverter.toArray(record));
         }
         return ret;

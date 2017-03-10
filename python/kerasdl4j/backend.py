@@ -164,6 +164,19 @@ def slice_X(X, start=None, stop=None):
             return X[start:stop]
 
 
+def arrayhelper_to_array(
+        arrayhelper):
+    """
+    Takes a reference to a Java NDArrayHelper and converts
+    it to a numpy array.
+    :param arrayhelper:
+    :return:
+    """
+    array = numpy.array(arrayhelper.getData(), dtype=float, order=arrayhelper.getOrder()).reshape(arrayhelper.getShape())
+
+    return array
+
+
 def check_dl4j_model(
         self):
     """
@@ -351,9 +364,12 @@ def _sequential_predict(
     params_builder.sequentialModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
     params_builder.batchSize(batch_size)
-    gateway.sequentialPredict(params_builder.build())
+    arrayhelper = gateway.sequentialPredict(params_builder.build())
 
     print("predict() operation complete")
+
+    array = arrayhelper_to_array(arrayhelper)
+    return array
 
 
 def _sequential_predict_on_batch(
@@ -371,9 +387,12 @@ def _sequential_predict_on_batch(
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.PredictOnBatchParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
     params_builder.featuresDirectory(features_directory)
-    gateway.sequentialPredictOnBatch(params_builder.build())
+    arrayhelper = gateway.sequentialPredictOnBatch(params_builder.build())
 
     print("predict_on_batch() operation complete")
+
+    array = arrayhelper_to_array(arrayhelper)
+    return array
 
 
 

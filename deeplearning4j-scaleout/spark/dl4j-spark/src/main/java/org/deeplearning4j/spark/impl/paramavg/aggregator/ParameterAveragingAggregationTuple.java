@@ -17,7 +17,8 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data
+@AllArgsConstructor
+@Data
 @Builder
 public class ParameterAveragingAggregationTuple implements Serializable {
     private final INDArray parametersSum;

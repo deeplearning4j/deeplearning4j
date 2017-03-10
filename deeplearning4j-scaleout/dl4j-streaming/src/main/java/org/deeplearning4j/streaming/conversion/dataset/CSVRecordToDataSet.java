@@ -19,20 +19,19 @@ public class CSVRecordToDataSet implements RecordToDataSet {
     @Override
     public DataSet convert(Collection<Collection<Writable>> records, int numLabels) {
         //all but last label
-        DataSet ret = new DataSet( Nd4j.create(records.size(),records.iterator().next().size() - 1),Nd4j.create(records.size(),numLabels));
+        DataSet ret = new DataSet(Nd4j.create(records.size(), records.iterator().next().size() - 1),
+                        Nd4j.create(records.size(), numLabels));
         //  INDArray ret = Nd4j.create(records.size(),records.iterator().next().size() - 1);
         int count = 0;
-        for(Collection<Writable> record : records) {
+        for (Collection<Writable> record : records) {
             List<Writable> list;
-            if(record instanceof List) {
+            if (record instanceof List) {
                 list = (List<Writable>) record;
-            }
-            else
+            } else
                 list = new ArrayList<>(record);
-            DataSet d = new DataSet(
-                    Nd4j.create(record.size() - 1),
-                    FeatureUtil.toOutcomeVector(list.get(list.size() - 1).toInt(),numLabels));
-            ret.addRow(d,count++);
+            DataSet d = new DataSet(Nd4j.create(record.size() - 1),
+                            FeatureUtil.toOutcomeVector(list.get(list.size() - 1).toInt(), numLabels));
+            ret.addRow(d, count++);
 
         }
 

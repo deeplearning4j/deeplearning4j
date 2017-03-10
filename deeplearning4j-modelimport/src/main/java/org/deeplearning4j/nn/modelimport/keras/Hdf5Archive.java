@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -83,7 +83,8 @@ public class Hdf5Archive {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    public String readAttributeAsJson(String attributeName, String... groups) throws UnsupportedKerasConfigurationException {
+    public String readAttributeAsJson(String attributeName, String... groups)
+                    throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
         hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
@@ -142,7 +143,8 @@ public class Hdf5Archive {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName) throws UnsupportedKerasConfigurationException {
+    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName)
+                    throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
         int nbDims = space.getSimpleExtentNdims();
@@ -154,11 +156,11 @@ public class Hdf5Archive {
         INDArray data = null;
         switch (nbDims) {
             case 4: /* 2D Convolution weights */
-                dataBuffer = new float[(int)(dims[0]*dims[1]*dims[2]*dims[3])];
+                dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
                 fp = new FloatPointer(dataBuffer);
                 dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0], (int)dims[1], (int)dims[2], (int)dims[3]);
+                data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     for (int i2 = 0; i2 < dims[1]; i2++)
@@ -167,11 +169,11 @@ public class Hdf5Archive {
                                 data.putScalar(i1, i2, i3, i4, dataBuffer[j++]);
                 break;
             case 3:
-                dataBuffer = new float[(int)(dims[0]*dims[1]*dims[2])];
+                dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2])];
                 fp = new FloatPointer(dataBuffer);
                 dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0], (int)dims[1], (int)dims[2]);
+                data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     for (int i2 = 0; i2 < dims[1]; i2++)
@@ -179,22 +181,22 @@ public class Hdf5Archive {
                             data.putScalar(i1, i2, i3, dataBuffer[j++]);
                 break;
             case 2: /* Dense and Recurrent weights */
-                dataBuffer = new float[(int)(dims[0]*dims[1])];
+                dataBuffer = new float[(int) (dims[0] * dims[1])];
                 fp = new FloatPointer(dataBuffer);
                 dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0], (int)dims[1]);
+                data = Nd4j.create((int) dims[0], (int) dims[1]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     for (int i2 = 0; i2 < dims[1]; i2++)
                         data.putScalar(i1, i2, dataBuffer[j++]);
                 break;
             case 1: /* Bias */
-                dataBuffer = new float[(int)dims[0]];
+                dataBuffer = new float[(int) dims[0]];
                 fp = new FloatPointer(dataBuffer);
                 dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0]);
+                data = Nd4j.create((int) dims[0]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     data.putScalar(i1, dataBuffer[j++]);
@@ -252,7 +254,8 @@ public class Hdf5Archive {
             try {
                 mapper.readTree(s);
                 break;
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             bufferSizeMult++;
             if (bufferSizeMult > 100) {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");

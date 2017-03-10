@@ -30,8 +30,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
     protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
 
-    protected GraphTransformer() {
-    }
+    protected GraphTransformer() {}
 
     /**
      * This method handles required initialization for GraphTransformer
@@ -41,22 +40,23 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         int nVertices = sourceGraph.numVertices();
         //int[] degrees = new int[nVertices];
         //for( int i=0; i<nVertices; i++ )
-           // degrees[i] = sourceGraph.getVertexDegree(i);
-/*
+        // degrees[i] = sourceGraph.getVertexDegree(i);
+        /*
         for (int y = 0; y < nVertices; y+= 20) {
             int[] copy = Arrays.copyOfRange(degrees, y, y+20);
             System.out.println("D: " + Arrays.toString(copy));
         }
-*/
-//        GraphHuffman huffman = new GraphHuffman(nVertices);
-//        huffman.buildTree(degrees);
+        */
+        //        GraphHuffman huffman = new GraphHuffman(nVertices);
+        //        huffman.buildTree(degrees);
 
         log.info("Transferring Huffman tree info to nodes...");
         for (int i = 0; i < nVertices; i++) {
             T element = sourceGraph.getVertex(i).getValue();
             element.setElementFrequency(sourceGraph.getConnectedVertices(i).size());
 
-            if (vocabCache != null) vocabCache.addToken(element);
+            if (vocabCache != null)
+                vocabCache.addToken(element);
         }
 
         if (vocabCache != null) {

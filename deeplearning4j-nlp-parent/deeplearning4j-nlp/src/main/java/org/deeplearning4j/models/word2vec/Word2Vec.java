@@ -33,7 +33,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
     private static final long serialVersionUID = 78249242142L;
 
     protected transient SentenceIterator sentenceIter;
-    @Getter protected transient TokenizerFactory tokenizerFactory;
+    @Getter
+    protected transient TokenizerFactory tokenizerFactory;
 
     /**
      * This method defines TokenizerFactory instance to be using during model building
@@ -44,10 +45,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         this.tokenizerFactory = tokenizerFactory;
 
         if (sentenceIter != null) {
-            SentenceTransformer transformer = new SentenceTransformer.Builder()
-                    .iterator(sentenceIter)
-                    .tokenizerFactory(this.tokenizerFactory)
-                    .build();
+            SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIter)
+                            .tokenizerFactory(this.tokenizerFactory).build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         }
     }
@@ -61,13 +60,13 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         //if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
 
         if (tokenizerFactory != null) {
-            SentenceTransformer transformer = new SentenceTransformer.Builder()
-                    .iterator(iterator)
-                    .tokenizerFactory(tokenizerFactory)
-                    .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
-                    .build();
+            SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
+                            .tokenizerFactory(tokenizerFactory)
+                            .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
+                            .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
-        } else log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
+        } else
+            log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
     }
 
     /**
@@ -108,9 +107,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         public Builder iterate(@NonNull DocumentIterator iterator) {
-            this.sentenceIterator = new StreamLineIterator.Builder(iterator)
-                    .setFetchSize(100)
-                    .build();
+            this.sentenceIterator = new StreamLineIterator.Builder(iterator).setFetchSize(100).build();
             return this;
         }
 
@@ -517,24 +514,22 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             Word2Vec ret = new Word2Vec();
 
             if (sentenceIterator != null) {
-                if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
+                if (tokenizerFactory == null)
+                    tokenizerFactory = new DefaultTokenizerFactory();
 
-                SentenceTransformer transformer = new SentenceTransformer.Builder()
-                        .iterator(sentenceIterator)
-                        .tokenizerFactory(tokenizerFactory)
-                        .allowMultithreading(allowParallelTokenization)
-                        .build();
+                SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIterator)
+                                .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                                .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
             if (this.labelAwareIterator != null) {
-                if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
+                if (tokenizerFactory == null)
+                    tokenizerFactory = new DefaultTokenizerFactory();
 
-                SentenceTransformer transformer = new SentenceTransformer.Builder()
-                        .iterator(labelAwareIterator)
-                        .tokenizerFactory(tokenizerFactory)
-                        .allowMultithreading(allowParallelTokenization)
-                        .build();
+                SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
+                                .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                                .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
@@ -593,7 +588,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             if (tokenizerFactory != null) {
                 this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
                 if (tokenizerFactory.getTokenPreProcessor() != null)
-                    this.configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+                    this.configuration.setTokenPreProcessor(
+                                    tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
             }
 
             ret.configuration = this.configuration;

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -79,8 +79,7 @@ public class NormalDistribution extends Distribution {
         if (getClass() != obj.getClass())
             return false;
         NormalDistribution other = (NormalDistribution) obj;
-        if (Double.doubleToLongBits(mean) != Double
-                .doubleToLongBits(other.mean))
+        if (Double.doubleToLongBits(mean) != Double.doubleToLongBits(other.mean))
             return false;
         if (Double.doubleToLongBits(std) != Double.doubleToLongBits(other.std))
             return false;
@@ -88,9 +87,6 @@ public class NormalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "NormalDistribution{" +
-                "mean=" + mean +
-                ", std=" + std +
-                '}';
+        return "NormalDistribution{" + "mean=" + mean + ", std=" + std + '}';
     }
 }

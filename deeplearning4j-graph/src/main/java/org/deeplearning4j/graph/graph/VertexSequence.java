@@ -10,11 +10,11 @@ import java.util.NoSuchElementException;
  * @author Alex Black
  */
 public class VertexSequence<V> implements IVertexSequence<V> {
-    private final IGraph<V,?> graph;
+    private final IGraph<V, ?> graph;
     private int[] indices;
     private int currIdx = 0;
 
-    public VertexSequence(IGraph<V, ?> graph, int[] indices){
+    public VertexSequence(IGraph<V, ?> graph, int[] indices) {
         this.graph = graph;
         this.indices = indices;
     }
@@ -31,12 +31,13 @@ public class VertexSequence<V> implements IVertexSequence<V> {
 
     @Override
     public Vertex<V> next() {
-        if(!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
         return graph.getVertex(indices[currIdx++]);
     }
 
     @Override
-    public void remove(){
+    public void remove() {
         throw new UnsupportedOperationException();
     }
 }

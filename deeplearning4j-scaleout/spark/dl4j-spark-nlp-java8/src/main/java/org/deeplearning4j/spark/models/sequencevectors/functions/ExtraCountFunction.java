@@ -13,11 +13,11 @@ import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
  *
  * @author raver119@gmail.com
  */
-public class ExtraCountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>>{
+public class ExtraCountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>> {
     protected Accumulator<ExtraCounter<Long>> accumulator;
     protected boolean fetchLabels;
 
-    public ExtraCountFunction(@NonNull  Accumulator<ExtraCounter<Long>>  accumulator, boolean fetchLabels) {
+    public ExtraCountFunction(@NonNull Accumulator<ExtraCounter<Long>> accumulator, boolean fetchLabels) {
         this.accumulator = accumulator;
         this.fetchLabels = fetchLabels;
     }
@@ -29,7 +29,7 @@ public class ExtraCountFunction<T extends SequenceElement> implements Function<S
         ExtraCounter<Long> localCounter = new ExtraCounter<>();
         long seqLen = 0;
 
-        for (T element: sequence.getElements()) {
+        for (T element : sequence.getElements()) {
             if (element == null)
                 continue;
 
@@ -40,7 +40,7 @@ public class ExtraCountFunction<T extends SequenceElement> implements Function<S
 
         // FIXME: we're missing label information here due to shallow vocab mechanics
         if (sequence.getSequenceLabels() != null)
-            for (T label: sequence.getSequenceLabels()) {
+            for (T label : sequence.getSequenceLabels()) {
                 localCounter.incrementCount(label.getStorageId(), 1.0);
             }
 

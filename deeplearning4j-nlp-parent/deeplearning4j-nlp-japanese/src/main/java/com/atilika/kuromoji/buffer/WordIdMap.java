@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -28,7 +28,7 @@ public class WordIdMap {
 
     private final int[] wordIds;
 
-    private final int[] empty = new int[]{};
+    private final int[] empty = new int[] {};
 
     public WordIdMap(InputStream input) throws IOException {
         indices = IntegerArrayIO.readArray(input);

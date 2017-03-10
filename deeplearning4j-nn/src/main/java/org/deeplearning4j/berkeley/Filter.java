@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -23,5 +23,5 @@ package org.deeplearning4j.berkeley;
  * @author Dan Klein
  */
 public interface Filter<T> {
-  boolean accept(T t);
+    boolean accept(T t);
 }

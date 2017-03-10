@@ -22,7 +22,7 @@ import java.util.Random;
  */
 public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
 
-    private final IGraph<V,? extends Number> graph;
+    private final IGraph<V, ? extends Number> graph;
     private final int walkLength;
     private final NoEdgeHandling mode;
     private final int firstVertex;
@@ -33,8 +33,8 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
     private Random rng;
     private int[] order;
 
-    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength){
-        this(graph,walkLength,System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
+    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength) {
+        this(graph, walkLength, System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
     /**Construct a RandomWalkIterator for a given graph, with a specified walk length and random number generator seed.<br>
@@ -42,7 +42,7 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
      * walks on graphs with vertices containing having no edges, or no outgoing edges (for directed graphs)
      * @see #WeightedRandomWalkIterator(IGraph, int, long, NoEdgeHandling)
      */
-    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed){
+    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed) {
         this(graph, walkLength, rngSeed, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
@@ -52,8 +52,9 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
      * @param rngSeed seed for randomization
      * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
      */
-    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed, NoEdgeHandling mode){
-        this(graph,walkLength,rngSeed,mode,0,graph.numVertices());
+    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed,
+                    NoEdgeHandling mode) {
+        this(graph, walkLength, rngSeed, mode, 0, graph.numVertices());
     }
 
     /**Constructor used to generate random walks starting at a subset of the vertices in the graph. Order of starting
@@ -65,8 +66,8 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
      * @param firstVertex first vertex index (inclusive) to start random walks from
      * @param lastVertex last vertex index (exclusive) to start random walks from
      */
-    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed, NoEdgeHandling mode, int firstVertex,
-                                      int lastVertex){
+    public WeightedRandomWalkIterator(IGraph<V, ? extends Number> graph, int walkLength, long rngSeed,
+                    NoEdgeHandling mode, int firstVertex, int lastVertex) {
         this.graph = graph;
         this.walkLength = walkLength;
         this.rng = new Random(rngSeed);
@@ -74,33 +75,38 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
         this.firstVertex = firstVertex;
         this.lastVertex = lastVertex;
 
-        order = new int[lastVertex-firstVertex];
-        for( int i=0; i<order.length; i++ ) order[i] = firstVertex+i;
+        order = new int[lastVertex - firstVertex];
+        for (int i = 0; i < order.length; i++)
+            order[i] = firstVertex + i;
         reset();
     }
 
     @Override
     public IVertexSequence<V> next() {
-        if(!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
         //Generate a weighted random walk starting at vertex order[current]
         int currVertexIdx = order[position++];
-        int[] indices = new int[walkLength+1];
+        int[] indices = new int[walkLength + 1];
         indices[0] = currVertexIdx;
-        if(walkLength == 0) return new VertexSequence<>(graph,indices);
+        if (walkLength == 0)
+            return new VertexSequence<>(graph, indices);
 
-        for( int i=1; i<=walkLength; i++ ) {
+        for (int i = 1; i <= walkLength; i++) {
             List<? extends Edge<? extends Number>> edgeList = graph.getEdgesOut(currVertexIdx);
 
             //First: check if there are any outgoing edges from this vertex. If not: handle the situation
-            if(edgeList == null || edgeList.isEmpty()){
+            if (edgeList == null || edgeList.isEmpty()) {
                 switch (mode) {
                     case SELF_LOOP_ON_DISCONNECTED:
-                        for (int j = i; j < walkLength; j++) indices[j] = currVertexIdx;
+                        for (int j = i; j < walkLength; j++)
+                            indices[j] = currVertexIdx;
                         return new VertexSequence<>(graph, indices);
                     case EXCEPTION_ON_DISCONNECTED:
-                        throw new NoEdgesException("Cannot conduct random walk: vertex " + currVertexIdx + " has no outgoing edges. "
-                                + " Set NoEdgeHandling mode to NoEdgeHandlingMode.SELF_LOOP_ON_DISCONNECTED to self loop instead of "
-                                + "throwing an exception in this situation.");
+                        throw new NoEdgesException("Cannot conduct random walk: vertex " + currVertexIdx
+                                        + " has no outgoing edges. "
+                                        + " Set NoEdgeHandling mode to NoEdgeHandlingMode.SELF_LOOP_ON_DISCONNECTED to self loop instead of "
+                                        + "throwing an exception in this situation.");
                     default:
                         throw new RuntimeException("Unknown/not implemented NoEdgeHandling mode: " + mode);
                 }
@@ -132,7 +138,7 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
                 }
             }
         }
-        return new VertexSequence<>(graph,indices);
+        return new VertexSequence<>(graph, indices);
     }
 
     @Override
@@ -144,8 +150,8 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
     public void reset() {
         position = 0;
         //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-        for(int i=order.length-1; i>0; i-- ){
-            int j = rng.nextInt(i+1);
+        for (int i = order.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
             int temp = order[j];
             order[j] = order[i];
             order[i] = temp;
@@ -153,7 +159,7 @@ public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
     }
 
     @Override
-    public int walkLength(){
+    public int walkLength() {
         return walkLength;
     }
 }

@@ -27,15 +27,8 @@ public class Word2VecVisualizationTests {
 
     @Test
     public void testBarnesHutTsneVisualization() throws Exception {
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .setMaxIter(4)
-                .stopLyingIteration(250)
-                .learningRate(500)
-                .useAdaGrad(false)
-                .theta(0.5)
-                .setMomentum(0.5)
-                .normalize(true)
-                .build();
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder().setMaxIter(4).stopLyingIteration(250).learningRate(500)
+                        .useAdaGrad(false).theta(0.5).setMomentum(0.5).normalize(true).build();
 
         //vectors.lookupTable().plotVocab(tsne);
     }

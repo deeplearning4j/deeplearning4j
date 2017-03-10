@@ -30,7 +30,7 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
         // build new tree if it wasn't created before
         if (vpTree == null) {
             List<DataPoint> points = new ArrayList<>();
-            for (String word: vocabCache.words()) {
+            for (String word : vocabCache.words()) {
                 points.add(new DataPoint(vocabCache.indexOf(word), lookupTable.vector(word)));
             }
             vpTree = new VPTree(points);
@@ -49,10 +49,12 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
      */
     @Override
     public Collection<String> wordsNearest(String label, int n) {
-        if (!vocabCache.hasToken(label)) return new ArrayList<>();
+        if (!vocabCache.hasToken(label))
+            return new ArrayList<>();
 
-        Collection<String> collection = wordsNearest(Arrays.asList(label),new ArrayList<String>(),n + 1);
-        if (collection.contains(label)) collection.remove(label);
+        Collection<String> collection = wordsNearest(Arrays.asList(label), new ArrayList<String>(), n + 1);
+        if (collection.contains(label))
+            collection.remove(label);
 
         return collection;
     }
@@ -90,11 +92,11 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
         List<Double> distances = new ArrayList<>();
 
         // we need n+1 to address original datapoint removal
-        vpTree.search(new DataPoint(0, words), top, add, distances );
+        vpTree.search(new DataPoint(0, words), top, add, distances);
 
         Collection<String> ret = new ArrayList<>();
-        for (DataPoint e: add) {
-            String word  = vocabCache.wordAtIndex(e.getIndex());
+        for (DataPoint e : add) {
+            String word = vocabCache.wordAtIndex(e.getIndex());
             ret.add(word);
         }
 

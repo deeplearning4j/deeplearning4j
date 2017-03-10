@@ -32,8 +32,11 @@ import java.util.*;
 public class TransferLearningHelper {
 
     private boolean isGraph = true;
+    private boolean applyFrozen = false;
     private ComputationGraph origGraph;
     private MultiLayerNetwork origMLN;
+    private int frozenTill;
+    private String[] frozenOutputAt;
     private ComputationGraph unFrozenSubsetGraph;
     private MultiLayerNetwork unFrozenSubsetMLN;
     Set<String> frozenInputVertices = new HashSet<>(); //name map so no problem
@@ -41,15 +44,47 @@ public class TransferLearningHelper {
     int frozenInputLayer = 0;
 
     /**
-     * Expecting a computation graph or a multilayer network with frozen layer/vertices
+     * Will modify the given comp graph (in place!) to freeze vertices from input to the vertex specified.
      *
-     * @param orig either a computation graph or a multi layer network
+     * @param orig           Comp graph
+     * @param frozenOutputAt vertex to freeze at (hold params constant during training)
+     */
+    public TransferLearningHelper(ComputationGraph orig, String... frozenOutputAt) {
+        origGraph = orig;
+        this.frozenOutputAt = frozenOutputAt;
+        applyFrozen = true;
+        initHelperGraph();
+    }
+
+    /**
+     * Expects a computation graph where some vertices are frozen
+     *
+     * @param orig
      */
     public TransferLearningHelper(ComputationGraph orig) {
         origGraph = orig;
         initHelperGraph();
     }
 
+    /**
+     * Will modify the given MLN (in place!) to freeze layers (hold params constant during training) specified and below
+     *
+     * @param orig       MLN to freeze
+     * @param frozenTill integer indicating the index of the layer and below to freeze
+     */
+    public TransferLearningHelper(MultiLayerNetwork orig, int frozenTill) {
+        isGraph = false;
+        this.frozenTill = frozenTill;
+        applyFrozen = true;
+        origMLN = orig;
+        initHelperMLN();
+    }
+
+    /**
+     * Expects a MLN where some layers are frozen
+     *
+     * @param orig
+     */
     public TransferLearningHelper(MultiLayerNetwork orig) {
         isGraph = false;
         origMLN = orig;
@@ -58,28 +93,62 @@ public class TransferLearningHelper {
 
     public void errorIfGraphIfMLN() {
         if (isGraph)
-            throw new IllegalArgumentException("This instance was initialized with a computation graph. Cannot apply methods related to MLN");
+            throw new IllegalArgumentException(
+                            "This instance was initialized with a computation graph. Cannot apply methods related to MLN");
         else
-            throw new IllegalArgumentException("This instance was initialized with a MultiLayerNetwork. Cannot apply methods related to computation graphs");
+            throw new IllegalArgumentException(
+                            "This instance was initialized with a MultiLayerNetwork. Cannot apply methods related to computation graphs");
 
     }
 
     /**
-     * Returns the unfrozen subset of the computation graph
+     * Returns the unfrozen subset of the original computation graph as a computation graph
      * Note that with each call to featurizedFit the parameters to the original computation graph are also updated
      */
-    protected ComputationGraph unfrozenGraph() {
-        if (!isGraph) errorIfGraphIfMLN();
+    public ComputationGraph unfrozenGraph() {
+        if (!isGraph)
+            errorIfGraphIfMLN();
         return unFrozenSubsetGraph;
     }
 
     /**
-     * Returns the unfrozen layers of the MultiLayerNetwork
+     * Returns the unfrozen layers of the MultiLayerNetwork as a multilayernetwork
      * Note that with each call to featurizedFit the parameters to the original MLN are also updated
      */
-    protected MultiLayerNetwork unfrozenMLN() {
-        if (isGraph) errorIfGraphIfMLN();
+    public MultiLayerNetwork unfrozenMLN() {
+        if (isGraph)
+            errorIfGraphIfMLN();
         return unFrozenSubsetMLN;
+    }
+
+    /**
+     * Use to get the output from a featurized input
+     *
+     * @param input featurized data
+     * @return output
+     */
+    public INDArray[] outputFromFeaturized(INDArray[] input) {
+        if (!isGraph)
+            errorIfGraphIfMLN();
+        return unFrozenSubsetGraph.output(input);
+    }
+
+    /**
+     * Use to get the output from a featurized input
+     *
+     * @param input featurized data
+     * @return output
+     */
+    public INDArray outputFromFeaturized(INDArray input) {
+        if (isGraph) {
+            if (unFrozenSubsetGraph.getNumOutputArrays() > 1) {
+                throw new IllegalArgumentException(
+                                "Graph has more than one output. Expecting an input array with outputFromFeaturized method call");
+            }
+            return unFrozenSubsetGraph.output(input)[0];
+        } else {
+            return unFrozenSubsetMLN.output(input);
+        }
     }
 
     /**
@@ -90,25 +159,57 @@ public class TransferLearningHelper {
 
         int[] backPropOrder = origGraph.topologicalSortOrder().clone();
         ArrayUtils.reverse(backPropOrder);
+
         Set<String> allFrozen = new HashSet<>();
+        if (applyFrozen) {
+            Collections.addAll(allFrozen, frozenOutputAt);
+        }
         for (int i = 0; i < backPropOrder.length; i++) {
             org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
-            if (gv.hasLayer()) {
-                if (gv.getLayer() instanceof FrozenLayer) {
-                    allFrozen.add(gv.getVertexName());
-                    //also need to add parents to list of allFrozen
-                    VertexIndices[] inputs = gv.getInputVertices();
-                    if (inputs != null && inputs.length > 0) {
-                        for (int j = 0; j < inputs.length; j++) {
-                            int inputVertexIdx = inputs[j].getVertexIndex();
-                            String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getVertexName();
-                            allFrozen.add(alsoFrozen);
+            if (applyFrozen && allFrozen.contains(gv.getVertexName())) {
+                if (gv.hasLayer()) {
+                    //Need to freeze this layer
+                    org.deeplearning4j.nn.api.Layer l = gv.getLayer();
+                    gv.setLayerAsFrozen();
+
+                    //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                    //This could no doubt be done more efficiently
+                    org.deeplearning4j.nn.api.Layer[] layers = origGraph.getLayers();
+                    for (int j = 0; j < layers.length; j++) {
+                        if (layers[j] == l) {
+                            layers[j] = gv.getLayer(); //Place the new frozen layer to replace the original layer
+                            break;
+                        }
+                    }
+                }
+
+                //Also: mark any inputs as to be frozen also
+                VertexIndices[] inputs = gv.getInputVertices();
+                if (inputs != null && inputs.length > 0) {
+                    for (int j = 0; j < inputs.length; j++) {
+                        int inputVertexIdx = inputs[j].getVertexIndex();
+                        String alsoFreeze = origGraph.getVertices()[inputVertexIdx].getVertexName();
+                        allFrozen.add(alsoFreeze);
+                    }
+                }
+            } else {
+                if (gv.hasLayer()) {
+                    if (gv.getLayer() instanceof FrozenLayer) {
+                        allFrozen.add(gv.getVertexName());
+                        //also need to add parents to list of allFrozen
+                        VertexIndices[] inputs = gv.getInputVertices();
+                        if (inputs != null && inputs.length > 0) {
+                            for (int j = 0; j < inputs.length; j++) {
+                                int inputVertexIdx = inputs[j].getVertexIndex();
+                                String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getVertexName();
+                                allFrozen.add(alsoFrozen);
+                            }
                         }
                     }
                 }
             }
         }
-        for (int i =0; i < backPropOrder.length; i++) {
+        for (int i = 0; i < backPropOrder.length; i++) {
             org.deeplearning4j.nn.graph.vertex.GraphVertex gv = origGraph.getVertices()[backPropOrder[i]];
             String gvName = gv.getVertexName();
             //is it an unfrozen vertex that has an input vertex that is frozen?
@@ -150,7 +251,7 @@ public class TransferLearningHelper {
         }
         unFrozenSubsetGraph = builder.build();
         copyOrigParamsToSubsetGraph();
-        unFrozenSubsetGraph.setListeners(origGraph.getListeners());
+        //unFrozenSubsetGraph.setListeners(origGraph.getListeners());
 
         if (frozenInputVertices.isEmpty()) {
             throw new IllegalArgumentException("No frozen layers found");
@@ -159,6 +260,14 @@ public class TransferLearningHelper {
     }
 
     private void initHelperMLN() {
+        if (applyFrozen) {
+            org.deeplearning4j.nn.api.Layer[] layers = origMLN.getLayers();
+            for (int i = frozenTill; i >= 0; i--) {
+                //unchecked?
+                layers[i] = new FrozenLayer(layers[i]);
+            }
+            origMLN.setLayers(layers);
+        }
         for (int i = 0; i < origMLN.getnLayers(); i++) {
             if (origMLN.getLayer(i) instanceof FrozenLayer) {
                 frozenInputLayer = i;
@@ -171,20 +280,16 @@ public class TransferLearningHelper {
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
-        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder()
-                .backprop(c.isBackprop())
-                .inputPreProcessors(c.getInputPreProcessors())
-                .pretrain(c.isPretrain())
-                .backpropType(c.getBackpropType())
-                .tBPTTForwardLength(c.getTbpttFwdLength())
-                .tBPTTBackwardLength(c.getTbpttBackLength())
-                .confs(allConfs).build());
+        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
+                        .inputPreProcessors(c.getInputPreProcessors()).pretrain(c.isPretrain())
+                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
+                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
         unFrozenSubsetMLN.init();
         //copy over params
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {
             unFrozenSubsetMLN.getLayer(i - frozenInputLayer - 1).setParams(origMLN.getLayer(i).params());
         }
-        unFrozenSubsetMLN.setListeners(origMLN.getListeners());
+        //unFrozenSubsetMLN.setListeners(origMLN.getListeners());
     }
 
     /**
@@ -238,22 +343,24 @@ public class TransferLearningHelper {
         if (isGraph) {
             //trying to featurize for a computation graph
             if (origGraph.getNumInputArrays() > 1 || origGraph.getNumOutputArrays() > 1) {
-                throw new IllegalArgumentException("Input or output size to a computation graph is greater than one. Requires use of a MultiDataSet.");
+                throw new IllegalArgumentException(
+                                "Input or output size to a computation graph is greater than one. Requires use of a MultiDataSet.");
             } else {
                 if (input.getFeaturesMaskArray() != null) {
-                    throw new IllegalArgumentException("Currently cannot support featurizing datasets with feature masks");
+                    throw new IllegalArgumentException(
+                                    "Currently cannot support featurizing datasets with feature masks");
                 }
-                MultiDataSet inbW = new MultiDataSet(
-                        new INDArray[]{input.getFeatures()}, new INDArray[]{input.getLabels()},
-                        null, new INDArray[]{input.getLabelsMaskArray()});
+                MultiDataSet inbW = new MultiDataSet(new INDArray[] {input.getFeatures()},
+                                new INDArray[] {input.getLabels()}, null, new INDArray[] {input.getLabelsMaskArray()});
                 MultiDataSet ret = featurize(inbW);
-                return new DataSet(ret.getFeatures()[0], input.getLabels(), ret.getLabelsMaskArrays()[0], input.getLabelsMaskArray());
+                return new DataSet(ret.getFeatures()[0], input.getLabels(), ret.getLabelsMaskArrays()[0],
+                                input.getLabelsMaskArray());
             }
         } else {
             if (input.getFeaturesMaskArray() != null)
                 throw new UnsupportedOperationException("Feature masks not supported with featurizing currently");
             return new DataSet(origMLN.feedForwardToLayer(frozenInputLayer + 1, input.getFeatures(), false)
-                    .get(frozenInputLayer + 1), input.getLabels(), null, input.getLabelsMaskArray());
+                            .get(frozenInputLayer + 1), input.getLabels(), null, input.getLabelsMaskArray());
         }
     }
 
@@ -296,14 +403,16 @@ public class TransferLearningHelper {
 
     private void copyParamsFromSubsetGraphToOrig() {
         for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer()) continue;
+            if (!aVertex.hasLayer())
+                continue;
             origGraph.getVertex(aVertex.getVertexName()).getLayer().setParams(aVertex.getLayer().params());
         }
     }
 
     private void copyOrigParamsToSubsetGraph() {
         for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
-            if (!aVertex.hasLayer()) continue;
+            if (!aVertex.hasLayer())
+                continue;
             aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params());
         }
     }

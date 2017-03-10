@@ -44,13 +44,13 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
         //Initialize the updater state
         if (updaterStateSize > 0) {
             //May be 0 if all SGD updaters, for example
-            viewArray = Nd4j.createUninitialized(new int[]{1, updaterStateSize}, Nd4j.order());
+            viewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
         }
         int soFar = 0;
         i = 0;
         for (Layer layer : graph.getLayers()) {
             int thisSize = layerUpdaters[i].stateSizeForLayer(layer);
-            if (thisSize == 0){
+            if (thisSize == 0) {
                 i++;
                 continue;
             }
@@ -74,21 +74,24 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
         if (updaterState != null) {
             if (updaterState.length() != updaterStateSize) {
-                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size " + updaterState.length());
+                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size "
+                                + updaterState.length());
             }
             //Assign subsets to the various updaters, without initializing (overwriting) the layer values
             this.viewArray = updaterState;
             int soFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
-                if (thisSize == 0) continue;
+                if (thisSize == 0)
+                    continue;
                 INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
                 layerUpdaters[i].setStateViewArray(layers[i], view, false);
                 soFar += thisSize;
             }
         } else if (updaterStateSize != 0) {
             //Updater state size is non-zero, but we didn't get an array...
-            throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got null input");
+            throw new IllegalStateException(
+                            "Expected updater state with size " + updaterStateSize + ", got null input");
         }
     }
 
@@ -99,7 +102,8 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
     private ComputationGraphUpdater(ComputationGraphUpdater updater) {
         layerUpdaters = new Updater[updater.layerUpdaters.length];
-        for (int i = 0; i < layerUpdaters.length; i++) layerUpdaters[i] = updater.layerUpdaters[i].clone();
+        for (int i = 0; i < layerUpdaters.length; i++)
+            layerUpdaters[i] = updater.layerUpdaters[i].clone();
         layerUpdatersMap = new HashMap<>(updater.layerUpdatersMap);
     }
 
@@ -118,7 +122,9 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
             String key = gradientPair.getKey();
             int idx = key.lastIndexOf('_');
             if (idx == -1)
-                throw new IllegalStateException("Invalid key: ComputationGraph Gradient key does not have layer separator: \"" + key + "\"");
+                throw new IllegalStateException(
+                                "Invalid key: ComputationGraph Gradient key does not have layer separator: \"" + key
+                                                + "\"");
 
             String layerName = key.substring(0, idx);
 
@@ -148,8 +154,8 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
     public void setStateViewArray(INDArray viewArray) {
         if (this.viewArray.length() != viewArray.length())
-            throw new IllegalStateException("Invalid input: view arrays differ in length. " +
-                    "Expected length " + this.viewArray.length() + ", got length " + viewArray.length());
+            throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
+                            + this.viewArray.length() + ", got length " + viewArray.length());
         this.viewArray.assign(viewArray);
     }
 
@@ -160,7 +166,8 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof ComputationGraphUpdater)) return false;
+        if (!(other instanceof ComputationGraphUpdater))
+            return false;
         return layerUpdatersMap.equals(((ComputationGraphUpdater) other).layerUpdatersMap);
     }
 

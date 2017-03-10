@@ -21,7 +21,8 @@ public abstract class BaseSparkSequenceLearningAlgorithm implements SparkSequenc
     protected transient ElementsLearningAlgorithm<ShallowSequenceElement> elementsLearningAlgorithm;
 
     @Override
-    public void configure(VocabCache<ShallowSequenceElement> vocabCache, WeightLookupTable<ShallowSequenceElement> lookupTable, VectorsConfiguration configuration) {
+    public void configure(VocabCache<ShallowSequenceElement> vocabCache,
+                    WeightLookupTable<ShallowSequenceElement> lookupTable, VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.vectorsConfiguration = configuration;
     }
@@ -37,7 +38,8 @@ public abstract class BaseSparkSequenceLearningAlgorithm implements SparkSequenc
     }
 
     @Override
-    public INDArray inferSequence(Sequence<ShallowSequenceElement> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations) {
+    public INDArray inferSequence(Sequence<ShallowSequenceElement> sequence, long nextRandom, double learningRate,
+                    double minLearningRate, int iterations) {
         throw new UnsupportedOperationException();
     }
 

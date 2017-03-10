@@ -14,13 +14,13 @@ public class NDArrayHelper {
   protected double[] data;
   protected int[] shape;
   protected int[] stride;
-  protected char order;
+  protected String order;
 
   public NDArrayHelper(INDArray array) {
     this.data = NDArrayHelper.toFlattened(array);
     this.shape = array.shape();
     this.stride = array.stride();
-    this.order = 'c';
+    this.order = "C";
   }
 
   public static double[] toFlattened(INDArray array) {

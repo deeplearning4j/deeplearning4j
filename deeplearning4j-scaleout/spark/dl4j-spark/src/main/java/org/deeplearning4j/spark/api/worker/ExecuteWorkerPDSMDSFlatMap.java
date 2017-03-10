@@ -16,12 +16,14 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
 
     public ExecuteWorkerPDSMDSFlatMap(TrainingWorker<R> worker) {
         super(new ExecuteWorkerPDSMDSFlatMapAdapter<>(worker));
     }
 }
+
 
 /**
  * A FlatMapFunction for executing training on serialized MultiDataSet objects, that can be loaded using a PortableDataStream
@@ -29,10 +31,11 @@ public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult> extends BaseFl
  *
  * @author Alex Black
  */
-class ExecuteWorkerPDSMDSFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
+class ExecuteWorkerPDSMDSFlatMapAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
     private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
 
-    public ExecuteWorkerPDSMDSFlatMapAdapter(TrainingWorker<R> worker){
+    public ExecuteWorkerPDSMDSFlatMapAdapter(TrainingWorker<R> worker) {
         this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
     }
 

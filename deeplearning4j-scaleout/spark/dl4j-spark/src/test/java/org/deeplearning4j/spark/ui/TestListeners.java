@@ -34,28 +34,20 @@ import static org.junit.Assert.assertTrue;
 public class TestListeners extends BaseSparkTest {
 
     @Test
-    public void testStatsCollection(){
+    public void testStatsCollection() {
 
         JavaSparkContext sc = getContext();
         int nExecutors = numExecutors();
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(123)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(1)
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(4).nOut(100)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.RELU)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(100).nOut(3)
-                        .activation(Activation.SOFTMAX)
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .pretrain(false).backprop(true)
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.RELU).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
+                                                        .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
+                                                        .build())
+                        .pretrain(false).backprop(true).build();
 
 
 
@@ -63,17 +55,15 @@ public class TestListeners extends BaseSparkTest {
         network.init();
 
 
-        TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
-                .batchSizePerWorker(5)
-                .averagingFrequency(6)
-                .build();
+        TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).batchSizePerWorker(5).averagingFrequency(6)
+                        .build();
 
-        SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc,conf,tm);
-        StatsStorage ss = new MapDBStatsStorage();  //In-memory
+        SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc, conf, tm);
+        StatsStorage ss = new MapDBStatsStorage(); //In-memory
 
         net.setListeners(ss, Collections.singletonList(new StatsListener(null)));
 
-        List<DataSet> list = new IrisDataSetIterator(120,150).next().asList();
+        List<DataSet> list = new IrisDataSetIterator(120, 150).next().asList();
         //120 examples, 4 executors, 30 examples per executor -> 6 updates of size 5 per executor
 
         JavaRDD<DataSet> rdd = sc.parallelize(list);
@@ -95,20 +85,20 @@ public class TestListeners extends BaseSparkTest {
         System.out.println(lastUpdates);
 
         System.out.println("Static info:");
-        for(String wid : workers) {
+        for (String wid : workers) {
             Persistable staticInfo = ss.getStaticInfo(sid, StatsListener.TYPE_ID, wid);
-            System.out.println(sid + "\t" + wid );
+            System.out.println(sid + "\t" + wid);
         }
 
         assertEquals(1, typeIDs.size());
         assertEquals(numExecutors(), workers.size());
         String firstWorker = workers.get(0);
-        String firstWorkerSubstring = workers.get(0).substring(0,firstWorker.length()-1);
-        for(String wid : workers){
-            String widSubstring = wid.substring(0, wid.length()-1);
+        String firstWorkerSubstring = workers.get(0).substring(0, firstWorker.length() - 1);
+        for (String wid : workers) {
+            String widSubstring = wid.substring(0, wid.length() - 1);
             assertEquals(firstWorkerSubstring, widSubstring);
 
-            String counterVal = wid.substring(wid.length()-1,wid.length());
+            String counterVal = wid.substring(wid.length() - 1, wid.length());
             int cv = Integer.parseInt(counterVal);
             assertTrue(0 <= cv && cv < numExecutors());
         }

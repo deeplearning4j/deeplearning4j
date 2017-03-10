@@ -12,7 +12,7 @@ import org.tartarus.snowball.ext.PorterStemmer;
  * @author raver119@gmail.com
  */
 @NoArgsConstructor
-public class EmbeddedStemmingPreprocessor implements TokenPreProcess{
+public class EmbeddedStemmingPreprocessor implements TokenPreProcess {
     private TokenPreProcess preProcessor;
 
     public EmbeddedStemmingPreprocessor(@NonNull TokenPreProcess preProcess) {

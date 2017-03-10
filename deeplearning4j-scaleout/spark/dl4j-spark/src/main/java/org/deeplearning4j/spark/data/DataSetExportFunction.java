@@ -33,10 +33,10 @@ public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
     @Override
     public void call(Iterator<DataSet> iter) throws Exception {
         String jvmuid = UIDProvider.getJVMUID();
-        uid = Thread.currentThread().getId() + jvmuid.substring(0,Math.min(8,jvmuid.length()));
+        uid = Thread.currentThread().getId() + jvmuid.substring(0, Math.min(8, jvmuid.length()));
 
 
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             DataSet next = iter.next();
 
             String filename = "dataset_" + uid + "_" + (outputCount++) + ".bin";
@@ -44,7 +44,7 @@ public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
             String path = outputDir.getPath();
             URI uri = new URI(path + (path.endsWith("/") || path.endsWith("\\") ? "" : "/") + filename);
             FileSystem file = FileSystem.get(uri, conf);
-            try(FSDataOutputStream out = file.create(new Path(uri))){
+            try (FSDataOutputStream out = file.create(new Path(uri))) {
                 next.save(out);
             }
         }

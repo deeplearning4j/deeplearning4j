@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,8 +38,7 @@ public class ArchiveUtils {
 
     private static final Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
 
-    private ArchiveUtils() {
-    }
+    private ArchiveUtils() {}
 
     /**
      * Extracts files to the specified destination
@@ -47,27 +46,26 @@ public class ArchiveUtils {
      * @param dest the destination directory
      * @throws IOException
      */
-    public static void unzipFileTo(String file,String dest) throws IOException {
+    public static void unzipFileTo(String file, String dest) throws IOException {
         File target = new File(file);
-        if(!target.exists())
+        if (!target.exists())
             throw new IllegalArgumentException("Archive doesnt exist");
         FileInputStream fin = new FileInputStream(target);
         int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
 
-        if(file.endsWith(".zip")) {
+        if (file.endsWith(".zip")) {
             //getFromOrigin the zip file content
-            ZipInputStream zis =
-                    new ZipInputStream(fin);
+            ZipInputStream zis = new ZipInputStream(fin);
             //getFromOrigin the zipped file list entry
             ZipEntry ze = zis.getNextEntry();
 
-            while(ze!=null){
+            while (ze != null) {
 
                 String fileName = ze.getName();
                 File newFile = new File(dest + File.separator + fileName);
 
-                log.info("file unzip : "+ newFile.getAbsoluteFile());
+                log.info("file unzip : " + newFile.getAbsoluteFile());
 
                 //createComplex all non exists folders
                 //else you will hit FileNotFoundException for compressed folder
@@ -92,7 +90,7 @@ public class ArchiveUtils {
 
 
 
-        else if(file.endsWith(".tar.gz") || file.endsWith(".tgz")) {
+        else if (file.endsWith(".tar.gz") || file.endsWith(".tgz")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
             GzipCompressorInputStream gzIn = new GzipCompressorInputStream(in);
@@ -110,7 +108,7 @@ public class ArchiveUtils {
 
                 if (entry.isDirectory()) {
 
-                    File f = new File(dest +File.separator +  entry.getName());
+                    File f = new File(dest + File.separator + entry.getName());
                     f.mkdirs();
                 }
                 /**
@@ -120,9 +118,8 @@ public class ArchiveUtils {
                 else {
                     int count;
 
-                    FileOutputStream fos = new FileOutputStream(dest + File.separator +  entry.getName());
-                    BufferedOutputStream destStream = new BufferedOutputStream(fos,
-                            BUFFER);
+                    FileOutputStream fos = new FileOutputStream(dest + File.separator + entry.getName());
+                    BufferedOutputStream destStream = new BufferedOutputStream(fos, BUFFER);
                     while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
                         destStream.write(data, 0, count);
                     }
@@ -140,14 +137,14 @@ public class ArchiveUtils {
             tarIn.close();
         }
 
-        else if(file.endsWith(".gz")) {
+        else if (file.endsWith(".gz")) {
             GZIPInputStream is2 = new GZIPInputStream(fin);
-            File extracted = new File(target.getParent(),target.getName().replace(".gz",""));
-            if(extracted.exists())
+            File extracted = new File(target.getParent(), target.getName().replace(".gz", ""));
+            if (extracted.exists())
                 extracted.delete();
             extracted.createNewFile();
             OutputStream fos = FileUtils.openOutputStream(extracted);
-            IOUtils.copyLarge(is2,fos);
+            IOUtils.copyLarge(is2, fos);
             is2.close();
             fos.flush();
             fos.close();
@@ -157,7 +154,6 @@ public class ArchiveUtils {
         target.delete();
 
     }
-
 
 
 

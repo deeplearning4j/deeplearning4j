@@ -25,7 +25,6 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
-//    protected Convolution.Type convolutionType;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;       //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
@@ -37,15 +36,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
 
     /**
-    * ConvolutionLayer
-    * nIn in the input layer is the number of channels
-    * nOut is the number of filters to be used in the net or in other words the depth
-    * The builder specifies the filter/kernel size, the stride and padding
-    * The pooling layer takes the kernel size
-    */
-    private ConvolutionLayer(Builder builder) {
-    	super(builder);
-//        this.convolutionType = builder.convolutionType;
+     * ConvolutionLayer
+     * nIn in the input layer is the number of channels
+     * nOut is the number of filters to be used in the net or in other words the depth
+     * The builder specifies the filter/kernel size, the stride and padding
+     * The pooling layer takes the kernel size
+     */
+    protected ConvolutionLayer(BaseConvBuilder<?> builder) {
+        super(builder);
         this.convolutionMode = builder.convolutionMode;
         if(builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
@@ -160,49 +158,22 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
     }
 
-    @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        private ConvolutionMode convolutionMode = null;
-        private int[] kernelSize = new int[] {5,5};
-        private int[] stride = new int[] {1,1};
-        private int[] padding = new int[] {0, 0};
-        private AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
-
+    public static class Builder extends BaseConvBuilder<Builder> {
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            super(kernelSize, stride, padding);
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            super(kernelSize, stride);
         }
 
-        public Builder(int... kernelSize) {
-            this.kernelSize = kernelSize;
+        public Builder(int... kernelSize){
+            super(kernelSize);
         }
 
-        public Builder() {}
-
-        /**
-         * @deprecated Use {@link #convolutionMode}
-         */
-        @Deprecated
-        public Builder convolutionType(Convolution.Type convolutionType) {
-            return this;
-        }
-
-        /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
-         *
-         * @param convolutionMode    Convolution mode for layer
-         */
-        public Builder convolutionMode(ConvolutionMode convolutionMode){
-            this.convolutionMode = convolutionMode;
-            return this;
+        public Builder(){
+            super();
         }
 
         /**
@@ -227,18 +198,55 @@ public class ConvolutionLayer extends FeedForwardLayer {
             return this;
         }
 
-        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
-        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode){
-            this.cudnnAlgoMode = cudnnAlgoMode;
-            return this;
-        }
-
         @Override
         @SuppressWarnings("unchecked")
         public ConvolutionLayer build() {
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new ConvolutionLayer(this);
+        }
+    }
+
+    protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+        protected ConvolutionMode convolutionMode = null;
+        protected int[] kernelSize = new int[] {5,5};
+        protected int[] stride = new int[] {1,1};
+        protected int[] padding = new int[] {0, 0};
+        protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+        }
+
+        protected BaseConvBuilder(int... kernelSize) {
+            this.kernelSize = kernelSize;
+        }
+
+        protected BaseConvBuilder() {}
+
+        /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode    Convolution mode for layer
+         */
+        public T convolutionMode(ConvolutionMode convolutionMode){
+            this.convolutionMode = convolutionMode;
+            return (T)this;
+        }
+
+        /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
+        public T cudnnAlgoMode(AlgoMode cudnnAlgoMode){
+            this.cudnnAlgoMode = cudnnAlgoMode;
+            return (T)this;
         }
     }
 }

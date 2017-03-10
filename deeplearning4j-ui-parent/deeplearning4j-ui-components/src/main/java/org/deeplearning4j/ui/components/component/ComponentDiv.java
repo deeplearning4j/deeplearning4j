@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -30,15 +30,16 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-@Data @EqualsAndHashCode(callSuper=true)
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentDiv extends Component {
     public static final String COMPONENT_TYPE = "ComponentDiv";
 
     private Component[] components;
 
-    public ComponentDiv(){
-        super(COMPONENT_TYPE,null);
+    public ComponentDiv() {
+        super(COMPONENT_TYPE, null);
     }
 
 
@@ -47,7 +48,8 @@ public class ComponentDiv extends Component {
         this.components = components;
     }
 
-    public ComponentDiv(Style style, Collection<Component> componentCollection){
-        this(style, (componentCollection == null ? null : componentCollection.toArray(new Component[componentCollection.size()])));
+    public ComponentDiv(Style style, Collection<Component> componentCollection) {
+        this(style, (componentCollection == null ? null
+                        : componentCollection.toArray(new Component[componentCollection.size()])));
     }
 }
