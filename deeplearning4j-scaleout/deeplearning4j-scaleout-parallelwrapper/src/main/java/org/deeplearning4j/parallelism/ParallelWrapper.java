@@ -11,6 +11,7 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -713,8 +714,8 @@ public class ParallelWrapper implements AutoCloseable {
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
                     if (!onRootModel) {
-                        MultiLayerConfiguration conf =
-                                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
+                        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
+
                         this.replicatedModel = new MultiLayerNetwork(conf);
 
                         ((MultiLayerNetwork) replicatedModel).init();
@@ -738,8 +739,8 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 } else if (originalModel instanceof ComputationGraph) {
                     if (!onRootModel) {
-                        this.replicatedModel = new ComputationGraph(
-                                        ((ComputationGraph) originalModel).getConfiguration().clone());
+                        this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
+
 
                         ((ComputationGraph) this.replicatedModel).init();
                         Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
