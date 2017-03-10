@@ -3,6 +3,7 @@ package org.deeplearning4j.keras;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.keras.api.*;
+import org.deeplearning4j.keras.data.NDArrayHelper;
 import org.deeplearning4j.keras.hdf5.HDF5MiniBatchDataSetIterator;
 import org.deeplearning4j.keras.model.KerasModelSerializer;
 import org.deeplearning4j.keras.model.KerasModelType;
@@ -169,7 +170,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A single feature and associated parameters
      */
-    public INDArray sequentialPredict(PredictParams predictParams) throws Exception {
+    public NDArrayHelper sequentialPredict(PredictParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -181,7 +182,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.predict() operation complete.");
 
-            return ret;
+            return new NDArrayHelper(ret);
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict()", e);
@@ -194,7 +195,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and associated parameters
      */
-    public INDArray sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+    public NDArrayHelper sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -206,7 +207,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.predict_on_batch() operation complete.");
 
-            return ret;
+            return new NDArrayHelper(ret);
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict_on_batch()", e);
@@ -362,7 +363,9 @@ public class DeepLearning4jEntryPoint {
 
             while(dataSetIterator.hasNext()) {
                 DataSet data = dataSetIterator.next();
-                ret.add(model.output(data.getFeatures()));
+                ret.add(
+                    model.output(data.getFeatures())
+                );
             }
 
             log.info("model.predict_on_batch() operation complete.");
