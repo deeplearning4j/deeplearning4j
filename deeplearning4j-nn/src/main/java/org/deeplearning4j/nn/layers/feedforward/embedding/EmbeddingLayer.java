@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -44,16 +44,16 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon){
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
         //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
-//        INDArray delta = epsilon.muli(activationDerivative);
-        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst();  //TODO handle activation function params
+        //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
+        //        INDArray delta = epsilon.muli(activationDerivative);
+        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
-        if(maskArray != null){
+        if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
@@ -62,40 +62,42 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         weightGradients.assign(0);
 
         int[] indexes = new int[input.length()];
-        for( int i=0; i<indexes.length; i++ ){
-            indexes[i] = input.getInt(i,0);
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = input.getInt(i, 0);
 
             weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
         INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
         INDArray biasGradients = delta.sum(0);
-        biasGradientsView.assign(biasGradients);    //TODO do this without the assign...
+        biasGradientsView.assign(biasGradients); //TODO do this without the assign...
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
 
-        return new Pair<>(ret,null);    //Don't bother returning epsilons: no layer below this one...
+        return new Pair<>(ret, null); //Don't bother returning epsilons: no layer below this one...
     }
 
     @Override
-    public INDArray preOutput(boolean training){
-        if(input.columns() != 1){
+    public INDArray preOutput(boolean training) {
+        if (input.columns() != 1) {
             //Assume shape is [numExamples,1], and each entry is an integer index
-            throw new DL4JInvalidInputException("Cannot do forward pass for embedding layer with input more than one column. "
-                    + "Expected input shape: [numExamples,1] with each entry being an integer index");
+            throw new DL4JInvalidInputException(
+                            "Cannot do forward pass for embedding layer with input more than one column. "
+                                            + "Expected input shape: [numExamples,1] with each entry being an integer index");
         }
 
         int[] indexes = new int[input.length()];
-        for( int i=0; i<indexes.length; i++ ) indexes[i] = input.getInt(i,0);
+        for (int i = 0; i < indexes.length; i++)
+            indexes[i] = input.getInt(i, 0);
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         //INDArray rows = weights.getRows(indexes);
-/*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
-
+        /*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
+        
         for( int i=0; i<indexes.length; i++ ){
             rows.putRow(i,weights.getRow(indexes[i]));
         }
@@ -107,12 +109,12 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public INDArray activate(boolean training){
+    public INDArray activate(boolean training) {
         INDArray rows = preOutput(training);
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(rows,training);
-        if(maskArray != null){
+        INDArray ret = conf.getLayer().getActivationFn().getActivation(rows, training);
+        if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }
         return ret;
@@ -124,7 +126,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    protected void applyDropOutIfNecessary(boolean training){
+    protected void applyDropOutIfNecessary(boolean training) {
         throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer");
     }
 

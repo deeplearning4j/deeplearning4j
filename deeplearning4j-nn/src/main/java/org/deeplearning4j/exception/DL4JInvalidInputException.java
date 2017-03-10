@@ -7,8 +7,7 @@ package org.deeplearning4j.exception;
  */
 public class DL4JInvalidInputException extends DL4JException {
 
-    public DL4JInvalidInputException() {
-    }
+    public DL4JInvalidInputException() {}
 
     public DL4JInvalidInputException(String message) {
         super(message);

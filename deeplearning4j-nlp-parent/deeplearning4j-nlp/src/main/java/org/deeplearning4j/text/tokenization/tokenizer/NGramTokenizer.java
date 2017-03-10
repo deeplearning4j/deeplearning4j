@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,7 +33,7 @@ public class NGramTokenizer implements Tokenizer {
     private TokenPreProcess preProcess;
     private Tokenizer tokenizer;
 
-    public NGramTokenizer(Tokenizer tokenizer,Integer minN, Integer maxN) {
+    public NGramTokenizer(Tokenizer tokenizer, Integer minN, Integer maxN) {
         this.tokens = new ArrayList<>();
         while (tokenizer.hasMoreTokens()) {
             String nextToken = tokenizer.nextToken();
@@ -46,7 +46,7 @@ public class NGramTokenizer implements Tokenizer {
             Integer min = Math.min(maxN + 1, nOriginalTokens + 1);
             for (int i = minN; i < min; i++) {
                 for (int j = 0; j < nOriginalTokens - i + 1; j++) {
-                    List<String> originalTokensSlice = this.originalTokens.subList(j, j+ i);
+                    List<String> originalTokensSlice = this.originalTokens.subList(j, j + i);
                     this.tokens.add(StringUtils.join(originalTokensSlice, " "));
                 }
             }
@@ -73,7 +73,7 @@ public class NGramTokenizer implements Tokenizer {
     @Override
     public List<String> getTokens() {
         List<String> tokens = new ArrayList<>();
-        while(hasMoreTokens()) {
+        while (hasMoreTokens()) {
             tokens.add(nextToken());
         }
         return tokens;

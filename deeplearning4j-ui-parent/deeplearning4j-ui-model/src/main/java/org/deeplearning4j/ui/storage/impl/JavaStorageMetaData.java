@@ -25,21 +25,23 @@ public class JavaStorageMetaData implements StorageMetaData {
     // on this machine, right now
     private byte[] extraMeta;
 
-    public JavaStorageMetaData(){
+    public JavaStorageMetaData() {
         //No arg constructor for serialization/deserialization
     }
 
-    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType, Class<?> updateType){
+    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, Class<?> initType,
+                    Class<?> updateType) {
         this(timeStamp, sessionID, typeID, workerID, (initType != null ? initType.getName() : null),
-                (updateType != null ? updateType.getName() : null));
+                        (updateType != null ? updateType.getName() : null));
     }
 
-    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass ) {
+    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass,
+                    String updateTypeClass) {
         this(timeStamp, sessionID, typeID, workerID, initTypeClass, updateTypeClass, null);
     }
 
-    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass, String updateTypeClass,
-                              Serializable extraMetaData ) {
+    public JavaStorageMetaData(long timeStamp, String sessionID, String typeID, String workerID, String initTypeClass,
+                    String updateTypeClass, Serializable extraMetaData) {
         this.timeStamp = timeStamp;
         this.sessionID = sessionID;
         this.typeID = typeID;
@@ -62,7 +64,7 @@ public class JavaStorageMetaData implements StorageMetaData {
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(this);
         } catch (IOException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
         return baos.toByteArray();
     }
@@ -85,7 +87,7 @@ public class JavaStorageMetaData implements StorageMetaData {
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
             r = (JavaStorageMetaData) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);  //Should never happen
+            throw new RuntimeException(e); //Should never happen
         }
 
         Field[] fields = JavaStorageMetaData.class.getDeclaredFields();
@@ -94,7 +96,7 @@ public class JavaStorageMetaData implements StorageMetaData {
             try {
                 f.set(this, f.get(r));
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);  //Should never happen
+                throw new RuntimeException(e); //Should never happen
             }
         }
     }

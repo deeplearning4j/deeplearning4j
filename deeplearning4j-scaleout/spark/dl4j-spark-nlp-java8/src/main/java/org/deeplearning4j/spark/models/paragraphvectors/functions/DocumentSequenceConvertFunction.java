@@ -14,7 +14,8 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class DocumentSequenceConvertFunction extends BaseTokenizerFunction implements Function<LabelledDocument, Sequence<VocabWord>> {
+public class DocumentSequenceConvertFunction extends BaseTokenizerFunction
+                implements Function<LabelledDocument, Sequence<VocabWord>> {
 
     public DocumentSequenceConvertFunction(@NonNull Broadcast<VectorsConfiguration> configurationBroadcast) {
         super(configurationBroadcast);
@@ -33,7 +34,7 @@ public class DocumentSequenceConvertFunction extends BaseTokenizerFunction imple
 
             List<String> tokens = tokenizerFactory.create(document.getContent()).getTokens();
 
-            for (String token: tokens) {
+            for (String token : tokens) {
                 if (token == null || token.isEmpty())
                     continue;
 
@@ -43,7 +44,7 @@ public class DocumentSequenceConvertFunction extends BaseTokenizerFunction imple
         }
 
         // get labels
-        for (String label: document.getLabels()) {
+        for (String label : document.getLabels()) {
             if (label == null || label.isEmpty())
                 continue;
 

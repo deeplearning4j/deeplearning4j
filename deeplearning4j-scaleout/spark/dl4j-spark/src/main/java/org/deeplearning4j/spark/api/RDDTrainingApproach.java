@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,5 @@ package org.deeplearning4j.spark.api;
  * @author Alex Black
  */
 public enum RDDTrainingApproach {
-    Export,
-    Direct
+    Export, Direct
 }

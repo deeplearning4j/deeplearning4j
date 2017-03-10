@@ -96,7 +96,8 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
      * @param retryBackoffFactor Backoff factor for retrying: 2.0 for example gives delays of 1000, 2000, 4000, 8000,
      *                           etc milliseconds, with a base retry delay of 1000
      */
-    public RemoteUIStatsStorageRouter(String address, String path, int maxRetryCount, long retryDelayMS, double retryBackoffFactor) {
+    public RemoteUIStatsStorageRouter(String address, String path, int maxRetryCount, long retryDelayMS,
+                    double retryBackoffFactor) {
         this.maxRetryCount = maxRetryCount;
         this.retryDelayMS = retryDelayMS;
         this.retryBackoffFactor = retryBackoffFactor;
@@ -128,12 +129,12 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
-        if(shutdown.get()){
+        if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
-            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+            if (count <= MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
             }
-            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+            if (count == MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
             }
         } else {
@@ -150,12 +151,12 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
-        if(shutdown.get()){
+        if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
-            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+            if (count <= MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
             }
-            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+            if (count == MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
             }
         } else {
@@ -172,12 +173,12 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putUpdate(Collection<? extends Persistable> updates) {
-        if(shutdown.get()){
+        if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
-            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+            if (count <= MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
             }
-            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+            if (count == MAX_SHUTDOWN_WARN_COUNT) {
                 log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
             }
         } else {
@@ -219,7 +220,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                 List<ToPost> list = new ArrayList<>();
                 ToPost t;
                 try {
-                    t = queue.take();  //Blocking operation
+                    t = queue.take(); //Blocking operation
                 } catch (InterruptedException e) {
                     continue;
                 }
@@ -234,12 +235,12 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                     } catch (IOException e) {
                         failureCount++;
                         log.warn("Error posting to remote UI at {}, consecutive failure count = {}. Waiting {} ms before retrying",
-                                url, failureCount, nextDelayMs, e);
+                                        url, failureCount, nextDelayMs, e);
                         success = false;
                     }
                     if (!success) {
                         for (int i = list.size() - 1; i > successCount; i--) {
-                            queue.addFirst(list.get(i));    //Add remaining back to be processed in original order
+                            queue.addFirst(list.get(i)); //Add remaining back to be processed in original order
                         }
                         waitForRetry();
                         break;
@@ -254,8 +255,8 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
         private void waitForRetry() {
             if (maxRetryCount >= 0 && failureCount > maxRetryCount) {
-                throw new RuntimeException("RemoteUIStatsStorageRouter: hit maximum consecutive failures(" + maxRetryCount +
-                        "). Shutting down remote router thread");
+                throw new RuntimeException("RemoteUIStatsStorageRouter: hit maximum consecutive failures("
+                                + maxRetryCount + "). Shutting down remote router thread");
             } else {
                 try {
                     Thread.sleep(nextDelayMs);
@@ -311,7 +312,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
         try {
             str = objectMapper.writeValueAsString(jsonObj);
         } catch (Exception e) {
-            throw new RuntimeException(e);  //Should never get an exception from simple Map<String,String>
+            throw new RuntimeException(e); //Should never get an exception from simple Map<String,String>
         }
 
         DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
@@ -332,15 +333,17 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                 }
                 in.close();
 
-                log.warn("Error posting to remote UI - received response code {}\tContent: {}", response, response.toString());
+                log.warn("Error posting to remote UI - received response code {}\tContent: {}", response,
+                                response.toString());
 
                 return false;
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             String msg = e.getMessage();
-            if(msg.contains("403 for URL")){
-                log.warn("Error posting to remote UI at {} (Response code: 403)." +
-                        " Remote listener support is not enabled? use UIServer.getInstance().enableRemoteListener()",url, e);
+            if (msg.contains("403 for URL")) {
+                log.warn("Error posting to remote UI at {} (Response code: 403)."
+                                + " Remote listener support is not enabled? use UIServer.getInstance().enableRemoteListener()",
+                                url, e);
             } else {
                 log.warn("Error posting to remote UI at {}", url, e);
             }

@@ -6,7 +6,5 @@ package org.deeplearning4j.api.storage;
  * @author Alex Black
  */
 public enum StorageType {
-    MetaData,
-    StaticInfo,
-    Update
+    MetaData, StaticInfo, Update
 }

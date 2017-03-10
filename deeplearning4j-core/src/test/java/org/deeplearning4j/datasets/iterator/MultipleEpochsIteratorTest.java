@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
 public class MultipleEpochsIteratorTest {
 
     @Test
-    public void testNextAndReset() throws Exception{
+    public void testNextAndReset() throws Exception {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
@@ -43,7 +43,7 @@ public class MultipleEpochsIteratorTest {
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
         assertTrue(multiIter.hasNext());
-        while(multiIter.hasNext()){
+        while (multiIter.hasNext()) {
             DataSet path = multiIter.next();
             assertFalse(path == null);
         }
@@ -70,7 +70,7 @@ public class MultipleEpochsIteratorTest {
     }
 
     @Test
-    public void testLoadBatchDataSet() throws Exception{
+    public void testLoadBatchDataSet() throws Exception {
         int epochs = 2;
 
         RecordReader rr = new CSVRecordReader();
@@ -79,7 +79,7 @@ public class MultipleEpochsIteratorTest {
         DataSet ds = iter.next(20);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
 
-        while(multiIter.hasNext()){
+        while (multiIter.hasNext()) {
             DataSet path = multiIter.next(10);
             assertEquals(path.numExamples(), 10, 0.0);
             assertFalse(path == null);
@@ -93,23 +93,20 @@ public class MultipleEpochsIteratorTest {
     public void testCifarDataSetIteratorReset() {
         int epochs = 2;
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .regularization(false)
-                .learningRate(1.0)
-                .weightInit(WeightInit.XAVIER)
-                .seed(12345L)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation(Activation.RELU).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                .pretrain(false).backprop(true)
-                .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(20, 20, 1))
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+                        .weightInit(WeightInit.XAVIER).seed(12345L).list()
+                        .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation(Activation.RELU).build())
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
+                        .pretrain(false).backprop(true)
+                        .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(20, 20, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new ScoreIterationListener(1));
 
-        MultipleEpochsIterator ds = new MultipleEpochsIterator(epochs, new CifarDataSetIterator(10,20, new int[]{20,20,1}));
+        MultipleEpochsIterator ds =
+                        new MultipleEpochsIterator(epochs, new CifarDataSetIterator(10, 20, new int[] {20, 20, 1}));
         net.fit(ds);
         assertEquals(epochs, ds.epochs);
         assertEquals(2, ds.batch);
@@ -138,7 +135,7 @@ public class MultipleEpochsIteratorTest {
         iterator.reset();
 
         long num2 = consumer.consumeWhileHasNext(true);
-        assertEquals((10 * 100) + 150, num1+num2);
+        assertEquals((10 * 100) + 150, num1 + num2);
     }
 
     @Test
@@ -159,6 +156,7 @@ public class MultipleEpochsIteratorTest {
     private class IterableWithoutException implements Iterable<DataSet> {
         private final AtomicLong counter = new AtomicLong(0);
         private final int datasets;
+
         public IterableWithoutException(int datasets) {
             this.datasets = datasets;
         }

@@ -23,13 +23,13 @@ public class ApiTest extends BaseUiServerTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250)
-                .theta(0.5).learningRate(500).useAdaGrad(false).numDimension(2)
-                .build();
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).theta(0.5).learningRate(500)
+                        .useAdaGrad(false).numDimension(2).build();
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
-        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0, 100),NDArrayIndex.interval(0,784));
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
+                        NDArrayIndex.interval(0, 784));
 
 
 
@@ -37,14 +37,14 @@ public class ApiTest extends BaseUiServerTest {
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
         b.saveAsFile(labelsList, "coords.csv");
-//        String coords =  client.target("http://localhost:8080").path("api").path("update")
-//                .request().accept(MediaType.APPLICATION_JSON)
-////                .post(Entity.entity(new UrlResource("http://localhost:8080/api/coords.csv"), MediaType.APPLICATION_JSON))
-//                .readEntity(String.class);
-//        ObjectMapper mapper = new ObjectMapper();
-//        List<String> testLines = mapper.readValue(coords,List.class);
-//        List<String> lines = IOUtils.readLines(new FileInputStream("coords.csv"));
-//        assertEquals(testLines,lines);
+        //        String coords =  client.target("http://localhost:8080").path("api").path("update")
+        //                .request().accept(MediaType.APPLICATION_JSON)
+        ////                .post(Entity.entity(new UrlResource("http://localhost:8080/api/coords.csv"), MediaType.APPLICATION_JSON))
+        //                .readEntity(String.class);
+        //        ObjectMapper mapper = new ObjectMapper();
+        //        List<String> testLines = mapper.readValue(coords,List.class);
+        //        List<String> lines = IOUtils.readLines(new FileInputStream("coords.csv"));
+        //        assertEquals(testLines,lines);
 
         throw new RuntimeException("Not implemented");
     }

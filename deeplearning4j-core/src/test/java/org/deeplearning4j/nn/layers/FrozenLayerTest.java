@@ -34,50 +34,39 @@ public class FrozenLayerTest {
     public void testFrozen() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD)
-                .activation(Activation.IDENTITY);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+                        .activation(Activation.IDENTITY);
 
-        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1)
-                .build();
+        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.clone().list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
-                        .build())
-                .layer(1, new DenseLayer.Builder()
-                        .nIn(3).nOut(2)
-                        .build())
-                .layer(2, new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build()).build());
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).build())
+                        .layer(2, new DenseLayer.Builder().nIn(2).nOut(3).build())
+                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                        .build())
+                        .build());
 
         modelToFineTune.init();
         List<INDArray> ff = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false);
         INDArray asFrozenFeatures = ff.get(2);
 
-        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
-                .fineTuneConfiguration(finetune)
-                .setFeatureExtractor(1).build();
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).fineTuneConfiguration(finetune)
+                        .setFeatureExtractor(1).build();
 
-        INDArray paramsLastTwoLayers = Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params());
+        INDArray paramsLastTwoLayers =
+                        Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params());
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.clone().list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build()).build(), paramsLastTwoLayers);
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(3).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                        .build())
+                        .build(), paramsLastTwoLayers);
 
-//        assertEquals(modelNow.getLayer(2).conf(), notFrozen.getLayer(0).conf());  //Equal, other than names
-//        assertEquals(modelNow.getLayer(3).conf(), notFrozen.getLayer(1).conf());  //Equal, other than names
+        //        assertEquals(modelNow.getLayer(2).conf(), notFrozen.getLayer(0).conf());  //Equal, other than names
+        //        assertEquals(modelNow.getLayer(3).conf(), notFrozen.getLayer(1).conf());  //Equal, other than names
 
         //Check: forward pass
         INDArray outNow = modelNow.output(randomData.getFeatures());
@@ -89,7 +78,8 @@ public class FrozenLayerTest {
             modelNow.fit(randomData);
         }
 
-        INDArray expected = Nd4j.hstack(modelToFineTune.getLayer(0).params(), modelToFineTune.getLayer(1).params(), notFrozen.params());
+        INDArray expected = Nd4j.hstack(modelToFineTune.getLayer(0).params(), modelToFineTune.getLayer(1).params(),
+                        notFrozen.params());
         INDArray act = modelNow.params();
         assertEquals(expected, act);
     }
@@ -100,30 +90,21 @@ public class FrozenLayerTest {
 
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD)
-                .activation(Activation.IDENTITY);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+                        .activation(Activation.IDENTITY);
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
-                        .build())
-                .layer(1, new DenseLayer.Builder()
-                        .nIn(3).nOut(2)
-                        .build())
-                .layer(2, new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build()).build());
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).build())
+                        .layer(2, new DenseLayer.Builder().nIn(2).nOut(3).build())
+                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                        .build())
+                        .build());
 
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false).get(2);
-        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune)
-                .setFeatureExtractor(1).build();
+        MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).setFeatureExtractor(1).build();
 
         MultiLayerNetwork clonedModel = modelNow.clone();
 
@@ -133,14 +114,14 @@ public class FrozenLayerTest {
         //Check params
         assertEquals(modelNow.params(), clonedModel.params());
 
-        MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build()).build(), Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params()));
+        MultiLayerNetwork notFrozen = new MultiLayerNetwork(
+                        overallConf.list().layer(0, new DenseLayer.Builder().nIn(2).nOut(3).build())
+                                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MCXENT)
+                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                                        .build())
+                                        .build(),
+                        Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params()));
 
         int i = 0;
         while (i < 5) {
@@ -150,7 +131,8 @@ public class FrozenLayerTest {
             i++;
         }
 
-        INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer(0).params(), modelToFineTune.getLayer(1).params(), notFrozen.params());
+        INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer(0).params(),
+                        modelToFineTune.getLayer(1).params(), notFrozen.params());
         assertEquals(expectedParams, modelNow.params());
         assertEquals(expectedParams, clonedModel.params());
 
@@ -161,50 +143,41 @@ public class FrozenLayerTest {
     public void testFrozenCompGraph() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD)
-                .activation(Activation.IDENTITY);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+                        .activation(Activation.IDENTITY);
 
-        ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder()
-                .addInputs("layer0In")
-                .addLayer("layer0", new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
-                        .build(), "layer0In")
-                .addLayer("layer1", new DenseLayer.Builder()
-                        .nIn(3).nOut(2)
-                        .build(), "layer0")
-                .addLayer("layer2", new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build(), "layer1")
-                .addLayer("layer3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build(), "layer2")
-                .setOutputs("layer3")
-                .build());
+        ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
+                        .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                        .addLayer("layer1", new DenseLayer.Builder().nIn(3).nOut(2).build(), "layer0")
+                        .addLayer("layer2", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer1")
+                        .addLayer("layer3",
+                                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MCXENT)
+                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                                        .build(),
+                                        "layer2")
+                        .setOutputs("layer3").build());
 
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForward(randomData.getFeatures(), false).get("layer1");
 
-        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
-                .setFeatureExtractor("layer1").build();
+        ComputationGraph modelNow =
+                        new TransferLearning.GraphBuilder(modelToFineTune).setFeatureExtractor("layer1").build();
 
-        ComputationGraph notFrozen = new ComputationGraph(overallConf.graphBuilder()
-                .addInputs("layer0In")
-                .addLayer("layer0", new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build(), "layer0In")
-                .addLayer("layer1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build(), "layer0")
-                .setOutputs("layer1")
-                .build());
+        ComputationGraph notFrozen = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
+                        .addLayer("layer0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer0In")
+                        .addLayer("layer1",
+                                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MCXENT)
+                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                                        .build(),
+                                        "layer0")
+                        .setOutputs("layer1").build());
 
         notFrozen.init();
-        notFrozen.setParams(Nd4j.hstack(modelToFineTune.getLayer("layer2").params(), modelToFineTune.getLayer("layer3").params()));
+        notFrozen.setParams(Nd4j.hstack(modelToFineTune.getLayer("layer2").params(),
+                        modelToFineTune.getLayer("layer3").params()));
 
         int i = 0;
         while (i < 5) {
@@ -213,7 +186,8 @@ public class FrozenLayerTest {
             i++;
         }
 
-        assertEquals(Nd4j.hstack(modelToFineTune.getLayer("layer0").params(), modelToFineTune.getLayer("layer1").params(), notFrozen.params()), modelNow.params());
+        assertEquals(Nd4j.hstack(modelToFineTune.getLayer("layer0").params(),
+                        modelToFineTune.getLayer("layer1").params(), notFrozen.params()), modelNow.params());
     }
 
     @Test
@@ -221,34 +195,26 @@ public class FrozenLayerTest {
 
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD)
-                .activation(Activation.IDENTITY);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+                        .activation(Activation.IDENTITY);
 
-        ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder()
-                .addInputs("layer0In")
-                .addLayer("layer0", new DenseLayer.Builder()
-                        .nIn(4).nOut(3)
-                        .build(), "layer0In")
-                .addLayer("layer1", new DenseLayer.Builder()
-                        .nIn(3).nOut(2)
-                        .build(), "layer0")
-                .addLayer("layer2", new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build(), "layer1")
-                .addLayer("layer3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build(), "layer2")
-                .setOutputs("layer3")
-                .build());
+        ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
+                        .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                        .addLayer("layer1", new DenseLayer.Builder().nIn(3).nOut(2).build(), "layer0")
+                        .addLayer("layer2", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer1")
+                        .addLayer("layer3",
+                                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MCXENT)
+                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                                        .build(),
+                                        "layer2")
+                        .setOutputs("layer3").build());
 
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForward(randomData.getFeatures(), false).get("layer1");
-        ComputationGraph modelNow = new TransferLearning.GraphBuilder(modelToFineTune)
-                .setFeatureExtractor("layer1").build();
+        ComputationGraph modelNow =
+                        new TransferLearning.GraphBuilder(modelToFineTune).setFeatureExtractor("layer1").build();
 
         ComputationGraph clonedModel = modelNow.clone();
 
@@ -258,19 +224,18 @@ public class FrozenLayerTest {
         //Check params
         assertEquals(modelNow.params(), clonedModel.params());
 
-        ComputationGraph notFrozen = new ComputationGraph(overallConf.graphBuilder()
-                .addInputs("layer0In")
-                .addLayer("layer0", new DenseLayer.Builder()
-                        .nIn(2).nOut(3)
-                        .build(), "layer0In")
-                .addLayer("layer1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(3)
-                        .build(), "layer0")
-                .setOutputs("layer1")
-                .build());
+        ComputationGraph notFrozen = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
+                        .addLayer("layer0", new DenseLayer.Builder().nIn(2).nOut(3).build(), "layer0In")
+                        .addLayer("layer1",
+                                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MCXENT)
+                                                                        .activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                                        .build(),
+                                        "layer0")
+                        .setOutputs("layer1").build());
         notFrozen.init();
-        notFrozen.setParams(Nd4j.hstack(modelToFineTune.getLayer("layer2").params(), modelToFineTune.getLayer("layer3").params()));
+        notFrozen.setParams(Nd4j.hstack(modelToFineTune.getLayer("layer2").params(),
+                        modelToFineTune.getLayer("layer3").params()));
 
 
         int i = 0;
@@ -281,7 +246,8 @@ public class FrozenLayerTest {
             i++;
         }
 
-        INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer("layer0").params(), modelToFineTune.getLayer("layer1").params(), notFrozen.params());
+        INDArray expectedParams = Nd4j.hstack(modelToFineTune.getLayer("layer0").params(),
+                        modelToFineTune.getLayer("layer1").params(), notFrozen.params());
         assertEquals(expectedParams, modelNow.params());
         assertEquals(expectedParams, clonedModel.params());
 

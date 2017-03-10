@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -44,17 +44,19 @@ public class GloveTest extends BaseSparkTest {
 
     @Test
     public void testGlove() throws Exception {
-        Glove glove = new Glove(true,5,100);
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath()).map(new Function<String, String>() {
-            @Override
-            public String call(String s) throws Exception {
-                return s.toLowerCase();
-            }
-        });
+        Glove glove = new Glove(true, 5, 100);
+        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath())
+                        .map(new Function<String, String>() {
+                            @Override
+                            public String call(String s) throws Exception {
+                                return s.toLowerCase();
+                            }
+                        });
 
 
-        Pair<VocabCache<VocabWord>,GloveWeightLookupTable> table = glove.train(corpus);
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), (VocabCache) table.getFirst()));
+        Pair<VocabCache<VocabWord>, GloveWeightLookupTable> table = glove.train(corpus);
+        WordVectors vectors = WordVectorSerializer
+                        .fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), (VocabCache) table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 20);
         assertTrue(words.contains("week"));
     }

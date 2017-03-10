@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,12 +38,13 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class BatchDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>,DataSet> {
+public class BatchDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, DataSet> {
 
     public BatchDataSetsFunction(int minibatchSize) {
         super(new BatchDataSetsFunctionAdapter(minibatchSize));
     }
 }
+
 
 /**
  * Function used to batch DataSet objects together. Typically used to combine singe-example DataSet objects out of
@@ -59,7 +60,7 @@ public class BatchDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<D
  *
  * @author Alex Black
  */
-class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>,DataSet> {
+class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, DataSet> {
     private final int minibatchSize;
 
     public BatchDataSetsFunctionAdapter(int minibatchSize) {
@@ -69,7 +70,7 @@ class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
     @Override
     public Iterable<DataSet> call(Iterator<DataSet> iter) throws Exception {
         List<DataSet> out = new ArrayList<>();
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             List<DataSet> list = new ArrayList<>();
 
             int count = 0;
@@ -80,8 +81,10 @@ class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
             }
 
             DataSet next;
-            if (list.size() == 0) next = list.get(0);
-            else next = DataSet.merge(list);
+            if (list.size() == 0)
+                next = list.get(0);
+            else
+                next = DataSet.merge(list);
 
             out.add(next);
         }

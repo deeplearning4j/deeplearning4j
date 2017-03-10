@@ -56,27 +56,30 @@ public class TrainModule implements UIModule {
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private enum ModelType {MLN, CG, Layer};
+
+    private enum ModelType {
+        MLN, CG, Layer
+    };
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
     private int currentWorkerIdx;
-    private Map<String,AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>());    //Key: session ID
-    private Map<String,Map<Integer,String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
-    private Map<String,Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
+    private Map<String, AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
+    private Map<String, Map<Integer, String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
+    private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
-    public TrainModule(){
+    public TrainModule() {
         String maxChartPointsProp = System.getProperty(CHART_MAX_POINTS_PROPERTY);
         int value = DEFAULT_MAX_CHART_POINTS;
-        if(maxChartPointsProp != null){
-            try{
+        if (maxChartPointsProp != null) {
+            try {
                 value = Integer.parseInt(maxChartPointsProp);
-            }catch (NumberFormatException e){
+            } catch (NumberFormatException e) {
                 log.warn("Invalid system property: {} = {}", CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
             }
         }
-        if(value >= 10){
+        if (value >= 10) {
             maxChartPoints = value;
         } else {
             maxChartPoints = DEFAULT_MAX_CHART_POINTS;
@@ -91,21 +94,29 @@ public class TrainModule implements UIModule {
     @Override
     public List<Route> getRoutes() {
         Route r = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
-        Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
+        Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
         Route r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
-        Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
+        Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
         Route r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
         Route r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
-        Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
+        Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
         Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
-        Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
-        Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
+        Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
+        Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(currentSessionID == null ? "" : currentSessionID));
         Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
         Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
-        Route r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function, this::getLastUpdateForSession);
-        Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier, () -> ok(String.valueOf(currentWorkerIdx)));
-        Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function, this::setWorkerByIdx);
+        Route r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function,
+                        this::getLastUpdateForSession);
+        Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(String.valueOf(currentWorkerIdx)));
+        Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function,
+                        this::setWorkerByIdx);
 
 
         return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r6d, r7, r7a);
@@ -114,52 +125,58 @@ public class TrainModule implements UIModule {
     @Override
     public synchronized void reportStorageEvents(Collection<StatsStorageEvent> events) {
         for (StatsStorageEvent sse : events) {
-            if(StatsListener.TYPE_ID.equals(sse.getTypeID())){
-                if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
+            if (StatsListener.TYPE_ID.equals(sse.getTypeID())) {
+                if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo
+                                && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
                     knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
                 }
 
                 Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
-                if(lastUpdate == null){
+                if (lastUpdate == null) {
                     lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());
-                } else if(sse.getTimestamp() > lastUpdate){
-                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());   //Should be thread safe - read only elsewhere
+                } else if (sse.getTimestamp() > lastUpdate) {
+                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp()); //Should be thread safe - read only elsewhere
                 }
             }
         }
 
-        if (currentSessionID == null) getDefaultSession();
+        if (currentSessionID == null)
+            getDefaultSession();
     }
 
     @Override
     public synchronized void onAttach(StatsStorage statsStorage) {
         for (String sessionID : statsStorage.listSessionIDs()) {
             for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
-                if (!StatsListener.TYPE_ID.equals(typeID)) continue;
+                if (!StatsListener.TYPE_ID.equals(typeID))
+                    continue;
                 knownSessionIDs.put(sessionID, statsStorage);
             }
         }
 
-        if (currentSessionID == null) getDefaultSession();
+        if (currentSessionID == null)
+            getDefaultSession();
     }
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-        for(String s : knownSessionIDs.keySet()){
-            if(knownSessionIDs.get(s) == statsStorage){
+        for (String s : knownSessionIDs.keySet()) {
+            if (knownSessionIDs.get(s) == statsStorage) {
                 knownSessionIDs.remove(s);
             }
         }
     }
 
     private void getDefaultSession() {
-        if (currentSessionID != null) return;
+        if (currentSessionID != null)
+            return;
 
         long mostRecentTime = Long.MIN_VALUE;
         String sessionID = null;
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
             List<Persistable> staticInfos = entry.getValue().getAllStaticInfos(entry.getKey(), StatsListener.TYPE_ID);
-            if (staticInfos == null || staticInfos.size() == 0) continue;
+            if (staticInfos == null || staticInfos.size() == 0)
+                continue;
             Persistable p = staticInfos.get(0);
             long thisTime = p.getTimeStamp();
             if (thisTime > mostRecentTime) {
@@ -173,36 +190,38 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private synchronized String getWorkerIdForIndex(int workerIdx){
+    private synchronized String getWorkerIdForIndex(int workerIdx) {
         String sid = currentSessionID;
-        if(sid == null) return null;
+        if (sid == null)
+            return null;
 
-        Map<Integer,String> idxToId = workerIdxToName.get(sid);
-        if(idxToId == null){
+        Map<Integer, String> idxToId = workerIdxToName.get(sid);
+        if (idxToId == null) {
             idxToId = Collections.synchronizedMap(new HashMap<>());
             workerIdxToName.put(sid, idxToId);
         }
 
-        if(idxToId.containsKey(workerIdx)){
+        if (idxToId.containsKey(workerIdx)) {
             return idxToId.get(workerIdx);
         }
 
         //Need to record new worker...
-            //Get counter
+        //Get counter
         AtomicInteger counter = workerIdxCount.get(sid);
-        if(counter == null){
+        if (counter == null) {
             counter = new AtomicInteger(0);
-            workerIdxCount.put(sid,counter);
+            workerIdxCount.put(sid, counter);
         }
 
-            //Get all worker IDs
+        //Get all worker IDs
         StatsStorage ss = knownSessionIDs.get(sid);
         List<String> allWorkerIds = new ArrayList<>(ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID));
         Collections.sort(allWorkerIds);
 
-            //Ensure all workers have been assigned an index
-        for(String s : allWorkerIds){
-            if(idxToId.containsValue(s)) continue;
+        //Ensure all workers have been assigned an index
+        for (String s : allWorkerIds) {
+            if (idxToId.containsValue(s))
+                continue;
             //Unknown worker ID:
             idxToId.put(counter.getAndIncrement(), s);
         }
@@ -243,7 +262,7 @@ public class TrainModule implements UIModule {
             dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
 
             // add hashmap of workers
-            if(workerCount > 0) {
+            if (workerCount > 0) {
                 dataThisSession.put("workers", workerIDs);
             }
 
@@ -284,55 +303,57 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private Result getLastUpdateForSession(String sessionID){
+    private Result getLastUpdateForSession(String sessionID) {
         Long lastUpdate = lastUpdateForSession.get(sessionID);
-        if(lastUpdate != null) return ok(String.valueOf(lastUpdate));
+        if (lastUpdate != null)
+            return ok(String.valueOf(lastUpdate));
         return ok("-1");
     }
 
-    private Result setWorkerByIdx(String newWorkerIdx){
-        try{
+    private Result setWorkerByIdx(String newWorkerIdx) {
+        try {
             currentWorkerIdx = Integer.parseInt(newWorkerIdx);
-        }catch (NumberFormatException e){
-            log.debug("Invaild call to setWorkerByIdx",e);
+        } catch (NumberFormatException e) {
+            log.debug("Invaild call to setWorkerByIdx", e);
         }
         return ok();
     }
 
-    private static double fixNaN(double d){
+    private static double fixNaN(double d) {
         return Double.isFinite(d) ? d : NAN_REPLACEMENT_VALUE;
     }
 
-    private static void cleanLegacyIterationCounts(List<Integer> iterationCounts){
-        if(iterationCounts.size() > 0){
+    private static void cleanLegacyIterationCounts(List<Integer> iterationCounts) {
+        if (iterationCounts.size() > 0) {
             boolean allEqual = true;
             int maxStepSize = 1;
             int first = iterationCounts.get(0);
             int length = iterationCounts.size();
             int prevIterCount = first;
-            for( int i=1; i<length; i++ ){
+            for (int i = 1; i < length; i++) {
                 int currIterCount = iterationCounts.get(i);
-                if(allEqual && first != currIterCount){
+                if (allEqual && first != currIterCount) {
                     allEqual = false;
                 }
-                maxStepSize = Math.max(maxStepSize, prevIterCount-currIterCount);
+                maxStepSize = Math.max(maxStepSize, prevIterCount - currIterCount);
                 prevIterCount = currIterCount;
             }
 
 
-            if(allEqual){
+            if (allEqual) {
                 maxStepSize = 1;
             }
 
-            for( int i=0; i<length; i++ ){
-                iterationCounts.set(i, first + i*maxStepSize);
+            for (int i = 0; i < length; i++) {
+                iterationCounts.set(i, first + i * maxStepSize);
             }
         }
     }
 
     private Result getOverviewData() {
         Long lastUpdate = lastUpdateForSession.get(currentSessionID);
-        if(lastUpdate == null) lastUpdate = -1L;
+        if (lastUpdate == null)
+            lastUpdate = -1L;
         I18N i18N = I18NProvider.getInstance();
 
         boolean noData = currentSessionID == null;
@@ -342,7 +363,7 @@ public class TrainModule implements UIModule {
 
 
         String wid = getWorkerIdForIndex(currentWorkerIdx);
-        if(wid == null){
+        if (wid == null) {
             noData = true;
         }
 
@@ -355,14 +376,15 @@ public class TrainModule implements UIModule {
         result.put("scoresIter", scoresIterCount);
 
         //Get scores info
-        List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-        if(updates == null || updates.size() == 0){
+        List<Persistable> updates =
+                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        if (updates == null || updates.size() == 0) {
             noData = true;
         }
 
         //Collect update ratios for weights
         //Collect standard deviations: activations, gradients, updates
-        Map<String, List<Double>> updateRatios = new HashMap<>();    //Mean magnitude (updates) / mean magnitude (parameters)
+        Map<String, List<Double>> updateRatios = new HashMap<>(); //Mean magnitude (updates) / mean magnitude (parameters)
         result.put("updateRatios", updateRatios);
 
         Map<String, List<Double>> stdevActivations = new HashMap<>();
@@ -379,7 +401,8 @@ public class TrainModule implements UIModule {
                 Map<String, Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
                 if (map != null) {
                     for (String s : map.keySet()) {
-                        if (!s.toLowerCase().endsWith("w")) continue;   //TODO: more robust "weights only" approach...
+                        if (!s.toLowerCase().endsWith("w"))
+                            continue; //TODO: more robust "weights only" approach...
                         updateRatios.put(s, new ArrayList<>());
                     }
                 }
@@ -387,7 +410,8 @@ public class TrainModule implements UIModule {
                 Map<String, Double> stdGrad = sp.getStdev(StatsType.Gradients);
                 if (stdGrad != null) {
                     for (String s : stdGrad.keySet()) {
-                        if (!s.toLowerCase().endsWith("w")) continue; //TODO: more robust "weights only" approach...
+                        if (!s.toLowerCase().endsWith("w"))
+                            continue; //TODO: more robust "weights only" approach...
                         stdevGradients.put(s, new ArrayList<>());
                     }
                 }
@@ -395,7 +419,8 @@ public class TrainModule implements UIModule {
                 Map<String, Double> stdUpdate = sp.getStdev(StatsType.Updates);
                 if (stdUpdate != null) {
                     for (String s : stdUpdate.keySet()) {
-                        if (!s.toLowerCase().endsWith("w")) continue;    //TODO: more robust "weights only" approach...
+                        if (!s.toLowerCase().endsWith("w"))
+                            continue; //TODO: more robust "weights only" approach...
                         stdevUpdates.put(s, new ArrayList<>());
                     }
                 }
@@ -421,32 +446,34 @@ public class TrainModule implements UIModule {
 
             int totalUpdates = updates.size();
             int subsamplingFrequency = 1;
-            if(totalUpdates > maxChartPoints){
+            if (totalUpdates > maxChartPoints) {
                 subsamplingFrequency = totalUpdates / maxChartPoints;
             }
 
             int pCount = -1;
-            int lastUpdateIdx = updates.size()-1;
+            int lastUpdateIdx = updates.size() - 1;
             for (Persistable u : updates) {
                 pCount++;
-                if (!(u instanceof StatsReport)) continue;
+                if (!(u instanceof StatsReport))
+                    continue;
 
                 last = (StatsReport) u;
                 int iterCount = last.getIterationCount();
 
-                if(iterCount <= lastIterCount){
+                if (iterCount <= lastIterCount) {
                     needToHandleLegacyIterCounts = true;
                 }
                 lastIterCount = iterCount;
 
-                if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
+                if (pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0) {
                     //Skip this - subsample the data
-                    if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
+                    if (pCount != lastUpdateIdx)
+                        continue; //Always keep the most recent value
                 }
 
                 scoresIterCount.add(iterCount);
                 lastScore = last.getScore();
-                if(Double.isFinite(lastScore)){
+                if (Double.isFinite(lastScore)) {
                     scores.add(lastScore);
                 } else {
                     scores.add(NAN_REPLACEMENT_VALUE);
@@ -459,10 +486,10 @@ public class TrainModule implements UIModule {
                 if (updateMM != null && paramMM != null && updateMM.size() > 0 && paramMM.size() > 0) {
                     for (String s : updateRatios.keySet()) {
                         List<Double> ratioHistory = updateRatios.get(s);
-                        double currUpdate = updateMM.get(s);
-                        double currParam = paramMM.get(s);
+                        double currUpdate = updateMM.getOrDefault(s, 0.0);
+                        double currParam = paramMM.getOrDefault(s, 0.0);
                         double ratio = currUpdate / currParam;
-                        if(Double.isFinite(ratio)){
+                        if (Double.isFinite(ratio)) {
                             ratioHistory.add(ratio);
                         } else {
                             ratioHistory.add(NAN_REPLACEMENT_VALUE);
@@ -477,19 +504,19 @@ public class TrainModule implements UIModule {
 
                 if (stdGrad != null) {
                     for (String s : stdevGradients.keySet()) {
-                        double d = stdGrad.get(s);
+                        double d = stdGrad.getOrDefault(s, 0.0);
                         stdevGradients.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdUpd != null) {
                     for (String s : stdevUpdates.keySet()) {
-                        double d = stdUpd.get(s);
+                        double d = stdUpd.getOrDefault(s, 0.0);
                         stdevUpdates.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
-                        double d = stdAct.get(s);
+                        double d = stdAct.getOrDefault(s,0.0);
                         stdevActivations.get(s).add(fixNaN(d));
                     }
                 }
@@ -503,14 +530,12 @@ public class TrainModule implements UIModule {
 
 
         //----- Performance Info -----
-        String[][] perfInfo = new String[][]{
-                {i18N.getMessage("train.overview.perftable.startTime"), ""},
-                {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
-                {i18N.getMessage("train.overview.perftable.lastUpdate"), ""},
-                {i18N.getMessage("train.overview.perftable.totalParamUpdates"), ""},
-                {i18N.getMessage("train.overview.perftable.updatesPerSec"), ""},
-                {i18N.getMessage("train.overview.perftable.examplesPerSec"), ""}
-        };
+        String[][] perfInfo = new String[][] {{i18N.getMessage("train.overview.perftable.startTime"), ""},
+                        {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
+                        {i18N.getMessage("train.overview.perftable.lastUpdate"), ""},
+                        {i18N.getMessage("train.overview.perftable.totalParamUpdates"), ""},
+                        {i18N.getMessage("train.overview.perftable.updatesPerSec"), ""},
+                        {i18N.getMessage("train.overview.perftable.examplesPerSec"), ""}};
 
         if (last != null) {
             perfInfo[2][1] = String.valueOf(dateFormat.format(new Date(last.getTimeStamp())));
@@ -523,11 +548,9 @@ public class TrainModule implements UIModule {
 
 
         // ----- Model Info -----
-        String[][] modelInfo = new String[][]{
-                {i18N.getMessage("train.overview.modeltable.modeltype"), ""},
-                {i18N.getMessage("train.overview.modeltable.nLayers"), ""},
-                {i18N.getMessage("train.overview.modeltable.nParams"), ""}
-        };
+        String[][] modelInfo = new String[][] {{i18N.getMessage("train.overview.modeltable.modeltype"), ""},
+                        {i18N.getMessage("train.overview.modeltable.nLayers"), ""},
+                        {i18N.getMessage("train.overview.modeltable.nParams"), ""}};
         if (!noData) {
             Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
             if (p != null) {
@@ -543,8 +566,8 @@ public class TrainModule implements UIModule {
                     modelType = "ComputationGraph";
                 } else {
                     modelType = className;
-                    if(modelType.lastIndexOf('.') > 0){
-                        modelType = modelType.substring(modelType.lastIndexOf('.')+1);
+                    if (modelType.lastIndexOf('.') > 0) {
+                        modelType = modelType.substring(modelType.lastIndexOf('.') + 1);
                     }
                 }
 
@@ -564,14 +587,16 @@ public class TrainModule implements UIModule {
 
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
-        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
+                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
 
         if (allStatic.size() == 0) {
             return ok();
         }
 
         TrainModuleUtils.GraphInfo gi = getGraphInfo();
-        if (gi == null) return ok();
+        if (gi == null)
+            return ok();
         return ok(Json.toJson(gi));
     }
 
@@ -585,7 +610,7 @@ public class TrainModule implements UIModule {
             return TrainModuleUtils.buildGraphInfo(conf.getFirst());
         } else if (conf.getSecond() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getSecond());
-        } else if( conf.getThird() != null){
+        } else if (conf.getThird() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getThird());
         } else {
             return null;
@@ -595,8 +620,10 @@ public class TrainModule implements UIModule {
     private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig() {
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
-        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
-        if (allStatic.size() == 0) return null;
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
+                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+        if (allStatic.size() == 0)
+            return null;
 
         StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
         String modelClass = p.getModelClassName();
@@ -609,10 +636,11 @@ public class TrainModule implements UIModule {
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
             return new Triple<>(null, conf, null);
         } else {
-            try{
-                NeuralNetConfiguration layer = NeuralNetConfiguration.mapper().readValue(config, NeuralNetConfiguration.class);
+            try {
+                NeuralNetConfiguration layer =
+                                NeuralNetConfiguration.mapper().readValue(config, NeuralNetConfiguration.class);
                 return new Triple<>(null, null, layer);
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -622,9 +650,10 @@ public class TrainModule implements UIModule {
 
     private Result getModelData(String str) {
         Long lastUpdateTime = lastUpdateForSession.get(currentSessionID);
-        if(lastUpdateTime == null) lastUpdateTime = -1L;
+        if (lastUpdateTime == null)
+            lastUpdateTime = -1L;
 
-        int layerIdx = Integer.parseInt(str);   //TODO validation
+        int layerIdx = Integer.parseInt(str); //TODO validation
         I18N i18N = I18NProvider.getInstance();
 
         //Model info for layer
@@ -635,7 +664,7 @@ public class TrainModule implements UIModule {
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
 
         String wid = getWorkerIdForIndex(currentWorkerIdx);
-        if(wid == null){
+        if (wid == null) {
             noData = true;
         }
 
@@ -660,48 +689,52 @@ public class TrainModule implements UIModule {
         result.put("layerInfo", layerInfoTable);
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
-        List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        List<Persistable> updates =
+                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
         List<Integer> iterationCounts = null;
         boolean needToHandleLegacyIterCounts = false;
-        if(updates != null && updates.size() > maxChartPoints){
+        if (updates != null && updates.size() > maxChartPoints) {
             int subsamplingFrequency = updates.size() / maxChartPoints;
             List<Persistable> subsampled = new ArrayList<>();
             iterationCounts = new ArrayList<>();
-            int pCount=-1;
-            int lastUpdateIdx = updates.size()-1;
+            int pCount = -1;
+            int lastUpdateIdx = updates.size() - 1;
 
             int lastIterCount = -1;
-            for(Persistable p : updates){
-                if(!(p instanceof StatsReport)) continue;;
-                StatsReport sr = (StatsReport)p;
+            for (Persistable p : updates) {
+                if (!(p instanceof StatsReport))
+                    continue;;
+                StatsReport sr = (StatsReport) p;
                 pCount++;
 
                 int iterCount = sr.getIterationCount();
-                if(iterCount <= lastIterCount){
+                if (iterCount <= lastIterCount) {
                     needToHandleLegacyIterCounts = true;
                 }
                 lastIterCount = iterCount;
 
 
-                if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
+                if (pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0) {
                     //Skip this to subsample the data
-                    if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
+                    if (pCount != lastUpdateIdx)
+                        continue; //Always keep the most recent value
                 }
 
                 subsampled.add(p);
                 iterationCounts.add(iterCount);
             }
             updates = subsampled;
-        } else if(updates != null){
+        } else if (updates != null) {
             int offset = 0;
             iterationCounts = new ArrayList<>(updates.size());
             int lastIterCount = -1;
-            for(Persistable p : updates){
-                if(!(p instanceof StatsReport)) continue;;
-                StatsReport sr = (StatsReport)p;
+            for (Persistable p : updates) {
+                if (!(p instanceof StatsReport))
+                    continue;;
+                StatsReport sr = (StatsReport) p;
                 int iterCount = sr.getIterationCount();
 
-                if(iterCount <= lastIterCount){
+                if (iterCount <= lastIterCount) {
                     needToHandleLegacyIterCounts = true;
                 }
 
@@ -718,9 +751,12 @@ public class TrainModule implements UIModule {
 
         //Get mean magnitudes line chart
         ModelType mt;
-        if(conf.getFirst() != null) mt = ModelType.MLN;
-        else if(conf.getSecond() != null) mt = ModelType.CG;
-        else mt = ModelType.Layer;
+        if (conf.getFirst() != null)
+            mt = ModelType.MLN;
+        else if (conf.getSecond() != null)
+            mt = ModelType.CG;
+        else
+            mt = ModelType.Layer;
         MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, mt);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
@@ -756,7 +792,8 @@ public class TrainModule implements UIModule {
 
     public Result getSystemData() {
         Long lastUpdate = lastUpdateForSession.get(currentSessionID);
-        if(lastUpdate == null) lastUpdate = -1L;
+        if (lastUpdate == null)
+            lastUpdate = -1L;
 
         I18N i18n = I18NProvider.getInstance();
 
@@ -766,8 +803,10 @@ public class TrainModule implements UIModule {
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
 
-        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
-        List<Persistable> latestUpdates = (noData ? Collections.EMPTY_LIST : ss.getLatestUpdateAllWorkers(currentSessionID, StatsListener.TYPE_ID));
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
+                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+        List<Persistable> latestUpdates = (noData ? Collections.EMPTY_LIST
+                        : ss.getLatestUpdateAllWorkers(currentSessionID, StatsListener.TYPE_ID));
 
 
         long lastUpdateTime = -1;
@@ -780,7 +819,8 @@ public class TrainModule implements UIModule {
         }
 
         long fromTime = lastUpdateTime - 5 * 60 * 1000; //TODO Make configurable
-        List<Persistable> lastNMinutes = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, fromTime));
+        List<Persistable> lastNMinutes =
+                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, fromTime));
 
         Map<String, Object> mem = getMemory(allStatic, lastNMinutes, i18n);
         Pair<Map<String, Object>, Map<String, Object>> hwSwInfo = getHardwareSoftwareInfo(allStatic, i18n);
@@ -806,10 +846,12 @@ public class TrainModule implements UIModule {
         return layerType;
     }
 
-    private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData, StatsStorage ss, String wid) {
+    private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData,
+                    StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), gi.getVertexNames().get(layerIdx)});
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerType"), ""});
+        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerName"),
+                        gi.getVertexNames().get(layerIdx)});
+        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerType"), ""});
 
         if (!noData) {
             Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
@@ -824,7 +866,7 @@ public class TrainModule implements UIModule {
                 NeuralNetConfiguration nnc = null;
                 if (modelClass.endsWith("MultiLayerNetwork")) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(configJson);
-                    int confIdx = layerIdx - 1;   //-1 because of input
+                    int confIdx = layerIdx - 1; //-1 because of input
                     if (confIdx >= 0) {
                         nnc = conf.getConf(confIdx);
                         layer = nnc.getLayer();
@@ -850,11 +892,11 @@ public class TrainModule implements UIModule {
                             layerType = gv.getClass().getSimpleName();
                         }
                     }
-                } else if(modelClass.endsWith("VariationalAutoencoder")){
+                } else if (modelClass.endsWith("VariationalAutoencoder")) {
                     layerType = gi.getVertexTypes().get(layerIdx);
-                    Map<String,String> map = gi.getVertexInfo().get(layerIdx);
-                    for(Map.Entry<String,String> entry : map.entrySet()){
-                        layerInfoRows.add(new String[]{entry.getKey(), entry.getValue()});
+                    Map<String, String> map = gi.getVertexInfo().get(layerIdx);
+                    for (Map.Entry<String, String> entry : map.entrySet()) {
+                        layerInfoRows.add(new String[] {entry.getKey(), entry.getValue()});
                     }
                 }
 
@@ -866,23 +908,28 @@ public class TrainModule implements UIModule {
                     String activationFn = null;
                     if (layer instanceof FeedForwardLayer) {
                         FeedForwardLayer ffl = (FeedForwardLayer) layer;
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNIn"), String.valueOf(ffl.getNIn())});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNIn"),
+                                        String.valueOf(ffl.getNIn())});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerSize"),
+                                        String.valueOf(ffl.getNOut())});
                         activationFn = layer.getActivationFn().toString();
                     }
                     int nParams = layer.initializer().numParams(nnc);
-                    layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"), String.valueOf(nParams)});
+                    layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
+                                    String.valueOf(nParams)});
                     if (nParams > 0) {
                         WeightInit wi = layer.getWeightInit();
                         String str = wi.toString();
                         if (wi == WeightInit.DISTRIBUTION) {
                             str += layer.getDist();
                         }
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerWeightInit"),
+                                        str});
 
                         Updater u = layer.getUpdater();
                         String us = (u == null ? "" : u.toString());
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
+                        layerInfoRows.add(
+                                        new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
 
                         //TODO: Maybe L1/L2, dropout, updater-specific values etc
                     }
@@ -902,15 +949,21 @@ public class TrainModule implements UIModule {
                             stride = ssl.getStride();
                             padding = ssl.getPadding();
                             activationFn = null;
-                            layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSubsamplingPoolingType"), ssl.getPoolingType().toString()});
+                            layerInfoRows.add(new String[] {
+                                            i18N.getMessage("train.model.layerinfotable.layerSubsamplingPoolingType"),
+                                            ssl.getPoolingType().toString()});
                         }
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnKernel"), Arrays.toString(kernel)});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnStride"), Arrays.toString(stride)});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnPadding"), Arrays.toString(padding)});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerCnnKernel"),
+                                        Arrays.toString(kernel)});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerCnnStride"),
+                                        Arrays.toString(stride)});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerCnnPadding"),
+                                        Arrays.toString(padding)});
                     }
 
                     if (activationFn != null) {
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerActivationFn"), activationFn});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerActivationFn"),
+                                        activationFn});
                     }
                 }
                 layerInfoRows.get(1)[1] = layerType;
@@ -922,9 +975,11 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
+    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
+                    List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
-            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(),
+                            Collections.emptyMap());
         }
 
         String layerName = gi.getVertexNames().get(layerIdx);
@@ -933,8 +988,9 @@ public class TrainModule implements UIModule {
             layerName = gi.getOriginalVertexName().get(layerIdx);
         }
         String layerType = gi.getVertexTypes().get(layerIdx);
-        if ("input".equalsIgnoreCase(layerType)) {        //TODO better checking - other vertices, etc
-            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+        if ("input".equalsIgnoreCase(layerType)) { //TODO better checking - other vertices, etc
+            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(),
+                            Collections.emptyMap());
         }
 
         List<Integer> iterCounts = new ArrayList<>();
@@ -946,9 +1002,10 @@ public class TrainModule implements UIModule {
             int pCount = -1;
             for (Persistable u : updates) {
                 pCount++;
-                if (!(u instanceof StatsReport)) continue;
+                if (!(u instanceof StatsReport))
+                    continue;
                 StatsReport sp = (StatsReport) u;
-                if(iterationCounts != null){
+                if (iterationCounts != null) {
                     iterCounts.add(iterationCounts.get(pCount));
                 } else {
                     int iterCount = sp.getIterationCount();
@@ -961,7 +1018,7 @@ public class TrainModule implements UIModule {
                 Map<String, Double> updateMM = sp.getMeanMagnitudes(StatsType.Updates);
                 for (String s : paramMM.keySet()) {
                     String prefix;
-                    if(modelType == ModelType.Layer){
+                    if (modelType == ModelType.Layer) {
                         prefix = layerName;
                     } else {
                         prefix = layerName + "_";
@@ -970,18 +1027,17 @@ public class TrainModule implements UIModule {
                     if (s.startsWith(prefix)) {
                         //Relevant parameter for this layer...
                         String layerParam = s.substring(prefix.length());
-                        //TODO check and handle not collected case...
-                        double pmm = paramMM.get(s);
-                        double umm = updateMM.get(s);
-                        if(!Double.isFinite(pmm)){
+                        double pmm = paramMM.getOrDefault(s, 0.0);
+                        double umm = updateMM.getOrDefault(s, 0.0);
+                        if (!Double.isFinite(pmm)) {
                             pmm = NAN_REPLACEMENT_VALUE;
                         }
-                        if(!Double.isFinite(umm)){
+                        if (!Double.isFinite(umm)) {
                             umm = NAN_REPLACEMENT_VALUE;
                         }
                         double ratio;
-                        if(umm == 0.0 && pmm == 0.0){
-                            ratio = 0.0;    //To avoid NaN from 0/0
+                        if (umm == 0.0 && pmm == 0.0) {
+                            ratio = 0.0; //To avoid NaN from 0/0
                         } else {
                             ratio = umm / pmm;
                         }
@@ -1014,18 +1070,19 @@ public class TrainModule implements UIModule {
     }
 
     private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
-    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                                List<Integer> iterationCounts) {
+
+    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi,
+                    List<Persistable> updates, List<Integer> iterationCounts) {
         if (gi == null) {
             return EMPTY_TRIPLE;
         }
 
-        String type = gi.getVertexTypes().get(index);    //Index may be for an input, for example
+        String type = gi.getVertexTypes().get(index); //Index may be for an input, for example
         if ("input".equalsIgnoreCase(type)) {
             return EMPTY_TRIPLE;
         }
         List<String> origNames = gi.getOriginalVertexName();
-        if(index < 0 || index >= origNames.size()){
+        if (index < 0 || index >= origNames.size()) {
             return EMPTY_TRIPLE;
         }
         String layerName = origNames.get(index);
@@ -1039,9 +1096,10 @@ public class TrainModule implements UIModule {
             int uCount = -1;
             for (Persistable u : updates) {
                 uCount++;
-                if (!(u instanceof StatsReport)) continue;
+                if (!(u instanceof StatsReport))
+                    continue;
                 StatsReport sp = (StatsReport) u;
-                if(iterationCounts == null){
+                if (iterationCounts == null) {
                     iterCounts[used] = sp.getIterationCount();
                 } else {
                     iterCounts[used] = iterationCounts.get(uCount);
@@ -1054,11 +1112,11 @@ public class TrainModule implements UIModule {
                 if (means != null && means.containsKey(layerName)) {
                     mean[used] = means.get(layerName).floatValue();
                     stdev[used] = stdevs.get(layerName).floatValue();
-                    if(!Float.isFinite(mean[used])){
-                        mean[used] = (float)NAN_REPLACEMENT_VALUE;
+                    if (!Float.isFinite(mean[used])) {
+                        mean[used] = (float) NAN_REPLACEMENT_VALUE;
                     }
-                    if(!Float.isFinite(stdev[used])){
-                        stdev[used] = (float)NAN_REPLACEMENT_VALUE;
+                    if (!Float.isFinite(stdev[used])) {
+                        stdev[used] = (float) NAN_REPLACEMENT_VALUE;
                     }
                     used++;
                 }
@@ -1074,8 +1132,8 @@ public class TrainModule implements UIModule {
         return new Triple<>(iterCounts, mean, stdev);
     }
 
-    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                      List<Integer> iterationCounts, ModelType modelType) {
+    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi,
+                    List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return Collections.emptyMap();
         }
@@ -1089,9 +1147,10 @@ public class TrainModule implements UIModule {
             int uCount = -1;
             for (Persistable u : updates) {
                 uCount++;
-                if (!(u instanceof StatsReport)) continue;
+                if (!(u instanceof StatsReport))
+                    continue;
                 StatsReport sp = (StatsReport) u;
-                if(iterationCounts == null){
+                if (iterationCounts == null) {
                     iterCounts[used] = sp.getIterationCount();
                 } else {
                     iterCounts[used] = iterationCounts.get(uCount);
@@ -1101,7 +1160,7 @@ public class TrainModule implements UIModule {
                 Map<String, Double> lrs = sp.getLearningRates();
 
                 String prefix;
-                if(modelType == ModelType.Layer){
+                if (modelType == ModelType.Layer) {
                     prefix = layerName;
                 } else {
                     prefix = layerName + "_";
@@ -1123,7 +1182,7 @@ public class TrainModule implements UIModule {
         }
 
         List<String> paramNames = new ArrayList<>(byName.keySet());
-        Collections.sort(paramNames);   //Sorted for consistency
+        Collections.sort(paramNames); //Sorted for consistency
 
         Map<String, Object> ret = new HashMap<>();
         ret.put("iterCounts", iterCounts);
@@ -1134,9 +1193,12 @@ public class TrainModule implements UIModule {
     }
 
 
-    private static Map<String, Object> getHistograms(int layerIdx, TrainModuleUtils.GraphInfo gi, StatsType statsType, Persistable p) {
-        if (p == null) return null;
-        if (!(p instanceof StatsReport)) return null;
+    private static Map<String, Object> getHistograms(int layerIdx, TrainModuleUtils.GraphInfo gi, StatsType statsType,
+                    Persistable p) {
+        if (p == null)
+            return null;
+        if (!(p instanceof StatsReport))
+            return null;
         StatsReport sr = (StatsReport) p;
 
         String layerName = gi.getOriginalVertexName().get(layerIdx);
@@ -1150,7 +1212,7 @@ public class TrainModule implements UIModule {
             for (String s : map.keySet()) {
                 if (s.startsWith(layerName)) {
                     String paramName;
-                    if(s.charAt(layerName.length()) == '_'){
+                    if (s.charAt(layerName.length()) == '_') {
                         //MLN or CG parameter naming convention
                         paramName = s.substring(layerName.length() + 1);
                     } else {
@@ -1164,7 +1226,7 @@ public class TrainModule implements UIModule {
                     Map<String, Object> thisHist = new HashMap<>();
                     double min = h.getMin();
                     double max = h.getMax();
-                    if(Double.isNaN(min)){
+                    if (Double.isNaN(min)) {
                         //If either is NaN, both will be
                         min = NAN_REPLACEMENT_VALUE;
                         max = NAN_REPLACEMENT_VALUE;
@@ -1182,7 +1244,8 @@ public class TrainModule implements UIModule {
         return ret;
     }
 
-    private static Map<String, Object> getMemory(List<Persistable> staticInfoAllWorkers, List<Persistable> updatesLastNMinutes, I18N i18n) {
+    private static Map<String, Object> getMemory(List<Persistable> staticInfoAllWorkers,
+                    List<Persistable> updatesLastNMinutes, I18N i18n) {
 
         Map<String, Object> ret = new HashMap<>();
 
@@ -1230,8 +1293,8 @@ public class TrainModule implements UIModule {
             List<Long> timestamps = new ArrayList<>();
             List<Float> fracJvm = new ArrayList<>();
             List<Float> fracOffHeap = new ArrayList<>();
-            long[] lastBytes = new long[2+numDevices];
-            long[] lastMaxBytes = new long[2+numDevices];
+            long[] lastBytes = new long[2 + numDevices];
+            long[] lastMaxBytes = new long[2 + numDevices];
 
             List<List<Float>> fracDeviceMem = null;
             if (numDevices > 0) {
@@ -1243,8 +1306,10 @@ public class TrainModule implements UIModule {
 
             for (Persistable p : updatesLastNMinutes) {
                 //TODO single pass
-                if (!p.getWorkerID().equals(wid)) continue;
-                if (!(p instanceof StatsReport)) continue;
+                if (!p.getWorkerID().equals(wid))
+                    continue;
+                if (!(p instanceof StatsReport))
+                    continue;
 
                 StatsReport sp = (StatsReport) p;
 
@@ -1257,8 +1322,10 @@ public class TrainModule implements UIModule {
 
                 double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
                 double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
-                if(Double.isNaN(jvmFrac)) jvmFrac = 0.0;
-                if(Double.isNaN(offheapFrac)) offheapFrac = 0.0;
+                if (Double.isNaN(jvmFrac))
+                    jvmFrac = 0.0;
+                if (Double.isNaN(offheapFrac))
+                    offheapFrac = 0.0;
                 fracJvm.add((float) jvmFrac);
                 fracOffHeap.add((float) offheapFrac);
 
@@ -1273,10 +1340,11 @@ public class TrainModule implements UIModule {
                     long[] devMaxBytes = sp.getDeviceMaxBytes();
                     for (int i = 0; i < numDevices; i++) {
                         double frac = devBytes[i] / ((double) devMaxBytes[i]);
-                        if(Double.isNaN(frac)) frac = 0.0;
+                        if (Double.isNaN(frac))
+                            frac = 0.0;
                         fracDeviceMem.get(i).add((float) frac);
-                        lastBytes[2+i] = devBytes[i];
-                        lastMaxBytes[2+i] = devMaxBytes[i];
+                        lastBytes[2 + i] = devBytes[i];
+                        lastMaxBytes[2 + i] = devMaxBytes[i];
                     }
                 }
             }
@@ -1310,7 +1378,8 @@ public class TrainModule implements UIModule {
         return ret;
     }
 
-    private static Pair<Map<String, Object>, Map<String, Object>> getHardwareSoftwareInfo(List<Persistable> staticInfoAllWorkers, I18N i18n) {
+    private static Pair<Map<String, Object>, Map<String, Object>> getHardwareSoftwareInfo(
+                    List<Persistable> staticInfoAllWorkers, I18N i18n) {
         Map<String, Object> retHw = new HashMap<>();
         Map<String, Object> retSw = new HashMap<>();
 
@@ -1339,18 +1408,24 @@ public class TrainModule implements UIModule {
             String[] deviceDescription = sr.getHwDeviceDescription();
             long[] devTotalMem = sr.getHwDeviceTotalMemory();
 
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmMax"), String.valueOf(sr.getHwJvmMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.offHeapMax"), String.valueOf(sr.getHwOffHeapMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmProcs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.computeDevices"), String.valueOf(numDevices)});
+            hwInfo.add(new String[] {i18n.getMessage("train.system.hwTable.jvmMax"),
+                            String.valueOf(sr.getHwJvmMaxMemory())});
+            hwInfo.add(new String[] {i18n.getMessage("train.system.hwTable.offHeapMax"),
+                            String.valueOf(sr.getHwOffHeapMaxMemory())});
+            hwInfo.add(new String[] {i18n.getMessage("train.system.hwTable.jvmProcs"),
+                            String.valueOf(sr.getHwJvmAvailableProcessors())});
+            hwInfo.add(new String[] {i18n.getMessage("train.system.hwTable.computeDevices"),
+                            String.valueOf(numDevices)});
             for (int i = 0; i < numDevices; i++) {
                 String label = i18n.getMessage("train.system.hwTable.deviceName") + " (" + i + ")";
-                String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i) : deviceDescription[i]);
-                hwInfo.add(new String[]{label, name});
+                String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i)
+                                : deviceDescription[i]);
+                hwInfo.add(new String[] {label, name});
 
                 String memLabel = i18n.getMessage("train.system.hwTable.deviceMemory") + " (" + i + ")";
-                String memBytes = (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
-                hwInfo.add(new String[]{memLabel, memBytes});
+                String memBytes =
+                                (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
+                hwInfo.add(new String[] {memLabel, memBytes});
             }
 
             retHw.put(String.valueOf(count), hwInfo);
@@ -1376,17 +1451,19 @@ public class TrainModule implements UIModule {
             }
 
             String datatype = sr.getSwNd4jDataTypeName();
-            if (datatype == null) datatype = "";
-            else datatype = datatype.toLowerCase();
+            if (datatype == null)
+                datatype = "";
+            else
+                datatype = datatype.toLowerCase();
 
             List<String[]> swInfo = new ArrayList<>();
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.os"), sr.getSwOsName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.hostname"), sr.getSwHostName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.osArch"), sr.getSwArch()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmName"), sr.getSwJvmName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmVersion"), sr.getSwJvmVersion()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jBackend"), nd4jBackend});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jDataType"), datatype});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.os"), sr.getSwOsName()});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.hostname"), sr.getSwHostName()});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.osArch"), sr.getSwArch()});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.jvmName"), sr.getSwJvmName()});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.jvmVersion"), sr.getSwJvmVersion()});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.nd4jBackend"), nd4jBackend});
+            swInfo.add(new String[] {i18n.getMessage("train.system.swTable.nd4jDataType"), datatype});
 
             retSw.put(String.valueOf(count), swInfo);
 

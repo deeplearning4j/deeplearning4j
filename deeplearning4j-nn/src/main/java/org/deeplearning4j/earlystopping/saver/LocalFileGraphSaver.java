@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -59,25 +59,25 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
      * @param directory Directory to save networks
      * @param encoding Character encoding for configuration (json)
      */
-    public LocalFileGraphSaver(String directory, Charset encoding){
+    public LocalFileGraphSaver(String directory, Charset encoding) {
         this.directory = directory;
         this.encoding = encoding;
     }
 
     @Override
     public void saveBestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileName);
-        save(net,confOut);
+        String confOut = FilenameUtils.concat(directory, bestFileName);
+        save(net, confOut);
     }
 
     @Override
     public void saveLatestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,latestFileName);
-        save(net,confOut);
+        String confOut = FilenameUtils.concat(directory, latestFileName);
+        save(net, confOut);
     }
 
-    private void save(ComputationGraph net, String confOut) throws IOException{
-       ModelSerializer.writeModel(net, confOut, true);
+    private void save(ComputationGraph net, String confOut) throws IOException {
+        ModelSerializer.writeModel(net, confOut, true);
     }
 
     @Override
@@ -98,7 +98,7 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LocalFileGraphSaver(dir=" + directory + ")";
     }
 }

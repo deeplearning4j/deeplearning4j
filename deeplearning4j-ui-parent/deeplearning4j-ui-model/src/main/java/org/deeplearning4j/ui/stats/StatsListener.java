@@ -42,11 +42,12 @@ public class StatsListener extends BaseStatsListener {
      * @param listenerFrequency Frequency with which to collect stats information
      */
     public StatsListener(StatsStorageRouter router, int listenerFrequency) {
-        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(), null, null);
+        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(),
+                        null, null);
     }
 
-    public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
-                             String sessionID, String workerID) {
+    public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig,
+                    StatsUpdateConfiguration updateConfig, String sessionID, String workerID) {
         super(router, initConfig, updateConfig, sessionID, workerID);
     }
 
@@ -66,7 +67,7 @@ public class StatsListener extends BaseStatsListener {
 
     @Override
     public StorageMetaData getNewStorageMetaData(long initTime, String sessionID, String workerID) {
-        return new SbeStorageMetaData(initTime, sessionID, BaseStatsListener.TYPE_ID, workerID, SbeStatsInitializationReport.class,
-                SbeStatsReport.class);
+        return new SbeStorageMetaData(initTime, sessionID, BaseStatsListener.TYPE_ID, workerID,
+                        SbeStatsInitializationReport.class, SbeStatsReport.class);
     }
 }

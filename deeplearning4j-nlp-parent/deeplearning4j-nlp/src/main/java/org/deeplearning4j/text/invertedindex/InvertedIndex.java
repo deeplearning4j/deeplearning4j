@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -82,7 +82,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param index
      * @return
      */
-    Pair<List<T>,String> documentWithLabel(int index);
+    Pair<List<T>, String> documentWithLabel(int index);
 
     /**
      * Returns a list of words associated with the document
@@ -118,7 +118,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addWordToDoc(int doc,T word);
+    void addWordToDoc(int doc, T word);
 
 
     /**
@@ -126,7 +126,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param doc the document to add to
      * @param words the words to add
      */
-    void addWordsToDoc(int doc,List<T> words);
+    void addWordsToDoc(int doc, List<T> words);
 
 
 
@@ -135,7 +135,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addLabelForDoc(int doc,T word);
+    void addLabelForDoc(int doc, T word);
 
 
     /**
@@ -143,8 +143,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param doc the document to add to
      *
      */
-    void addLabelForDoc(int doc,String label);
-
+    void addLabelForDoc(int doc, String label);
 
 
 
@@ -154,7 +153,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<T> words,String label);
+    void addWordsToDoc(int doc, List<T> words, String label);
 
 
     /**
@@ -163,9 +162,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<T> words,T label);
-
-
+    void addWordsToDoc(int doc, List<T> words, T label);
 
 
 
@@ -174,7 +171,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param doc the document to add to
      * @param word the word to add
      */
-    void addLabelsForDoc(int doc,List<T> word);
+    void addLabelsForDoc(int doc, List<T> word);
 
 
     /**
@@ -183,8 +180,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param label the labels to add
      *
      */
-    void addLabelsForDoc(int doc,Collection<String> label);
-
+    void addLabelsForDoc(int doc, Collection<String> label);
 
 
 
@@ -194,7 +190,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDoc(int doc,List<T> words,Collection<String> label);
+    void addWordsToDoc(int doc, List<T> words, Collection<String> label);
 
 
     /**
@@ -203,10 +199,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param words the words to add
      * @param label the label for the document
      */
-    void addWordsToDocVocabWord(int doc,List<T> words,Collection<T> label);
-
-
-
+    void addWordsToDocVocabWord(int doc, List<T> words, Collection<T> label);
 
 
 
@@ -232,7 +225,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabels(Function<Pair<List<T>,Collection<String>>, Void> func, ExecutorService exec);
+    void eachDocWithLabels(Function<Pair<List<T>, Collection<String>>, Void> func, ExecutorService exec);
 
 
     /**
@@ -240,7 +233,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabel(Function<Pair<List<T>,String>, Void> func, ExecutorService exec);
+    void eachDocWithLabel(Function<Pair<List<T>, String>, Void> func, ExecutorService exec);
 
     /**
      * Iterate over each document

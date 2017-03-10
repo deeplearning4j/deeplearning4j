@@ -32,7 +32,7 @@ public class UIDProvider {
         //The first two components here will be identical for all UID instances in a JVM, where as the 'hexStringOfUIDInstance'
         // will vary (increment) between UID object instances. So we'll only be using the first two components here
         int lastIdx = asString.lastIndexOf(":");
-        jvmUid = asString.substring(0, lastIdx).replaceAll(":","");
+        jvmUid = asString.substring(0, lastIdx).replaceAll(":", "");
 
 
         //Assumptions here:
@@ -46,11 +46,11 @@ public class UIDProvider {
         Enumeration<NetworkInterface> niEnumeration = null;
         try {
             niEnumeration = NetworkInterface.getNetworkInterfaces();
-        }catch(Exception e) {
+        } catch (Exception e) {
             noInterfaces = true;
         }
 
-        if(niEnumeration != null ) {
+        if (niEnumeration != null) {
             while (niEnumeration.hasMoreElements()) {
                 NetworkInterface ni = niEnumeration.nextElement();
                 byte[] addr;
@@ -60,34 +60,34 @@ public class UIDProvider {
                     continue;
                 }
                 if (addr == null || addr.length != 6)
-                    continue;  //May be null (if it can't be obtained) or not standard 6 byte MAC-48 representation
+                    continue; //May be null (if it can't be obtained) or not standard 6 byte MAC-48 representation
 
                 address = addr;
                 break;
             }
         }
 
-        if(address == null){
-            log.warn("Could not generate hardware UID{}. Using fallback: JVM UID as hardware UID.", (noInterfaces ? " (no interfaces)" : ""));
+        if (address == null) {
+            log.warn("Could not generate hardware UID{}. Using fallback: JVM UID as hardware UID.",
+                            (noInterfaces ? " (no interfaces)" : ""));
             hardwareUid = jvmUid;
         } else {
             StringBuilder sb = new StringBuilder();
-            for(byte b : address){
-                sb.append(String.format("%02x",b));
+            for (byte b : address) {
+                sb.append(String.format("%02x", b));
             }
             hardwareUid = sb.toString();
         }
     }
 
-    private UIDProvider() {
-    }
+    private UIDProvider() {}
 
 
-    public static String getJVMUID(){
+    public static String getJVMUID() {
         return jvmUid;
     }
 
-    public static String getHardwareUID(){
+    public static String getHardwareUID() {
         return hardwareUid;
     }
 

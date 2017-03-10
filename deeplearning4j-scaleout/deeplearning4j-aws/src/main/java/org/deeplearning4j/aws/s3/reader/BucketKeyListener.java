@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,13 +28,13 @@ import com.amazonaws.services.s3.AmazonS3;
  */
 public interface BucketKeyListener {
 
-	/**
-	 * 
-	 * @param s3 an s3 client
-	 * @param bucket the bucket being iterated on
-	 * @param key the current key
-	 */
-	void onKey(AmazonS3 s3,String bucket,String key);
-	
-	
+    /**
+     * 
+     * @param s3 an s3 client
+     * @param bucket the bucket being iterated on
+     * @param key the current key
+     */
+    void onKey(AmazonS3 s3, String bucket, String key);
+
+
 }

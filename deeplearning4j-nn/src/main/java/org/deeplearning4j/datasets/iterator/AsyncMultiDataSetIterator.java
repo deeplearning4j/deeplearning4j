@@ -37,7 +37,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             queueLength = 2;
 
         this.iterator = iterator;
-        if (this.iterator.resetSupported()) this.iterator.reset();
+        if (this.iterator.resetSupported())
+            this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
         runnable = new IteratorRunnable(iterator.hasNext());
@@ -74,7 +75,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     @Override
     public void reset() {
         if (!resetSupported())
-            throw new UnsupportedOperationException("Cannot reset Async iterator wrapping iterator that does not support reset");
+            throw new UnsupportedOperationException(
+                            "Cannot reset Async iterator wrapping iterator that does not support reset");
 
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
@@ -114,7 +116,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             return runnable.hasLatch();
         } else {
             if (!runnable.killRunnable && runnable.exception != null) {
-                throw runnable.exception;   //Something went wrong
+                throw runnable.exception; //Something went wrong
             }
             //Runnable has exited, presumably because it has fetched all elements
             return runnable.hasLatch();
@@ -133,7 +135,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         if (!queue.isEmpty()) {
             runnable.feeder.decrementAndGet();
-            return queue.poll();    //non-blocking, but returns null if empty
+            return queue.poll(); //non-blocking, but returns null if empty
         }
 
         //Blocking queue is empty, but more to come
@@ -157,13 +159,14 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 if (!runnable.isAlive && queue.isEmpty()) {
                     if (runnable.exception != null)
                         throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
-                    throw new IllegalStateException("Unexpected state occurred for AsyncMultiDataSetIterator: runnable died or no data available");
+                    throw new IllegalStateException(
+                                    "Unexpected state occurred for AsyncMultiDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
             throw runnable.exception;
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);  //Shouldn't happen under normal circumstances
+            throw new RuntimeException(e); //Shouldn't happen under normal circumstances
         }
     }
 
@@ -202,7 +205,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             This method was added to address possible race condition within runnable loop.
             Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
             and if it's already locked within main runnable loop - we get fast TRUE.
-         */
+            */
             // this is added just to avoid expensive lock
             if (feeder.get() > 0 || !queue.isEmpty())
                 return true;
@@ -212,11 +215,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 boolean result = iterator.hasNext() || feeder.get() != 0 || !queue.isEmpty();
                 if (!isAlive)
                     return result;
-                else while (isAlive) {
-                    // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
-                    result = feeder.get() != 0 || !queue.isEmpty() || iterator.hasNext();
-                    if (result) return true;
-                }
+                else
+                    while (isAlive) {
+                        // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
+                        result = feeder.get() != 0 || !queue.isEmpty() || iterator.hasNext();
+                        if (result)
+                            return true;
+                    }
                 return result;
             } finally {
                 lock.readLock().unlock();

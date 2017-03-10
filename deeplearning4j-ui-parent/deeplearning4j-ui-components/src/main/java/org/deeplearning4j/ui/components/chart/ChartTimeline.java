@@ -21,7 +21,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper=true)
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartTimeline extends Chart {
     public static final String COMPONENT_TYPE = "ChartTimeline";
@@ -29,12 +29,12 @@ public class ChartTimeline extends Chart {
     private List<String> laneNames = new ArrayList<>();
     private List<List<TimelineEntry>> laneData = new ArrayList<>();
 
-    public ChartTimeline(){
+    public ChartTimeline() {
         super(COMPONENT_TYPE);
         //no-arg constructor for Jackson
     }
 
-    private ChartTimeline(Builder builder){
+    private ChartTimeline(Builder builder) {
         super(COMPONENT_TYPE, builder);
         this.laneNames = builder.laneNames;
         this.laneData = builder.laneData;
@@ -47,24 +47,27 @@ public class ChartTimeline extends Chart {
         private List<List<TimelineEntry>> laneData = new ArrayList<>();
 
 
-        public Builder(String title, StyleChart style){
+        public Builder(String title, StyleChart style) {
             super(title, style);
         }
 
 
-        public Builder addLane(String name, List<TimelineEntry> data){
+        public Builder addLane(String name, List<TimelineEntry> data) {
             laneNames.add(name);
             laneData.add(data);
             return this;
         }
 
-        public ChartTimeline build(){
+        public ChartTimeline build() {
             return new ChartTimeline(this);
         }
     }
 
 
-    @Data @NoArgsConstructor @AllArgsConstructor @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class TimelineEntry {
         private String entryLabel;
         private long startTimeMs;

@@ -69,17 +69,16 @@ public class ParamAndGradientIterationListener implements IterationListener {
      * @param delimiter delimiter (for example, "\t" or "," etc)
      */
     @Builder
-    public ParamAndGradientIterationListener(int iterations, boolean printHeader,
-                                             boolean printMean, boolean printMinMax, boolean printMeanAbsValue,
-                                             boolean outputToConsole, boolean outputToFile, boolean outputToLogger,
-                                             File file, String delimiter) {
+    public ParamAndGradientIterationListener(int iterations, boolean printHeader, boolean printMean,
+                    boolean printMinMax, boolean printMeanAbsValue, boolean outputToConsole, boolean outputToFile,
+                    boolean outputToLogger, File file, String delimiter) {
         this.printHeader = printHeader;
         this.printMean = printMean;
         this.printMinMax = printMinMax;
         this.printMeanAbsValue = printMeanAbsValue;
         this.iterations = iterations;
         this.file = file;
-        if(this.file != null) {
+        if (this.file != null) {
             this.filePath = file.toPath();
         }
         this.outputToConsole = outputToConsole;
@@ -115,32 +114,31 @@ public class ParamAndGradientIterationListener implements IterationListener {
 
             for (String s : params.keySet()) {
                 //Parameters:
-                if (printMean) sb.append(delimiter).append(s).append("_mean");
+                if (printMean)
+                    sb.append(delimiter).append(s).append("_mean");
                 //Min, max
                 if (printMinMax) {
-                    sb.append(delimiter)
-                            .append(s).append("_min")
-                            .append(delimiter)
-                            .append(s).append("_max");
+                    sb.append(delimiter).append(s).append("_min").append(delimiter).append(s).append("_max");
                 }
-                if (printMeanAbsValue) sb.append(delimiter).append(s).append("_meanAbsValue");
+                if (printMeanAbsValue)
+                    sb.append(delimiter).append(s).append("_meanAbsValue");
 
                 //Gradients:
-                if (printMean) sb.append(delimiter).append(s).append("_meanG");
+                if (printMean)
+                    sb.append(delimiter).append(s).append("_meanG");
                 //Min, max
                 if (printMinMax) {
-                    sb.append(delimiter)
-                            .append(s).append("_minG")
-                            .append(delimiter)
-                            .append(s).append("_maxG");
+                    sb.append(delimiter).append(s).append("_minG").append(delimiter).append(s).append("_maxG");
                 }
-                if (printMeanAbsValue) sb.append(delimiter).append(s).append("_meanAbsValueG");
+                if (printMeanAbsValue)
+                    sb.append(delimiter).append(s).append("_meanAbsValueG");
             }
             sb.append("\n");
 
             if (outputToFile) {
                 try {
-                    Files.write(filePath, sb.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    Files.write(filePath, sb.toString().getBytes(), StandardOpenOption.CREATE,
+                                    StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (IOException e) {
                     if (writeFailureCount++ < MAX_WRITE_FAILURE_MESSAGES) {
                         //Print error message
@@ -152,11 +150,14 @@ public class ParamAndGradientIterationListener implements IterationListener {
                 }
             }
 
-            if (outputToLogger) logger.info(sb.toString());
-            if (outputToConsole) System.out.println(sb.toString());
+            if (outputToLogger)
+                logger.info(sb.toString());
+            if (outputToConsole)
+                System.out.println(sb.toString());
         }
 
-        if (totalIterationCount % iterations != 0) return;    //No op this iteration
+        if (totalIterationCount % iterations != 0)
+            return; //No op this iteration
 
         Map<String, INDArray> params = model.paramTable();
         Map<String, INDArray> grads = model.gradient().gradientForVariable();
@@ -209,8 +210,10 @@ public class ParamAndGradientIterationListener implements IterationListener {
         sb.append("\n");
 
         String out = sb.toString();
-        if (outputToLogger) logger.info(out);
-        if (outputToConsole) System.out.print(out);
+        if (outputToLogger)
+            logger.info(out);
+        if (outputToConsole)
+            System.out.print(out);
 
         if (outputToFile) {
             try {

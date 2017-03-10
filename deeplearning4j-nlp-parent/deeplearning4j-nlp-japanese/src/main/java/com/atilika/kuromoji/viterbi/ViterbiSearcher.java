@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -37,10 +37,8 @@ public class ViterbiSearcher {
 
     private final TokenizerBase.Mode mode;
 
-    public ViterbiSearcher(TokenizerBase.Mode mode,
-                           ConnectionCosts costs,
-                           UnknownDictionary unknownDictionary,
-                           List<Integer> penalties) {
+    public ViterbiSearcher(TokenizerBase.Mode mode, ConnectionCosts costs, UnknownDictionary unknownDictionary,
+                    List<Integer> penalties) {
         if (!penalties.isEmpty()) {
             this.kanjiPenaltyLengthTreshold = penalties.get(0);
             this.kanjiPenalty = penalties.get(1);
@@ -73,12 +71,12 @@ public class ViterbiSearcher {
 
         for (int i = 1; i < startIndexArr.length; i++) {
 
-            if (startIndexArr[i] == null || endIndexArr[i] == null) {    // continue since no array which contains ViterbiNodes exists. Or no previous node exists.
+            if (startIndexArr[i] == null || endIndexArr[i] == null) { // continue since no array which contains ViterbiNodes exists. Or no previous node exists.
                 continue;
             }
 
             for (ViterbiNode node : startIndexArr[i]) {
-                if (node == null) {    // If array doesn't contain ViterbiNode any more, continue to next index
+                if (node == null) { // If array doesn't contain ViterbiNode any more, continue to next index
                     break;
                 }
 
@@ -99,9 +97,8 @@ public class ViterbiSearcher {
                 return;
             } else {
                 // cost = [total cost from BOS to previous node] + [connection cost between previous node and current node] + [word cost]
-                int pathCost = leftNode.getPathCost() +
-                    costs.get(leftNode.getRightId(), backwardConnectionId) +
-                    wordCost;
+                int pathCost = leftNode.getPathCost() + costs.get(leftNode.getRightId(), backwardConnectionId)
+                                + wordCost;
 
                 // Add extra cost for long nodes in "Search mode".
                 if (mode == TokenizerBase.Mode.SEARCH || mode == TokenizerBase.Mode.EXTENDED) {
@@ -124,7 +121,7 @@ public class ViterbiSearcher {
         int length = surface.length();
 
         if (length > kanjiPenaltyLengthTreshold) {
-            if (isKanjiOnly(surface)) {    // Process only Kanji keywords
+            if (isKanjiOnly(surface)) { // Process only Kanji keywords
                 pathCost += (length - kanjiPenaltyLengthTreshold) * kanjiPenalty;
             } else if (length > otherPenaltyLengthThreshold) {
                 pathCost += (length - otherPenaltyLengthThreshold) * otherPenalty;
@@ -178,7 +175,8 @@ public class ViterbiSearcher {
             String word = surface.substring(i - 1, i);
             int startIndex = node.getStartIndex() + i - 1;
 
-            ViterbiNode uniGramNode = new ViterbiNode(unigramWordId, word, unknownDictionary, startIndex, ViterbiNode.Type.UNKNOWN);
+            ViterbiNode uniGramNode = new ViterbiNode(unigramWordId, word, unknownDictionary, startIndex,
+                            ViterbiNode.Type.UNKNOWN);
             uniGramNodes.addFirst(uniGramNode);
         }
 

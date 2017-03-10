@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -29,7 +29,8 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
  *
  * @author Alex BLack
  */
-@Data @EqualsAndHashCode(callSuper=true)
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Chart extends Component {
 
@@ -46,7 +47,7 @@ public abstract class Chart extends Component {
     private Double gridVerticalStrokeWidth;
     private Double gridHorizontalStrokeWidth;
 
-    public Chart(String componentType){
+    public Chart(String componentType) {
         super(componentType, null);
     }
 
@@ -67,7 +68,8 @@ public abstract class Chart extends Component {
     }
 
 
-    @Getter @SuppressWarnings("unchecked")
+    @Getter
+    @SuppressWarnings("unchecked")
     public static abstract class Builder<T extends Builder<T>> {
 
         private String title;
@@ -171,7 +173,7 @@ public abstract class Chart extends Component {
          */
         public T setGridWidth(Integer gridVerticalStrokeWidth, Integer gridHorizontalStrokeWidth) {
             return setGridWidth((gridVerticalStrokeWidth != null ? gridVerticalStrokeWidth.doubleValue() : null),
-                    (gridHorizontalStrokeWidth != null ? gridHorizontalStrokeWidth.doubleValue() : null));
+                            (gridHorizontalStrokeWidth != null ? gridHorizontalStrokeWidth.doubleValue() : null));
         }
 
     }

@@ -32,9 +32,12 @@ import java.util.List;
 @Slf4j
 public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
 
-    @Getter protected VocabCache<VocabWord> vocabCache;
-    @Getter protected InMemoryLookupTable<VocabWord> lookupTable;
-    @Getter protected Word2Vec word2Vec;
+    @Getter
+    protected VocabCache<VocabWord> vocabCache;
+    @Getter
+    protected InMemoryLookupTable<VocabWord> lookupTable;
+    @Getter
+    protected Word2Vec word2Vec;
 
     public VocabCacheExporter() {
 
@@ -52,7 +55,7 @@ public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
         INDArray syn0 = null;
 
         // just roll through list
-        for (ExportContainer<VocabWord> element: list) {
+        for (ExportContainer<VocabWord> element : list) {
             VocabWord word = element.getElement();
             INDArray weights = element.getArray();
 
@@ -68,14 +71,13 @@ public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
         }
 
         if (lookupTable == null)
-            lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
-                    .cache(vocabCache)
-                    .vectorLength(syn0.columns())
-                    .build();
+            lookupTable = new InMemoryLookupTable.Builder<VocabWord>().cache(vocabCache).vectorLength(syn0.columns())
+                            .build();
 
         lookupTable.setSyn0(syn0);
 
         // this is bad & dirty, but we don't really need anything else for testing :)
-        word2Vec = WordVectorSerializer.fromPair(Pair.<InMemoryLookupTable, VocabCache>makePair(lookupTable, vocabCache));
+        word2Vec = WordVectorSerializer
+                        .fromPair(Pair.<InMemoryLookupTable, VocabCache>makePair(lookupTable, vocabCache));
     }
 }

@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public interface SparkElementsLearningAlgorithm extends ElementsLearningAlgorithm<ShallowSequenceElement> {
-    TrainingDriver<? extends TrainingMessage>  getTrainingDriver();
+    TrainingDriver<? extends TrainingMessage> getTrainingDriver();
 
-    Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate);
+    Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom,
+                    double learningRate);
 }
