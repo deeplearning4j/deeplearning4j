@@ -66,18 +66,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray preOutput(boolean training) {
-        // This is a bit of a hack due to the fact that we cache the layer input
-        // and calls to backpropGradient (which also reshape the input) result
-        // in a call to this function. Thus, this function will sometimes be called
-        // with a rank 4 input with singleton fourth dimension. Thus, we need to
-        // check for that.
         INDArray origInput = input;
-        if(input.rank() == 3) {
-            // add singleton fourth dimension to input if necessary
-            input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
-        } else if(input.rank() != 4 || input.size(3) != 1)
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Convolution1DLayer with shape "
-                    + Arrays.toString(input.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's activate method
         INDArray preOutput = super.preOutput(training);
