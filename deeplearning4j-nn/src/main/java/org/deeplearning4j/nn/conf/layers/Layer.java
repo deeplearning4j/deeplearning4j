@@ -30,6 +30,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
@@ -47,6 +48,7 @@ import java.util.Map;
 @JsonSubTypes(value = {
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
+        @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
@@ -55,6 +57,7 @@ import java.util.Map;
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
         @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
+        @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
         @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
