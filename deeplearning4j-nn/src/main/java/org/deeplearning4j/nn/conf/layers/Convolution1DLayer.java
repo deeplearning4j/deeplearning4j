@@ -81,32 +81,25 @@ public class Convolution1DLayer extends ConvolutionLayer {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
 
-    public static class Builder extends ConvolutionLayer.Builder {
-        public Builder(int kernelSize, int stride, int padding) {
-            this();
-            this.kernelSize = new int[] { 1, 1 };
-            this.kernelSize[0] = kernelSize;
-            this.stride[0] = stride;
-            this.padding[0] = padding;
+    public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+
+        public Builder() {
+            this(0, 1, 0);
+            this.kernelSize = null;
         }
 
         public Builder(int kernelSize, int stride) {
-            this();
-            this.kernelSize = new int[] { 1, 1 };
-            this.kernelSize[0] = kernelSize;
-            this.stride[0] = stride;
+            this(kernelSize, stride, 0);
         }
 
         public Builder(int kernelSize) {
-            this();
-            this.kernelSize = new int[] { 1, 1 };
-            this.kernelSize[0] = kernelSize;
+            this(kernelSize, 1, 0);
         }
 
-        public Builder() {
-            this.kernelSize = null;
-            this.stride = new int[] { 1, 1 };
-            this.padding = new int[] { 0, 0 };
+        public Builder(int kernelSize, int stride, int padding) {
+            this.kernelSize = new int[] { kernelSize, 1 };
+            this.stride = new int[]{stride, 1};
+            this.padding = new int[]{padding, 0};
         }
 
         /**
@@ -115,18 +108,17 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param kernelSize the length of the kernel
          * @return
          */
-        public Convolution1DLayer.Builder kernelSize(int kernelSize){
-            this.kernelSize = new int[] { 1, 1 };
-            this.kernelSize[0] = kernelSize;
+        public Builder kernelSize(int kernelSize){
+            this.kernelSize = new int[] { kernelSize, 1 };
             return this;
         }
 
-        public Convolution1DLayer.Builder stride(int stride){
+        public Builder stride(int stride){
             this.stride[0] = stride;
             return this;
         }
 
-        public Convolution1DLayer.Builder padding(int padding){
+        public Builder padding(int padding){
             this.padding[0] = padding;
             return this;
         }
