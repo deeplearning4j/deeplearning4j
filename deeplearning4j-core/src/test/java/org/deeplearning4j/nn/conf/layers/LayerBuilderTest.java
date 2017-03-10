@@ -78,8 +78,7 @@ public class LayerBuilderTest {
     }
     @Test
     public void testConvolutionLayer() throws Exception {
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize, stride, padding)
-                .convolutionType(convType).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize, stride, padding).build();
 
         checkSerialization(conv);
 

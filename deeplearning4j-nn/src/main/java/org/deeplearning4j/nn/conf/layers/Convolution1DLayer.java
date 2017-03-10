@@ -104,12 +104,10 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         /**
          * Size of the convolution
-         * rows/columns
          * @param kernelSize the length of the kernel
-         * @return
          */
         public Builder kernelSize(int kernelSize){
-            this.kernelSize = new int[] { kernelSize, 1 };
+            this.kernelSize[0] = kernelSize;
             return this;
         }
 
