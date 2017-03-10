@@ -209,7 +209,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
         protected ConvolutionMode convolutionMode = null;
-        protected int[] kernelSize = null;
+        protected int[] kernelSize = new int[] {5,5};
         protected int[] stride = new int[] {1,1};
         protected int[] padding = new int[] {0, 0};
         protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
