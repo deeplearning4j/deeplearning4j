@@ -327,11 +327,11 @@ public class DerivativeTests extends BaseNd4jTest {
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
             z.putScalar(i, x);
-            expOut[i] = (x >= 0 ? 1 : 0.01);
+            expOut[i] = (x >= 0 ? 1 : 0.25);
         }
 
         INDArray zPrime = Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory().createTransform("leakyrelu", z).derivative());
+                        .execAndReturn(new LeakyReLU(z, 0.25).derivative());
 
         for (int i = 0; i < 100; i++) {
             double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
