@@ -58,9 +58,10 @@ public class TrainModuleUtils {
         for (NeuralNetConfiguration c : list) {
             Layer layer = c.getLayer();
             String layerName = layer.getLayerName();
-            if (layerName == null) layerName = "layer" + layerIdx;
+            if (layerName == null)
+                layerName = "layer" + layerIdx;
             vertexNames.add(layerName);
-            originalVertexName.add(String.valueOf(layerIdx-1));
+            originalVertexName.add(String.valueOf(layerIdx - 1));
 
             String layerType = c.getLayer().getClass().getSimpleName().replaceAll("Layer$", "");
             layerTypes.add(layerType);
@@ -139,7 +140,7 @@ public class TrainModuleUtils {
         return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo, originalVertexName);
     }
 
-    public static GraphInfo buildGraphInfo(NeuralNetConfiguration config){
+    public static GraphInfo buildGraphInfo(NeuralNetConfiguration config) {
 
         List<String> vertexNames = new ArrayList<>();
         List<String> originalVertexName = new ArrayList<>();
@@ -152,28 +153,28 @@ public class TrainModuleUtils {
         layerInputs.add(Collections.emptyList());
         layerInfo.add(Collections.emptyMap());
 
-        if(config.getLayer() instanceof VariationalAutoencoder){
+        if (config.getLayer() instanceof VariationalAutoencoder) {
             //Special case like this is a bit ugly - but it works
             VariationalAutoencoder va = (VariationalAutoencoder) config.getLayer();
             int[] encLayerSizes = va.getEncoderLayerSizes();
             int[] decLayerSizes = va.getDecoderLayerSizes();
 
             int layerIndex = 1;
-            for( int i=0; i<encLayerSizes.length; i++ ){
+            for (int i = 0; i < encLayerSizes.length; i++) {
                 String name = "encoder_" + i;
                 vertexNames.add(name);
-                originalVertexName.add("e"+i);
+                originalVertexName.add("e" + i);
                 String layerType = "VAE-Encoder";
                 layerTypes.add(layerType);
-                layerInputs.add(Collections.singletonList(layerIndex-1));
+                layerInputs.add(Collections.singletonList(layerIndex - 1));
                 layerIndex++;
 
-                Map<String,String> encoderInfo = new LinkedHashMap<>();
-                int inputSize = (i == 0 ? va.getNIn() : encLayerSizes[i-1]);
+                Map<String, String> encoderInfo = new LinkedHashMap<>();
+                int inputSize = (i == 0 ? va.getNIn() : encLayerSizes[i - 1]);
                 int outputSize = encLayerSizes[i];
                 encoderInfo.put("Input Size", String.valueOf(inputSize));
                 encoderInfo.put("Layer Size", String.valueOf(outputSize));
-                encoderInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize));
+                encoderInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize));
                 encoderInfo.put("Activation Function", va.getActivationFn().toString());
                 layerInfo.add(encoderInfo);
             }
@@ -181,33 +182,33 @@ public class TrainModuleUtils {
             vertexNames.add("z");
             originalVertexName.add(VariationalAutoencoderParamInitializer.PZX_PREFIX);
             layerTypes.add("VAE-LatentVariable");
-            layerInputs.add(Collections.singletonList(layerIndex-1));
+            layerInputs.add(Collections.singletonList(layerIndex - 1));
             layerIndex++;
-            Map<String,String> latentInfo = new LinkedHashMap<>();
-            int inputSize = encLayerSizes[encLayerSizes.length-1];
+            Map<String, String> latentInfo = new LinkedHashMap<>();
+            int inputSize = encLayerSizes[encLayerSizes.length - 1];
             int outputSize = va.getNOut();
             latentInfo.put("Input Size", String.valueOf(inputSize));
             latentInfo.put("Layer Size", String.valueOf(outputSize));
-            latentInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize * 2));
+            latentInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize * 2));
             latentInfo.put("Activation Function", va.getPzxActivationFn().toString());
             layerInfo.add(latentInfo);
 
 
-            for( int i=0; i<decLayerSizes.length; i++ ){
+            for (int i = 0; i < decLayerSizes.length; i++) {
                 String name = "decoder_" + i;
                 vertexNames.add(name);
-                originalVertexName.add("d"+i);
+                originalVertexName.add("d" + i);
                 String layerType = "VAE-Decoder";
                 layerTypes.add(layerType);
-                layerInputs.add(Collections.singletonList(layerIndex-1));
+                layerInputs.add(Collections.singletonList(layerIndex - 1));
                 layerIndex++;
 
-                Map<String,String> decoderInfo = new LinkedHashMap<>();
-                inputSize = (i == 0 ? va.getNOut() : decLayerSizes[i-1]);
+                Map<String, String> decoderInfo = new LinkedHashMap<>();
+                inputSize = (i == 0 ? va.getNOut() : decLayerSizes[i - 1]);
                 outputSize = encLayerSizes[i];
                 decoderInfo.put("Input Size", String.valueOf(inputSize));
                 decoderInfo.put("Layer Size", String.valueOf(outputSize));
-                decoderInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize));
+                decoderInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize));
                 decoderInfo.put("Activation Function", va.getActivationFn().toString());
                 layerInfo.add(decoderInfo);
             }
@@ -215,14 +216,15 @@ public class TrainModuleUtils {
             vertexNames.add("x");
             originalVertexName.add(VariationalAutoencoderParamInitializer.PXZ_PREFIX);
             layerTypes.add("VAE-Reconstruction");
-            layerInputs.add(Collections.singletonList(layerIndex-1));
+            layerInputs.add(Collections.singletonList(layerIndex - 1));
             layerIndex++;
-            Map<String,String> reconstructionInfo = new LinkedHashMap<>();
-            inputSize = decLayerSizes[decLayerSizes.length-1];
+            Map<String, String> reconstructionInfo = new LinkedHashMap<>();
+            inputSize = decLayerSizes[decLayerSizes.length - 1];
             outputSize = va.getNIn();
             reconstructionInfo.put("Input Size", String.valueOf(inputSize));
             reconstructionInfo.put("Layer Size", String.valueOf(outputSize));
-            reconstructionInfo.put("Num Parameters", String.valueOf((inputSize+1) * va.getOutputDistribution().distributionInputSize(va.getNIn())));
+            reconstructionInfo.put("Num Parameters", String
+                            .valueOf((inputSize + 1) * va.getOutputDistribution().distributionInputSize(va.getNIn())));
             reconstructionInfo.put("Distribution", va.getOutputDistribution().toString());
             layerInfo.add(reconstructionInfo);
 
@@ -231,7 +233,8 @@ public class TrainModuleUtils {
             //RBM or similar...
             Layer layer = config.getLayer();
             String layerName = layer.getLayerName();
-            if (layerName == null) layerName = "layer0";
+            if (layerName == null)
+                layerName = "layer0";
             vertexNames.add(layerName);
             originalVertexName.add(String.valueOf("0"));
 
@@ -263,7 +266,8 @@ public class TrainModuleUtils {
         }
 
         if (layer instanceof ConvolutionLayer) {
-            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 =
+                            (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
             map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
             map.put("Stride", Arrays.toString(layer1.getStride()));
             map.put("Padding", Arrays.toString(layer1.getPadding()));

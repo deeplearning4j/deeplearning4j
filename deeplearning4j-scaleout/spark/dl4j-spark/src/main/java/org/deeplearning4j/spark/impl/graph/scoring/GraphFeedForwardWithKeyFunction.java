@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -43,12 +43,14 @@ import java.util.List;
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-public class GraphFeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
+public class GraphFeedForwardWithKeyFunction<K>
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
 
     public GraphFeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         super(new GraphFeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
     }
 }
+
 
 /**
  * Function to feed-forward examples, and get the network output (for example, class probabilities).
@@ -57,7 +59,8 @@ public class GraphFeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionA
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray[]>>, Tuple2<K, INDArray[]>> {
+class GraphFeedForwardWithKeyFunctionAdapter<K>
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray[]>>, Tuple2<K, INDArray[]>> {
 
     protected static Logger log = LoggerFactory.getLogger(GraphFeedForwardWithKeyFunction.class);
 
@@ -70,7 +73,8 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
      * @param jsonConfig MultiLayerConfiguration, as json
      * @param batchSize  Batch size to use for forward pass (use > 1 for efficiency)
      */
-    public GraphFeedForwardWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public GraphFeedForwardWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.batchSize = batchSize;
@@ -87,7 +91,8 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcast set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
 
         //Issue: for 2d data (MLPs etc) we can just stack the examples.
@@ -101,16 +106,16 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
         int[][] firstShapes = null;
         boolean sizesDiffer = false;
         int tupleCount = 0;
-        while(iterator.hasNext()){
-            Tuple2<K,INDArray[]> t2 = iterator.next();
-            if(firstShapes == null){
+        while (iterator.hasNext()) {
+            Tuple2<K, INDArray[]> t2 = iterator.next();
+            if (firstShapes == null) {
                 firstShapes = new int[t2._2().length][0];
-                for( int i=0; i<firstShapes.length; i++ ){
+                for (int i = 0; i < firstShapes.length; i++) {
                     firstShapes[i] = t2._2()[i].shape();
                 }
-            } else if(!sizesDiffer){
-                for( int i=0; i<firstShapes.length; i++ ) {
-                    for( int j=1; j<firstShapes[i].length; j++ ) {
+            } else if (!sizesDiffer) {
+                for (int i = 0; i < firstShapes.length; i++) {
+                    for (int j = 1; j < firstShapes[i].length; j++) {
                         if (firstShapes[i][j] != featuresList.get(tupleCount - 1)[i].size(j)) {
                             sizesDiffer = true;
                             break;
@@ -124,14 +129,14 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
             tupleCount++;
         }
 
-        if(tupleCount == 0){
+        if (tupleCount == 0) {
             return Collections.emptyList();
         }
 
-        List<Tuple2<K,INDArray[]>> output = new ArrayList<>(tupleCount);
+        List<Tuple2<K, INDArray[]>> output = new ArrayList<>(tupleCount);
         int currentArrayIndex = 0;
 
-        while(currentArrayIndex < featuresList.size()) {
+        while (currentArrayIndex < featuresList.size()) {
             int firstIdx = currentArrayIndex;
             int nextIdx = currentArrayIndex;
             int examplesInBatch = 0;
@@ -139,15 +144,15 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
             firstShapes = null;
             while (nextIdx < featuresList.size() && examplesInBatch < batchSize) {
                 INDArray[] f = featuresList.get(nextIdx);
-                if(firstShapes == null){
+                if (firstShapes == null) {
                     firstShapes = new int[f.length][0];
-                    for( int i=0; i<firstShapes.length; i++ ){
+                    for (int i = 0; i < firstShapes.length; i++) {
                         firstShapes[i] = f[i].shape();
                     }
-                } else if(sizesDiffer){
+                } else if (sizesDiffer) {
                     boolean breakWhile = false;
-                    for( int i=0; i<firstShapes.length; i++ ){
-                        for( int j=1; j<firstShapes[i].length; j++ ) {
+                    for (int i = 0; i < firstShapes.length; i++) {
+                        for (int j = 1; j < firstShapes[i].length; j++) {
                             if (firstShapes[i][j] != featuresList.get(nextIdx)[i].size(j)) {
                                 //Next example has a different size. So: don't add it to the current batch, just process what we have
                                 breakWhile = true;
@@ -155,7 +160,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
                             }
                         }
                     }
-                    if(breakWhile){
+                    if (breakWhile) {
                         break;
                     }
                 }
@@ -166,9 +171,9 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
             }
 
             INDArray[] batchFeatures = new INDArray[toMerge.get(0).length];
-            for( int i=0; i<batchFeatures.length; i++ ){
+            for (int i = 0; i < batchFeatures.length; i++) {
                 INDArray[] tempArr = new INDArray[toMerge.size()];
-                for( int j=0; j<tempArr.length; j++ ){
+                for (int j = 0; j < tempArr.length; j++) {
                     tempArr[j] = toMerge.get(j)[i];
                 }
                 batchFeatures[i] = Nd4j.concat(0, tempArr);
@@ -178,11 +183,11 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
             INDArray[] out = network.output(false, batchFeatures);
 
             examplesInBatch = 0;
-            for(int i=firstIdx; i<nextIdx; i++ ){
+            for (int i = firstIdx; i < nextIdx; i++) {
                 int numExamples = origSizeList.get(i);
                 INDArray[] outSubset = new INDArray[out.length];
-                for( int j=0; j<out.length; j++ ){
-                    outSubset[j] = getSubset(examplesInBatch, examplesInBatch+numExamples, out[j]);
+                for (int j = 0; j < out.length; j++) {
+                    outSubset[j] = getSubset(examplesInBatch, examplesInBatch + numExamples, out[j]);
                 }
                 examplesInBatch += numExamples;
 
@@ -198,14 +203,16 @@ class GraphFeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapte
         return output;
     }
 
-    private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from){
-        switch(from.rank()){
+    private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from) {
+        switch (from.rank()) {
             case 2:
                 return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all());
             case 3:
-                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             case 4:
-                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             default:
                 throw new RuntimeException("Invalid rank: " + from.rank());
         }

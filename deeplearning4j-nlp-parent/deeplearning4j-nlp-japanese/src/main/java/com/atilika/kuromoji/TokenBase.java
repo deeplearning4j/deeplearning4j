@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -98,13 +98,8 @@ public abstract class TokenBase {
 
     @Override
     public String toString() {
-        return "Token{" +
-            "surface='" + surface + '\'' +
-            ", position=" + position +
-            ", type=" + type +
-            ", dictionary=" + dictionary +
-            ", wordId=" + wordId +
-            '}';
+        return "Token{" + "surface='" + surface + '\'' + ", position=" + position + ", type=" + type + ", dictionary="
+                        + dictionary + ", wordId=" + wordId + '}';
     }
 
     /**

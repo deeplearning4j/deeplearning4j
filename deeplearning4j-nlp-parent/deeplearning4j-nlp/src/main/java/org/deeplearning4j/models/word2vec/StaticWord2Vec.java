@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class StaticWord2Vec implements WordVectors {
-    private List<Map<Integer, INDArray>>  cacheWrtDevice = new ArrayList<>();
+    private List<Map<Integer, INDArray>> cacheWrtDevice = new ArrayList<>();
     private AbstractStorage<Integer> storage;
     private long cachePerDevice = 0L;
     private VocabCache<VocabWord> vocabCache;
@@ -50,7 +50,8 @@ public class StaticWord2Vec implements WordVectors {
      */
     protected void init() {
         if (storage.size() != vocabCache.numWords())
-            throw new RuntimeException("Number of words in Vocab isn't matching number of stored Vectors. vocab: ["+ vocabCache.numWords()+"]; storage: ["+storage.size()+"]");
+            throw new RuntimeException("Number of words in Vocab isn't matching number of stored Vectors. vocab: ["
+                            + vocabCache.numWords() + "]; storage: [" + storage.size() + "]");
 
         // initializing device cache
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); i++) {
@@ -173,11 +174,10 @@ public class StaticWord2Vec implements WordVectors {
         int idx = 0;
         if (hasWord(word))
             idx = vocabCache.indexOf(word);
+        else if (getUNK() != null)
+            idx = vocabCache.indexOf(getUNK());
         else
-            if (getUNK() != null)
-                idx = vocabCache.indexOf(getUNK());
-            else
-                return null;
+            return null;
 
         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         INDArray array = null;
@@ -187,7 +187,7 @@ public class StaticWord2Vec implements WordVectors {
 
         array = storage.get(idx);
 
-        if (cachePerDevice > 0){
+        if (cachePerDevice > 0) {
             // TODO: add cache here
             long arrayBytes = array.length() * array.data().getElementSize();
             if ((arrayBytes * cacheWrtDevice.get(deviceId).size()) + arrayBytes < cachePerDevice)
@@ -206,7 +206,7 @@ public class StaticWord2Vec implements WordVectors {
     @Override
     public INDArray getWordVectors(Collection<String> labels) {
         List<INDArray> words = new ArrayList<>();
-        for (String label: labels) {
+        for (String label : labels) {
             if (hasWord(label) || getUNK() != null)
                 words.add(getWordVectorMatrix(label));
         }
@@ -265,7 +265,8 @@ public class StaticWord2Vec implements WordVectors {
     @Override
     public double similarity(String label1, String label2) {
         if (label1 == null || label2 == null) {
-            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
+            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null" : "exists") + ";" + label2 + " vec2:"
+                            + (label2 == null ? "null" : "exists"));
             return Double.NaN;
         }
 
@@ -273,11 +274,13 @@ public class StaticWord2Vec implements WordVectors {
         INDArray vec2 = getWordVectorMatrix(label2).dup();
 
         if (vec1 == null || vec2 == null) {
-            log.debug(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
+            log.debug(label1 + ": " + (vec1 == null ? "null" : "exists") + ";" + label2 + " vec2:"
+                            + (vec2 == null ? "null" : "exists"));
             return Double.NaN;
         }
 
-        if (label1.equals(label2)) return 1.0;
+        if (label1.equals(label2))
+            return 1.0;
 
         vec1 = Transforms.unitVec(vec1);
         vec2 = Transforms.unitVec(vec2);

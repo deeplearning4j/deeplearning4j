@@ -9,7 +9,7 @@ import scala.Tuple2;
  *
  * @author Alex Black
  */
-public class ArrayPairToPair <K> implements PairFunction<Tuple2<K,INDArray[]>,K,INDArray> {
+public class ArrayPairToPair<K> implements PairFunction<Tuple2<K, INDArray[]>, K, INDArray> {
     @Override
     public Tuple2<K, INDArray> call(Tuple2<K, INDArray[]> v1) throws Exception {
         INDArray arr = (v1._2() == null ? null : v1._2()[0]);

@@ -44,15 +44,16 @@ public class CountCumSum {
         // Action to fill the accumulator
         rdd.foreachPartition(new MapPerPartitionVoidFunction());
     }
+
     // Do cum sum within the partition
     public void cumSumWithinPartition() {
 
         // Accumulator to get the max of the cumulative sum in each partition
-        final Accumulator<Counter<Integer>> maxPerPartitionAcc = sc.accumulator(new Counter<Integer>(),
-                                                                                new MaxPerPartitionAccumulator());
+        final Accumulator<Counter<Integer>> maxPerPartitionAcc =
+                        sc.accumulator(new Counter<Integer>(), new MaxPerPartitionAccumulator());
         // Partition mapping to fold within partition
-        foldWithinPartitionRDD = sentenceCountRDD.mapPartitionsWithIndex(
-                new FoldWithinPartitionFunction(maxPerPartitionAcc), true).cache();
+        foldWithinPartitionRDD = sentenceCountRDD
+                        .mapPartitionsWithIndex(new FoldWithinPartitionFunction(maxPerPartitionAcc), true).cache();
         actionForMapPartition(foldWithinPartitionRDD);
 
         // Broadcast the counter (partition index : sum of count) to all workers
@@ -61,9 +62,10 @@ public class CountCumSum {
 
     public void cumSumBetweenPartition() {
 
-        cumSumRDD = foldWithinPartitionRDD.mapPartitionsWithIndex(
-                new FoldBetweenPartitionFunction(broadcastedMaxPerPartitionCounter), true)
-                                          .setName("cumSumRDD").cache();
+        cumSumRDD = foldWithinPartitionRDD
+                        .mapPartitionsWithIndex(new FoldBetweenPartitionFunction(broadcastedMaxPerPartitionCounter),
+                                        true)
+                        .setName("cumSumRDD").cache();
         foldWithinPartitionRDD.unpersist();
     }
 

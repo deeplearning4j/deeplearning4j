@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,7 +38,7 @@ import java.util.Set;
  * @author Adam Gibson
  *
  */
-public class MathUtils  {
+public class MathUtils {
 
     /** The natural logarithm of 2. */
     public static double log2 = Math.log(2);
@@ -51,8 +51,8 @@ public class MathUtils  {
      * @param min min value
      * @return the normalized value
      */
-    public static double normalize(double val,double min,double max) {
-        if(max < min)
+    public static double normalize(double val, double min, double max) {
+        if (max < min)
             throw new IllegalArgumentException("Max must be greater than min");
 
         return (val - min) / (max - min);
@@ -66,8 +66,10 @@ public class MathUtils  {
      * @return the discrete value
      */
     public static int clamp(int value, int min, int max) {
-        if (value < min) value = min;
-        if (value > max) value = max;
+        if (value < min)
+            value = min;
+        if (value > max)
+            value = max;
         return value;
     }
 
@@ -90,8 +92,7 @@ public class MathUtils  {
      * @param v the number to getFromOrigin the next power of 2 for
      * @return the next power of 2 for the passed in value
      */
-    public static long nextPowOf2(long v)
-    {
+    public static long nextPowOf2(long v) {
         v--;
         v |= v >> 1;
         v |= v >> 2;
@@ -105,7 +106,6 @@ public class MathUtils  {
 
 
 
-
     /**
      * Generates a binomial distributed number using
      * the given rng
@@ -114,7 +114,7 @@ public class MathUtils  {
      * @param p
      * @return
      */
-    public static int binomial(RandomGenerator rng,int n, double p) {
+    public static int binomial(RandomGenerator rng, int n, double p) {
         if ((p < 0) || (p > 1)) {
             return 0;
         }
@@ -134,7 +134,7 @@ public class MathUtils  {
      * @param max the max num
      * @return a number uniformly distributed between min and max
      */
-    public static double uniform(Random rng,double min, double max) {
+    public static double uniform(Random rng, double min, double max) {
         return rng.nextDouble() * (max - min) + min;
     }
 
@@ -146,15 +146,16 @@ public class MathUtils  {
      *
      * @return the correlation coefficient or r
      */
-    public static  double correlation(double[] residuals,double targetAttribute[]) {
+    public static double correlation(double[] residuals, double targetAttribute[]) {
         double[] predictedValues = new double[residuals.length];
-        for(int i=0;i<predictedValues.length;i++) {
-            predictedValues[i]=targetAttribute[i] - residuals[i];
+        for (int i = 0; i < predictedValues.length; i++) {
+            predictedValues[i] = targetAttribute[i] - residuals[i];
         }
-        double ssErr=ssError(predictedValues,targetAttribute);
-        double total=ssTotal(residuals,targetAttribute);
-        return 1-(ssErr/total);
+        double ssErr = ssError(predictedValues, targetAttribute);
+        double total = ssTotal(residuals, targetAttribute);
+        return 1 - (ssErr / total);
     }//end correlation
+
     /**
      * 1 / 1 + exp(-x)
      * @param x
@@ -171,11 +172,11 @@ public class MathUtils  {
      * @param targetAttribute data for target attribute
      * @return the sum squares of regression
      */
-    public static double ssReg(double[] residuals,double[] targetAttribute) {
-        double mean=sum(targetAttribute)/targetAttribute.length;
-        double ret=0;
-        for(int i=0;i<residuals.length;i++) {
-            ret+=Math.pow(residuals[i]-mean,2);
+    public static double ssReg(double[] residuals, double[] targetAttribute) {
+        double mean = sum(targetAttribute) / targetAttribute.length;
+        double ret = 0;
+        for (int i = 0; i < residuals.length; i++) {
+            ret += Math.pow(residuals[i] - mean, 2);
         }
         return ret;
     }
@@ -186,10 +187,10 @@ public class MathUtils  {
      * @param targetAttribute data for target attribute
      * @return the sum squares of regression
      */
-    public static double ssError(double[] predictedValues,double[] targetAttribute) {
-        double ret=0;
-        for(int i=0;i<predictedValues.length;i++) {
-            ret+=Math.pow(targetAttribute[i]-predictedValues[i],2);
+    public static double ssError(double[] predictedValues, double[] targetAttribute) {
+        double ret = 0;
+        for (int i = 0; i < predictedValues.length; i++) {
+            ret += Math.pow(targetAttribute[i] - predictedValues[i], 2);
         }
         return ret;
 
@@ -202,16 +203,16 @@ public class MathUtils  {
      * @param strings the strings to calculate similarity for
      * @return the cosine similarity between the strings
      */
-    public static double stringSimilarity(String...strings) {
-        if(strings==null)
+    public static double stringSimilarity(String... strings) {
+        if (strings == null)
             return 0;
         Counter<String> counter = new Counter<>();
         Counter<String> counter2 = new Counter<>();
 
-        for(int i = 0; i < strings[0].length(); i++)
+        for (int i = 0; i < strings[0].length(); i++)
             counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0);
 
-        for(int i = 0; i < strings[1].length(); i++)
+        for (int i = 0; i < strings[1].length(); i++)
             counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0);
         Set<String> v1 = counter.keySet();
         Set<String> v2 = counter2.keySet();
@@ -235,12 +236,12 @@ public class MathUtils  {
      * @return the vector length of the passed in array
      */
     public static double vectorLength(double[] vector) {
-        double ret=0;
-        if(vector==null)
+        double ret = 0;
+        if (vector == null)
             return ret;
         else {
-            for(int i=0;i<vector.length;i++) {
-                ret+=Math.pow(vector[i],2);
+            for (int i = 0; i < vector.length; i++) {
+                ret += Math.pow(vector[i], 2);
             }
 
         }
@@ -254,9 +255,10 @@ public class MathUtils  {
      * @param numTimesWordAppearedInADocument the number of times the word occurred in a document
      * @return log(10) (totalDocs/numTImesWordAppearedInADocument)
      */
-    public static double idf(double totalDocs,double numTimesWordAppearedInADocument) {
+    public static double idf(double totalDocs, double numTimesWordAppearedInADocument) {
         //return totalDocs > 0 ? Math.log10(totalDocs/numTimesWordAppearedInADocument) : 0;
-        if (totalDocs == 0) return 0;
+        if (totalDocs == 0)
+            return 0;
         double idf = Math.log10(totalDocs / numTimesWordAppearedInADocument);
         return idf;
     }
@@ -268,24 +270,26 @@ public class MathUtils  {
      */
     public static double tf(int count, int documentLength) {
         //return count > 0 ? 1 + Math.log10(count) : 0
-        double tf = ((double) count/ documentLength);
+        double tf = ((double) count / documentLength);
         return tf;
     }
+
     /**
      * Return td * idf
      * @param tf the term frequency (assumed calculated)
      * @param idf inverse document frequency (assumed calculated)
      * @return td * idf
      */
-    public static double tfidf(double tf,double idf) {
-//        System.out.println("TF-IDF Value: " + (tf * idf));
+    public static double tfidf(double tf, double idf) {
+        //        System.out.println("TF-IDF Value: " + (tf * idf));
         return tf * idf;
     }
 
     private static int charForLetter(char c) {
-        char[] chars={'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
-        for(int i=0;i<chars.length;i++)
-            if(chars[i] == c )
+        char[] chars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+                        't', 'u', 'v', 'w', 'x', 'y', 'z'};
+        for (int i = 0; i < chars.length; i++)
+            if (chars[i] == c)
                 return i;
         return -1;
 
@@ -299,8 +303,8 @@ public class MathUtils  {
      * @param targetAttribute data for target attribute
      * @return Total variance in target attribute
      */
-    public static double ssTotal(double[] residuals,double[] targetAttribute) {
-        return ssReg(residuals,targetAttribute) + ssError(residuals,targetAttribute);
+    public static double ssTotal(double[] residuals, double[] targetAttribute) {
+        return ssReg(residuals, targetAttribute) + ssError(residuals, targetAttribute);
     }
 
     /**
@@ -310,25 +314,28 @@ public class MathUtils  {
      */
     public static double sum(double[] nums) {
 
-        double ret=0;
-        for(double d : nums) ret+=d;
+        double ret = 0;
+        for (double d : nums)
+            ret += d;
 
         return ret;
     }//end sum
+
     /**
      * This will merge the coordinates of the given coordinate system.
      * @param x the x coordinates
      * @param y the y coordinates
      * @return a vector such that each (x,y) pair is at ret[i],ret[i+1]
      */
-    public static double[] mergeCoords(double[] x,double[] y) {
-        if(x.length!=y.length)
-            throw new IllegalArgumentException("Sample sizes must be the same for each data applyTransformToDestination.");
+    public static double[] mergeCoords(double[] x, double[] y) {
+        if (x.length != y.length)
+            throw new IllegalArgumentException(
+                            "Sample sizes must be the same for each data applyTransformToDestination.");
         double[] ret = new double[x.length + y.length];
 
-        for(int i=0;i<x.length;i++) {
-            ret[i]=x[i];
-            ret[i+1]=y[i];
+        for (int i = 0; i < x.length; i++) {
+            ret[i] = x[i];
+            ret[i + 1] = y[i];
         }
         return ret;
     }//end mergeCoords
@@ -339,13 +346,14 @@ public class MathUtils  {
      * @param y the y coordinates
      * @return a vector such that each (x,y) pair is at ret[i],ret[i+1]
      */
-    public static List<Double> mergeCoords(List<Double> x,List<Double> y) {
-        if(x.size()!=y.size())
-            throw new IllegalArgumentException("Sample sizes must be the same for each data applyTransformToDestination.");
+    public static List<Double> mergeCoords(List<Double> x, List<Double> y) {
+        if (x.size() != y.size())
+            throw new IllegalArgumentException(
+                            "Sample sizes must be the same for each data applyTransformToDestination.");
 
         List<Double> ret = new ArrayList<>();
 
-        for(int i=0;i<x.size();i++) {
+        for (int i = 0; i < x.size(); i++) {
             ret.add(x.get(i));
             ret.add(y.get(i));
         }
@@ -360,31 +368,31 @@ public class MathUtils  {
      * @return a double array with w_0 and w_1 are the associated indices.
      */
     public static double[] weightsFor(List<Double> vector) {
-		/* split coordinate system */
-        List<double[]> coords=coordSplit(vector);
-		/* x vals */
-        double[] x=coords.get(0);
-		/* y vals */
-        double[] y=coords.get(1);
+        /* split coordinate system */
+        List<double[]> coords = coordSplit(vector);
+        /* x vals */
+        double[] x = coords.get(0);
+        /* y vals */
+        double[] y = coords.get(1);
 
 
-        double meanX=sum(x)/x.length;
-        double meanY=sum(y)/y.length;
+        double meanX = sum(x) / x.length;
+        double meanY = sum(y) / y.length;
 
-        double sumOfMeanDifferences=sumOfMeanDifferences(x,y);
-        double xDifferenceOfMean=sumOfMeanDifferencesOnePoint(x);
+        double sumOfMeanDifferences = sumOfMeanDifferences(x, y);
+        double xDifferenceOfMean = sumOfMeanDifferencesOnePoint(x);
 
-        double w_1=sumOfMeanDifferences/xDifferenceOfMean;
+        double w_1 = sumOfMeanDifferences / xDifferenceOfMean;
 
-        double w_0=meanY  - (w_1) * meanX;
+        double w_0 = meanY - (w_1) * meanX;
 
         //double w_1=(n*sumOfProducts(x,y) - sum(x) * sum(y))/(n*sumOfSquares(x) - Math.pow(sum(x),2));
 
         //	double w_0=(sum(y) - (w_1 * sum(x)))/n;
 
         double[] ret = new double[vector.size()];
-        ret[0]=w_0;
-        ret[1]=w_1;
+        ret[0] = w_0;
+        ret[1] = w_1;
 
         return ret;
     }//end weightsFor
@@ -399,23 +407,23 @@ public class MathUtils  {
      * @param w_1 the second weight
      * @return the squared loss of the given points
      */
-    public static double squaredLoss(double[] x,double[] y,double w_0,double w_1) {
-        double sum=0;
-        for(int j=0;j<x.length;j++) {
-            sum+=Math.pow((y[j]-(w_1 * x[j] + w_0)),2);
+    public static double squaredLoss(double[] x, double[] y, double w_0, double w_1) {
+        double sum = 0;
+        for (int j = 0; j < x.length; j++) {
+            sum += Math.pow((y[j] - (w_1 * x[j] + w_0)), 2);
         }
         return sum;
     }//end squaredLoss
 
 
-    public static double w_1(double[] x,double[] y,int n) {
-        return (n*sumOfProducts(x,y) - sum(x) * sum(y))/(n*sumOfSquares(x) - Math.pow(sum(x),2));
+    public static double w_1(double[] x, double[] y, int n) {
+        return (n * sumOfProducts(x, y) - sum(x) * sum(y)) / (n * sumOfSquares(x) - Math.pow(sum(x), 2));
     }
 
-    public static double w_0(double[] x,double[] y,int n) {
-        double weight1=w_1(x,y,n);
+    public static double w_0(double[] x, double[] y, int n) {
+        double weight1 = w_1(x, y, n);
 
-        return (sum(y) - (weight1 * sum(x)))/n;
+        return (sum(y) - (weight1 * sum(x))) / n;
     }
 
     /**
@@ -427,37 +435,37 @@ public class MathUtils  {
      */
     public static double[] weightsFor(double[] vector) {
 
-		/* split coordinate system */
-        List<double[]> coords=coordSplit(vector);
-		/* x vals */
-        double[] x=coords.get(0);
-		/* y vals */
-        double[] y=coords.get(1);
+        /* split coordinate system */
+        List<double[]> coords = coordSplit(vector);
+        /* x vals */
+        double[] x = coords.get(0);
+        /* y vals */
+        double[] y = coords.get(1);
 
 
-        double meanX=sum(x)/x.length;
-        double meanY=sum(y)/y.length;
+        double meanX = sum(x) / x.length;
+        double meanY = sum(y) / y.length;
 
-        double sumOfMeanDifferences=sumOfMeanDifferences(x,y);
-        double xDifferenceOfMean=sumOfMeanDifferencesOnePoint(x);
+        double sumOfMeanDifferences = sumOfMeanDifferences(x, y);
+        double xDifferenceOfMean = sumOfMeanDifferencesOnePoint(x);
 
-        double w_1=sumOfMeanDifferences/xDifferenceOfMean;
+        double w_1 = sumOfMeanDifferences / xDifferenceOfMean;
 
-        double w_0=meanY  - (w_1) * meanX;
-
+        double w_0 = meanY - (w_1) * meanX;
 
 
 
         double[] ret = new double[vector.length];
-        ret[0]=w_0;
-        ret[1]=w_1;
+        ret[0] = w_0;
+        ret[1] = w_1;
 
         return ret;
     }//end weightsFor
 
-    public static double errorFor(double actual,double prediction) {
-        return actual-prediction;
+    public static double errorFor(double actual, double prediction) {
+        return actual - prediction;
     }
+
     /**
      * Used for calculating top part of simple regression for
      * beta 1
@@ -465,14 +473,14 @@ public class MathUtils  {
      * @param vector2 the y coordinates
      * @return the sum of mean differences for the input vectors
      */
-    public static double sumOfMeanDifferences(double[] vector,double[] vector2) {
-        double mean=sum(vector)/vector.length;
-        double mean2=sum(vector2)/vector2.length;
-        double ret=0;
-        for(int i=0;i<vector.length;i++) {
-            double vec1Diff=vector[i]-mean;
-            double vec2Diff=vector2[i]-mean2;
-            ret+=vec1Diff * vec2Diff;
+    public static double sumOfMeanDifferences(double[] vector, double[] vector2) {
+        double mean = sum(vector) / vector.length;
+        double mean2 = sum(vector2) / vector2.length;
+        double ret = 0;
+        for (int i = 0; i < vector.length; i++) {
+            double vec1Diff = vector[i] - mean;
+            double vec2Diff = vector2[i] - mean2;
+            ret += vec1Diff * vec2Diff;
         }
         return ret;
     }//end sumOfMeanDifferences
@@ -484,11 +492,11 @@ public class MathUtils  {
      * @return the sum of mean differences for the input vectors
      */
     public static double sumOfMeanDifferencesOnePoint(double[] vector) {
-        double mean=sum(vector)/vector.length;
-        double ret=0;
-        for(int i=0;i<vector.length;i++) {
-            double vec1Diff=Math.pow(vector[i]-mean,2);
-            ret+=vec1Diff;
+        double mean = sum(vector) / vector.length;
+        double ret = 0;
+        for (int i = 0; i < vector.length; i++) {
+            double vec1Diff = Math.pow(vector[i] - mean, 2);
+            ret += vec1Diff;
         }
         return ret;
     }//end sumOfMeanDifferences
@@ -504,10 +512,11 @@ public class MathUtils  {
      * if the length is or nums i null
      */
     public static double times(double[] nums) {
-        if(nums==null || nums.length==0) return 0;
-        double ret=1;
-        for(int i=0;i<nums.length;i++)
-            ret*=nums[i];
+        if (nums == null || nums.length == 0)
+            return 0;
+        double ret = 1;
+        for (int i = 0; i < nums.length; i++)
+            ret *= nums[i];
         return ret;
     }//end times
 
@@ -519,13 +528,14 @@ public class MathUtils  {
      * @return the sum of products for the given numbers
      */
     public static double sumOfProducts(double[]... nums) {
-        if(nums==null || nums.length < 1) return 0;
-        double sum=0;
+        if (nums == null || nums.length < 1)
+            return 0;
+        double sum = 0;
 
-        for(int i=0;i<nums.length;i++) {
-			/* The ith column for all of the rows */
-            double[] column=column(i,nums);
-            sum+=times(column);
+        for (int i = 0; i < nums.length; i++) {
+            /* The ith column for all of the rows */
+            double[] column = column(i, nums);
+            sum += times(column);
 
         }
         return sum;
@@ -540,17 +550,17 @@ public class MathUtils  {
      * for all of the arrays.
      * @throws IllegalArgumentException if the index is < 0
      */
-    private static double[] column(int column,double[] ... nums)
-            throws IllegalArgumentException {
+    private static double[] column(int column, double[]... nums) throws IllegalArgumentException {
 
         double[] ret = new double[nums.length];
 
-        for(int i=0;i<nums.length;i++) {
-            double[] curr=nums[i];
-            ret[i]=curr[column];
+        for (int i = 0; i < nums.length; i++) {
+            double[] curr = nums[i];
+            ret[i] = curr[column];
         }
         return ret;
     }//end column
+
     /**
      * This returns the coordinate split in a list of coordinates
      * such that the values for ret[0] are the x values
@@ -561,20 +571,23 @@ public class MathUtils  {
      */
     public static List<double[]> coordSplit(double[] vector) {
 
-        if(vector==null) return null;
+        if (vector == null)
+            return null;
         List<double[]> ret = new ArrayList<>();
-		/* x coordinates */
-        double[] xVals = new double[vector.length/2];
-		/* y coordinates */
-        double[] yVals = new double[vector.length/2];
-		/* current points */
-        int xTracker=0;
-        int yTracker=0;
-        for(int i=0;i<vector.length;i++) {
+        /* x coordinates */
+        double[] xVals = new double[vector.length / 2];
+        /* y coordinates */
+        double[] yVals = new double[vector.length / 2];
+        /* current points */
+        int xTracker = 0;
+        int yTracker = 0;
+        for (int i = 0; i < vector.length; i++) {
             //even value, x coordinate
-            if(i%2==0) xVals[xTracker++]=vector[i];
-                //y coordinate
-            else yVals[yTracker++]=vector[i];
+            if (i % 2 == 0)
+                xVals[xTracker++] = vector[i];
+            //y coordinate
+            else
+                yVals[yTracker++] = vector[i];
         }
         ret.add(xVals);
         ret.add(yVals);
@@ -590,21 +603,21 @@ public class MathUtils  {
      * @param chunk the number to separate by
      * @return a partition data applyTransformToDestination relative to the passed in chunk number
      */
-    public static List<List<Double>> partitionVariable(List<Double> arr,int chunk) {
-        int count=0;
+    public static List<List<Double>> partitionVariable(List<Double> arr, int chunk) {
+        int count = 0;
         List<List<Double>> ret = new ArrayList<>();
 
 
-        while(count < arr.size()) {
+        while (count < arr.size()) {
 
-            List<Double> sublist=arr.subList(count,count+chunk);
-            count+=chunk;
+            List<Double> sublist = arr.subList(count, count + chunk);
+            count += chunk;
             ret.add(sublist);
 
         }
         //All data sets must be same size
-        for(List<Double> lists : ret) {
-            if(lists.size() < chunk)
+        for (List<Double> lists : ret) {
+            if (lists.size() < chunk)
                 ret.remove(lists);
         }
         return ret;
@@ -624,20 +637,23 @@ public class MathUtils  {
      */
     public static List<double[]> coordSplit(List<Double> vector) {
 
-        if(vector==null) return null;
+        if (vector == null)
+            return null;
         List<double[]> ret = new ArrayList<>();
-		/* x coordinates */
-        double[] xVals = new double[vector.size()/2];
-		/* y coordinates */
-        double[] yVals = new double[vector.size()/2];
-		/* current points */
-        int xTracker=0;
-        int yTracker=0;
-        for(int i=0;i<vector.size();i++) {
+        /* x coordinates */
+        double[] xVals = new double[vector.size() / 2];
+        /* y coordinates */
+        double[] yVals = new double[vector.size() / 2];
+        /* current points */
+        int xTracker = 0;
+        int yTracker = 0;
+        for (int i = 0; i < vector.size(); i++) {
             //even value, x coordinate
-            if(i%2==0) xVals[xTracker++]=vector.get(i);
-                //y coordinate
-            else yVals[yTracker++]=vector.get(i);
+            if (i % 2 == 0)
+                xVals[xTracker++] = vector.get(i);
+            //y coordinate
+            else
+                yVals[yTracker++] = vector.get(i);
         }
         ret.add(xVals);
         ret.add(yVals);
@@ -656,11 +672,13 @@ public class MathUtils  {
     public static double[] xVals(double[] vector) {
 
 
-        if(vector==null) return null;
-        double[] x = new double[vector.length/2];
-        int count=0;
-        for(int i=0;i<vector.length;i++) {
-            if(i%2!=0) x[count++]=vector[i];
+        if (vector == null)
+            return null;
+        double[] x = new double[vector.length / 2];
+        int count = 0;
+        for (int i = 0; i < vector.length; i++) {
+            if (i % 2 != 0)
+                x[count++] = vector[i];
         }
         return x;
     }//end xVals
@@ -671,10 +689,11 @@ public class MathUtils  {
      * @return the y values of the given vector
      */
     public static double[] yVals(double[] vector) {
-        double[] y = new double[vector.length/2];
-        int count=0;
-        for(int i=0;i<vector.length;i++) {
-            if(i%2==0) y[count++]=vector[i];
+        double[] y = new double[vector.length / 2];
+        int count = 0;
+        for (int i = 0; i < vector.length; i++) {
+            if (i % 2 == 0)
+                y[count++] = vector[i];
         }
         return y;
     }//end yVals
@@ -687,10 +706,12 @@ public class MathUtils  {
      * @return the sum of squares for this vector
      */
     public static double sumOfSquares(double[] vector) {
-        double ret=0;
-        for(double d : vector) ret += Math.pow(d, 2);
+        double ret = 0;
+        for (double d : vector)
+            ret += Math.pow(d, 2);
         return ret;
     }
+
     /**
      * This returns the determination coefficient of two vectors given a length
      * @param y1 the first vector
@@ -698,8 +719,8 @@ public class MathUtils  {
      * @param n the length of both vectors
      * @return the determination coefficient or r^2
      */
-    public static  double determinationCoefficient(double[] y1, double[] y2, int n) {
-        return Math.pow(correlation(y1,y2),2);
+    public static double determinationCoefficient(double[] y1, double[] y2, int n) {
+        return Math.pow(correlation(y1, y2), 2);
     }
 
 
@@ -710,11 +731,12 @@ public class MathUtils  {
      * @param a a double
      * @return	the logarithm for base 2
      */
-    public static  double log2(double a) {
-        if(a == 0)
+    public static double log2(double a) {
+        if (a == 0)
             return 0.0;
         return Math.log(a) / log2;
     }
+
     /**
      * This returns the slope of the given points.
      * @param x1 the first x to use
@@ -723,8 +745,8 @@ public class MathUtils  {
      * @param y2 the end y to use
      * @return the slope of the given points
      */
-    public double slope(double x1,double x2,double y1,double y2) {
-        return (y2-y1)/(x2-x1);
+    public double slope(double x1, double x2, double y1, double y2) {
+        return (y2 - y1) / (x2 - x1);
     }//end slope
 
     /**
@@ -733,36 +755,39 @@ public class MathUtils  {
      * @param predicted the predicted values
      * @return the root means squared error for two data sets
      */
-    public static double rootMeansSquaredError(double[] real,double[] predicted) {
-        double ret= 0.0;
-        for(int i=0;i<real.length;i++) {
-            ret+=Math.pow((real[i]-predicted[i]), 2);
+    public static double rootMeansSquaredError(double[] real, double[] predicted) {
+        double ret = 0.0;
+        for (int i = 0; i < real.length; i++) {
+            ret += Math.pow((real[i] - predicted[i]), 2);
         }
         return Math.sqrt(ret / real.length);
     }//end rootMeansSquaredError
+
     /**
      * This returns the entropy (information gain, or uncertainty of a random variable).
      * @param vector the vector of values to getFromOrigin the entropy for
      * @return the entropy of the given vector
      */
     public static double entropy(double[] vector) {
-        if(vector==null || vector.length < 1)
+        if (vector == null || vector.length < 1)
             return 0;
         else {
-            double ret=0;
-            for(double d : vector) ret+=d * Math.log(d);
+            double ret = 0;
+            for (double d : vector)
+                ret += d * Math.log(d);
             return ret;
 
         }
     }//end entropy
+
     /**
      * This returns the kronecker delta of two doubles.
      * @param i the first number to compare
      * @param j the second number to compare
      * @return 1 if they are equal, 0 otherwise
      */
-    public static int kroneckerDelta(double i,double j) {
-        return (i==j) ? 1 : 0;
+    public static int kroneckerDelta(double i, double j) {
+        return (i == j) ? 1 : 0;
     }
 
     /**
@@ -773,30 +798,30 @@ public class MathUtils  {
      * @param numDataPoints size of the data applyTransformToDestination
      * @return an adjusted r^2 for degrees of freedom
      */
-    public static double adjustedrSquared(double rSquared,int numRegressors,int numDataPoints) {
+    public static double adjustedrSquared(double rSquared, int numRegressors, int numDataPoints) {
         double divide = (numDataPoints - 1.0) / (numDataPoints - numRegressors - 1.0);
-        double rSquaredDiff=1-rSquared;
-        return 1-(rSquaredDiff *divide );
+        double rSquaredDiff = 1 - rSquared;
+        return 1 - (rSquaredDiff * divide);
     }
 
 
-    public static double[] normalizeToOne( double[] doubles ) {
-        normalize( doubles , sum( doubles ) );
+    public static double[] normalizeToOne(double[] doubles) {
+        normalize(doubles, sum(doubles));
         return doubles;
     }
 
-    public static double min( double[] doubles ) {
-        double ret = doubles[ 0 ];
-        for( double d : doubles )
-            if( d < ret )
+    public static double min(double[] doubles) {
+        double ret = doubles[0];
+        for (double d : doubles)
+            if (d < ret)
                 ret = d;
         return ret;
     }
 
-    public static double max( double[] doubles ) {
-        double ret = doubles[ 0 ];
-        for( double d : doubles )
-            if( d > ret )
+    public static double max(double[] doubles) {
+        double ret = doubles[0];
+        for (double d : doubles)
+            if (d > ret)
                 ret = d;
         return ret;
     }
@@ -836,7 +861,7 @@ public class MathUtils  {
         double sum = 0.0;
 
         double[] result = new double[a.length];
-        for(int i = 0; i < a.length; i++) {
+        for (int i = 0; i < a.length; i++) {
             result[i] = Math.exp(a[i] - max);
             sum += result[i];
         }
@@ -845,6 +870,7 @@ public class MathUtils  {
 
         return result;
     }//end logs2probs
+
     /**
      * This returns the entropy for a given vector of probabilities.
      * @param probabilities the probabilities to getFromOrigin the entropy for
@@ -888,16 +914,18 @@ public class MathUtils  {
      * @return the factorial for this number
      */
     public static double factorial(double n) {
-        if(n==1 || n==0) return 1;
-        for(double i=n;i>0;i--,n*=(i > 0 ? i : 1)) {}
+        if (n == 1 || n == 0)
+            return 1;
+        for (double i = n; i > 0; i--, n *= (i > 0 ? i : 1)) {
+        }
         return n;
     }//end factorial
 
 
 
-
     /** The small deviation allowed in double comparisons. */
     public static double SMALL = 1e-6;
+
     /**
      * Returns the log-odds for a given probability.
      *
@@ -909,8 +937,7 @@ public class MathUtils  {
     public static /*@pure@*/ double probToLogOdds(double prob) {
 
         if (gr(prob, 1) || (sm(prob, 0))) {
-            throw new IllegalArgumentException("probToLogOdds: probability must " +
-                    "be in [0,1] "+prob);
+            throw new IllegalArgumentException("probToLogOdds: probability must " + "be in [0,1] " + prob);
         }
         double p = SMALL + (1.0 - 2 * SMALL) * prob;
         return Math.log(p / (1 - p));
@@ -925,20 +952,19 @@ public class MathUtils  {
      */
     public static /*@pure@*/ int round(double value) {
 
-        return value > 0
-                ? (int)(value + 0.5)
-                : -(int)(Math.abs(value) + 0.5);
+        return value > 0 ? (int) (value + 0.5) : -(int) (Math.abs(value) + 0.5);
     }//end round
+
     /**
      * This returns the permutation of n choose r.
      * @param n the n to choose
      * @param r the number of elements to choose
      * @return the permutation of these numbers
      */
-    public static double permutation(double n,double r) {
-        double nFac=MathUtils.factorial(n);
-        double nMinusRFac=MathUtils.factorial((n-r));
-        return nFac/nMinusRFac;
+    public static double permutation(double n, double r) {
+        double nFac = MathUtils.factorial(n);
+        double nMinusRFac = MathUtils.factorial((n - r));
+        return nFac / nMinusRFac;
     }//end permutation
 
 
@@ -948,12 +974,12 @@ public class MathUtils  {
      * @param r the number of elements to choose
      * @return the amount of possible combinations for this applyTransformToDestination of elements
      */
-    public static double combination(double n,double r) {
-        double nFac=MathUtils.factorial(n);
-        double rFac=MathUtils.factorial(r);
-        double nMinusRFac=MathUtils.factorial((n-r));
+    public static double combination(double n, double r) {
+        double nFac = MathUtils.factorial(n);
+        double rFac = MathUtils.factorial(r);
+        double nMinusRFac = MathUtils.factorial((n - r));
 
-        return nFac/(rFac * nMinusRFac);
+        return nFac / (rFac * nMinusRFac);
     }//end combination
 
 
@@ -963,11 +989,11 @@ public class MathUtils  {
     public static double hypotenuse(double a, double b) {
         double r;
         if (Math.abs(a) > Math.abs(b)) {
-            r = b/a;
-            r = Math.abs(a)*Math.sqrt(1+r*r);
+            r = b / a;
+            r = Math.abs(a) * Math.sqrt(1 + r * r);
         } else if (b != 0) {
-            r = a/b;
-            r = Math.abs(b)*Math.sqrt(1+r*r);
+            r = a / b;
+            r = Math.abs(b) * Math.sqrt(1 + r * r);
         } else {
             r = 0.0;
         }
@@ -991,17 +1017,17 @@ public class MathUtils  {
             double lower = Math.floor(value);
             double prob = value - lower;
             if (rand.nextDouble() < prob) {
-                return (int)lower + 1;
+                return (int) lower + 1;
             } else {
-                return (int)lower;
+                return (int) lower;
             }
         } else {
             double lower = Math.floor(Math.abs(value));
             double prob = Math.abs(value) - lower;
             if (rand.nextDouble() < prob) {
-                return -((int)lower + 1);
+                return -((int) lower + 1);
             } else {
-                return -(int)lower;
+                return -(int) lower;
             }
         }
     }//end probRound
@@ -1013,11 +1039,11 @@ public class MathUtils  {
      * @param afterDecimalPoint the number of digits after the decimal point
      * @return the double rounded to the given precision
      */
-    public static /*@pure@*/ double roundDouble(double value,int afterDecimalPoint) {
+    public static /*@pure@*/ double roundDouble(double value, int afterDecimalPoint) {
 
-        double mask = Math.pow(10.0, (double)afterDecimalPoint);
+        double mask = Math.pow(10.0, (double) afterDecimalPoint);
 
-        return (double)(Math.round(value * mask)) / mask;
+        return (double) (Math.round(value * mask)) / mask;
     }//end roundDouble
 
 
@@ -1029,12 +1055,13 @@ public class MathUtils  {
      * @param afterDecimalPoint the number of digits after the decimal point
      * @return the double rounded to the given precision
      */
-    public static /*@pure@*/ float roundFloat(float value,int afterDecimalPoint) {
+    public static /*@pure@*/ float roundFloat(float value, int afterDecimalPoint) {
 
         float mask = (float) Math.pow(10, (float) afterDecimalPoint);
 
-        return (float)(Math.round(value * mask)) / mask;
+        return (float) (Math.round(value * mask)) / mask;
     }//end roundDouble
+
     /**
      * This will return the bernoulli trial for the given event.
      * A bernoulli trial is a mechanism for detecting the probability
@@ -1044,21 +1071,22 @@ public class MathUtils  {
      * @param successProb the probability of the event happening
      * @return the probability of the given event occurring k times.
      */
-    public static double bernoullis(double n,double k,double successProb) {
+    public static double bernoullis(double n, double k, double successProb) {
 
         double combo = MathUtils.combination(n, k);
-        double q= 1 - successProb;
-        return combo * Math.pow(successProb,k) * Math.pow(q,n-k);
+        double q = 1 - successProb;
+        return combo * Math.pow(successProb, k) * Math.pow(q, n - k);
     }//end bernoullis
+
     /**
      * Tests if a is smaller than b.
      *
      * @param a a double
      * @param b a double
      */
-    public static /*@pure@*/ boolean sm(double a,double b) {
+    public static /*@pure@*/ boolean sm(double a, double b) {
 
-        return (b-a > SMALL);
+        return (b - a > SMALL);
     }
 
     /**
@@ -1067,9 +1095,9 @@ public class MathUtils  {
      * @param a a double
      * @param b a double
      */
-    public static /*@pure@*/ boolean gr(double a,double b) {
+    public static /*@pure@*/ boolean gr(double a, double b) {
 
-        return (a-b > SMALL);
+        return (a - b > SMALL);
     }
 
     /**
@@ -1079,11 +1107,11 @@ public class MathUtils  {
      * @param separator the separator to use
      * @return the new double array based on the given data
      */
-    public static double[] fromString(String data,String separator) {
-        String[] split=data.split(separator);
+    public static double[] fromString(String data, String separator) {
+        String[] split = data.split(separator);
         double[] ret = new double[split.length];
-        for(int i=0;i<split.length;i++) {
-            ret[i]=Double.parseDouble(split[i]);
+        for (int i = 0; i < split.length; i++) {
+            ret[i] = Double.parseDouble(split[i]);
         }
         return ret;
     }//end fromString
@@ -1118,7 +1146,7 @@ public class MathUtils  {
      * @throws NonSquareMatrixException
      */
     public CholeskyDecomposition choleskyFromMatrix(RealMatrix m) throws Exception {
-        return new  CholeskyDecomposition(m);
+        return new CholeskyDecomposition(m);
     }//end choleskyFromMatrix
 
 
@@ -1129,20 +1157,20 @@ public class MathUtils  {
      * @param binary the binary string to convert
      * @return an equivalent base 10 number
      */
-    public  static int toDecimal(String binary) {
+    public static int toDecimal(String binary) {
         long num = Long.parseLong(binary);
         long rem;
-		/* Use the remainder method to ensure validity */
-        while(num > 0){
+        /* Use the remainder method to ensure validity */
+        while (num > 0) {
             rem = num % 10;
             num = num / 10;
-            if(rem != 0 && rem != 1){
+            if (rem != 0 && rem != 1) {
                 System.out.println("This is not a binary number.");
                 System.out.println("Please try once again.");
                 return -1;
             }
         }
-        return Integer.parseInt(binary,2);
+        return Integer.parseInt(binary, 2);
     }//end toDecimal
 
 
@@ -1152,27 +1180,27 @@ public class MathUtils  {
      * @return a z value such that the value is the interleaved lsd to msd for each
      * double in the vector
      */
-    public  static int distanceFinderZValue(double[] vector) {
-        StringBuilder binaryBuffer =new StringBuilder();
+    public static int distanceFinderZValue(double[] vector) {
+        StringBuilder binaryBuffer = new StringBuilder();
         List<String> binaryReps = new ArrayList<>(vector.length);
-        for(int i=0;i<vector.length;i++) {
-            double d=vector[i];
-            int j=(int) d;
-            String binary=Integer.toBinaryString(j);
+        for (int i = 0; i < vector.length; i++) {
+            double d = vector[i];
+            int j = (int) d;
+            String binary = Integer.toBinaryString(j);
             binaryReps.add(binary);
         }
         //append from left to right, the least to the most significant bit
         //till all strings are empty
-        while(!binaryReps.isEmpty()) {
-            for(int j=0;j<binaryReps.size();j++) {
-                String curr=binaryReps.get(j);
-                if(!curr.isEmpty()) {
-                    char first=curr.charAt(0);
+        while (!binaryReps.isEmpty()) {
+            for (int j = 0; j < binaryReps.size(); j++) {
+                String curr = binaryReps.get(j);
+                if (!curr.isEmpty()) {
+                    char first = curr.charAt(0);
                     binaryBuffer.append(first);
-                    curr=curr.substring(1);
+                    curr = curr.substring(1);
                     binaryReps.set(j, curr);
-                }
-                else binaryReps.remove(j);
+                } else
+                    binaryReps.remove(j);
             }
         }
         return Integer.parseInt(binaryBuffer.toString(), 2);
@@ -1186,17 +1214,18 @@ public class MathUtils  {
      * @param q the second vector
      * @return the distance between two vectors
      */
-    public static double euclideanDistance(double[] p,double[]  q) {
+    public static double euclideanDistance(double[] p, double[] q) {
 
         double ret = 0;
-        for(int i = 0;i < p.length;i++) {
-            double diff = (q[i]-p[i]);
-            double sq=Math.pow(diff,2);
+        for (int i = 0; i < p.length; i++) {
+            double diff = (q[i] - p[i]);
+            double sq = Math.pow(diff, 2);
             ret += sq;
         }
         return ret;
 
     }//end euclideanDistance
+
     /**
      * This returns the distance of two vectors
      * sum(i=1,n)   (q_i - p_i)^2
@@ -1204,13 +1233,13 @@ public class MathUtils  {
      * @param q the second vector
      * @return the distance between two vectors
      */
-    public static double euclideanDistance(float[] p,float[]  q) {
+    public static double euclideanDistance(float[] p, float[] q) {
 
-        double ret=0;
-        for(int i=0;i < p.length;i++) {
-            double diff = (q[i]-p[i]);
-            double sq = Math.pow(diff,2);
-            ret+=sq;
+        double ret = 0;
+        for (int i = 0; i < p.length; i++) {
+            double diff = (q[i] - p[i]);
+            double sq = Math.pow(diff, 2);
+            ret += sq;
         }
         return ret;
 
@@ -1225,8 +1254,8 @@ public class MathUtils  {
     public static double[] generateUniform(int l) {
         double[] ret = new double[l];
         Random rgen = new Random();
-        for(int i=0;i<l;i++) {
-            ret[i]=rgen.nextDouble();
+        for (int i = 0; i < l; i++) {
+            ret[i] = rgen.nextDouble();
         }
         return ret;
     }//end generateUniform
@@ -1242,10 +1271,10 @@ public class MathUtils  {
      */
     public static double manhattanDistance(double[] p, double[] q) {
 
-        double ret=0;
-        for(int i=0;i<p.length;i++) {
-            double difference=p[i]-q[i];
-            ret+=Math.abs(difference);
+        double ret = 0;
+        for (int i = 0; i < p.length; i++) {
+            double difference = p[i] - q[i];
+            ret += Math.abs(difference);
         }
         return ret;
     }//end manhattanDistance
@@ -1254,10 +1283,10 @@ public class MathUtils  {
 
     public static double[] sampleDoublesInInterval(double[][] doubles, int l) {
         double[] sample = new double[l];
-        for(int i=0;i<l;i++) {
-            int rand1=randomNumberBetween(0, doubles.length-1);
-            int rand2=randomNumberBetween(0,doubles[i].length);
-            sample[i]=doubles[rand1][rand2];
+        for (int i = 0; i < l; i++) {
+            int rand1 = randomNumberBetween(0, doubles.length - 1);
+            int rand2 = randomNumberBetween(0, doubles[i].length);
+            sample[i] = doubles[rand1][rand2];
         }
 
         return sample;
@@ -1269,10 +1298,10 @@ public class MathUtils  {
      * @param end the end of the interval
      * @return an int between begin and end
      */
-    public static int randomNumberBetween(double begin,double end) {
-        if(begin > end)
+    public static int randomNumberBetween(double begin, double end) {
+        if (begin > end)
             throw new IllegalArgumentException("Begin must not be less than end");
-        return	(int)begin + (int)(Math.random() * ((end - begin) + 1));
+        return (int) begin + (int) (Math.random() * ((end - begin) + 1));
     }
 
     /**
@@ -1281,28 +1310,29 @@ public class MathUtils  {
      * @param end the end of the interval
      * @return an int between begin and end
      */
-    public static int randomNumberBetween(double begin,double end,RandomGenerator rng) {
-        if(begin > end)
+    public static int randomNumberBetween(double begin, double end, RandomGenerator rng) {
+        if (begin > end)
             throw new IllegalArgumentException("Begin must not be less than end");
-        return	(int)begin + (int)(rng.nextDouble() * ((end - begin) + 1));
-    }
-    public static float randomFloatBetween(float begin,float end) {
-        float rand = (float) Math.random();
-        return	begin + (rand * ((end - begin)));
+        return (int) begin + (int) (rng.nextDouble() * ((end - begin) + 1));
     }
 
-    public static double randomDoubleBetween(double begin,double end) {
-        return	begin + (Math.random() * ((end - begin)));
+    public static float randomFloatBetween(float begin, float end) {
+        float rand = (float) Math.random();
+        return begin + (rand * ((end - begin)));
+    }
+
+    public static double randomDoubleBetween(double begin, double end) {
+        return begin + (Math.random() * ((end - begin)));
     }
 
     public static void shuffleArray(int[] array, long rngSeed) {
-        shuffleArray(array,new Random(rngSeed));
+        shuffleArray(array, new Random(rngSeed));
     }
 
-    public static void shuffleArray(int[] array, Random rng ){
+    public static void shuffleArray(int[] array, Random rng) {
         //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-        for(int i=array.length-1; i>0; i-- ){
-            int j = rng.nextInt(i+1);
+        for (int i = array.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
             int temp = array[j];
             array[j] = array[i];
             array[i] = temp;

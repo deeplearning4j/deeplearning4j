@@ -19,10 +19,8 @@ public class AggregatingSentenceIteratorTest {
         BasicLineIterator iterator = new BasicLineIterator(file);
         BasicLineIterator iterator2 = new BasicLineIterator(file);
 
-        AggregatingSentenceIterator aggr = new AggregatingSentenceIterator.Builder()
-                .addSentenceIterator(iterator)
-                .addSentenceIterator(iterator2)
-                .build();
+        AggregatingSentenceIterator aggr = new AggregatingSentenceIterator.Builder().addSentenceIterator(iterator)
+                        .addSentenceIterator(iterator2).build();
 
         int cnt = 0;
         while (aggr.hasNext()) {

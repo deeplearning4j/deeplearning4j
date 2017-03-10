@@ -10,7 +10,7 @@ import java.util.Collection;
  * A function convert from record to ndarrays
  * @author Adam Gibson
  */
-public interface RecordToNDArray  extends Serializable {
+public interface RecordToNDArray extends Serializable {
 
     /**
      * Converts a list of records in to 1 ndarray

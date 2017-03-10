@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,9 +32,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Composable input pre processor
  * @author Adam Gibson
  */
-@Data @EqualsAndHashCode(callSuper=false)
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
-	private InputPreProcessor[] inputPreProcessors;
+    private InputPreProcessor[] inputPreProcessors;
 
     @JsonCreator
     public ComposableInputPreProcessor(@JsonProperty("inputPreProcessors") InputPreProcessor... inputPreProcessors) {
@@ -43,7 +44,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        for(InputPreProcessor preProcessor : inputPreProcessors)
+        for (InputPreProcessor preProcessor : inputPreProcessors)
             input = preProcessor.preProcess(input, miniBatchSize);
         return input;
     }
@@ -52,7 +53,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     public INDArray backprop(INDArray output, int miniBatchSize) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
-        for(int i=inputPreProcessors.length-1; i>=0; i--){
+        for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
             output = inputPreProcessors[i].backprop(output, miniBatchSize);
         }
         return output;
@@ -61,9 +62,9 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     @Override
     public ComposableInputPreProcessor clone() {
         ComposableInputPreProcessor clone = (ComposableInputPreProcessor) super.clone();
-        if(clone.inputPreProcessors != null) {
+        if (clone.inputPreProcessors != null) {
             InputPreProcessor[] processors = new InputPreProcessor[clone.inputPreProcessors.length];
-            for(int i = 0; i < clone.inputPreProcessors.length; i++) {
+            for (int i = 0; i < clone.inputPreProcessors.length; i++) {
                 processors[i] = clone.inputPreProcessors[i].clone();
             }
             clone.inputPreProcessors = processors;
@@ -73,15 +74,16 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) {
-        for(InputPreProcessor p : inputPreProcessors){
+        for (InputPreProcessor p : inputPreProcessors) {
             inputType = p.getOutputType(inputType);
         }
         return inputType;
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
-        for(InputPreProcessor preproc : inputPreProcessors){
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
+        for (InputPreProcessor preproc : inputPreProcessors) {
             Pair<INDArray, MaskState> p = preproc.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
             maskArray = p.getFirst();
             currentMaskState = p.getSecond();

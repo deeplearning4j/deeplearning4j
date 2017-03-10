@@ -77,17 +77,15 @@ public class PlayUIServer extends UIServer {
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
 
-    private long uiProcessingDelay = 500;   //500ms. TODO make configurable
+    private long uiProcessingDelay = 500; //500ms. TODO make configurable
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private Thread uiEventRoutingThread;
-    @Parameter(names={"-r","-enableRemote"}
-            , description = "Whether to enable remote or not", arity = 1)
+    @Parameter(names = {"-r", "-enableRemote"}, description = "Whether to enable remote or not", arity = 1)
     private boolean enableRemote;
 
 
-    @Parameter(names={"--uiPort"}
-            , description = "Whether to enable remote or not", arity = 1)
+    @Parameter(names = {"--uiPort"}, description = "Whether to enable remote or not", arity = 1)
     private int port = DEFAULT_UI_PORT;
 
     public PlayUIServer() {
@@ -99,15 +97,18 @@ public class PlayUIServer extends UIServer {
     }
 
 
-    public  void runMain(String[] args) {
+    public void runMain(String[] args) {
         JCommander jcmdr = new JCommander(this);
 
         try {
             jcmdr.parse(args);
-        } catch(ParameterException e) {
+        } catch (ParameterException e) {
             //User provides invalid input -> print the usage info
             jcmdr.usage();
-            try{ Thread.sleep(500); } catch(Exception e2){ }
+            try {
+                Thread.sleep(500);
+            } catch (Exception e2) {
+            }
             System.exit(1);
         }
         RoutingDsl routingDsl = new RoutingDsl();
@@ -121,7 +122,7 @@ public class PlayUIServer extends UIServer {
         routingDsl.GET("/lang/getCurrent").routeTo(() -> ok(I18NProvider.getInstance().getDefaultLanguage()));
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
-        uiModules.add(new DefaultModule());         //For: navigation page "/"
+        uiModules.add(new DefaultModule()); //For: navigation page "/"
         uiModules.add(new HistogramModule());
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
@@ -133,13 +134,13 @@ public class PlayUIServer extends UIServer {
         //Check if custom UI modules are enabled...
         String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
         boolean useCustomModules = false;
-        if(customModulePropertyStr != null){
+        if (customModulePropertyStr != null) {
             useCustomModules = Boolean.parseBoolean(customModulePropertyStr);
         }
 
-        if(useCustomModules){
+        if (useCustomModules) {
             List<Class<?>> excludeClasses = new ArrayList<>();
-            for(UIModule u : uiModules){
+            for (UIModule u : uiModules) {
                 excludeClasses.add(u.getClass());
             }
             List<UIModule> list = getCustomUIModules(excludeClasses);
@@ -184,10 +185,10 @@ public class PlayUIServer extends UIServer {
         this.port = port;
 
         String addr = server.mainAddress().toString();
-        if(addr.startsWith("/0:0:0:0:0:0:0:0")){
+        if (addr.startsWith("/0:0:0:0:0:0:0:0")) {
             int last = addr.lastIndexOf(':');
-            if(last > 0) {
-                addr = "http://localhost:" + addr.substring(last+1);
+            if (last > 0) {
+                addr = "http://localhost:" + addr.substring(last + 1);
             }
         }
         log.info("UI Server started at {}", addr);
@@ -195,7 +196,7 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
-        if(enableRemote)
+        if (enableRemote)
             enableRemoteListener();
     }
 
@@ -204,17 +205,19 @@ public class PlayUIServer extends UIServer {
         new PlayUIServer().runMain(args);
     }
 
-    private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses){
+    private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses) {
         //Scan classpath for UI module instances, but ignore the 'excludeClasses' classes
         List<String> classNames = Collections.singletonList(UIModule.class.getName());
         Reflections reflections = new Reflections();
         org.reflections.Store store = reflections.getStore();
-        Iterable<String> subtypesByName = store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
+        Iterable<String> subtypesByName =
+                        store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
         Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
 
         List<Class<?>> toCreate = new ArrayList<>();
-        for(Class<?> c : subtypeClasses){
-            if(excludeClasses.contains(c)) continue;;
+        for (Class<?> c : subtypeClasses) {
+            if (excludeClasses.contains(c))
+                continue;;
             toCreate.add(c);
         }
 
@@ -223,8 +226,8 @@ public class PlayUIServer extends UIServer {
             UIModule m;
             try {
                 m = (UIModule) c.newInstance();
-            }catch (Exception e){
-                log.warn("Could not create instance of custom UIModule of type {}; skipping",c,e);
+            } catch (Exception e) {
+                log.warn("Could not create instance of custom UIModule of type {}; skipping", c, e);
                 continue;
             }
             log.debug("Created instance of custom UI module: {}", c);
@@ -241,8 +244,10 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public synchronized void attach(StatsStorage statsStorage) {
-        if (statsStorage == null) throw new IllegalArgumentException("StatsStorage cannot be null");
-        if (statsStorageInstances.contains(statsStorage)) return;
+        if (statsStorage == null)
+            throw new IllegalArgumentException("StatsStorage cannot be null");
+        if (statsStorageInstances.contains(statsStorage))
+            return;
         StatsStorageListener listener = new QueueStatsStorageListener(eventQueue);
         listeners.add(new Pair<>(statsStorage, listener));
         statsStorage.registerStatsStorageListener(listener);
@@ -257,11 +262,13 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public synchronized void detach(StatsStorage statsStorage) {
-        if (statsStorage == null) throw new IllegalArgumentException("StatsStorage cannot be null");
-        if (!statsStorageInstances.contains(statsStorage)) return;   //No op
+        if (statsStorage == null)
+            throw new IllegalArgumentException("StatsStorage cannot be null");
+        if (!statsStorageInstances.contains(statsStorage))
+            return; //No op
         boolean found = false;
         for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
-            if (p.getFirst() == statsStorage) {       //Same object, not equality
+            if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
                 listeners.remove(p);
                 found = true;
@@ -287,9 +294,10 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void enableRemoteListener() {
-        if(remoteReceiverModule == null)
+        if (remoteReceiverModule == null)
             remoteReceiverModule = new RemoteReceiverModule();
-        if(remoteReceiverModule.isEnabled()) return;
+        if (remoteReceiverModule.isEnabled())
+            return;
         enableRemoteListener(new InMemoryStatsStorage(), true);
     }
 
@@ -297,8 +305,8 @@ public class PlayUIServer extends UIServer {
     public void enableRemoteListener(StatsStorageRouter statsStorage, boolean attach) {
         remoteReceiverModule.setEnabled(true);
         remoteReceiverModule.setStatsStorage(statsStorage);
-        if(attach && statsStorage instanceof StatsStorage) {
-            attach((StatsStorage)statsStorage);
+        if (attach && statsStorage instanceof StatsStorage) {
+            attach((StatsStorage) statsStorage);
         }
     }
 
@@ -314,7 +322,7 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void stop() {
-        if(server != null)
+        if (server != null)
             server.stop();
     }
 
@@ -336,16 +344,16 @@ public class PlayUIServer extends UIServer {
             while (!shutdown.get()) {
 
                 List<StatsStorageEvent> events = new ArrayList<>();
-                StatsStorageEvent sse = eventQueue.take();  //Blocking operation
+                StatsStorageEvent sse = eventQueue.take(); //Blocking operation
                 events.add(sse);
                 eventQueue.drainTo(events); //Non-blocking
 
-                for(UIModule m : uiModules) {
+                for (UIModule m : uiModules) {
 
                     List<String> callbackTypes = m.getCallbackTypeIDs();
                     List<StatsStorageEvent> out = new ArrayList<>();
-                    for(StatsStorageEvent e : events){
-                        if(callbackTypes.contains(e.getTypeID())){
+                    for (StatsStorageEvent e : events) {
+                        if (callbackTypes.contains(e.getTypeID())) {
                             out.add(e);
                         }
                     }

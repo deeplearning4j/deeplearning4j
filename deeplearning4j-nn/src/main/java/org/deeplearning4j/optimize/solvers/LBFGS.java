@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,11 +40,14 @@ public class LBFGS extends BaseOptimizer {
     private static final long serialVersionUID = 9148732140255034888L;
     private int m = 4;
 
-    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
+                    Collection<IterationListener> iterationListeners,
+                    Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
@@ -61,8 +64,8 @@ public class LBFGS extends BaseOptimizer {
 
     @Override
     public void preProcessLine() {
-    	if(!searchState.containsKey(SEARCH_DIR))
-    		searchState.put(SEARCH_DIR, ((INDArray)searchState.get(GRADIENT_KEY)).dup());
+        if (!searchState.containsKey(SEARCH_DIR))
+            searchState.put(SEARCH_DIR, ((INDArray) searchState.get(GRADIENT_KEY)).dup());
     }
 
     // Numerical Optimization (Nocedal & Wright) section 7.2
@@ -85,7 +88,7 @@ public class LBFGS extends BaseOptimizer {
 
         INDArray sCurrent;
         INDArray yCurrent;
-        if( s.size() >= m ){
+        if (s.size() >= m) {
             //Optimization: Remove old (no longer needed) INDArrays, and use assign for re-use.
             //Better to do this: fewer objects created -> less memory overall + less garbage collection
             sCurrent = s.removeLast();
@@ -99,17 +102,17 @@ public class LBFGS extends BaseOptimizer {
             yCurrent = gradient.sub(previousGradient);
         }
 
-        rho.addFirst(1.0 / sy);	//Most recent first
-        s.addFirst(sCurrent);	//Most recent first. si = currParams - oldParams
-        y.addFirst(yCurrent);	//Most recent first. yi = currGradient - oldGradient
+        rho.addFirst(1.0 / sy); //Most recent first
+        s.addFirst(sCurrent); //Most recent first. si = currParams - oldParams
+        y.addFirst(yCurrent); //Most recent first. yi = currGradient - oldGradient
 
         //assert (s.size()==y.size()) : "Gradient and parameter sizes are not equal";
-        if(s.size() != y.size())
+        if (s.size() != y.size())
             throw new IllegalStateException("Gradient and parameter sizes are not equal");
 
         //In general: have m elements in s,y,rho.
         //But for first few iterations, have less.
-        int numVectors = Math.min(m,s.size());
+        int numVectors = Math.min(m, s.size());
 
         double[] alpha = new double[numVectors];
 
@@ -123,16 +126,16 @@ public class LBFGS extends BaseOptimizer {
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         searchDir.assign(gradient);
 
-        for( int i=0; i<numVectors; i++ ){
+        for (int i = 0; i < numVectors; i++) {
             INDArray si = sIter.next();
             INDArray yi = yIter.next();
             double rhoi = rhoIter.next();
 
-            if(si.length() != searchDir.length())
+            if (si.length() != searchDir.length())
                 throw new IllegalStateException("Gradients and parameters length not equal");
 
-            alpha[i] = rhoi * Nd4j.getBlasWrapper().dot(si,searchDir);
-            Nd4j.getBlasWrapper().level1().axpy(searchDir.length(),-alpha[i],yi,searchDir);	//q = q-alpha[i]*yi
+            alpha[i] = rhoi * Nd4j.getBlasWrapper().dot(si, searchDir);
+            Nd4j.getBlasWrapper().level1().axpy(searchDir.length(), -alpha[i], yi, searchDir); //q = q-alpha[i]*yi
         }
 
         //Use Hessian approximation initialization scheme
@@ -145,17 +148,17 @@ public class LBFGS extends BaseOptimizer {
         sIter = s.descendingIterator();
         yIter = y.descendingIterator();
         rhoIter = rho.descendingIterator();
-        for( int i=0; i<numVectors; i++ ){
+        for (int i = 0; i < numVectors; i++) {
             INDArray si = sIter.next();
             INDArray yi = yIter.next();
             double rhoi = rhoIter.next();
 
-            double beta = rhoi * Nd4j.getBlasWrapper().dot(yi, searchDir);		//beta = rho_i * y_i^T * r
+            double beta = rhoi * Nd4j.getBlasWrapper().dot(yi, searchDir); //beta = rho_i * y_i^T * r
             //r = r + s_i * (alpha_i - beta)
             Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha[i] - beta, si, searchDir);
         }
 
         previousParameters.assign(parameters);
-        previousGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
+        previousGradient.assign(gradient); //Update gradient. Still in searchState map keyed by GRADIENT_KEY
     }
 }

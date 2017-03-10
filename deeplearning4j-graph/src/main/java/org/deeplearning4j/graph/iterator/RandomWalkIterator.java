@@ -17,7 +17,7 @@ import java.util.Random;
  */
 public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
 
-    private final IGraph<V,?> graph;
+    private final IGraph<V, ?> graph;
     private final int walkLength;
     private final NoEdgeHandling mode;
     private final int firstVertex;
@@ -28,8 +28,8 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     private Random rng;
     private int[] order;
 
-    public RandomWalkIterator(IGraph<V,?> graph, int walkLength ){
-        this(graph,walkLength,System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
+    public RandomWalkIterator(IGraph<V, ?> graph, int walkLength) {
+        this(graph, walkLength, System.currentTimeMillis(), NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
     /**Construct a RandomWalkIterator for a given graph, with a specified walk length and random number generator seed.<br>
@@ -37,7 +37,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
      * walks on graphs with vertices containing having no edges, or no outgoing edges (for directed graphs)
      * @see #RandomWalkIterator(IGraph, int, long, NoEdgeHandling)
      */
-    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed ){
+    public RandomWalkIterator(IGraph<V, ?> graph, int walkLength, long rngSeed) {
         this(graph, walkLength, rngSeed, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
     }
 
@@ -47,8 +47,8 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
      * @param rngSeed seed for randomization
      * @param mode mode for handling random walks from vertices with either no edges, or no outgoing edges (for directed graphs)
      */
-    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode ){
-        this(graph,walkLength,rngSeed,mode,0,graph.numVertices());
+    public RandomWalkIterator(IGraph<V, ?> graph, int walkLength, long rngSeed, NoEdgeHandling mode) {
+        this(graph, walkLength, rngSeed, mode, 0, graph.numVertices());
     }
 
     /**Constructor used to generate random walks starting at a subset of the vertices in the graph. Order of starting
@@ -60,8 +60,8 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
      * @param firstVertex first vertex index (inclusive) to start random walks from
      * @param lastVertex last vertex index (exclusive) to start random walks from
      */
-    public RandomWalkIterator(IGraph<V,?> graph, int walkLength, long rngSeed, NoEdgeHandling mode, int firstVertex,
-                              int lastVertex ){
+    public RandomWalkIterator(IGraph<V, ?> graph, int walkLength, long rngSeed, NoEdgeHandling mode, int firstVertex,
+                    int lastVertex) {
         this.graph = graph;
         this.walkLength = walkLength;
         this.rng = new Random(rngSeed);
@@ -69,28 +69,32 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
         this.firstVertex = firstVertex;
         this.lastVertex = lastVertex;
 
-        order = new int[lastVertex-firstVertex];
-        for( int i=0; i<order.length; i++ ) order[i] = firstVertex+i;
+        order = new int[lastVertex - firstVertex];
+        for (int i = 0; i < order.length; i++)
+            order[i] = firstVertex + i;
         reset();
     }
 
     @Override
     public IVertexSequence<V> next() {
-        if(!hasNext()) throw new NoSuchElementException();
+        if (!hasNext())
+            throw new NoSuchElementException();
         //Generate a random walk starting at vertex order[current]
         int currVertexIdx = order[position++];
-        int[] indices = new int[walkLength+1];
+        int[] indices = new int[walkLength + 1];
         indices[0] = currVertexIdx;
-        if(walkLength == 0) return new VertexSequence<>(graph,indices);
+        if (walkLength == 0)
+            return new VertexSequence<>(graph, indices);
 
         Vertex<V> next;
-        try{
-            next = graph.getRandomConnectedVertex(currVertexIdx,rng);
-        }catch(NoEdgesException e){
-            switch(mode){
+        try {
+            next = graph.getRandomConnectedVertex(currVertexIdx, rng);
+        } catch (NoEdgesException e) {
+            switch (mode) {
                 case SELF_LOOP_ON_DISCONNECTED:
-                    for(int i=1; i<walkLength; i++) indices[i] = currVertexIdx;
-                    return new VertexSequence<>(graph,indices);
+                    for (int i = 1; i < walkLength; i++)
+                        indices[i] = currVertexIdx;
+                    return new VertexSequence<>(graph, indices);
                 case EXCEPTION_ON_DISCONNECTED:
                     throw e;
                 default:
@@ -100,12 +104,12 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
         indices[1] = next.vertexID();
         currVertexIdx = indices[1];
 
-        for( int i=2; i<=walkLength; i++ ){ //<= walk length: i.e., if walk length = 2, it contains 3 vertices etc
-            next = graph.getRandomConnectedVertex(currVertexIdx,rng);
+        for (int i = 2; i <= walkLength; i++) { //<= walk length: i.e., if walk length = 2, it contains 3 vertices etc
+            next = graph.getRandomConnectedVertex(currVertexIdx, rng);
             currVertexIdx = next.vertexID();
             indices[i] = currVertexIdx;
         }
-        return new VertexSequence<>(graph,indices);
+        return new VertexSequence<>(graph, indices);
     }
 
     @Override
@@ -117,8 +121,8 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     public void reset() {
         position = 0;
         //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-        for(int i=order.length-1; i>0; i-- ){
-            int j = rng.nextInt(i+1);
+        for (int i = order.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
             int temp = order[j];
             order[j] = order[i];
             order[i] = temp;
@@ -126,7 +130,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     }
 
     @Override
-    public int walkLength(){
+    public int walkLength() {
         return walkLength;
     }
 }

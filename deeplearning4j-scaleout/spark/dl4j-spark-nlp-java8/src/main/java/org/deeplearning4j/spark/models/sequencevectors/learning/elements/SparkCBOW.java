@@ -32,15 +32,19 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
     }
 
     @Override
-    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence,
+                    AtomicLong nextRandom, double learningRate) {
         // FIXME: totalElementsCount should have real value
         if (vectorsConfiguration.getSampling() > 0)
-            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
+            sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L,
+                            vectorsConfiguration.getSampling());
 
         int currentWindow = vectorsConfiguration.getWindow();
 
-        if (vectorsConfiguration.getVariableWindows() != null && vectorsConfiguration.getVariableWindows().length != 0) {
-            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils.nextInt(vectorsConfiguration.getVariableWindows().length)];
+        if (vectorsConfiguration.getVariableWindows() != null
+                        && vectorsConfiguration.getVariableWindows().length != 0) {
+            currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
+                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {
@@ -56,15 +60,15 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             int b = (int) nextRandom.get() % currentWindow;
 
-            int end =  currentWindow * 2 + 1 - b;
+            int end = currentWindow * 2 + 1 - b;
 
             ShallowSequenceElement currentWord = sequence.getElementByIndex(i);
 
             List<Integer> intsList = new ArrayList<>();
-            for(int a = b; a < end; a++) {
-                if(a != currentWindow) {
+            for (int a = b; a < end; a++) {
+                if (a != currentWindow) {
                     int c = i - currentWindow + a;
-                    if(c >= 0 && c < sequence.size()) {
+                    if (c >= 0 && c < sequence.size()) {
                         ShallowSequenceElement lastWord = sequence.getElementByIndex(c);
 
                         intsList.add(lastWord.getIndex());
@@ -90,9 +94,10 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
         return currentFrame;
     }
 
-    protected void iterateSample(ShallowSequenceElement currentWord, int[] windowWords, AtomicLong nextRandom, double alpha, boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
-        int [] idxSyn1 = null;
-        byte [] codes = null;
+    protected void iterateSample(ShallowSequenceElement currentWord, int[] windowWords, AtomicLong nextRandom,
+                    double alpha, boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
+        int[] idxSyn1 = null;
+        byte[] codes = null;
 
         if (vectorsConfiguration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[currentWord.getCodeLength()];
@@ -110,7 +115,8 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
         }
 
 
-        CbowRequestMessage cbrm = new CbowRequestMessage(windowWords, idxSyn1, currentWord.getIndex(), codes, (int) vectorsConfiguration.getNegative(), alpha, nextRandom.get());
+        CbowRequestMessage cbrm = new CbowRequestMessage(windowWords, idxSyn1, currentWord.getIndex(), codes,
+                        (int) vectorsConfiguration.getNegative(), alpha, nextRandom.get());
         frame.get().stackMessage(cbrm);
     }
 

@@ -29,8 +29,8 @@ public class KerasGlobalPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasGlobalPooling(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasGlobalPooling(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -42,15 +42,13 @@ public class KerasGlobalPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasGlobalPooling(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.dimensions = mapPoolingDimensions(this.className);
-        GlobalPoolingLayer.Builder builder = new GlobalPoolingLayer.Builder(mapPoolingType(this.className))
-            .poolingDimensions(dimensions)
-            .collapseDimensions(true)
-            .name(this.layerName)
-            .dropOut(this.dropout);
+        GlobalPoolingLayer.Builder builder =
+                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className)).poolingDimensions(dimensions)
+                                        .collapseDimensions(true).name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
@@ -61,7 +59,7 @@ public class KerasGlobalPooling extends KerasLayer {
      * @return  SubsamplingLayer
      */
     public GlobalPoolingLayer getGlobalPoolingLayer() {
-        return (GlobalPoolingLayer)this.layer;
+        return (GlobalPoolingLayer) this.layer;
     }
 
     /**
@@ -74,7 +72,8 @@ public class KerasGlobalPooling extends KerasLayer {
      */
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras GlobalPooling layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras GlobalPooling layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor;
         if (inputType[0].getType() == InputType.Type.FF && this.dimensions.length == 1) {
             preprocessor = new FeedForwardToRnnPreProcessor();
@@ -94,7 +93,8 @@ public class KerasGlobalPooling extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
 
         /* Check whether layer requires a preprocessor for this InputType. */
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);

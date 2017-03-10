@@ -44,7 +44,7 @@ public class SentenceIteratorConverter implements LabelAwareIterator {
         if (backendIterator instanceof LabelAwareSentenceIterator) {
             List<String> labels = ((LabelAwareSentenceIterator) backendIterator).currentLabels();
             if (labels != null) {
-                for (String label: labels) {
+                for (String label : labels) {
                     document.addLabel(label);
                     generator.storeLabel(label);
                 }
@@ -55,7 +55,8 @@ public class SentenceIteratorConverter implements LabelAwareIterator {
                     generator.storeLabel(label);
                 }
             }
-        } else if (generator != null) document.addLabel(generator.nextLabel());
+        } else if (generator != null)
+            document.addLabel(generator.nextLabel());
 
         return document;
     }

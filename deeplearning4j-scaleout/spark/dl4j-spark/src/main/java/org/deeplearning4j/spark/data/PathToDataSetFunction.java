@@ -16,25 +16,25 @@ import java.net.URI;
  *
  * @author Alex Black
  */
-public class PathToDataSetFunction implements Function<String,DataSet> {
-    public static final int BUFFER_SIZE = 4194304;  //4 MB
+public class PathToDataSetFunction implements Function<String, DataSet> {
+    public static final int BUFFER_SIZE = 4194304; //4 MB
 
     private FileSystem fileSystem;
 
     @Override
     public DataSet call(String path) throws Exception {
-        if(fileSystem == null){
-            try{
+        if (fileSystem == null) {
+            try {
                 fileSystem = FileSystem.get(new URI(path), new Configuration());
-            }catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         DataSet ds = new DataSet();
-        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
             ds.load(inputStream);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 

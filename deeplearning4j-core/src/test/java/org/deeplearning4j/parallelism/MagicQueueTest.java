@@ -32,14 +32,14 @@ public class MagicQueueTest {
 
         int numDevices = 1; // Force single device
 
-        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
 
         queue.add(dataSet_1);
         queue.add(dataSet_2);
@@ -58,7 +58,7 @@ public class MagicQueueTest {
         int cnt = 0;
         while (!queue.isEmpty()) {
             DataSet ds = queue.poll();
-            assertNotEquals("Failed on iteration: " + cnt,null, ds);
+            assertNotEquals("Failed on iteration: " + cnt, null, ds);
             cnt++;
         }
 
@@ -77,14 +77,17 @@ public class MagicQueueTest {
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
-        for (int i = 0; i < numDevices * 4; i++ ) {
-            DataSet dataSet = new DataSet(Nd4j.create(new float[]{1f, 2f, 3f}), Nd4j.create(new float[]{1f, 2f, 3f}));
+        for (int i = 0; i < numDevices * 4; i++) {
+            DataSet dataSet = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
             queue.add(dataSet);
         }
 
         Thread.sleep(500);
 
-        assertEquals(8 / numDevices, queue.size());
+        if (numDevices == 1)
+            assertEquals(4, queue.size());
+        else
+            assertEquals(8 / numDevices, queue.size());
 
 
         int cnt = 0;
@@ -117,14 +120,14 @@ public class MagicQueueTest {
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
-        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
 
 
 
@@ -177,8 +180,13 @@ public class MagicQueueTest {
             log.info("Checking fourth device...");
             nextDev++;
         } else {
-            log.info("Checking second device...");
-            nextDev = 1;
+            if (numDevices > 1) {
+                log.info("Checking second device...");
+                nextDev = 1;
+            } else {
+                log.info("Checking first device...");
+                nextDev = 0;
+            }
         }
 
 
@@ -193,14 +201,14 @@ public class MagicQueueTest {
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
-        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
-        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f}));
+        DataSet dataSet_1 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_2 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_3 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_4 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_5 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_6 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_7 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
+        DataSet dataSet_8 = new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f}));
 
 
 
@@ -242,7 +250,7 @@ public class MagicQueueTest {
     public void testSequentialIterable() throws Exception {
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < 1024; i++)
-            list.add(new DataSet(Nd4j.create(new float[]{1f,2f,3f}), Nd4j.create(new float[]{1f,2f,3f})));
+            list.add(new DataSet(Nd4j.create(new float[] {1f, 2f, 3f}), Nd4j.create(new float[] {1f, 2f, 3f})));
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 

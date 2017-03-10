@@ -53,7 +53,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
     private ShadowCopyThread shadowThread;
 
-//    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
+    //    private Counter<Integer> sentenceOccurrences = Util.parallelCounter();
     //private CounterMap<T, T> coOccurrenceCounts = Util.parallelCounterMap();
     private volatile CountMap<T> coOccurrenceCounts = new CountMap<>();
     //private Counter<Integer> occurrenceAllocations = Util.parallelCounter();
@@ -64,8 +64,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
     protected static final Logger logger = LoggerFactory.getLogger(AbstractCoOccurrences.class);
 
     // this method should be private, to avoid non-configured instantiation
-    private AbstractCoOccurrences() {
-    }
+    private AbstractCoOccurrences() {}
 
     /**
      * This method returns cooccurrence distance weights for two SequenceElements
@@ -109,7 +108,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
         List<CoOccurrencesCalculatorThread> threads = new ArrayList<>();
         for (int x = 0; x < workers; x++) {
-            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<>(new SynchronizedSequenceIterator<>(sequenceIterator), vocabCache), processedSequences));
+            threads.add(x, new CoOccurrencesCalculatorThread(x, new FilteredSequenceIterator<>(
+                            new SynchronizedSequenceIterator<>(sequenceIterator), vocabCache), processedSequences));
             threads.get(x).start();
         }
 
@@ -136,9 +136,9 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         final SentenceIterator iterator;
 
         try {
-            iterator = new SynchronizedSentenceIterator(new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
-                    .setFetchSize(500000)
-                    .build());
+            iterator = new SynchronizedSentenceIterator(
+                            new PrefetchingSentenceIterator.Builder(new BasicLineIterator(targetFile))
+                                            .setFetchSize(500000).build());
 
         } catch (Exception e) {
             logger.error("Target file was not found on last stage!");
@@ -267,7 +267,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             ret.memory_threshold = this.maxmemory;
 
 
-            logger.info("Actual memory limit: ["+ this.maxmemory +"]");
+            logger.info("Actual memory limit: [" + this.maxmemory + "]");
 
             // use temp file, if no target file was specified
             try {
@@ -291,7 +291,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
         private final AtomicLong sequenceCounter;
         private int threadId;
 
-        public CoOccurrencesCalculatorThread(int threadId, @NonNull SequenceIterator<T> iterator, @NonNull AtomicLong sequenceCounter) {
+        public CoOccurrencesCalculatorThread(int threadId, @NonNull SequenceIterator<T> iterator,
+                        @NonNull AtomicLong sequenceCounter) {
             this.iterator = iterator;
             this.sequenceCounter = sequenceCounter;
             this.threadId = threadId;
@@ -305,7 +306,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 Sequence<T> sequence = iterator.nextSequence();
 
                 List<String> tokens = new ArrayList<>(sequence.asLabels());
-    //            logger.info("Tokens size: " + tokens.size());
+                //            logger.info("Tokens size: " + tokens.size());
                 for (int x = 0; x < sequence.getElements().size(); x++) {
                     int wordIdx = vocabCache.indexOf(tokens.get(x));
                     if (wordIdx < 0) {
@@ -318,20 +319,20 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         continue;
                     */
 
-                    int windowStop = Math.min(x + windowSize + 1,tokens.size());
-                    for(int j = x; j < windowStop; j++) {
+                    int windowStop = Math.min(x + windowSize + 1, tokens.size());
+                    for (int j = x; j < windowStop; j++) {
                         int otherWord = vocabCache.indexOf(tokens.get(j));
                         if (otherWord < 0) {
                             continue;
                         }
                         String w2 = vocabCache.wordFor(tokens.get(j)).getLabel();
 
-                        if(w2.equals(Glove.DEFAULT_UNK) || otherWord == wordIdx) {
+                        if (w2.equals(Glove.DEFAULT_UNK) || otherWord == wordIdx) {
                             continue;
                         }
 
 
-                        T tokenX  = vocabCache.wordFor(tokens.get(x));
+                        T tokenX = vocabCache.wordFor(tokens.get(x));
                         T tokenJ = vocabCache.wordFor(tokens.get(j));
                         double nWeight = 1.0 / (j - x + Nd4j.EPS_THRESHOLD);
 
@@ -343,7 +344,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                                 lock.readLock().unlock();
                                 */
                                 if (threadId == 0) {
-                                    logger.debug("Memory consuimption > threshold: {footrpint: ["+ getMemoryFootprint()+"], threshold: [" + getMemoryThreshold() +"] }");
+                                    logger.debug("Memory consuimption > threshold: {footrpint: [" + getMemoryFootprint()
+                                                    + "], threshold: [" + getMemoryThreshold() + "] }");
                                 }
                                 Thread.sleep(10000);
                             } catch (Exception e) {
@@ -425,7 +427,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             while (!isFinished.get() && !isTerminate.get()) {
                 // check used memory. if memory use below threshold - sleep for a while. if above threshold - invoke copier
 
-                if (getMemoryFootprint() > getMemoryThreshold()  || (shouldInvoke.get() && !isInvoked.get())) {
+                if (getMemoryFootprint() > getMemoryThreshold() || (shouldInvoke.get() && !isInvoked.get())) {
                     // we'll just invoke copier, nothing else
                     shouldInvoke.compareAndSet(true, false);
                     invokeBlocking();
@@ -433,7 +435,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     try {
                         /*
                                commented and left here for future debugging purposes, if needed
-
+                        
                                 //lock.readLock().lock();
                                 //int size = coOccurrenceCounts.size();
                                 //lock.readLock().unlock();
@@ -486,7 +488,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
 
                 // obtain local copy of CountMap
-                 localMap = coOccurrenceCounts;
+                localMap = coOccurrenceCounts;
 
                 // set new CountMap, and release write lock
                 coOccurrenceCounts = new CountMap<>();
@@ -501,16 +503,19 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 File file = null;
                 if (!isFinished.get()) {
                     file = tempFiles[counter.previous()];
-                } else file = targetFile;
+                } else
+                    file = targetFile;
 
 
-            //    PrintWriter pw = new PrintWriter(file);
+                //    PrintWriter pw = new PrintWriter(file);
 
                 int linesRead = 0;
 
-                logger.debug("Saving to: ["+ counter.get()+"], Reading from: [" + counter.previous()+"]");
-                CoOccurenceReader<T> reader = new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache, localMap);
-                CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile): new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
+                logger.debug("Saving to: [" + counter.get() + "], Reading from: [" + counter.previous() + "]");
+                CoOccurenceReader<T> reader =
+                                new BinaryCoOccurrenceReader<>(tempFiles[counter.previous()], vocabCache, localMap);
+                CoOccurrenceWriter<T> writer = (isFinished.get()) ? new ASCIICoOccurrenceWriter<T>(targetFile)
+                                : new BinaryCoOccurrenceWriter<T>(tempFiles[counter.get()]);
                 while (reader.hasMoreObjects()) {
                     CoOccurrenceWeight<T> line = reader.nextObject();
 
@@ -542,29 +547,29 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 writer.finish();
 
-            /*
+                /*
                 SentenceIterator sIterator =  new PrefetchingSentenceIterator.Builder(new BasicLineIterator(tempFiles[counter.get()]))
                         .setFetchSize(500000)
                         .build();
-
-
+                
+                
                 int linesRead = 0;
                 while (sIterator.hasNext()) {
                     //List<Writable> list = new ArrayList<>(reader.next());
                     String sentence = sIterator.nextSentence();
                     if (sentence == null || sentence.isEmpty()) continue;
                     String[] strings = sentence.split(" ");
-
-
+                
+                
                     // first two elements are integers - vocab indexes
                     //T element1 = vocabCache.wordFor(vocabCache.wordAtIndex(list.get(0).toInt()));
                     //T element2 = vocabCache.wordFor(vocabCache.wordAtIndex(list.get(1).toInt()));
                     T element1 = vocabCache.elementAtIndex(Integer.valueOf(strings[0]));
                     T element2 = vocabCache.elementAtIndex(Integer.valueOf(strings[1]));
-
+                
                     // getting third element, previously stored weight
                     double sWeight = Double.valueOf(strings[2]);  // list.get(2).toDouble();
-
+                
                     // now, since we have both elements ready, we can check this pair against inmemory map
                         double mWeight = localMap.getCount(element1, element2);
                         if (mWeight <= 0) {
@@ -572,40 +577,40 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         } else {
                             // since we have new weight value in memory, we should update sWeight value before moving it off memory
                             sWeight += mWeight;
-
+                
                             // original pair can be safely removed from CountMap
                             localMap.removePair(element1,element2);
                         }
-
+                
                         StringBuilder builder = new StringBuilder().append(element1.getIndex()).append(" ").append(element2.getIndex()).append(" ").append(sWeight);
                         pw.println(builder.toString());
                         numberOfLinesSaved++;
                         linesRead++;
-
+                
                    // if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
                   //  if (linesRead % 100000 == 0) logger.info("Lines read: [" + linesRead +"]");
                 }
                 */
-/*
+                /*
                 logger.info("Lines read: [" + linesRead + "]");
-
+                
                 //now, we can dump the rest of elements, which were not presented in existing dump
                 Iterator<Pair<T, T>> iterator = localMap.getPairIterator();
                 while (iterator.hasNext()) {
                     Pair<T, T> pair = iterator.next();
                     double mWeight = localMap.getCount(pair);
-
+                
                     StringBuilder builder = new StringBuilder().append(pair.getFirst().getIndex()).append(" ").append(pair.getFirst().getIndex()).append(" ").append(mWeight);
                     pw.println(builder.toString());
                     numberOfLinesSaved++;
-
-              //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
+                
+                              //      if (numberOfLinesSaved % 100000 == 0) logger.info("Lines saved: [" + numberOfLinesSaved +"]");
                 }
-
+                
                 pw.flush();
                 pw.close();
-
-*/
+                
+                */
 
                 // just a hint for gc
                 localMap = null;

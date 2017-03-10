@@ -24,7 +24,11 @@ public class FoldWithinPartitionFunction implements Function2<Integer, Iterator<
     @Override
     public Iterator<AtomicLong> call(Integer ind, Iterator<AtomicLong> partition) throws Exception {
 
-        List<AtomicLong> foldedItemList = new ArrayList<AtomicLong>() {{ add(new AtomicLong(0L)); }};
+        List<AtomicLong> foldedItemList = new ArrayList<AtomicLong>() {
+            {
+                add(new AtomicLong(0L));
+            }
+        };
 
         // Recurrent state implementation of cum sum
         int foldedItemListSize = 1;

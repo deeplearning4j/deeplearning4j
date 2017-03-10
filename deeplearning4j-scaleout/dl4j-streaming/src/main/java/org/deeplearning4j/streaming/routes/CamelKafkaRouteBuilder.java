@@ -24,19 +24,17 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
     private String dataTypeUnMarshal;
     private String zooKeeperHost = "localhost";
     private int zooKeeperPort = 2181;
+
     /**
      * Let's configure the Camel routing rules using Java code...
      */
     @Override
     public void configure() {
-        from(inputUri)
-                .unmarshal(dataTypeUnMarshal)
-                .to(String.format("datavec://%s?inputMarshaller=%s&writableConverter=%s",inputFormat,datavecMarshaller,writableConverter))
-                .process(processor)
-                .to(String.format("kafka:%s?topic=%s",
-                        kafkaBrokerList,
-                        topicName,
-                        zooKeeperHost,zooKeeperPort));
+        from(inputUri).unmarshal(dataTypeUnMarshal)
+                        .to(String.format("datavec://%s?inputMarshaller=%s&writableConverter=%s", inputFormat,
+                                        datavecMarshaller, writableConverter))
+                        .process(processor).to(String.format("kafka:%s?topic=%s", kafkaBrokerList, topicName,
+                                        zooKeeperHost, zooKeeperPort));
     }
 
 
@@ -117,36 +115,26 @@ public class CamelKafkaRouteBuilder extends RouteBuilder {
             return this;
         }
 
-        private void assertStringNotNUllOrEmpty(String value,String name)  {
-            if(value == null || value.isEmpty())
-                throw new IllegalStateException(String.format("Please define a %s",name));
+        private void assertStringNotNUllOrEmpty(String value, String name) {
+            if (value == null || value.isEmpty())
+                throw new IllegalStateException(String.format("Please define a %s", name));
 
         }
 
         public CamelKafkaRouteBuilder build() {
             CamelKafkaRouteBuilder routeBuilder;
-            assertStringNotNUllOrEmpty(inputUri,"input uri");
-            assertStringNotNUllOrEmpty(topicName,"topic name");
-            assertStringNotNUllOrEmpty(kafkaBrokerList,"kafka broker");
-            assertStringNotNUllOrEmpty(inputFormat,"input format");
-            routeBuilder = new CamelKafkaRouteBuilder(
-                    topicName,
-                    kafkaBrokerList,
-                    writableConverter,
-                    datavecMarshaller,
-                    inputUri,
-                    inputFormat
-                    ,processor,
-                    dataTypeUnMarshal,
-                    zooKeeperHost,
-                    zooKeeperPort);
-            if(camelContext != null)
+            assertStringNotNUllOrEmpty(inputUri, "input uri");
+            assertStringNotNUllOrEmpty(topicName, "topic name");
+            assertStringNotNUllOrEmpty(kafkaBrokerList, "kafka broker");
+            assertStringNotNUllOrEmpty(inputFormat, "input format");
+            routeBuilder = new CamelKafkaRouteBuilder(topicName, kafkaBrokerList, writableConverter, datavecMarshaller,
+                            inputUri, inputFormat, processor, dataTypeUnMarshal, zooKeeperHost, zooKeeperPort);
+            if (camelContext != null)
                 routeBuilder.setContext(camelContext);
             return routeBuilder;
         }
 
     }
-
 
 
 

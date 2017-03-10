@@ -26,16 +26,18 @@ import static org.junit.Assert.assertTrue;
 public class CustomPreprocessorTest {
 
     @Test
-    public void testCustomPreprocessor(){
+    public void testCustomPreprocessor() {
         //First: Ensure that the CustomLayer class is registered
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
 
-        AnnotatedClass ac = AnnotatedClass.construct(InputPreProcessor.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+        AnnotatedClass ac = AnnotatedClass.construct(InputPreProcessor.class,
+                        mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac,
+                        mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
         boolean found = false;
         for (NamedType nt : types) {
-//            System.out.println(nt);
-            if (nt.getType() == MyCustomPreprocessor.class){
+            //            System.out.println(nt);
+            if (nt.getType() == MyCustomPreprocessor.class) {
                 found = true;
                 break;
             }
@@ -44,13 +46,13 @@ public class CustomPreprocessorTest {
         assertTrue("MyCustomPreprocessor: not registered with NeuralNetConfiguration mapper", found);
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
-                .inputPreProcessor(0, new MyCustomPreprocessor())
-                .pretrain(false).backprop(true).build();
+        MultiLayerConfiguration conf =
+                        new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+                                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10)
+                                                        .nOut(10).build())
+                                        .inputPreProcessor(0, new MyCustomPreprocessor()).pretrain(false).backprop(true)
+                                        .build();
 
         String json = conf.toJson();
         String yaml = conf.toYaml();

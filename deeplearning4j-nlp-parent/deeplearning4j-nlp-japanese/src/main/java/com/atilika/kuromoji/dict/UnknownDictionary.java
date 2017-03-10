@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -27,8 +27,9 @@ import java.io.InputStream;
 
 public class UnknownDictionary implements Dictionary {
 
-//    public static final String UNKNOWN_DICTIONARY_FILENAME = "unknownDictionary.bin";
-    public static final String UNKNOWN_DICTIONARY_FILENAME = KuromojiBinFilesFetcher.getRootPath() +  "unknownDictionary.bin";
+    //    public static final String UNKNOWN_DICTIONARY_FILENAME = "unknownDictionary.bin";
+    public static final String UNKNOWN_DICTIONARY_FILENAME =
+                    KuromojiBinFilesFetcher.getRootPath() + "unknownDictionary.bin";
 
     private static final String DEFAULT_FEATURE = "*";
 
@@ -44,11 +45,8 @@ public class UnknownDictionary implements Dictionary {
 
     private final CharacterDefinitions characterDefinition;
 
-    public UnknownDictionary(CharacterDefinitions characterDefinition,
-                             int[][] entries,
-                             int[][] costs,
-                             String[][] features,
-                             int totalFeatures) {
+    public UnknownDictionary(CharacterDefinitions characterDefinition, int[][] entries, int[][] costs,
+                    String[][] features, int totalFeatures) {
         this.characterDefinition = characterDefinition;
         this.entries = entries;
         this.costs = costs;
@@ -56,16 +54,9 @@ public class UnknownDictionary implements Dictionary {
         this.totalFeatures = totalFeatures;
     }
 
-    public UnknownDictionary(CharacterDefinitions characterDefinition,
-                             int[][] entries,
-                             int[][] costs,
-                             String[][] features) {
-        this(characterDefinition,
-            entries,
-            costs,
-            features,
-            features.length
-        );
+    public UnknownDictionary(CharacterDefinitions characterDefinition, int[][] entries, int[][] costs,
+                    String[][] features) {
+        this(characterDefinition, entries, costs, features, features.length);
     }
 
 
@@ -131,22 +122,16 @@ public class UnknownDictionary implements Dictionary {
         return characterDefinition;
     }
 
-    public static UnknownDictionary newInstance(ResourceResolver resolver,
-                                                CharacterDefinitions characterDefinitions,
-                                                int totalFeatures) throws IOException {
+    public static UnknownDictionary newInstance(ResourceResolver resolver, CharacterDefinitions characterDefinitions,
+                    int totalFeatures) throws IOException {
         InputStream unkDefInput = resolver.resolve(UnknownDictionary.UNKNOWN_DICTIONARY_FILENAME);
 
         int[][] costs = IntegerArrayIO.readArray2D(unkDefInput);
         int[][] references = IntegerArrayIO.readArray2D(unkDefInput);
         String[][] features = StringArrayIO.readArray2D(unkDefInput);
 
-        UnknownDictionary unknownDictionary = new UnknownDictionary(
-            characterDefinitions,
-            references,
-            costs,
-            features,
-            totalFeatures
-        );
+        UnknownDictionary unknownDictionary =
+                        new UnknownDictionary(characterDefinitions, references, costs, features, totalFeatures);
 
         return unknownDictionary;
     }

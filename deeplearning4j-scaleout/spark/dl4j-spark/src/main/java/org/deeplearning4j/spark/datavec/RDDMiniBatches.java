@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import java.util.List;
  * RDD mini batch partitioning
  * @author Adam Gibson
  */
-public class RDDMiniBatches  implements Serializable {
+public class RDDMiniBatches implements Serializable {
     private int miniBatches = 10;
     private JavaRDD<DataSet> toSplitJava;
 
@@ -72,7 +72,7 @@ public class RDDMiniBatches  implements Serializable {
 
             //edge cases with map partitions where one will be left over.
             //this is due to race conditions.
-            if(temp.size() > 1)
+            if (temp.size() > 1)
                 ret.add(DataSet.merge(temp));
 
             return ret;

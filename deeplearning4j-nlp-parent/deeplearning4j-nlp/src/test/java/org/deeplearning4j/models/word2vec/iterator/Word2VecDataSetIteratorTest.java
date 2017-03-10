@@ -41,23 +41,11 @@ public class Word2VecDataSetIteratorTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(10) // we make sure we'll have some missing words
-                .iterations(1)
-                .learningRate(0.025)
-                .layerSize(150)
-                .seed(42)
-                .sampling(0)
-                .negativeSample(0)
-                .useHierarchicSoftmax(true)
-                .windowSize(5)
-                .modelUtils(new BasicModelUtils<VocabWord>())
-                .useAdaGrad(false)
-                .iterate(iter)
-                .workers(8)
-                .tokenizerFactory(t)
-                .elementsLearningAlgorithm(new CBOW<VocabWord>())
-                .build();
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(10) // we make sure we'll have some missing words
+                        .iterations(1).learningRate(0.025).layerSize(150).seed(42).sampling(0).negativeSample(0)
+                        .useHierarchicSoftmax(true).windowSize(5).modelUtils(new BasicModelUtils<VocabWord>())
+                        .useAdaGrad(false).iterate(iter).workers(8).tokenizerFactory(t)
+                        .elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
 
         vec.fit();
 
@@ -79,6 +67,7 @@ public class Word2VecDataSetIteratorTest {
 
         return new LabelAwareSentenceIterator() {
             private AtomicInteger cnt = new AtomicInteger(0);
+
             @Override
             public String currentLabel() {
                 return labels.get(cnt.incrementAndGet() % labels.size());

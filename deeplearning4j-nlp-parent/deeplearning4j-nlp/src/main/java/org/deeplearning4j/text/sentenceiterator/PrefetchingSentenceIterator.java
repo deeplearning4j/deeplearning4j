@@ -52,12 +52,14 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
 
     @Override
     public void reset() {
-        if (reader != null) reader.reset();
+        if (reader != null)
+            reader.reset();
     }
 
     @Override
     public void finish() {
-        if (reader != null) reader.terminate();
+        if (reader != null)
+            reader.terminate();
     }
 
     @Override
@@ -72,7 +74,8 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
 
     @Override
     protected void finalize() throws Throwable {
-        if (reader != null) reader.terminate();
+        if (reader != null)
+            reader.terminate();
         super.finalize();
     }
 
@@ -110,12 +113,13 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         private SentenceIterator iterator;
         private int fetchSize;
         private AtomicBoolean shouldTerminate = new AtomicBoolean(false);
-        private ReentrantReadWriteLock lock =  new ReentrantReadWriteLock();
+        private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
         private SentencePreProcessor preProcessor;
         private AtomicBoolean isRunning = new AtomicBoolean(true);
         private ArrayBlockingQueue<String> buffer;
 
-        public AsyncIteratorReader(@NonNull SentenceIterator iterator, int fetchSize, SentencePreProcessor preProcessor) {
+        public AsyncIteratorReader(@NonNull SentenceIterator iterator, int fetchSize,
+                        SentencePreProcessor preProcessor) {
             this.iterator = iterator;
             this.fetchSize = fetchSize;
             this.preProcessor = preProcessor;
@@ -127,31 +131,35 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         @Override
         public void run() {
             while (!shouldTerminate.get()) {
-                if (iterator.hasNext())isRunning.set(true);
-                    else try {
+                if (iterator.hasNext())
+                    isRunning.set(true);
+                else
+                    try {
                         Thread.sleep(50);
                     } catch (Exception e) {
-                    //
+                        //
                     }
                 while (!shouldTerminate.get() && iterator.hasNext()) {
 
-                        int cnt = 0;
-                        if (buffer.size() < fetchSize) {
-                            while (!shouldTerminate.get() && cnt < fetchSize && iterator.hasNext()) {
-                                try {
-                                    lock.writeLock().lock();
-                                    String line = iterator.nextSentence();
-                                    if (line != null)
-                                        buffer.add((this.preProcessor == null) ? line : this.preProcessor.preProcess(line));
-                                } finally {
-                                    lock.writeLock().unlock();
-                                }
-                                cnt++;
+                    int cnt = 0;
+                    if (buffer.size() < fetchSize) {
+                        while (!shouldTerminate.get() && cnt < fetchSize && iterator.hasNext()) {
+                            try {
+                                lock.writeLock().lock();
+                                String line = iterator.nextSentence();
+                                if (line != null)
+                                    buffer.add((this.preProcessor == null) ? line : this.preProcessor.preProcess(line));
+                            } finally {
+                                lock.writeLock().unlock();
                             }
-//                            log.info("Lines added: [" + cnt + "], buffer size: [" + buffer.size() + "]");
-                        } else try {
-                                Thread.sleep(10);
-                            } catch (Exception e) {}
+                            cnt++;
+                        }
+                        //                            log.info("Lines added: [" + cnt + "], buffer size: [" + buffer.size() + "]");
+                    } else
+                        try {
+                            Thread.sleep(10);
+                        } catch (Exception e) {
+                        }
                 }
                 isRunning.set(false);
             }
@@ -169,7 +177,8 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
         }
 
         public boolean hasMoreLines() {
-            if (!buffer.isEmpty()) return true;
+            if (!buffer.isEmpty())
+                return true;
 
             try {
                 this.lock.readLock().lock();

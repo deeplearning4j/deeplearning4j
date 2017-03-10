@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -68,8 +68,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
      */
     @JsonCreator
     public FeedForwardToCnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                                        @JsonProperty("inputWidth") int inputWidth,
-                                        @JsonProperty("numChannels") int numChannels) {
+                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
@@ -83,14 +82,16 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
+        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
+            input = input.dup('c');
 
         this.shape = input.shape();
         if (input.shape().length == 4)
             return input;
         if (input.columns() != inputWidth * inputHeight * numChannels)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
-                    + " x columns " + inputWidth + " x channels " + numChannels + " but was instead " + Arrays.toString(input.shape()));
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
+                            + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
+                            + " but was instead " + Arrays.toString(input.shape()));
 
         return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
     }
@@ -98,10 +99,12 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     @Override
     // return 4 dimensions
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
+        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+            epsilons = epsilons.dup('c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
-            if (epsilons.rank() == 2) return epsilons;   //should never happen
+            if (epsilons.rank() == 2)
+                return epsilons; //should never happen
 
             return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
@@ -114,7 +117,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     public FeedForwardToCnnPreProcessor clone() {
         try {
             FeedForwardToCnnPreProcessor clone = (FeedForwardToCnnPreProcessor) super.clone();
-            if (clone.shape != null) clone.shape = clone.shape.clone();
+            if (clone.shape != null)
+                clone.shape = clone.shape.clone();
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -129,25 +133,26 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                 InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
                 int expSize = inputHeight * inputWidth * numChannels;
                 if (c.getSize() != expSize) {
-                    throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize + " = (d=" + numChannels +
-                            " * w=" + inputWidth + " * h=" + inputHeight + "), got " + inputType);
+                    throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize
+                                    + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "
+                                    + inputType);
                 }
                 return InputType.convolutional(inputHeight, inputWidth, numChannels);
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
                 if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth() + ","
-                            + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels + "," + inputHeight + ","
-                            + inputWidth + ")");
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth()
+                                    + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
+                                    + "," + inputHeight + "," + inputWidth + ")");
                 }
                 return c2;
             case CNNFlat:
                 InputType.InputTypeConvolutionalFlat c3 = (InputType.InputTypeConvolutionalFlat) inputType;
                 if (c3.getDepth() != numChannels || c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c3.getDepth() + ","
-                            + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels + "," + inputHeight + ","
-                            + inputWidth + ")");
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c3.getDepth()
+                                    + "," + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels
+                                    + "," + inputHeight + "," + inputWidth + ")");
                 }
                 return c3.getUnflattenedType();
             default:
@@ -156,7 +161,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+                    int minibatchSize) {
         //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
         return new Pair<>(maskArray, currentMaskState);
     }

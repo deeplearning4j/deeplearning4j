@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,11 +32,11 @@ import java.io.Serializable;
  */
 public interface Vectorizer extends Serializable {
 
-	/**
-	 * Vectorizes the input source in to a dataset
-	 * @return Adam Gibson
-	 */
-	DataSet vectorize();
+    /**
+     * Vectorizes the input source in to a dataset
+     * @return Adam Gibson
+     */
+    DataSet vectorize();
 
 
 

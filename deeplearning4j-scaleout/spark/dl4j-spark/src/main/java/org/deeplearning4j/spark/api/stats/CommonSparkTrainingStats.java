@@ -27,13 +27,10 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     public static final String WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS = "WorkerFlatMapGetInitialModelTimeMs";
     public static final String WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS = "WorkerFlatMapDataSetGetTimesMs";
     public static final String WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS = "WorkerFlatMapProcessMiniBatchTimesMs";
-    private static Set<String> columnNames = Collections.unmodifiableSet(
-            new LinkedHashSet<>(Arrays.asList(
-                    WORKER_FLAT_MAP_TOTAL_TIME_MS,
-                    WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS,
-                    WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS,
-                    WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS
-            )));
+    private static Set<String> columnNames =
+                    Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(WORKER_FLAT_MAP_TOTAL_TIME_MS,
+                                    WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS, WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS,
+                                    WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS)));
 
     private SparkTrainingStats trainingWorkerSpecificStats;
     private List<EventStats> workerFlatMapTotalTimeMs;
@@ -43,12 +40,11 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
 
 
-
-    public CommonSparkTrainingStats(){
+    public CommonSparkTrainingStats() {
 
     }
 
-    private CommonSparkTrainingStats(Builder builder){
+    private CommonSparkTrainingStats(Builder builder) {
         this.trainingWorkerSpecificStats = builder.trainingMasterSpecificStats;
         this.workerFlatMapTotalTimeMs = builder.workerFlatMapTotalTimeMs;
         this.workerFlatMapGetInitialModelTimeMs = builder.workerFlatMapGetInitialModelTimeMs;
@@ -60,14 +56,15 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public Set<String> getKeySet() {
         Set<String> set = new LinkedHashSet<>(columnNames);
-        if(trainingWorkerSpecificStats != null) set.addAll(trainingWorkerSpecificStats.getKeySet());
+        if (trainingWorkerSpecificStats != null)
+            set.addAll(trainingWorkerSpecificStats.getKeySet());
 
         return set;
     }
 
     @Override
     public List<EventStats> getValue(String key) {
-        switch (key){
+        switch (key) {
             case WORKER_FLAT_MAP_TOTAL_TIME_MS:
                 return workerFlatMapTotalTimeMs;
             case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
@@ -77,14 +74,15 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
             case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return workerFlatMapProcessMiniBatchTimesMs;
             default:
-                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getValue(key);
+                if (trainingWorkerSpecificStats != null)
+                    return trainingWorkerSpecificStats.getValue(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
         }
     }
 
     @Override
-    public String getShortNameForKey(String key){
-        switch (key){
+    public String getShortNameForKey(String key) {
+        switch (key) {
             case WORKER_FLAT_MAP_TOTAL_TIME_MS:
                 return "Total";
             case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
@@ -94,43 +92,50 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
             case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
                 return "ProcessBatch";
             default:
-                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getShortNameForKey(key);
+                if (trainingWorkerSpecificStats != null)
+                    return trainingWorkerSpecificStats.getShortNameForKey(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
         }
     }
 
     @Override
-    public boolean defaultIncludeInPlots(String key){
-        switch (key){
+    public boolean defaultIncludeInPlots(String key) {
+        switch (key) {
             case WORKER_FLAT_MAP_TOTAL_TIME_MS:
             case WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS:
             case WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS:
-                return false;   //Covered by worker stats generally
+                return false; //Covered by worker stats generally
             case WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS:
                 return true;
             default:
-                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.defaultIncludeInPlots(key);
+                if (trainingWorkerSpecificStats != null)
+                    return trainingWorkerSpecificStats.defaultIncludeInPlots(key);
                 return false;
         }
     }
 
     @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
-        if(!(other instanceof CommonSparkTrainingStats)) throw new IllegalArgumentException("Cannot add other training stats: not an instance of CommonSparkTrainingStats");
+        if (!(other instanceof CommonSparkTrainingStats))
+            throw new IllegalArgumentException(
+                            "Cannot add other training stats: not an instance of CommonSparkTrainingStats");
 
-        CommonSparkTrainingStats o = (CommonSparkTrainingStats)other;
+        CommonSparkTrainingStats o = (CommonSparkTrainingStats) other;
 
         workerFlatMapTotalTimeMs.addAll(o.workerFlatMapTotalTimeMs);
         workerFlatMapGetInitialModelTimeMs.addAll(o.workerFlatMapGetInitialModelTimeMs);
         workerFlatMapDataSetGetTimesMs.addAll(o.workerFlatMapDataSetGetTimesMs);
         workerFlatMapProcessMiniBatchTimesMs.addAll(o.workerFlatMapProcessMiniBatchTimesMs);
 
-        if(trainingWorkerSpecificStats != null) trainingWorkerSpecificStats.addOtherTrainingStats(o.trainingWorkerSpecificStats);
-        else if(o.trainingWorkerSpecificStats != null) throw new IllegalStateException("Cannot merge: training master specific stats is null in one, but not the other");
+        if (trainingWorkerSpecificStats != null)
+            trainingWorkerSpecificStats.addOtherTrainingStats(o.trainingWorkerSpecificStats);
+        else if (o.trainingWorkerSpecificStats != null)
+            throw new IllegalStateException(
+                            "Cannot merge: training master specific stats is null in one, but not the other");
     }
 
     @Override
-    public SparkTrainingStats getNestedTrainingStats(){
+    public SparkTrainingStats getNestedTrainingStats() {
         return trainingWorkerSpecificStats;
     }
 
@@ -140,22 +145,31 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
         sb.append(String.format(f, WORKER_FLAT_MAP_TOTAL_TIME_MS));
-        if(workerFlatMapTotalTimeMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(workerFlatMapTotalTimeMs,",")).append("\n");
+        if (workerFlatMapTotalTimeMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(workerFlatMapTotalTimeMs, ",")).append("\n");
 
         sb.append(String.format(f, WORKER_FLAT_MAP_GET_INITIAL_MODEL_TIME_MS));
-        if(workerFlatMapGetInitialModelTimeMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(workerFlatMapGetInitialModelTimeMs,",")).append("\n");
+        if (workerFlatMapGetInitialModelTimeMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(workerFlatMapGetInitialModelTimeMs, ",")).append("\n");
 
         sb.append(String.format(f, WORKER_FLAT_MAP_DATA_SET_GET_TIMES_MS));
-        if(workerFlatMapDataSetGetTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(workerFlatMapDataSetGetTimesMs,",")).append("\n");
+        if (workerFlatMapDataSetGetTimesMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(workerFlatMapDataSetGetTimesMs, ",")).append("\n");
 
         sb.append(String.format(f, WORKER_FLAT_MAP_PROCESS_MINI_BATCH_TIMES_MS));
-        if(workerFlatMapProcessMiniBatchTimesMs == null ) sb.append("-\n");
-        else sb.append(StatsUtils.getDurationAsString(workerFlatMapProcessMiniBatchTimesMs,",")).append("\n");
+        if (workerFlatMapProcessMiniBatchTimesMs == null)
+            sb.append("-\n");
+        else
+            sb.append(StatsUtils.getDurationAsString(workerFlatMapProcessMiniBatchTimesMs, ",")).append("\n");
 
-        if(trainingWorkerSpecificStats != null) sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
+        if (trainingWorkerSpecificStats != null)
+            sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
 
         return sb.toString();
     }
@@ -166,11 +180,11 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
 
         //Total time stats (includes total example counts)
-        String totalTimeStatsPath = FilenameUtils.concat(outputPath,FILENAME_TOTAL_TIME_STATS);
+        String totalTimeStatsPath = FilenameUtils.concat(outputPath, FILENAME_TOTAL_TIME_STATS);
         StatsUtils.exportStats(workerFlatMapTotalTimeMs, totalTimeStatsPath, d, sc);
 
         //"Get initial model" stats:
-        String getInitialModelStatsPath = FilenameUtils.concat(outputPath,FILENAME_GET_INITIAL_MODEL_STATS);
+        String getInitialModelStatsPath = FilenameUtils.concat(outputPath, FILENAME_GET_INITIAL_MODEL_STATS);
         StatsUtils.exportStats(workerFlatMapGetInitialModelTimeMs, getInitialModelStatsPath, d, sc);
 
         //"DataSet get time" stats:
@@ -181,7 +195,8 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         String processMiniBatchStatsPath = FilenameUtils.concat(outputPath, FILENAME_PROCESS_MINIBATCH_TIME_STATS);
         StatsUtils.exportStats(workerFlatMapProcessMiniBatchTimesMs, processMiniBatchStatsPath, d, sc);
 
-        if(trainingWorkerSpecificStats != null) trainingWorkerSpecificStats.exportStatFiles(outputPath, sc);
+        if (trainingWorkerSpecificStats != null)
+            trainingWorkerSpecificStats.exportStatFiles(outputPath, sc);
     }
 
     public static class Builder {
@@ -191,32 +206,32 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         private List<EventStats> workerFlatMapDataSetGetTimesMs;
         private List<EventStats> workerFlatMapProcessMiniBatchTimesMs;
 
-        public Builder trainingMasterSpecificStats(SparkTrainingStats trainingMasterSpecificStats){
+        public Builder trainingMasterSpecificStats(SparkTrainingStats trainingMasterSpecificStats) {
             this.trainingMasterSpecificStats = trainingMasterSpecificStats;
             return this;
         }
 
-        public Builder workerFlatMapTotalTimeMs(List<EventStats> workerFlatMapTotalTimeMs){
+        public Builder workerFlatMapTotalTimeMs(List<EventStats> workerFlatMapTotalTimeMs) {
             this.workerFlatMapTotalTimeMs = workerFlatMapTotalTimeMs;
             return this;
         }
 
-        public Builder workerFlatMapGetInitialModelTimeMs(List<EventStats> workerFlatMapGetInitialModelTimeMs){
+        public Builder workerFlatMapGetInitialModelTimeMs(List<EventStats> workerFlatMapGetInitialModelTimeMs) {
             this.workerFlatMapGetInitialModelTimeMs = workerFlatMapGetInitialModelTimeMs;
             return this;
         }
 
-        public Builder workerFlatMapDataSetGetTimesMs(List<EventStats> workerFlatMapDataSetGetTimesMs){
+        public Builder workerFlatMapDataSetGetTimesMs(List<EventStats> workerFlatMapDataSetGetTimesMs) {
             this.workerFlatMapDataSetGetTimesMs = workerFlatMapDataSetGetTimesMs;
             return this;
         }
 
-        public Builder workerFlatMapProcessMiniBatchTimesMs(List<EventStats> workerFlatMapProcessMiniBatchTimesMs){
+        public Builder workerFlatMapProcessMiniBatchTimesMs(List<EventStats> workerFlatMapProcessMiniBatchTimesMs) {
             this.workerFlatMapProcessMiniBatchTimesMs = workerFlatMapProcessMiniBatchTimesMs;
             return this;
         }
 
-        public CommonSparkTrainingStats build(){
+        public CommonSparkTrainingStats build() {
             return new CommonSparkTrainingStats(this);
         }
     }

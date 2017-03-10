@@ -28,7 +28,8 @@ public class WeightedWalkerTest {
                 basicGraph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
 
                 int x = i + 3;
-                if (x >= 10) x = 0;
+                if (x >= 10)
+                    x = 0;
                 basicGraph.addEdge(i, x, 1, false);
             }
 
@@ -45,10 +46,8 @@ public class WeightedWalkerTest {
     @Test
     public void testBasicIterator1() throws Exception {
         GraphWalker<VocabWord> walker = new WeightedWalker.Builder<>(basicGraph)
-                .setWalkDirection(WalkDirection.FORWARD_PREFERRED)
-                .setWalkLength(10)
-                .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
-                .build();
+                        .setWalkDirection(WalkDirection.FORWARD_PREFERRED).setWalkLength(10)
+                        .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED).build();
 
         int cnt = 0;
         while (walker.hasNext()) {

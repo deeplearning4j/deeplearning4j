@@ -37,7 +37,7 @@ public class TsneModule implements UIModule {
 
     private List<String> uploadedFileLines = null;
 
-    public TsneModule(){
+    public TsneModule() {
 
     }
 
@@ -48,11 +48,12 @@ public class TsneModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/tsne", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.tsne.Tsne.apply()));
+        Route r1 = new Route("/tsne", HttpMethod.GET, FunctionType.Supplier,
+                        () -> ok(org.deeplearning4j.ui.views.html.tsne.Tsne.apply()));
         Route r2 = new Route("/tsne/sessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r3 = new Route("/tsne/coords/:sid", HttpMethod.GET, FunctionType.Function, this::getCoords);
         Route r4 = new Route("/tsne/upload", HttpMethod.POST, FunctionType.Supplier, this::uploadFile);
-//        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
+        //        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
         Route r5 = new Route("/tsne/post/:sid", HttpMethod.GET, FunctionType.Function, this::postFile);
         return Arrays.asList(r1, r2, r3, r4, r5);
     }
@@ -72,29 +73,29 @@ public class TsneModule implements UIModule {
 
     }
 
-    private Result listSessions(){
+    private Result listSessions() {
         List<String> list = new ArrayList<>(knownSessionIDs.keySet());
-        if(uploadedFileLines != null){
+        if (uploadedFileLines != null) {
             list.add(UPLOADED_FILE);
         }
         return Results.ok(Json.toJson(list));
     }
 
-    private Result getCoords(String sessionId){
-        if(UPLOADED_FILE.equals(sessionId) && uploadedFileLines != null){
+    private Result getCoords(String sessionId) {
+        if (UPLOADED_FILE.equals(sessionId) && uploadedFileLines != null) {
             return Results.ok(Json.toJson(uploadedFileLines));
-        } else if(knownSessionIDs.containsKey(sessionId)){
+        } else if (knownSessionIDs.containsKey(sessionId)) {
             return Results.ok(Json.toJson(knownSessionIDs.get(sessionId)));
         } else {
             return Results.ok();
         }
     }
 
-    private Result uploadFile(){
+    private Result uploadFile() {
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if(fileParts.size() <= 0){
+        if (fileParts.size() <= 0) {
             return badRequest("No file uploaded");
         }
 
@@ -104,22 +105,22 @@ public class TsneModule implements UIModule {
         String contentType = uploadedFile.getContentType();
         File file = uploadedFile.getFile();
 
-        try{
+        try {
             uploadedFileLines = FileUtils.readLines(file);
-        } catch (IOException e){
+        } catch (IOException e) {
             return badRequest("Could not read from uploaded file");
         }
 
         return ok("File uploaded: " + fileName + ", " + contentType + ", " + file);
     }
 
-    private Result postFile(String sid){
-//        System.out.println("POST FILE CALLED: " + sid);
+    private Result postFile(String sid) {
+        //        System.out.println("POST FILE CALLED: " + sid);
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if(fileParts.size() <= 0){
-//            System.out.println("**** NO FILE ****");
+        if (fileParts.size() <= 0) {
+            //            System.out.println("**** NO FILE ****");
             return badRequest("No file uploaded");
         }
 
@@ -130,10 +131,10 @@ public class TsneModule implements UIModule {
         File file = uploadedFile.getFile();
 
         List<String> lines;
-        try{
+        try {
             lines = FileUtils.readLines(file);
-        } catch (IOException e){
-//            System.out.println("**** COULD NOT READ FILE ****");
+        } catch (IOException e) {
+            //            System.out.println("**** COULD NOT READ FILE ****");
             return badRequest("Could not read from uploaded file");
         }
 

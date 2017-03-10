@@ -44,14 +44,14 @@ public class HistogramIterationListener extends StatsListener {
         this(new InMemoryStatsStorage(), iterations, openBrowser);
     }
 
-    public HistogramIterationListener(StatsStorage ssr, int iterations, boolean openBrowser){
+    public HistogramIterationListener(StatsStorage ssr, int iterations, boolean openBrowser) {
         super(ssr, null, getUpdateConfiguration(iterations), null, null);
         int port = -1;
-        try{
+        try {
             UIServer server = UIServer.getInstance();
             port = server.getPort();
-        }catch(Exception e){
-            log.error("Error initializing UI server",e);
+        } catch (Exception e) {
+            log.error("Error initializing UI server", e);
             throw new RuntimeException(e);
         }
 
@@ -60,24 +60,24 @@ public class HistogramIterationListener extends StatsListener {
         this.path = "http://localhost:" + port + "/" + subPath;
         this.openBrowser = openBrowser;
 
-        System.out.println("UI Histogram URL: " + this.path );
+        System.out.println("UI Histogram URL: " + this.path);
     }
 
     @Override
     public void iterationDone(Model model, int iteration) {
         super.iterationDone(model, iteration);
 
-        if(openBrowser && firstIteration){
-            StringBuilder builder = new StringBuilder("http://localhost:")
-                    .append(UIServer.getInstance().getPort()).append("/"); ///connectionInfo.getFullAddress());
+        if (openBrowser && firstIteration) {
+            StringBuilder builder =
+                            new StringBuilder("http://localhost:").append(UIServer.getInstance().getPort()).append("/"); ///connectionInfo.getFullAddress());
             builder.append(subPath).append("?sid=").append(super.getSessionID());
-            UiUtils.tryOpenBrowser(builder.toString(),log);
+            UiUtils.tryOpenBrowser(builder.toString(), log);
             firstIteration = false;
         }
     }
 
 
-    private static StatsUpdateConfiguration getUpdateConfiguration(int iterations){
+    private static StatsUpdateConfiguration getUpdateConfiguration(int iterations) {
         //Note: we don't *need* all of these stats just for histogram listener - but other info
         // is still available at /train
         return new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(iterations).build();

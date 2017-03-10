@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -62,6 +62,7 @@ public class Glove implements Serializable {
     private int windowSize = 15;
     private int iterations = 300;
     private static Logger log = LoggerFactory.getLogger(Glove.class);
+
     /**
      *
      * @param tokenizerFactoryClazz the fully qualified class name of the tokenizer
@@ -89,25 +90,18 @@ public class Glove implements Serializable {
     }
 
 
-    private Pair<INDArray,Double> update(
-            AdaGrad weightAdaGrad
-            ,AdaGrad biasAdaGrad
-            ,INDArray syn0
-            ,INDArray bias
-            ,VocabWord w1
-            ,INDArray wordVector
-            ,INDArray contextVector
-            ,double gradient) {
+    private Pair<INDArray, Double> update(AdaGrad weightAdaGrad, AdaGrad biasAdaGrad, INDArray syn0, INDArray bias,
+                    VocabWord w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
-        INDArray grad1 =  contextVector.mul(gradient);
-        INDArray update = weightAdaGrad.getGradient(grad1,w1.getIndex(),syn0.shape());
+        INDArray grad1 = contextVector.mul(gradient);
+        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), syn0.shape());
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(w1.getIndex());
-        double biasGradient = biasAdaGrad.getGradient(gradient,w1.getIndex(),bias.shape());
+        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), bias.shape());
         double update2 = w1Bias - biasGradient;
-        bias.putScalar(w1.getIndex(),bias.getDouble(w1.getIndex()) - update2);
-        return new Pair<>(update,update2);
+        bias.putScalar(w1.getIndex(), bias.getDouble(w1.getIndex()) - update2);
+        return new Pair<>(update, update2);
     }
 
     /**
@@ -115,7 +109,7 @@ public class Glove implements Serializable {
      * @param rdd the rdd to train
      * @return the vocab and weights
      */
-    public Pair<VocabCache<VocabWord>,GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception{
+    public Pair<VocabCache<VocabWord>, GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception {
         // Each `train()` can use different parameters
         final JavaSparkContext sc = new JavaSparkContext(rdd.context());
         final SparkConf conf = sc.getConf();
@@ -132,13 +126,15 @@ public class Glove implements Serializable {
         final String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
         final boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
 
-        Map<String, Object> tokenizerVarMap = new HashMap<String, Object>() {{
-            put("numWords", numWords);
-            put("nGrams", nGrams);
-            put("tokenizer", tokenizer);
-            put("tokenPreprocessor", tokenPreprocessor);
-            put("removeStop", removeStop);
-        }};
+        Map<String, Object> tokenizerVarMap = new HashMap<String, Object>() {
+            {
+                put("numWords", numWords);
+                put("nGrams", nGrams);
+                put("tokenizer", tokenizer);
+                put("tokenPreprocessor", tokenPreprocessor);
+                put("removeStop", removeStop);
+            }
+        };
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(tokenizerVarMap);
 
 
@@ -151,109 +147,120 @@ public class Glove implements Serializable {
         Long totalWordCount = pipeline.getTotalWordCount();
         VocabCache<VocabWord> vocabCache = pipeline.getVocabCache();
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = pipeline.getSentenceWordsCountRDD();
-        final Pair<VocabCache<VocabWord>,Long> vocabAndNumWords = new Pair<>(vocabCache, totalWordCount);
+        final Pair<VocabCache<VocabWord>, Long> vocabAndNumWords = new Pair<>(vocabCache, totalWordCount);
 
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
 
         final GloveWeightLookupTable gloveWeightLookupTable = new GloveWeightLookupTable.Builder()
-                .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(GlovePerformer.ALPHA,0.01))
-                .maxCount(conf.getDouble(GlovePerformer.MAX_COUNT,100)).vectorLength(conf.getInt(GlovePerformer.VECTOR_LENGTH,300))
-                .xMax(conf.getDouble(GlovePerformer.X_MAX,0.75)).build();
+                        .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(GlovePerformer.ALPHA, 0.01))
+                        .maxCount(conf.getDouble(GlovePerformer.MAX_COUNT, 100))
+                        .vectorLength(conf.getInt(GlovePerformer.VECTOR_LENGTH, 300))
+                        .xMax(conf.getDouble(GlovePerformer.X_MAX, 0.75)).build();
         gloveWeightLookupTable.resetWeights();
 
         gloveWeightLookupTable.getBiasAdaGrad().historicalGradient = Nd4j.ones(gloveWeightLookupTable.getSyn0().rows());
-        gloveWeightLookupTable.getWeightAdaGrad().historicalGradient = Nd4j.ones(gloveWeightLookupTable.getSyn0().shape());
+        gloveWeightLookupTable.getWeightAdaGrad().historicalGradient =
+                        Nd4j.ones(gloveWeightLookupTable.getSyn0().shape());
 
 
         log.info("Created lookup table of size " + Arrays.toString(gloveWeightLookupTable.getSyn0().shape()));
-        CounterMap<String,String> coOccurrenceCounts = sentenceWordsCountRDD.map(new CoOccurrenceCalculator(symmetric,vocabCacheBroadcast, windowSize))
-                .fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
-        Iterator<Pair<String,String>> pair2 = coOccurrenceCounts.getPairIterator();
-        List<Triple<String,String,Double>> counts = new ArrayList<>();
+        CounterMap<String, String> coOccurrenceCounts = sentenceWordsCountRDD
+                        .map(new CoOccurrenceCalculator(symmetric, vocabCacheBroadcast, windowSize))
+                        .fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
+        Iterator<Pair<String, String>> pair2 = coOccurrenceCounts.getPairIterator();
+        List<Triple<String, String, Double>> counts = new ArrayList<>();
 
-        while(pair2.hasNext()) {
-            Pair<String,String> next = pair2.next();
-            if(coOccurrenceCounts.getCount(next.getFirst(),next.getSecond()) > gloveWeightLookupTable.getMaxCount()) {
-                coOccurrenceCounts.setCount(next.getFirst(),next.getSecond(),gloveWeightLookupTable.getMaxCount());
+        while (pair2.hasNext()) {
+            Pair<String, String> next = pair2.next();
+            if (coOccurrenceCounts.getCount(next.getFirst(), next.getSecond()) > gloveWeightLookupTable.getMaxCount()) {
+                coOccurrenceCounts.setCount(next.getFirst(), next.getSecond(), gloveWeightLookupTable.getMaxCount());
             }
-            counts.add(new Triple<>(next.getFirst(),next.getSecond(),coOccurrenceCounts.getCount(next.getFirst(),next.getSecond())));
+            counts.add(new Triple<>(next.getFirst(), next.getSecond(),
+                            coOccurrenceCounts.getCount(next.getFirst(), next.getSecond())));
 
         }
 
         log.info("Calculated co occurrences");
 
-        JavaRDD<Triple<String,String,Double>> parallel = sc.parallelize(counts);
-        JavaPairRDD<String, Tuple2<String,Double>> pairs = parallel.mapToPair(new PairFunction<Triple<String, String, Double>, String, Tuple2<String, Double>>() {
-            @Override
-            public Tuple2<String, Tuple2<String, Double>> call(Triple<String, String, Double> stringStringDoubleTriple) throws Exception {
-                return new Tuple2<>(stringStringDoubleTriple.getFirst(),new Tuple2<>(stringStringDoubleTriple.getSecond(),stringStringDoubleTriple.getThird()));
-            }
-        });
+        JavaRDD<Triple<String, String, Double>> parallel = sc.parallelize(counts);
+        JavaPairRDD<String, Tuple2<String, Double>> pairs = parallel
+                        .mapToPair(new PairFunction<Triple<String, String, Double>, String, Tuple2<String, Double>>() {
+                            @Override
+                            public Tuple2<String, Tuple2<String, Double>> call(
+                                            Triple<String, String, Double> stringStringDoubleTriple) throws Exception {
+                                return new Tuple2<>(stringStringDoubleTriple.getFirst(),
+                                                new Tuple2<>(stringStringDoubleTriple.getSecond(),
+                                                                stringStringDoubleTriple.getThird()));
+                            }
+                        });
 
-        JavaPairRDD<VocabWord,Tuple2<VocabWord,Double>> pairsVocab = pairs.mapToPair(new PairFunction<Tuple2<String, Tuple2<String, Double>>, VocabWord, Tuple2<VocabWord, Double>>() {
-            @Override
-            public Tuple2<VocabWord, Tuple2<VocabWord, Double>> call(Tuple2<String, Tuple2<String, Double>> stringTuple2Tuple2) throws Exception {
-                VocabWord w1 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._1());
-                VocabWord w2 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._2()._1());
-                return new Tuple2<>(w1, new Tuple2<>(w2, stringTuple2Tuple2._2()._2()));
-            }
-        });
+        JavaPairRDD<VocabWord, Tuple2<VocabWord, Double>> pairsVocab = pairs.mapToPair(
+                        new PairFunction<Tuple2<String, Tuple2<String, Double>>, VocabWord, Tuple2<VocabWord, Double>>() {
+                            @Override
+                            public Tuple2<VocabWord, Tuple2<VocabWord, Double>> call(
+                                            Tuple2<String, Tuple2<String, Double>> stringTuple2Tuple2)
+                                            throws Exception {
+                                VocabWord w1 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._1());
+                                VocabWord w2 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._2()._1());
+                                return new Tuple2<>(w1, new Tuple2<>(w2, stringTuple2Tuple2._2()._2()));
+                            }
+                        });
 
 
-        for(int i = 0; i < iterations; i++) {
-            JavaRDD<GloveChange> change = pairsVocab.map(new Function<Tuple2<VocabWord, Tuple2<VocabWord, Double>>, GloveChange>() {
-                @Override
-                public GloveChange call(Tuple2<VocabWord, Tuple2<VocabWord, Double>> vocabWordTuple2Tuple2) throws Exception {
-                    VocabWord w1 = vocabWordTuple2Tuple2._1();
-                    VocabWord w2 = vocabWordTuple2Tuple2._2()._1();
-                    INDArray w1Vector = gloveWeightLookupTable.getSyn0().slice(w1.getIndex());
-                    INDArray w2Vector = gloveWeightLookupTable.getSyn0().slice(w2.getIndex());
-                    INDArray bias = gloveWeightLookupTable.getBias();
-                    double score = vocabWordTuple2Tuple2._2()._2();
-                    double xMax = gloveWeightLookupTable.getxMax();
-                    double maxCount = gloveWeightLookupTable.getMaxCount();
-                    //w1 * w2 + bias
-                    double prediction = Nd4j.getBlasWrapper().dot(w1Vector, w2Vector);
-                    prediction += bias.getDouble(w1.getIndex()) + bias.getDouble(w2.getIndex());
+        for (int i = 0; i < iterations; i++) {
+            JavaRDD<GloveChange> change =
+                            pairsVocab.map(new Function<Tuple2<VocabWord, Tuple2<VocabWord, Double>>, GloveChange>() {
+                                @Override
+                                public GloveChange call(
+                                                Tuple2<VocabWord, Tuple2<VocabWord, Double>> vocabWordTuple2Tuple2)
+                                                throws Exception {
+                                    VocabWord w1 = vocabWordTuple2Tuple2._1();
+                                    VocabWord w2 = vocabWordTuple2Tuple2._2()._1();
+                                    INDArray w1Vector = gloveWeightLookupTable.getSyn0().slice(w1.getIndex());
+                                    INDArray w2Vector = gloveWeightLookupTable.getSyn0().slice(w2.getIndex());
+                                    INDArray bias = gloveWeightLookupTable.getBias();
+                                    double score = vocabWordTuple2Tuple2._2()._2();
+                                    double xMax = gloveWeightLookupTable.getxMax();
+                                    double maxCount = gloveWeightLookupTable.getMaxCount();
+                                    //w1 * w2 + bias
+                                    double prediction = Nd4j.getBlasWrapper().dot(w1Vector, w2Vector);
+                                    prediction += bias.getDouble(w1.getIndex()) + bias.getDouble(w2.getIndex());
 
-                    double weight = FastMath.pow(Math.min(1.0, (score / maxCount)), xMax);
+                                    double weight = FastMath.pow(Math.min(1.0, (score / maxCount)), xMax);
 
-                    double fDiff = score > xMax ? prediction : weight * (prediction - Math.log(score));
-                    if (Double.isNaN(fDiff))
-                        fDiff = Nd4j.EPS_THRESHOLD;
-                    //amount of change
-                    double gradient = fDiff;
+                                    double fDiff = score > xMax ? prediction : weight * (prediction - Math.log(score));
+                                    if (Double.isNaN(fDiff))
+                                        fDiff = Nd4j.EPS_THRESHOLD;
+                                    //amount of change
+                                    double gradient = fDiff;
 
-                    Pair<INDArray, Double> w1Update = update(
-                            gloveWeightLookupTable.getWeightAdaGrad()
-                            , gloveWeightLookupTable.getBiasAdaGrad()
-                            , gloveWeightLookupTable.getSyn0()
-                            , gloveWeightLookupTable.getBias()
-                            , w1, w1Vector, w2Vector, gradient);
-                    Pair<INDArray, Double> w2Update = update(
-                            gloveWeightLookupTable.getWeightAdaGrad()
-                            , gloveWeightLookupTable.getBiasAdaGrad()
-                            , gloveWeightLookupTable.getSyn0()
-                            , gloveWeightLookupTable.getBias()
-                            , w2, w2Vector, w1Vector, gradient);
-                    return new GloveChange(
-                            w1, w2
-                            , w1Update.getFirst(), w2Update.getFirst()
-                            , w1Update.getSecond(), w2Update.getSecond()
-                            , fDiff
-                            , gloveWeightLookupTable.getWeightAdaGrad().getHistoricalGradient().slice(w1.getIndex()),
-                            gloveWeightLookupTable.getWeightAdaGrad().getHistoricalGradient().slice(w2.getIndex())
-                            , gloveWeightLookupTable.getBiasAdaGrad().getHistoricalGradient().getDouble(w2.getIndex())
-                            , gloveWeightLookupTable.getBiasAdaGrad().getHistoricalGradient().getDouble(w1.getIndex()));
+                                    Pair<INDArray, Double> w1Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
+                                                    gloveWeightLookupTable.getBiasAdaGrad(),
+                                                    gloveWeightLookupTable.getSyn0(), gloveWeightLookupTable.getBias(),
+                                                    w1, w1Vector, w2Vector, gradient);
+                                    Pair<INDArray, Double> w2Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
+                                                    gloveWeightLookupTable.getBiasAdaGrad(),
+                                                    gloveWeightLookupTable.getSyn0(), gloveWeightLookupTable.getBias(),
+                                                    w2, w2Vector, w1Vector, gradient);
+                                    return new GloveChange(w1, w2, w1Update.getFirst(), w2Update.getFirst(),
+                                                    w1Update.getSecond(), w2Update.getSecond(), fDiff,
+                                                    gloveWeightLookupTable.getWeightAdaGrad().getHistoricalGradient()
+                                                                    .slice(w1.getIndex()),
+                                                    gloveWeightLookupTable.getWeightAdaGrad().getHistoricalGradient()
+                                                                    .slice(w2.getIndex()),
+                                                    gloveWeightLookupTable.getBiasAdaGrad().getHistoricalGradient()
+                                                                    .getDouble(w2.getIndex()),
+                                                    gloveWeightLookupTable.getBiasAdaGrad().getHistoricalGradient()
+                                                                    .getDouble(w1.getIndex()));
 
-                }
-            });
+                                }
+                            });
 
 
 
             List<GloveChange> gloveChanges = change.collect();
             double error = 0.0;
-            for(GloveChange change2 : gloveChanges) {
+            for (GloveChange change2 : gloveChanges) {
                 change2.apply(gloveWeightLookupTable);
                 error += change2.getError();
             }
@@ -269,7 +276,7 @@ public class Glove implements Serializable {
 
         }
 
-        return new Pair<>(vocabAndNumWords.getFirst(),gloveWeightLookupTable);
+        return new Pair<>(vocabAndNumWords.getFirst(), gloveWeightLookupTable);
     }
 
 }

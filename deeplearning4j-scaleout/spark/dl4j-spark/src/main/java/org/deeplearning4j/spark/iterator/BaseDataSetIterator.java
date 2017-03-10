@@ -34,18 +34,20 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        if(inputColumns == -1) preloadDataSet();
+        if (inputColumns == -1)
+            preloadDataSet();
         return inputColumns;
     }
 
     @Override
     public int totalOutcomes() {
-        if(totalOutcomes == -1) preloadDataSet();
+        if (totalOutcomes == -1)
+            preloadDataSet();
         return totalExamples();
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return dataSetStreams != null;
     }
 
@@ -56,14 +58,16 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
 
     @Override
     public void reset() {
-        if(dataSetStreams == null) throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
+        if (dataSetStreams == null)
+            throw new IllegalStateException("Cannot reset iterator constructed with an iterator");
         iter = dataSetStreams.iterator();
         cursor = 0;
     }
 
     @Override
     public int batch() {
-        if(batch == -1) preloadDataSet();
+        if (batch == -1)
+            preloadDataSet();
         return batch;
     }
 
@@ -102,7 +106,7 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
         throw new UnsupportedOperationException();
     }
 
-    private void preloadDataSet(){
+    private void preloadDataSet() {
         preloadedDataSet = load(iter.next());
         totalOutcomes = preloadedDataSet.getLabels().size(1);
         inputColumns = preloadedDataSet.getFeatureMatrix().size(1);

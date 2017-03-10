@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -25,6 +25,6 @@ import java.util.List;
 
 public interface ClusteringAlgorithm {
 
-	ClusterSet applyTo(List<Point> points);
-	
+    ClusterSet applyTo(List<Point> points);
+
 }

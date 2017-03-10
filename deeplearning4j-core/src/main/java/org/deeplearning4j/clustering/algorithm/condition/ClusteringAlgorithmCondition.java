@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,6 +22,6 @@ import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 
 public interface ClusteringAlgorithmCondition {
 
-	boolean isSatisfied(IterationHistory iterationHistory);
-	
+    boolean isSatisfied(IterationHistory iterationHistory);
+
 }

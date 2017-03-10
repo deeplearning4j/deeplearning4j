@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,28 +30,28 @@ import org.deeplearning4j.clustering.algorithm.strategy.FixedClusterCountStrateg
  */
 public class KMeansClustering extends BaseClusteringAlgorithm {
 
-	private static final long	serialVersionUID	= 8476951388145944776L;
-	
-	
-
-	protected KMeansClustering(ClusteringStrategy clusteringStrategy) {
-		super(clusteringStrategy);
-	}
+    private static final long serialVersionUID = 8476951388145944776L;
 
 
 
-	public static KMeansClustering setup(int clusterCount, int maxIterationCount,String distanceFunction) {
-		ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
-		clusteringStrategy.endWhenIterationCountEquals(maxIterationCount);
-		return new KMeansClustering(clusteringStrategy);
-	}
+    protected KMeansClustering(ClusteringStrategy clusteringStrategy) {
+        super(clusteringStrategy);
+    }
 
-	public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate,
-																			 String distanceFunction, boolean allowEmptyClusters) {
-		ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
-		clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
-		return new KMeansClustering(clusteringStrategy);
-	}
-	
+
+
+    public static KMeansClustering setup(int clusterCount, int maxIterationCount, String distanceFunction) {
+        ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
+        clusteringStrategy.endWhenIterationCountEquals(maxIterationCount);
+        return new KMeansClustering(clusteringStrategy);
+    }
+
+    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, String distanceFunction,
+                    boolean allowEmptyClusters) {
+        ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
+        clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
+        return new KMeansClustering(clusteringStrategy);
+    }
+
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,9 +36,10 @@ public class GloveParam implements Serializable {
     private double negative;
     private double xMax;
     private double maxCount;
-    private Broadcast<CounterMap<String,String>> coOccurrenceCounts;
+    private Broadcast<CounterMap<String, String>> coOccurrenceCounts;
 
-    public GloveParam(int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax, double maxCount, Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+    public GloveParam(int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,
+                    double maxCount, Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -105,11 +106,11 @@ public class GloveParam implements Serializable {
         this.maxCount = maxCount;
     }
 
-    public Broadcast< CounterMap<String,String> > getCoOccurrenceCounts() {
+    public Broadcast<CounterMap<String, String>> getCoOccurrenceCounts() {
         return coOccurrenceCounts;
     }
 
-    public void setCoOccurrenceCounts(Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+    public void setCoOccurrenceCounts(Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
         this.coOccurrenceCounts = coOccurrenceCounts;
     }
 
@@ -122,7 +123,7 @@ public class GloveParam implements Serializable {
         private double negative = 5;
         private double xMax = 0.75;
         private double maxCount = 100;
-        private Broadcast< CounterMap<String,String> > coOccurrenceCounts;
+        private Broadcast<CounterMap<String, String>> coOccurrenceCounts;
 
         public Builder vectorLength(int vectorLength) {
             this.vectorLength = vectorLength;
@@ -159,7 +160,7 @@ public class GloveParam implements Serializable {
             return this;
         }
 
-        public Builder coOccurrenceCounts(Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+        public Builder coOccurrenceCounts(Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
             this.coOccurrenceCounts = coOccurrenceCounts;
             return this;
         }

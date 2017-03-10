@@ -21,13 +21,16 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public abstract class BaseTextVectorizer implements TextVectorizer {
-    @Setter protected transient TokenizerFactory tokenizerFactory;
+    @Setter
+    protected transient TokenizerFactory tokenizerFactory;
     protected transient LabelAwareIterator iterator;
     protected int minWordFrequency;
-    @Getter protected VocabCache<VocabWord> vocabCache;
+    @Getter
+    protected VocabCache<VocabWord> vocabCache;
     protected LabelsSource labelsSource;
     protected Collection<String> stopWords = new ArrayList<>();
-    @Getter protected transient InvertedIndex<VocabWord> index;
+    @Getter
+    protected transient InvertedIndex<VocabWord> index;
     protected boolean isParallel = true;
 
     protected LabelsSource getLabelsSource() {
@@ -35,22 +38,18 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     }
 
     public void buildVocab() {
-        if (vocabCache == null) vocabCache = new AbstractCache.Builder<VocabWord>().build();
+        if (vocabCache == null)
+            vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(this.iterator)
-                .tokenizerFactory(tokenizerFactory)
-                .build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(this.iterator)
+                        .tokenizerFactory(tokenizerFactory).build();
 
-        AbstractSequenceIterator<VocabWord> iterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(iterator, minWordFrequency)
-                .setTargetVocabCache(vocabCache).setStopWords(stopWords)
-                .allowParallelTokenization(isParallel)
-                .build();
+                        .addSource(iterator, minWordFrequency).setTargetVocabCache(vocabCache).setStopWords(stopWords)
+                        .allowParallelTokenization(isParallel).build();
 
         constructor.buildJointVocabulary(false, true);
     }

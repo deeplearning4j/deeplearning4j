@@ -24,23 +24,26 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerMultiDataSetFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, R> {
+public class ExecuteWorkerMultiDataSetFlatMap<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, R> {
 
     public ExecuteWorkerMultiDataSetFlatMap(TrainingWorker<R> worker) {
         super(new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker));
     }
 }
 
+
 /**
  * A FlatMapFunction for executing training on MultiDataSets. Used only in SparkComputationGraph implementation.
  *
  * @author Alex Black
  */
-class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> {
+class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> {
 
     private final TrainingWorker<R> worker;
 
-    public ExecuteWorkerMultiDataSetFlatMapAdapter(TrainingWorker<R> worker){
+    public ExecuteWorkerMultiDataSetFlatMapAdapter(TrainingWorker<R> worker) {
         this.worker = worker;
     }
 
@@ -50,40 +53,48 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult> implemen
 
         boolean stats = dataConfig.isCollectTrainingStats();
         StatsCalculationHelper s = (stats ? new StatsCalculationHelper() : null);
-        if(stats) s.logMethodStartTime();
+        if (stats)
+            s.logMethodStartTime();
 
-        if(!dataSetIterator.hasNext()){
-            if(stats) s.logReturnTime();
+        if (!dataSetIterator.hasNext()) {
+            if (stats)
+                s.logReturnTime();
             //TODO return the results...
-            return Collections.emptyList();  //Sometimes: no data
+            return Collections.emptyList(); //Sometimes: no data
         }
 
         int batchSize = dataConfig.getBatchSizePerWorker();
         final int prefetchCount = dataConfig.getPrefetchNumBatches();
 
         MultiDataSetIterator batchedIterator = new IteratorMultiDataSetIterator(dataSetIterator, batchSize);
-        if(prefetchCount > 0){
+        if (prefetchCount > 0) {
             batchedIterator = new AsyncMultiDataSetIterator(batchedIterator, prefetchCount);
         }
 
         try {
-            if(stats) s.logInitialModelBefore();
+            if (stats)
+                s.logInitialModelBefore();
             ComputationGraph net = worker.getInitialModelGraph();
-            if(stats) s.logInitialModelAfter();
+            if (stats)
+                s.logInitialModelAfter();
 
             int miniBatchCount = 0;
-            int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
+            int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker()
+                            : Integer.MAX_VALUE);
 
             while (batchedIterator.hasNext() && miniBatchCount++ < maxMinibatches) {
-                if(stats) s.logNextDataSetBefore();
+                if (stats)
+                    s.logNextDataSetBefore();
                 MultiDataSet next = batchedIterator.next();
-                if(stats) s.logNextDataSetAfter(next.getFeatures(0).size(0));
+                if (stats)
+                    s.logNextDataSetAfter(next.getFeatures(0).size(0));
 
-                if(stats){
+                if (stats) {
                     s.logProcessMinibatchBefore();
-                    Pair<R,SparkTrainingStats> result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
+                    Pair<R, SparkTrainingStats> result =
+                                    worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
                     s.logProcessMinibatchAfter();
-                    if(result != null){
+                    if (result != null) {
                         //Terminate training immediately
                         s.logReturnTime();
                         SparkTrainingStats workerStats = result.getSecond();
@@ -94,7 +105,7 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult> implemen
                     }
                 } else {
                     R result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
-                    if(result != null){
+                    if (result != null) {
                         //Terminate training immediately
                         return Collections.singletonList(result);
                     }
@@ -102,9 +113,9 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult> implemen
             }
 
             //For some reason, we didn't return already. Normally this shouldn't happen
-            if(stats){
+            if (stats) {
                 s.logReturnTime();
-                Pair<R,SparkTrainingStats> pair = worker.getFinalResultWithStats(net);
+                Pair<R, SparkTrainingStats> pair = worker.getFinalResultWithStats(net);
                 pair.getFirst().setStats(s.build(pair.getSecond()));
                 return Collections.singletonList(pair.getFirst());
             } else {
@@ -112,12 +123,12 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult> implemen
             }
         } finally {
             //Make sure we shut down the async thread properly...
-            if(batchedIterator instanceof AsyncMultiDataSetIterator){
-                ((AsyncMultiDataSetIterator)batchedIterator).shutdown();
+            if (batchedIterator instanceof AsyncMultiDataSetIterator) {
+                ((AsyncMultiDataSetIterator) batchedIterator).shutdown();
             }
 
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
     }
 }
