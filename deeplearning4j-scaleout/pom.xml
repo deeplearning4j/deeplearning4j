@@ -37,6 +37,12 @@
         <module>deeplearning4j-scaleout-parallelwrapper-parameter-server</module>
     </modules>
 
+    <properties>
+        <spark.major.version>1</spark.major.version>
+        <spark.version>1.6.2</spark.version>
+        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
+    </properties>
+
     <profiles>
         <profile>
             <id>test-nd4j-native</id>
