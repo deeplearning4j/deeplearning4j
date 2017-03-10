@@ -94,8 +94,12 @@ public class ModelSerializer {
         // Save parameters as binary
         ZipEntry coefficients = new ZipEntry("coefficients.bin");
         zipfile.putNextEntry(coefficients);
-        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
+        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
+        try {
             Nd4j.write(model.params(), dos);
+        } finally {
+            dos.flush();
+            if(!saveUpdater) dos.close();
         }
 
         if (saveUpdater) {
@@ -110,8 +114,11 @@ public class ModelSerializer {
                 ZipEntry updater = new ZipEntry(UPDATER_BIN);
                 zipfile.putNextEntry(updater);
 
-                try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
+                try {
                     Nd4j.write(updaterState, dos);
+                } finally {
+                    dos.flush();
+                    dos.close();
                 }
             }
         }
