@@ -38,6 +38,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                     + Arrays.toString(epsilon.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
         // add singleton fourth dimension to input and next layer's epsilon
+        INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
@@ -46,7 +47,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         INDArray epsNext = gradientEpsNext.getSecond();
 
         // remove singleton fourth dimension from input and current epsilon
-        input = input.reshape(input.size(0), input.size(1), input.size(2));
+        input = origInput;
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
 
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
@@ -59,13 +60,14 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                     + Arrays.toString(input.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
         // add singleton fourth dimension to input
+        INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
         INDArray acts = super.activate(training);
 
         // remove singleton fourth dimension from input and output activations
-        input = input.reshape(input.size(0), input.size(1), input.size(2));
+        input = origInput;
         acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
 
         return acts;

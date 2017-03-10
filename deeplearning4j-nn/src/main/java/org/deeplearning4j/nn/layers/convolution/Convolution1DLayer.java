@@ -45,6 +45,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         // add singleton fourth dimension to input and next layer's epsilon
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+        INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's backpropGradient method
@@ -53,7 +54,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         // remove singleton fourth dimension from input and current epsilon
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
-        input = input.reshape(input.size(0), input.size(1), input.size(2));
+        input = origInput;
 
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
     }
@@ -70,8 +71,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
         // in a call to this function. Thus, this function will sometimes be called
         // with a rank 4 input with singleton fourth dimension. Thus, we need to
         // check for that.
+        INDArray origInput = input;
         if(input.rank() == 3) {
-            // add singleton fourth dimension to input
+            // add singleton fourth dimension to input if necessary
             input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
         } else if(input.rank() != 4 || input.size(3) != 1)
             throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Convolution1DLayer with shape "
@@ -80,8 +82,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
         // call 2D ConvolutionLayer's activate method
         INDArray preOutput = super.preOutput(training);
 
-        // remove singleton fourth dimension from input and output activations
-        input = input.reshape(input.size(0), input.size(1), input.size(2));
+        // remove singleton fourth dimension from output activations
+        input = origInput;
         preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
 
         return preOutput;
