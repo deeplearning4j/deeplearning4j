@@ -45,7 +45,6 @@ public class TestJson {
 
     @Test
     public void testMultiLayerSpaceJson() {
-
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
@@ -58,7 +57,7 @@ public class TestJson {
                         .activation(new DiscreteParameterSpace<>("relu","softplus","leakyrelu"))
                         .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
                 .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
                         .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .iLossFunction(LossFunctions.LossFunction.MCXENT.getILossFunction()).build())

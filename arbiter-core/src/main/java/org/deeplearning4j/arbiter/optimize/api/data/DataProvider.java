@@ -17,6 +17,12 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.data;
 
+import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 import java.io.Serializable;
 import java.util.Map;
 
@@ -25,10 +31,17 @@ import java.util.Map;
  *
  * @param <D> Type of the data to be used when learning
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
+        @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
+})
 public interface DataProvider<D> extends Serializable {
 
     /**
-     * Get training data given some parameters for the data. Data parameters map is used to specify things like batch
+     * Get training data given some parameters for the data.
+     * Data parameters map is used to specify things like batch
      * size data preprocessing
      *
      * @param dataParameters Parameters for data. May be null or empty for default data
