@@ -1,10 +1,10 @@
 package org.nd4j.reflectionloader;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.nd4j.reflectionloader.testclasses.TestInterface1;
 import org.nd4j.reflectionloader.testclasses.TestInterface2;
 import org.nd4j.reflectionloader.testclasses.TestInterfaceImpl1;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 
