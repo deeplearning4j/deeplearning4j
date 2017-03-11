@@ -36,51 +36,47 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 public class LeakyReLU extends BaseTransformOp {
-    private double alpha = 0.01;
+    public static final double DEFAULT_ALPHA = 0.01;
+    private double alpha = DEFAULT_ALPHA;
 
     public LeakyReLU() {
-        alpha = 0.01;
-        this.extraArgs = new Object[] {alpha};
+        super();
     }
 
     public LeakyReLU(INDArray x, double alpha) {
         super(x);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
-
+        init(x,y,z,n);  //Need to re-init to properly set alpha in extra args array
     }
 
     public LeakyReLU(INDArray x, INDArray z, double alpha) {
         super(x, z);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        init(x,y,z,n);
     }
 
     public LeakyReLU(INDArray x, INDArray z, long n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        init(x,y,z,n);
     }
 
     public LeakyReLU(INDArray x, INDArray y, INDArray z, long n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        init(x,y,z,n);
     }
 
     public LeakyReLU(INDArray x, INDArray z) {
         super(x, z);
-        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray z, long n) {
         super(x, z, n);
-        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
-        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x) {

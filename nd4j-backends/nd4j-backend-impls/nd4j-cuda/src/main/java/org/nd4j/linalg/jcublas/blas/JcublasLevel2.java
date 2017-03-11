@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -60,6 +61,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         }
 
         allocator.registerAction(ctx, Y, A, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -134,6 +136,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         }
 
         allocator.registerAction(ctx, Y, A, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override

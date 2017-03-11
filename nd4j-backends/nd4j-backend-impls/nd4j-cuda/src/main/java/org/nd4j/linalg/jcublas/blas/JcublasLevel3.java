@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -80,6 +81,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
 
@@ -111,6 +113,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -139,6 +142,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -166,6 +170,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -206,6 +211,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, B, A);
+        OpExecutionerUtil.checkForAny(B);
     }
 
     @Override
@@ -238,6 +244,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -266,6 +273,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -292,6 +300,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -320,6 +329,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+        OpExecutionerUtil.checkForAny(C);
     }
 
     @Override
@@ -348,6 +358,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, B, A);
+        OpExecutionerUtil.checkForAny(B);
     }
 
     @Override
@@ -375,6 +386,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, B, A);
+        OpExecutionerUtil.checkForAny(B);
     }
 
     @Override

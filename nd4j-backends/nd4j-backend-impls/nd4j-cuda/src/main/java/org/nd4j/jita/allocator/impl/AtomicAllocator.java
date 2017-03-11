@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -589,7 +590,6 @@ public class AtomicAllocator implements Allocator {
         private int threadId;
         private int deviceId;
         private AtomicLong stopper = new AtomicLong(System.currentTimeMillis());
-        private AtomicLong lastGC = new AtomicLong(0);
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
@@ -621,15 +621,18 @@ public class AtomicAllocator implements Allocator {
                     try {
                         if (threadId == 0) {
                             // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            long ct = System.currentTimeMillis();
-                            if (useTracker.get() > ct - 3000 && lastGC.get() < ct - 200) {
-                                System.gc();
-                                lastGC.set(ct);
+                            if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
+                                long ct = System.currentTimeMillis();
+                                if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
+                                    Nd4j.getMemoryManager().invokeGc();
+                                } else {
+                                    LockSupport.parkNanos(50000L);
+                                }
                             } else {
-                                Thread.sleep(50);
+                                LockSupport.parkNanos(50000L);
                             }
                         } else
-                            Thread.sleep(50);
+                            LockSupport.parkNanos(500000L);
                     } catch (Exception e) {
 
                     }
@@ -675,8 +678,8 @@ public class AtomicAllocator implements Allocator {
                 */
                 try {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 10000));
-                    if (bucketId == 0)
-                        System.gc();
+                    //if (bucketId == 0)
+                        //System.gc();
                 } catch (Exception e) {
                     // we can have interruption here, to force gc
                 }

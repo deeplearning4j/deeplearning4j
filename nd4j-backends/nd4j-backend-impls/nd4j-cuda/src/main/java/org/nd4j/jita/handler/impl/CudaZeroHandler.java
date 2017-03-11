@@ -214,7 +214,8 @@ public class CudaZeroHandler implements MemoryHandler {
                             log.warn("No available [HOST] memory, sleeping for a while...");
                             log.debug("Currently used: [" + zeroUseCounter.get() + "], allocated objects: ["
                                             + zeroAllocations.get(0) + "]");
-                            System.gc();
+
+                            Nd4j.getMemoryManager().invokeGc();
                             Thread.sleep(1000);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
@@ -304,7 +305,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setAllocationStatus(AllocationStatus.HOST);
 
-                            System.gc();
+                            Nd4j.getMemoryManager().invokeGc();
                             try {
                                 Thread.sleep(100);
                             } catch (Exception e) {
@@ -314,7 +315,8 @@ public class CudaZeroHandler implements MemoryHandler {
                     } else {
                         log.warn("Hard limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]",
                                         deviceId);
-                        System.gc();
+
+                        Nd4j.getMemoryManager().invokeGc();
                         try {
                             Thread.sleep(100);
                         } catch (Exception e) {
@@ -325,7 +327,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     log.warn("Soft limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]",
                                     deviceId);
 
-                    System.gc();
+                    Nd4j.getMemoryManager().invokeGc();
                     try {
                         Thread.sleep(100);
                     } catch (Exception e) {

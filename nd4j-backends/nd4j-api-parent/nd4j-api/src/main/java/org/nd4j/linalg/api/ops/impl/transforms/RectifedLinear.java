@@ -35,26 +35,32 @@ import org.nd4j.linalg.factory.Nd4j;
 public class RectifedLinear extends BaseTransformOp {
     private double cutoff = 0.0;
 
-    public RectifedLinear() {}
+    public RectifedLinear() {
+        this.extraArgs = new Object[] {cutoff};
+    }
 
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
+        init(x,y,z,n);  //Need to re-init to properly set cutoff in extra args array
     }
 
     public RectifedLinear(INDArray x, INDArray z, long n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, double cutoff) {
         super(x);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, INDArray z) {

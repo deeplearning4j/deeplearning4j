@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -147,5 +148,11 @@ public class CudaMemoryManager extends BasicMemoryManager {
             // both buffers are NOT compressed
             AtomicAllocator.getInstance().memcpy(dstBuffer, srcBuffer);
         }
+    }
+
+    @Override
+    public void setAutoGcWindow(int windowMillis) {
+        super.setAutoGcWindow(windowMillis);
+        CudaEnvironment.getInstance().getConfiguration().setNoGcWindowMs(windowMillis);
     }
 }

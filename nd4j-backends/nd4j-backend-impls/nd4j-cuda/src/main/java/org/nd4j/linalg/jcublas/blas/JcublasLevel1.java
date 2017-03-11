@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
@@ -498,6 +499,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, Y, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -523,6 +525,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, Y, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -537,6 +540,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+
+        OpExecutionerUtil.checkForAny(Y);
         /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
@@ -571,6 +576,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         //        cublasHandle_t handle = ctx.getHandle();
 
         ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
+
+        OpExecutionerUtil.checkForAny(Y);
 
         /*        synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
@@ -622,6 +629,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, Y, X);
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -646,6 +655,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, Y, X);
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -664,6 +675,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
 
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+
+        OpExecutionerUtil.checkForAny(Y);
 
         /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
@@ -792,6 +805,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, X);
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     @Override
@@ -815,6 +830,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
 
         allocator.registerAction(ctx, X);
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     @Override

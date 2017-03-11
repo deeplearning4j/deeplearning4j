@@ -32,4 +32,14 @@ public class CpuMemoryManager extends BasicMemoryManager {
     public void collect(INDArray... arrays) {
         super.collect(arrays);
     }
+
+    /**
+     * Nd4j-native backend doesn't use periodic GC. This method will always return false.
+     *
+     * @return
+     */
+    @Override
+    public boolean isPeriodicGcActive() {
+        return false;
+    }
 }

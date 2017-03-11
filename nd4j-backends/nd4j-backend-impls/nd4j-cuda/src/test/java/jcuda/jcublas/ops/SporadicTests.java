@@ -581,6 +581,13 @@ public class SporadicTests {
     }
 
     @Test
+    public void testAffinityManager() {
+        Nd4j.getMemoryManager().setAutoGcWindow(127);
+
+        assertEquals(127, CudaEnvironment.getInstance().getConfiguration().getNoGcWindowMs());
+    }
+
+    @Test
     public void testPrintOut() throws Exception {
         Nd4j.create(100);
 
@@ -590,6 +597,43 @@ public class SporadicTests {
         Nd4j.create(500);
 
         Nd4j.getExecutioner().printEnvironmentInformation();
+    }
+
+    @Test
+    public void testReduceX() throws Exception {
+        CudaEnvironment.getInstance().getConfiguration().setMaximumGridSize(11);
+        INDArray x = Nd4j.create(500, 500);
+        INDArray exp_0 = Nd4j.linspace(1, 500, 500);
+        INDArray exp_1 = Nd4j.create(500).assign(250.5);
+
+        x.addiRowVector(Nd4j.linspace(1, 500, 500));
+
+        assertEquals(exp_0, x.mean(0));
+        assertEquals(exp_1, x.mean(1));
+
+        assertEquals(250.5, x.meanNumber().doubleValue(), 1e-5);
+    }
+
+    @Test
+    public void testIndexReduceX() throws Exception {
+        CudaEnvironment.getInstance().getConfiguration().setMaximumGridSize(11);
+        INDArray x = Nd4j.create(500, 500);
+        INDArray exp_0 = Nd4j.create(500).assign(0);
+        INDArray exp_1 = Nd4j.create(500).assign(499);
+
+        x.addiRowVector(Nd4j.linspace(1, 500, 500));
+
+        assertEquals(exp_0, Nd4j.argMax(x, 0));
+        assertEquals(exp_1, Nd4j.argMax(x, 1));
+    }
+
+    @Test
+    public void testInf() {
+        INDArray x = Nd4j.create(10).assign(0.0);
+
+        x.muli(0.0);
+
+        log.error("X: {}", x);
     }
 
     public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
@@ -608,7 +652,4 @@ public class SporadicTests {
         DataSet ret =  new DataSet(Nd4j.vstack(inp.toArray(new INDArray[0])), Nd4j.vstack(lab.toArray(new INDArray[0])));
         return ret;
     }
-
-
-
 }
