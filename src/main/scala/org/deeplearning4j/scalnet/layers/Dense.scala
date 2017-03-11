@@ -30,7 +30,7 @@ import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer
 class Dense(
     nOut: Int,
     nIn: Int = 0,
-    val weightInit: WeightInit = WeightInit.VI,
+    val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
     val activation: String = "identity",
     val regularizer: WeightRegularizer = NoRegularizer(),
     val dropOut: Double = 0.0,
