@@ -11,6 +11,7 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -171,6 +172,8 @@ public class ParallelWrapper implements AutoCloseable {
                         throw new RuntimeException(e);
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
 
                 /*
                     average model, and propagate it to whole
@@ -343,6 +346,11 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 zoo[cnt] = new Trainer(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+                // if if we're using MQ here - we'd like
+                if (isMQ)
+                    Nd4j.getAffinityManager().attachThreadToDevice(zoo[cnt], cnt % Nd4j.getAffinityManager().getNumberOfDevices());
+
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -395,6 +403,8 @@ public class ParallelWrapper implements AutoCloseable {
                         throw new RuntimeException(e);
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
 
                 /*
                     average model, and propagate it to whole
@@ -617,17 +627,18 @@ public class ParallelWrapper implements AutoCloseable {
             this.setName("ParallelWrapper trainer " + threadId);
 
             this.originalModel = model;
-            if (rootDevice != threadId) {
-                if (model instanceof MultiLayerNetwork) {
+            //if (rootDevice != threadId) {
+                /*if (model instanceof MultiLayerNetwork) {
                     this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
                 } else if (model instanceof ComputationGraph) {
                     this.replicatedModel = ((ComputationGraph) model).clone();
                 }
-            } else {
+                */
+            /*} else {
                 this.onRootModel = true;
                 this.replicatedModel = model;
-            }
+            }*/
         }
 
         public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
@@ -703,8 +714,8 @@ public class ParallelWrapper implements AutoCloseable {
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
                     if (!onRootModel) {
-                        MultiLayerConfiguration conf =
-                                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().clone();
+                        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
+
                         this.replicatedModel = new MultiLayerNetwork(conf);
 
                         ((MultiLayerNetwork) replicatedModel).init();
@@ -728,8 +739,8 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 } else if (originalModel instanceof ComputationGraph) {
                     if (!onRootModel) {
-                        this.replicatedModel = new ComputationGraph(
-                                        ((ComputationGraph) originalModel).getConfiguration().clone());
+                        this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
+
 
                         ((ComputationGraph) this.replicatedModel).init();
                         Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
@@ -757,6 +768,10 @@ public class ParallelWrapper implements AutoCloseable {
                     while (!shouldStop.get()) {
                         DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
+
+                            //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
+                            //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
+
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                             } else if (replicatedModel instanceof ComputationGraph) {
