@@ -1,9 +1,9 @@
 package org.nd4j.reflectionloader;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleAbstractTypeResolver;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.module.SimpleAbstractTypeResolver;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.Reflections;
 
 import java.io.IOException;
