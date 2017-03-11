@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +21,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PerformanceListener implements IterationListener {
     private final int frequency;
     private static final Logger logger = LoggerFactory.getLogger(PerformanceListener.class);
-    private double samplesPerSec = 0.0f;
-    private double batchesPerSec = 0.0f;
-    private long lastTime;
-    private AtomicLong iterationCount = new AtomicLong(0);
+    private ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
+    private ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
+    private ThreadLocal<Long> lastTime = new ThreadLocal<>();
+    private ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
 
     private boolean reportScore;
     private boolean reportSample = true;
@@ -40,7 +41,6 @@ public class PerformanceListener implements IterationListener {
     public PerformanceListener(int frequency, boolean reportScore) {
         this.frequency = frequency;
         this.reportScore = reportScore;
-        this.lastTime = System.currentTimeMillis();
     }
 
     @Override
@@ -57,12 +57,22 @@ public class PerformanceListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         // we update lastTime on every iteration
         // just to simplify things
+        if (lastTime.get() == null)
+            lastTime.set(System.currentTimeMillis());
 
+        if (samplesPerSec.get() == null)
+            samplesPerSec.set(0.0);
 
-        if (iterationCount.getAndIncrement() % frequency == 0) {
+        if (batchesPerSec.get() == null)
+            batchesPerSec.set(0.0);
+
+        if (iterationCount.get() == null)
+            iterationCount.set(new AtomicLong(0));
+
+        if (iterationCount.get().getAndIncrement() % frequency == 0) {
             long currentTime = System.currentTimeMillis();
 
-            long timeSpent = currentTime - lastTime;
+            long timeSpent = currentTime - lastTime.get();
             float timeSec = timeSpent / 1000f;
 
             INDArray input;
@@ -83,23 +93,26 @@ public class PerformanceListener implements IterationListener {
 
             long numSamples = input.lengthLong() / tadLength;
 
-            samplesPerSec = numSamples / timeSec;
-            batchesPerSec = 1 / timeSec;
+            samplesPerSec.set((double) (numSamples / timeSec));
+            batchesPerSec.set((double) (1 / timeSec));
 
 
             StringBuilder builder = new StringBuilder();
 
+            if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
+                builder.append("Device: [").append(Nd4j.getAffinityManager().getDeviceForCurrentThread()).append("]; ");
+
             if (reportIteration)
-                builder.append("iteration ").append(iterationCount.get()).append("; ");
+                builder.append("iteration ").append(iterationCount.get().get()).append("; ");
 
             if (reportTime)
                 builder.append("iteration time: ").append(timeSpent).append(" ms; ");
 
             if (reportSample)
-                builder.append("samples/sec: ").append(String.format("%.3f", samplesPerSec)).append("; ");
+                builder.append("samples/sec: ").append(String.format("%.3f", samplesPerSec.get())).append("; ");
 
             if (reportBatch)
-                builder.append("batches/sec: ").append(String.format("%.3f", batchesPerSec)).append("; ");
+                builder.append("batches/sec: ").append(String.format("%.3f", batchesPerSec.get())).append("; ");
 
             if (reportScore)
                 builder.append("score: ").append(model.score()).append(";");
@@ -108,7 +121,7 @@ public class PerformanceListener implements IterationListener {
             logger.info(builder.toString());
         }
 
-        lastTime = System.currentTimeMillis();
+        lastTime.set(System.currentTimeMillis());
     }
 
     public static class Builder {
