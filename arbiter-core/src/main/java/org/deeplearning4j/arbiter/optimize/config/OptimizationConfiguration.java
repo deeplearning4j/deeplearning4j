@@ -19,6 +19,7 @@
 package org.deeplearning4j.arbiter.optimize.config;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
@@ -26,21 +27,29 @@ import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
+import org.nd4j.reflectionloader.JacksonReflectionLoader;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * OptimizationConfiguration ties together all of the various components (such as data, score functions, result saving etc)
+ * OptimizationConfiguration ties together all of the various
+ * components (such as data, score functions, result saving etc)
  * required to execute hyperparameter optimization.
  *
- * @param <T> Type of candidates
- * @param <M> Type of model returned
- * @param <D> Type of data
+ * @param <T> Type of candidates usually a {@link DL4JConfiguration }
+ * @param <M> Type of model returned usually a MultiLayerNetwork or ComputationGraph
+ * @param <D> Type of data usually a DataSetIterator
+ * @param <A> The Result class )usually something like {@link org.deeplearning4j.eval.Evaluation}
+ *
  * @author Alex Black
  */
 @Data
+@NoArgsConstructor
 public class OptimizationConfiguration<T, M, D, A> {
 
     private DataProvider<D> dataProvider;
@@ -49,6 +58,16 @@ public class OptimizationConfiguration<T, M, D, A> {
     private ScoreFunction<M, D> scoreFunction;
     private List<TerminationCondition> terminationConditions;
     private Long rngSeed;
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
+    
+    static {
+        List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
+        jsonMapper = JacksonReflectionLoader.findTypesFor(classes);
+        yamlMapper = JacksonReflectionLoader.findTypesFor(classes,false);
+
+    }
+    
 
     private OptimizationConfiguration(Builder<T, M, D, A> builder) {
         this.dataProvider = builder.dataProvider;
@@ -106,10 +125,54 @@ public class OptimizationConfiguration<T, M, D, A> {
         }
 
         public OptimizationConfiguration<T, M, D, A> build() {
-            return new OptimizationConfiguration<T, M, D, A>(this);
+            return new OptimizationConfiguration<>(this);
         }
     }
 
+
+    /**
+     * Create an optimization configuration from the json
+     * @param json the json to create the config from
+     * @param tCLazz the type of candidates class
+     * @param mClazz the model return type class
+     * @param dCLazz the type of data class
+     * @param aClazz the result type
+     *  For type definitions
+     *  @see OptimizationConfiguration
+     * @return
+     */
+    public static <T,M,D,A> OptimizationConfiguration<T,M,D,A> fromYaml(String json,Class<T> tCLazz,Class<M> mClazz,Class<D> dCLazz,Class<A> aClazz) {
+        try {
+            return jsonMapper.readValue(json,
+                    jsonMapper.getTypeFactory()
+                            .constructParametrizedType(OptimizationConfiguration.class,
+                                    OptimizationConfiguration.class,tCLazz,mClazz,dCLazz,aClazz));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create an optimization configuration from the json
+     * @param json the json to create the config from
+     * @param tCLazz the type of candidates class
+     * @param mClazz the model return type class
+     * @param dCLazz the type of data class
+     * @param aClazz the result type
+     *  For type definitions
+     *  @see OptimizationConfiguration
+     * @return
+     */
+    public static <T,M,D,A> OptimizationConfiguration<T,M,D,A> fromJson(String json,Class<T> tCLazz,Class<M> mClazz,Class<D> dCLazz,Class<A> aClazz) {
+        try {
+            return jsonMapper.readValue(json,
+                    jsonMapper.getTypeFactory()
+                            .constructParametrizedType(OptimizationConfiguration.class,
+                                    OptimizationConfiguration.class,tCLazz,mClazz,dCLazz,aClazz));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Return a json configuration of this optimization configuration
@@ -118,7 +181,7 @@ public class OptimizationConfiguration<T, M, D, A> {
      */
     public String toJson() {
         try {
-            return JsonMapper.getMapper().writeValueAsString(this);
+            return jsonMapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -131,7 +194,7 @@ public class OptimizationConfiguration<T, M, D, A> {
      */
     public String toYaml() {
         try {
-            return YamlMapper.getMapper().writeValueAsString(this);
+            return yamlMapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

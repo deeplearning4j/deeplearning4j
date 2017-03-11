@@ -107,7 +107,8 @@ public class TestGraphLocalExecution {
                 .build();
 
         IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
-                = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
+                = new LocalOptimizationRunner<>(configuration,
+                new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
         ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
@@ -120,7 +121,6 @@ public class TestGraphLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                 .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150,150),true))
@@ -136,7 +136,7 @@ public class TestGraphLocalExecution {
                 .iterations(1)
                 .addInputs("in").setInputTypes(InputType.feedForward(4))
                 .addLayer("first", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
                         .build(), "in")   //1-2 identical layers (except nIn)
                 .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
@@ -167,6 +167,7 @@ public class TestGraphLocalExecution {
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
+
 
         IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));

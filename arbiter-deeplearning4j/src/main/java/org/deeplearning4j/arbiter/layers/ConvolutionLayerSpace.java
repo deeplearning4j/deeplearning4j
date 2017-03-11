@@ -76,7 +76,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (convolutionType != null) builder.convolutionType(convolutionType.getValue(values));
         if (kernelSize != null) builder.kernelSize(kernelSize.getValue(values));
         if (stride != null) builder.stride(stride.getValue(values));
         if (padding != null) builder.padding(padding.getValue(values));

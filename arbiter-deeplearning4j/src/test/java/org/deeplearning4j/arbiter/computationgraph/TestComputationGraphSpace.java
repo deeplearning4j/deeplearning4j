@@ -114,10 +114,10 @@ public class TestComputationGraphSpace {
 
         Random r = new Random(12345);
 
-        for( int i=0; i<50; i++ ){
+        for(int i = 0; i < 50; i++) {
 
             double[] rvs = new double[nParams];
-            for( int j=0; j<rvs.length; j++ ) rvs[j] = r.nextDouble();
+            for( int j = 0; j < rvs.length; j++ ) rvs[j] = r.nextDouble();
 
 
             ComputationGraphConfiguration conf = mls.getValue(rvs).getConfiguration();
@@ -136,7 +136,7 @@ public class TestComputationGraphSpace {
                 double l2 = layerConf.getLayer().getL2();
                 assertTrue( l2 >= 0.2 && l2 <= 0.5);
 
-                if(j == nLayers-1){ //Output layer
+                if(j == nLayers - 1) { //Output layer
                     assertEquals("softmax",layerConf.getLayer().getActivationFn().toString());
                 } else {
                     String actFn = layerConf.getLayer().getActivationFn().toString();

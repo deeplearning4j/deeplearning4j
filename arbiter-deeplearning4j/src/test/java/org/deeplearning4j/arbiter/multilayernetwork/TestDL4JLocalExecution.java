@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
@@ -60,9 +61,9 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class TestDL4JLocalExecution {
 
-    private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
 
     @Test
     @org.junit.Ignore
@@ -175,7 +176,6 @@ public class TestDL4JLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-
         EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                 .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
@@ -238,7 +238,7 @@ public class TestDL4JLocalExecution {
     }
 
 
-    public static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
+    public static class IrisDataSetProvider implements DataProvider<DataSetIterator> {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {

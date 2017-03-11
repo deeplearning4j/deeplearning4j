@@ -23,7 +23,8 @@ import org.deeplearning4j.ui.components.text.ComponentText;
 
 /**
  * Listener designed to report status to Arbiter UI - used for ComputationGraphs
- * Combines listener functionality for both early stopping AND iteration listeners
+ * Combines listener functionality for both early
+ * stopping AND iteration listeners
  */
 public class UIGraphStatusReportingListener extends BaseUIStatusReportingListener<ComputationGraph> {
 
