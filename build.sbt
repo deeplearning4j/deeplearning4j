@@ -13,7 +13,7 @@ lazy val root = (project in file(".")).settings(
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
     "org.nd4j" % "nd4j-native" % nd4jVersion.value % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test,
-    "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
+    "ch.qos.logback" % "logback-classic" % "1.2.1" % Test,
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test,
     "org.scalanlp" %% "breeze" % "0.12" % Test,
     "com.github.julien-truffaut" %% "monocle-core" % "1.2.0" % Test
@@ -40,7 +40,7 @@ lazy val root = (project in file(".")).settings(
         </license>
       </licenses>
       <scm>
-        <connection>scm:git@github.com:SkymindIO/deeplearning4j.git</connection>
+        <connection>scm:git://github.com:SkymindIO/deeplearning4j.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/deeplearning4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
         <tag>HEAD</tag>

@@ -304,4 +304,3 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
 
   override def lessThan(left: Float, right: Float): Boolean = left < right
 }
-
