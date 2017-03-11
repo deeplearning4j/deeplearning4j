@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.evaluator.graph;
 
+import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.eval.Evaluation;
@@ -25,6 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
+
+import java.util.Map;
 
 /**
  * A model evaluator for doing additional evaluation (classification evaluation)
@@ -41,10 +44,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
  *
  * @author Adam Gibson
  */
+@AllArgsConstructor
 public class GraphClassificationDataSetFactoryEvaluator implements ModelEvaluator<ComputationGraph, DataSetIteratorFactory, Evaluation> {
+    private Map<String,Object> factoryParams = null;
+
     @Override
     public Evaluation evaluateModel(ComputationGraph model, DataProvider<DataSetIteratorFactory> dataProvider) {
-        DataSetIterator iterator = dataProvider.testData(null).create();
+        DataSetIterator iterator = dataProvider.testData(factoryParams).create();
         Evaluation eval = new Evaluation();
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
