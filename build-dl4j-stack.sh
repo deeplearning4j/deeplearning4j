@@ -244,6 +244,12 @@ else
 fi
 pushd deeplearning4j
 maybeUpdateRepo
+if [ $DELETE_REPOS == "true" ]; then
+    # reset the working diectory to the latest version of the tracking branch
+    git remote update
+    TRACKING_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u})
+    git reset --hard $TRACKING_BRANCH
+fi
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
     checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0' $DL4J_OPTIONS $MVN_OPTS
