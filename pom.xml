@@ -22,6 +22,7 @@
     <modules>
         <module>arbiter-deeplearning4j</module>
         <module>arbiter-core</module>
+        <module>arbiter-server</module>
     </modules>
     <packaging>pom</packaging>
     <name>Arbiter</name>

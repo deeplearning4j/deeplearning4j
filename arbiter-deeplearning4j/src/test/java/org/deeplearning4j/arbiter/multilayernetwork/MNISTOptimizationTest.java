@@ -132,15 +132,15 @@ public class MNISTOptimizationTest {
     }
 
 
-    private static class MnistDataSetProvider implements DataProvider<DataSetIterator>{
+    private static class MnistDataSetProvider implements DataProvider<DataSetIterator> {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
             try{
-                if(dataParameters == null || dataParameters.isEmpty()){
+                if(dataParameters == null || dataParameters.isEmpty()) {
                     return new MnistDataSetIterator(64, 10000, false, true, true, 123);
                 }
-                if(dataParameters.containsKey("batchsize")){
+                if(dataParameters.containsKey("batchsize")) {
                     int b = (Integer)dataParameters.get("batchsize");
                     return new MnistDataSetIterator(b, 10000, false, true, true, 123);
                 }
