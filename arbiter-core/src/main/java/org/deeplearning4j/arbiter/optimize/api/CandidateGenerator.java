@@ -52,8 +52,16 @@ public interface CandidateGenerator<C> {
 
     void reportResults(OptimizationResult<C, ?, ?> result);
 
+    /**
+     *
+     * @return
+     */
     ParameterSpace<C> getParameterSpace();
 
+    /**
+     *
+     * @param rngSeed
+     */
     void setRngSeed(long rngSeed);
 
 }

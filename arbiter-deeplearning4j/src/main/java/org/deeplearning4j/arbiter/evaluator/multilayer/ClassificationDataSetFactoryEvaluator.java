@@ -17,26 +17,41 @@
  */
 package org.deeplearning4j.arbiter.evaluator.multilayer;
 
+import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
-
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
+
+import java.util.Map;
 
 /**
  * A model evaluator for doing additional evaluation (classification evaluation)
  * for a {@link MultiLayerNetwork} given a {@link DataSetIterator}
  *
- * @author Alex Black
+ * In order to construct this evaluator you need to pass in a map
+ * containing the parameters for this evaluator. You will likely be using
+ * the {@link org.deeplearning4j.arbiter.data.DataSetIteratorFactoryProvider}
+ * in which case you need to pass in a map in the constructor containing a key of value:
+ * {@link org.deeplearning4j.arbiter.data.DataSetIteratorFactoryProvider#FACTORY_KEY}
+ *  with a value of type string which contains the class name of the {@link DataSetIteratorFactory}
+ *  to use.
+ *
+ *
+ * @author Adam Gibson
  */
-public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, DataSetIterator, Evaluation> {
-    @Override
-    public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider) {
+@AllArgsConstructor
+public class ClassificationDataSetFactoryEvaluator implements ModelEvaluator<MultiLayerNetwork, DataSetIteratorFactory, Evaluation> {
+    private Map<String,Object> evalParams = null;
 
-        DataSetIterator iterator = dataProvider.testData(null);
+
+    @Override
+    public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<DataSetIteratorFactory> dataProvider) {
+        DataSetIterator iterator = dataProvider.testData(evalParams).create();
         Evaluation eval = new Evaluation();
         while (iterator.hasNext()) {
             DataSet ds = iterator.next();
