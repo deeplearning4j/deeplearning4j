@@ -63,6 +63,8 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 
   def remainderi(a : NDArray, that : INDArray) : NDArray
 
+  def remainderi(a: NDArray, that: Number): NDArray
+
   def divi(a: NDArray, that: INDArray): NDArray
 
   def rdivi(a: NDArray, that: INDArray): NDArray
@@ -127,7 +129,6 @@ trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
 
   override def remainder(a: INDArray, that: INDArray): INDArray = a.remainder(that)
 
-
   override def add(a: INDArray, that: INDArray): INDArray = a.add(that)
 
   override def div(a: INDArray, that: INDArray): INDArray = a.div(that)
@@ -151,12 +152,13 @@ trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
 
   override def remainderi(a: INDArray, that: INDArray): INDArray = a.remainderi(that)
 
+  override def remainderi(a: INDArray, that: Number): INDArray = a.remainderi(that)
+
   override def divi(a: INDArray, that: INDArray): INDArray = a.divi(that)
 
   override def rdivi(a: INDArray, that: INDArray): INDArray = a.rdivi(that)
 
   override def remainder(a: INDArray, that: Number): INDArray = a.remainder(that)
-
 
   override def add(a: INDArray, that: Number): INDArray = a.add(that)
 
