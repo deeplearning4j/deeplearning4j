@@ -20,7 +20,7 @@ Deeplearning4j的Github代码库中有许多演示各种功能的示例。[快�
 
 ### PrintSchemasAtEachStep.java
 
-该示例主要演示架构（Schema）显示工具的功能，这些工具主要用于可视化，确保数据转换代码的运行状况符合预期。 
+该示例主要演示如何用printSchema工具来实现可视化，确保数据转换工作的进展符合预期。 
 
 * [示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
 
