@@ -3,14 +3,9 @@ package org.deeplearning4j.arbiter.scoring.graph;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
-import org.deeplearning4j.arbiter.scoring.graph.util.ScoreUtil;
-import org.deeplearning4j.eval.RegressionEvaluation;
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
 
