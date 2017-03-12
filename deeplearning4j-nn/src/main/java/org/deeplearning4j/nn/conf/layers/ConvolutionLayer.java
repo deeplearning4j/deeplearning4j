@@ -3,14 +3,16 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.LayerValidation;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -177,23 +179,316 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode Convolution mode for layer
+         */
+        @Override
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
+            this.convolutionMode = convolutionMode;
+            return this;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            super.nIn(nIn);
+            return this;
+        }
+
+        @Override
+        public Builder nOut(int nOut) {
+            super.nOut(nOut);
+            return this;
+        }
+
+        /**
+         * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         *
+         * @param cudnnAlgoMode
+         */
+        @Override
+        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
+            super.cudnnAlgoMode(cudnnAlgoMode);
+            return this;
+        }
+
+        /**
+         * Layer name assigns layer string name.
+         * Allows easier differentiation between layers.
+         *
+         * @param layerName
+         */
+        @Override
+        public Builder name(String layerName) {
+            super.name(layerName);
+            return this;
+        }
+
+        @Override
+        public Builder activation(IActivation activationFunction) {
+            super.activation(activationFunction);
+            return this;
+        }
+
+        @Override
+        public Builder activation(Activation activation) {
+            super.activation(activation);
+            return this;
+        }
+
+        /**
+         * Weight initialization scheme.
+         *
+         * @param weightInit
+         * @see WeightInit
+         */
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            super.weightInit(weightInit);
+            return this;
+        }
+
+        @Override
+        public Builder biasInit(double biasInit) {
+            super.biasInit(biasInit);
+            return this;
+        }
+
+        /**
+         * Distribution to sample initial weights from. Used in conjunction with
+         * .weightInit(WeightInit.DISTRIBUTION).
+         *
+         * @param dist
+         */
+        @Override
+        public Builder dist(Distribution dist) {
+            super.dist(dist);
+            return this;
+        }
+
+        /**
+         * Learning rate. Defaults to 1e-1
+         *
+         * @param learningRate
+         */
+        @Override
+        public Builder learningRate(double learningRate) {
+            return super.learningRate(learningRate);
+        }
+
+        /**
+         * Bias learning rate. Set this to apply a different learning rate to the bias
+         *
+         * @param biasLearningRate
+         */
+        @Override
+        public Builder biasLearningRate(double biasLearningRate) {
+            return super.biasLearningRate(biasLearningRate);
+        }
+
+        /**
+         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
+         *
+         * @param learningRateSchedule
+         */
+        @Override
+        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
+            return super.learningRateSchedule(learningRateSchedule);
+        }
+
+        /**
+         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
+         * coefficient for the bias.
+         *
+         * @param l1
+         */
+        @Override
+        public Builder l1(double l1) {
+            return super.l1(l1);
+        }
+
+        /**
+         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
+         * coefficient for the bias.
+         *
+         * @param l2
+         */
+        @Override
+        public Builder l2(double l2) {
+            return super.l2(l2);
+        }
+
+        /**
+         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
+         *
+         * @param l1Bias
+         */
+        @Override
+        public Builder l1Bias(double l1Bias) {
+            return super.l1Bias(l1Bias);
+        }
+
+        /**
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         *
+         * @param l2Bias
+         */
+        @Override
+        public Builder l2Bias(double l2Bias) {
+            return super.l2Bias(l2Bias);
+        }
+
+        /**
+         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
+         * Note that 0.0 (the default) disables dropout.
+         *
+         * @param dropOut
+         */
+        @Override
+        public Builder dropOut(double dropOut) {
+            return super.dropOut(dropOut);
+        }
+
+        /**
+         * Momentum rate.
+         *
+         * @param momentum
+         */
+        @Override
+        public Builder momentum(double momentum) {
+            return super.momentum(momentum);
+        }
+
+        /**
+         * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
+         *
+         * @param momentumAfter
+         */
+        @Override
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            return super.momentumAfter(momentumAfter);
+        }
+
+        /**
+         * Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
+         * RSMPROP for RMSProp, etc.
+         *
+         * @param updater
+         * @see Updater
+         */
+        @Override
+        public Builder updater(Updater updater) {
+            return super.updater(updater);
+        }
+
+        /**
+         * Ada delta coefficient, rho. Only applies if using .updater(Updater.ADADELTA)
+         *
+         * @param rho
+         */
+        @Override
+        public Builder rho(double rho) {
+            return super.rho(rho);
+        }
+
+        /**
+         * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         *
+         * @param rmsDecay
+         */
+        @Override
+        public Builder rmsDecay(double rmsDecay) {
+            return super.rmsDecay(rmsDecay);
+        }
+
+        /**
+         * Epsilon value for updaters: Adagrad and Adadelta. Only used if using Updater.ADAGRAD or Updater.ADADELTA
+         *
+         * @param epsilon Epsilon value to use for adagrad and adadelta
+         */
+        @Override
+        public Builder epsilon(double epsilon) {
+            return super.epsilon(epsilon);
+        }
+
+        /**
+         * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         *
+         * @param adamMeanDecay
+         */
+        @Override
+        public Builder adamMeanDecay(double adamMeanDecay) {
+             return super.adamMeanDecay(adamMeanDecay);
+        }
+
+        /**
+         * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         *
+         * @param adamVarDecay
+         */
+        @Override
+        public Builder adamVarDecay(double adamVarDecay) {
+             super.adamVarDecay(adamVarDecay);
+             return this;
+        }
+
+        /**
+         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         *
+         * @param gradientNormalization Type of normalization to use. Defaults to None.
+         * @see GradientNormalization
+         */
+        @Override
+        public Builder gradientNormalization(GradientNormalization gradientNormalization) {
+            super.gradientNormalization(gradientNormalization);
+            return this;
+        }
+
+        /**
+         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
+         * Not used otherwise.<br>
+         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
+         *
+         * @param threshold
+         */
+        @Override
+        public Builder gradientNormalizationThreshold(double threshold) {
+            super.gradientNormalizationThreshold(threshold);
+            return this;
+        }
+
+        /**
+         * Learning rate decay policy. Used to adapt learning rate based on policy.
+         *
+         * @param policy Type of policy to use. Defaults to None.
+         * @see GradientNormalization
+         */
+        @Override
+        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
+            super.learningRateDecayPolicy(policy);
+            return this;
+        }
+
+        /**
          * Size of the convolution
          * rows/columns
          * @param kernelSize the height and width of the
          *                   kernel
          * @return
          */
-        public Builder kernelSize(int... kernelSize){
+        public Builder kernelSize(int... kernelSize) {
             this.kernelSize = kernelSize;
             return this;
         }
 
-        public Builder stride(int... stride){
+        public Builder stride(int... stride) {
             this.stride = stride;
             return this;
         }
 
-        public Builder padding(int... padding){
+        public Builder padding(int... padding) {
             this.padding = padding;
             return this;
         }

@@ -18,11 +18,24 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 import java.io.Serializable;
 
 /** Interface for termination conditions to be evaluated once per epoch (i.e., once per pass of the full data set),
  *  based on a score and epoch number
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = BestScoreEpochTerminationCondition.class, name = "BestScoreEpochTerminationCondition"),
+        @JsonSubTypes.Type(value = MaxEpochsTerminationCondition.class, name = "MaxEpochsTerminationCondition"),
+        @JsonSubTypes.Type(value = MaxScoreIterationTerminationCondition.class, name = "MaxScoreIterationTerminationCondition"),
+
+})
 public interface EpochTerminationCondition extends Serializable {
 
     /** Initialize the epoch termination condition (often a no-op)*/
