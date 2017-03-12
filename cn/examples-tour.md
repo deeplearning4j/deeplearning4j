@@ -1,282 +1,277 @@
----
-title: Examples of Deelpearning4j
-layout: cn-default
----
+# DeepLearning4j示例一览
 
-# Survey of DeepLearning4j Examples
+Deeplearning4j的Github代码库中有许多演示各种功能的示例。[快速入门指南](https://deeplearning4j.org/cn/quickstart)中介绍了设置Intellij并克隆代码库的方法。本页概述其中的部分示例。
 
-Deeplearning4j's Github repository has many examples to cover its functionality. The [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
+## DataVec示例
 
-## DataVec examples
-
-Most of the examples make use of DataVec, a toolkit for preprocessing and clearning data through normalization, standardization, search and replace, column shuffles and vectorization. Reading raw data and transforming it into a DataSet object for your Neural Network is often the first step toward training that network. If you're unfamiliar with DataVec, here is a description and some links to useful examples.
+大多数示例都会用到DataVec这一工具包，对数据进行标准化、规范化、搜索替换、列的随机排序、向量化等预处理和清理操作。神经网络定型之前的第一个步骤通常是读取原始数据并将其转换为一个网络可以识别的DataSet对象。如果您还不熟悉DataVec，请参阅以下的介绍和示例链接。 
 
 ### IrisAnalysis.java
 
-This example takes the canonical Iris dataset of the flower species of the same name, whose relevant measurements are sepal length, sepal width, petal length and petal width. It builds a Spark RDD from the relatively small dataset and runs an analysis against it.
+该示例读取经典的鸢尾花数据集，这一相对较小的数据集包括几种鸢尾花的萼片长度、萼片宽度、花瓣长度和花瓣宽度数据。该示例会用鸢尾花数据集建立一个Spark RDD，然后对数据进行分析。 
 
-* [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
+* [示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
 
 ### BasicDataVecExample.java
 
-This example loads data into a Spark RDD. All DataVec transform operations use Spark RDDs. Here, we use DataVec to filter data, apply time transformations and remove columns.
+该示例将数据加载到一个Spark RDD。所有的DataVec转换操作都使用Spark RDD。该示例用DataVec来筛选数据，转换时间数据，移除不必要的列。
 
-* [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/basic/BasicDataVecExample.java)
+* [示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/basic/BasicDataVecExample.java)
 
 ### PrintSchemasAtEachStep.java
 
-This example shows the print Schema tools that are useful to visualize and to ensure that the code for the transform is behaving as expected.
+该示例主要演示如何用printSchema工具来实现可视化，确保数据转换工作的进展符合预期。 
 
-* [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
+* [示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
 
 ### JoinExample.java
 
-You may need to join datasets before passing to a neural network. You can do that in DataVec, and this example shows you how.
+有时您可能需要将多个数据集合并后再传递给神经网络。DataVec可以完成这一步骤，具体方法参见本示例。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/join/JoinExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/join/JoinExample.java)
 
 ### LogDataExample.java
 
-This is an example of parsing log data using DataVec. The obvious use cases are cybersecurity and customer relationship management.
+这是用DataVec解析日志数据的示例。相关应用案例包括网络安全和客户关系管理等。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/logdata/LogDataExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/logdata/LogDataExample.java)
 
 ### MnistImagePipelineExample.java
 
-This example is from the video below, which demonstrates the ParentPathLabelGenerator and ImagePreProcessing scaler.
+该示例来自以下的视频，主要演示了ParentPathLabelGenerator和ImagePreProcessing缩放器。 
 
 <iframe width="560" height="315" src="http://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/MnistImagePipelineExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/MnistImagePipelineExample.java)
 
 ### PreprocessNormalizerExample.java
 
-This example demonstrates preprocessing features available in DataVec.
+该示例演示了DataVec提供的多种预处理功能。
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/PreprocessNormalizerExample.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/PreprocessNormalizerExample.java)
 
 ### CSVExampleEvaluationMetaData.java
 
-DataMeta data tracking - i.e. seeing where data for each example comes from - is useful when tracking down malformed data that causes errors and other issues. This example demostrates the functionality in the RecordMetaData class.
+DataMeta数据跟踪（即明确每个样例的数据来源）可以用于找出造成错误或其他问题的格式不正确的数据。该示例演示了如何用RecordMetaData类实现这一功能。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java)
 
 -------------------
 
-## DeepLearning4J Examples
+## DeepLearning4J示例
 
-To build a neural net, you will use either `MultiLayerNetwork` or `ComputationGraph`. Both options work using a Builder interface. A few highlights from the examples are described below.
+神经网络需要用`MultiLayerNetwork`或`ComputationGraph`类来建立。此二者都依靠Builder（构建器）接口来运作。以下是一些重要的相关示例。 
 
-### MNIST dataset of handwritten digits
+### MNIST手写数字数据集
 
-MNIST is the "Hello World" of deep learning. Simple, straightforward, and focussed on image recognition, a task that Neural Networks do well.
+MNIST在深度学习领域是相当于“Hello World”的入门示例。神经网络很擅长这种简单明确、专注于图像识别的任务。 
 
 ### MLPMnistSingleLayerExample.java
 
-This is a Single Layer Perceptron for recognizing digits. Note that this pulls the images from a binary package containing the dataset, a rather special case for data ingestion.
+这是一个用于识别数字的单层感知器。请注意，该示例会从一个含有MNIST数据集的二进制包中获取图像，这属于比较特殊的数据摄取方式。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
 
 ### MLPMnistTwoLayerExample.java
 
-A two-layer perceptron for MNIST, showing there is more than one useful network for a given dataset.
+该示例是一个处理MNIST的双层感知器，证明适用于某一特定数据集的神经网络不止一种。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
 
-### Feedforward Examples
+### 前馈网络示例
 
-Data flows through feed-forward neural networks in a single pass from input via hidden layers to output.
+前馈式神经网络让数据进行一次单向传递，从输入层开始，流经隐藏层，最后到达输出层。
 
-These networks can be used for a wide range of tasks depending on they are configured. Along with image classification over MNIST data, this directory has examples demonstrating regression, classification, and anomoly detection.
+经过适当的配置，前馈网络可以用于许多不同类型的任务。除了MNIST数据的图像分类外，该目录还包括演示回归、分类和异常检测功能的示例。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
 
-### Convolutional Neural Networks
+### 卷积神经网络
 
-Convolutional Neural Networks are mainly used for image recognition, although they apply to sound and text as well.
+卷积神经网络主要用于图像识别，也可以用于处理声音和文本数据。 
 
 ### AnimalsClassification.java
 
-This example can be run using either LeNet or AlexNet.
+该示例可以用LeNet或AlexNet来运行。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
 
 ---------------
 
-# Saving and Loading Models
+# 模型保存与加载
 
-Training a network over a large volume of training data takes time. Fortunately, you can save a trained model and
-load the model for later training or inference.
+用大量数据来定型网络是需要耗费时间的。好在您可以保存已定型的模型，
+之后再重新加载，用于定型或推断。
 
 ### SaveLoadComputationGraph.java
 
-This demonstrates saving and loading a network build using the class ComputationGraph.
+该示例主要演示如何保存、加载一个用ComputationGraph类构建的网络。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving/SaveLoadComputationGraph.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving/SaveLoadComputationGraph.java)
 
 ### SaveLoadMultiLayerNetwork.java
 
-Demonstrates saving and loading a Neural Network built with the class MultiLayerNetwork.
+该示例主要演示如何保存、加载一个用MultiLayerNetwork类构建的神经网络。
 
-### Saving/loading a trained model and passing it new input
+### 保存/加载已定型的模型并输入新数据 
 
-Our video series shows code that includes saving and loading models, as well as inference.
+以下视频教程中介绍了模型保存、加载以及推断所需的代码。 
 
-[Our YouTube channel](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
+[我们的YouTube频道](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
 
 ----------
 
-# Custom Loss Functions and Layers
+# 自定义损失函数与层
 
-Do you need to add a Loss Function that is not available or prebuilt yet? Check out these examples.
+您是否需要添加一项我们暂不提供或尚未预建的损失函数？请看以下的示例。
 
 ### CustomLossExample.java
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossExample.java)
 
 ### CustomLossL1L2.java
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossL1L2.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossL1L2.java)
 
-### Custom Layer
+### 自定义层
 
-Do you need to add a layer with features that aren't available in DeepLearning4J core? This example show where to begin.
+您是否需要添加一个具有DeepLearning4J核心库中暂不包含的功能的层？该示例将介绍具体操作方法。 
 
 ### CustomLayerExample.java
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers/CustomLayerExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers/CustomLayerExample.java)
 
 -----------
 
-# Natural Language Processing
+# 自然语言处理
 
-Neural Networks for NLP? We have those, too.
+处理自然语言的神经网络？我们有。
 
-### GloVe
+### GloVe 
 
-Global Vectors for Word Representation are useful for detecting relationships between words.
+全局词向量可用于检测词语之间的关系。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/glove/GloVeExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/glove/GloVeExample.java)
 
-### Paragraph Vectors
+### 段落向量
 
-A vectorized representation of words. Described [here](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
+文字的向量化表示。相关介绍参见[此处](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 
-### Sequence Vectors
+### 序列向量
 
-One way to represent sentences is as a sequence of words.
+句子可以表示为词的序列。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/sequencevectors/SequenceVectorsTextExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/sequencevectors/SequenceVectorsTextExample.java)
 
 ### Word2Vec
 
-Described [here](https://deeplearning4j.org/word2vec.html)
+相关介绍参见[此处](https://deeplearning4j.org/cn/word2vec.html)
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
 
 -------------------------
 
-## Data Visualization
+## 数据可视化
 
-t-Distributed Stochastic Neighbor Embedding (t-SNE) is useful for data visualization. We include an example in the NLP section since word similarity visualization is a common use.
+t-分布邻域嵌入算法（t-SNE）主要用于数据的可视化。此处将其示例归入自然语言处理类别，因为词语相似度的可视化是该算法的一种常见应用。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java)
 
 ------------------------
 
-## Recurrent Neural Networks
+## 循环神经网络
 
-Recurrent Neural Networks are useful for processing time series data or other sequentially fed data like video.
+循环神经网络可用于处理时间序列数据和其他以序列形式馈入的数据，例如视频。 
 
-The examples folder for Recurrent Neural Networks has the following:
+循环神经网络的示例文件夹包括以下内容：
 
 ### BasicRNNExample.java
 
-An RNN learns a string of characters.
+学习一串字符的循环神经网络。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/basic/BasicRNNExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/basic/BasicRNNExample.java)
 
 ### GravesLSTMCharModellingExample.java
 
-Takes the complete works of Shakespeare as a sequence of characters and Trains a Neural Net to generate "Shakespeare" one character at a time.
+该示例将莎士比亚全集的内容作为字符序列读取，让神经网络学习如何逐个字符地生成“莎士比亚作品”。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)
 
 ### SingleTimestepRegressionExample.java
 
-Regression with an LSTM (Long Short Term Memory) Recurrent Neural Network.
+用LSTM（长短期记忆）循环神经网络进行回归。 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/regression/SingleTimestepRegressionExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/regression/SingleTimestepRegressionExample.java)
 
 ### AdditionRNN.java
 
-This example trains a neural network to do addition.
+该示例让神经网络学习如何做加法。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seq2seq/AdditionRNN.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seq2seq/AdditionRNN.java)
 
 ### RegressionMathFunctions.java
 
-This example trains a neural network to perform various math operations.
+该示例让神经网络学习进行各类数学运算。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/regression/RegressionMathFunctions.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/regression/RegressionMathFunctions.java)
 
 ### UCISequenceClassificationExample.java
 
-A publicly available dataset of time series data of six classes, cyclic, up-trending, etc. Example of an RNN learning to classify the time series.
+该示例演示如何让循环神经网络学习对一个公开的时间序列数据集进行分类，数据有循环、向上趋势等六种类别。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqClassification/UCISequenceClassificationExample.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqClassification/UCISequenceClassificationExample.java)
 
 ### VideoClassificationExample.java
 
-How do autonomous vehicles distinguish between a pedestrian, a stop sign and a green light? A complex neural net using Convolutional and Recurrent layers is trained on a set of training videos. The trained network is passed live onboard video and decisions based on object detection from the Neural Net determine the vehicles actions.
+自动驾驶汽车如何区分行人、停车标志和绿灯？我们需要用一系列视频来定型一个包括卷积和循环层的复合神经网络，然后让已定型的神经网络读取实时视频，进行物体检测，判定车辆的运动方式。 
 
-This example is similar, but simplified. It combines convolutional, max pooling, dense (feed forward) and recurrent (LSTM) layers to classify frames in a video.
+示例内容与此类似，但作了简化。它用包含卷积、最大池化、稠密（前馈）和循环（LSTM）层的网络来对视频中的帧进行分类。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)
 
 ### SentimentExampleIterator.java
 
-This sentiment analysis example classifies sentiment as positive or negative using word vectors and a Recurrent Neural Network.
+情感分析示例用词向量和循环神经网络来进行正面和负面情感的分类。 
 
-[Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+[示例代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 
 ---------------
 
-## Distributed Training on Spark
+## 基于Spark的分布式定型
 
-DeepLearning4j supports using a Spark Cluster for network training. Here are the examples.
+DeepLearning4j支持基于Spark集群的网络定型。以下是相关的示例。 
 
 ### MnistMLPExample.java
 
-This is an example of a Multi-Layer Perceptron training on the Mnist data set of handwritten digits.
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
+该示例用MNIST数据集的手写数字来定型多层感知器。 
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
 
 ### SparkLSTMCharacterExample.java
 
-An LSTM recurrent Network in Spark.
+基于Spark的LSTM循环网络 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/rnn/SparkLSTMCharacterExample.java)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/rnn/SparkLSTMCharacterExample.java)
 
 ---------------------
 
-## ND4J Examples
+## ND4J示例
 
-ND4J is a tensor processing library. It can be thought of as Numpy for the JVM. Neural Networks work by processing and updating MultiDimensional arrays of numeric values. In a typical Neural Net application you use DataVec to ingest and convert the data to numeric. Classes used would be RecordReader. Once you need to pass data into a Neural Network, you typically use RecordReaderDataSetIterator. RecordReaderDataSetIterator returns a DataSet object. DataSet consists of an NDArray of the input features and an NDArray of the labels.
+ND4J是一个张量处理库，相当于JVM的NumPy。神经网络的工作方式是处理并更新多维数值数组。在具体应用中，一般需要用DataVec来摄取数据并将其转换为数值形式。这一过程要用到RecordReader类。当您需要将数据输入神经网络时，通常都会使用RecordReaderDataSetIterator。RecordReaderDataSetIterator会返回一个DataSet对象。DataSet包含一个输入特征的NDArray和一个标签的NDArray。 
 
-The learning algorithms and loss functions are executed as ND4J operations.
+学习算法及损失函数作为ND4J运算执行。 
 
-### Basic ND4J examples
+### 基础ND4J示例
 
-This is a directory with examples for creating and manipulating NDArrays.
+该目录中的示例主要介绍NDArray的创建和操作方法。
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples/src/main/java/org/nd4j/examples)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples/src/main/java/org/nd4j/examples)
 
 -------------
 
-# Reinforcement Learning Examples
+# 强化学习示例
 
-Deep learning algorithms have learned to play Space Invaders and Doom using reinforcement learning. DeepLearning4J/RL4J examples of Reinforcement Learning are available here:
+采用强化学习的深度学习算法已能掌握Space Invaders和Doom两款游戏的玩法。DeepLearning4J/RL4J的强化学习示例参见此处： 
 
-[Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples)
+[示例代码](http://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples)
