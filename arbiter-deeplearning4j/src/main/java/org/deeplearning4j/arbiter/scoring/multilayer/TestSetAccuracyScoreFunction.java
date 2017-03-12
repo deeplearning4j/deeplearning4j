@@ -18,9 +18,7 @@ public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNet
     @Override
     public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
         DataSetIterator testData = dataProvider.testData(dataParameters);
-
         Evaluation evaluation = model.evaluate(testData);
-
         return evaluation.accuracy();
     }
 

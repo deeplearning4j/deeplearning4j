@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.scoring.graph;
+package org.deeplearning4j.arbiter.scoring.graph.factory;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
@@ -23,24 +23,26 @@ import org.deeplearning4j.arbiter.scoring.graph.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
 import java.util.Map;
 
 /**
- * Base class for accuracy/f1 calculations on a ComputationGraph with a MultiDataSetIterator
+ * Base class for accuracy/f1 calculations on a
+ * ComputationGraph with a DataSetIteratorFactory
  *
  * @author Alex Black
  */
-public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIteratorFactory> {
 
-    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<DataSetIteratorFactory> dataProvider, Map<String, Object> dataParameters) {
+
         if (model.getNumOutputArrays() != 1)
-            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
-
-        MultiDataSetIterator testData = dataProvider.testData(dataParameters);
+        DataSetIterator testData = dataProvider.testData(dataParameters).create();
         return ScoreUtil.getEvaluation(model,testData);
     }
 

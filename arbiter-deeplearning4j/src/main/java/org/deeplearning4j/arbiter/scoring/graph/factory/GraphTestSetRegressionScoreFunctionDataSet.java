@@ -1,4 +1,4 @@
-package org.deeplearning4j.arbiter.scoring.graph;
+package org.deeplearning4j.arbiter.scoring.graph.factory;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
@@ -7,31 +7,32 @@ import org.deeplearning4j.arbiter.scoring.graph.util.ScoreUtil;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
 import java.util.Map;
 
 /**
- * Score function for regression (including multi-label regression, and multiple output arrays) for a ComputationGraph
- * on a MultiDataSetIterator
+ * Score function for regression (including multi-label regression) for a
+ * ComputationGraph on a DataSetIteratorFactory
  *
  * @author Alex Black
  */
-public class GraphTestSetRegressionScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIteratorFactory> {
 
     private final RegressionValue regressionValue;
 
     /**
      * @param regressionValue The type of evaluation to do: MSE, MAE, RMSE, etc
      */
-    public GraphTestSetRegressionScoreFunction(RegressionValue regressionValue) {
+    public GraphTestSetRegressionScoreFunctionDataSet(RegressionValue regressionValue) {
         this.regressionValue = regressionValue;
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        MultiDataSetIterator testSet = dataProvider.testData(dataParameters);
+    public double score(ComputationGraph model, DataProvider<DataSetIteratorFactory> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testSet = dataProvider.testData(dataParameters).create();
         return ScoreUtil.score(model,testSet,regressionValue);
     }
 
@@ -42,6 +43,6 @@ public class GraphTestSetRegressionScoreFunction implements ScoreFunction<Comput
 
     @Override
     public String toString() {
-        return "GraphTestSetRegressionScoreFunction(type=" + regressionValue + ")";
+        return "GraphTestSetRegressionScoreFunctionDataSet(type=" + regressionValue + ")";
     }
 }

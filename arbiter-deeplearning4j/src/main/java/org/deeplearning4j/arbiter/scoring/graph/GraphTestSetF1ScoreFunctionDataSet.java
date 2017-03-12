@@ -25,7 +25,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.Map;
 
 /**
- * Calculate the F1 score on a DataSetIterator test set for a ComputationGraph
+ * Calculate the F1 score on a
+ * DataSetIterator test set for a ComputationGraph
  *
  * @author Alex Black
  */
