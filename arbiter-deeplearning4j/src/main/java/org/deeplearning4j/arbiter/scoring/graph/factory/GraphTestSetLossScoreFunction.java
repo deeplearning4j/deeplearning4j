@@ -15,32 +15,33 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.scoring.multilayer;
+package org.deeplearning4j.arbiter.scoring.graph.factory;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.graph.util.ScoreUtil;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIteratorFactory;
 
 import java.util.Map;
 
-public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIteratorFactory> {
 
     private final boolean average;
 
-    public TestSetLossScoreFunction() {
-        this(true);
+    public GraphTestSetLossScoreFunction() {
+        this(false);
     }
 
-    public TestSetLossScoreFunction(boolean average) {
+    public GraphTestSetLossScoreFunction(boolean average) {
         this.average = average;
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        DataSetIterator testData = dataProvider.testData(dataParameters);
+    public double score(ComputationGraph model, DataProvider<MultiDataSetIteratorFactory> dataProvider, Map<String, Object> dataParameters) {
+        MultiDataSetIterator testData = dataProvider.testData(dataParameters).create();
         return ScoreUtil.score(model,testData,average);
     }
 
@@ -51,6 +52,6 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
 
     @Override
     public String toString() {
-        return "TestSetLossScoreFunction()";
+        return "GraphTestSetLossScoreFunctionDataSet()";
     }
 }

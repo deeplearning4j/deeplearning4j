@@ -15,42 +15,40 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.scoring.graph;
+package org.deeplearning4j.arbiter.scoring.graph.factory;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.graph.util.ScoreUtil;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
+
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIteratorFactory;
 
 import java.util.Map;
 
-public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+/**
+ * Base class for accuracy/f1 calculations on a ComputationGraph with a MultiDataSetIteratorFactory
+ *
+ * @author Alex Black
+ */
+public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIteratorFactory> {
 
-    private final boolean average;
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<MultiDataSetIteratorFactory> dataProvider, Map<String, Object> dataParameters) {
+        if (model.getNumOutputArrays() != 1)
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
+                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
-    public GraphTestSetLossScoreFunction() {
-        this(false);
-    }
-
-    public GraphTestSetLossScoreFunction(boolean average) {
-        this.average = average;
-    }
-
-    @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        MultiDataSetIterator testData = dataProvider.testData(dataParameters);
-        return ScoreUtil.score(model,testData,average);
+        MultiDataSetIterator testData = dataProvider.testData(dataParameters).create();
+        return ScoreUtil.getEvaluation(model,testData);
     }
 
     @Override
     public boolean minimize() {
-        return true;
+        return false;
     }
 
     @Override
-    public String toString() {
-        return "GraphTestSetLossScoreFunctionDataSet()";
-    }
+    public abstract String toString();
 }

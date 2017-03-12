@@ -15,29 +15,29 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.scoring.graph;
+package org.deeplearning4j.arbiter.scoring.graph.factory;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
 import java.util.Map;
 
 /**
- * Calculate the F1 score on a {@link MultiDataSetIterator} test set
- * for a {@link ComputationGraph}
+ * Calculate the F1 score on a
+ * DataSetIteratorFactory test set for a ComputationGraph
  *
  * @author Alex Black
  */
-public class GraphTestSetF1ScoreFunction extends BaseGraphTestSetEvaluationScoreFunction {
+public class GraphTestSetF1ScoreFunctionDataSet extends BaseGraphTestSetEvaluationScoreFunctionDataSet {
 
     @Override
-    public String toString() {
-        return "GraphTestSetF1ScoreFunction";
+    public double score(ComputationGraph model, DataProvider<DataSetIteratorFactory> dataProvider, Map<String, Object> dataParameters) {
+        return getEvaluation(model, dataProvider, dataParameters).f1();
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        return getEvaluation(model, dataProvider, dataParameters).f1();
+    public String toString() {
+        return "GraphTestSetF1ScoreFunctionDataSet";
     }
 }
