@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  *
  */
-public class GraphTestSetLossScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIterator> {
+public class GraphTestSetLossScoreFunctionDataSet implements ScoreFunction<ComputationGraph, Object> {
 
     private final boolean average;
 
@@ -42,8 +42,8 @@ public class GraphTestSetLossScoreFunctionDataSet implements ScoreFunction<Compu
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        DataSetIterator testData = dataProvider.testData(dataParameters);
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
         return ScoreUtil.score(model,testData,average);
     }
 

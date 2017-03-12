@@ -37,7 +37,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LayerSpace contains the common Layre hyperparameters; should match {@link Layer} in terms of features
+ * LayerSpace contains the common
+ * Layer hyperparameters; should match
+ * {@link Layer} in terms of features
  *
  * @author Alex Black
  */

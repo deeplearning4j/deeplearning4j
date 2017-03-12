@@ -109,13 +109,13 @@ public class TestJson {
         //Define configuration:
 
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
-        DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
 
-        OptimizationConfiguration<GraphConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<GraphConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<GraphConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<GraphConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
-                .dataProvider(dataProvider)
+                .dataProvider(dataProvider  )
                 .scoreFunction(new TestSetLossScoreFunction())
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))

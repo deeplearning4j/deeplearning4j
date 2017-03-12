@@ -25,7 +25,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
 
-public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, Object> {
 
     private final boolean average;
 
@@ -38,8 +38,8 @@ public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationG
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        MultiDataSetIterator testData = dataProvider.testData(dataParameters);
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        MultiDataSetIterator testData = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
         return ScoreUtil.score(model,testData,average);
     }
 

@@ -10,16 +10,98 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIteratorFactory;
 
-import java.util.Map;
 
 
 /**
- * Created by agibsonccc on 3/11/17.
+ * Various utilities for functions used in arbiter.
+ *
+ * @author Adam Gibson
  */
 public class ScoreUtil {
 
+
+
+    /**
+     * Get a {@link DataSetIterator}
+     * from the given object whether it's a {@link DataSetIterator}
+     * or {@link DataSetIteratorFactory}, any other type will throw
+     * an {@link IllegalArgumentException}
+     * @param o the object to get the iterator from
+     * @return the datasetiterator from the given objects
+     */
+    public static MultiDataSetIterator getMultiIterator(Object o) {
+        if(o instanceof MultiDataSetIterator)
+            return (MultiDataSetIterator) o;
+        else if(o instanceof MultiDataSetIteratorFactory) {
+            MultiDataSetIteratorFactory factory = (MultiDataSetIteratorFactory) o;
+            return factory.create();
+        }
+
+        throw new IllegalArgumentException("Type must either be DataSetIterator or DataSetIteratorFactory");
+    }
+
+
+    /**
+     * Get a {@link DataSetIterator}
+     * from the given object whether it's a {@link DataSetIterator}
+     * or {@link DataSetIteratorFactory}, any other type will throw
+     * an {@link IllegalArgumentException}
+     * @param o the object to get the iterator from
+     * @return the datasetiterator from the given objects
+     */
+    public static DataSetIterator getIterator(Object o) {
+        if(o instanceof DataSetIterator)
+            return (DataSetIterator) o;
+        else if(o instanceof DataSetIteratorFactory) {
+            DataSetIteratorFactory factory = (DataSetIteratorFactory) o;
+            return factory.create();
+        }
+
+        throw new IllegalArgumentException("Type must either be DataSetIterator or DataSetIteratorFactory");
+    }
+
+    /**
+     *
+     * @param model
+     * @param testData
+     * @return
+     */
+    public static Evaluation getEvaluation(MultiLayerNetwork model,DataSetIterator testData) {
+        Evaluation eval = new Evaluation();
+        while (testData.hasNext()) {
+            DataSet ds = testData.next();
+            INDArray features = ds.getFeatures();
+            INDArray labels = ds.getLabels();
+
+            if (ds.hasMaskArrays()) {
+                INDArray fMask = ds.getFeaturesMaskArray();
+                INDArray lMask = ds.getLabelsMaskArray();
+
+                INDArray out = model.output(ds.getFeatures(), false, fMask, lMask);
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                if (lMask != null) {
+                    eval.evalTimeSeries(labels, out, lMask);
+                } else {
+                    eval.evalTimeSeries(labels, out);
+                }
+
+            } else {
+                INDArray out = model.output(features);
+                if (out.rank() == 3) {
+                    eval.evalTimeSeries(labels, out);
+                } else {
+                    eval.eval(labels, out);
+                }
+            }
+        }
+
+        return eval;
+    }
 
     /**
      * Get the evaluation

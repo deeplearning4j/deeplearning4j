@@ -87,7 +87,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -99,8 +99,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -141,7 +141,7 @@ public class TestDL4JLocalExecution {
                 .pretrain(false).backprop(true).build();
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
 
@@ -151,8 +151,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -200,7 +200,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2\\").getAbsolutePath();
@@ -211,8 +211,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -238,7 +238,7 @@ public class TestDL4JLocalExecution {
     }
 
 
-    public static class IrisDataSetProvider implements DataProvider<DataSetIterator> {
+    public static class IrisDataSetProvider implements DataProvider<Object> {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {

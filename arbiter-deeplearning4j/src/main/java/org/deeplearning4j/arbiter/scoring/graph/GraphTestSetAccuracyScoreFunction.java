@@ -40,7 +40,7 @@ public class GraphTestSetAccuracyScoreFunction extends BaseGraphTestSetEvaluatio
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         return getEvaluation(model, dataProvider, dataParameters).accuracy();
     }
 }
