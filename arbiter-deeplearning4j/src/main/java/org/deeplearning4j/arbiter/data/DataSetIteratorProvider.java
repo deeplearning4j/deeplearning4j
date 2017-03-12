@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class DataSetIteratorProvider implements DataProvider<DataSetIterator> {
+public class DataSetIteratorProvider implements DataProvider<Object> {
 
     private final DataSetIterator trainData;
     private final DataSetIterator testData;

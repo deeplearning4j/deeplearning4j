@@ -25,7 +25,10 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.Map;
 
-public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+/**
+ *
+ */
+public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
 
     private final boolean average;
 
@@ -38,8 +41,8 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        DataSetIterator testData = dataProvider.testData(dataParameters);
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
         return ScoreUtil.score(model,testData,average);
     }
 

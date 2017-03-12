@@ -20,10 +20,9 @@ package org.deeplearning4j.arbiter.evaluator.multilayer;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
@@ -32,40 +31,10 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  *
  * @author Alex Black
  */
-public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, DataSetIterator, Evaluation> {
+public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, Object, Evaluation> {
     @Override
-    public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider) {
-
-        DataSetIterator iterator = dataProvider.testData(null);
-        Evaluation eval = new Evaluation();
-        while (iterator.hasNext()) {
-            DataSet ds = iterator.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
-
-            if (ds.hasMaskArrays()) {
-                INDArray fMask = ds.getFeaturesMaskArray();
-                INDArray lMask = ds.getLabelsMaskArray();
-
-                INDArray out = model.output(ds.getFeatures(), false, fMask, lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    eval.evalTimeSeries(labels, out, lMask);
-                } else {
-                    eval.evalTimeSeries(labels, out);
-                }
-
-            } else {
-                INDArray out = model.output(features);
-                if (out.rank() == 3) {
-                    eval.evalTimeSeries(labels, out);
-                } else {
-                    eval.eval(labels, out);
-                }
-            }
-        }
-
-        return eval;
+    public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<Object> dataProvider) {
+        DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(null));
+        return ScoreUtil.getEvaluation(model,iterator);
     }
 }

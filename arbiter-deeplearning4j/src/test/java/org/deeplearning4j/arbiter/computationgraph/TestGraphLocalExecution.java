@@ -61,8 +61,6 @@ import java.util.concurrent.TimeUnit;
 
 public class TestGraphLocalExecution {
 
-    private static Logger log = LoggerFactory.getLogger(TestGraphLocalExecution.class);
-
     @Test
     @Ignore
     public void testLocalExecution() throws Exception {
@@ -86,7 +84,7 @@ public class TestGraphLocalExecution {
 
         //Define configuration:
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
 
@@ -96,8 +94,8 @@ public class TestGraphLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<GraphConfiguration,ComputationGraph,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))
@@ -147,7 +145,7 @@ public class TestGraphLocalExecution {
         //Define configuration:
 
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
-        DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2CG\\").getAbsolutePath();
@@ -158,8 +156,8 @@ public class TestGraphLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<GraphConfiguration,ComputationGraph,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))

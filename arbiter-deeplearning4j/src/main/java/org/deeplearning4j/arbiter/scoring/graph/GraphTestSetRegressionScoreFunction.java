@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class GraphTestSetRegressionScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public class GraphTestSetRegressionScoreFunction implements ScoreFunction<ComputationGraph, Object> {
 
     private final RegressionValue regressionValue;
 
@@ -27,8 +27,8 @@ public class GraphTestSetRegressionScoreFunction implements ScoreFunction<Comput
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        MultiDataSetIterator testSet = dataProvider.testData(dataParameters);
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        MultiDataSetIterator testSet = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
         return ScoreUtil.score(model,testSet,regressionValue);
     }
 

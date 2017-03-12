@@ -40,7 +40,9 @@ import java.util.List;
 
 /**
  * Listener designed to report status to Arbiter UI
- * Combines listener functionality for both early stopping AND iteration listeners
+ * Combines listener functionality for
+ * both early stopping AND
+ * iteration listeners
  */
 public abstract class BaseUIStatusReportingListener<T extends Model> implements EarlyStoppingListener<T>, IterationListener {
 

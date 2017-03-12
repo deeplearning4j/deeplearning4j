@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
     private final RegressionValue regressionValue;
 
     /**
@@ -25,9 +25,9 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        DataSetIterator testSet = dataProvider.testData(dataParameters);
-        return ScoreUtil.score(model,testSet,regressionValue);
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
+        return ScoreUtil.score(model,testData,regressionValue);
     }
 
     @Override

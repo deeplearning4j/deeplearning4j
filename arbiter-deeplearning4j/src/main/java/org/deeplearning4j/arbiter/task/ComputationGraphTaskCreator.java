@@ -29,6 +29,7 @@ import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
@@ -45,14 +46,14 @@ import java.util.concurrent.Callable;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration, ComputationGraph, DataSetIterator, A> {
+public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration, ComputationGraph, Object, A> {
 
-    private ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator;
+    private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
 
     @Override
     public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
-            Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
-            ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction,
+            Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
+            ScoreFunction<ComputationGraph, Object> scoreFunction,
             UICandidateStatusListener statusListener) {
 
         return new GraphLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
@@ -62,15 +63,16 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
     private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
 
         private Candidate<GraphConfiguration> candidate;
-        private DataProvider<DataSetIterator> dataProvider;
-        private ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction;
-        private ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator;
+        private DataProvider<Object> dataProvider;
+        private ScoreFunction<ComputationGraph, Object> scoreFunction;
+        private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
 
         private UIGraphStatusReportingListener dl4jListener;
 
-        public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
-                                 ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction,
-                                 ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator, UICandidateStatusListener listener) {
+        public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
+                                 ScoreFunction<ComputationGraph, Object> scoreFunction,
+                                 ModelEvaluator<ComputationGraph, Object, A> modelEvaluator,
+                                 UICandidateStatusListener listener) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
@@ -88,7 +90,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             net.setListeners(dl4jListener);
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = dataProvider.trainData(candidate.getDataParameters());
+            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();

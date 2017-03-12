@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.saver.local.multilayer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
@@ -27,8 +28,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.io.*;
 import java.nio.file.Files;
@@ -39,8 +39,8 @@ import java.nio.file.Files;
  *
  * @author Alex Black
  */
+@Slf4j
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
-    private static Logger log = LoggerFactory.getLogger(LocalMultiLayerNetworkSaver.class);
     private String path;
     private File fPath;
 
