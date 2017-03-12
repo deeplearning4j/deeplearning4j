@@ -1,6 +1,5 @@
-package org.deeplearning4j.arbiter.data;
+package org.deeplearning4j.arbiter.optimize.api.data;
 
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
 import java.util.Map;
@@ -17,7 +16,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class DataSetIteratorFactoryProvider implements DataProvider<DataSetIteratorFactory> {
+public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
 
     public final static String FACTORY_KEY = "org.deeplearning4j.arbiter.data.data.factory";
 

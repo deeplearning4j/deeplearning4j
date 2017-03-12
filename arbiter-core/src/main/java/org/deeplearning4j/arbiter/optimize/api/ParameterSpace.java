@@ -21,6 +21,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -35,13 +36,14 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = ContinuousParameterSpace.class, name = "ContinuousParameterSpace"),
         @JsonSubTypes.Type(value = DiscreteParameterSpace.class, name = "DiscreteParameterSpace"),
         @JsonSubTypes.Type(value = IntegerParameterSpace.class, name = "IntegerParameterSpace"),
         @JsonSubTypes.Type(value = FixedValue.class, name = "FixedValue")
 })
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+
 public interface ParameterSpace<P> {
 
     /**
@@ -68,6 +70,7 @@ public interface ParameterSpace<P> {
     /**
      * Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpace values?)
      */
+    @JsonIgnore
     boolean isLeaf();
 
     /**

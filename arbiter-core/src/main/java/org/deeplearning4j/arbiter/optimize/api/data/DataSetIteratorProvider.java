@@ -1,6 +1,5 @@
-package org.deeplearning4j.arbiter.data;
+package org.deeplearning4j.arbiter.optimize.api.data;
 
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.Map;

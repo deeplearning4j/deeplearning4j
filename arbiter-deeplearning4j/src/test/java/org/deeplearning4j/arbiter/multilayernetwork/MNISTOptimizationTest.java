@@ -62,7 +62,6 @@ import java.util.concurrent.TimeUnit;
 public class MNISTOptimizationTest {
 
     public static void main(String[] args) throws Exception {
-
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
                 .iterationTerminationConditions(
@@ -89,7 +88,7 @@ public class MNISTOptimizationTest {
                         .activation(new DiscreteParameterSpace<>("relu","softplus","leakyrelu"))
                         .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
                 .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
                         .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())

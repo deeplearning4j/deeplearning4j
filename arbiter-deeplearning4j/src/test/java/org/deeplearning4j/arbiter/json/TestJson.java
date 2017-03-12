@@ -10,6 +10,7 @@ import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
@@ -109,7 +110,7 @@ public class TestJson {
         //Define configuration:
 
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
-        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
         OptimizationConfiguration<GraphConfiguration,MultiLayerNetwork,Object,Evaluation> configuration

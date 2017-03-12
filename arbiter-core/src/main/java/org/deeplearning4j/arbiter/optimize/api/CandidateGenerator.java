@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -48,8 +49,13 @@ public interface CandidateGenerator<C> {
     /**
      * Generate a candidate hyperparameter configuration
      */
+    @JsonIgnore
     Candidate<C> getCandidate();
 
+    /**
+     * Report results for the candidate generator.
+     * @param result
+     */
     void reportResults(OptimizationResult<C, ?, ?> result);
 
     /**

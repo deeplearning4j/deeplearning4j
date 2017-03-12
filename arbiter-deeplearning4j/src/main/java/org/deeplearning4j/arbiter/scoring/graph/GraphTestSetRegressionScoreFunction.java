@@ -10,7 +10,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import java.util.Map;
 
 /**
- * Score function for regression (including multi-label regression, and multiple output arrays) for a ComputationGraph
+ * Score function for regression (including multi-label regression,
+ * and multiple output arrays) for a ComputationGraph
  * on a MultiDataSetIterator
  *
  * @author Alex Black

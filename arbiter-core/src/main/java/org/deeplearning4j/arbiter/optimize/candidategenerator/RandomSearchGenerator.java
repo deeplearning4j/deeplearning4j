@@ -25,8 +25,10 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * RandomSearchGenerator: generates candidates at random.<br>
- * Note: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
- * when generating candidates. This allows the search to be weighted more towards certain values according to a probability
+ * Note: if a probability distribution is provided for continuous hyperparameters,
+ * this will be taken into account
+ * when generating candidates. This allows the search to be weighted more towards
+ * certain values according to a probability
  * density. For example: generate samples for learning rate according to log uniform distribution
  *
  * @param <T> Type of candidates to generate
@@ -50,11 +52,9 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public Candidate<T> getCandidate() {
-
         double[] randomValues = new double[parameterSpace.numParameters()];
         for (int i = 0; i < randomValues.length; i++) randomValues[i] = rng.nextDouble();
-
-        return new Candidate<T>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues);
+        return new Candidate<>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues);
     }
 
     @Override

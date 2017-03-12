@@ -19,11 +19,15 @@ package org.deeplearning4j.arbiter.optimize.api.termination;
 
 
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 /**
  * Global termination condition for conducting hyperparameter optimization.
  * Termination conditions are used to determine if/when the optimization should stop.
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface TerminationCondition {
 
     /**

@@ -37,7 +37,8 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
     private int index = -1;
 
     public DiscreteParameterSpace(@JsonProperty("values") P... values) {
-        this.values = Arrays.asList(values);
+        if (values != null)
+            this.values = Arrays.asList(values);
     }
 
     public DiscreteParameterSpace(Collection<P> values) {
@@ -50,7 +51,7 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     @Override
     public P getValue(double[] input) {
-        if (index == -1){
+        if (index == -1) {
             throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         }
         //Map a value in range [0,1] to one of the list of values
@@ -79,7 +80,7 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     @Override
     public void setIndices(int... indices) {
-        if (indices == null || indices.length != 1){
+        if (indices == null || indices.length != 1) {
             throw new IllegalArgumentException("Invalid index");
         }
         this.index = indices[0];

@@ -15,6 +15,8 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonTypeName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,6 +24,8 @@ import java.util.List;
 
 //public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
 @EqualsAndHashCode(callSuper = true)
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
+@JsonTypeName("MultiLayerSpace")
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Deprecated

@@ -23,6 +23,7 @@ import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.LoggingOptimizationRunnerStatusListener;
@@ -87,7 +88,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<Object> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -141,7 +142,7 @@ public class TestDL4JLocalExecution {
                 .pretrain(false).backprop(true).build();
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential);
-        DataProvider<Object> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
 
@@ -200,7 +201,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<Object> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2\\").getAbsolutePath();
@@ -238,26 +239,5 @@ public class TestDL4JLocalExecution {
     }
 
 
-    public static class IrisDataSetProvider implements DataProvider<Object> {
 
-        @Override
-        public DataSetIterator trainData(Map<String, Object> dataParameters) {
-            if(dataParameters == null || dataParameters.isEmpty()) return new IrisDataSetIterator(150,150);
-            if(dataParameters.containsKey("batchsize")){
-                int b = (Integer)dataParameters.get("batchsize");
-                return new IrisDataSetIterator(b,150);
-            }
-            return new IrisDataSetIterator(150,150);
-        }
-
-        @Override
-        public DataSetIterator testData(Map<String, Object> dataParameters) {
-            return trainData(dataParameters);
-        }
-
-        @Override
-        public String toString(){
-            return "IrisDataSetProvider()";
-        }
-    }
 }

@@ -22,6 +22,7 @@ import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
@@ -29,7 +30,7 @@ import java.util.Map;
  *
  */
 public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
-
+    @JsonProperty
     private final boolean average;
 
     public TestSetLossScoreFunction() {

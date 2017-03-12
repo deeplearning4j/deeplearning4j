@@ -17,23 +17,31 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.termination;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * Terminate hyperparameter optimization after a fixed amount of time has passed
+ * Terminate hyperparameter optimization after
+ * a fixed amount of time has passed
+ * @author Alex Black
  */
+@NoArgsConstructor
 public class MaxTimeCondition implements TerminationCondition {
 
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
-
+    @JsonProperty
     private long duration;
+    @JsonProperty
     private TimeUnit timeUnit;
+    @JsonProperty
     private long startTime;
+    @JsonProperty
     private long endTime;
 
     /**

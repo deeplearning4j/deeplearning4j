@@ -97,6 +97,12 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected int numEpochs = 1;
 
+
+    static {
+        JsonMapper.getMapper().registerSubtypes(ComputationGraphSpace.class,MultiLayerSpace.class);
+        YamlMapper.getMapper().registerSubtypes(ComputationGraphSpace.class,MultiLayerSpace.class);
+    }
+
     @SuppressWarnings("unchecked")
     protected BaseNetworkSpace(Builder builder) {
         this.useDropConnect = builder.useDropConnect;

@@ -17,12 +17,14 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.integer;
 
+import lombok.NoArgsConstructor;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.distribution.DistributionUtils;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.IntegerDistributionSerializer;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -37,7 +39,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties("index")
+@JsonIgnoreProperties({"index","min","max"})
+@NoArgsConstructor
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @JsonSerialize(using = IntegerDistributionSerializer.class)
@@ -60,6 +63,7 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
      *
      * @param distribution Distribution to use
      */
+    @JsonCreator
     public IntegerParameterSpace(@JsonProperty("distribution") IntegerDistribution distribution) {
         this.distribution = distribution;
     }
@@ -114,7 +118,7 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
         if (o == this) return true;
         if (!(o instanceof IntegerParameterSpace)) return false;
         final IntegerParameterSpace other = (IntegerParameterSpace) o;
-        if (!other.canEqual((Object) this)) return false;
+        if (!other.canEqual(this)) return false;
         if (distribution == null ? other.distribution != null : !DistributionUtils.distributionEquals(distribution, other.distribution))
             return false;
         if (this.index != other.index) return false;

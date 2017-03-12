@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator} and {@link GridSearchCandidateGenerator}
+ * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator}
+ * and {@link GridSearchCandidateGenerator}
  * are built.
  *
  * @param <T> Type of candidates to generate
