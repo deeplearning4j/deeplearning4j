@@ -110,6 +110,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             // we don't cache too big objects
 
             if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get(deviceId).get() >= MAX_GPU_CACHE) {
+                //log.info("DEVICE_{} memory purging: {} bytes; MS: {}; MT: {}", deviceId, reqMemory, MAX_GPU_ALLOCATION, MAX_GPU_CACHE);
                 super.free(point);
                 return;
             }
