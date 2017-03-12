@@ -18,19 +18,27 @@
 
 package org.deeplearning4j.earlystopping.scorecalc;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/** Given a DataSetIterator: calculate the total loss for the model on that data set.
+/**
+ *  Given a DataSetIterator: calculate
+ *  the total loss for the model on that data set.
  * Typically used to calculate the loss on a test set.
  */
+@NoArgsConstructor
 public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph> {
-
+    @JsonIgnore
     private DataSetIterator dataSetIterator;
+    @JsonIgnore
     private MultiDataSetIterator multiDataSetIterator;
+    @JsonProperty
     private boolean average;
 
     /**Calculate the score (loss function value) on a given data set (usually a test set)
