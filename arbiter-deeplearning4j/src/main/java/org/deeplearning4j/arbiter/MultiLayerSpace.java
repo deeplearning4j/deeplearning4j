@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-//public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
 @EqualsAndHashCode(callSuper = true)
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
 @JsonTypeName("MultiLayerSpace")
