@@ -5324,9 +5324,9 @@ public class Nd4j {
     /**
      * Concatneate ndarrays along a dimension
      *
-     * @param dimension the dimension to concatnte along
+     * @param dimension the dimension to concatneate along
      * @param toConcat  the ndarrays to concat
-     * @return the concatted ndarrays with an output shape of
+     * @return the merged ndarrays with an output shape of
      * the ndarray shapes save the dimension shape specified
      * which is then the sum of the sizes along that dimension
      */
