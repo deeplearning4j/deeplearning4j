@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
@@ -60,9 +61,9 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class TestDL4JLocalExecution {
 
-    private static Logger log = LoggerFactory.getLogger(TestDL4JLocalExecution.class);
 
     @Test
     @org.junit.Ignore
@@ -86,7 +87,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -98,8 +99,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -140,7 +141,7 @@ public class TestDL4JLocalExecution {
                 .pretrain(false).backprop(true).build();
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
 
@@ -150,8 +151,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -175,7 +176,6 @@ public class TestDL4JLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-
         EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                 .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
@@ -200,7 +200,7 @@ public class TestDL4JLocalExecution {
         //Define configuration:
 
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new IrisDataSetProvider();
+        DataProvider<Object> dataProvider = new IrisDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2\\").getAbsolutePath();
@@ -211,8 +211,8 @@ public class TestDL4JLocalExecution {
         f.deleteOnExit();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
@@ -238,7 +238,7 @@ public class TestDL4JLocalExecution {
     }
 
 
-    public static class IrisDataSetProvider implements DataProvider<DataSetIterator>{
+    public static class IrisDataSetProvider implements DataProvider<Object> {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {

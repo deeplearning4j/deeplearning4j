@@ -99,7 +99,7 @@ public class MNISTOptimizationTest {
 
         //Define configuration:
         CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<DataSetIterator> dataProvider = new MnistDataSetProvider();
+        DataProvider<Object> dataProvider = new MnistDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterMNISTSmall\\").getAbsolutePath();
@@ -109,8 +109,8 @@ public class MNISTOptimizationTest {
         f.mkdir();
         if(!f.exists()) throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation>()
+        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
                 .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
@@ -132,15 +132,15 @@ public class MNISTOptimizationTest {
     }
 
 
-    private static class MnistDataSetProvider implements DataProvider<DataSetIterator>{
+    private static class MnistDataSetProvider implements DataProvider<Object> {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
             try{
-                if(dataParameters == null || dataParameters.isEmpty()){
+                if(dataParameters == null || dataParameters.isEmpty()) {
                     return new MnistDataSetIterator(64, 10000, false, true, true, 123);
                 }
-                if(dataParameters.containsKey("batchsize")){
+                if(dataParameters.containsKey("batchsize")) {
                     int b = (Integer)dataParameters.get("batchsize");
                     return new MnistDataSetIterator(b, 10000, false, true, true, 123);
                 }

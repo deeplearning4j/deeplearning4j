@@ -3,6 +3,7 @@ package org.deeplearning4j.arbiter.scoring.multilayer;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -10,17 +11,16 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.Map;
 
 /**
- * Score function that calculates the F1 score on a test set for a MultiLayerNetwork
+ * Score function that calculates the F1 score
+ * on a test set for a {@link MultiLayerNetwork}
  *
  * @author Alex Black
  */
-public class TestSetF1ScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+public class TestSetF1ScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-        DataSetIterator testData = dataProvider.testData(dataParameters);
-
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
         Evaluation evaluation = model.evaluate(testData);
-
         return evaluation.f1();
     }
 

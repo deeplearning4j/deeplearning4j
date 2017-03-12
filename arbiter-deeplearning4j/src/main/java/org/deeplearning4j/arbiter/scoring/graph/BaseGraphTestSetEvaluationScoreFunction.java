@@ -19,10 +19,9 @@ package org.deeplearning4j.arbiter.scoring.graph;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
@@ -32,43 +31,15 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFunction<ComputationGraph, Object> {
 
-    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         if (model.getNumOutputArrays() != 1)
             throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
-        MultiDataSetIterator testData = dataProvider.testData(dataParameters);
-
-        Evaluation evaluation = new Evaluation();
-
-        while (testData.hasNext()) {
-            MultiDataSet next = testData.next();
-            if (next.hasMaskArrays()) {
-                INDArray[] fMask = next.getFeaturesMaskArrays();
-                INDArray[] lMask = next.getLabelsMaskArrays();
-
-                model.setLayerMaskArrays(fMask, lMask);
-
-                INDArray out = model.output(next.getFeatures())[0];
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    evaluation.evalTimeSeries(next.getLabels(0), out, lMask[0]);
-                } else {
-                    evaluation.evalTimeSeries(next.getLabels(0), out);
-                }
-
-                model.clearLayerMaskArrays();
-            } else {
-                INDArray out = model.output(false, next.getFeatures())[0];
-                if (next.getLabels(0).rank() == 3) evaluation.evalTimeSeries(next.getLabels(0), out);
-                else evaluation.eval(next.getLabels(0), out);
-            }
-        }
-
-        return evaluation;
+        MultiDataSetIterator testData = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
+        return ScoreUtil.getEvaluation(model,testData);
     }
 
     @Override

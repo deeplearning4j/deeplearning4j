@@ -24,7 +24,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import java.util.Map;
 
 /**
- * Calculate the F1 score on a MultiDataSetIterator test set for a ComputationGraph
+ * Calculate the F1 score on a {@link MultiDataSetIterator} test set
+ * for a {@link ComputationGraph}
  *
  * @author Alex Black
  */
@@ -36,7 +37,7 @@ public class GraphTestSetF1ScoreFunction extends BaseGraphTestSetEvaluationScore
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         return getEvaluation(model, dataProvider, dataParameters).f1();
     }
 }

@@ -38,7 +38,7 @@ import java.util.Map;
 public class GraphTestSetAccuracyScoreFunctionDataSet extends BaseGraphTestSetEvaluationScoreFunctionDataSet {
 
     @Override
-    public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         return getEvaluation(model, dataProvider, dataParameters).accuracy();
     }
 

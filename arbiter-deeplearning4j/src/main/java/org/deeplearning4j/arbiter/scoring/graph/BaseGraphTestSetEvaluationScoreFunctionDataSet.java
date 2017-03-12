@@ -20,6 +20,7 @@ package org.deeplearning4j.arbiter.scoring.graph;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,19 +30,20 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.Map;
 
 /**
- * Base class for accuracy/f1 calculations on a ComputationGraph with a DataSetIterator
+ * Base class for accuracy/f1 calculations on a
+ * ComputationGraph with a DataSetIterator
  *
  * @author Alex Black
  */
-public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIterator> {
+public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements ScoreFunction<ComputationGraph, Object> {
 
-    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
 
         if (model.getNumOutputArrays() != 1)
             throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
-        DataSetIterator testData = dataProvider.testData(dataParameters);
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
 
         Evaluation evaluation = new Evaluation();
 

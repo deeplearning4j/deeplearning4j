@@ -19,13 +19,13 @@ package org.deeplearning4j.arbiter.scoring.graph;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
 
-public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
+public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, Object> {
 
     private final boolean average;
 
@@ -38,23 +38,9 @@ public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationG
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-
-        MultiDataSetIterator testData = dataProvider.testData(dataParameters);
-
-        //TODO: do this properly taking into account division by N, L1/L2 etc
-        double sumScore = 0.0;
-        int totalExamples = 0;
-        while (testData.hasNext()) {
-            MultiDataSet ds = testData.next();
-            int numExamples = ds.getFeatures(0).size(0);
-
-            sumScore += numExamples * model.score(ds);
-            totalExamples += numExamples;
-        }
-
-        if (!average) return sumScore;
-        return sumScore / totalExamples;
+    public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        MultiDataSetIterator testData = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
+        return ScoreUtil.score(model,testData,average);
     }
 
     @Override

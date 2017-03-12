@@ -217,7 +217,13 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     }
 
 
-    public static ComputationGraphSpace fromJson(String json){
+    /**
+     * Instantiate a computation graph space from
+     * a raw json string
+     * @param json
+     * @return
+     */
+    public static ComputationGraphSpace fromJson(String json) {
         try {
             return JsonMapper.getMapper().readValue(json, ComputationGraphSpace.class);
         } catch (IOException e) {
@@ -225,7 +231,13 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
     }
 
-    public static ComputationGraphSpace fromYaml(String yaml){
+    /**
+     * Instantiate a computation graph space
+     * from a raw yaml string
+     * @param yaml
+     * @return
+     */
+    public static ComputationGraphSpace fromYaml(String yaml) {
         try {
             return YamlMapper.getMapper().readValue(yaml, ComputationGraphSpace.class);
         } catch (IOException e) {

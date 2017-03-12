@@ -19,13 +19,16 @@ package org.deeplearning4j.arbiter.scoring.multilayer;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.Map;
 
-public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+/**
+ *
+ */
+public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
 
     private final boolean average;
 
@@ -38,23 +41,9 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-
-        DataSetIterator testData = dataProvider.testData(dataParameters);
-
-        //TODO: do this properly taking into account division by N, L1/L2 etc
-        double sumScore = 0.0;
-        int totalExamples = 0;
-        while (testData.hasNext()) {
-            DataSet ds = testData.next();
-            int numExamples = ds.numExamples();
-
-            sumScore += numExamples * model.score(ds);
-            totalExamples += numExamples;
-        }
-
-        if (!average) return sumScore;
-        return sumScore / totalExamples;
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
+        return ScoreUtil.score(model,testData,average);
     }
 
     @Override

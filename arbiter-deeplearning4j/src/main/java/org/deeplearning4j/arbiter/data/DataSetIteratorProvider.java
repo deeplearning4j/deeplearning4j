@@ -6,7 +6,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.Map;
 
 /**
- * DataSetIteratorProvider: a simple DataProver that takes (and returns) DataSetIterators, one for the training
+ * DataSetIteratorProvider: a simple DataProver that takes (and returns)
+ * DataSetIterators, one for the training
  * data and one for the test data.
  * <p>
  * <b>NOTE</b>: This is NOT thread safe, as the underlying DataSetIterators are generally not thread safe.
@@ -15,7 +16,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class DataSetIteratorProvider implements DataProvider<DataSetIterator> {
+public class DataSetIteratorProvider implements DataProvider<Object> {
 
     private final DataSetIterator trainData;
     private final DataSetIterator testData;
