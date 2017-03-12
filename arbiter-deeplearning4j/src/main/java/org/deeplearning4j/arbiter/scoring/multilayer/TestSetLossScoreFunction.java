@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.scoring.multilayer;
 
+import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
@@ -29,6 +30,7 @@ import java.util.Map;
 /**
  *
  */
+@Data
 public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
     @JsonProperty
     private final boolean average;

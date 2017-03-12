@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.candidategenerator;
 
+import lombok.Data;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @param <T> Type of candidates to generate
  */
+@Data
 public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T> {
 
     protected ParameterSpace<T> parameterSpace;

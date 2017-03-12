@@ -18,15 +18,18 @@
 package org.deeplearning4j.arbiter.optimize.api.termination;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Terminate hyperparameter search when the total number of candidates exceeds a specified value
+ * Terminate hyperparameter search when the total number
+ * of candidates exceeds a specified value
  */
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 public class MaxCandidatesCondition implements TerminationCondition {
     @JsonProperty
     private  int maxCandidates;

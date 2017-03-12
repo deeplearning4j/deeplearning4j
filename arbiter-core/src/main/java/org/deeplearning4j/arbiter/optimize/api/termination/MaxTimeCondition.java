@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.termination;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.joda.time.DateTimeZone;
@@ -24,6 +25,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import javax.annotation.sql.DataSourceDefinitions;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +34,7 @@ import java.util.concurrent.TimeUnit;
  * @author Alex Black
  */
 @NoArgsConstructor
+@Data
 public class MaxTimeCondition implements TerminationCondition {
 
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
