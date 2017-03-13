@@ -15,6 +15,8 @@ import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
+import org.deeplearning4j.arbiter.server.cli.NeuralNetTypeValidator;
+import org.deeplearning4j.arbiter.server.cli.ProblemTypeValidator;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.eval.Evaluation;
@@ -45,16 +47,16 @@ public class ArbiterCliRunner {
     private String modelSavePath = System.getProperty("java.io.tmpdir");
     @Parameter(names = {"--optimizationConfigPath"})
     private String optimizationConfigPath = null;
-    @Parameter(names = {"--problemType"})
-    private String problemType = CLASSIFICIATION;
+    @Parameter(names = {"--problemType"},validateWith = ProblemTypeValidator.class)
+    private String problemType = CLASSIFICATION;
     @Parameter(names = {"--regressionType"})
     private String regressionType = null;
     @Parameter(names = {"--dataSetIteratorClass"},required = true)
     private String dataSetIteratorClass = null;
-    @Parameter(names = {"--neuralNetType"},required = true)
+    @Parameter(names = {"--neuralNetType"},required = true,validateWith = NeuralNetTypeValidator.class)
     private String neuralNetType = null;
 
-    public final static String CLASSIFICIATION = "classification";
+    public final static String CLASSIFICATION = "classification";
     public final static String REGRESSION = "regression";
 
 
@@ -120,7 +122,7 @@ public class ArbiterCliRunner {
             }
         }
 
-        else if(problemType.equals(CLASSIFICIATION)) {
+        else if(problemType.equals(CLASSIFICATION)) {
             if(neuralNetType.equals(COMP_GRAPH)) {
                 OptimizationConfiguration<GraphConfiguration,ComputationGraph,Object,Evaluation> configuration
                         = OptimizationConfiguration.fromJson(

@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.api.saving;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.io.IOException;
  * A simple class to store optimization results in-memory.
  * Not recommended for large (or a large number of) models.
  */
+@NoArgsConstructor
 public class InMemoryResultSaver<T, M, A> implements ResultSaver<T, M, A> {
     @Override
     public ResultReference<T, M, A> saveModel(OptimizationResult<T, M, A> result) throws IOException {

@@ -17,6 +17,8 @@
  */
 package org.deeplearning4j.arbiter.saver.local.multilayer;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -40,6 +42,8 @@ import java.nio.file.Files;
  * @author Alex Black
  */
 @Slf4j
+@NoArgsConstructor
+@AllArgsConstructor
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
     private String path;
     private File fPath;
