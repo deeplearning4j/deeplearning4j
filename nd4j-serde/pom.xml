@@ -3,12 +3,12 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-serde</artifactId>
-  <version>0.7.3-SNAPSHOT</version>
+  <version>0.8.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
         <module>nd4j-aeron</module>
@@ -17,6 +17,7 @@
         <module>nd4j-base64</module>
         <module>nd4j-camel-routes</module>
         <module>nd4j-gson</module>
+        <module>nd4j-jackson-reflectionloader</module>
     </modules>
 
 </project>
