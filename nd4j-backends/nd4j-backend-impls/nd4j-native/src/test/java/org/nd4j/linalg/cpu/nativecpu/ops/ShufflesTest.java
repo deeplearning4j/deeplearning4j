@@ -3,8 +3,11 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import static org.junit.Assert.assertEquals;
 
@@ -99,6 +102,21 @@ public class ShufflesTest {
             for (int y = 0; y < row.length(); y++ ) {
                 assertEquals(val, row.getDouble(y), 0.001);
             }
+        }
+    }
+
+    @Test
+    public void testBinomial() {
+        Distribution distribution = Nd4j.getDistributions().createBinomial(3, Nd4j.create(10).putScalar(1, 0.00001));
+
+        for (int x = 0; x < 10000; x++) {
+            INDArray z = distribution.sample(new int[]{1, 10});
+
+            System.out.println();
+
+            MatchCondition condition = new MatchCondition(z, Conditions.equals(0.0));
+            int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+            assertEquals(z.length(), match);
         }
     }
 }
