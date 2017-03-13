@@ -530,6 +530,131 @@ namespace randomOps {
                 buffer->rewindH(zLength * trials);
         }
     };
+
+
+    /**
+    * This Op produces random values within [0..N], Distribuion is binomial
+    */
+    template<typename T>
+    class BinomialDistributionEx {
+    public:
+
+
+        method_XY
+        method_X
+        method_idx
+
+        static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            int trials = (int) extraArguments[0];
+            T prob = extraArguments[1];
+
+            __shared__ Nd4jIndex zLength;
+            __shared__ int yEWS;
+            __shared__ int zEWS;
+
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
+
+                zLength = shape::length(zShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            for (Nd4jIndex e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+                int success = 0;
+                for (int t = 1; t <= trials; t++) {
+                    T randVal = buffer->relativeT<T>((e+1) * t);
+                    if (y != z) {
+                        // we're using external probs
+                        prob = y[e * yEWS];
+                    }
+
+                    if (randVal < prob)
+                        success++;
+                }
+
+                // we need this, to eliminate excessive code branching in runtime
+                __syncthreads();
+
+                // if trials is set to 0, effectively we just have successful memset
+                z[e * zEWS] = (T) success;
+            }
+
+            __syncthreads();
+            if (trials > 0)
+                devBuffer->rewind(zLength * trials);
+        }
+#endif
+
+        static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            int trials = (int) extraArguments[0];
+
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
+
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
+            int zEWS = shape::elementWiseStride(zShapeBuffer);
+
+            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            int span = (zLength / _threads) + 8;
+
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jIndex start = span * tid;
+                Nd4jIndex end = span * (tid + 1);
+                if (end > zLength) end = zLength;
+
+                T prob = extraArguments[1];
+
+                for (Nd4jIndex e = start; e < end; e++) {
+
+                    int success = 0;
+                    for (int t = 1; t <= trials; t++) {
+                        T randVal = buffer->relativeT<T>((e+1) * t);
+                        if (y != z) {
+                            // we're using external probs
+                            prob = y[e * yEWS];
+                        }
+
+                        if (randVal < prob)
+                            success++;
+                    }
+
+                    // if trials is set to 0, effectively we just have successful memset
+                    z[e * zEWS] = (T) success;
+                }
+            }
+
+            // update rng state
+            if (trials > 0)
+                buffer->rewindH(zLength * trials);
+        }
+    };
 }
 
 #endif //LIBND4J_SPECIAL_RANDOM_OPS_H
