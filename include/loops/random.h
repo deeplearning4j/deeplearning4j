@@ -14,7 +14,8 @@
         (5, randomOps::Choice) ,\
         (6, randomOps::GaussianDistribution) ,\
         (7, randomOps::BernoulliDistribution) ,\
-        (8, randomOps::BinomialDistribution)
+        (8, randomOps::BinomialDistribution),\
+        (9, randomOps::BinomialDistributionEx)
 
 
 
