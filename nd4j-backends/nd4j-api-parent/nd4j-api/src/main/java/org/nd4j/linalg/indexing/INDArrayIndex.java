@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface INDArrayIndex {
+public interface    INDArrayIndex {
     /**
      * The ending for this index
      * @return
