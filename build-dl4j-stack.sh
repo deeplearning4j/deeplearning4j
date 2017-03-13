@@ -11,6 +11,17 @@ function checkexit {
     return $status
 }
 
+function maybeUpdateRepo {
+    if [ $UPDATE_REPOS == "true" ]; then
+        # are there uncommited changes in the repo?
+        if ! (git diff-index --quiet HEAD --) then
+           echo "Some uncommited changes found in this repo! Stashing..."
+           git stash
+        fi
+        git pull
+    fi
+}
+
 # check incoming parameters
 while [[ $# -gt 1 ]]
 do
@@ -48,8 +59,9 @@ case $key in
     -s|--shallow)
     SHALLOW="YES"
     ;;
-    -d|--delete-repos)
-    DELETE_REPOS="YES"
+    -r|--repostrategy)
+    REPO_STRATEGY="$2"
+    shift # past argument
     ;;
     --testnd4j)
     TEST_ND4J="YES"
@@ -98,19 +110,19 @@ else
 fi
 
 # Report argument values
-echo BUILD        = "${BUILD}"
-echo PACKAGING    = "${PACKAGING}"
-echo CHIP         = "${CHIP}"
-echo COMPUTE      = "${COMPUTE}"
-echo NATIVE       = "${NATIVE}"
-echo LIBTYPE      = "${LIBTYPE}"
-echo SCALAV       = "${SCALAV}"
-echo SHALLOW      = "${SHALLOW}"
-echo DELETE_REPOS = "${DELETE_REPOS}"
-echo TEST_ND4J    = "${TEST_ND4J}"
-echo TEST_DATAVEC = "${TEST_DATAVEC}"
-echo TEST_DL4J    = "${TEST_DL4J}"
-echo MVN_OPTS     = "${MVN_OPTS}"
+echo BUILD         = "${BUILD}"
+echo PACKAGING     = "${PACKAGING}"
+echo CHIP          = "${CHIP}"
+echo COMPUTE       = "${COMPUTE}"
+echo NATIVE        = "${NATIVE}"
+echo LIBTYPE       = "${LIBTYPE}"
+echo SCALAV        = "${SCALAV}"
+echo SHALLOW       = "${SHALLOW}"
+echo REPO_STRATEGY = "${REPO_STRATEGY}"
+echo TEST_ND4J     = "${TEST_ND4J}"
+echo TEST_DATAVEC  = "${TEST_DATAVEC}"
+echo TEST_DL4J     = "${TEST_DL4J}"
+echo MVN_OPTS      = "${MVN_OPTS}"
 
 ###########################
 # Script execution starts #
@@ -129,6 +141,23 @@ for dirName in $JAVA_PROJECTS; do
     fi
 done
 
+# What to do with existing repos
+case $REPO_STRATEGY in
+    "delete")
+        DELETE_REPOS="true"
+        UPDATE_REPOS=""
+        ;;
+    "update")
+        UPDATE_REPOS="true"
+        DELETE_REPOS=""
+        ;;
+    *) # unknown : do nothing
+        UPDATE_REPOS=""
+        DELETE_REPOS=""
+        ;;
+esac
+
+
 # removes any existing repositories to ensure a clean build
 if ! [ -z "$DELETE_REPOS" ]; then
     PROJECTS="libnd4j nd4j datavec deeplearning4j"
@@ -142,6 +171,7 @@ if ! [ -z $DELETE_REPOS ] || ! [ -d libnd4j ]; then
     checkexit $GIT_CLONE https://github.com/deeplearning4j/libnd4j.git
 fi
 pushd libnd4j
+maybeUpdateRepo
 if [ -z "$NATIVE" ]; then
     checkexit bash buildnativeoperations.sh "$@" -a native
 else
@@ -169,6 +199,7 @@ else
     ND4J_OPTIONS=""
 fi
 pushd nd4j
+maybeUpdateRepo
 if [ "$CHIP" == "cpu" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests' $ND4J_OPTIONS $MVN_OPTS
 else
@@ -190,6 +221,7 @@ else
     fi
 fi
 pushd datavec
+maybeUpdateRepo
 if [ "$SCALAV" == "" ]; then
   checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $DATAVEC_OPTIONS $MVN_OPTS
 else
@@ -211,6 +243,13 @@ else
     fi
 fi
 pushd deeplearning4j
+maybeUpdateRepo
+if [ $DELETE_REPOS == "true" ]; then
+    # reset the working diectory to the latest version of the tracking branch
+    git remote update
+    TRACKING_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u})
+    git reset --hard $TRACKING_BRANCH
+fi
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
     checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:deeplearning4j-cuda-8.0' $DL4J_OPTIONS $MVN_OPTS
