@@ -26,7 +26,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by agibsonccc on 3/12/17.
+ *   Options:
+ *     --dataSetIteratorClass
+       --modelSavePath
+ Default: /tmp
+ *     --neuralNetType
+       --optimizationConfigPath
+       --problemType
+           Default: classification
+ --regressionType
+
+
+
+ @author Adam Gibson
  */
 public class ArbiterCliRunner {
     @Parameter(names = {"--modelSavePath"})
