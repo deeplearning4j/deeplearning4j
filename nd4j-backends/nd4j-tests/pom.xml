@@ -33,7 +33,7 @@
 
 
     <properties>
-        <scala.binary.version>2.10</scala.binary.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
     <build>
         <plugins>
