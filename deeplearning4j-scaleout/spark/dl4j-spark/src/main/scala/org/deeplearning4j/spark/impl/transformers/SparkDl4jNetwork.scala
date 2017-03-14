@@ -88,17 +88,17 @@ class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
 
     override def write : MLWriter = new SparkDl4jModelWriter(this)
 
-    object SparkDl4jNetworkModel extends MLReadable[SparkDl4jMultiLayer] {
-        override def read: MLReader[SparkDl4jMultiLayer] = new SparkDl4jReader
-        override def load(path: String): SparkDl4jMultiLayer = super.load(path)
-        private class SparkDl4jReader extends MLReader[SparkDl4jMultiLayer] {
-            override def load(path: String) : SparkDl4jMultiLayer = {
-                val mln = ModelSerializer.restoreMultiLayerNetwork(path)
-                new SparkDl4jMultiLayer(sc, mln, null)
-            }
+}
+
+object SparkDl4jModel extends MLReadable[SparkDl4jMultiLayer] {
+    override def read: MLReader[SparkDl4jMultiLayer] = new SparkDl4jReader
+    override def load(path: String): SparkDl4jMultiLayer = super.load(path)
+    private class SparkDl4jReader extends MLReader[SparkDl4jMultiLayer] {
+        override def load(path: String) : SparkDl4jMultiLayer = {
+            val mln = ModelSerializer.restoreMultiLayerNetwork(path)
+            new SparkDl4jMultiLayer(sc, mln, null)
         }
     }
-
 }
 
 trait Serializer extends Serializable {
