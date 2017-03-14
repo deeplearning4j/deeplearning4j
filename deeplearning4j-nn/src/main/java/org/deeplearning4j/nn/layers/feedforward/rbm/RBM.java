@@ -232,13 +232,11 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             }
             case BINARY: {
                 dist = Nd4j.getDistributions().createBinomial(1, hProb);
-                dist.reseedRandomGenerator(seed);
                 hSample = dist.sample(hProb.shape());
                 break;
             }
             case GAUSSIAN: {
                 dist = Nd4j.getDistributions().createNormal(hProb, 1);
-                dist.reseedRandomGenerator(seed);
                 hSample = dist.sample(hProb.shape());
                 break;
             }
@@ -285,16 +283,13 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             }
             case BINARY: {
                 Distribution dist = Nd4j.getDistributions().createBinomial(1, vProb);
-                dist.reseedRandomGenerator(seed);
                 vSample = dist.sample(vProb.shape());
                 break;
             }
             case GAUSSIAN:
             case LINEAR: {
                 Distribution dist = Nd4j.getDistributions().createNormal(vProb, 1);
-                dist.reseedRandomGenerator(seed);
                 vSample = dist.sample(vProb.shape());
-                // this also works but needs reseedRnadomGenerator applied before sampling: Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
                 break;
             }
             case SOFTMAX: {
@@ -345,7 +340,6 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 return sigmoid(preSig);
             case GAUSSIAN:
                 Distribution dist = Nd4j.getDistributions().createNormal(preSig, 1);
-                dist.reseedRandomGenerator(seed);
                 preSig = dist.sample(preSig.shape());
                 return preSig;
             case RECTIFIED:
@@ -370,7 +364,6 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                                 .execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
             case GAUSSIAN: {
                 Distribution dist = Nd4j.getDistributions().createNormal(z, 1);
-                dist.reseedRandomGenerator(seed);
                 INDArray gaussian = dist.sample(z.shape());
                 INDArray derivative = z.mul(-2).mul(gaussian);
                 return derivative;
@@ -406,7 +399,6 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 return sigmoid(vMean);
             case GAUSSIAN:
                 Distribution dist = Nd4j.getDistributions().createNormal(vMean, 1);
-                dist.reseedRandomGenerator(seed);
                 vMean = dist.sample(vMean.shape());
                 return vMean;
             case LINEAR:
