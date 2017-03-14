@@ -3,12 +3,18 @@ package org.nd4j.linalg.memory;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 /**
  *
  * @author raver119@gmail.com
  */
 public interface MemoryManager {
+
+    Nd4jWorkspace getCurrentWorkspace();
+
+    void setCurrentWorkspace(Nd4jWorkspace workspace);
 
     /**
      * PLEASE NOTE: This method is under development yet. Do not use it.

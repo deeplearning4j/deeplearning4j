@@ -3,6 +3,7 @@ package org.nd4j.linalg.memory;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -156,6 +157,17 @@ public class BasicMemoryManager implements MemoryManager {
             cnt /= intervals.size();
             return cnt;
         } else return 0;
+
+    }
+
+
+    @Override
+    public Nd4jWorkspace getCurrentWorkspace() {
+        return null;
+    }
+
+    @Override
+    public void setCurrentWorkspace(Nd4jWorkspace workspace) {
 
     }
 }
