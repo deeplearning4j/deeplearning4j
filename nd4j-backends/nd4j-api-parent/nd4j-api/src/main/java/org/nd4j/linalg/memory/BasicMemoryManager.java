@@ -2,12 +2,12 @@ package org.nd4j.linalg.memory;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,6 +32,8 @@ public class BasicMemoryManager implements MemoryManager {
     protected static final int intervalTail = 100;
 
     protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
+
+    private MemoryWorkspace workspace = null;
 
     /**
      * This method returns
@@ -160,14 +162,13 @@ public class BasicMemoryManager implements MemoryManager {
 
     }
 
-
     @Override
-    public Nd4jWorkspace getCurrentWorkspace() {
-        return null;
+    public MemoryWorkspace getCurrentWorkspace() {
+        return workspace;
     }
 
     @Override
     public void setCurrentWorkspace(MemoryWorkspace workspace) {
-
+        this.workspace = workspace;
     }
 }

@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.buffer.factory;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -423,6 +424,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(float[] data);
 
+    DataBuffer createFloat(float[] data, MemoryWorkspace workspace);
+
     /**
      * Creates an int data buffer
      *
@@ -495,6 +498,8 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createFloat(float[] data, boolean copy);
+
+    DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace);
 
     /**
      * Creates an int data buffer

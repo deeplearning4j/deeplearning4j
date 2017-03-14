@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +183,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
         underlyingLength = data.length;
     }
 
+    public BaseDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        initTypeAndSize();
+
+        pointer = workspace.alloc(data.length * getElementSize()).asFloatPointer().put(data);
+        indexer = FloatIndexer.create((FloatPointer) pointer);
+        wrappedBuffer = pointer.asByteBuffer();
+
+        length = data.length;
+        underlyingLength = data.length;
+    }
+
+
     /**
      *
      * @param data
@@ -265,6 +279,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(float[] data) {
         this(data, true);
+    }
+
+    public BaseDataBuffer(float[] data, MemoryWorkspace workspace) {
+        this(data, true, workspace);
     }
 
     /**

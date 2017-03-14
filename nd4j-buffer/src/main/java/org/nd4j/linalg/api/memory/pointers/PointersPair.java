@@ -1,4 +1,4 @@
-package org.nd4j.linalg.memory.pointers;
+package org.nd4j.linalg.api.memory.pointers;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PointersPair {
-    private PagedPointer mainPointer;
-    private PagedPointer secondaryPointer;
+    private PagedPointer hostPointer;
+    private PagedPointer devicePointer;
 }

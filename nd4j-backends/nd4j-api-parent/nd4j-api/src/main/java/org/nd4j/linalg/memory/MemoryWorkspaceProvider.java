@@ -1,6 +1,7 @@
 package org.nd4j.linalg.memory;
 
-import org.nd4j.linalg.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
 /**
  * This interface describes backend-specific implementations

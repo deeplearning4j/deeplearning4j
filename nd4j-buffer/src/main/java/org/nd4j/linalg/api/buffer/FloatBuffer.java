@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -82,6 +83,10 @@ public class FloatBuffer extends BaseDataBuffer {
         this(data, true);
     }
 
+    public FloatBuffer(float[] data, MemoryWorkspace workspace) {
+        this(data, true, workspace);
+    }
+
     public FloatBuffer(int[] data) {
         this(data, true);
     }
@@ -131,6 +136,10 @@ public class FloatBuffer extends BaseDataBuffer {
 
     public FloatBuffer(float[] floats, boolean copy) {
         super(floats, copy);
+    }
+
+    public FloatBuffer(float[] floats, boolean copy, MemoryWorkspace workspace) {
+        super(floats, copy, workspace);
     }
 
     public FloatBuffer(float[] data, boolean copy, int offset) {

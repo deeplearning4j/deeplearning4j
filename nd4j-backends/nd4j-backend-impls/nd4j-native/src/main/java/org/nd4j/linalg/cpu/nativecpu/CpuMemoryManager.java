@@ -1,5 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.memory.BasicMemoryManager;
@@ -19,7 +21,7 @@ public class CpuMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        return super.allocate(bytes, kind, initialize);
+        return new FloatPointer(bytes / 4);
     }
 
     /**

@@ -1,17 +1,15 @@
-package org.nd4j.linalg.memory.conf;
+package org.nd4j.linalg.api.memory.conf;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.memory.enums.LearningPolicy;
-import org.nd4j.linalg.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com

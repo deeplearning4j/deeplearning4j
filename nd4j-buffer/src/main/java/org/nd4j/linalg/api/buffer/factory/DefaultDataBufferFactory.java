@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -297,6 +298,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
+        return createFloat(data, true, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(float[] data) {
         return createInt(data, true);
     }
@@ -339,6 +345,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(float[] data, boolean copy) {
         return new FloatBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace) {
+        return new FloatBuffer(data, copy, workspace);
     }
 
     @Override
