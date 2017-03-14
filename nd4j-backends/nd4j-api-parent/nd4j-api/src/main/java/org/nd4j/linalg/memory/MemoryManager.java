@@ -12,9 +12,9 @@ import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
  */
 public interface MemoryManager {
 
-    Nd4jWorkspace getCurrentWorkspace();
+    MemoryWorkspace getCurrentWorkspace();
 
-    void setCurrentWorkspace(Nd4jWorkspace workspace);
+    void setCurrentWorkspace(MemoryWorkspace workspace);
 
     /**
      * PLEASE NOTE: This method is under development yet. Do not use it.

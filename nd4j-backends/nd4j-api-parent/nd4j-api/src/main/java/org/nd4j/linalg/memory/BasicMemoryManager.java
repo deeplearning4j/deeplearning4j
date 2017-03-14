@@ -167,7 +167,7 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
     @Override
-    public void setCurrentWorkspace(Nd4jWorkspace workspace) {
+    public void setCurrentWorkspace(MemoryWorkspace workspace) {
 
     }
 }

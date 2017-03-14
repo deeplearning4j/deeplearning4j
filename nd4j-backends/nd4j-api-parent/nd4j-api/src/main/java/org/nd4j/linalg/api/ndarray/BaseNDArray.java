@@ -4942,5 +4942,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-
+    @Override
+    public INDArray argMax(int... dimension) {
+        return Nd4j.argMax(this, dimension);
+    }
 }

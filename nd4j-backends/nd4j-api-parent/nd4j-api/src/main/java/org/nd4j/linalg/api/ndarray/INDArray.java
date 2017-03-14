@@ -2381,4 +2381,6 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray fmodi(Number denominator);
+
+    INDArray argMax(int... dimension);
 }
