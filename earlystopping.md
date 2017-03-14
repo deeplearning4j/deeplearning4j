@@ -90,33 +90,7 @@ The early stopping implementation described above will only work with a single d
 
 Note that `EarlyStoppingParallelTrainer` doesn't support all of the functionality as its single device counterpart. It is not UI-compatible and may not work with complex iteration listeners. This is due to how the model is distributed and copied in the background.
 
-You may set up parallel early stopping as follows:
-
-```
-DataSetIterator trainingData = ...
-DataSetIterator testData = ...
-
-MultiLayerNetwork net = ...
-// set test data and score caluclator
-EarlyStoppingConfiguration<MultiLayerNetwork> esConf = ... 
-
- // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
-int workers = 4;
-// DataSets prefetching options. Set this value with respect to number of actual devices
-int prefetchBuffer = 24;
- // rare averaging improves performance, but might reduce model accuracy
-int averagingFrequency = 3;
-	
-EarlyStoppingParallelTrainer<MultiLayerNetwork> wrapper = 
-    new EarlyStoppingParallelTrainer<>(
-            esConf,
-            net,
-            trainingData, // use SequenceRecordReaderDataSetIterator
-            null, // MultiDataSetIterator is null
-            workers,
-            prefetchBuffer,
-            averagingFrequency);
-```
+[TestParallelEarlyStopping.java](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/test/java/org/deeplearning4j/parallelism/TestParallelEarlyStopping.java) gives a good example of setting up parallel early stopping in different scenarios.
 
 
 ## Final notes
