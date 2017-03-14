@@ -139,30 +139,7 @@ While Word2vec refers to a family of related algorithms, this implementation use
 
 Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](./quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
 
-``` xml
-<properties>
-  <nd4j.version>0.4.1-SNAPSHOT</nd4j.version> // check Maven Central for latest versions!
-  <dl4j.version>0.4.1-SNAPSHOT</dl4j.version>
-</properties>
 
-<dependencies>
-  <dependency>
-     <groupId>org.deeplearning4j</groupId>
-     <artifactId>deeplearning4j-ui</artifactId>
-     <version>${dl4j.version}</version>
-   </dependency>
-   <dependency>
-     <groupId>org.deeplearning4j</groupId>
-     <artifactId>deeplearning4j-nlp</artifactId>
-     <version>${dl4j.version}</version>
-   </dependency>
-   <dependency>
-     <groupId>org.nd4j</groupId>
-     <artifactId>nd4j-native</artifactId> 
-     <version>${nd4j.version}</version>
-   </dependency>
-</dependencies>
-```
 
 ### Loading Data
 
