@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@JsonTypeName("MultiLayerSpace")
+@Data
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     @JsonProperty
     private List<LayerConf> layerSpaces = new ArrayList<>();
