@@ -30,6 +30,8 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 
 import java.io.*;
@@ -45,9 +47,11 @@ import java.nio.file.Files;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
+    @JsonProperty
     private String path;
     private File fPath;
 
+    @JsonCreator
     public LocalMultiLayerNetworkSaver(String path) {
         if (path == null) throw new NullPointerException();
         this.path = path;
@@ -120,6 +124,6 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
 
     @Override
     public String toString() {
-        return "LocalMultiLayerNetworkScoreSaver(path=" + fPath.getAbsolutePath() + ")";
+        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
     }
 }

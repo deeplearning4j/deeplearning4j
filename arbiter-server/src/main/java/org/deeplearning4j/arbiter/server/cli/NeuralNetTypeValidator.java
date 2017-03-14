@@ -2,7 +2,6 @@ package org.deeplearning4j.arbiter.server.cli;
 
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.ParameterException;
-import org.deeplearning4j.arbiter.server.ArbiterCliGenerator;
 import org.deeplearning4j.arbiter.server.ArbiterCliRunner;
 
 /**

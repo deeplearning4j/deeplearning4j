@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -31,12 +32,13 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends LayerSpace<L> {
-
+    @JsonProperty
     protected ParameterSpace<Integer> nIn;
+    @JsonProperty
     protected ParameterSpace<Integer> nOut;
 
 
-    protected FeedForwardLayerSpace(Builder builder){
+    protected FeedForwardLayerSpace(Builder builder) {
         super(builder);
         nIn = builder.nIn;
         nOut = builder.nOut;

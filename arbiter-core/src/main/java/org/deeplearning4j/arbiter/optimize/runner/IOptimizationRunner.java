@@ -20,9 +20,10 @@ package org.deeplearning4j.arbiter.optimize.runner;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
-
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface IOptimizationRunner<C,M,A> {
 
     void execute();

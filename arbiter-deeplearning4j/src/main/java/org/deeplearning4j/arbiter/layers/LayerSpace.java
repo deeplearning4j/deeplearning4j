@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -44,7 +45,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(value={
         @JsonSubTypes.Type( value = ActivationLayerSpace.class, name = "ActivationLayerSpace"),
         @JsonSubTypes.Type( value = AutoEncoderLayerSpace.class, name = "AutoencoderLayerSpace"),
@@ -62,19 +63,30 @@ import java.util.Map;
         @JsonSubTypes.Type( value = SubsamplingLayerSpace.class, name = "SubsamplingLayerSpace"),
         @JsonSubTypes.Type( value = VariationalAutoencoderLayerSpace.class, name = "VariationalAutoencoderLayerSpace")
 })
+
 @Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
-
+    @JsonProperty
     protected ParameterSpace<String> activationFunction;
+    @JsonProperty
     protected ParameterSpace<WeightInit> weightInit;
+    @JsonProperty
     protected ParameterSpace<Double> biasInit;
+    @JsonProperty
     protected ParameterSpace<Distribution> dist;
+    @JsonProperty
     protected ParameterSpace<Double> learningRate;
+    @JsonProperty
     protected ParameterSpace<Double> biasLearningRate;
+    @JsonProperty
     protected ParameterSpace<Map<Integer, Double>> learningRateAfter;
+    @JsonProperty
     protected ParameterSpace<Double> lrScoreBasedDecay;
+    @JsonProperty
     protected ParameterSpace<Double> l1;
+    @JsonProperty
     protected ParameterSpace<Double> l2;
+    @JsonProperty
     protected ParameterSpace<Double> dropOut;
     protected ParameterSpace<Double> momentum;
     protected ParameterSpace<Map<Integer, Double>> momentumAfter;

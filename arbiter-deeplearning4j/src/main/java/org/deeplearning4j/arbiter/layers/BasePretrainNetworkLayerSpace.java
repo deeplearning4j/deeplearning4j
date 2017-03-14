@@ -25,13 +25,14 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class BasePretrainNetworkLayerSpace<L extends BasePretrainNetwork> extends FeedForwardLayerSpace<L> {
-
+    @JsonProperty
     protected ParameterSpace<LossFunction> lossFunction;
 
     protected BasePretrainNetworkLayerSpace(Builder builder) {

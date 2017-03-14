@@ -18,6 +18,8 @@
 package org.deeplearning4j.arbiter.optimize.api;
 
 import lombok.Data;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
@@ -31,12 +33,17 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @Data
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public class OptimizationResult<C, M, A> implements Serializable {
-
+    @JsonProperty
     private Candidate<C> candidate;
+    @JsonProperty
     private M result;
+    @JsonProperty
     private Double score;
+    @JsonProperty
     private int index;
+    @JsonProperty
     private A modelSpecificResults;
 
     public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults) {

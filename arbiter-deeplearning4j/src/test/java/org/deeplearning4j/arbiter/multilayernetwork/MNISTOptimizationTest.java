@@ -93,7 +93,6 @@ public class MNISTOptimizationTest {
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .earlyStoppingConfiguration(esConf)
-                .cnnInputSize(28,28,1)
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
