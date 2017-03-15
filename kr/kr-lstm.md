@@ -63,10 +63,10 @@ RNNs은 FFNets과는 좀 다릅니다. RNNs은 지금 들어온 입력 데이터
 
 예를 들어 RNNs이 문자열을 입력받으면, 우선 첫 번째 문자로 학습을 하고 학습한 내용을 은닉층에 저장합니다. 그리고 이 값을 이용해 두 번째 입력을 처리합니다. 예를 들면 `q` 다음엔 `u`가 올 확률이 높고, `t`다음엔 `h`가 올 확률이 높은데, 이 정보를 이용할 수 있습니다.
 
-RNNs은 애니메이션으로 시각화하면 쉽게 이해할 수 있습니다. 아래 애니메이션을 참고하시기 바랍니다. 혹시 그림이 뜨지 않는다면 [이 링크](https://i.imgur.com/6Uak4vF.gifv)를 누르세요.
+RNNs은 애니메이션으로 시각화하면 쉽게 이해할 수 있습니다. 아래 애니메이션을 참고하시기 바랍니다. 혹시 그림이 뜨지 않는다면 [이 링크](http://imgur.com/kpZBDfV)를 누르세요.
 
 {::nomarkdown}
-<blockquote class="imgur-embed-pub" lang="en" data-id="6Uak4vF"><a href="//imgur.com/6Uak4vF">View post on imgur.com</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+<blockquote class="imgur-embed-pub" lang="en" data-id="kpZBDfV"><a href="//imgur.com/kpZBDfV">how recurrent neural networks work #deeplearning4j #dl4j</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
 {:/nomarkdown}
 
 애니메이션에서 `x`는 입력, `w`는 입력 데이터에 곱해지는 가중치, `a`는 은닉층의 활성값(=입력과 은닉층 값을 고려해서 구해지는 값), `b`는 은닉층이 sigmoid 함수를 통과한 출력입니다.

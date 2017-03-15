@@ -69,10 +69,10 @@ Given a series of letters, a recurrent *will* use the first character to help de
 Since recurrent nets span time, they are probably best illustrated with animation (the first vertical line of nodes to appear can be thought of as a feedforward network, which becomes recurrent as it unfurls over time). 
 
 {::nomarkdown}
-<blockquote class="imgur-embed-pub" lang="en" data-id="6Uak4vF"><a href="//imgur.com/6Uak4vF">View post on imgur.com</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+<blockquote class="imgur-embed-pub" lang="en" data-id="kpZBDfV"><a href="//imgur.com/kpZBDfV">how recurrent neural networks work #deeplearning4j #dl4j</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
 {:/nomarkdown}
 
-In the [diagram above](https://i.imgur.com/6Uak4vF.gifv), each `x` is an input example, `w` is the weights that filter inputs, `a` is the activation of the hidden layer (a combination of weighted input and the previous hidden state), and `b` is the output of the hidden layer after it has been transformed, or squashed, using a rectified linear or sigmoid unit. 
+In the [diagram above](http://imgur.com/kpZBDfV), each `x` is an input example, `w` is the weights that filter inputs, `a` is the activation of the hidden layer (a combination of weighted input and the previous hidden state), and `b` is the output of the hidden layer after it has been transformed, or squashed, using a rectified linear or sigmoid unit.
 
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
