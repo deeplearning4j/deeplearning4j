@@ -14,6 +14,7 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvid
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
@@ -21,17 +22,25 @@ import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
+import org.deeplearning4j.arbiter.server.cli.NeuralNetTypeValidator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by agibsonccc on 3/12/17.
+ * Generate an {@link OptimizationConfiguration}
+ * via the command line interface.
+ * You can then use this configuration json file from
+ * {@link ArbiterCliRunner}
+ *
+ * @author Adam Gibson
  */
 public class ArbiterCliGenerator {
     @Parameter(names = {"--searchSpacePath"})
@@ -55,6 +64,10 @@ public class ArbiterCliGenerator {
     @Parameter(names = {"--configSavePath"},required = true)
     private String configSavePath = null;
 
+    @Parameter(names = {"--duration"},description = "The number of minutes to run for. Default is -1 which means run till convergence.")
+    private long duration = -1;
+    @Parameter(names = {"--numCandidates"},description = "The number of candidates to generate. Default is 1.")
+    private int numCandidates = 1;
 
     public final static String REGRESSION_MULTI = "regression";
     public final static String REGRESSION = "regression";
@@ -119,8 +132,7 @@ public class ArbiterCliGenerator {
                         .dataProvider(dataProvider)
                         .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelOutputPath))
                         .scoreFunction(scoreFunctionMultiLayerNetwork())
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                new MaxCandidatesCondition(100))
+                        .terminationConditions(getConditions())
                         .build();
                 FileUtils.writeStringToFile(new File(configSavePath),configuration.toJson());
 
@@ -132,8 +144,7 @@ public class ArbiterCliGenerator {
                         .dataProvider(dataProvider)
                         .modelSaver(new LocalMultiLayerNetworkSaver<Double>(modelOutputPath))
                         .scoreFunction(scoreFunctionMultiLayerNetwork())
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                new MaxCandidatesCondition(100))
+                        .terminationConditions(getConditions())
                         .build();
                 FileUtils.writeStringToFile(new File(configSavePath),configuration.toJson());
 
@@ -161,8 +172,7 @@ public class ArbiterCliGenerator {
                         .dataProvider(dataProvider)
                         .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelOutputPath))
                         .scoreFunction(scoreFunctionCompGraph())
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                new MaxCandidatesCondition(100))
+                        .terminationConditions(getConditions())
                         .build();
 
                 FileUtils.writeStringToFile(new File(configSavePath),configuration.toJson());
@@ -174,8 +184,7 @@ public class ArbiterCliGenerator {
                         .dataProvider(dataProvider)
                         .modelSaver(new LocalComputationGraphSaver<Double>(modelOutputPath))
                         .scoreFunction(scoreFunctionCompGraph())
-                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                new MaxCandidatesCondition(100))
+                        .terminationConditions(getConditions())
                         .build();
                 FileUtils.writeStringToFile(new File(configSavePath),configuration.toJson());
 
@@ -191,6 +200,21 @@ public class ArbiterCliGenerator {
     public static void main(String...args) throws Exception {
         new ArbiterCliGenerator().runMain(args);
     }
+
+    private List<TerminationCondition> getConditions() {
+        List<TerminationCondition> ret = new ArrayList<>();
+        if(duration > 0) {
+            ret.add(new MaxTimeCondition(duration,TimeUnit.MINUTES));
+        }
+
+        if(numCandidates > 0)
+            ret.add(new MaxCandidatesCondition(numCandidates));
+        if(ret.isEmpty()) {
+            ret.add(new MaxCandidatesCondition(1));
+        }
+        return ret;
+    }
+
 
     private GridSearchCandidateGenerator.Mode getMode() {
         if(gridSearchOrder.equals(RANDOM_ORDER))
