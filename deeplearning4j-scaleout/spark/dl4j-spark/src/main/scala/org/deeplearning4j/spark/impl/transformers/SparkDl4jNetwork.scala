@@ -90,13 +90,13 @@ class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
 
 }
 
-object SparkDl4jModel extends MLReadable[SparkDl4jMultiLayer] {
-    override def read: MLReader[SparkDl4jMultiLayer] = new SparkDl4jReader
-    override def load(path: String): SparkDl4jMultiLayer = super.load(path)
-    private class SparkDl4jReader extends MLReader[SparkDl4jMultiLayer] {
-        override def load(path: String) : SparkDl4jMultiLayer = {
+object SparkDl4jModel extends MLReadable[SparkDl4jModel] {
+    override def read: MLReader[SparkDl4jModel] = new SparkDl4jReader
+    override def load(path: String): SparkDl4jModel = super.load(path)
+    private class SparkDl4jReader extends MLReader[SparkDl4jModel] {
+        override def load(path: String) : SparkDl4jModel = {
             val mln = ModelSerializer.restoreMultiLayerNetwork(path)
-            new SparkDl4jMultiLayer(sc, mln, null)
+            new SparkDl4jModel(Identifiable.randomUID("dl4j"), new SparkDl4jMultiLayer(sc, mln, null))
         }
     }
 }
