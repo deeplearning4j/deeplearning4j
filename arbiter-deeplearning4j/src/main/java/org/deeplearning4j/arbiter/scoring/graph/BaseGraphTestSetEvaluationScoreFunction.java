@@ -27,7 +27,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import java.util.Map;
 
 /**
- * Base class for accuracy/f1 calculations on a ComputationGraph with a MultiDataSetIterator
+ * Base class for accuracy/f1 calculations on a
+ * {@link ComputationGraph} with a {@link MultiDataSetIterator}
  *
  * @author Alex Black
  */

@@ -20,25 +20,30 @@ package org.deeplearning4j.arbiter.optimize.candidategenerator;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 /**
  * RandomSearchGenerator: generates candidates at random.<br>
- * Note: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
- * when generating candidates. This allows the search to be weighted more towards certain values according to a probability
+ * Note: if a probability distribution is provided for continuous hyperparameters,
+ * this will be taken into account
+ * when generating candidates. This allows the search to be weighted more towards
+ * certain values according to a probability
  * density. For example: generate samples for learning rate according to log uniform distribution
  *
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
 @EqualsAndHashCode(exclude = {"order","candidateCounter","rng"})
-@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng"})
+@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng","candidate"})
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
-    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace) {
-        super(parameterSpace);
-
+    @JsonCreator
+    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,@JsonProperty("dataParameters") Map<String,Object> dataParameters) {
+        super(parameterSpace,dataParameters);
         initialize();
     }
 
@@ -50,11 +55,9 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public Candidate<T> getCandidate() {
-
         double[] randomValues = new double[parameterSpace.numParameters()];
         for (int i = 0; i < randomValues.length; i++) randomValues[i] = rng.nextDouble();
-
-        return new Candidate<T>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues);
+        return new Candidate<>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,dataParameters);
     }
 
     @Override

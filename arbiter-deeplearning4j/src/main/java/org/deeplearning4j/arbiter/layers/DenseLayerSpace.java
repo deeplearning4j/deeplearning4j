@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 /**
  * layer hyperparameter configuration space for dense layers (i.e., multi-layer perceptron layers)
@@ -30,8 +31,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
+@NoArgsConstructor //For Jackson JSON/YAML deserialization
 public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
 
     private DenseLayerSpace(Builder builder) {

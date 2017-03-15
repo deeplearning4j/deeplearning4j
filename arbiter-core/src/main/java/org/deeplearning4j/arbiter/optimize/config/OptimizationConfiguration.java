@@ -19,6 +19,7 @@
 package org.deeplearning4j.arbiter.optimize.config;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
@@ -28,8 +29,10 @@ import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.nd4j.reflectionloader.JacksonReflectionLoader;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,30 +47,37 @@ import java.util.List;
  * @param <T> Type of candidates usually a {@link DL4JConfiguration }
  * @param <M> Type of model returned usually a MultiLayerNetwork or ComputationGraph
  * @param <D> Type of data usually a DataSetIterator
- * @param <A> The Result class )usually something like {@link org.deeplearning4j.eval.Evaluation}
+ * @param <A> The Result class usually something like {@link org.deeplearning4j.eval.Evaluation}
  *
  * @author Alex Black
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"dataProvider","terminationConditions","candidateGenerator","resultSaver"})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public class OptimizationConfiguration<T, M, D, A> {
-
+    @JsonSerialize
     private DataProvider<D> dataProvider;
+    @JsonSerialize
     private CandidateGenerator<T> candidateGenerator;
+    @JsonSerialize
     private ResultSaver<T, M, A> resultSaver;
+    @JsonSerialize
     private ScoreFunction<M, D> scoreFunction;
+    @JsonSerialize
     private List<TerminationCondition> terminationConditions;
+    @JsonSerialize
     private Long rngSeed;
     private static ObjectMapper jsonMapper;
     private static ObjectMapper yamlMapper;
-    
+
     static {
-        List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
-        jsonMapper = JacksonReflectionLoader.findTypesFor(classes);
-        yamlMapper = JacksonReflectionLoader.findTypesFor(classes,false);
+        // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
+        jsonMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>());
+        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(),false);
 
     }
-    
+
 
     private OptimizationConfiguration(Builder<T, M, D, A> builder) {
         this.dataProvider = builder.dataProvider;

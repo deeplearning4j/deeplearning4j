@@ -15,28 +15,29 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonTypeName;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-//public class MultiLayerSpace implements ModelParameterSpace<MultiLayerConfiguration> {
-@EqualsAndHashCode(callSuper = true)
+@Data
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
-
-    @Deprecated
-    private ParameterSpace<int[]> cnnInputSize;
+    @JsonProperty
     private List<LayerConf> layerSpaces = new ArrayList<>();
+    @JsonProperty
     private ParameterSpace<InputType> inputType;
 
     //Early stopping configuration / (fixed) number of epochs:
+    @JsonProperty
     private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
-
+    @JsonProperty
     private int numParameters;
 
     private MultiLayerSpace(Builder builder) {
         super(builder);
-        this.cnnInputSize = builder.cnnInputSize;
         this.inputType = builder.inputType;
 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
@@ -56,7 +57,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Override
     public DL4JConfiguration getValue(double[] values) {
-
         //First: create layer configs
         List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
         for (LayerConf c : layerSpaces) {
@@ -158,9 +158,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
-
-        @Deprecated
-        private ParameterSpace<int[]> cnnInputSize;
         private List<LayerConf> layerSpaces = new ArrayList<>();
         private ParameterSpace<InputType> inputType;
 
@@ -168,16 +165,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
 
 
-        @Deprecated
-        public Builder cnnInputSize(int height, int width, int depth) {
-            return cnnInputSize(new FixedValue<>(new int[]{height, width, depth}));
-        }
-
-        @Deprecated
-        public Builder cnnInputSize(ParameterSpace<int[]> cnnInputSize) {
-            this.cnnInputSize = cnnInputSize;
-            return this;
-        }
 
         public Builder setInputType(InputType inputType) {
             return setInputType(new FixedValue<>(inputType));

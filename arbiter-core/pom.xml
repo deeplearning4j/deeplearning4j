@@ -14,6 +14,12 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jackson-reflectionloader</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
@@ -61,6 +67,8 @@
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
+
+
 
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>

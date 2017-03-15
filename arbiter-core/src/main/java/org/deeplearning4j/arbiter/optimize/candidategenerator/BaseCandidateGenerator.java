@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.arbiter.optimize.candidategenerator;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
@@ -24,22 +26,26 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator} and {@link GridSearchCandidateGenerator}
+ * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator}
+ * and {@link GridSearchCandidateGenerator}
  * are built.
  *
  * @param <T> Type of candidates to generate
  */
+@Data
+@EqualsAndHashCode(exclude = {"rng"})
 public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T> {
-
     protected ParameterSpace<T> parameterSpace;
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
     protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
-
-    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace) {
+    protected Map<String,Object> dataParameters;
+    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace,Map<String,Object> dataParameters) {
         this.parameterSpace = parameterSpace;
+        this.dataParameters = dataParameters;
     }
 
     protected void initialize() {

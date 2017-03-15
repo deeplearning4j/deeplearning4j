@@ -17,6 +17,8 @@
  */
 package org.deeplearning4j.arbiter.evaluator.multilayer;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 
@@ -25,16 +27,24 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.util.Map;
+
 /**
- * A model evaluator for doing additional evaluation (classification evaluation)
+ * A model evaluator for doing additional
+ * evaluation (classification evaluation)
  * for a {@link MultiLayerNetwork} given a {@link DataSetIterator}
  *
  * @author Alex Black
  */
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, Object, Evaluation> {
+    private Map<String,Object> params = null;
+
+
     @Override
     public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<Object> dataProvider) {
-        DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(null));
+        DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
         return ScoreUtil.getEvaluation(model,iterator);
     }
 }

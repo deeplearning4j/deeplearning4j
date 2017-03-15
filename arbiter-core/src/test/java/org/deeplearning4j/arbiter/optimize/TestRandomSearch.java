@@ -20,6 +20,7 @@ package org.deeplearning4j.arbiter.optimize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
@@ -49,13 +50,14 @@ import java.util.concurrent.Callable;
  * http://www.sfu.ca/~ssurjano/branin.html
  */
 public class TestRandomSearch {
-    public static Logger log = LoggerFactory.getLogger(TestRandomSearch.class);
     @Test
     @Ignore
     public void test() throws Exception {
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,new HashMap<>());
 
         //Define configuration:
-        CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace());
+        CandidateGenerator<BraninConfig> candidateGenerator = new RandomSearchGenerator<>(new BraninSpace(),commands);
         OptimizationConfiguration<BraninConfig, BraninConfig, Void, Void> configuration =
                 new OptimizationConfiguration.Builder<BraninConfig, BraninConfig, Void, Void >()
                         .candidateGenerator(candidateGenerator)

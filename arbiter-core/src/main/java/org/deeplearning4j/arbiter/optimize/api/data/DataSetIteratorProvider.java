@@ -1,6 +1,6 @@
-package org.deeplearning4j.arbiter.data;
+package org.deeplearning4j.arbiter.optimize.api.data;
 
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import lombok.Data;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.Map;
@@ -16,6 +16,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Data
 public class DataSetIteratorProvider implements DataProvider<Object> {
 
     private final DataSetIterator trainData;

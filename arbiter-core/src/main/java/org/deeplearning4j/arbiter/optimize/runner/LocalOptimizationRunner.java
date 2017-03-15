@@ -22,7 +22,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * LocalOptimizationRunner: execute hyperparameter optimization locally (on current machine, in current JVM).
+ * LocalOptimizationRunner: execute hyperparameter optimization
+ * locally (on current machine, in current JVM).
  *
  * @param <C> Type for candidate configurations
  * @param <M> Type of trained model

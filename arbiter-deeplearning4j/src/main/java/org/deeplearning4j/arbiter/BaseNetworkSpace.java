@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @EqualsAndHashCode
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;
@@ -96,6 +98,12 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     protected ParameterSpace<ConvolutionMode> convolutionMode;
 
     protected int numEpochs = 1;
+
+
+    static {
+        JsonMapper.getMapper().registerSubtypes(ComputationGraphSpace.class,MultiLayerSpace.class);
+        YamlMapper.getMapper().registerSubtypes(ComputationGraphSpace.class,MultiLayerSpace.class);
+    }
 
     @SuppressWarnings("unchecked")
     protected BaseNetworkSpace(Builder builder) {

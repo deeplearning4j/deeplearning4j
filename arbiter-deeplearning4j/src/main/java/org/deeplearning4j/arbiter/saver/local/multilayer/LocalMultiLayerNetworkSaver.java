@@ -17,6 +17,10 @@
  */
 package org.deeplearning4j.arbiter.saver.local.multilayer;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -28,6 +32,8 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 
 import java.io.*;
@@ -40,10 +46,15 @@ import java.nio.file.Files;
  * @author Alex Black
  */
 @Slf4j
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
+    @JsonProperty
     private String path;
     private File fPath;
 
+    @JsonCreator
     public LocalMultiLayerNetworkSaver(String path) {
         if (path == null) throw new NullPointerException();
         this.path = path;
@@ -116,6 +127,6 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
 
     @Override
     public String toString() {
-        return "LocalMultiLayerNetworkScoreSaver(path=" + fPath.getAbsolutePath() + ")";
+        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
     }
 }

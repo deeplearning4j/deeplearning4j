@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.api.saving;
 
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.IOException;
 
@@ -27,6 +28,7 @@ import java.io.IOException;
  * So instead: return a reference to the saved result. Idea is that the result may be saved to disk or a database,
  * and we can easily load it back into memory (if/when required) using the getResult() method
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface ResultReference<T, M, A> {
 
     OptimizationResult<T, M, A> getResult() throws IOException;

@@ -18,6 +18,8 @@
 package org.deeplearning4j.arbiter.optimize.api.saving;
 
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.IOException;
 
@@ -30,6 +32,8 @@ import java.io.IOException;
  * @param <A> Additional evaluation
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface ResultSaver<C, M, A> {
 
     /**

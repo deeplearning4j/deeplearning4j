@@ -27,6 +27,9 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonTypeName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,15 +45,20 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)    //For Jackson JSON ser/de
 @Data
 @EqualsAndHashCode(callSuper = true)
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
+@JsonTypeName("ComputationGraphSpace")
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
-
+    @JsonProperty
     private List<LayerConf> layerSpaces = new ArrayList<>();
+    @JsonProperty
     private List<VertexConf> vertices = new ArrayList<>();
-
+    @JsonProperty
     private String[] networkInputs;
+    @JsonProperty
     private String[] networkOutputs;
+    @JsonProperty
     private InputType[] inputTypes;
-
+    @JsonProperty
     private int numParameters;
 
     //Early stopping configuration / (fixed) number of epochs:

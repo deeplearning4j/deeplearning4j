@@ -18,6 +18,11 @@
 package org.deeplearning4j.arbiter.optimize.api.score;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -30,6 +35,8 @@ import java.util.Map;
  * @param <M> Type of model
  * @param <D> Type of data used
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface ScoreFunction<M, D> extends Serializable {
 
     /**

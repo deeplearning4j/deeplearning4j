@@ -25,6 +25,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -35,15 +36,15 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
 public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEncoder> {
-
+    @JsonProperty
     private ParameterSpace<Double> corruptionLevel;
+    @JsonProperty
     private ParameterSpace<Double> sparsity;
 
     private AutoEncoderLayerSpace(Builder builder) {
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
-
         this.numParameters = CollectionUtils.countUnique(collectLeaves());
     }
 

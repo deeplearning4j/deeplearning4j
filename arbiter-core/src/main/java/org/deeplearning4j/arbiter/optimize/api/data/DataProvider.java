@@ -17,8 +17,6 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.data;
 
-import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -34,8 +32,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
-        @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
-        @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
+        @JsonSubTypes.Type(value = DataSetIteratorFactoryProvider.class, name = "DataSetIteratorFactoryProvider")
 })
 public interface DataProvider<D> extends Serializable {
 

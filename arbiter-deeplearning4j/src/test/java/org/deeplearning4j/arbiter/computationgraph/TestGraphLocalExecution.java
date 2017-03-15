@@ -22,7 +22,9 @@ import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.evaluator.graph.GraphClassificationDataSetEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
 import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
@@ -57,6 +59,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class TestGraphLocalExecution {
@@ -64,6 +68,8 @@ public class TestGraphLocalExecution {
     @Test
     @Ignore
     public void testLocalExecution() throws Exception {
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
@@ -83,8 +89,8 @@ public class TestGraphLocalExecution {
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
-        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
 
@@ -124,6 +130,8 @@ public class TestGraphLocalExecution {
                 .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150,150),true))
                 .modelSaver(new InMemoryModelSaver<ComputationGraph>())
                 .build();
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
@@ -144,8 +152,8 @@ public class TestGraphLocalExecution {
 
         //Define configuration:
 
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
-        DataProvider<Object> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
+        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs,commands);
+        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest2CG\\").getAbsolutePath();

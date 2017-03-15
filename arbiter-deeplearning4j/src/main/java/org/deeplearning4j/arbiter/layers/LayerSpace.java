@@ -25,11 +25,9 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.ArrayList;
@@ -44,27 +42,9 @@ import java.util.Map;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type( value = ActivationLayerSpace.class, name = "ActivationLayerSpace"),
-        @JsonSubTypes.Type( value = AutoEncoderLayerSpace.class, name = "AutoencoderLayerSpace"),
-        @JsonSubTypes.Type( value = BatchNormalizationSpace.class, name = "BatchNormalizationSpace"),
-        @JsonSubTypes.Type( value = ConvolutionLayerSpace.class, name = "ConvolutionLayerSpace"),
-        @JsonSubTypes.Type( value = DenseLayerSpace.class, name = "DenseLayerSpace"),
-        @JsonSubTypes.Type( value = EmbeddingLayerSpace.class, name = "EmbeddingLayerSpace"),
-        @JsonSubTypes.Type( value = GlobalPoolingLayerSpace.class, name = "GlobalPoolingLayerSpace"),
-        @JsonSubTypes.Type( value = GravesBidirectionalLSTMLayerSpace.class, name = "GravesBidirectionalLSTMLayerSpace"),
-        @JsonSubTypes.Type( value = GravesLSTMLayerSpace.class, name = "GravesLSTMLayerSpace"),
-        @JsonSubTypes.Type( value = LocalResponseNormalizationLayerSpace.class, name = "LocalResponseNormalizationLayerSpace"),
-        @JsonSubTypes.Type( value = OutputLayerSpace.class, name = "OutputLayerSpace"),
-        @JsonSubTypes.Type( value = RBMLayerSpace.class, name = "RBMLayerSpace"),
-        @JsonSubTypes.Type( value = RnnOutputLayerSpace.class, name = "RnnOutputLayerSpace"),
-        @JsonSubTypes.Type( value = SubsamplingLayerSpace.class, name = "SubsamplingLayerSpace"),
-        @JsonSubTypes.Type( value = VariationalAutoencoderLayerSpace.class, name = "VariationalAutoencoderLayerSpace")
-})
+
 @Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
-
     protected ParameterSpace<String> activationFunction;
     protected ParameterSpace<WeightInit> weightInit;
     protected ParameterSpace<Double> biasInit;
@@ -86,7 +66,6 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
     protected ParameterSpace<Double> adamVarDecay;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
-
     protected int numParameters;
 
     @SuppressWarnings("unchecked")
@@ -116,6 +95,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
 //    public abstract L randomLayer();
 
+    @Override
     public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = new ArrayList<>();
         if (activationFunction != null) list.addAll(activationFunction.collectLeaves());
@@ -223,7 +203,6 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         } else return s;
     }
 
-    //    public abstract static class Builder<T extends Builder<T>> {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T> {
         protected ParameterSpace<String> activationFunction;
@@ -250,7 +229,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
 
         public T activation(String activationFunction) {
-            return activation(new FixedValue<String>(activationFunction));
+            return activation(new FixedValue<>(activationFunction));
         }
 
         public T activation(ParameterSpace<String> activationFunction) {
@@ -268,7 +247,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         }
 
         public T dist(Distribution dist) {
-            return dist(new FixedValue<Distribution>(dist));
+            return dist(new FixedValue<>(dist));
         }
 
         public T dist(ParameterSpace<Distribution> dist) {
@@ -422,7 +401,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         }
 
         public T gradientNormalizationThreshold(double threshold) {
-            return gradientNormalizationThreshold(new FixedValue<Double>(threshold));
+            return gradientNormalizationThreshold(new FixedValue<>(threshold));
         }
 
         public T gradientNormalizationThreshold(ParameterSpace<Double> gradientNormalizationThreshold) {

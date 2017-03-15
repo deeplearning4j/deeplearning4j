@@ -22,6 +22,7 @@ import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
@@ -55,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -62,7 +64,6 @@ import java.util.concurrent.TimeUnit;
 public class MNISTOptimizationTest {
 
     public static void main(String[] args) throws Exception {
-
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
                 .iterationTerminationConditions(
@@ -89,16 +90,17 @@ public class MNISTOptimizationTest {
                         .activation(new DiscreteParameterSpace<>("relu","softplus","leakyrelu"))
                         .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
                 .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<String>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
                         .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .earlyStoppingConfiguration(esConf)
-                .cnnInputSize(28,28,1)
                 .pretrain(false).backprop(true).build();
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define configuration:
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
         DataProvider<Object> dataProvider = new MnistDataSetProvider();
 
 

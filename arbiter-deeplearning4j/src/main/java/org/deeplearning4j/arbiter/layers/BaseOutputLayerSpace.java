@@ -17,10 +17,7 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
@@ -35,7 +32,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L>{
+public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L> {
 
     protected ParameterSpace<ILossFunction> lossFunction;
 
@@ -44,13 +41,13 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         this.lossFunction = builder.lossFunction;
     }
 
-    protected void setLayerOptionsBuilder(BaseOutputLayer.Builder builder, double[] values){
+    protected void setLayerOptionsBuilder(BaseOutputLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder,values);
         if(lossFunction != null) builder.lossFunction(lossFunction.getValue(values));
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves(){
+    public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
         if(lossFunction != null) list.addAll(lossFunction.collectLeaves());
         return list;
@@ -79,13 +76,13 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         }
     }
 
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
     public static class LossFunctionParameterSpace implements ParameterSpace<ILossFunction> {
 
-        private final ParameterSpace<LossFunction> lossFunctionParameterSpace;
+        private  ParameterSpace<LossFunction> lossFunctionParameterSpace;
 
-        public LossFunctionParameterSpace(ParameterSpace<LossFunction> lossFunctionParameterSpace) {
-            this.lossFunctionParameterSpace = lossFunctionParameterSpace;
-        }
 
         @Override
         public ILossFunction getValue(double[] parameterValues) {

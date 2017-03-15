@@ -19,9 +19,11 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
@@ -32,11 +34,11 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
         @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
 })
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface CandidateGenerator<C> {
 
     /**
@@ -50,6 +52,10 @@ public interface CandidateGenerator<C> {
      */
     Candidate<C> getCandidate();
 
+    /**
+     * Report results for the candidate generator.
+     * @param result
+     */
     void reportResults(OptimizationResult<C, ?, ?> result);
 
     /**
