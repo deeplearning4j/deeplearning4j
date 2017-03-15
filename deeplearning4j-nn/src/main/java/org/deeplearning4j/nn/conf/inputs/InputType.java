@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.inputs;
 
 import lombok.*;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -49,6 +50,7 @@ public abstract class InputType implements Serializable {
     }
 
 
+    @JsonIgnore
     public abstract Type getType();
 
     @Override
