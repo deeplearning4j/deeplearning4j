@@ -185,14 +185,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public BaseDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+
         initTypeAndSize();
+
+        log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType()).asFloatPointer().put(data);
         indexer = FloatIndexer.create((FloatPointer) pointer);
-        wrappedBuffer = pointer.asByteBuffer();
-
-        length = data.length;
-        underlyingLength = data.length;
+        //wrappedBuffer = pointer.asByteBuffer();
     }
 
 
@@ -484,17 +486,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
         if (dataType() == Type.DOUBLE) {
+            log.info("Allocating DoublePointer of {} elements", length);
+
             pointer = workspace.alloc(length * getElementSize(), dataType()).asDoublePointer(); //new DoublePointer(length());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == Type.FLOAT) {
+            log.info("Allocating FloatPointer of {} elements", length);
             pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
             if (initialize)
                 fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
+            log.info("Allocating IntPointer of {} elements", length);
+
             pointer = new IntPointer(length());
             indexer = IntIndexer.create((IntPointer) pointer);
             if (initialize)

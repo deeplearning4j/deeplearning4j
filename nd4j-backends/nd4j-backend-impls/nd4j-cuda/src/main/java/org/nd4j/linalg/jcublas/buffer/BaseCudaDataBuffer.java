@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -147,6 +148,45 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
+
+        if (dataType() == Type.DOUBLE) {
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
+            indexer = DoubleIndexer.create((DoublePointer) pointer);
+        } else if (dataType() == Type.FLOAT) {
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
+            indexer = FloatIndexer.create((FloatPointer) pointer);
+        } else if (dataType() == Type.INT) {
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
+            indexer = IntIndexer.create((IntPointer) pointer);
+        } else if (dataType() == Type.HALF) {
+            // FIXME: proper pointer and proper indexer should be used here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+            indexer = HalfIndexer.create((ShortPointer) pointer);
+        }
+
+        /*
+        this.wrappedBuffer = this.pointer.asByteBuffer();
+
+        if (this.wrappedBuffer == null) {
+            throw new IllegalStateException("WrappedBuffer is NULL");
+        }
+        */
+    }
+
+    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, MemoryWorkspace workspace) {
+        this.allocationMode = AllocationMode.JAVACPP;
+        initTypeAndSize();
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                new AllocationShape(length, elementSize, dataType()), initialize);
+        this.length = length;
+        //allocationPoint.attachBuffer(this);
+        this.elementSize = elementSize;
+        this.trackingPoint = allocationPoint.getObjectId();
+        this.offset = 0;
+        this.originalOffset = 0;
+
+        if (1 > 0)
+            throw new UnsupportedOperationException();
 
         if (dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();

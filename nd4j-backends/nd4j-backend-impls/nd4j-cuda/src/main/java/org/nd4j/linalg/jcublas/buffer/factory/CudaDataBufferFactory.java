@@ -255,6 +255,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaFloatDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(long length) {
         return new CudaIntDataBuffer(length);
     }

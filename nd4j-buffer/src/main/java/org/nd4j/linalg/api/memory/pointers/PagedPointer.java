@@ -1,10 +1,12 @@
 package org.nd4j.linalg.api.memory.pointers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class PagedPointer extends Pointer {
 
     // we're storing this pointer as strong reference
@@ -16,7 +18,9 @@ public class PagedPointer extends Pointer {
 
     public PagedPointer(Pointer pointer) {
         this.originalPointer = pointer;
+
         this.address = pointer.address();
+
         this.capacity = pointer.capacity();
         this.limit = pointer.limit();
         this.position = 0;
@@ -24,6 +28,7 @@ public class PagedPointer extends Pointer {
 
     public PagedPointer(Pointer pointer, long capacity) {
         this.address = pointer.address();
+
         this.capacity = capacity;
         this.limit = capacity;
         this.position = 0;
@@ -31,6 +36,7 @@ public class PagedPointer extends Pointer {
 
     public PagedPointer(Pointer pointer, long capacity, long offset) {
         this.address = pointer.address() + offset;
+
         this.capacity = capacity;
         this.limit = capacity;
         this.position = 0;
@@ -43,7 +49,7 @@ public class PagedPointer extends Pointer {
 
 
     public FloatPointer asFloatPointer() {
-        return new FloatPointer(this);
+        return new ImmortalFloatPointer(this);
     }
 
     public DoublePointer asDoublePointer() {
@@ -56,5 +62,15 @@ public class PagedPointer extends Pointer {
 
     public LongPointer asLongPointer() {
         return new LongPointer(this);
+    }
+
+    @Override
+    public void deallocate() {
+        log.info("Paged deallocate 1");
+    }
+
+    @Override
+    public void deallocate(boolean deallocate) {
+        log.info("Paged deallocate 2");
     }
 }

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -17,13 +18,14 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
  */
 @Slf4j
-public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
+public class Nd4jWorkspace implements MemoryWorkspace {
     protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
 
@@ -34,6 +36,13 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
 
     protected MemoryManager memoryManager;
 
+    protected AtomicBoolean isLearning = new AtomicBoolean(true);
+
+
+    protected AtomicLong cycleAllocations = new AtomicLong(0);
+    protected AtomicLong spilledAllocations = new AtomicLong(0);
+    protected AtomicLong maxCycle = new AtomicLong(0);
+
     @Getter protected final WorkspaceConfiguration workspaceConfiguration;
 
     // TODO: it should be something like our PointersPair
@@ -42,11 +51,13 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
     // this memory manager implementation will be used to allocate real memory for this workspace
 
 
-
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
         this.workspaceConfiguration = configuration;
 
         this.memoryManager = Nd4j.getMemoryManager();
+
+        // and actual workspace allocation
+        currentSize.set(workspaceConfiguration.getInitialSize());
 
         init();
     }
@@ -62,13 +73,14 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
     protected void init() {
         //  we want params validation here
 
-        // and actual workspace allocation
-        currentSize.set(workspaceConfiguration.getInitialSize());
 
         log.info("Allocating workspace of {} bytes...", currentSize.get());
 
-        if (currentSize.get() > 0)
-            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get(), MemoryKind.HOST, true)));
+        if (currentSize.get() > 0) {
+            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + 1024, MemoryKind.HOST, true)));
+
+            Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+        }
     }
 
     public PagedPointer alloc(long requiredMemory, DataBuffer.Type type) {
@@ -81,18 +93,30 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
             1) reqMem + currentOffset < totalSize, we just return pointer + offset
             2) go for either realloc or external allocation
          */
-        if (currentOffset.get() + requiredMemory < currentSize.get()) {
+        long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+
+        if (currentOffset.get() + requiredMemory <= currentSize.get()) {
             // FIXME: check for alignment here
             long prevOffset = currentOffset.getAndAdd(requiredMemory);
 
-            log.info("Allocating array of {} bytes, capacity of {} elements", requiredMemory, requiredMemory / Nd4j.sizeOfDataType(type));
+            log.info("Allocating array of {} bytes, capacity of {} elements, prevOffset:", requiredMemory, numElements);
 
-            return workspace.getHostPointer().withOffset(prevOffset, requiredMemory / Nd4j.sizeOfDataType(type));
+            return workspace.getHostPointer().withOffset(prevOffset, numElements);
         } else {
+            spilledAllocations.addAndGet(requiredMemory);
+
+            log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
-                    return new PagedPointer(new FloatPointer(requiredMemory / Nd4j.sizeOfDataType(type)), requiredMemory / Nd4j.sizeOfDataType(type));
+                    cycleAllocations.addAndGet(requiredMemory);
+                    PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+
+                    externalAllocations.add(new PointersPair(pointer, null));
+
+                    return pointer;
                 case REALLOCATE: {
+                        // TODO: basically reallocate (if possible), and call for alloc once again
                         throw new UnsupportedOperationException("Not implemented yet");
                     }
                 case FAIL:
@@ -116,5 +140,38 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
             1) memset primary page(s)
             2) purge external allocations
          */
+
+        if (cycleAllocations.get() > maxCycle.get())
+            maxCycle.set(cycleAllocations.get());
+
+
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
+
+        currentOffset.set(0);
+        externalAllocations.clear();
+    }
+
+    @Override
+    public void initializeWorkspace() {
+        if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE) {
+            currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
+            init();
+        }
+
+    }
+
+    @Override
+    public void notifyScopeEntered() {
+        cycleAllocations.set(0);
+        currentOffset.set(0);
+    }
+
+    @Override
+    public void notifyScopeLeft() {
+        try {
+            close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.workspace;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,12 +26,23 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class BasicWorkspaceTests extends BaseNd4jTest {
     DataBuffer.Type initialType;
 
     private static final WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
             .initialSize(10 * 1024 * 1024)
+            .maxSize(10 * 1024 * 1024)
+            .overallocationLimit(0.1)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .build();
+
+    private static final WorkspaceConfiguration loopConfig = WorkspaceConfiguration.builder()
+            .initialSize(0)
             .maxSize(10 * 1024 * 1024)
             .overallocationLimit(0.1)
             .policyAllocation(AllocationPolicy.STRICT)
@@ -54,6 +66,70 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
         Nd4j.setDataType(initialType);
+    }
+
+    @Test
+    public void testCold() throws Exception {
+        INDArray array = Nd4j.create(10);
+
+        array.addi(1.0);
+
+        assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
+    }
+
+    @Test
+    public void testLoops1() throws Exception {
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getCurrentOffset());
+
+        workspace.notifyScopeEntered();
+
+        INDArray arrayCold = Nd4j.create(10);
+
+        assertEquals(0, workspace.getCurrentOffset());
+        assertEquals(0, workspace.getCurrentSize());
+
+        arrayCold.assign(1.0f);
+
+        assertEquals(10f, arrayCold.sumNumber().floatValue(), 0.01f);
+
+        workspace.notifyScopeLeft();
+
+
+        workspace.initializeWorkspace();
+        assertEquals(40, workspace.getCurrentSize());
+
+
+        log.info("-----------------------");
+
+        for (int x = 0; x < 10; x++) {
+            assertEquals(0, workspace.getCurrentOffset());
+
+            workspace.notifyScopeEntered();
+
+            INDArray array = Nd4j.create(10);
+
+            assertEquals(40, workspace.getCurrentOffset());
+
+
+
+//            log.info("Array: {}", array);
+
+            array.addi(1.0f);
+
+            //assertEquals(40, workspace.getCurrentOffset());
+
+            assertEquals("Failed on iteration " + x,10, array.sumNumber().doubleValue(), 0.01);
+
+            workspace.notifyScopeLeft();
+
+            assertEquals(0, workspace.getCurrentOffset());
+        }
     }
 
     @Test
