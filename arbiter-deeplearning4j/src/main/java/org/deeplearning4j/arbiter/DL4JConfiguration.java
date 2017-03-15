@@ -24,6 +24,7 @@ import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 
@@ -37,8 +38,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Data
 public class DL4JConfiguration implements Serializable {
+    @JsonSerialize
     private MultiLayerConfiguration multiLayerConfiguration;
+    @JsonSerialize
     private EarlyStoppingConfiguration earlyStoppingConfiguration;
+    @JsonSerialize
     private Integer numEpochs;
 
 

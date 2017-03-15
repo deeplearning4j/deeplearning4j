@@ -49,6 +49,8 @@ public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
     }
 
     private DataSetIteratorFactory create(Map<String,Object> dataParameters) {
+        if(dataParameters == null)
+            throw new IllegalArgumentException("Data parameters is null. Please specify a class name to create a dataset iterator.");
         if(!dataParameters.containsKey(FACTORY_KEY))
             throw new IllegalArgumentException("No data set iterator factory class found. Please specify a class name with key " + FACTORY_KEY);
         String value = dataParameters.get(FACTORY_KEY).toString();

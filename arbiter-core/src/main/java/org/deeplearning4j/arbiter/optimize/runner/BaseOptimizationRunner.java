@@ -20,6 +20,7 @@ package org.deeplearning4j.arbiter.optimize.runner;
 import com.google.common.util.concurrent.ListenableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
@@ -49,11 +50,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <A> Type of additional results
  * @author Alex Black
  */
+@Slf4j
 public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
-
     private static final int POLLING_FREQUENCY = 1;
     private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
-    private static Logger log = LoggerFactory.getLogger(BaseOptimizationRunner.class);
 
     private OptimizationConfiguration<C, M, D, A> config;
     //    private CandidateExecutor<C, M, D, A> executor;
@@ -99,8 +99,11 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                 });
     }
 
+    /**
+     *
+     */
+    @Override
     public void execute() {
-
         log.info("BaseOptimizationRunner: execution started");
         for (OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
 

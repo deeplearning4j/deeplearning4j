@@ -6,6 +6,7 @@ import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
 import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -35,6 +36,8 @@ import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -108,8 +111,10 @@ public class TestJson {
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs);
+        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs,commands);
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 

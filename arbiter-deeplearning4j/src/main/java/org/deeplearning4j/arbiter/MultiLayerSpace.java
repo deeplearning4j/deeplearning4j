@@ -57,7 +57,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
     @Override
     public DL4JConfiguration getValue(double[] values) {
-
         //First: create layer configs
         List<org.deeplearning4j.nn.conf.layers.Layer> layers = new ArrayList<>();
         for (LayerConf c : layerSpaces) {

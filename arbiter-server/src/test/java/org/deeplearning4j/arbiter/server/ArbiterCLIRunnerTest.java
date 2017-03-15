@@ -24,8 +24,12 @@ import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 3/12/17.
@@ -44,17 +48,19 @@ public class ArbiterCLIRunnerTest {
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
+                .addLayer(new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2,10))
                         .activation(new DiscreteParameterSpace<>("relu","tanh"))
                         .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .numEpochs(3)
                 .pretrain(false).backprop(true).build();
-
+         assertEquals(mls,MultiLayerSpace.fromJson(mls.toJson()));
         //Define configuration:
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
@@ -73,9 +79,10 @@ public class ArbiterCLIRunnerTest {
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
+        assertEquals(configuration,OptimizationConfiguration.fromJson(configuration.toJson(),DL4JConfiguration.class,MultiLayerNetwork.class,Object.class,Evaluation.class));
 
         FileUtils.writeStringToFile(new File(configPath),configuration.toJson());
-
+        System.out.println(configuration.toJson());
         cliRunner.runMain(
                 "--dataSetIteratorClass",
                 MnistDataSetIteratorFactory.class.getCanonicalName(),
@@ -85,5 +92,7 @@ public class ArbiterCLIRunnerTest {
                 configPath
         );
     }
+
+
 
 }

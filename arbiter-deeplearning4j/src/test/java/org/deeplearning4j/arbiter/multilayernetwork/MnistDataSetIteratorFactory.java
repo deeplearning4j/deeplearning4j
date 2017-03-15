@@ -1,4 +1,4 @@
-package org.deeplearning4j.arbiter.server;
+package org.deeplearning4j.arbiter.multilayernetwork;
 
 import lombok.Data;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;

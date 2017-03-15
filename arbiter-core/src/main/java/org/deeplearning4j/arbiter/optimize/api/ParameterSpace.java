@@ -43,7 +43,6 @@ import java.util.List;
         @JsonSubTypes.Type(value = FixedValue.class, name = "FixedValue")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
-
 public interface ParameterSpace<P> {
 
     /**

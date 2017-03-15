@@ -18,6 +18,8 @@
 package org.deeplearning4j.arbiter.saver.local.multilayer;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -46,6 +48,7 @@ import java.nio.file.Files;
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
     @JsonProperty
     private String path;

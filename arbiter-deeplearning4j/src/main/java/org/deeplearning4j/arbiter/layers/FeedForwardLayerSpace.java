@@ -17,7 +17,6 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -30,11 +29,9 @@ import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+@NoArgsConstructor //For Jackson JSON/YAML deserialization
 public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends LayerSpace<L> {
-    @JsonProperty
     protected ParameterSpace<Integer> nIn;
-    @JsonProperty
     protected ParameterSpace<Integer> nOut;
 
 

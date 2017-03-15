@@ -5,6 +5,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
@@ -22,7 +23,9 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -76,10 +79,13 @@ public class TestJson {
 
     @Test
     public void testCandidateGeneratorJson() throws Exception {
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,new HashMap<>());
+
         List<CandidateGenerator<?>> l = new ArrayList<>();
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.Sequential));
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.RandomOrder));
-        l.add(new RandomSearchGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5)));
+        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.Sequential,commands));
+        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.RandomOrder,commands));
+        l.add(new RandomSearchGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5),commands));
 
         for(CandidateGenerator<?> cg : l){
             String strJson = jsonMapper.writeValueAsString(cg);

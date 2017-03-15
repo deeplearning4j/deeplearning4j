@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -86,8 +87,10 @@ public class TestDL4JLocalExecution {
                 .pretrain(false).backprop(true).build();
 
         //Define configuration:
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 
@@ -140,8 +143,10 @@ public class TestDL4JLocalExecution {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .numEpochs(3)
                 .pretrain(false).backprop(true).build();
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls,5, GridSearchCandidateGenerator.Mode.Sequential,commands);
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/").getAbsolutePath();
@@ -182,6 +187,9 @@ public class TestDL4JLocalExecution {
                 .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150,150),true))
                 .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>())
                 .build();
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
+
 
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
@@ -200,7 +208,7 @@ public class TestDL4JLocalExecution {
 
         //Define configuration:
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
 
 

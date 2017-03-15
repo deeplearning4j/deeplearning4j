@@ -23,6 +23,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
@@ -33,11 +34,11 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
         @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
 })
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface CandidateGenerator<C> {
 
     /**
@@ -49,7 +50,6 @@ public interface CandidateGenerator<C> {
     /**
      * Generate a candidate hyperparameter configuration
      */
-    @JsonIgnore
     Candidate<C> getCandidate();
 
     /**

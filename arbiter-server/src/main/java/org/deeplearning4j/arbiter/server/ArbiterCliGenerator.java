@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -92,19 +94,21 @@ public class ArbiterCliGenerator {
 
 
         DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        Map<String,Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,dataSetIteratorClass);
 
 
         if(neuralNetType.equals(MULTI_LAYER)) {
             MultiLayerSpace multiLayerSpace = loadMultiLayer();
             CandidateGenerator<DL4JConfiguration> candidateGenerator = null;
             if(candidateType.equals(GRID_SEARCH_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace);
+                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace,commands);
 
 
 
             }
             else if(candidateType.equals(RANDOM_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace);
+                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace,commands);
 
             }
 
@@ -141,11 +145,11 @@ public class ArbiterCliGenerator {
             ComputationGraphSpace computationGraphSpace = loadCompGraph();
             CandidateGenerator<GraphConfiguration> candidateGenerator = null;
             if(candidateType.equals(GRID_SEARCH_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace);
+                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace,commands);
 
             }
             else if(candidateType.equals(RANDOM_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace);
+                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace,commands);
 
             }
 
