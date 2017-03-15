@@ -23,13 +23,11 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
 import java.util.*;
@@ -97,9 +95,12 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     protected Gradient createGradient(INDArray wGradient, INDArray vBiasGradient, INDArray hBiasGradient) {
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY, hBiasGradient);
+        // The order of the following statements matters!! The gradient is being flattened and applied to
+        // flattened params in this order.
+        // The order might need to be handled via ordering
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY, wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY, hBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         return ret;
     }
 
