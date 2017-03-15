@@ -187,7 +187,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
-        pointer = workspace.alloc(data.length * getElementSize()).asFloatPointer().put(data);
+        pointer = workspace.alloc(data.length * getElementSize(), dataType()).asFloatPointer().put(data);
         indexer = FloatIndexer.create((FloatPointer) pointer);
         wrappedBuffer = pointer.asByteBuffer();
 

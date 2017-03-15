@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.MemoryKind;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -62,17 +62,19 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
         //  we want params validation here
 
         // and actual workspace allocation
-        this.currentSize.set(workspaceConfiguration.getInitialSize());
+        currentSize.set(workspaceConfiguration.getInitialSize());
+
+        log.info("Allocating workspace of {} bytes...", currentSize.get());
 
         if (currentSize.get() > 0)
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get(), MemoryKind.HOST, true)));
     }
 
-    public PagedPointer alloc(long requiredMemory) {
-        return this.alloc(requiredMemory, MemoryKind.HOST);
+    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type) {
+        return this.alloc(requiredMemory, MemoryKind.HOST, type);
     }
 
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type) {
         /*
             just two options here:
             1) reqMem + currentOffset < totalSize, we just return pointer + offset
@@ -82,9 +84,11 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
             // FIXME: check for alignment here
             long prevOffset = currentOffset.getAndAdd(requiredMemory);
 
-            return workspace.getHostPointer().withOffset(prevOffset, requiredMemory / 4);
+            log.info("Allocating array of {} bytes, capacity of {} elements", requiredMemory, requiredMemory / 4);
+
+            return workspace.getHostPointer().withOffset(prevOffset, requiredMemory / Nd4j.sizeOfDataType(type));
         } else {
-            return new PagedPointer(new FloatPointer(requiredMemory / 4), requiredMemory / 4);
+            return new PagedPointer(new FloatPointer(requiredMemory / 4), requiredMemory / Nd4j.sizeOfDataType(type));
         }
     }
 

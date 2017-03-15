@@ -7,11 +7,15 @@ import org.bytedeco.javacpp.*;
  */
 public class PagedPointer extends Pointer {
 
+    // we're storing this pointer as strong reference
+    private Pointer originalPointer;
+
     private PagedPointer() {
 
     }
 
     public PagedPointer(Pointer pointer) {
+        this.originalPointer = pointer;
         this.address = pointer.address();
         this.capacity = pointer.capacity();
         this.limit = pointer.limit();

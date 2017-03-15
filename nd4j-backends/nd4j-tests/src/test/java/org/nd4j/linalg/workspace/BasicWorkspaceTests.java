@@ -67,6 +67,12 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         // checking if allocation actually happened
         assertEquals(20, workspace.getCurrentOffset());
 
+        // checking stuff at native side
+        double sum = array.sumNumber().doubleValue();
+        assertEquals(15.0, sum, 0.01);
+
+        array.getFloat(0);
+
         // checking INDArray validity
         assertEquals(1.0, array.getFloat(0), 0.01);
         assertEquals(2.0, array.getFloat(1), 0.01);
@@ -74,15 +80,37 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(4.0, array.getFloat(3), 0.01);
         assertEquals(5.0, array.getFloat(4), 0.01);
 
-        /*
+
         // checking INDArray validity
         assertEquals(1.0, array.getDouble(0), 0.01);
         assertEquals(2.0, array.getDouble(1), 0.01);
         assertEquals(3.0, array.getDouble(2), 0.01);
         assertEquals(4.0, array.getDouble(3), 0.01);
         assertEquals(5.0, array.getDouble(4), 0.01);
-*/
+
         // checking workspace memory space
+
+        INDArray array2 = Nd4j.create(new float[]{5f, 4f, 3f, 2f, 1f});
+
+        sum = array2.sumNumber().doubleValue();
+        assertEquals(15.0, sum, 0.01);
+
+        // 44 = 20 + 4 + 20, 4 was allocated as Op.extraArgs for sum
+        assertEquals(44, workspace.getCurrentOffset());
+
+
+        array.addi(array2);
+
+        sum = array.sumNumber().doubleValue();
+        assertEquals(30.0, sum, 0.01);
+
+
+        // checking INDArray validity
+        assertEquals(6.0, array.getFloat(0), 0.01);
+        assertEquals(6.0, array.getFloat(1), 0.01);
+        assertEquals(6.0, array.getFloat(2), 0.01);
+        assertEquals(6.0, array.getFloat(3), 0.01);
+        assertEquals(6.0, array.getFloat(4), 0.01);
     }
 
 

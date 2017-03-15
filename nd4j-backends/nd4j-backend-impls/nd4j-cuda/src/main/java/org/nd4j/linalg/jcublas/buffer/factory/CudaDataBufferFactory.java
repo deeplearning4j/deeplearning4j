@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
@@ -74,6 +75,18 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
         }
         return null;
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException();
     }
 
     @Override

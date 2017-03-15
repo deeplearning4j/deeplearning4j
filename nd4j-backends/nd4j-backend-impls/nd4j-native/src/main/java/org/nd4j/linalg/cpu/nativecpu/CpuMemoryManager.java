@@ -1,11 +1,10 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.memory.BasicMemoryManager;
-import org.nd4j.linalg.memory.MemoryKind;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 
 /**
  * @author raver119@gmail.com
