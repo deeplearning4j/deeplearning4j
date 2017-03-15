@@ -65,9 +65,11 @@ redirect_from: /ja-lstm
 
 再帰型ネットワークは時間を超えて作業するため、こちらのようなアニメーションによる説明が最適です。（最初の縦線のノードは、時が経つと共に展開されると循環するフィードフォワードネットワークであると考えてください。）
 
-<iframe src="http://imgur.com/kpZBDfV" width="100%" height="630px;" style="border:none;"></iframe>
+{::nomarkdown}
+<blockquote class="imgur-embed-pub" lang="en" data-id="kpZBDfV"><a href="//imgur.com/kpZBDfV">how recurrent neural networks work #deeplearning4j #dl4j</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+{:/nomarkdown}
 
-[上図](http://imgur.com/kpZBDfV)にある`x`は入力のexample、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変形、または押し込まれた後の隠れ層の出力を表しています。
+[上図](https://i.imgur.com/kpZBDfV)にある`x`は入力のexample、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変形、または押し込まれた後の隠れ層の出力を表しています。
 
 ## <a name="backpropagation">通時的誤差逆伝播法（BPTT）</a>
 
