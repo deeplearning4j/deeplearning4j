@@ -326,6 +326,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(long length, boolean initialize);
 
+    DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create an int data buffer
      *

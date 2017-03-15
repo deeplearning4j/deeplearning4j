@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.memory.MemoryManager;
@@ -84,11 +85,21 @@ public class Nd4jWorkspace implements AutoCloseable, MemoryWorkspace {
             // FIXME: check for alignment here
             long prevOffset = currentOffset.getAndAdd(requiredMemory);
 
-            log.info("Allocating array of {} bytes, capacity of {} elements", requiredMemory, requiredMemory / 4);
+            log.info("Allocating array of {} bytes, capacity of {} elements", requiredMemory, requiredMemory / Nd4j.sizeOfDataType(type));
 
             return workspace.getHostPointer().withOffset(prevOffset, requiredMemory / Nd4j.sizeOfDataType(type));
         } else {
-            return new PagedPointer(new FloatPointer(requiredMemory / 4), requiredMemory / Nd4j.sizeOfDataType(type));
+            switch (workspaceConfiguration.getPolicySpill()) {
+                case EXTERNAL:
+                    return new PagedPointer(new FloatPointer(requiredMemory / Nd4j.sizeOfDataType(type)), requiredMemory / Nd4j.sizeOfDataType(type));
+                case REALLOCATE: {
+                        throw new UnsupportedOperationException("Not implemented yet");
+                    }
+                case FAIL:
+                default: {
+                    throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
+                }
+            }
         }
     }
 

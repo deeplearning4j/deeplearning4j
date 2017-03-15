@@ -473,6 +473,35 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    protected BaseDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        if (length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
+        this.length = length;
+        this.underlyingLength = length;
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        if (length < 0)
+            throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
+
+        if (dataType() == Type.DOUBLE) {
+            pointer = workspace.alloc(length * getElementSize(), dataType()).asDoublePointer(); //new DoublePointer(length());
+            indexer = DoubleIndexer.create((DoublePointer) pointer);
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == Type.FLOAT) {
+            pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
+            indexer = FloatIndexer.create((FloatPointer) pointer);
+            if (initialize)
+                fillPointerWithZero();
+
+        } else if (dataType() == Type.INT) {
+            pointer = new IntPointer(length());
+            indexer = IntIndexer.create((IntPointer) pointer);
+            if (initialize)
+                fillPointerWithZero();
+        }
+    }
+
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
         if (dataType() == Type.FLOAT) {

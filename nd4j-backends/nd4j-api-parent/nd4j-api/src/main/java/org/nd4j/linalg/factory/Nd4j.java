@@ -1298,7 +1298,7 @@ public class Nd4j {
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
         else if (dataType() == DataBuffer.Type.HALF)

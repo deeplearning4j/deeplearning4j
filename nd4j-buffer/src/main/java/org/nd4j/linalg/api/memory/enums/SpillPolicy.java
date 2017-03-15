@@ -6,4 +6,5 @@ package org.nd4j.linalg.api.memory.enums;
 public enum SpillPolicy {
     EXTERNAL,
     REALLOCATE,
+    FAIL,
 }

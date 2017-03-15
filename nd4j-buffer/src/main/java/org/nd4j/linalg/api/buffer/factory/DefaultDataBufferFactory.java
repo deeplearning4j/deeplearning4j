@@ -238,6 +238,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new FloatBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(long length) {
         return new IntBuffer(length);
     }
