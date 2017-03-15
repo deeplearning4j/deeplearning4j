@@ -65,9 +65,9 @@ redirect_from: /ja-lstm
 
 再帰型ネットワークは時間を超えて作業するため、こちらのようなアニメーションによる説明が最適です。（最初の縦線のノードは、時が経つと共に展開されると循環するフィードフォワードネットワークであると考えてください。）
 
-<iframe src="https://i.imgur.com/6Uak4vF.gif" width="100%" height="630px;" style="border:none;"></iframe>
+<iframe src="http://imgur.com/kpZBDfV" width="100%" height="630px;" style="border:none;"></iframe>
 
-[上図](https://i.imgur.com/6Uak4vF.gifv)にある`x`は入力のexample、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変形、または押し込まれた後の隠れ層の出力を表しています。
+[上図](http://imgur.com/kpZBDfV)にある`x`は入力のexample、`w`は入力をフィルターする重み、`a`は隠れ層の活性化（重みを付けた入力とその前の隠れ状態の組み合わせ）、`b`はReLUやシグモイド関数を使って変形、または押し込まれた後の隠れ層の出力を表しています。
 
 ## <a name="backpropagation">通時的誤差逆伝播法（BPTT）</a>
 
