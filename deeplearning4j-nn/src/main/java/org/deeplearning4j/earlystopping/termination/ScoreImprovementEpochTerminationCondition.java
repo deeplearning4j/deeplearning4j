@@ -18,17 +18,25 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Terminate training if best model score does not improve for N epochs
  */
+@Slf4j
+@Data
 public class ScoreImprovementEpochTerminationCondition implements EpochTerminationCondition {
-    private static Logger log = LoggerFactory.getLogger(ScoreImprovementEpochTerminationCondition.class);
+    @JsonProperty
     private int maxEpochsWithNoImprovement;
+    @JsonProperty
     private int bestEpoch = -1;
+    @JsonProperty
     private double bestScore;
+    @JsonProperty
     private double minImprovement = 0.0;
 
     public ScoreImprovementEpochTerminationCondition(int maxEpochsWithNoImprovement) {
@@ -70,6 +78,6 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
     @Override
     public String toString() {
         return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement=" + maxEpochsWithNoImprovement
-                        + ", minImprovement=" + minImprovement + ")";
+                + ", minImprovement=" + minImprovement + ")";
     }
 }

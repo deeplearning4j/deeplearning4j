@@ -19,11 +19,14 @@
 package org.deeplearning4j.earlystopping;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -42,6 +45,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@NoArgsConstructor
 public class EarlyStoppingConfiguration<T extends Model> implements Serializable {
 
     private EarlyStoppingModelSaver<T> modelSaver;
