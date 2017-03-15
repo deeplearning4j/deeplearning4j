@@ -84,8 +84,16 @@ The source code for the built in termination classes are in this [directory](htt
 
 You can of course implement your own iteration and epoch termination conditions.
 
+## Early Stopping w/ Parallel Wrapper
 
-Final notes:
+The early stopping implementation described above will only work with a single device. However, `EarlyStoppingParallelTrainer` provides similar functionality as early stopping and allows you to optimize for either multiple CPUs or GPUs. `EarlyStoppingParallelTrainer` wraps your model in a `ParallelWrapper` class and performs localized distributed training.
+
+Note that `EarlyStoppingParallelTrainer` doesn't support all of the functionality as its single device counterpart. It is not UI-compatible and may not work with complex iteration listeners. This is due to how the model is distributed and copied in the background.
+
+[TestParallelEarlyStopping.java](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/test/java/org/deeplearning4j/parallelism/TestParallelEarlyStopping.java) gives a good example of setting up parallel early stopping in different scenarios.
+
+
+## Final notes
 
 * Here's a [very simple example using early stopping](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/earlystopping/EarlyStoppingMNIST.java)
 * [These unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/earlystopping/TestEarlyStopping.java) may also be useful.

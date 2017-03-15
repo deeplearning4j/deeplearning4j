@@ -49,6 +49,10 @@ Within `ParallelWrapper`, your initial model will be duplicated, and each worker
 
 It's worth noting that for data-parallel training, a higher learning rate is recommended. Something around +20% should be a good starting value.
 
+## Early Stopping w/ Parallel Wrapper
+
+A special early stopping class, `EarlyStoppingParallelTrainer` provides similar functionality as early stopping with single GPU devices. Read more about [early stopping here](./earlystopping).
+
 ## HALF Datatype
 
 If your app can afford using half-precision math (typically neural nets can afford this), you can enable this as data type for your app, and you'll see following benefits:
