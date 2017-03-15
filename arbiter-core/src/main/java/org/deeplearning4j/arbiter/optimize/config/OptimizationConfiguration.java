@@ -119,6 +119,11 @@ public class OptimizationConfiguration<T, M, D, A> {
             return this;
         }
 
+        /**
+         * Termination conditions to use
+         * @param conditions
+         * @return
+         */
         public Builder<T, M, D, A> terminationConditions(TerminationCondition... conditions) {
             terminationConditions = Arrays.asList(conditions);
             return this;
