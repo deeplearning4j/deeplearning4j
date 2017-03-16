@@ -38,6 +38,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     protected MemoryManager memoryManager;
 
     protected AtomicBoolean isLearning = new AtomicBoolean(true);
+    protected AtomicBoolean isUsed = new AtomicBoolean(true);
 
 
     protected AtomicLong cycleAllocations = new AtomicLong(0);
@@ -96,6 +97,12 @@ public class Nd4jWorkspace implements MemoryWorkspace {
          */
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
+        // shortcut made to skip workspace
+        if (!isUsed.get()) {
+            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+            return pointer;
+        }
+
         if (currentOffset.get() + requiredMemory <= currentSize.get()) {
             // FIXME: check for alignment here
             long prevOffset = currentOffset.getAndAdd(requiredMemory);
@@ -141,6 +148,12 @@ public class Nd4jWorkspace implements MemoryWorkspace {
             1) memset primary page(s)
             2) purge external allocations
          */
+
+        if (!isUsed.get()) {
+            log.warn("Worskpace was turned off, and wasn't ever turned on back again");
+            isUsed.set(true);
+        }
+
 
         if (cycleAllocations.get() > maxCycle.get())
             maxCycle.set(cycleAllocations.get());
@@ -192,5 +205,10 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void toggleWorkspaceUse(boolean isEnabled) {
+        isUsed.set(isEnabled);
     }
 }

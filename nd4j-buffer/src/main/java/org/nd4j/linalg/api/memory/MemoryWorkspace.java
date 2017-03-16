@@ -24,4 +24,6 @@ public interface MemoryWorkspace extends AutoCloseable {
     void initializeWorkspace();
 
     void destroyWorkspace();
+
+    void toggleWorkspaceUse(boolean isEnabled);
 }

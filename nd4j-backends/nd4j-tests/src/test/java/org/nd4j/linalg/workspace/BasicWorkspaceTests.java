@@ -90,6 +90,37 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testToggle1() throws Exception {
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getCurrentOffset());
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array1 = Nd4j.create(100);
+
+            cW.toggleWorkspaceUse(false);
+
+            INDArray arrayDetached = Nd4j.create(100);
+
+            arrayDetached.assign(1.0f);
+
+            double sum = arrayDetached.sumNumber().doubleValue();
+            assertEquals(100f, sum, 0.01);
+
+            cW.toggleWorkspaceUse(true);
+
+            INDArray array2 = Nd4j.create(100);
+        }
+
+        assertEquals(0, workspace.getCurrentOffset());
+        assertEquals(800, workspace.getCurrentSize());
+    }
+
+    @Test
     public void testLoop4() throws Exception {
         Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
 
