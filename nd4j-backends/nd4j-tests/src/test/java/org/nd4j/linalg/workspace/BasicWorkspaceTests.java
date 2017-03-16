@@ -119,7 +119,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         // should be 800 = 100 elements * 4 bytes per element * 2 as overallocation coefficient
-        assertEquals(800, workspace.getCurrentSize());
+        assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
         // should be 800 = 100 elements * 4 bytes per element * 2 as overallocation coefficient
-        assertEquals(800, workspace.getCurrentSize());
+        assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
     }
 
     @Test
@@ -193,7 +193,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
         assertEquals(0, workspace.getCurrentOffset());
-        assertEquals(800, workspace.getCurrentSize());
+        assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
 
 
         try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
@@ -210,11 +210,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             cW.toggleWorkspaceUse(true);
 
-            assertEquals(400, workspace.getCurrentOffset());
+            assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
             INDArray array2 = Nd4j.create(100);
 
-            assertEquals(800, workspace.getCurrentOffset());
+            assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
         }
     }
 
@@ -234,12 +234,12 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
         assertEquals(0, workspace.getCurrentOffset());
-        assertEquals(800, workspace.getCurrentSize());
+        assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
 
         try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
 
-            assertEquals(400, workspace.getCurrentOffset());
+            assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
         }
 
         assertEquals(0, workspace.getCurrentOffset());
@@ -266,7 +266,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         workspace.notifyScopeLeft();
 
         assertEquals(0, workspace.getCurrentOffset());
-        assertEquals(440, workspace.getCurrentSize());
+        assertEquals(110 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
     }
 
     @Test
@@ -291,13 +291,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
         workspace.initializeWorkspace();
-        assertEquals(400, workspace.getCurrentSize());
+        assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
         assertEquals(0, workspace.getCurrentOffset());
 
         workspace.notifyScopeEntered();
 
         INDArray arrayHot = Nd4j.create(10);
-        assertEquals(40, workspace.getCurrentOffset());
+        assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         workspace.notifyScopeLeft();
     }
@@ -327,7 +327,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         workspace.initializeWorkspace();
-        assertEquals(44, workspace.getCurrentSize());
+        assertEquals(11 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
 
 
         log.info("-----------------------");
@@ -339,11 +339,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             INDArray array = Nd4j.create(10);
 
-            assertEquals(40, workspace.getCurrentOffset());
+            assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
             array.addi(1.0f);
 
-            assertEquals(40, workspace.getCurrentOffset());
+            assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
             assertEquals("Failed on iteration " + x,10, array.sumNumber().doubleValue(), 0.01);
 
@@ -366,13 +366,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(20, workspace.getCurrentOffset());
+        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         array.assign(1.0f);
 
         INDArray dup = array.dup();
 
-        assertEquals(40, workspace.getCurrentOffset());
+        assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
     }
@@ -402,7 +402,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(20, workspace.getCurrentOffset());
+        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         try {
             INDArray array2 = Nd4j.create(10000000);
@@ -411,11 +411,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             assertTrue(true);
         }
 
-        assertEquals(20, workspace.getCurrentOffset());
+        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         INDArray array2 = Nd4j.create(new int[] {1,5}, 'c');
 
-        assertEquals(40, workspace.getCurrentOffset());
+        assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
     }
 
     @Test
@@ -431,7 +431,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(20, workspace.getCurrentOffset());
+        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         array.assign(1.0f);
 
@@ -451,7 +451,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(5);
 
         // checking if allocation actually happened
-        assertEquals(20, workspace.getCurrentOffset());
+        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getCurrentOffset());
 
         array.assign(1.0f);
 
