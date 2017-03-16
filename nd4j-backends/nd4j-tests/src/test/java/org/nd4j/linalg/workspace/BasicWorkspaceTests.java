@@ -118,6 +118,28 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getCurrentOffset());
         assertEquals(800, workspace.getCurrentSize());
+
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array1 = Nd4j.create(100);
+
+            cW.toggleWorkspaceUse(false);
+
+            INDArray arrayDetached = Nd4j.create(100);
+
+            arrayDetached.assign(1.0f);
+
+            double sum = arrayDetached.sumNumber().doubleValue();
+            assertEquals(100f, sum, 0.01);
+
+            cW.toggleWorkspaceUse(true);
+
+            assertEquals(400, workspace.getCurrentOffset());
+
+            INDArray array2 = Nd4j.create(100);
+
+            assertEquals(800, workspace.getCurrentOffset());
+        }
     }
 
     @Test
