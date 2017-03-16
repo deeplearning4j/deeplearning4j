@@ -112,6 +112,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             assertEquals(400, workspace.getCurrentOffset());
         }
+
+        assertEquals(0, workspace.getCurrentOffset());
     }
 
     @Test
