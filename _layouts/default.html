@@ -4,29 +4,34 @@
 {% include header.html %}
 <!-- Promote Skymind Academy Workshop -->
 <div id="TopBanner" class="TopBanner">
-    <p><span>Attend a 3-Day Introductory Deep Learning Workshop</span> <a href="https://skymind.ai/academy#university" target="_blank" class="TopBanner-download-link">View Upcoming Workshops »</a></p>
+  <p><span>Attend a 3-Day Introductory Deep Learning Workshop</span> <a href="https://skymind.ai/academy#university"
+                                                                        target="_blank" class="TopBanner-download-link">View
+    Upcoming Workshops »</a></p>
 </div>
 <style>
-/* Fix subscribe form formatting */
-li.subscribe-form {
-  padding: 2px 20px !important;
-}
-.hs-richtext {
-  margin-bottom: -30px;
-}
-.hs-button {
-  background-color: #2196f3;
-  border-color: #2196f3;
-  color: #fff;
-  margin-top: 10px;
-}
-/* Top Banner Formatting*/
-.TopBanner {
-    display: none;
-}
+  /* Fix subscribe form formatting */
+  li.subscribe-form {
+    padding: 2px 20px !important;
+  }
 
-@media only screen and (min-width : 768px) {
+  .hs-richtext {
+    margin-bottom: -30px;
+  }
+
+  .hs-button {
+    background-color: #2196f3;
+    border-color: #2196f3;
+    color: #fff;
+    margin-top: 10px;
+  }
+
+  /* Top Banner Formatting*/
   .TopBanner {
+    display: none;
+  }
+
+  @media only screen and (min-width: 768px) {
+    .TopBanner {
       display: block;
       background-color: #424242;
       color: #ffffff;
@@ -35,11 +40,13 @@ li.subscribe-form {
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
       text-align: center;
-  }
-  .site-header.navbar-transparent .navbar {
+      padding-left: 280px;
+    }
+
+    .site-header.navbar-transparent .navbar {
       top: 40px !important;
+    }
   }
-}
 </style>
 
 <!-- Top Navigation -->
@@ -49,8 +56,9 @@ li.subscribe-form {
 <!-- END Top Navigation -->
 <!-- Sidebar -->
 <aside class="sidebar sidebar-boxed sidebar-dark">
-  <a class="sidebar-brand" href="../index.html"><img src="../assets/themes/thedocs/img/DL4J-LOGO-2.png" alt="Deeplearning4j"></a>
-    {% include sidebar.html %}
+  <a class="sidebar-brand" href="../index.html"><img src="../assets/themes/thedocs/img/DL4J-LOGO-2.png"
+                                                     alt="Deeplearning4j"></a>
+  {% include sidebar.html %}
 </aside>
 <!-- END Sidebar -->
 
