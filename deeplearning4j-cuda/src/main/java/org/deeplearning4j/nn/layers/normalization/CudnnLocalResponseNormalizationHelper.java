@@ -34,8 +34,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cuda.cudaSuccess;
+import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**
@@ -47,13 +46,13 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error);
+            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
         }
     }
 
     static void checkCudnn(int status) {
         if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status);
+            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
         }
     }
 
@@ -121,6 +120,19 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                     double beta) {
+        if (n < CUDNN_LRN_MIN_N) {
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+        }
+        if (n > CUDNN_LRN_MAX_N) {
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+        }
+        if (k < CUDNN_LRN_MIN_K) {
+            throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
+        }
+        if (beta < CUDNN_LRN_MIN_BETA) {
+            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+        }
+
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -171,6 +183,19 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
     @Override
     public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta) {
+        if (n < CUDNN_LRN_MIN_N) {
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+        }
+        if (n > CUDNN_LRN_MAX_N) {
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+        }
+        if (k < CUDNN_LRN_MIN_K) {
+            throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
+        }
+        if (beta < CUDNN_LRN_MIN_BETA) {
+            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+        }
+
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);

@@ -37,8 +37,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cuda.cudaSuccess;
+import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**
@@ -50,13 +49,13 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error);
+            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
         }
     }
 
     static void checkCudnn(int status) {
         if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status);
+            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
         }
     }
 
