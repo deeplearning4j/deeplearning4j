@@ -102,7 +102,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         workspace.initializeWorkspace();
-        assertEquals(40, workspace.getCurrentSize());
+        assertEquals(44, workspace.getCurrentSize());
 
 
         log.info("-----------------------");
@@ -116,13 +116,9 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             assertEquals(40, workspace.getCurrentOffset());
 
-
-
-//            log.info("Array: {}", array);
-
             array.addi(1.0f);
 
-            //assertEquals(40, workspace.getCurrentOffset());
+            assertEquals(40, workspace.getCurrentOffset());
 
             assertEquals("Failed on iteration " + x,10, array.sumNumber().doubleValue(), 0.01);
 
@@ -151,7 +147,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         INDArray dup = array.dup();
 
-        assertEquals(44, workspace.getCurrentOffset());
+        assertEquals(40, workspace.getCurrentOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
     }

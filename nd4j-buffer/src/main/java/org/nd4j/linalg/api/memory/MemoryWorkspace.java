@@ -22,4 +22,6 @@ public interface MemoryWorkspace extends AutoCloseable {
     void notifyScopeLeft();
 
     void initializeWorkspace();
+
+    void destroyWorkspace();
 }

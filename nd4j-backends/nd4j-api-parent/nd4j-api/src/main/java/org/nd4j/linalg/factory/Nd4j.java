@@ -1328,6 +1328,30 @@ public class Nd4j {
         return ret;
     }
 
+    public static DataBuffer createBufferDetached(float[] data) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.FLOAT)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static DataBuffer createBufferDetached(double[] data) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * Create a buffer based on the data type
      *

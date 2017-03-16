@@ -3,6 +3,7 @@ package org.nd4j.linalg.memory.abstracts;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -157,7 +158,16 @@ public class Nd4jWorkspace implements MemoryWorkspace {
             currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
             init();
         }
+    }
 
+    @Override
+    public void destroyWorkspace() {
+        if (workspace.getHostPointer() != null && workspace.getHostPointer().getOriginalPointer() != null && workspace.getHostPointer().getOriginalPointer() instanceof BytePointer)
+            workspace.getHostPointer().getOriginalPointer().deallocate();
+
+        workspace.setHostPointer(null);
+        currentSize.set(0);
+        currentOffset.set(0);
     }
 
     @Override
