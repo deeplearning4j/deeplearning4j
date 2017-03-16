@@ -12,9 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public abstract class BaseLevel {
 
 
-    public float[] getFloatData(INDArray buf) {
-        return BlasBufferUtil.getFloatData(buf);
-    }
+    public float[] getFloatData(INDArray buf) { return BlasBufferUtil.getFloatData(buf); }
 
     public double[] getDoubleData(INDArray buf) {
         return BlasBufferUtil.getDoubleData(buf);

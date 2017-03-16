@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.nd4j.linalg.api.ndarray.ISparseMatrix;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
 import org.nd4j.linalg.factory.ISparseMatrixFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -16,7 +17,7 @@ public class CpuSparseMatrixFactory extends ISparseMatrixFactory {
     }
     // contructors ?
 
-    Override
+    @Override
     public void createBlas(){ blas = new SparseCpuBlas();}
 
     @Override
@@ -39,4 +40,10 @@ public class CpuSparseMatrixFactory extends ISparseMatrixFactory {
     public void createLapack() {
         lapack = new SparseCpuLapack();
     }
+
+    @Override
+    public ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int nnz, int[] shape){
+        return new CpuSparseMatrix(data, columns, pointerB, pointerE, nnz, shape);
+    }
+
 }
