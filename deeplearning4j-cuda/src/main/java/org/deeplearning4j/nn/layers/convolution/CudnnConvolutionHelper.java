@@ -51,13 +51,13 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error);
+            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
         }
     }
 
     static void checkCudnn(int status) {
         if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status);
+            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
         }
     }
 
