@@ -38,7 +38,7 @@ public class BalanceMinibatches {
         if (!rootDir.exists())
             rootDir.mkdirs();
         if (!rootSaveDir.exists())
-            rootDir.mkdirs();
+            rootSaveDir.mkdirs();
 
         if (paths == null)
             paths = Maps.newHashMap();
