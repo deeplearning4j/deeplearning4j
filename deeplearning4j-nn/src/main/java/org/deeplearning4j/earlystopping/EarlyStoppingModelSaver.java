@@ -18,7 +18,13 @@
 
 package org.deeplearning4j.earlystopping;
 
+import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.saver.LocalFileGraphSaver;
+import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -27,6 +33,14 @@ import java.io.Serializable;
  * @param <T> Type of model to  save. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = InMemoryModelSaver.class, name = "InMemoryModelSaver"),
+        @JsonSubTypes.Type(value = LocalFileGraphSaver.class, name = "LocalFileGraphSaver"),
+        @JsonSubTypes.Type(value = LocalFileModelSaver.class, name = "LocalFileModelSaver"),
+
+})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface EarlyStoppingModelSaver<T extends Model> extends Serializable {
 
     /** Save the best model (so far) learned during early stopping training */

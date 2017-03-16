@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,6 +67,28 @@ import static org.junit.Assert.assertEquals;
  */
 public class RBMTests {
     private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
+
+    @Test
+    public void testGradientFlattening() {
+        INDArray features = Nd4j.create(new double[][] {
+                {0,0,0,0,0,0}});
+        INDArray params = Nd4j.create(new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+        INDArray expectedParams = params.dup();
+        RBM rbm = getRBMLayer(6, 3, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
+                LossFunctions.LossFunction.SQUARED_LOSS, 1);
+//        INDArray expectedStepParams = Nd4j.create(new double[] {-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
+
+        rbm.fit(features);
+        Gradient g = rbm.gradient();
+
+        List<INDArray> grList = new ArrayList();
+        grList.add(g.getGradientFor("W"));
+        grList.add(g.getGradientFor("b"));
+        grList.add(g.getGradientFor("vb"));
+        INDArray expectedGradient = Nd4j.toFlattened('f', grList);
+
+        assertEquals(expectedParams.subi(expectedGradient), rbm.params());
+    }
 
     @Test
     public void testIrisGaussianHidden() {
@@ -320,6 +343,19 @@ public class RBMTests {
                         VisibleUnit.SOFTMAX);
     }
 
+
+    private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params,
+                                   boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions, int learningRate) {
+        org.deeplearning4j.nn.conf.layers.RBM layer =
+                new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
+                        .learningRate(learningRate).lossFunction(lossFunctions).build();
+
+        NeuralNetConfiguration conf =
+                new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
+        conf.setPretrain(pretrain);
+
+        return (RBM) conf.getLayer().instantiate(conf, null, 0, params, initialize);
+    }
 
     private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params,
                     boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions) {

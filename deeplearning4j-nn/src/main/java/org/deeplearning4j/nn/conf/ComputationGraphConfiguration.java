@@ -211,6 +211,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
             conf.vertexInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
+
+        conf.networkInputs = new ArrayList<>();
+
         conf.networkInputs = new ArrayList<>(this.networkInputs);
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);
 
