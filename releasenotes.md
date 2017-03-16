@@ -3,6 +3,61 @@ title: Release Notes
 layout: default
 ---
 
+# <a name="zeroeightzero">Release Notes for Version 0.8.0</a>
+
+- Added transfer learning API [Link](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/transferlearning/vgg16)
+- Spark 2.0 support (DL4J and DataVec; see transition notes below)
+- New layers
+    - Global pooling (aka "pooling over time"; usable with both RNNs and CNNs) [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/pooling/GlobalPoolingLayer.java)
+    - Center loss output layer [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/centerloss/CenterLossLenetMnistExample.java)
+    - 1D Convolution and subsampling layers [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/convolution/Convolution1DLayer.java) [Link2](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/convolution/subsampling/Subsampling1DLayer.java)
+    - ZeroPaddingLayer [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/layers/convolution/ZeroPaddingLayer.java)
+- New ComputationGraph vertices
+    - L2 distance vertex
+    - L2 normalization vertex
+- Per-output masking is now supported for most loss functions (for per output masking, use a mask array equal in size/shape to the labels array; previous masking functionality was per-example for RNNs)
+- L1 and L2 regularization can now be configured for biases (via l1Bias and l2Bias configuration options)
+- Evaluation improvements:
+    - DL4J now has an IEvaluation class (that Evaluation, RegressionEvaluation, etc all implement. Also allows custom evaluation on Spark) [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/IEvaluation.java)
+    - Added multi-class (one vs. all) ROC: ROCMultiClass [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/ROCMultiClass.java)
+    - For both MultiLayerNetwork and SparkDl4jMultiLayer: added evaluateRegression, evaluateROC, evaluateROCMultiClass convenience methods
+    - HTML export functionality added for ROC charts [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/evaluation/EvaluationTools.java#L93)
+    - TSNE re-added to new UI
+    - Training UI: now usable without an internet connection (no longer relies on externally hosted fonts)
+    - UI: improvements to error handling for ‘no data’ condition
+- Epsilon configuration now used for Adam and RMSProp updaters
+- Fix for bidirectional LSTMs + variable-length time series (using masking)
+- Added CnnSentenceDataSetIterator (for use with ‘CNN for Sentence Classification’ architecture) [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nlp-parent/deeplearning4j-nlp/src/main/java/org/deeplearning4j/iterator/CnnSentenceDataSetIterator.java) [Link2](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/sentenceClassification/CnnSentenceClassificationExample.java)
+- Spark + Kryo: now test serialization + throw exception if misconfigured (instead of logging an error that can be missed)
+- MultiLayerNetwork now adds default layer names if no name is specified
+- DataVec:
+    - JSON/YAML support for DataAnalysis, custom Transforms etc
+    - ImageRecordReader refactored to reduce garbage collection load (hence improve performance with large training sets)
+    - Faster quality analysis.
+- Arbiter: added new layer types to match DL4J
+    - Performance improvement for Word2Vec/ParagraphVectors tokenization & training.
+- Batched inference introduced for ParagraphVectors
+- Nd4j improvements
+    - New native operations available for ND4j: firstIndex, lastIndex, remainder, fmod, or, and, xor.
+    - OpProfiler NAN_PANIC & INF_PANIC now also checks result of BLAS calls.
+    - Nd4.getMemoryManager() now provides methods to tweak GC behavior.
+- Alpha version of parameter server for Word2Vec/ParagraphVectors were introduced for Spark. Please note: It’s not recommended for production use yet.
+- Performance improvements for CNN inference
+
+### 0.7.2 -> 0.8.0 Transition Notes
+
+- Spark versioning schemes: with the addition of Spark 2 support, the versions for Deeplearning4j and DataVec Spark modules has changed
+    - For Spark 1: use ```<version>0.8.0_spark_1</version>```
+    - For Spark 2: use ```<version>0.8.0_spark_2</version>```
+    - Also note: Modules with Spark 2 support are released with Scala 2.11 support only. Spark 1 modules are released with both Scala 2.10 and 2.11 support
+
+### 0.8.0 Known Issues (At Launch)
+
+- UI/CUDA/Linux issue: [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3026)
+- Dirty shutdown on JVM exit is possible for CUDA backend sometimes: [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3028)
+- Issues with RBM implementation [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3049)
+
+
 # <a name="zeroseventwo">Release Notes for Version 0.7.2</a>
 - Added variational autoencoder [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/variational/VariationalAutoEncoderExample.java)
 - Activation function refactor
