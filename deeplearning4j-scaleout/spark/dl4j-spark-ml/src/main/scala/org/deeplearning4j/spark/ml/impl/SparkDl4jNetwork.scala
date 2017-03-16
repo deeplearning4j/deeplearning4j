@@ -1,5 +1,7 @@
 package org.deeplearning4j.spark.ml.impl
 
+import java.util
+
 import org.apache.spark.ml.{PredictionModel, Predictor}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
@@ -8,6 +10,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.DataFrame
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster
 import org.deeplearning4j.util.ModelSerializer
@@ -22,11 +25,17 @@ final class SparkDl4jNetwork(override val uid: String) extends Predictor[Vector,
     private var _numLabels : Int = 2
     private var _freq : Int = 10
     private var _trainingMaster : Serializer = _
+    private var _listeners : util.Collection[IterationListener] = _
+    private var _collectStats: Boolean = false
 
     def this() = this(Identifiable.randomUID("dl4j"))
 
     override def train(dataset: DataFrame) : SparkDl4jModel = {
         val sparkNet = new SparkDl4jMultiLayer(dataset.sqlContext.sparkContext, _multiLayerConfiguration, _trainingMaster())
+        sparkNet.setCollectTrainingStats(_collectStats)
+        if (_listeners != null) {
+            sparkNet.setListeners(_listeners)
+        }
         val lps = dataset.select(getFeaturesCol, getLabelCol).rdd
             .map(row => new LabeledPoint(row.getAs[Double](getLabelCol), row.getAs[Vector](getFeaturesCol)))
             .map(item => {
@@ -56,6 +65,16 @@ final class SparkDl4jNetwork(override val uid: String) extends Predictor[Vector,
 
     def setTrainingMaster(tm: Serializer) : SparkDl4jNetwork = {
         this._trainingMaster = tm
+        this
+    }
+
+    def setListeners(iterationListener: util.Collection[IterationListener]) : SparkDl4jNetwork = {
+        this._listeners = iterationListener
+        this
+    }
+
+    def setCollectionStats(collectStats: Boolean) : SparkDl4jNetwork = {
+        this._collectStats = collectStats
         this
     }
 }
