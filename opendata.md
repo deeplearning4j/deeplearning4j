@@ -137,7 +137,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 
 * [EU Surveillance Atlas of Infectious Diseases](http://ecdc.europa.eu/en/data-tools/atlas/Pages/atlas.aspx)
 * [Merck Molecular Activity Challenge](http://www.kaggle.com/c/MerckActivity/data)
-* [Musk dataset](https://archive.ics.uci.edu/ml/datasets/Musk+(Version+2): The Musk database describes molecules occurring in different conformations. Each molecule is either musk or non-musk and one of the conformations determines this property.
+* [Musk dataset](https://archive.ics.uci.edu/ml/datasets/Musk+(Version+2)): The Musk database describes molecules occurring in different conformations. Each molecule is either musk or non-musk and one of the conformations determines this property.
 
 ### Government & statistics data
 
