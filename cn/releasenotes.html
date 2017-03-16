@@ -63,6 +63,22 @@ layout: cn-default
   <li>Performance improvements for CNN inference</li>
 </ul><br>
 <br>
+<h3>0.7.2 -> 0.8.0 Transition Notes</h3>
+<p>Spark versioning schemes: with the addition of Spark 2 support, the versions for Deeplearning4j and DataVec Spark modules has changed</p>
+<ul>
+	<li>For Spark 1: use <code>&lt;version&gt;0.8.0_spark_1&lt;/version&gt;</code></li>
+	<li>For Spark 2: use <code>&lt;version&gt;0.8.0_spark_2&lt;/version&gt;</code></li>
+  <li>Also note: Modules with Spark 2 support are released with Scala 2.11 support only. Spark 1 modules are released with both Scala 2.10 and 2.11 support</li>
+</ul><br>
+<br>
+<h3>0.8.0 Known Issues (At Launch)</h3>
+<ul>
+  <li>UI/CUDA/Linux issue: <a href="https://github.com/deeplearning4j/deeplearning4j/issues/3026">Link</a></li>
+  <li>Dirty shutdown on JVM exit is possible for CUDA backend sometimes: <a href="https://github.com/deeplearning4j/deeplearning4j/issues/3028">Link</a></li>
+  <li>Issues with RBM implementation <a href="https://github.com/deeplearning4j/deeplearning4j/issues/3049">Link</a></li>
+</ul>
+<br>
+<br>
 
 <p><h2>Release Notes for Version 0.7.2</h2>
 <ul>
