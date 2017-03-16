@@ -107,8 +107,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getCurrentSize());
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
-            INDArray array = Nd4j.create(100);
+        for (int x = 10; x <= 100; x+=10) {
+            try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+                INDArray array = Nd4j.create(x);
+            }
         }
 
         assertEquals(0, workspace.getCurrentSize());
