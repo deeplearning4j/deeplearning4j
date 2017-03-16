@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.transformers
+package org.deeplearning4j.spark.ml.impl
 
 import org.apache.spark.ml.{PredictionModel, Predictor}
 import org.apache.spark.ml.param.ParamMap
