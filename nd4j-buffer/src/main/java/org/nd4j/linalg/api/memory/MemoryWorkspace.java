@@ -17,9 +17,9 @@ public interface MemoryWorkspace extends AutoCloseable {
 
     PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType);
 
-    void notifyScopeEntered();
+    MemoryWorkspace notifyScopeEntered();
 
-    void notifyScopeLeft();
+    MemoryWorkspace notifyScopeLeft();
 
     void initializeWorkspace();
 

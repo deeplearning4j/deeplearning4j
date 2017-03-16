@@ -85,7 +85,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     public PagedPointer alloc(long requiredMemory, DataBuffer.Type type) {
-        return this.alloc(requiredMemory, MemoryKind.HOST, type);
+        return alloc(requiredMemory, MemoryKind.HOST, type);
     }
 
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type) {
@@ -145,8 +145,12 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         if (cycleAllocations.get() > maxCycle.get())
             maxCycle.set(cycleAllocations.get());
 
+        if (currentSize.get() > 0)
+            Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
 
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
+        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && maxCycle.get() > 0)
+            initializeWorkspace();
+
 
         currentOffset.set(0);
         externalAllocations.clear();
@@ -168,18 +172,23 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         workspace.setHostPointer(null);
         currentSize.set(0);
         currentOffset.set(0);
+        cycleAllocations.set(0);
+        maxCycle.set(0);
     }
 
     @Override
-    public void notifyScopeEntered() {
+    public MemoryWorkspace notifyScopeEntered() {
         cycleAllocations.set(0);
         currentOffset.set(0);
+
+        return this;
     }
 
     @Override
-    public void notifyScopeLeft() {
+    public MemoryWorkspace notifyScopeLeft() {
         try {
             close();
+            return this;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -8,6 +8,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,7 +42,18 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             .policySpill(SpillPolicy.EXTERNAL)
             .build();
 
-    private static final WorkspaceConfiguration loopConfig = WorkspaceConfiguration.builder()
+    private static final WorkspaceConfiguration loopOverTimeConfig = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .maxSize(10 * 1024 * 1024)
+            .overallocationLimit(0.1)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .build();
+
+
+    private static final WorkspaceConfiguration loopFirstConfig = WorkspaceConfiguration.builder()
             .initialSize(0)
             .maxSize(10 * 1024 * 1024)
             .overallocationLimit(0.1)
@@ -78,8 +90,90 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testLoop4() throws Exception {
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getCurrentOffset());
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array1 = Nd4j.create(100);
+            INDArray array2 = Nd4j.create(100);
+        }
+
+        assertEquals(0, workspace.getCurrentOffset());
+        assertEquals(800, workspace.getCurrentSize());
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array1 = Nd4j.create(100);
+
+            assertEquals(400, workspace.getCurrentOffset());
+        }
+    }
+
+    @Test
+    public void testLoops3() throws Exception {
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getCurrentOffset());
+
+        workspace.notifyScopeEntered();
+
+        INDArray arrayCold1 = Nd4j.create(100);
+        INDArray arrayCold2 = Nd4j.create(10);
+
+        assertEquals(0, workspace.getCurrentOffset());
+        assertEquals(0, workspace.getCurrentSize());
+
+        workspace.notifyScopeLeft();
+
+        assertEquals(0, workspace.getCurrentOffset());
+        assertEquals(440, workspace.getCurrentSize());
+    }
+
+    @Test
+    public void testLoops2() throws Exception {
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopOverTimeConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getCurrentOffset());
+
+        for (int x = 1; x <= 100; x++) {
+            workspace.notifyScopeEntered();
+
+            INDArray arrayCold = Nd4j.create(x);
+
+            assertEquals(0, workspace.getCurrentOffset());
+            assertEquals(0, workspace.getCurrentSize());
+
+            workspace.notifyScopeLeft();
+        }
+
+        workspace.initializeWorkspace();
+        assertEquals(400, workspace.getCurrentSize());
+        assertEquals(0, workspace.getCurrentOffset());
+
+        workspace.notifyScopeEntered();
+
+        INDArray arrayHot = Nd4j.create(10);
+        assertEquals(40, workspace.getCurrentOffset());
+
+        workspace.notifyScopeLeft();
+    }
+
+    @Test
     public void testLoops1() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopConfig);
+        Nd4jWorkspace workspace = new Nd4jWorkspace(loopOverTimeConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
