@@ -90,6 +90,80 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testOverallocation3() throws Exception {
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .maxSize(10 * 1024 * 1024)
+                .overallocationLimit(1.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+
+        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertEquals(0, workspace.getCurrentSize());
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array = Nd4j.create(100);
+        }
+
+        assertEquals(0, workspace.getCurrentSize());
+
+        workspace.initializeWorkspace();
+
+
+        // should be 800 = 100 elements * 4 bytes per element * 2 as overallocation coefficient
+        assertEquals(800, workspace.getCurrentSize());
+    }
+
+    @Test
+    public void testOverallocation2() throws Exception {
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .maxSize(10 * 1024 * 1024)
+                .overallocationLimit(1.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+
+        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertEquals(0, workspace.getCurrentSize());
+
+        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+            INDArray array = Nd4j.create(100);
+        }
+
+        // should be 800 = 100 elements * 4 bytes per element * 2 as overallocation coefficient
+        assertEquals(800, workspace.getCurrentSize());
+    }
+
+    @Test
+    public void testOverallocation1() throws Exception {
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
+                .initialSize(1024)
+                .maxSize(10 * 1024 * 1024)
+                .overallocationLimit(1.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyLearning(LearningPolicy.NONE)
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+
+        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+
+        assertEquals(2048, workspace.getCurrentSize());
+    }
+
+    @Test
     public void testToggle1() throws Exception {
         Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
 

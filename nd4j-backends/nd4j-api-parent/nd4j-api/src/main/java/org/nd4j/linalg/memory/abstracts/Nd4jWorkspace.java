@@ -7,6 +7,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -79,6 +80,9 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         log.info("Allocating workspace of {} bytes...", currentSize.get());
 
         if (currentSize.get() > 0) {
+            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
+                currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + 1024, MemoryKind.HOST, true)));
 
             Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
