@@ -6,11 +6,11 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import javax.annotation.Nonnull;
 
 /**
- * This interface describes backend-specific implementations of MemoryWorkspaceProvider, basically Factory + Thread-based provider
+ * This interface describes backend-specific implementations of MemoryWorkspaceManager, basically Factory + Thread-based provider
  *
  * @author raver119@gmail.com
  */
-public interface MemoryWorkspaceProvider {
+public interface MemoryWorkspaceManager {
     /**
      * This method sets default workspace configuration for this provider instance
      *
@@ -34,13 +34,31 @@ public interface MemoryWorkspaceProvider {
     MemoryWorkspace createNewWorkspace();
 
     /**
-     * This method returns you current Workspace for current Thread
+     * This method returns you current default Workspace for current Thread
      *
      * PLEASE NOTE: If Workspace wasn't defined, new Workspace will be created using current default configuration
      *
      * @return
      */
     MemoryWorkspace getWorkspaceForCurrentThread();
+
+    /**
+     * This method returns you Workspace for a given Id for current Thread
+     *
+     * PLEASE NOTE: If Workspace wasn't defined, new Workspace will be created using current default configuration
+     *
+     * @return
+     */
+    MemoryWorkspace getWorkspaceForCurrentThread(String id);
+
+    /**
+     * This method returns you Workspace for a given Id for current Thread
+     *
+     * PLEASE NOTE: If Workspace wasn't defined, new Workspace will be created using given configuration
+     *
+     * @return
+     */
+    MemoryWorkspace getWorkspaceForCurrentThread(WorkspaceConfiguration configuration, String id);
 
     /**
      * This method allows you to set given Workspace as default for current Thread
@@ -50,11 +68,25 @@ public interface MemoryWorkspaceProvider {
     void setWorkspaceForCurrentThread(MemoryWorkspace workspace);
 
     /**
+     * This method allows you to set given Workspace for spacific Id for current Thread
+     *
+     * @param workspace
+     */
+    void setWorkspaceForCurrentThread(MemoryWorkspace workspace, String id);
+
+    /**
      * This method allows you to destroy given Workspace
      *
      * @param workspace
      */
     void destroyWorkspace(MemoryWorkspace workspace);
+
+    /**
+     * This method destroys & deallocates all Workspaces for a calling Thread
+     *
+     * PLEASE NOTE: This method is NOT safe
+     */
+    void destroyAllWorkspacesForCurrentThread();
 
     /**
      * This method destroys current Workspace for current Thread

@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.memory.MemoryWorkspaceProvider;
+import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
@@ -71,7 +71,7 @@ import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceProvider;
+import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -141,7 +141,7 @@ public class Nd4j {
     public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") == null ? false : true;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
-    public static MemoryWorkspaceProvider workspaceManager;
+    private static MemoryWorkspaceManager workspaceManager;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -5827,7 +5827,7 @@ public class Nd4j {
             getExecutioner().setExecutionMode(executionMode);
 
             // FIXME: make this backend-specific
-            workspaceManager = new BasicWorkspaceProvider();
+            workspaceManager = new BasicWorkspaceManager();
 
             String fallback = System.getenv("ND4J_FALLBACK");
             if (fallback != null && !fallback.isEmpty()) {
@@ -5985,7 +5985,7 @@ public class Nd4j {
         return fallbackMode.get();
     }
 
-    public static MemoryWorkspaceProvider getWorkspaceManager() {
+    public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
     }
 }

@@ -33,7 +33,7 @@ public class BasicMemoryManager implements MemoryManager {
 
     protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
 
-    private MemoryWorkspace workspace = null;
+    private ThreadLocal<MemoryWorkspace> workspace = new ThreadLocal<>();
 
     /**
      * This method returns
@@ -164,11 +164,11 @@ public class BasicMemoryManager implements MemoryManager {
 
     @Override
     public MemoryWorkspace getCurrentWorkspace() {
-        return workspace;
+        return workspace.get();
     }
 
     @Override
     public void setCurrentWorkspace(MemoryWorkspace workspace) {
-        this.workspace = workspace;
+        this.workspace.set(workspace);
     }
 }

@@ -32,7 +32,6 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Getter protected String id;
 
-
     protected AtomicLong currentSize = new AtomicLong(0);
     protected AtomicLong hostOffset = new AtomicLong(0);
     protected AtomicLong deviceOffset = new AtomicLong(0);
@@ -56,6 +55,8 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     // TODO: it should be something like our PointersPair
     protected List<PointersPair> externalAllocations = new ArrayList<>();
+
+    private MemoryWorkspace previousWorkspace;
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 
@@ -93,7 +94,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
             if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
                 currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
 
-            if (currentSize.get() > workspaceConfiguration.getMaxSize())
+            if (workspaceConfiguration.getMaxSize() > 0 && currentSize.get() > workspaceConfiguration.getMaxSize())
                 currentSize.set(workspaceConfiguration.getMaxSize());
 
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + 1024, MemoryKind.HOST, true)));
@@ -191,7 +192,11 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public void initializeWorkspace() {
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE) {
-            currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
+            if (workspaceConfiguration.getMaxSize() > 0)
+                currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
+            else
+                currentSize.set(maxCycle.get());
+
             init();
         }
     }
@@ -210,6 +215,10 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeEntered() {
+        previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(this);
+
+
         cycleAllocations.set(0);
         hostOffset.set(0);
 
@@ -224,6 +233,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeLeft() {
+        Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         try {
             close();
             return this;
