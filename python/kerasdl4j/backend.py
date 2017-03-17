@@ -32,7 +32,7 @@ def install_dl4j_backend(model):
     :param model: Model in which fit will be hijacked
     """
     # append special methods
-    # model._old_save = model.save
+    model._old_save = model.save
     model.save = instancemethod(_save_model, model)
 
     # hijack Keras API
