@@ -65,20 +65,19 @@ public class KDTree implements Serializable {
             int successor;
             while (true) {
                 //exactly equal
-                if (node.getPoint().eq(point).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
+                if (node.getPoint().neq(point).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
                     return;
                 } else {
-                    successor = successor(root, point, disc);
+                    successor = successor(node, point, disc);
                     KDNode child;
                     if (successor < 1)
-                        child = root.getLeft();
+                        child = node.getLeft();
                     else
-                        child = root.getRight();
+                        child = node.getRight();
                     if (child == null)
                         break;
                     disc = (disc + 1) % dims;
                     node = child;
-
                 }
             }
 
@@ -90,9 +89,8 @@ public class KDTree implements Serializable {
 
             rect.enlargeTo(point);
             insert.setParent(node);
-            size++;
-
         }
+        size++;
 
     }
 
@@ -178,6 +176,7 @@ public class KDTree implements Serializable {
         double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult().doubleValue();
         if (dist2 < dist) {
             best = node.getPoint();
+            dist = dist2;
         }
 
         HyperRect lower = rect.getLower(node.point, _disc);
