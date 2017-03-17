@@ -60,6 +60,86 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspaces4() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+
+        try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+
+            INDArray array1 = Nd4j.create(100);
+
+            try(Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").notifyScopeEntered()) {
+                INDArray array2 = Nd4j.create(100);
+
+                try(Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS3").notifyScopeEntered()) {
+                    INDArray array3 = Nd4j.create(100);
+
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+                }
+
+                INDArray array2b = Nd4j.create(100);
+
+                assertEquals(200 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+            }
+
+            INDArray array1b = Nd4j.create(100);
+
+            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+        }
+
+        Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
+        Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2");
+        Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS3");
+
+
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+    }
+
+    @Test
+    public void testNestedWorkspaces3() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+
+
+        // We open top-level workspace
+        try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+
+            INDArray array1 = Nd4j.create(100);
+
+            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+
+            // we open first nested workspace
+            try(Nd4jWorkspace ws2 = (Nd4jWorkspace)  Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").notifyScopeEntered()) {
+                assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+
+                INDArray array2 = Nd4j.create(100);
+
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+            }
+
+            // and second nexted workspace
+            try(Nd4jWorkspace ws3 = (Nd4jWorkspace)  Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS3").notifyScopeEntered()) {
+                assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+
+                INDArray array2 = Nd4j.create(100);
+
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+            }
+
+            // this allocation should happen within top-level workspace
+            INDArray array1b = Nd4j.create(100);
+
+            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+        }
+
+        assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Test
     public void testNestedWorkspaces2() throws Exception {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 

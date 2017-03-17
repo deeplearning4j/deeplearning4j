@@ -163,7 +163,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() throws Exception {
-        // TODO: to be implemented
+        Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         /*
             Basically all we want here, is:
             1) memset primary page(s)
@@ -233,7 +233,6 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeLeft() {
-        Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         try {
             close();
             return this;
