@@ -50,13 +50,13 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error);
+            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
         }
     }
 
     static void checkCudnn(int status) {
         if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status);
+            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
         }
     }
 
@@ -172,6 +172,10 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps) {
+        if (eps < CUDNN_BN_MIN_EPSILON) {
+            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
+        }
+
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -231,6 +235,10 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps) {
+        if (eps < CUDNN_BN_MIN_EPSILON) {
+            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
+        }
+
         int miniBatch = x.size(0);
         int inDepth = x.size(1);
         int inH = x.size(2);
