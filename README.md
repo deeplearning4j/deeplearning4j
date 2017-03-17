@@ -18,7 +18,10 @@ quickly. Current input data types supported out of the box:
 * CSV Data
 * Raw Text Data (Tweets, Text Documents, etc)
 * Image Data
-
+* LibSVM
+* SVMLight
+* MatLab (MAT) format
+* JSON, XML, YAML, XML
 
 Datavec draws inspiration from a lot of the Hadoop ecosystem tools, and in particular accesses data on disk through the
 Hadoop API (like Spark does), which means it's compatible with many records
