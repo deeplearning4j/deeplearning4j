@@ -347,9 +347,11 @@ def _sequential_evaluate(
     params_builder.featuresDirectory(features_directory)
     params_builder.labelsDirectory(labels_directory)
     params_builder.batchSize(batch_size)
-    gateway.sequentialEvaluate(params_builder.build())
+    ret = gateway.sequentialEvaluate(params_builder.build())
 
     print("evaluate() operation complete")
+
+    return ret
 
 
 def _sequential_predict(
@@ -521,9 +523,11 @@ def _functional_evaluate(
     params_builder.featuresDirectory(features_directory)
     params_builder.labelsDirectory(labels_directory)
     params_builder.batchSize(batch_size)
-    gateway.functionalEvaluate(params_builder.build())
+    ret = gateway.functionalEvaluate(params_builder.build())
 
     print("evaluate() operation complete")
+
+    return ret
 
 
 def _functional_predict(
