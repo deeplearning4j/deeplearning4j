@@ -39,61 +39,42 @@ def install_dl4j_backend(model):
     if model.__class__.__name__ == 'Sequential':
         # compile()
         model._old_compile = model.compile
-        model.compile = instance_wrapper(_sequential_compile, model, None)
+        model.compile = instancemethod(_sequential_compile, model)
         # fit()
         model._old_fit = model.fit
-        model.fit = instance_wrapper(_sequential_fit, model, None)
+        model.fit = instancemethod(_sequential_fit, model)
         # evaluate()
         model._old_evaluate = model.evaluate
-        model.evaluate = instance_wrapper(_sequential_evaluate, model, None)
+        model.evaluate = instancemethod(_sequential_evaluate, model)
         # predict()
         model._old_predict = model.predict
-        model.predict = instance_wrapper(_sequential_predict, model, None)
+        model.predict = instancemethod(_sequential_predict, model)
         # predict_on_batch()
         model._old_predict_on_batch = model.predict_on_batch
-        model.predict_on_batch = instance_wrapper(_sequential_predict_on_batch, model, None)
+        model.predict_on_batch = instancemethod(_sequential_predict_on_batch, model)
 
     elif model.__class__.__name__ == 'Model':
         # compile()
         model._old_compile = model.compile
-        model.compile = instance_wrapper(_functional_compile, model, None)
+        model.compile = instancemethod(_functional_compile, model)
         # fit()
         model._old_fit = model.fit
-        model.fit = instance_wrapper(_functional_fit, model, None)
+        model.fit = instancemethod(_functional_fit, model)
         # evaluate()
         model._old_evaluate = model.evaluate
-        model.evaluate = instance_wrapper(_functional_evaluate, model, None)
+        model.evaluate = instancemethod(_functional_evaluate, model)
         # predict()
         model._old_predict = model.predict
-        model.predict = instance_wrapper(_functional_predict, model, None)
+        model.predict = instancemethod(_functional_predict, model)
         # predict_on_batch()
         model._old_predict_on_batch = model.predict_on_batch
-        model.predict_on_batch = instance_wrapper(_functional_predict_on_batch, model, None)
+        model.predict_on_batch = instancemethod(_functional_predict_on_batch, model)
 
     else:
         raise ValueError('DL4J Keras only works with Sequential and Functional models')
 
     print("Deeplearning4j backend installed to model instance")
     print("Please check main stdout for DL4J operation output")
-
-
-def instance_wrapper(
-        function,
-        instance,
-        the_class=None):
-    """
-    A wrapper for cross-version compatibility for creating new methods
-    on an object instance.
-
-    :param function:
-    :param instance:
-    :param the_class:
-    :return:
-    """
-    if sys.version_info > (3, 0):
-        return instancemethod(function, instance)
-    else:
-        return new.instancemethod(function, instance, the_class)
 
 
 def generate_tmp_path():
