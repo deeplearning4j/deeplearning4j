@@ -91,9 +91,9 @@ def instance_wrapper(
     :return:
     """
     if sys.version_info > (3, 0):
-        instancemethod(function, instance)
+        return instancemethod(function, instance)
     else:
-        new.instancemethod(function, instance, the_class)
+        return new.instancemethod(function, instance, the_class)
 
 
 def generate_tmp_path():
