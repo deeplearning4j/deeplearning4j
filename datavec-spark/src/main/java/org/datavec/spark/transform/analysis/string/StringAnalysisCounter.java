@@ -20,9 +20,10 @@ import org.datavec.spark.transform.analysis.AnalysisCounter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.datavec.api.writable.Writable;
+import org.apache.spark.util.StatCounter;
 
 /**
- * A counter function for doing analysis on integer columns, on Spark
+ * A counter function for doing analysis on String columns, on Spark
  *
  * @author Alex Black
  */
@@ -30,18 +31,40 @@ import org.datavec.api.writable.Writable;
 @Data
 public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCounter> {
 
-    private long countZeroLength;
-    private long countMinLength;
-    private int minLengthSeen = Integer.MAX_VALUE;
-    private long countMaxLength;
-    private int maxLengthSeen = Integer.MIN_VALUE;
-    private long sumLength = 0;
-    private long countTotal = 0;
+    private StatCounter counter = new StatCounter();
+    private long countZeroLength = 0;
+    private long countMinLength = 0;
+    private long countMaxLength = 0;
 
-    public StringAnalysisCounter() {
+    public StringAnalysisCounter() {};
 
+    public int getMinLengthSeen() {
+        return (int) counter.min();
+    };
+
+    public int getMaxLengthSeen() {
+        return (int) counter.max();
+    };
+
+    public long getSumLength() {
+        return (long) counter.sum();
+    };
+
+    public long getCountTotal() {
+        return counter.count();
+    };
+
+    public double getSampleStdev() {
+        return counter.sampleStdev();
+    };
+
+    public double getMean() {
+        return counter.mean();
     }
 
+    public double getSampleVariance() {
+        return counter.sampleVariance();
+    }
 
     @Override
     public StringAnalysisCounter add(Writable writable) {
@@ -50,63 +73,48 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
         if (length == 0)
             countZeroLength++;
 
-        if (length == minLengthSeen)
+        if (length == getMinLengthSeen())
             countMinLength++;
-        else if (length < minLengthSeen) {
-            minLengthSeen = length;
+        else if (length < getMinLengthSeen()) {
             countMinLength = 1;
         }
 
-        if (length == maxLengthSeen)
+        if (length == getMaxLengthSeen())
             countMaxLength++;
-        else if (length > maxLengthSeen) {
-            maxLengthSeen = length;
+        else if (length > getMaxLengthSeen()) {
             countMaxLength = 1;
         }
-
-        sumLength += length;
-        countTotal++;
+        counter.merge((double) length);
 
         return this;
     }
 
     public StringAnalysisCounter merge(StringAnalysisCounter other) {
         int otherMin = other.getMinLengthSeen();
-        int newMinLengthSeen;
         long newCountMinLength;
-        if (minLengthSeen == otherMin) {
-            newMinLengthSeen = minLengthSeen;
-            newCountMinLength = countMinLength + other.countMinLength;
-        } else if (minLengthSeen > otherMin) {
+        if (getMinLengthSeen() == otherMin) {
+            newCountMinLength = countMinLength + other.getCountMinLength();
+        } else if (getMinLengthSeen() > otherMin) {
             //Keep other, take count from other
-            newMinLengthSeen = otherMin;
-            newCountMinLength = other.countMinLength;
+            newCountMinLength = other.getCountMinLength();
         } else {
             //Keep this min, no change to count
-            newMinLengthSeen = minLengthSeen;
             newCountMinLength = countMinLength;
         }
 
         int otherMax = other.getMaxLengthSeen();
-        int newMaxLengthSeen;
         long newCountMaxLength;
-        if (maxLengthSeen == otherMax) {
-            newMaxLengthSeen = maxLengthSeen;
-            newCountMaxLength = countMaxLength + other.countMaxLength;
-        } else if (maxLengthSeen < otherMax) {
+        if (getMaxLengthSeen() == otherMax) {
+            newCountMaxLength = countMaxLength + other.getCountMaxLength();
+        } else if (getMaxLengthSeen() < otherMax) {
             //Keep other, take count from other
-            newMaxLengthSeen = otherMax;
-            newCountMaxLength = other.countMaxLength;
+            newCountMaxLength = other.getCountMaxLength();
         } else {
             //Keep this max, no change to count
-            newMaxLengthSeen = maxLengthSeen;
             newCountMaxLength = countMaxLength;
         }
 
-
-        return new StringAnalysisCounter(countZeroLength + other.countZeroLength, newCountMinLength, newMinLengthSeen,
-                        newCountMaxLength, newMaxLengthSeen, sumLength + other.sumLength,
-                        countTotal + other.countTotal);
+        return new StringAnalysisCounter(counter.merge(other.getCounter()),
+                        countZeroLength + other.getCountZeroLength(), newCountMinLength, newCountMaxLength);
     }
-
 }

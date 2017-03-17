@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform;
 
+import org.datavec.api.berkeley.Iterators;
 import org.datavec.spark.SequenceEmptyRecordFunction;
 import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
@@ -51,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -165,7 +167,7 @@ public class SparkTransformExecutor {
         JavaRDD<List<Writable>> currentWritables = inputWritables;
         JavaRDD<List<List<Writable>>> currentSequence = inputSequence;
 
-        List<DataAction> list = sequence.getActionList();
+        List<DataAction> dataActions = sequence.getActionList();
         if (inputWritables != null) {
             List<Writable> first = inputWritables.first();
             if (first.size() != sequence.getInitialSchema().numColumns()) {
@@ -184,8 +186,8 @@ public class SparkTransformExecutor {
 
 
         int count = 1;
-        for (DataAction d : list) {
-            //log.info("Starting execution of stage {} of {}", count, list.size());     //
+        for (DataAction d : dataActions) {
+            //log.info("Starting execution of stage {} of {}", count, dataActions.size());     //
 
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
@@ -259,7 +261,7 @@ public class SparkTransformExecutor {
                 if (currentWritables == null) {
                     throw new IllegalStateException(
                                     "Error during execution of CalculateSortedRank: current writables are null. "
-                                                    + "Trying to execute a CalculateSortedRank operation on a sequenc? (not currently supported)");
+                                                    + "Trying to execute a CalculateSortedRank operation on a sequence? (not currently supported)");
                 }
 
                 Comparator<Writable> comparator = csr.getComparator();
@@ -280,7 +282,7 @@ public class SparkTransformExecutor {
             count++;
         }
 
-        //log.info("Completed {} of {} execution steps", count - 1, list.size());       //Lazy execution means this can be printed before anything has actually happened...
+        //log.info("Completed {} of {} execution steps", count - 1, dataActions.size());       //Lazy execution means this can be printed before anything has actually happened...
 
         return new Pair<>(currentWritables, currentSequence);
     }
@@ -295,14 +297,25 @@ public class SparkTransformExecutor {
      */
     public static JavaRDD<List<Writable>> executeJoin(Join join, JavaRDD<List<Writable>> left,
                     JavaRDD<List<Writable>> right) {
-        //Extract out the keys, then join
-        //This gives us a JavaPairRDD<String,JoinValue>
-        JavaPairRDD<List<Writable>, JoinValue> leftJV = left.mapToPair(new MapToJoinValuesFunction(true, join));
-        JavaPairRDD<List<Writable>, JoinValue> rightJV = right.mapToPair(new MapToJoinValuesFunction(false, join));
 
-        //Then merge, collect by key, execute the join
-        JavaPairRDD<List<Writable>, JoinValue> both = leftJV.union(rightJV);
-        JavaPairRDD<List<Writable>, Iterable<JoinValue>> grouped = both.groupByKey();
-        return grouped.flatMap(new ExecuteJoinFlatMapFunction(join));
+        String[] leftColumnNames = join.getJoinColumnsLeft();
+        int[] leftColumnIndexes = new int[leftColumnNames.length];
+        for (int i = 0; i < leftColumnNames.length; i++) {
+            leftColumnIndexes[i] = join.getLeftSchema().getIndexOfColumn(leftColumnNames[i]);
+        }
+        JavaPairRDD<List<Writable>, List<Writable>> leftJV = left.mapToPair(new ExtractKeysFunction(leftColumnIndexes));
+
+        String[] rightColumnNames = join.getJoinColumnsRight();
+        int[] rightColumnIndexes = new int[rightColumnNames.length];
+        for (int i = 0; i < rightColumnNames.length; i++) {
+            rightColumnIndexes[i] = join.getRightSchema().getIndexOfColumn(rightColumnNames[i]);
+        }
+        JavaPairRDD<List<Writable>, List<Writable>> rightJV =
+                        right.mapToPair(new ExtractKeysFunction(rightColumnIndexes));
+
+        JavaPairRDD<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>> cogroupedJV =
+                        leftJV.cogroup(rightJV);
+
+        return cogroupedJV.flatMap(new ExecuteJoinFromCoGroupFlatMapFunction(join));
     }
 }
