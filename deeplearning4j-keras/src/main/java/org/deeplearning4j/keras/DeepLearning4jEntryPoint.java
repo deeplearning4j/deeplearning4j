@@ -127,7 +127,8 @@ public class DeepLearning4jEntryPoint {
                 if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);
                     Evaluation eval = model.evaluate(testIterator);
-                    log.info(eval.toString());
+                    log.info("Accuracy: "+eval.accuracy());
+                    log.info("Precision: "+eval.precision());
                 }
             }
 
@@ -278,7 +279,8 @@ public class DeepLearning4jEntryPoint {
                 if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);
                     Evaluation eval = model.evaluate(testIterator);
-                    log.info(eval.toString());
+                    log.info("Accuracy: "+eval.accuracy());
+                    log.info("Precision: "+eval.precision());
                 }
             }
 
