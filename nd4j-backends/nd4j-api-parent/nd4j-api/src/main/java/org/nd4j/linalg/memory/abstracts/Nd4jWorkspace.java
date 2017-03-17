@@ -30,6 +30,8 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
     protected long threadId;
 
+    @Getter protected String id;
+
 
     protected AtomicLong currentSize = new AtomicLong(0);
     protected AtomicLong hostOffset = new AtomicLong(0);
@@ -57,9 +59,13 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 
-
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
+        this(configuration, DEFAULT_ID);
+    }
+
+    public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         this.workspaceConfiguration = configuration;
+        this.id = workspaceId;
 
         this.memoryManager = Nd4j.getMemoryManager();
 

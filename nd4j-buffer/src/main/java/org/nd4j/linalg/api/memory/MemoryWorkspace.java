@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
  * @author raver119@gmail.com
  */
 public interface MemoryWorkspace extends AutoCloseable {
+    String DEFAULT_ID = "DefaultWorkspace";
 
     /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance
@@ -17,6 +18,13 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @return
      */
     WorkspaceConfiguration getWorkspaceConfiguration();
+
+    /**
+     * This method returns Id of this workspace
+     *
+     * @return
+     */
+    String getId();
 
     /**
      * This method does allocation from a given Workspace
