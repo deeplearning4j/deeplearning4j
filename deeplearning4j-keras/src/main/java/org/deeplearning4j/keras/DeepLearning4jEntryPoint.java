@@ -145,7 +145,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param evaluateParams Parameters for a Keras evaluate operation
      */
-    public Evaluation sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
+    public double[] sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
             MultiLayerNetwork model = evaluateParams.getSequentialModel();
 
@@ -158,7 +158,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.evaluate() operation complete.");
 
-            return ret;
+            return new double[]{ret.accuracy(), ret.precision()};
 
         } catch (Throwable e) {
             log.error("Error while performing model.evaluate()", e);
@@ -297,7 +297,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param evaluateParams Parameters for a Keras evaluate operation
      */
-    public Evaluation functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
+    public double[] functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
             ComputationGraph model = evaluateParams.getFunctionalModel();
 
@@ -310,7 +310,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.evaluate() operation complete.");
 
-            return ret;
+            return new double[]{ret.accuracy(), ret.precision()};
 
         } catch (Throwable e) {
             log.error("Error while performing model.evaluate()", e);
