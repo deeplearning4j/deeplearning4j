@@ -3,6 +3,14 @@ title: Release Notes
 layout: default
 ---
 
+**Contents**
+
+* <a href="#zeroeightzero">Version 0.8.0</a>
+* <a href="#zeroseventwo">Version 0.7.2</a>
+* <a href="#six">Version 0.6.0</a>
+* <a href="#five">Version 0.5.0</a>
+* <a href="#four">Version 0.4.0</a>
+
 # <a name="zeroeightzero">Release Notes for Version 0.8.0</a>
 
 - Added transfer learning API [Link](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/transferlearning/vgg16)
