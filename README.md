@@ -89,8 +89,10 @@ mapping:
 
 - `RecordReader` implementations:
    @saudet and @agibsonccc
+- Transformations and their API:
+   @agibsonccc and @AlexDBlack
 - Spark and distributed processing:
-   @AlexDBlack and @huitseeker
+   @AlexDBlack, @agibsonccc and @huitseeker
 - Native formats, geodata:
    @saudet
 
