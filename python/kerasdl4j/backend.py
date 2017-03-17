@@ -173,12 +173,13 @@ def slice_X(X, start=None, stop=None):
 def arrayhelper_to_array(
         arrayhelper):
     """
-    Takes a reference to a Java NDArrayHelper and converts
-    it to a numpy array.
+    DL4J gateway will return a flattened array with shape info in C order. This
+    converts it into a numpy array.
+
     :param arrayhelper:
     :return:
     """
-    array = numpy.array(arrayhelper.getData(), dtype=float, order=arrayhelper.getOrder()).reshape(arrayhelper.getShape())
+    array = numpy.array(arrayhelper[0], dtype=float, order="C").reshape(arrayhelper[1])
 
     return array
 

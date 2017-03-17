@@ -11,20 +11,20 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 public class NDArrayHelper {
 
-  protected double[] data;
-  protected int[] shape;
-  protected int[] stride;
-  protected String order;
+  public static double[][] toFlattened(INDArray array) {
+    INDArray cArray = array.dup('c');
+    int[] shape = cArray.shape();
+    double[] data = cArray.data().asDouble();
 
-  public NDArrayHelper(INDArray array) {
-    this.data = NDArrayHelper.toFlattened(array);
-    this.shape = array.shape();
-    this.stride = array.stride();
-    this.order = "C";
-  }
+    // convert shape to double so we can return it in a single
+    // array for numpy
+   double[] dShape = new double[shape.length];
 
-  public static double[] toFlattened(INDArray array) {
-    return array.dup('c').data().asDouble();
+    for(int i = 0; i < dShape.length; i++) {
+      dShape[i] = (double) shape[i];
+    }
+
+    return new double[][]{data, dShape};
   }
 
 }
