@@ -18,7 +18,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -57,6 +61,38 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
+    }
+
+    @Test
+    public void testMultithreading1() throws Exception {
+        final List<MemoryWorkspace> workspaces = new CopyOnWriteArrayList<>();
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+
+        Thread[] threads = new Thread[20];
+        for (int x = 0; x < threads.length; x++) {
+            threads[x] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread();
+                    workspaces.add(workspace);
+                }
+            });
+
+            threads[x].start();
+        }
+
+        for (int x = 0; x < threads.length; x++) {
+            threads[x].join();
+        }
+
+        for (int x = 0; x < threads.length; x++) {
+            for (int y = 0; y < threads.length; y++) {
+                if (x == y)
+                    continue;
+
+                assertFalse(workspaces.get(x) == workspaces.get(y));
+            }
+        }
     }
 
     @Test
