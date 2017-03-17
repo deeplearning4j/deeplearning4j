@@ -171,7 +171,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A single feature and associated parameters
      */
-    public NDArrayHelper sequentialPredict(PredictParams predictParams) throws Exception {
+    public double[][] sequentialPredict(PredictParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -183,7 +183,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.predict() operation complete.");
 
-            return new NDArrayHelper(ret);
+            return NDArrayHelper.toFlattened(ret);
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict()", e);
@@ -196,7 +196,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and associated parameters
      */
-    public NDArrayHelper sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+    public double[][] sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
 
@@ -208,7 +208,7 @@ public class DeepLearning4jEntryPoint {
 
             log.info("model.predict_on_batch() operation complete.");
 
-            return new NDArrayHelper(ret);
+            return NDArrayHelper.toFlattened(ret);
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict_on_batch()", e);
