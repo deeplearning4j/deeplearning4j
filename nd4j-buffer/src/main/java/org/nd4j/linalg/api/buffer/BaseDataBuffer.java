@@ -190,7 +190,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         initTypeAndSize();
 
-        log.info("Allocating FloatPointer from array of {} elements", data.length);
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType()).asFloatPointer().put(data);
         indexer = FloatIndexer.create((FloatPointer) pointer);
@@ -493,7 +493,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == Type.FLOAT) {
-            log.info("Allocating FloatPointer of {} elements", length);
+            //log.info("Allocating FloatPointer of {} elements", length);
             pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
             if (initialize)

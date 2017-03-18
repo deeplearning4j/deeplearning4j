@@ -130,7 +130,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
             // FIXME: check for alignment here
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
-            log.info("Allocating array of {} bytes, capacity of {} elements, prevOffset:", requiredMemory, numElements);
+            //log.info("Allocating array of {} bytes, capacity of {} elements, prevOffset:", requiredMemory, numElements);
 
             return workspace.getHostPointer().withOffset(prevOffset, numElements);
         } else {
@@ -233,6 +233,8 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() )) {
             hostOffset.set(0);
             resetPlanned.set(false);
+
+            log.info("Resetting workspace at the end of loop...");
         }
 
         cycleAllocations.set(0);
