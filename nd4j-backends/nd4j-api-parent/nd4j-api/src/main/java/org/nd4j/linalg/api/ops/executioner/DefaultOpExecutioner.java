@@ -102,11 +102,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray execAndReturn(Op op) {
         if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
-        } else if (op instanceof ScalarOp) {
+        }
+        if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
-        } else if (op instanceof Accumulation) {
+        }
+        if (op instanceof Accumulation) {
             return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
-        } else if (op instanceof IndexAccumulation) {
+        }
+        if (op instanceof IndexAccumulation) {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
         }
 
@@ -243,8 +246,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank()) {
+            dimension = new int[]{Integer.MAX_VALUE};
+        }
 
         if (op.isPassThrough()) {
             op.exec(dimension);
@@ -254,16 +258,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
-        } else if (op instanceof ScalarOp) {
+                    "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+        }
+        if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
             throw new IllegalStateException("Java computation no longer supported");
-        } else if (op instanceof TransformOp) {
-            throw new UnsupportedOperationException(
-                            "Executing transform ops along a dimension should be done via exec special");
-        } else {
-            throw new UnsupportedOperationException("Unknown op type");
         }
+        if (op instanceof TransformOp) {
+            throw new UnsupportedOperationException(
+                    "Executing transform ops along a dimension should be done via exec special");
+        }
+        throw new UnsupportedOperationException("Unknown op type");
     }
 
     @Override
