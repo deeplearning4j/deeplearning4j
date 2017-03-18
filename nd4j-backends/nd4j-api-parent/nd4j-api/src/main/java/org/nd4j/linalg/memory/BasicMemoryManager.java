@@ -171,4 +171,6 @@ public class BasicMemoryManager implements MemoryManager {
     public void setCurrentWorkspace(MemoryWorkspace workspace) {
         this.workspace.set(workspace);
     }
+
+
 }

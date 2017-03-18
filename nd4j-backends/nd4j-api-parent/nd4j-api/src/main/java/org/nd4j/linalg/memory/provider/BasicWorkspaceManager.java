@@ -108,4 +108,37 @@ public class BasicWorkspaceManager implements MemoryWorkspaceManager {
         if (backingMap.get() == null)
             backingMap.set(new HashMap<String, MemoryWorkspace>());
     }
+
+    /**
+     * This method gets & activates default workspace
+     *
+     * @return
+     */
+    @Override
+    public MemoryWorkspace getAndActivateWorkspace() {
+        return getWorkspaceForCurrentThread().notifyScopeEntered();
+    }
+
+    /**
+     * This method gets & activates workspace with a given Id
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public MemoryWorkspace getAndActivateWorkspace(@NonNull String id) {
+        return getWorkspaceForCurrentThread(id).notifyScopeEntered();
+    }
+
+    /**
+     * This method gets & activates default with a given configuration and Id
+     *
+     * @param configuration
+     * @param id
+     * @return
+     */
+    @Override
+    public MemoryWorkspace getAndActivateWorkspace(@NonNull WorkspaceConfiguration configuration,@NonNull String id) {
+        return getWorkspaceForCurrentThread(configuration, id).notifyScopeEntered();
+    }
 }

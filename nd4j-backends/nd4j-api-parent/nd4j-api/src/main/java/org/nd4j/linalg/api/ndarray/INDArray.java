@@ -2382,5 +2382,17 @@ public interface INDArray extends Serializable {
      */
     INDArray fmodi(Number denominator);
 
+    /**
+     * This method returns index of highest value along specified dimension(s)
+     *
+     * @param dimension
+     * @return
+     */
     INDArray argMax(int... dimension);
+
+    /**
+     * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
+     * @return
+     */
+    boolean isAttached();
 }

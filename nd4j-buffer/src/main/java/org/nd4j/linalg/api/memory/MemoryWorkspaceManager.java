@@ -92,4 +92,25 @@ public interface MemoryWorkspaceManager {
      * This method destroys current Workspace for current Thread
      */
     void destroyWorkspace();
+
+    /**
+     * This method gets & activates default workspace
+     *
+     * @return
+     */
+    MemoryWorkspace getAndActivateWorkspace();
+
+    /**
+     * This method gets & activates workspace with a given Id
+     *
+     * @return
+     */
+    MemoryWorkspace getAndActivateWorkspace(String id);
+
+    /**
+     * This method gets & activates default with a given configuration and Id
+     *
+     * @return
+     */
+    MemoryWorkspace getAndActivateWorkspace(WorkspaceConfiguration configuration, String id);
 }

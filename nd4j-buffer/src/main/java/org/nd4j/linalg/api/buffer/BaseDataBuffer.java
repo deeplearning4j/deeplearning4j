@@ -64,6 +64,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Indexer indexer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
+    protected boolean attached = false;
+
     // Allocator-related stuff. Moved down here to avoid type casting.
     protected transient DataBuffer originalBuffer;
     protected transient long originalOffset = 0;
@@ -187,6 +189,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         length = data.length;
         underlyingLength = data.length;
+        attached = true;
 
         initTypeAndSize();
 
@@ -482,28 +485,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         this.underlyingLength = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
+        attached = true;
+
         if (length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
         if (dataType() == Type.DOUBLE) {
-            log.info("Allocating DoublePointer of {} elements", length);
-
             pointer = workspace.alloc(length * getElementSize(), dataType()).asDoublePointer(); //new DoublePointer(length());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == Type.FLOAT) {
-            //log.info("Allocating FloatPointer of {} elements", length);
             pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
+
             if (initialize)
                 fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
-            log.info("Allocating IntPointer of {} elements", length);
-
             pointer = new IntPointer(length());
             indexer = IntIndexer.create((IntPointer) pointer);
+
             if (initialize)
                 fillPointerWithZero();
         }
@@ -1495,5 +1497,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public void setConstant(boolean reallyConstant) {
         this.constant = reallyConstant;
+    }
+
+    /**
+     * This method returns True, if this DataBuffer is attached to some workspace. False otherwise
+     *
+     * @return
+     */
+    @Override
+    public boolean isAttached() {
+        return attached;
     }
 }

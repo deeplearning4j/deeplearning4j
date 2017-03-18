@@ -196,7 +196,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         /*
             Basically all we want here, is:

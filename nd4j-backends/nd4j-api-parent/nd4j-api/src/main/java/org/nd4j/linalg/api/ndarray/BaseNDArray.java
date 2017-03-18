@@ -4942,8 +4942,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    /**
+     * This method returns index of highest value along specified dimension(s)
+     *
+     * @param dimension
+     * @return
+     */
     @Override
     public INDArray argMax(int... dimension) {
         return Nd4j.argMax(this, dimension);
+    }
+
+
+    /**
+     * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
+     *
+     * @return
+     */
+    @Override
+    public boolean isAttached() {
+        return data.isAttached();
     }
 }

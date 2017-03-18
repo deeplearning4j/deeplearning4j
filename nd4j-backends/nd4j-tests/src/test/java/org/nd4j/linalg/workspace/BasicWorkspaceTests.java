@@ -20,9 +20,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -87,6 +85,20 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         array.addi(1.0);
 
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
+    }
+
+    @Test
+    public void testIsAttached1() {
+
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+            INDArray array = Nd4j.create(100);
+
+            assertTrue(array.isAttached());
+        }
+
+        INDArray array = Nd4j.create(100);
+
+        assertFalse(array.isAttached());
     }
 
     @Test
