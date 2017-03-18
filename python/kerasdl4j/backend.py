@@ -200,7 +200,7 @@ def arrayhelper_from_array(
     if sys.byteorder != 'big':
         header.byteswap()
         body.byteswap()
-    buf = bytearray(headerlength.tostring() + header.tostring() + body.tostring())
+    buf = bytearray(header.tostring() + body.tostring())
     return buf
 
 
