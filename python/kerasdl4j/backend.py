@@ -13,6 +13,7 @@ else:
 from keras import backend as K
 from os import path, mkdir
 from py4j.java_gateway import JavaGateway
+import array as pyarray
 
 # cache objects for hijack
 batch_file_template = "batch_{id}.h5"
@@ -193,9 +194,9 @@ def arrayhelper_from_array(
     :param numpy_matrix:
     :return:
     """
-    headerlength = numpy.array('i', list(len(numpy_matrix.shape)))
-    header = numpy.array('i', list(numpy_matrix.shape))
-    body = numpy.array('i', numpy_matrix.flatten().tolist());
+    headerlength = pyarray.array('i', list(len(numpy_matrix.shape)))
+    header = pyarray.array('i', list(numpy_matrix.shape))
+    body = pyarray.array('d', numpy_matrix.flatten().tolist());
     if sys.byteorder != 'big':
         header.byteswap()
         body.byteswap()
