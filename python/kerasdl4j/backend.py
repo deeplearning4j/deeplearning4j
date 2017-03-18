@@ -193,12 +193,13 @@ def arrayhelper_from_array(
     :param numpy_matrix:
     :return:
     """
-    header = array.array('i', list(numpy_matrix.shape))
-    body = array.array('i', numpy_matrix.flatten().tolist());
+    headerlength = numpy.array('i', list(len(numpy_matrix.shape)))
+    header = numpy.array('i', list(numpy_matrix.shape))
+    body = numpy.array('i', numpy_matrix.flatten().tolist());
     if sys.byteorder != 'big':
         header.byteswap()
         body.byteswap()
-    buf = bytearray(len(numpy_matrix.shape).tostring() + header.tostring() + body.tostring())
+    buf = bytearray(headerlength.tostring() + header.tostring() + body.tostring())
     return buf
 
 
