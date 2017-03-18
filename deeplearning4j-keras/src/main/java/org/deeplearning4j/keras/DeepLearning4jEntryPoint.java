@@ -199,12 +199,8 @@ public class DeepLearning4jEntryPoint {
     public double[][] sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getSequentialModel();
-
-            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                predictParams.getFeaturesDirectory()
-            );
-
-            INDArray ret = model.output(dataSetIterator);
+            INDArray input = NDArrayHelper.fromFlattened(predictParams.getData());
+            INDArray ret = model.output(input);
 
             log.info("model.predict_on_batch() operation complete.");
 

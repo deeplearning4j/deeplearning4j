@@ -184,6 +184,24 @@ def arrayhelper_to_array(
     return array
 
 
+def arrayhelper_from_array(
+        numpy_matrix):
+    """
+    DL4J gateway can accept a flattened array buffer, which speeds up transfer
+    and avoids the tricky situation of writing to disk.
+    
+    :param numpy_matrix:
+    :return:
+    """
+    header = array.array('i', list(numpy_matrix.shape))
+    body = array.array('i', numpy_matrix.flatten().tolist());
+    if sys.byteorder != 'big':
+        header.byteswap()
+        body.byteswap()
+    buf = bytearray(len(numpy_matrix.shape).tostring() + header.tostring() + body.tostring())
+    return buf
+
+
 def check_dl4j_model(
         self):
     """

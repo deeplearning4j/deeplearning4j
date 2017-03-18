@@ -11,5 +11,5 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 public class PredictOnBatchParams {
     private MultiLayerNetwork sequentialModel;
     private ComputationGraph functionalModel;
-    private String featuresDirectory;
+    private byte[] data;
 }

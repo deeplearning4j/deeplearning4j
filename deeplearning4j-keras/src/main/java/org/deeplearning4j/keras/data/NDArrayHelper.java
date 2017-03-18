@@ -2,6 +2,7 @@ package org.deeplearning4j.keras.data;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Helper for converting INDArrays to byte[]. This is helpful for returning data to the
@@ -25,6 +26,28 @@ public class NDArrayHelper {
     }
 
     return new double[][]{data, dShape};
+  }
+
+  public static INDArray fromFlattened(byte[] data) {
+    java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(data);
+    // first value describes shape
+    // offset describes where data actually starts
+    int shapeLength = buf.getInt();
+    int[] shape = new int[shapeLength];
+    int dataLength = data.length-shapeLength-1;
+    double[] preOut = new double[dataLength];
+
+    // create the shape
+    for(int i = 0; i < shapeLength; i++) {
+      shape[i] = buf.getInt();
+    }
+
+    // create the array
+    for(int i = 0; i < data.length; i++) {
+      preOut[i] = buf.getDouble();
+    }
+
+    return Nd4j.create(preOut).reshape(shape);
   }
 
 }
