@@ -8,6 +8,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -50,6 +51,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong cycleAllocations = new AtomicLong(0);
     protected AtomicLong spilledAllocations = new AtomicLong(0);
     protected AtomicLong maxCycle = new AtomicLong(0);
+    protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
 
     @Getter protected final WorkspaceConfiguration workspaceConfiguration;
 
@@ -134,6 +136,10 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         } else {
             spilledAllocations.addAndGet(requiredMemory);
 
+            if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+                resetPlanned.set(true);
+            }
+
             log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
@@ -160,35 +166,6 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         // no-op for main page(s), purge for external stuff
     }
 
-
-    @Override
-    public void close() throws Exception {
-        Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
-        /*
-            Basically all we want here, is:
-            1) memset primary page(s)
-            2) purge external allocations
-         */
-
-        if (!isUsed.get()) {
-            log.warn("Worskpace was turned off, and wasn't ever turned on back again");
-            isUsed.set(true);
-        }
-
-
-        if (cycleAllocations.get() > maxCycle.get())
-            maxCycle.set(cycleAllocations.get());
-
-        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && maxCycle.get() > 0)
-            initializeWorkspace();
-
-        lastCycleAllocations.set(cycleAllocations.get());
-
-        hostOffset.set(0);
-        disabledCounter.set(0);
-        externalAllocations.clear();
-    }
-
     @Override
     public void initializeWorkspace() {
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE) {
@@ -213,19 +190,56 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         maxCycle.set(0);
     }
 
+
+    @Override
+    public void close() throws Exception {
+        Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
+        /*
+            Basically all we want here, is:
+            1) memset primary page(s)
+            2) purge external allocations
+         */
+
+        if (!isUsed.get()) {
+            log.warn("Worskpace was turned off, and wasn't ever turned on back again");
+            isUsed.set(true);
+        }
+
+
+        if (cycleAllocations.get() > maxCycle.get())
+            maxCycle.set(cycleAllocations.get());
+
+        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && maxCycle.get() > 0)
+            initializeWorkspace();
+
+        lastCycleAllocations.set(cycleAllocations.get());
+
+        disabledCounter.set(0);
+
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
+            hostOffset.set(0);
+            externalAllocations.clear();
+        }
+    }
+
     @Override
     public MemoryWorkspace notifyScopeEntered() {
         previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
 
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
+            hostOffset.set(0);
+            externalAllocations.clear();
+        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() )) {
+            hostOffset.set(0);
+            resetPlanned.set(false);
+        }
 
         cycleAllocations.set(0);
-        hostOffset.set(0);
-
         disabledCounter.set(0);
-        externalAllocations.clear();
 
-        if (currentSize.get() > 0)
+
+        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT)
             Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
 
         return this;

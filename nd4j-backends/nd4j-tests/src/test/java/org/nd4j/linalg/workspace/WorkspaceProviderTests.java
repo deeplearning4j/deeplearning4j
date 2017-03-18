@@ -9,10 +9,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -61,6 +58,35 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
+    }
+
+    @Test
+    public void testUnboundedLoop1() throws Exception {
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(100 * 100 * Nd4j.sizeOfDataType())
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .build();
+
+        for (int x = 0; x < 100; x++) {
+            try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
+
+                INDArray array = Nd4j.create(100);
+            }
+
+            Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER");
+
+            assertEquals((x + 1 ) * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+        }
+
+        Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER");
+        assertEquals(100 * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+
+        // just to trigger reset
+        ws1.notifyScopeEntered();
+
+        // confirming reset
+        assertEquals(0, ws1.getHostOffset());
     }
 
     @Test
