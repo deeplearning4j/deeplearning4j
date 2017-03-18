@@ -1,11 +1,15 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,10 +320,23 @@ public class AsyncDataSetIterator implements DataSetIterator {
         @Override
         public void run() {
             try {
+                WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                        .initialSize(20 * 1024L * 1024L)
+                        .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyAllocation(AllocationPolicy.STRICT)
+                        .build();
+
                 while (!killRunnable && baseIterator.hasNext()) {
                     feeder.incrementAndGet();
                     lock.writeLock().lock();
-                    DataSet ds = baseIterator.next();
+
+                    DataSet ds = null;
+
+                    try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
+                        ds = baseIterator.next();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
