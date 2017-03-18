@@ -349,26 +349,15 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and associated parameters
      */
-    public List<INDArray[]> functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+    public double[][] functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             ComputationGraph model = predictParams.getFunctionalModel();
-
-            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                predictParams.getFeaturesDirectory()
-            );
-
-            List<INDArray[]> ret = new LinkedList<>();
-
-            while(dataSetIterator.hasNext()) {
-                DataSet data = dataSetIterator.next();
-                ret.add(
-                    model.output(data.getFeatures())
-                );
-            }
+            INDArray input = NDArrayHelper.fromFlattened(predictParams.getData());
+            INDArray ret = model.outputSingle(input);
 
             log.info("model.predict_on_batch() operation complete.");
 
-            return ret;
+            return NDArrayHelper.toFlattened(ret);
 
         } catch (Throwable e) {
             log.error("Error while performing model.predict_on_batch()", e);
