@@ -189,7 +189,7 @@ def arrayhelper_from_array(
     """
     DL4J gateway can accept a flattened array buffer, which speeds up transfer
     and avoids the tricky situation of writing to disk.
-    
+
     :param numpy_matrix:
     :return:
     """
@@ -409,11 +409,9 @@ def _sequential_predict_on_batch(
 
     print("Performing predict_on_batch() operation...")
 
-    features_directory = dump_ndarray(len(x), x)
-
     params_builder = gateway.jvm.org.deeplearning4j.keras.api.PredictOnBatchParams.builder()
     params_builder.sequentialModel(self._dl4j_model)
-    params_builder.featuresDirectory(features_directory)
+    params_builder.data(arrayhelper_from_array(x)) # input becomes array buffer
     arrayhelper = gateway.sequentialPredictOnBatch(params_builder.build())
 
     print("predict_on_batch() operation complete")
