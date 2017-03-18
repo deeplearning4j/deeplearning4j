@@ -47,6 +47,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong disabledCounter = new AtomicLong(0);
 
 
+    protected AtomicLong cyclesCount = new AtomicLong(0);
     protected AtomicLong lastCycleAllocations = new AtomicLong(0);
     protected AtomicLong cycleAllocations = new AtomicLong(0);
     protected AtomicLong spilledAllocations = new AtomicLong(0);
@@ -74,6 +75,9 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
+
+        if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
+            log.warn("Workspace initialization OVER_TIME was selected, but number of cycles isn't positive value!");
 
         init();
     }
@@ -230,7 +234,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
             externalAllocations.clear();
-        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() )) {
+        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() ) && currentSize.get() > 0) {
             hostOffset.set(0);
             resetPlanned.set(false);
 
@@ -244,6 +248,12 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         if (currentSize.get() > 0 && workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT)
             Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
 
+
+        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
+            initializeWorkspace();
+
+
+        cyclesCount.incrementAndGet();
         return this;
     }
 

@@ -26,6 +26,8 @@ public class WorkspaceConfiguration implements Serializable {
     protected long initialSize;
     protected long maxSize;
 
+    protected int cyclesBeforeInitialization;
+
     protected double overallocationLimit;
 
     public static class WorkspaceConfigurationBuilder {
@@ -37,6 +39,8 @@ public class WorkspaceConfiguration implements Serializable {
 
         private long initialSize = 0;
         private long maxSize = 0;
+
+        protected int cyclesBeforeInitialization = 0;
 
         private double overallocationLimit = 0.3;
     }

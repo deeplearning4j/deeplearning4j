@@ -60,6 +60,48 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         Nd4j.setDataType(this.initialType);
     }
 
+    /**
+     * This simple test checks for over-time learning with coefficient applied
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testUnboundedLoop2() throws Exception {
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .overallocationLimit(4.0)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(5)
+                .build();
+
+        Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER");
+
+        for (int x = 0; x < 100; x++) {
+            try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
+                INDArray array = Nd4j.create(100);
+            }
+
+            // only checking after workspace is initialized
+            if (x > 5) {
+                assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
+
+                // if we've passed 5 iterations - workspace is initialized, and now offset mechanics works
+                if (x % 5 == 0)
+                    assertEquals(2000, ws1.getHostOffset());
+                else
+                    assertEquals((x % 5) * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            } else if (x < 5) {
+                // we're making sure we're not initialize early
+                assertEquals(0, ws1.getCurrentSize());
+            }
+        }
+
+        // maximum allocation amount is 100 elements during learning, and additional coefficient is 4.0. result is workspace of 500 elements
+        assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
+    }
+
     @Test
     public void testUnboundedLoop1() throws Exception {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
