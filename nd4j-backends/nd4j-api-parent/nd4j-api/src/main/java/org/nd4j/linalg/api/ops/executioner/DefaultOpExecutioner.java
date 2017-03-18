@@ -325,6 +325,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     }
 
+    @Override
     public ExecutionMode executionMode() {
         return executionMode;
     }
@@ -456,18 +457,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case OPERATIONS:
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
-            case NAN_PANIC: {
+            case NAN_PANIC:
                 OpExecutionerUtil.checkForNaN(op);
-            }
                 break;
-            case INF_PANIC: {
+            case INF_PANIC:
                 OpExecutionerUtil.checkForInf(op);
-            }
                 break;
-            case ANY_PANIC: {
+            case ANY_PANIC:
                 OpExecutionerUtil.checkForNaN(op);
                 OpExecutionerUtil.checkForInf(op);
-            }
                 break;
             case DISABLED:
             default:
