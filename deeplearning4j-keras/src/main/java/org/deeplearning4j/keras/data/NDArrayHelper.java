@@ -1,6 +1,7 @@
 package org.deeplearning4j.keras.data;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -10,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * py4j and transmitted using a binary protocol.
  */
 @Data
+@Slf4j
 public class NDArrayHelper {
 
   public static double[][] toFlattened(INDArray array) {
@@ -36,6 +38,9 @@ public class NDArrayHelper {
     int[] shape = new int[shapeLength];
     int dataLength = data.length-shapeLength-1;
     double[] preOut = new double[dataLength];
+
+    log.info("Shape: "+shape);
+    log.info("Data length: "+dataLength);
 
     // create the shape
     for(int i = 0; i < shapeLength; i++) {

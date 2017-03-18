@@ -194,6 +194,8 @@ def arrayhelper_from_array(
     :param numpy_matrix:
     :return:
     """
+    print(numpy_matrix.shape)
+
     header = pyarray.array('i', list(numpy_matrix.shape))
     header.insert(0, len(numpy_matrix.shape))
     body = pyarray.array('d', numpy_matrix.flatten().tolist());
