@@ -43,7 +43,7 @@ public class NDArrayHelper {
     }
 
     // create the array
-    for(int i = 0; i < data.length; i++) {
+    for(int i = 0; i < dataLength; i++) {
       preOut[i] = buf.getDouble();
     }
 
