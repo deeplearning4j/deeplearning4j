@@ -53,6 +53,10 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.deeplearning4j</groupId>
+          <artifactId>deeplearning4j-ui-components</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
