@@ -14,63 +14,42 @@ import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
 import org.deeplearning4j.util.ModelSerializer
+import org.nd4j.linalg.dataset.DataSet
+import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.util.FeatureUtil
 
 
 abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M], M <: SparkDl4jModelWrapper[T, M]]
-(override val uid: String) extends Predictor[T, E, M]  {
+(override val uid: String,
+ protected val multiLayerConfiguration : MultiLayerConfiguration,
+ protected val numLabels: Int,
+ protected val trainingMaster: ParamSerializer,
+ protected val listeners : util.Collection[IterationListener],
+ protected val collectStats: Boolean = false
+) extends Predictor[T, E, M]  {
 
-    protected var _multiLayerConfiguration : MultiLayerConfiguration = _
-    protected var _numLabels : Int = 2
-    protected var _freq : Int = 10
-    protected var _trainingMaster : ParamSerializer = _
-    protected var _listeners : util.Collection[IterationListener] = _
-    protected var _collectStats: Boolean = false
+    protected def mapVectorFunc : Row => LabeledPoint
 
     override def copy(extra: ParamMap) : E = defaultCopy(extra)
 
-    val mapVectorFunc : Row => LabeledPoint
-
-    def setNumLabels(value: Int) : E = {
-        this._numLabels = value
-        this.asInstanceOf[E]
-    }
-
-    def setMultiLayerConfiguration(multiLayerConfiguration: MultiLayerConfiguration) : E = {
-        this._multiLayerConfiguration = multiLayerConfiguration
-        this.asInstanceOf[E]
-    }
-
-    def setTrainingMaster(tm: ParamSerializer) : E = {
-        this._trainingMaster = tm
-        this.asInstanceOf[E]
-    }
-
-    def setListeners(iterationListener: util.Collection[IterationListener]) : E = {
-        this._listeners = iterationListener
-        this.asInstanceOf[E]
-    }
-
-    def setCollectionStats(collectStats: Boolean) : E = {
-        this._collectStats = collectStats
-        this.asInstanceOf[E]
-    }
-
     override def setLabelCol(value: String): E = super.setLabelCol(value)
+
+    override def setFeaturesCol(value: String): E = super.setFeaturesCol(value)
 
     protected def trainer(dataRowsFacade: DatasetFacade) : SparkDl4jMultiLayer = {
         val dataset = dataRowsFacade.get
-        val sparkNet = new SparkDl4jMultiLayer(dataset.sqlContext.sparkContext, _multiLayerConfiguration, _trainingMaster())
-        sparkNet.setCollectTrainingStats(_collectStats)
-        if (_listeners != null) {
-            sparkNet.setListeners(_listeners)
+        val sparkNet = new SparkDl4jMultiLayer(dataset.sqlContext.sparkContext, multiLayerConfiguration, trainingMaster())
+        sparkNet.setCollectTrainingStats(collectStats)
+        if (listeners != null) {
+            sparkNet.setListeners(listeners)
         }
         val lps = dataset.select(getFeaturesCol, getLabelCol).rdd
             .map(mapVectorFunc)
             .map(item => {
                 val features = item.features
                 val label = item.label
-                if (_numLabels > 1) {
-                    new DataSet(Nd4j.create(features.toArray), FeatureUtil.toOutcomeVector(label.asInstanceOf[Int], _numLabels))
+                if (numLabels > 1) {
+                    new DataSet(Nd4j.create(features.toArray), FeatureUtil.toOutcomeVector(label.toInt, numLabels))
                 } else {
                     new DataSet(Nd4j.create(features.toArray), Nd4j.create(Array(label)))
                 }
@@ -106,12 +85,17 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
 }
 
 trait SparkDl4jModelWrap extends MLReadable[SparkDl4jModel] {
+
     override def read: MLReader[SparkDl4jModel] = new SparkDl4jReader
+
     override def load(path: String): SparkDl4jModel = super.load(path)
+
     private class SparkDl4jReader extends MLReader[SparkDl4jModel] {
+
         override def load(path: String) : SparkDl4jModel = {
             val mln = ModelSerializer.restoreMultiLayerNetwork(path)
             new SparkDl4jModel(Identifiable.randomUID("dl4j"), new SparkDl4jMultiLayer(sc, mln, null))
         }
+
     }
 }

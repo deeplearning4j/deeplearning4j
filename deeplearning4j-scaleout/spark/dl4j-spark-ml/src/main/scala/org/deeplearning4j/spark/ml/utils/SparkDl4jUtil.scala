@@ -11,7 +11,8 @@ import org.json4s.jackson.JsonMethods.{compact, parse, render}
 import org.json4s.{JObject, JValue, _}
 
 /**
-  * This is imported from Spark with a few minor changes, since the libraries are private. This is a known constraint in spark around params.
+  * This is imported from Spark with a few minor changes, since the libraries are private.
+  * This is a known constraint in spark around params. https://issues.apache.org/jira/browse/SPARK-7146
   */
 object SparkDl4jUtil {
 

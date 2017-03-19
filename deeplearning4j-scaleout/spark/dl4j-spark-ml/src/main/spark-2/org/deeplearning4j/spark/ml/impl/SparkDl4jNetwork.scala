@@ -1,20 +1,38 @@
 package org.deeplearning4j.spark.ml.impl
 
+import java.util
+
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.{Dataset, Row}
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration
+import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
-import org.deeplearning4j.spark.ml.utils.DatasetFacade
+import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
 
 
-final class SparkDl4jNetwork(override val uid: String) extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](uid) {
+final class SparkDl4jNetwork(
+                                override val multiLayerConfiguration: MultiLayerConfiguration,
+                                override val numLabels: Int,
+                                override val trainingMaster: ParamSerializer,
+                                override val listeners: util.Collection[IterationListener],
+                                override val collectStats: Boolean = false,
+                                override val uid: String = Identifiable.randomUID("dl4j"))
+    extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
+        uid, multiLayerConfiguration, numLabels, trainingMaster, listeners, collectStats) {
+
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener]) {
+        this(multiLayerConfiguration, numLabels, trainingMaster, listeners, false, Identifiable.randomUID("dl4j"))
+    }
+
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener], collectStats: Boolean) {
+        this(multiLayerConfiguration, numLabels, trainingMaster, listeners, collectStats, Identifiable.randomUID("dl4j"))
+    }
 
     override val mapVectorFunc: Row => LabeledPoint = row => new LabeledPoint(row.getAs[Double]($(labelCol)), Vectors.fromML(row.getAs[Vector]($(featuresCol))))
-
-    def this() = this(Identifiable.randomUID("dl4j"))
 
     override def train(dataset: Dataset[_]): SparkDl4jModel = {
         val spn = trainer(DatasetFacade.dataRows(dataset))
