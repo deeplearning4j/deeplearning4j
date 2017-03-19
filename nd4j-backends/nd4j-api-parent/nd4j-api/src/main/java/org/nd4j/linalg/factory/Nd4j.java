@@ -116,6 +116,7 @@ public class Nd4j {
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
     public final static String MEMORY_MANAGER = "memorymanager";
+    public final static String WORKSPACE_MANAGER = "workspacemanager";
     public final static String RANDOM_PROVIDER = "random";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
@@ -143,6 +144,7 @@ public class Nd4j {
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
 
+    protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
@@ -5787,6 +5789,9 @@ public class Nd4j {
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
             randomFactory = new RandomFactory(randomClazz);
 
+            workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
+                    .forName(System.getProperty(WORKSPACE_MANAGER, props.get(WORKSPACE_MANAGER).toString()));
+
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class
                             .forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
@@ -5803,6 +5808,7 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+            workspaceManager = workspaceManagerClazz.newInstance();
 
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class
                             .forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
@@ -5825,9 +5831,6 @@ public class Nd4j {
                             Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
-
-            // FIXME: make this backend-specific
-            workspaceManager = new BasicWorkspaceManager();
 
             String fallback = System.getenv("ND4J_FALLBACK");
             if (fallback != null && !fallback.isEmpty()) {
