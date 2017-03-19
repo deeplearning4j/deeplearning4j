@@ -72,12 +72,13 @@ public class Nd4jEnvironment implements Serializable {
     public static Nd4jEnvironment getEnvironment() {
         Properties envInfo = Nd4j.getExecutioner().getEnvironmentInformation();
         Nd4jEnvironment ret = Nd4jEnvironment.builder()
-                        .numCores(Integer.parseInt(envInfo.getProperty(CPU_CORES_KEY, "0")))
-                        .ram(Long.parseLong(envInfo.getProperty(HOST_TOTAL_MEMORY_KEY, "0")))
-                        .os(envInfo.getProperty(OS_KEY)).blasVendor(envInfo.getProperty(BLAS_VENDOR_KEY))
-                        .blasThreads(Long.parseLong(envInfo.getProperty(BLAS_THREADS_KEY, "0")))
-                        .ompThreads(Integer.parseInt(envInfo.getProperty(OMP_THREADS_KEY, "0")))
-                        .numGpus(Integer.parseInt(envInfo.getProperty(CUDA_NUM_GPUS_KEY, "0"))).build();
+                .numCores(getIntOrZero(CPU_CORES_KEY, envInfo))
+                .ram(getLongOrZero(HOST_TOTAL_MEMORY_KEY, envInfo))
+                .os(envInfo.get(OS_KEY).toString())
+                .blasVendor(envInfo.get(BLAS_VENDOR_KEY).toString())
+                .blasThreads(getLongOrZero(BLAS_THREADS_KEY,envInfo))
+                .ompThreads(getIntOrZero(OMP_THREADS_KEY, envInfo))
+                .numGpus(getIntOrZero(CUDA_NUM_GPUS_KEY, envInfo)).build();
         if (envInfo.containsKey(CUDA_DEVICE_INFORMATION_KEY)) {
             List<Map<String, Object>> deviceInfo = (List<Map<String, Object>>) envInfo.get(CUDA_DEVICE_INFORMATION_KEY);
             List<Long> gpuRam = new ArrayList<>();
@@ -91,6 +92,19 @@ public class Nd4jEnvironment implements Serializable {
 
         return ret;
 
+    }
+
+
+    private static long getLongOrZero(String key,Properties properties) {
+        if(properties.get(key) == null)
+            return 0;
+        return Long.parseLong(properties.get(key).toString());
+    }
+
+    private static int getIntOrZero(String key,Properties properties) {
+        if(properties.get(key) == null)
+            return 0;
+        return Integer.parseInt(properties.get(key).toString());
     }
 
 
