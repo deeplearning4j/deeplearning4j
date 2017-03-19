@@ -28,19 +28,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
-import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -108,11 +102,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray execAndReturn(Op op) {
         if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
-        } else if (op instanceof ScalarOp) {
+        }
+        if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
-        } else if (op instanceof Accumulation) {
+        }
+        if (op instanceof Accumulation) {
             return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
-        } else if (op instanceof IndexAccumulation) {
+        }
+        if (op instanceof IndexAccumulation) {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
         }
 
@@ -249,8 +246,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank()) {
+            dimension = new int[]{Integer.MAX_VALUE};
+        }
 
         if (op.isPassThrough()) {
             op.exec(dimension);
@@ -260,16 +258,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
-        } else if (op instanceof ScalarOp) {
+                    "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+        }
+        if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
             throw new IllegalStateException("Java computation no longer supported");
-        } else if (op instanceof TransformOp) {
-            throw new UnsupportedOperationException(
-                            "Executing transform ops along a dimension should be done via exec special");
-        } else {
-            throw new UnsupportedOperationException("Unknown op type");
         }
+        if (op instanceof TransformOp) {
+            throw new UnsupportedOperationException(
+                    "Executing transform ops along a dimension should be done via exec special");
+        }
+        throw new UnsupportedOperationException("Unknown op type");
     }
 
     @Override
@@ -331,6 +330,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     }
 
+    @Override
     public ExecutionMode executionMode() {
         return executionMode;
     }
@@ -462,18 +462,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case OPERATIONS:
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
-            case NAN_PANIC: {
+            case NAN_PANIC:
                 OpExecutionerUtil.checkForNaN(op);
-            }
                 break;
-            case INF_PANIC: {
+            case INF_PANIC:
                 OpExecutionerUtil.checkForInf(op);
-            }
                 break;
-            case ANY_PANIC: {
+            case ANY_PANIC:
                 OpExecutionerUtil.checkForNaN(op);
                 OpExecutionerUtil.checkForInf(op);
-            }
                 break;
             case DISABLED:
             default:
