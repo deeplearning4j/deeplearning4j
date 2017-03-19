@@ -53,6 +53,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong spilledAllocations = new AtomicLong(0);
     protected AtomicLong maxCycle = new AtomicLong(0);
     protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
+    protected AtomicBoolean isOpen = new AtomicBoolean(false);
 
     @Getter protected final WorkspaceConfiguration workspaceConfiguration;
 
@@ -198,6 +199,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public void close() {
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
+        isOpen.set(false);
         /*
             Basically all we want here, is:
             1) memset primary page(s)
@@ -230,6 +232,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     public MemoryWorkspace notifyScopeEntered() {
         previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
+        isOpen.set(true);
 
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
@@ -259,12 +262,8 @@ public class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeLeft() {
-        try {
-            close();
-            return this;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        close();
+        return this;
     }
 
     @Override
@@ -280,5 +279,15 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public long getMaxCycleAllocations() {
         return maxCycle.get();
+    }
+
+    /**
+     * This method returns True if scope was opened, and not closed yet.
+     *
+     * @return
+     */
+    @Override
+    public boolean isScopeActive() {
+        return isOpen.get();
     }
 }

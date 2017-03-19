@@ -88,6 +88,39 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testScope2() throws Exception {
+        INDArray array = null;
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+            array = Nd4j.create(100);
+
+            // despite we're allocating this array in workspace, it's empty yet, so it's external allocation
+            assertTrue(array.isInScope());
+            assertEquals(0, wsI.getCurrentSize());
+        }
+
+
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+            array = Nd4j.create(100);
+
+            assertTrue(array.isInScope());
+        }
+
+        assertFalse(array.isInScope());
+    }
+
+    @Test
+    public void testScope1() throws Exception {
+        INDArray array = null;
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            array = Nd4j.create(100);
+
+            assertTrue(array.isInScope());
+        }
+
+        assertFalse(array.isInScope());
+    }
+
+    @Test
     public void testIsAttached1() {
 
         try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {

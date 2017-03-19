@@ -2395,4 +2395,12 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isAttached();
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     *
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     * @return
+     */
+    boolean isInScope();
 }

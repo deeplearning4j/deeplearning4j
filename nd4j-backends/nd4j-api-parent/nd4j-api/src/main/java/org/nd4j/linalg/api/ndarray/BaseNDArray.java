@@ -4963,4 +4963,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isAttached() {
         return data.isAttached();
     }
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     * <p>
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     *
+     * @return
+     */
+    @Override
+    public boolean isInScope() {
+        if (!isAttached())
+            return true;
+
+        return data.isInScope();
+    }
 }

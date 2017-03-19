@@ -60,6 +60,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     MemoryWorkspace notifyScopeLeft();
 
     /**
+     * This method returns True if scope was opened, and not closed yet.
+     *
+     * @return
+     */
+    boolean isScopeActive();
+
+    /**
      * This method causes Workspace initialization
      *
      * PLEASE NOTE: This call will have no effect on previously initialized Workspace

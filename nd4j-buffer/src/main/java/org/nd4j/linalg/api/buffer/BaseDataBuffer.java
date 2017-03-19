@@ -64,7 +64,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Indexer indexer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
-    protected boolean attached = false;
+    protected transient boolean attached = false;
+    protected transient MemoryWorkspace parentWorkspace;
 
     // Allocator-related stuff. Moved down here to avoid type casting.
     protected transient DataBuffer originalBuffer;
@@ -190,6 +191,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         length = data.length;
         underlyingLength = data.length;
         attached = true;
+        parentWorkspace = workspace;
 
         initTypeAndSize();
 
@@ -485,17 +487,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         this.underlyingLength = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
-        attached = true;
+
+
 
         if (length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
         if (dataType() == Type.DOUBLE) {
+            attached = true;
+            parentWorkspace = workspace;
+
             pointer = workspace.alloc(length * getElementSize(), dataType()).asDoublePointer(); //new DoublePointer(length());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == Type.FLOAT) {
+            attached = true;
+            parentWorkspace = workspace;
+
             pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
 
@@ -1507,5 +1516,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public boolean isAttached() {
         return attached;
+    }
+
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     * <p>
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     *
+     * @return
+     */
+    @Override
+    public boolean isInScope() {
+        if (!isAttached())
+            return true;
+
+        return parentWorkspace.isScopeActive();
     }
 }
