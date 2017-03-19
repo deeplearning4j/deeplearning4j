@@ -1,4 +1,4 @@
-package org.nd4j.jita.workspace;
+package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
@@ -10,12 +10,12 @@ import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 /**
  * @author raver119@gmail.com
  */
-public class CudaWorkspace extends Nd4jWorkspace {
-    public CudaWorkspace(@NonNull WorkspaceConfiguration configuration) {
+public class CpuWorkspace extends Nd4jWorkspace {
+    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
     }
 
-    public CudaWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
+    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         super(configuration, workspaceId);
     }
 

@@ -60,7 +60,7 @@ public class Nd4jWorkspace implements MemoryWorkspace {
     // TODO: it should be something like our PointersPair
     protected List<PointersPair> externalAllocations = new ArrayList<>();
 
-    private MemoryWorkspace previousWorkspace;
+    protected MemoryWorkspace previousWorkspace;
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 
@@ -104,9 +104,6 @@ public class Nd4jWorkspace implements MemoryWorkspace {
             if (workspaceConfiguration.getMaxSize() > 0 && currentSize.get() > workspaceConfiguration.getMaxSize())
                 currentSize.set(workspaceConfiguration.getMaxSize());
 
-            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + 1024, MemoryKind.HOST, true)));
-
-            Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
         }
     }
 

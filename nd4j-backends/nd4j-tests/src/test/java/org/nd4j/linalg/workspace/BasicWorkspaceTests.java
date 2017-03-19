@@ -176,7 +176,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 .policySpill(SpillPolicy.EXTERNAL)
                 .build();
 
-        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -209,7 +209,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 .policySpill(SpillPolicy.EXTERNAL)
                 .build();
 
-        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -235,14 +235,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 .policySpill(SpillPolicy.EXTERNAL)
                 .build();
 
-        Nd4jWorkspace workspace = new Nd4jWorkspace(overallocationConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
         assertEquals(2048, workspace.getCurrentSize());
     }
 
     @Test
     public void testToggle1() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(loopFirstConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -295,7 +295,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLoop4() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(loopFirstConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -322,7 +322,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLoops3() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopFirstConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(loopFirstConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -346,7 +346,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLoops2() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopOverTimeConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(loopOverTimeConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -379,7 +379,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLoops1() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(loopOverTimeConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(loopOverTimeConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -430,7 +430,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation5() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(basicConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -466,7 +466,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 .build();
 
 
-        Nd4jWorkspace workspace = new Nd4jWorkspace(failConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(failConfig);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -495,7 +495,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation3() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -515,7 +515,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation2() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -535,7 +535,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation1() throws Exception {
-        Nd4jWorkspace workspace = new Nd4jWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 

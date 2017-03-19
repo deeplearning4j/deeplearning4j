@@ -104,7 +104,7 @@ public class BasicWorkspaceManager implements MemoryWorkspaceManager {
         }
     }
 
-    private void ensureThreadExistense() {
+    protected void ensureThreadExistense() {
         if (backingMap.get() == null)
             backingMap.set(new HashMap<String, MemoryWorkspace>());
     }
