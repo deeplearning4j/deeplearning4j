@@ -87,6 +87,35 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
     }
 
+
+
+    @Test
+    public void testDetach1() throws Exception {
+        INDArray array = null;
+        INDArray copy = null;
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+            // despite we're allocating this array in workspace, it's empty yet, so it's external allocation
+            assertTrue(array.isInScope());
+            assertTrue(array.isAttached());
+            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+
+            copy = array.detach();
+
+            assertTrue(array.isInScope());
+            assertTrue(array.isAttached());
+            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+
+            assertFalse(copy.isAttached());
+            assertTrue(copy.isInScope());
+            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+        }
+
+        assertEquals(15.0f, copy.sumNumber().floatValue(), 0.01f);
+        assertFalse(array == copy);
+    }
+
     @Test
     public void testScope2() throws Exception {
         INDArray array = null;
@@ -103,6 +132,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             array = Nd4j.create(100);
 
             assertTrue(array.isInScope());
+            assertEquals(100 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
         }
 
         assertFalse(array.isInScope());

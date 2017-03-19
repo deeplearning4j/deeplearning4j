@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -4977,5 +4978,36 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return true;
 
         return data.isInScope();
+    }
+
+    /**
+     * This metod detaches INDArray from Workspace, returning copy. Basically it's dup() into new memory chunk.
+     * <p>
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     *
+     * @return
+     */
+    @Override
+    public INDArray detach() {
+        if (!isAttached())
+            return this;
+
+        /*
+         two options here
+         1) we're within some workspace
+         2) we're out of any workspace
+        */
+        if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
+            return this.dup(this.ordering());
+        } else {
+            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
+            INDArray copy = this.dup(this.ordering());
+
+            Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+            return copy;
+        }
     }
 }
