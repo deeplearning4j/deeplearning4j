@@ -254,27 +254,35 @@ public class MLLibUtil {
      * @param data the data to convert
      * @param numPossibleLabels the number of possible labels
      * @return
+     * @deprecated Use {@link #fromLabeledPoint(JavaRDD, int)}
      */
     @Deprecated
     public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data,
-                    int numPossibleLabels) {
-        List<DataSet> list = fromLabeledPoint(data.collect(), numPossibleLabels);
-        return sc.parallelize(list);
+                    final int numPossibleLabels) {
+        return data.map(
+                new Function<LabeledPoint, DataSet>() {
+                    @Override
+                    public DataSet call(LabeledPoint lp) {
+                        return fromLabeledPoint(lp, numPossibleLabels);
+                    }
+                });
     }
 
     /**
      * Convert rdd labeled points to a rdd dataset with continuous features
      * @param data the java rdd labeled points ready to convert
      * @return a JavaRDD<Dataset> with a continuous label
+     * @deprecated Use {@link #fromContinuousLabeledPoint(JavaRDD)}
      */
     @Deprecated
     public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
-        List<LabeledPoint> labeledPoints = data.collect();
-        List<DataSet> dataSets = new ArrayList<>();
-        for (LabeledPoint labeledPoint : labeledPoints) {
-            dataSets.add(convertToDataset(labeledPoint));
-        }
-        return sc.parallelize(dataSets);
+
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return convertToDataset(lp);
+            }
+        });
     }
 
     private static DataSet convertToDataset(LabeledPoint lp) {
@@ -288,11 +296,18 @@ public class MLLibUtil {
      * @param sc the spark context to use
      * @param data the dataset to convert
      * @return an rdd of labeled point
+     * @deprecated Use {@link #fromDataSet(JavaRDD)}
+     *
      */
     @Deprecated
     public static JavaRDD<LabeledPoint> fromDataSet(JavaSparkContext sc, JavaRDD<DataSet> data) {
-        List<LabeledPoint> list = toLabeledPoint(data.collect());
-        return sc.parallelize(list);
+
+        return data.map(new Function<DataSet, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(DataSet pt) {
+                return toLabeledPoint(pt);
+            }
+        });
     }
 
     /**
