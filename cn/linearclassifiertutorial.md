@@ -1,21 +1,20 @@
 ---
-title: Linear Classifier Tutorial
+title: 线性分类器教程
 layout: cn-default
 ---
 
-# Linear Classifier Tutorial
+# 线性分类器教程
 
-This tutorial will show you how to solve a binary classification problem with Deeplearning4j: 
+本教程将介绍如何用Deeplearning4j来解决二元分类问题： 
 
-Given TK data such as TK (the input variables), you'll train a neural network to predict whether or not a given instances belongs to one group or the other. 
+对于给定的TK数据，例如TK（输入变量），您将定型一个神经网络来预测一项给定实例属于两个类别中的哪一类。 
 
-You'll train a logistic regression model, and based on the input, the model will output a number between 0 and 1, which can be interpreted as the probability that the data instance belongs to the TK group.
+您需要定型一个逻辑回归模型，模型将根据输入数据输出一个0到1之间的数字，可解读为输入数据属于TK类别的概率。
 
-## Setup
+## 安装设置
 
-First, install Deeplearning4j and its examples by follow the [Quickstart instructions](./quickstart).
+首先请按[快速入门指南](./quickstart)安装Deeplearning4j及其示例。
 
-## The Dataset
+## 数据集
 
-## Turning Data Into Vectors
-
+## 将数据转换为向量
