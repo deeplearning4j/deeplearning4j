@@ -98,7 +98,7 @@ public class RegressionEvalTest {
             merged.merge(list.get(i));
         }
 
-        double prec = 1e-6;
+        double prec = 1e-5;
         for (int i = 0; i < nCols; i++) {
             assertEquals(single.correlationR2(i), merged.correlationR2(i), prec);
             assertEquals(single.meanAbsoluteError(i), merged.meanAbsoluteError(i), prec);
