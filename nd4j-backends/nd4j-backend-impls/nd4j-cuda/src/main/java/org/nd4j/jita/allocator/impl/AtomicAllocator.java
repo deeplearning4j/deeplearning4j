@@ -21,8 +21,11 @@ import org.nd4j.jita.constant.ConstantProtector;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
+import org.nd4j.jita.workspace.CudaWorkspace;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -385,10 +388,27 @@ public class AtomicAllocator implements Allocator {
         point.attachReference(reference);
         point.setDeviceId(-1);
 
+        if (buffer.isAttached()) {
+            long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
+            log.info("Allocating {} bytes from attached memory...", reqMem);
 
-        // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
-        PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
-        point.setPointers(pair);
+            CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
+
+            PointersPair pair = new PointersPair();
+
+            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType());
+            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType());
+
+            pair.setDevicePointer(ptrDev);
+            pair.setHostPointer(ptrHost);
+
+            point.setAllocationStatus(AllocationStatus.DEVICE);
+            point.setPointers(pair);
+        } else {
+            // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
+            PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
+            point.setPointers(pair);
+        }
 
         allocationsMap.put(allocId, point);
         return point;
@@ -604,6 +624,12 @@ public class AtomicAllocator implements Allocator {
                 GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
                 if (reference != null) {
                     AllocationPoint point = reference.getPoint();
+
+                    // skipping any allocation that is coming from workspace
+                    if (point.isAttached()) {
+                        // TODO: remove allocation point as well?
+                        continue;
+                    }
 
                     if (threadId == 0)
                         stopper.set(System.currentTimeMillis());

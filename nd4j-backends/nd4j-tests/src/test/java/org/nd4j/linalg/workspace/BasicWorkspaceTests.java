@@ -550,8 +550,6 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         double sum = array.sumNumber().doubleValue();
         assertEquals(15.0, sum, 0.01);
 
-        array.getFloat(0);
-
         // checking INDArray validity
         assertEquals(1.0, array.getFloat(0), 0.01);
         assertEquals(2.0, array.getFloat(1), 0.01);

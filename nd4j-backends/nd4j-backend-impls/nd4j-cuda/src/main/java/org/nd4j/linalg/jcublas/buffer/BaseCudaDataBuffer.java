@@ -101,8 +101,22 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this(data, copy, 0);
     }
 
+    public BaseCudaDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        //super(data, copy);
+        this(data, copy, 0, workspace);
+    }
+
     public BaseCudaDataBuffer(float[] data, boolean copy, long offset) {
         this(data.length, 4);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+        set(data, this.length, offset, offset);
+    }
+
+    public BaseCudaDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        this(data.length, 4, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -173,9 +187,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         */
     }
 
-    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, MemoryWorkspace workspace) {
+    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
         this.allocationMode = AllocationMode.JAVACPP;
         initTypeAndSize();
+
+        if (dataType() != Type.INT) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+        }
+
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
                 new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
@@ -185,19 +205,26 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = 0;
         this.originalOffset = 0;
 
-        if (1 > 0)
-            throw new UnsupportedOperationException();
 
         if (dataType() == Type.DOUBLE) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
         } else if (dataType() == Type.FLOAT) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
             indexer = FloatIndexer.create((FloatPointer) pointer);
         } else if (dataType() == Type.INT) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (dataType() == Type.HALF) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+
             // FIXME: proper pointer and proper indexer should be used here
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
@@ -220,6 +247,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public BaseCudaDataBuffer(long length, int elementSize) {
         this(length, elementSize, true);
+    }
+
+    public BaseCudaDataBuffer(long length, int elementSize, MemoryWorkspace workspace) {
+        this(length, elementSize, true, workspace);
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, long offset) {

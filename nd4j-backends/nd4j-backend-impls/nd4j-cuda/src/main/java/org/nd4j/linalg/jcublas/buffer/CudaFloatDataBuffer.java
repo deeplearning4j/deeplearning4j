@@ -94,6 +94,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
+    public CudaFloatDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
+    }
+
     public CudaFloatDataBuffer(float[] data, boolean copy, int offset) {
         super(data, copy, offset);
     }
