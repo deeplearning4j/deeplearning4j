@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,6 +23,8 @@ import java.util.List;
  */
 @NoArgsConstructor
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
+
+    public static final int DEFAULT_PRECISION = 4;
 
     //Basically: Need counts - correct and incorrect - for each class
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
@@ -57,7 +60,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         //First: binarize the network prediction probabilities, threshold 0.5
         //This gives us 3 binary arrays: labels, predictions, masks
-        INDArray classPredictions = Nd4j.getExecutioner().execAndReturn(new LessThan(networkPredictions.dup()));
+        INDArray classPredictions = networkPredictions.gt(0.5);
 
         INDArray notLabels = Nd4j.getExecutioner().execAndReturn(new Not(labels.dup()));
         INDArray notClassPredictions = Nd4j.getExecutioner().execAndReturn(new Not(classPredictions.dup()));
@@ -85,7 +88,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             countTruePositive = new int[l];
             countFalsePositive = new int[l];
             countTrueNegative = new int[l];
-            countFalsePositive = new int[l];
+            countFalseNegative = new int[l];
         }
 
         addInPlace(countTruePositive, tpCount);
@@ -138,58 +141,114 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         this.labels = new ArrayList<>(labels);
     }
 
+    /**
+     * Get the total output number, accounting for any masking
+     * @param outputNum
+     * @return
+     */
+    public int totalCount(int outputNum){
+        assertIndex(outputNum);
+        return countTruePositive[outputNum] + countTrueNegative[outputNum] + countFalseNegative[outputNum] + countFalsePositive[outputNum];
+    }
+
+    public int truePositives(int outputNum){
+        assertIndex(outputNum);
+        return countTruePositive[outputNum];
+    }
+
+    public int trueNegatives(int outputNum){
+        assertIndex(outputNum);
+        return countTrueNegative[outputNum];
+    }
+
+    public int falsePositives(int outputNum){
+        assertIndex(outputNum);
+        return countFalsePositive[outputNum];
+    }
+
+    public int falseNegatives(int outputNum){
+        assertIndex(outputNum);
+        return countFalseNegative[outputNum];
+    }
+
+    public double accuracy(int outputNum){
+        assertIndex(outputNum);
+        return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double)totalCount(outputNum);
+    }
+
+    public double precision(int outputNum){
+        assertIndex(outputNum);
+        //double precision = tp / (double) (tp + fp);
+        return countTruePositive[outputNum] / (double)( countTruePositive[outputNum] + countFalsePositive[outputNum]);
+    }
+
+    public double recall(int outputNum){
+        assertIndex(outputNum);
+        //tp / (double) (tp + fn);
+        return countTruePositive[outputNum] / (double)(countTruePositive[outputNum] + countFalseNegative[outputNum]);
+    }
+
+    public double f1(int outputNum){
+        assertIndex(outputNum);
+
+        double precision = precision(outputNum);
+        double recall = recall(outputNum);
+
+        return 2.0*(precision * recall) / (precision + recall);
+    }
+
+    private void assertIndex(int outputNum){
+        if(countTruePositive == null){
+            throw new UnsupportedOperationException("EvaluationBinary does not have any stats: eval must be called first");
+        }
+        if(outputNum < 0 || outputNum >= countTruePositive.length){
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum-1));
+        }
+    }
+
     public String stats() {
+        return stats(DEFAULT_PRECISION);
+    }
+
+    public String stats(int printPrecision){
+
         StringBuilder sb = new StringBuilder();
 
-        //Report: Accuracy, precision, recall, F1,
-        //Then: confusion matrix
+        //Report: Accuracy, precision, recall, F1. Then: confusion matrix
 
-        int maxLabelsLength = 20;
+        int maxLabelsLength = 15;
         if (labels != null) {
             for (String s : labels) {
                 maxLabelsLength = Math.max(s.length(), maxLabelsLength);
             }
         }
 
-        int numDP = 5;
-        String subPattern = "%-12." + numDP + "f";
+        String subPattern = "%-12." + printPrecision + "f";
         String pattern = "%-" + (maxLabelsLength + 5) + "s"             //Label
-                + subPattern + subPattern + subPattern + subPattern     //Accuracy, precision, recall, f1
-                + "%-10d-10d-10d-10d-10d";                              //Total count, TP, TN, FP, FN
+                + subPattern + subPattern + subPattern + subPattern     //Accuracy, f1, precision, recall
+                + "%-8d%-7d%-7d%-7d%-7d";                               //Total count, TP, TN, FP, FN
 
-        String patternHeader = "%-" + (maxLabelsLength+5) + "s"
-                + "-12s-12s-12s-12s-10d-10d-10d-10d-10d";
+        String patternHeader = "%-" + (maxLabelsLength+5) + "s%-12s%-12s%-12s%-12s%-8s%-7s%-7s%-7s%-7s";
 
-        String header = String.format(patternHeader,
-                "Label",
-                "Accuracy",
-                "F1",
-                "Precision",
-                "Recall",
-                "Total #",
-                "True Pos #",
-                "True Neg #",
-                "False Pos #",
-                "False Neg #");
+        String header = String.format(patternHeader, "Label", "Accuracy", "F1", "Precision", "Recall", "Total",
+                "TP", "TN", "FP", "FN");
 
         sb.append(header);
 
         for (int i = 0; i < countTrueNegative.length; i++) {
-            int tp = countTruePositive[i];
-            int tn = countTrueNegative[i];
-            int fp = countFalseNegative[i];
-            int fn = countFalseNegative[i];
-            int totalCount = tp + tn + fp + fn;
+            int totalCount = totalCount(i);
 
-            double acc = (tp + tn) / (double) totalCount;
-            double precision = tp / (double) (tp + fp);
-            double recall = tp / (double) (tp + fn);
-            double f1 = 2.0*(precision * recall) / (precision + recall);
+            double acc = accuracy(i);
+            double f1 = f1(i);
+            double precision = precision(i);
+            double recall = recall(i);
 
             String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-            sb.append("\n").append(String.format(pattern, acc, f1, precision, recall, totalCount, tp, tn, fp, fn));
+            sb.append("\n").append(String.format(pattern, label, acc, f1, precision, recall, totalCount,
+                    truePositives(i), trueNegatives(i), falsePositives(i), falseNegatives(i)));
         }
 
+        return sb.toString();
     }
 }

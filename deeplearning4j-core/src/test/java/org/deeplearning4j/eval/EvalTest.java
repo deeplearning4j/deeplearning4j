@@ -693,15 +693,12 @@ public class EvalTest {
 
     @Test
     public void testBinaryCase(){
-
         INDArray ones10 = Nd4j.ones(10,1);
         INDArray ones4 = Nd4j.ones(4, 1);
         INDArray zeros4 = Nd4j.zeros(4, 1);
         INDArray ones3 = Nd4j.ones(3, 1);
         INDArray zeros3 = Nd4j.zeros(3, 1);
         INDArray zeros2 = Nd4j.zeros(2, 1);
-
-
 
         Evaluation e = new Evaluation();
         e.eval(ones10, ones10);             //10 true positives
