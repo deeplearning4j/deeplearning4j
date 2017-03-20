@@ -29,4 +29,9 @@ public class CpuWorkspace extends Nd4jWorkspace {
             Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
         }
     }
+
+    @Override
+    protected void resetWorkspace() {
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+    }
 }

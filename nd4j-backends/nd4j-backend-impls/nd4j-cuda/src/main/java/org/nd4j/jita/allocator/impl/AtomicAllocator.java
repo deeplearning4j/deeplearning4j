@@ -403,6 +403,7 @@ public class AtomicAllocator implements Allocator {
             pair.setHostPointer(ptrHost);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
+            point.setAttached(true);
             point.setPointers(pair);
         } else {
             // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that

@@ -14,6 +14,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * @author raver119@gmail.com
@@ -34,9 +35,24 @@ public class CudaMemoryManager extends BasicMemoryManager {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         if (kind == MemoryKind.HOST) {
-            return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
+            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+
+            if (initialize)
+                Pointer.memset(ptr, 0, bytes);
+
+            return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
+            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
+
+            if (initialize) {
+                CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+                NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                context.getSpecialStream().synchronize();
+            }
+
+
+            return ptr; //allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
         } else
             throw new RuntimeException("Unknown MemoryKind requested: " + kind);
     }

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class Nd4jWorkspace implements MemoryWorkspace {
+public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
     protected long threadId;
 
@@ -234,9 +234,16 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
             externalAllocations.clear();
+
+            if (currentSize.get() > 0)
+                resetWorkspace();
         } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() ) && currentSize.get() > 0) {
             hostOffset.set(0);
             resetPlanned.set(false);
+
+            if (currentSize.get() > 0)
+                resetWorkspace();
+
 
             log.info("Resetting workspace at the end of loop...");
         }
@@ -256,6 +263,8 @@ public class Nd4jWorkspace implements MemoryWorkspace {
         cyclesCount.incrementAndGet();
         return this;
     }
+
+    protected abstract void resetWorkspace();
 
     @Override
     public MemoryWorkspace notifyScopeLeft() {

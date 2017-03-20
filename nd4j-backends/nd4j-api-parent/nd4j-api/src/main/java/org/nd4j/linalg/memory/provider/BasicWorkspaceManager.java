@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * @author raver119@gmail.com
  */
-public class BasicWorkspaceManager implements MemoryWorkspaceManager {
+public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
@@ -35,16 +35,6 @@ public class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     @Override
-    public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
-        return new Nd4jWorkspace(configuration);
-    }
-
-    @Override
-    public MemoryWorkspace createNewWorkspace() {
-        return new Nd4jWorkspace(defaultConfiguration);
-    }
-
-    @Override
     public MemoryWorkspace getWorkspaceForCurrentThread() {
         return getWorkspaceForCurrentThread(MemoryWorkspace.DEFAULT_ID);
     }
@@ -54,6 +44,7 @@ public class BasicWorkspaceManager implements MemoryWorkspaceManager {
         return getWorkspaceForCurrentThread(defaultConfiguration, id);
     }
 
+    /*
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
         ensureThreadExistense();
@@ -66,6 +57,7 @@ public class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
         return workspace;
     }
+    */
 
     @Override
     public void setWorkspaceForCurrentThread(MemoryWorkspace workspace) {

@@ -270,6 +270,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(0, workspace.getHostOffset());
         assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
 
+        log.info("--------------------------");
 
         try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
