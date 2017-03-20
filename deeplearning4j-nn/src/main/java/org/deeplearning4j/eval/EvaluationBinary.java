@@ -2,9 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -12,7 +10,7 @@ import java.util.List;
 
 /**
  * EvaluationBinary: used for evaluating networks with binary classification outputs. The typical classification metrics,
- * such as accuracy, precision, recall, F1 score, etc. are reported for each output.<br>
+ * such as accuracy, precision, recall, F1 score, etc. are calculated for each output.<br>
  * <p>
  * Note that EvaluationBinary supports both per-example and per-output masking.
  * <p>
@@ -23,10 +21,8 @@ import java.util.List;
  */
 @NoArgsConstructor
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
-
     public static final int DEFAULT_PRECISION = 4;
 
-    //Basically: Need counts - correct and incorrect - for each class
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
     //use INDArrays to store the counts
     private int[] countTruePositive;    //P=1, Act=1
@@ -49,6 +45,23 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     }
 
     @Override
+    public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
+        if(labelsMask == null || labelsMask.rank() == 2){
+            super.evalTimeSeries(labels, predictions, labelsMask);
+            return;
+        } else if (labelsMask.rank() != 3){
+            throw new IllegalArgumentException("Labels must: must be rank 2 or 3. Got: " + labelsMask.rank());
+        }
+
+        //Per output time series masking
+        INDArray l2d = EvaluationUtils.reshapeTimeSeriesTo2d(labels);
+        INDArray p2d = EvaluationUtils.reshapeTimeSeriesTo2d(predictions);
+        INDArray m2d = EvaluationUtils.reshapeTimeSeriesTo2d(labelsMask);
+
+        eval(l2d, p2d, m2d);
+    }
+
+    @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
 
         if (countTruePositive != null && countTruePositive.length != labels.size(1)) {
@@ -56,7 +69,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                     + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
         }
 
-        //Assume 2d labels/predictions here.
+        if(labels.rank() == 3){
+            evalTimeSeries(labels, networkPredictions, maskArray);
+            return;
+        }
 
         //First: binarize the network prediction probabilities, threshold 0.5
         //This gives us 3 binary arrays: labels, predictions, masks
@@ -110,6 +126,17 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             this.countFalsePositive = other.countFalsePositive;
             this.countTrueNegative = other.countTrueNegative;
             this.countFalseNegative = other.countFalseNegative;
+        } else {
+            if(this.countTruePositive.length != other.countTruePositive.length){
+                throw new IllegalStateException("Cannot merge EvaluationBinary instances with different sizes. This "
+                        + "size: " + this.countTruePositive.length + ", other size: " + other.countTruePositive.length);
+            }
+
+            //Both have stats
+            addInPlace(this.countTruePositive, other.countTruePositive);
+            addInPlace(this.countTrueNegative, other.countTrueNegative);
+            addInPlace(this.countFalsePositive, other.countFalsePositive);
+            addInPlace(this.countFalseNegative, other.countFalseNegative);
         }
     }
 
@@ -120,7 +147,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     }
 
     /**
-     * Returns the number of labels - (i.e., size of the prediction/labels arrays) - if the
+     * Returns the number of labels - (i.e., size of the prediction/labels arrays) - if known. Returns -1 otherwise
      */
     public int numLabels() {
         if (countTruePositive == null) {
@@ -131,7 +158,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     }
 
     /**
-     * Set the label names
+     * Set the label names, for printing via {@link #stats()}
      */
     public void setLabelNames(List<String> labels) {
         if (labels == null) {
@@ -142,52 +169,74 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     }
 
     /**
-     * Get the total output number, accounting for any masking
-     * @param outputNum
-     * @return
+     * Get the total number of values for the specified column, accounting for any masking
      */
     public int totalCount(int outputNum){
         assertIndex(outputNum);
-        return countTruePositive[outputNum] + countTrueNegative[outputNum] + countFalseNegative[outputNum] + countFalsePositive[outputNum];
+        return countTruePositive[outputNum] + countTrueNegative[outputNum] + countFalseNegative[outputNum]
+                + countFalsePositive[outputNum];
     }
 
+    /**
+     * Get the true positives count for the specified output
+     */
     public int truePositives(int outputNum){
         assertIndex(outputNum);
         return countTruePositive[outputNum];
     }
 
+    /**
+     * Get the true negatives count for the specified output
+     */
     public int trueNegatives(int outputNum){
         assertIndex(outputNum);
         return countTrueNegative[outputNum];
     }
 
+    /**
+     * Get the false positives count for the specified output
+     */
     public int falsePositives(int outputNum){
         assertIndex(outputNum);
         return countFalsePositive[outputNum];
     }
 
+    /**
+     * Get the false negatives count for the specified output
+     */
     public int falseNegatives(int outputNum){
         assertIndex(outputNum);
         return countFalseNegative[outputNum];
     }
 
+    /**
+     * Get the accuracy for the specified output
+     */
     public double accuracy(int outputNum){
         assertIndex(outputNum);
         return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double)totalCount(outputNum);
     }
 
+    /**
+     * Get the precision (tp / (tp + fp)) for the specified output
+     */
     public double precision(int outputNum){
         assertIndex(outputNum);
         //double precision = tp / (double) (tp + fp);
         return countTruePositive[outputNum] / (double)( countTruePositive[outputNum] + countFalsePositive[outputNum]);
     }
 
+    /**
+     * Get the recall (tp / (tp + fn)) for the specified output
+     */
     public double recall(int outputNum){
         assertIndex(outputNum);
-        //tp / (double) (tp + fn);
         return countTruePositive[outputNum] / (double)(countTruePositive[outputNum] + countFalseNegative[outputNum]);
     }
 
+    /**
+     * Get the F1 score for the specified output
+     */
     public double f1(int outputNum){
         assertIndex(outputNum);
 
@@ -206,10 +255,18 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
     }
 
+    /**
+     * Get a String representation of the EvaluationBinary class, using the default precision
+     */
     public String stats() {
         return stats(DEFAULT_PRECISION);
     }
 
+    /**
+     * Get a String representation of the EvaluationBinary class, using the specified precision
+     *
+     * @param printPrecision The precision (number of decimal places) for the accuracy, f1, etc.
+     */
     public String stats(int printPrecision){
 
         StringBuilder sb = new StringBuilder();
