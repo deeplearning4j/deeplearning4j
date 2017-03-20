@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
@@ -231,9 +232,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
         if (nCols == 1) {
             INDArray binaryGuesses = guesses.gt(0.5);
+            INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
+            INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
+            //tp: predicted = 1, actual = 1
             int tp = binaryGuesses.mul(realOutcomes).sumNumber().intValue();
-            int fp = binaryGuesses.mul(-1.0).addi(1.0).muli(realOutcomes).sumNumber().intValue();
-            int fn = binaryGuesses.mul(realOutcomes.mul(-1.0).addi(1.0)).sumNumber().intValue();
+            //fp: predicted = 1, actual = 0
+            int fp = binaryGuesses.mul(notLabel).sumNumber().intValue();
+            //fn: predicted = 0, actual = 1
+            int fn = notGuess.mul(realOutcomes).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
             confusion.add(1, 1, tp);
@@ -243,13 +249,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
             truePositives.incrementCount(1, tp);
             falsePositives.incrementCount(1, fp);
-            falseNegatives.incrementCount(1, fp);
-            trueNegatives.incrementCount(1, tp);
+            falseNegatives.incrementCount(1, fn);
+            trueNegatives.incrementCount(1, tn);
 
             truePositives.incrementCount(0, tn);
             falsePositives.incrementCount(0, fn);
-            falseNegatives.incrementCount(0, fn);
-            trueNegatives.incrementCount(0, tn);
+            falseNegatives.incrementCount(0, fp);
+            trueNegatives.incrementCount(0, tp);
 
             if (recordMetaData != null) {
                 for (int i = 0; i < binaryGuesses.size(0); i++) {
