@@ -435,4 +435,10 @@ var PAGES = [{
 "title": "深度置信网络教程：鸢尾花数据集",
 "description": "鸢尾花数据集的规模比较小，所以用该数据集定型的神经网络的输出可能各不相同。",
 "tags": ["iris", "鸢尾花", "dbn", "深度置信网络", "神经网络", "deep belief network", "用例"]
+},
+{
+"url": "https://deeplearning4j.org/cn/model-import-keras",
+"title": "将Keras模型导入Deeplearning4j",
+"description": "-modelimport模块中包含的例程让用户可以导入用Keras配置、定型的神经网络模型。",
+"tags": ["keras", "keras 模型", "python", "tensorflow", "theano", "caffe", "torch", "模型导入"]
 }];
