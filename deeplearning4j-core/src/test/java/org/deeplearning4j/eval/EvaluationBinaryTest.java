@@ -184,4 +184,18 @@ public class EvaluationBinaryTest {
 
         assertEquals(eb2.stats(), eb1.stats());
     }
+
+    @Test
+    public void testEvaluationBinaryWithROC() {
+        //Simple test for nested ROCBinary in EvaluationBinary
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray l1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(new int[]{50,4}), 0.5));
+        INDArray p1 = Nd4j.rand(50,4);
+
+        EvaluationBinary eb = new EvaluationBinary(4, 30);
+        eb.eval(l1, p1);
+
+        System.out.println(eb.stats());
+    }
 }

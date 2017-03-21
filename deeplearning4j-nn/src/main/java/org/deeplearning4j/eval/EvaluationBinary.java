@@ -6,11 +6,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * EvaluationBinary: used for evaluating networks with binary classification outputs. The typical classification metrics,
  * such as accuracy, precision, recall, F1 score, etc. are calculated for each output.<br>
+ * Note that {@link ROCBinary} is also used internally to calculate AUC for each output, but only when using an
+ * appropriate constructor, {@link #EvaluationBinary(int, Integer)}
  * <p>
  * Note that EvaluationBinary supports both per-example and per-output masking.
  * <p>
@@ -29,14 +32,29 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private int[] countFalsePositive;   //P=1, Act=0
     private int[] countTrueNegative;    //P=0, Act=0
     private int[] countFalseNegative;   //P=0, Act=1
+    private ROCBinary rocBinary;
 
     private List<String> labels;
 
     public EvaluationBinary(int size) {
+        this(size, null);
+    }
+
+    /**
+     * This constructor allows for ROC to be calculated in addition to the standard evaluation metrics, when the
+     * rocBinarySteps arg is non-null. See {@link ROCBinary} for more details
+     *
+     * @param size           Number of outputs
+     * @param rocBinarySteps Consructor arg for {@link ROCBinary#ROCBinary(int)}
+     */
+    public EvaluationBinary(int size, Integer rocBinarySteps){
         countTruePositive = new int[size];
         countFalsePositive = new int[size];
         countTrueNegative = new int[size];
         countFalseNegative = new int[size];
+        if(rocBinarySteps != null){
+            rocBinary = new ROCBinary(rocBinarySteps);
+        }
     }
 
     @Override
@@ -111,6 +129,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         addInPlace(countFalsePositive, fpCount);
         addInPlace(countTrueNegative, tnCount);
         addInPlace(countFalseNegative, fnCount);
+
+        if(rocBinary != null){
+            rocBinary.eval(labels, networkPredictions, maskArray);
+        }
     }
 
     @Override
@@ -126,6 +148,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             this.countFalsePositive = other.countFalsePositive;
             this.countTrueNegative = other.countTrueNegative;
             this.countFalseNegative = other.countFalseNegative;
+            this.rocBinary = other.rocBinary;
         } else {
             if(this.countTruePositive.length != other.countTruePositive.length){
                 throw new IllegalStateException("Cannot merge EvaluationBinary instances with different sizes. This "
@@ -137,6 +160,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             addInPlace(this.countTrueNegative, other.countTrueNegative);
             addInPlace(this.countFalsePositive, other.countFalsePositive);
             addInPlace(this.countFalseNegative, other.countFalseNegative);
+
+            if(this.rocBinary != null){
+                this.rocBinary.merge(other.rocBinary);
+            }
         }
     }
 
@@ -246,6 +273,13 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return 2.0*(precision * recall) / (precision + recall);
     }
 
+    /**
+     * Returns the {@link ROCBinary} instance, if present
+     */
+    public ROCBinary getROCBinary(){
+        return rocBinary;
+    }
+
     private void assertIndex(int outputNum){
         if(countTruePositive == null){
             throw new UnsupportedOperationException("EvaluationBinary does not have any stats: eval must be called first");
@@ -287,8 +321,21 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         String patternHeader = "%-" + (maxLabelsLength+5) + "s%-12s%-12s%-12s%-12s%-8s%-7s%-7s%-7s%-7s";
 
-        String header = String.format(patternHeader, "Label", "Accuracy", "F1", "Precision", "Recall", "Total",
+
+
+        List<String> headerNames = Arrays.asList("Label", "Accuracy", "F1", "Precision", "Recall", "Total",
                 "TP", "TN", "FP", "FN");
+
+        if(rocBinary != null){
+            patternHeader += "%-12s";
+            pattern += subPattern;
+
+            headerNames = new ArrayList<>(headerNames);
+            headerNames.add("AUC");
+        }
+
+        String header = String.format(patternHeader, headerNames.toArray());
+
 
         sb.append(header);
 
@@ -302,8 +349,14 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
             String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-            sb.append("\n").append(String.format(pattern, label, acc, f1, precision, recall, totalCount,
-                    truePositives(i), trueNegatives(i), falsePositives(i), falseNegatives(i)));
+            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount,
+                    truePositives(i), trueNegatives(i), falsePositives(i), falseNegatives(i));
+            if(rocBinary != null){
+                args = new ArrayList<>(args);
+                args.add(rocBinary.calculateAUC(i));
+            }
+
+            sb.append("\n").append(String.format(pattern, args.toArray()));
         }
 
         return sb.toString();
