@@ -78,7 +78,7 @@ public class LineRecordReader extends BaseRecordReader {
         } else {
             if (!(inputSplit instanceof StringSplit) && splitIndex < locations.length - 1) {
                 splitIndex++;
-                lineIndex = 0;
+                lineIndex = 0; //New split opened -> reset line index
                 try {
                     close();
                     iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
@@ -86,12 +86,12 @@ public class LineRecordReader extends BaseRecordReader {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                lineIndex = 0; //New split opened -> reset line index
 
                 if (iter.hasNext()) {
                     String record = iter.next();
                     invokeListeners(record);
                     ret.add(new Text(record));
+                    lineIndex++;
                     return ret;
                 }
             }
