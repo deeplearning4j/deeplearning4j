@@ -439,6 +439,12 @@ var PAGES = [{
 {
 "url": "https://deeplearning4j.org/cn/model-import-keras",
 "title": "将Keras模型导入Deeplearning4j",
-"description": "-modelimport模块中包含的例程让用户可以导入用Keras配置、定型的神经网络模型。",
+"description": "keras-modelimport模块中包含的例程让用户可以导入用Keras配置、定型的神经网络模型。",
 "tags": ["keras", "keras 模型", "python", "tensorflow", "theano", "caffe", "torch", "模型导入"]
+},
+{
+"url": "https://deeplearning4j.org/cn/examples-tour",
+"title": "DeepLearning4j示例一览",
+"description": "Deeplearning4j的Github代码库中有许多演示各种功能的示例。快速入门指南中介绍了设置Intellij并克隆代码库的方法。本页概述其中的部分示例。",
+"tags": ["示例", "用例", "datavec", "rl4j", "example", "deeplearning4j", "video", "视频", "模型", "保存", "加载", "自然语言", "可视化", "spark", "nd4j"]
 }];
