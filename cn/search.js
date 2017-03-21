@@ -423,4 +423,10 @@ var PAGES = [{
 "title": "词汇缓存的工作原理",
 "description": "词汇缓存即词汇表缓存，是Deeplearning4j用于处理TF-IDF、词向量和某些信息提取方法等自然语言分析任务的一种通用机制",
 "tags": ["词汇", "词汇缓存", "tfidf", "word2vec", "nlp", "自然语言"]
+},
+{
+"url": "https://deeplearning4j.org/cn/philosophy",
+"title": "我们的理念",
+"description": "Deeplearning4j不是一个科研框架。虽然它可以用于研究，而且我们也鼓励人们这样做（Apache许可协议），但我们很注重具体的用例。",
+"tags": ["理念", "研究", "research", "数据加工", "spark", "jvm", "jni"]
 }];
