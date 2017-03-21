@@ -123,7 +123,6 @@ public class ModelSerializer {
             }
         }
 
-        zipfile.flush();
         zipfile.close();
     }
 

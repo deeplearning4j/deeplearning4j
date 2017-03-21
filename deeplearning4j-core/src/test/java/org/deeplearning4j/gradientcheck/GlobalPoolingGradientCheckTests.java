@@ -11,6 +11,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -23,6 +25,10 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 17/01/2017.
  */
 public class GlobalPoolingGradientCheckTests {
+
+    static {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
