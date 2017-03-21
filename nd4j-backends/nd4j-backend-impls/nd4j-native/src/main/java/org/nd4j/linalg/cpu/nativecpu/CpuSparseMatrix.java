@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.ndarray.ISparseMatrix;
  */
 public class CpuSparseMatrix extends ISparseMatrix {
 
-    public CpuSparseMatrix(double[] data, int[] columns, int[] pointerB, int[] pointerE, int nnz, int[] shape) {
-        super(data, columns, pointerB, pointerE, nnz, shape);
+    public CpuSparseMatrix(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        super(data, columns, pointerB, pointerE, shape);
     }
 }
