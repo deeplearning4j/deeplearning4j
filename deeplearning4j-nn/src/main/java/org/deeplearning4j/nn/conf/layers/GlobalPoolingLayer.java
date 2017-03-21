@@ -45,6 +45,7 @@ public class GlobalPoolingLayer extends Layer {
     private boolean collapseDimensions;
 
     private GlobalPoolingLayer(Builder builder) {
+        super(builder);
         this.poolingType = builder.poolingType;
         this.poolingDimensions = builder.poolingDimensions;
         this.collapseDimensions = builder.collapseDimensions;
