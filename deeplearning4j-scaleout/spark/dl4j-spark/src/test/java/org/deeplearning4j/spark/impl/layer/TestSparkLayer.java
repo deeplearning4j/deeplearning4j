@@ -52,7 +52,7 @@ public class TestSparkLayer extends BaseSparkTest {
 
 
         System.out.println("Initializing network");
-        SparkDl4jLayer master = new SparkDl4jLayer(sc, conf);
+        SparkDl4jLayerS master = new SparkDl4jLayer(sc, conf);
         DataSet d = new IrisDataSetIterator(150, 150).next();
         d.normalizeZeroMeanZeroUnitVariance();
         d.shuffle();
