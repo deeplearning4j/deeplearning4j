@@ -417,4 +417,10 @@ var PAGES = [{
 "title": "DL4J核心概念简介",
 "description": "本页内容假设您已安装最新版本的DL4J。如果您不确定最新的版本是什么，请克隆快速入门指南中的示例，然后查看其中的pom.xml文件。",
 "tags": ["数据加工", "标准化", "dataset", "indarray", "模型", "构建", "定型", "评估"]
+},
+{
+"url": "https://deeplearning4j.org/cn/vocabcache",
+"title": "词汇缓存的工作原理",
+"description": "词汇缓存即词汇表缓存，是Deeplearning4j用于处理TF-IDF、词向量和某些信息提取方法等自然语言分析任务的一种通用机制",
+"tags": ["词汇", "词汇缓存", "tfidf", "word2vec", "nlp", "自然语言"]
 }];
