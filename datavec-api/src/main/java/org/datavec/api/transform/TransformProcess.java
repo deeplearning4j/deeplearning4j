@@ -291,9 +291,7 @@ public class TransformProcess implements Serializable {
      * Execute the full sequence of transformations for a single time series (sequence). May return null if example is filtered
      */
     public List<List<Writable>> executeSequence(List<List<Writable>> inputSequence) {
-
-
-        throw new UnsupportedOperationException("Not yet implemented");
+       return executeSequenceToSequence(inputSequence);
     }
 
     /**
