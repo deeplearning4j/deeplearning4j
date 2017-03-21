@@ -167,9 +167,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             nextEpsilon = dLdx;
 
         } else if (epsilon.rank() == 4) {
-            if (!Shape.strideDescendingCAscendingF(epsilon))
-                epsilon = epsilon.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-
             INDArray dGamma = epsilon.mul(xHat).sum(0, 2, 3);
             INDArray dBeta = epsilon.sum(0, 2, 3);
             INDArray dxhat;
