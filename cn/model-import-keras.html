@@ -11,15 +11,13 @@ layout: cn-default
 <p>如有更多问题，请访问<a href="https://gitter.im/deeplearning4j/deeplearning4j" target="_blank">DL4J线上交流群</a>。您也可以考虑<a href="https://github.com/deeplearning4j/deeplearning4j/issues" target="_blank">通过Github提交功能申请</a>，让所需的功能进入DL4J的开发路线图，甚至可以自己编写功能分支，然后向我们发出合并请求！</p>
 <p>模型导入模块和本页教程都将不断更新，敬请关注！</p>
 <br>
-<br>
 <h2>常用模型的支持</h2>
 <p>VGG16和其他预定型模型被广泛用于演示以及针对特定用例的再定型。我们很高兴宣布DL4J目前已能支持VGG16导入，同时还提供一些辅助功能，包括将所需摄取的数据格式化和标准化，以及将数值输出转换为标签文本类别等。</p>
-<br>
 <br>
 <h2>Deeplearning4j模型库</h2>
 <p>除了可导入预定型的Keras模型，Deeplearning4j还有自己的模型库，我们会不断添加新的模型。</p>
 <br>
-<br>
+
 <h2>使用modelimport类之前所需的IDE配置</h2>
 <p>编辑您的Pom.xml文件，加入下列依赖项</p>
 <pre class="line-numbers"><code class="language-java">
@@ -30,10 +28,8 @@ layout: cn-default
 &lt;/dependency&lt;
 </code></pre>       
 <br>
-<br>
 <h2>可用方法</h2>
 <p>Keras模型导入功能有以下几种使用方式。Keras有两类模型：Sequential（顺序）和Functional（函数式，又译泛型）模型。Keras的Sequential模型相当于DeepLeanring4J的MultiLayerNetwork。Keras的Functional模型相当于DeepLearning4J的计算图。</p> 
-<br>
 <br>
 <h2>仅导入模型配置</h2>
 <p>请注意，目前我们还不能支持全部的模型配置，但我们的目标是让用户能导入最有用且最常用的网络类型。</p>
@@ -44,7 +40,7 @@ layout: cn-default
   <li>Functional模型</li>
   <li>包含用于后续定型的更新器的Functional模型</li>
 </ul><br>
-<br>
+
 <h2>看代码</h2>
 <p>导入在Keras中用model.to_json()保存的Sequential模型配置</p>
 <pre><code class="language-java">
@@ -79,7 +75,8 @@ MultiLayerNetwork network = KerasModelImport.importKerasSequentialModelAndWeight
 <p>导入Keras模型</p>
 <p>以下的视频教程演示了将Keras模型加载到Deeplearning4j并验证网络能否正常运行的代码。主讲Tom Hanlon会介绍如何将一个在Keras中用Theano后端构建的简单的鸢尾花数据分类器导出并加载到Deeplearning4j当中。</p><br>
 <div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=l0366tap001&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div><br>
-<br>
+
+
 <h2>为什么选择Keras？</h2>
 <p>Keras是在Theano或Tensorflow等Python学习库的基础上建立的一个抽象层，是一种更加便利的深度学习接口。</p>
 <p>如果要在Theano这样的框架中定义一个层，您必须非常精确地定义权重、偏差、激活函数以及将输入数据转换为输出的具体方式。 此外，您还需要自行处理反向传播以及权重和偏差的更新。Keras将这些都包装起来，为用户提供包含上述各类计算和更新机制的预制层。</p>
