@@ -39,7 +39,7 @@ public class ParallelWrapperMainTest {
         int nEpochs = 10;
         int iterations = 1;
         int seed = 123;
-        int uiPort = new Random().nextInt(1000) + 9000;
+        int uiPort = 9500;
         System.setProperty("org.deeplearning4j.ui.port", String.valueOf(uiPort));
         log.info("Load data....");
         DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
