@@ -20,8 +20,6 @@ package org.deeplearning4j.nn.conf.distribution;
 
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 
@@ -29,7 +27,7 @@ import java.io.Serializable;
  * An abstract distribution.
  *
  */
-@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = BinomialDistribution.class, name = "binomial"),
                 @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
                 @JsonSubTypes.Type(value = GaussianDistribution.class, name = "gaussian"),
