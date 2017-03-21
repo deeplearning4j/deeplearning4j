@@ -429,4 +429,10 @@ var PAGES = [{
 "title": "我们的理念",
 "description": "Deeplearning4j不是一个科研框架。虽然它可以用于研究，而且我们也鼓励人们这样做（Apache许可协议），但我们很注重具体的用例。",
 "tags": ["理念", "研究", "research", "数据加工", "spark", "jvm", "jni"]
+},
+{
+"url": "https://deeplearning4j.org/cn/dbn-iris-tutorial",
+"title": "深度置信网络教程：鸢尾花数据集",
+"description": "鸢尾花数据集的规模比较小，所以用该数据集定型的神经网络的输出可能各不相同。",
+"tags": ["iris", "鸢尾花", "dbn", "深度置信网络", "神经网络", "deep belief network", "用例"]
 }];
