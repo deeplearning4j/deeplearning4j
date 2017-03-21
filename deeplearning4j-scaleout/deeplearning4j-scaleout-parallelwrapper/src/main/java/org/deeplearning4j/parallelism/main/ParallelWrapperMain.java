@@ -17,7 +17,7 @@ import java.io.File;
 
 /**
  * Parallelwrapper main class.
- * Configure a parallelwrapper
+ * Configure a {@link ParallelWrapper}
  * instance from the command line.
  *
  *
