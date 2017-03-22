@@ -20,73 +20,27 @@
     <parent>
         <artifactId>deeplearning4j-ui-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-ui</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>deeplearning4j-ui_2.11</artifactId>
 
     <name>deeplearning4j-ui</name>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>../dl4j-test-resources/src/main/resources</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
     <dependencies>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-assets</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-client</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-forms</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-multipart</artifactId>
-            <version>2.16</version>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-play_2.11</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-views-mustache</artifactId>
-            <version>${dropwizard.version}</version>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>${javax.ws.rs.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-views-freemarker</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -106,8 +60,27 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui-resources</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
+
 </project>

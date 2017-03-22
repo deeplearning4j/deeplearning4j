@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.util;
 
-import java.util.List;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,12 +34,12 @@ public class MovingWindowMatrixTest {
     @Test
     public void testMovingWindow() {
         INDArray ones = Nd4j.ones(4, 4);
-        MovingWindowMatrix m = new MovingWindowMatrix(ones,2,2);
+        MovingWindowMatrix m = new MovingWindowMatrix(ones, 2, 2);
         List<INDArray> windows = m.windows();
-        assertEquals(4,windows.size());
-        MovingWindowMatrix m2 = new MovingWindowMatrix(ones,2,2,true);
-        List<INDArray> windowsRotate  = m2.windows();
-        assertEquals(16,windowsRotate.size());
+        assertEquals(4, windows.size());
+        MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
+        List<INDArray> windowsRotate = m2.windows();
+        assertEquals(16, windowsRotate.size());
 
 
     }

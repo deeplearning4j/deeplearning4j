@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,12 +20,14 @@ package org.deeplearning4j.aws.ec2.provision;
 
 public class DistributedDeepLearningTrainer {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		ClusterSetup clusterSet = new ClusterSetup(args);
-		
-	}
+    private DistributedDeepLearningTrainer() {}
+
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        ClusterSetup clusterSet = new ClusterSetup(args);
+
+    }
 
 }

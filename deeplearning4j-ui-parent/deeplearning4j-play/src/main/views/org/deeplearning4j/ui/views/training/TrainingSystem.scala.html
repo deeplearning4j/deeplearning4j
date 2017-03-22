@@ -1,0 +1,297 @@
+@(i18n: org.deeplearning4j.ui.api.I18N)
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <meta charset="utf-8">
+        <title>@i18n.getMessage("train.pagetitle")</title>
+            <!-- Start Mobile Specific -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+            <!-- End Mobile Specific -->
+
+        <link id="bootstrap-style" href="/assets/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/assets/css/bootstrap-responsive.min.css" rel="stylesheet">
+        <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
+        <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
+        <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
+        <link rel="shortcut icon" href="/assets/img/favicon.ico">
+
+            <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
+            <!--[if lt IE 9]>
+	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
+	<![endif]-->
+
+            <!--[if IE 9]>
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
+	<![endif]-->
+
+    </head>
+
+    <body>
+            <!-- Start Header -->
+        <div class="navbar">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".top-nav.nav-collapse,.sidebar-nav.nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                    <div id="sessionSelectDiv" style="display:none; float:right">
+                        @i18n.getMessage("train.session.label")
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <!-- End Header -->
+
+        <div class="container-fluid-full">
+            <div class="row-fluid">
+
+                    <!-- Start Main Menu -->
+                <div id="sidebar-left" class="span2">
+                    <div class="nav-collapse sidebar-nav">
+                        <ul class="nav nav-tabs nav-stacked main-menu">
+                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.overview")</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.model")</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.system")</span></a></li>
+                            @*<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.userguide")</span></a></li>*@
+                            <li>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">
+                                    @i18n.getMessage("train.nav.language")</span></a>
+                                <ul>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('de', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> Deutsch</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 中文</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 한글</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> русский</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> український</span></a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                    <!-- End Main Menu -->
+
+                <noscript>
+                    <div class="alert alert-block span10">
+                        <h4 class="alert-heading">Warning!</h4>
+                        <p>You need to have <a href="http://en.wikipedia.org/wiki/JavaScript" target="_blank">
+                            JavaScript</a> enabled to use this site.</p>
+                    </div>
+                </noscript>
+
+                    <!-- Start Content -->
+                <div id="content" class="span10">
+
+                    <div class="row-fluid">
+
+                        <div class="box span12">
+                            <div class="box-header">
+                                <h2><b>@i18n.getMessage("train.system.title")</b></h2>
+                                <div class="btn-group" style="margin-top: -11px; position:absolute; right: 40px;">
+                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">@i18n.getMessage("train.system.selectMachine") <span class="caret"></span></button>
+                                    <ul class="dropdown-menu" id="systemTab"></ul>
+                                </div>
+                            </div>
+                            <div class="box-content">
+
+                                    <!--Start System Information -->
+                                <div class="tab-content">
+                                    <div class="tab-pane active">
+
+                                            <!-- System Memory Utilization Chart -->
+                                        <div class="row-fluid">
+
+                                            <div class="box span12" id="systemMemoryChart">
+                                                <div class="box-header">
+                                                    <h2><b>@i18n.getMessage("train.system.chart.systemMemoryTitle") %</b></h2>
+                                                </div>
+                                                <div class="box-content">
+                                                    <div id="systemMemoryChartPlot" class="center" style="height: 300px;" ></div>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y">0</span>, <b>
+                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">0</span></p>
+                                                </div>
+                                            </div>
+
+                                            <!-- GPU Memory Utlization Chart -->
+                                            <div class="box span6" id="gpuMemoryChart">
+                                                <div class="box-header">
+                                                    <h2><b>@i18n.getMessage("train.system.chart.gpuMemoryTitle") %</b></h2>
+                                                </div>
+                                                <div class="box-content">
+                                                    <div id="gpuMemoryChartPlot" class="center" style="height: 300px;" ></div>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y2">0</span>, <b>
+                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x2">0</span></p>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                            <!-- Tables -->
+                                        <div class="row-fluid">
+
+                                                <!-- Hardware Information -->
+                                            <div class="box span12">
+                                                <div class="box-header">
+                                                    <h2><b>@i18n.getMessage("train.system.hwTable.title")</b></h2>
+                                                </div>
+                                                <div class="box-content">
+                                                    <table class="table table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmCurrent")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmMax")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapCurrent")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapMax")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmProcs")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.computeDevices")</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td id="currentBytesJVM">Loading...</td>
+                                                                <td id="maxBytesJVM">Loading...</td>
+                                                                <td id="currentBytesOffHeap">Loading...</td>
+                                                                <td id="maxBytesOffHeap">Loading...</td>
+                                                                <td id="jvmAvailableProcessors">Loading...</td>
+                                                                <td id="nComputeDevices">Loading...</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="row-fluid">
+
+                                                <!-- Software Information -->
+                                            <div class="box span12">
+                                                <div class="box-header">
+                                                    <h2><b>@i18n.getMessage("train.system.swTable.title")</b></h2>
+                                                </div>
+                                                <div class="box-content">
+                                                    <table class="table table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>@i18n.getMessage("train.system.swTable.hostname")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.os")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.osArch")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.jvmName")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.jvmVersion")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.nd4jBackend")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.nd4jDataType")</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td id="hostName">Loading...</td>
+                                                                <td id="OS">Loading...</td>
+                                                                <td id="OSArchitecture">Loading...</td>
+                                                                <td id="jvmName">Loading...</td>
+                                                                <td id="jvmVersion">Loading...</td>
+                                                                <td id="nd4jBackend">Loading...</td>
+                                                                <td id="nd4jDataType">Loading...</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                            @*<!-- GPU Information -->*@
+                                        @*<div class="row-fluid" id="gpuTable">*@
+                                            @*<div class="box span12">*@
+                                                @*<div class="box-header">*@
+                                                    @*<h2><b>GPU Information</b></h2>*@
+                                                @*</div>*@
+                                                @*<div class="box-content">*@
+                                                    @*<table class="table table-striped">*@
+                                                        @*<thead>*@
+                                                            @*<tr>*@
+                                                                @*<th>?</th>*@
+                                                            @*</tr>*@
+                                                        @*</thead>*@
+                                                        @*<tbody>*@
+                                                            @*<tr>*@
+                                                                @*<td id="gpuPlaceholder">Loading...</td>*@
+                                                            @*</tr>*@
+                                                        @*</tbody>*@
+                                                    @*</table>*@
+                                                @*</div>*@
+                                            @*</div>*@
+                                        @*</div>*@
+                                    </div>
+                                        <!-- End System Tab -->
+                                </div>
+                            </div>
+                        </div>
+                            <!-- End System Tab -->
+                    </div><!-- End Row Fluid-->
+                </div><!-- End Content -->
+            </div><!-- End Container-->
+        </div><!-- End Row Fluid-->
+
+        <!-- Start JavaScript-->
+        <script src="/assets/js/jquery-1.9.1.min.js"></script>
+        <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
+        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
+        <script src="/assets/js/jquery.ui.touch-punch.js"></script>
+        <script src="/assets/js/modernizr.js"></script>
+        <script src="/assets/js/bootstrap.min.js"></script>
+        <script src="/assets/js/jquery.cookie.js"></script>
+        <script src="/assets/js/fullcalendar.min.js"></script>
+        <script src="/assets/js/jquery.dataTables.min.js"></script>
+        <script src="/assets/js/excanvas.js"></script>
+        <script src="/assets/js/jquery.flot.js"></script>
+        <script src="/assets/js/jquery.flot.pie.js"></script>
+        <script src="/assets/js/jquery.flot.stack.js"></script>
+        <script src="/assets/js/jquery.flot.resize.min.js"></script>
+        <script src="/assets/js/jquery.chosen.min.js"></script>
+        <script src="/assets/js/jquery.uniform.min.js"></script>
+        <script src="/assets/js/jquery.cleditor.min.js"></script>
+        <script src="/assets/js/jquery.noty.js"></script>
+        <script src="/assets/js/jquery.elfinder.min.js"></script>
+        <script src="/assets/js/jquery.raty.min.js"></script>
+        <script src="/assets/js/jquery.iphone.toggle.js"></script>
+        <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
+        <script src="/assets/js/jquery.gritter.min.js"></script>
+        <script src="/assets/js/jquery.imagesloaded.js"></script>
+        <script src="/assets/js/jquery.masonry.min.js"></script>
+        <script src="/assets/js/jquery.knob.modified.js"></script>
+        <script src="/assets/js/jquery.sparkline.min.js"></script>
+        <script src="/assets/js/counter.js"></script>
+        <script src="/assets/js/retina.js"></script>
+        <script src="/assets/js/train/system.js"></script> <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+
+        <!-- Execute once on page load -->
+        <script>
+                $(document).ready(function () {
+                    renderSystemPage(true);
+                    renderTabs();
+                    selectMachine();
+                    /* Default GPU to hidden */
+                    $("#gpuTable").hide();
+                    $("#gpuMemoryChart").hide();
+                });
+        </script>
+
+            <!--Execute periodically (every 2 sec) -->
+        <script>
+                setInterval(function () {
+                    renderSystemPage(false);
+                }, 2000);
+        </script>
+            <!--End JavaScript-->
+
+    </body>
+</html>

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,13 +20,12 @@ package org.deeplearning4j.spark.impl.layer;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * This is considered the "Worker"
@@ -42,15 +41,14 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
 
     private final Model network;
 
-    public DL4jWorker(String json,INDArray params) {
+    public DL4jWorker(String json, INDArray params) {
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
-        LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
-        if(layerFactory == null)
-            throw new IllegalStateException("Please specify a layer factory");
-        this.network = layerFactory.create(conf);
-        int numParams = this.network.numParams();
-        if(numParams != params.length())
-            throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray thisParams = Nd4j.create(1, numParams);
+        this.network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
+        if (numParams != params.length())
+            throw new IllegalStateException("Number of params for configured network was " + numParams
+                            + " while the specified parameter vector length was " + params.length());
         Layer network = (Layer) this.network;
         network.setParams(params);
     }
@@ -59,14 +57,13 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
     public INDArray call(DataSet v1) throws Exception {
         try {
             Layer network = (Layer) this.network;
-            if(network instanceof OutputLayer) {
+            if (network instanceof OutputLayer) {
                 OutputLayer o = (OutputLayer) network;
                 o.fit(v1);
-            }
-            else
+            } else
                 network.fit(v1.getFeatureMatrix());
             return network.params();
-        }catch(Exception e) {
+        } catch (Exception e) {
             System.err.println("Error with dataset " + v1.numExamples());
             throw e;
         }

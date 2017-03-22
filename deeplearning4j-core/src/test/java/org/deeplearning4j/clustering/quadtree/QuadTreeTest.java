@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.clustering.quadtree;
 
-import java.util.Set;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,17 +30,17 @@ import static org.junit.Assert.assertTrue;
  */
 public class QuadTreeTest {
 
-  @Test
-  public void testQuadTree() {
-    INDArray n = Nd4j.ones(3, 2);
-    n.slice(1).addi(1);
-    n.slice(2).addi(2);
-    QuadTree quadTree = new QuadTree(n);
-    assertEquals(n.rows(),quadTree.getCumSize());
-    assertTrue(quadTree.isCorrect());
+    @Test
+    public void testQuadTree() {
+        INDArray n = Nd4j.ones(3, 2);
+        n.slice(1).addi(1);
+        n.slice(2).addi(2);
+        QuadTree quadTree = new QuadTree(n);
+        assertEquals(n.rows(), quadTree.getCumSize());
+        assertTrue(quadTree.isCorrect());
 
 
 
-  }
+    }
 
 }

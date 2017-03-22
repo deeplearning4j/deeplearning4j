@@ -66,6 +66,9 @@ abstract class Component {
             case ComponentType[ComponentType.ChartStackedArea]:
                 return new ChartStackedArea(jsonStr);
 
+            case ComponentType[ComponentType.ChartTimeline]:
+                return new ChartTimeline(jsonStr);
+
             case ComponentType[ComponentType.DecoratorAccordion]:
                 return new DecoratorAccordion(jsonStr);
 

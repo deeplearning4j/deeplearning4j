@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,18 +18,16 @@
 
 package org.deeplearning4j.aws.s3.uploader;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.MultipleFileUpload;
 import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
 import org.deeplearning4j.aws.s3.BaseS3;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Uploads files to S3
@@ -46,20 +44,20 @@ public class S3Uploader extends BaseS3 {
      * @param file the file to upload
      * @param bucketName the bucket name to upload
      */
-    public void multiPartUpload(File file,String bucketName) {
+    public void multiPartUpload(File file, String bucketName) {
         AmazonS3 client = new AmazonS3Client(creds);
         bucketName = ensureValidBucketName(bucketName);
 
         List<Bucket> buckets = client.listBuckets();
-        for(Bucket b : buckets)
-            if(b.getName().equals(bucketName)) {
-                doMultiPart(client,bucketName,file);
+        for (Bucket b : buckets)
+            if (b.getName().equals(bucketName)) {
+                doMultiPart(client, bucketName, file);
                 return;
             }
 
         //bucket didn't exist: create it
         client.createBucket(bucketName);
-        doMultiPart(client,bucketName, file);
+        doMultiPart(client, bucketName, file);
     }
 
     /**
@@ -68,33 +66,31 @@ public class S3Uploader extends BaseS3 {
      * @param file the file to upload
      * @param bucketName the name of the bucket
      */
-	public void upload(File file,String bucketName) {
-		AmazonS3 client = new AmazonS3Client(creds);
-		bucketName = ensureValidBucketName(bucketName);
+    public void upload(File file, String bucketName) {
+        AmazonS3 client = new AmazonS3Client(creds);
+        bucketName = ensureValidBucketName(bucketName);
 
-		List<Bucket> buckets = client.listBuckets();
-		for(Bucket b : buckets) 
-			if(b.getName().equals(bucketName)) {
-				client.putObject(bucketName, file.getName(), file);
-				return;
-			}
-		
-		//bucket didn't exist: create it
-		client.createBucket(bucketName);
-		client.putObject(bucketName, file.getName(), file);
-		
-	}
+        List<Bucket> buckets = client.listBuckets();
+        for (Bucket b : buckets)
+            if (b.getName().equals(bucketName)) {
+                client.putObject(bucketName, file.getName(), file);
+                return;
+            }
 
-    private void doMultiPart(AmazonS3 s3Client,String bucketName,File file) {
+        //bucket didn't exist: create it
+        client.createBucket(bucketName);
+        client.putObject(bucketName, file.getName(), file);
+
+    }
+
+    private void doMultiPart(AmazonS3 s3Client, String bucketName, File file) {
         // Create a list of UploadPartResponse objects. You get one of these
         // for each part upload.
         List<PartETag> partETags = new ArrayList<>();
 
         // Step 1: Initialize.
-        InitiateMultipartUploadRequest initRequest = new
-                InitiateMultipartUploadRequest(bucketName, file.getName());
-        InitiateMultipartUploadResult initResponse =
-                s3Client.initiateMultipartUpload(initRequest);
+        InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(bucketName, file.getName());
+        InitiateMultipartUploadResult initResponse = s3Client.initiateMultipartUpload(initRequest);
 
         long contentLength = file.length();
         long partSize = 5242880; // Set part size to 5 MB.
@@ -107,78 +103,72 @@ public class S3Uploader extends BaseS3 {
                 partSize = Math.min(partSize, (contentLength - filePosition));
 
                 // Create request to upload a part.
-                UploadPartRequest uploadRequest = new UploadPartRequest()
-                        .withBucketName(bucketName).withKey(file.getName())
-                        .withUploadId(initResponse.getUploadId()).withPartNumber(i)
-                        .withFileOffset(filePosition)
-                        .withFile(file)
-                        .withPartSize(partSize);
+                UploadPartRequest uploadRequest = new UploadPartRequest().withBucketName(bucketName)
+                                .withKey(file.getName()).withUploadId(initResponse.getUploadId()).withPartNumber(i)
+                                .withFileOffset(filePosition).withFile(file).withPartSize(partSize);
 
                 // Upload part and add response to our list.
-                partETags.add(
-                        s3Client.uploadPart(uploadRequest).getPartETag());
+                partETags.add(s3Client.uploadPart(uploadRequest).getPartETag());
 
                 filePosition += partSize;
             }
 
             // Step 3: Complete.
-            CompleteMultipartUploadRequest compRequest = new
-                    CompleteMultipartUploadRequest(
-                    bucketName,
-                    file.getName(),
-                    initResponse.getUploadId(),
-                    partETags);
+            CompleteMultipartUploadRequest compRequest = new CompleteMultipartUploadRequest(bucketName, file.getName(),
+                            initResponse.getUploadId(), partETags);
 
             s3Client.completeMultipartUpload(compRequest);
         } catch (Exception e) {
-            s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(
-                    bucketName, file.getName(), initResponse.getUploadId()));
+            s3Client.abortMultipartUpload(
+                            new AbortMultipartUploadRequest(bucketName, file.getName(), initResponse.getUploadId()));
         }
     }
 
-	private String ensureValidBucketName(String bucketName) {
-		String formatted = bucketName.replaceAll("\\s+","_");
-		int length = bucketName.length();
-		if(length >= 62)
-			length = 62;
-		formatted = formatted.substring(0,length);
-		formatted = formatted.replace(".","d");
-		formatted = formatted.toLowerCase();
-		if(formatted.endsWith("-"))
-			formatted = formatted.substring(0,length - 1);
-		
-		return formatted;
-	}
-	
-	public void upload(File file,String name,String bucketName) {
-		AmazonS3 client = getClient();
-		bucketName = ensureValidBucketName(bucketName);
-		List<Bucket> buckets = client.listBuckets();
-	//	ObjectMetadata med = new ObjectMetadata();
-//		med.setContentLength(fileLength);
-		for(Bucket b : buckets)
-			if(b.getName().equals(bucketName)) {
-				//client.putObject(bucketName, name, is, med);
-				client.putObject(new PutObjectRequest(bucketName, name, file));
-				return;
-			}
-		
-		//bucket didn't exist: createComplex it
-		client.createBucket(bucketName);
-		//client.putObject(bucketName, name, is, med);
-		client.putObject(new PutObjectRequest(bucketName, name, file));
-	}
-	
+    private String ensureValidBucketName(String bucketName) {
+        String formatted = bucketName.replaceAll("\\s+", "_");
+        int length = bucketName.length();
+        if (length >= 62)
+            length = 62;
+        formatted = formatted.substring(0, length);
+        formatted = formatted.replace(".", "d");
+        formatted = formatted.toLowerCase();
+        if (formatted.endsWith("-"))
+            formatted = formatted.substring(0, length - 1);
 
-	public MultipleFileUpload uploadFolder(String bucketName, String keyPrefix,  File folderPath, boolean includeSubDir) {
-		TransferManager transfer = new TransferManager(getClient());
-		return transfer.uploadDirectory(bucketName, keyPrefix, folderPath, includeSubDir);
-	}
+        return formatted;
+    }
 
-	public MultipleFileUpload uploadFileList(String bucketName, File folderPath, List<File> fileList, String keyPrefix){
-		TransferManager transfer = new TransferManager(getClient());
-		return transfer.uploadFileList(bucketName, keyPrefix, folderPath, fileList);
-	}
+    public void upload(File file, String name, String bucketName) {
+        AmazonS3 client = getClient();
+        bucketName = ensureValidBucketName(bucketName);
+        List<Bucket> buckets = client.listBuckets();
+        //	ObjectMetadata med = new ObjectMetadata();
+        //		med.setContentLength(fileLength);
+        for (Bucket b : buckets)
+            if (b.getName().equals(bucketName)) {
+                //client.putObject(bucketName, name, is, med);
+                client.putObject(new PutObjectRequest(bucketName, name, file));
+                return;
+            }
+
+        //bucket didn't exist: createComplex it
+        client.createBucket(bucketName);
+        //client.putObject(bucketName, name, is, med);
+        client.putObject(new PutObjectRequest(bucketName, name, file));
+    }
+
+
+    public MultipleFileUpload uploadFolder(String bucketName, String keyPrefix, File folderPath,
+                    boolean includeSubDir) {
+        TransferManager transfer = new TransferManager(getClient());
+        return transfer.uploadDirectory(bucketName, keyPrefix, folderPath, includeSubDir);
+    }
+
+    public MultipleFileUpload uploadFileList(String bucketName, File folderPath, List<File> fileList,
+                    String keyPrefix) {
+        TransferManager transfer = new TransferManager(getClient());
+        return transfer.uploadFileList(bucketName, keyPrefix, folderPath, fileList);
+    }
 
 
 }

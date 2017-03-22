@@ -1,2 +1,0 @@
-java -cp "lib/*" -server -XX:+UseTLAB   -Dakka.remote.netty.tcp.hostname=train -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:MaxTenuringThreshold=0   -XX:CMSInitiatingOccupancyFraction=60  -XX:+CMSParallelRemarkEnabled -XX:+CMSPermGenSweepingEnabled -XX:+CMSClassUnloadingEnabled com.blix.deeplearning.text.vocabloader.MultiTopicModelingVocabLoaderMultiThreaded topicmodeling-multi-smaller.bin scraperarticles.smaller.bak  bagofwords-dbn.bin
-

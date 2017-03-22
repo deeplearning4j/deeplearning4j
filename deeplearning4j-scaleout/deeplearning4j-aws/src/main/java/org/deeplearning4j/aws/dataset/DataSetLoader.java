@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,19 +18,19 @@
 
 package org.deeplearning4j.aws.dataset;
 
-import java.io.InputStream;
-
 import org.deeplearning4j.aws.s3.reader.S3Downloader;
+
+import java.io.InputStream;
 
 public class DataSetLoader {
 
-	private String bucket;
-	
-	
-	
-	public void onData(InputStream is) {
-		S3Downloader downloader = new S3Downloader();
-		
-	}
+    private String bucket;
+
+
+
+    public void onData(InputStream is) {
+        S3Downloader downloader = new S3Downloader();
+
+    }
 
 }

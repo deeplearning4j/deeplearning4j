@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,9 +18,6 @@
 
 package org.deeplearning4j.aws.s3;
 
-import java.io.File;
-import java.io.InputStream;
-
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -28,6 +25,9 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+
+import java.io.File;
+import java.io.InputStream;
 
 
 /**
@@ -47,73 +47,73 @@ import com.amazonaws.services.s3.AmazonS3Client;
 public abstract class BaseS3 {
 
 
-	/**
-	 * 
-	 */
-	protected static final long serialVersionUID = -2280107690193651289L;
-	protected String accessKey;
-	protected String secretKey;
-	protected AWSCredentials creds;
-	public final static String ACCESS_KEY = "org.deeplearning4j.aws.accessKey";
-	public final static String  ACCESS_SECRET = "org.deeplearning4j.aws.accessSecret";
-	public final static String AWS_ACCESS_KEY = "AWS_ACCESS_KEY"; //"AWS_ACCESS_KEY_ID";
-	public final static String AWS_SECRET_KEY = "AWS_SECRET_KEY"; //"AWS_SECRET_ACCESS_KEY";
-	
-	
-	protected void findCreds() {
-		if(System.getProperty(ACCESS_KEY) != null && System.getProperty(ACCESS_SECRET) != null) {
-			accessKey = System.getProperty(ACCESS_KEY);
-			secretKey = System.getProperty(ACCESS_SECRET);
-		}
-		
-		else if(System.getenv(AWS_ACCESS_KEY) != null && System.getenv(AWS_SECRET_KEY) != null) {
-			accessKey = System.getenv(AWS_ACCESS_KEY);
-			secretKey = System.getenv(AWS_SECRET_KEY);
-		}
-	}
-	
-	public BaseS3() {
-		findCreds();
-		if(accessKey != null && secretKey != null)
-			creds = new BasicAWSCredentials(accessKey,secretKey);
-		if(creds == null)
-			throw new IllegalStateException("Unable to find ec2 credentials");
-	}
-	
-	public BaseS3(File file) throws Exception {
-		if(accessKey != null && secretKey != null)
-			creds = new BasicAWSCredentials(accessKey,secretKey);
-		else 
-			creds = new PropertiesCredentials(file);
-			
-		
-	}
-	
-	public BaseS3(InputStream is) throws Exception {
-		if(accessKey != null && secretKey != null)
-			creds = new BasicAWSCredentials(accessKey,secretKey);
-		else 
-			creds = new PropertiesCredentials(is);
-			
-		
-	}
+    /**
+     * 
+     */
+    protected static final long serialVersionUID = -2280107690193651289L;
+    protected String accessKey;
+    protected String secretKey;
+    protected AWSCredentials creds;
+    public final static String ACCESS_KEY = "org.deeplearning4j.aws.accessKey";
+    public final static String ACCESS_SECRET = "org.deeplearning4j.aws.accessSecret";
+    public final static String AWS_ACCESS_KEY = "AWS_ACCESS_KEY"; //"AWS_ACCESS_KEY_ID";
+    public final static String AWS_SECRET_KEY = "AWS_SECRET_KEY"; //"AWS_SECRET_ACCESS_KEY";
 
-	public AWSCredentials getCreds() {
-		return creds;
-	}
 
-	public void setCreds(AWSCredentials creds) {
-		this.creds = creds;
-	}
-	
-	public AmazonS3 getClient() {
-		return new AmazonS3Client(creds);
-	}
-	
-	public AmazonEC2 getEc2() {
-		
-		return new AmazonEC2Client(creds);
-	}
-	
+    protected void findCreds() {
+        if (System.getProperty(ACCESS_KEY) != null && System.getProperty(ACCESS_SECRET) != null) {
+            accessKey = System.getProperty(ACCESS_KEY);
+            secretKey = System.getProperty(ACCESS_SECRET);
+        }
+
+        else if (System.getenv(AWS_ACCESS_KEY) != null && System.getenv(AWS_SECRET_KEY) != null) {
+            accessKey = System.getenv(AWS_ACCESS_KEY);
+            secretKey = System.getenv(AWS_SECRET_KEY);
+        }
+    }
+
+    public BaseS3() {
+        findCreds();
+        if (accessKey != null && secretKey != null)
+            creds = new BasicAWSCredentials(accessKey, secretKey);
+        if (creds == null)
+            throw new IllegalStateException("Unable to find ec2 credentials");
+    }
+
+    public BaseS3(File file) throws Exception {
+        if (accessKey != null && secretKey != null)
+            creds = new BasicAWSCredentials(accessKey, secretKey);
+        else
+            creds = new PropertiesCredentials(file);
+
+
+    }
+
+    public BaseS3(InputStream is) throws Exception {
+        if (accessKey != null && secretKey != null)
+            creds = new BasicAWSCredentials(accessKey, secretKey);
+        else
+            creds = new PropertiesCredentials(is);
+
+
+    }
+
+    public AWSCredentials getCreds() {
+        return creds;
+    }
+
+    public void setCreds(AWSCredentials creds) {
+        this.creds = creds;
+    }
+
+    public AmazonS3 getClient() {
+        return new AmazonS3Client(creds);
+    }
+
+    public AmazonEC2 getEc2() {
+
+        return new AmazonEC2Client(creds);
+    }
+
 
 }

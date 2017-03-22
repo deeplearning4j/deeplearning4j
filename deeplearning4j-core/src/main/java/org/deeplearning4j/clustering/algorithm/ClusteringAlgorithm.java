@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,13 +18,13 @@
 
 package org.deeplearning4j.clustering.algorithm;
 
-import java.util.List;
-
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.Point;
 
+import java.util.List;
+
 public interface ClusteringAlgorithm {
 
-	ClusterSet applyTo(List<Point> points);
-	
+    ClusterSet applyTo(List<Point> points);
+
 }

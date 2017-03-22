@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -49,9 +49,8 @@ public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNet
 
     @Override
     public double calculateScore(MultiLayerNetwork network) {
-
-        SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc,network);
-        return net.calculateScore(data,average);
+        SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc, network, null);
+        return net.calculateScore(data, average);
     }
 
 }

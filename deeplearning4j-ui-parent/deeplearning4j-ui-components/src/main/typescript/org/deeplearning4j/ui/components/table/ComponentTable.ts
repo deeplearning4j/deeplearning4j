@@ -47,6 +47,7 @@ class ComponentTable extends Component implements Renderable {
         tbl.style.width = '100%';
         if(s && s.getBorderWidthPx() != null ) tbl.setAttribute('border', String(s.getBorderWidthPx()));
         if(s && s.getBackgroundColor()) tbl.style.backgroundColor = s.getBackgroundColor();
+        if(s && s.getWhitespaceMode()) tbl.style.whiteSpace = s.getWhitespaceMode();
 
         if (s && s.getColumnWidths()) {
             //TODO allow other than percentage

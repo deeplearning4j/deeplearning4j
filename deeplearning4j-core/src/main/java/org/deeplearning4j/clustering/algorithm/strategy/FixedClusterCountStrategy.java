@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,21 +21,27 @@ package org.deeplearning4j.clustering.algorithm.strategy;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 
 public class FixedClusterCountStrategy extends BaseClusteringStrategy {
-	public static int	defaultIterationCount	= 100;
+    public static int defaultIterationCount = 100;
 
-	protected FixedClusterCountStrategy(Integer initialClusterCount, String distanceFunction, boolean allowEmptyClusters) {
-		super(ClusteringStrategyType.FIXED_CLUSTER_COUNT, initialClusterCount, distanceFunction, allowEmptyClusters);
-	}
+    protected FixedClusterCountStrategy() {
+        super();
+    }
 
-	public static FixedClusterCountStrategy setup(int clusterCount,String distanceFunction) {
-		return new FixedClusterCountStrategy(clusterCount, distanceFunction, false);
-	}
-	
-	public boolean isOptimizationDefined() {
-		return false;
-	}
-	public boolean isOptimizationApplicableNow(IterationHistory iterationHistory) {
-		return false;
-	}
+    protected FixedClusterCountStrategy(Integer initialClusterCount, String distanceFunction,
+                    boolean allowEmptyClusters) {
+        super(ClusteringStrategyType.FIXED_CLUSTER_COUNT, initialClusterCount, distanceFunction, allowEmptyClusters);
+    }
+
+    public static FixedClusterCountStrategy setup(int clusterCount, String distanceFunction) {
+        return new FixedClusterCountStrategy(clusterCount, distanceFunction, false);
+    }
+
+    public boolean isOptimizationDefined() {
+        return false;
+    }
+
+    public boolean isOptimizationApplicableNow(IterationHistory iterationHistory) {
+        return false;
+    }
 
 }

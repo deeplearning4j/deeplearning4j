@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,31 +18,37 @@
 
 package org.deeplearning4j.clustering.algorithm.optimisation;
 
-public class ClusteringOptimization {
+import java.io.Serializable;
 
-	private ClusteringOptimizationType	type;
-	private double value;
+public class ClusteringOptimization implements Serializable {
 
-	public ClusteringOptimization(ClusteringOptimizationType type, double value) {
-		super();
-		this.type = type;
-		this.value = value;
-	}
+    private ClusteringOptimizationType type;
+    private double value;
 
-	public ClusteringOptimizationType getType() {
-		return type;
-	}
+    protected ClusteringOptimization() {
+        // no-op for serialization only
+    }
 
-	public void setType(ClusteringOptimizationType type) {
-		this.type = type;
-	}
+    public ClusteringOptimization(ClusteringOptimizationType type, double value) {
+        super();
+        this.type = type;
+        this.value = value;
+    }
 
-	public double getValue() {
-		return value;
-	}
+    public ClusteringOptimizationType getType() {
+        return type;
+    }
 
-	public void setValue(double value) {
-		this.value = value;
-	}
+    public void setType(ClusteringOptimizationType type) {
+        this.type = type;
+    }
+
+    public double getValue() {
+        return value;
+    }
+
+    public void setValue(double value) {
+        this.value = value;
+    }
 
 }

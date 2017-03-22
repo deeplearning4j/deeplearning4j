@@ -18,13 +18,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.8.1_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>dl4j-spark</artifactId>
+    <artifactId>dl4j-spark_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark</name>
@@ -33,63 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <hadoop.version>1.0.4</hadoop.version>
-        <scala.version>2.10.4</scala.version>
-        <spark.version>1.3.0</spark.version>
     </properties>
-
-    <profiles>
-        <profile>
-            <id>cdh5</id>
-            <repositories>
-                <repository>
-                    <id>org.apache.hadoop</id>
-                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-                </repository>
-            </repositories>
-            <properties>
-                <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-                <spark.version>1.2.0-cdh5.3.0</spark.version>
-            </properties>
-        </profile>
-    </profiles>
-
-
-    <build>
-        <testResources>
-            <testResource>
-                <directory>../../../dl4j-test-resources/src/main/resources</directory>
-            </testResource>
-        </testResources>
-        <plugins>
-            <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>../../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
 
     <pluginRepositories>
         <pluginRepository>
@@ -99,97 +42,57 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-mllib_${scala.binary.version}</artifactId>
-                <version>${spark.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-core_${scala.binary.version}</artifactId>
-                <version>${spark.version}</version>
-                <exclusions>
-
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                </exclusions>
-
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <exclusions>
 
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
+        <!-- ND4J Shaded Jackson Dependency -->
 
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>${deeplearning4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark_2.11</artifactId>
+            <version>${datavec.spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-api</artifactId>
-            <version>${project.version}</version>
+            <artifactId>deeplearning4j-ui-components</artifactId>
+            <version>${deeplearning4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-image</artifactId>
-            <version>${canova.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-nd4j-codec</artifactId>
-            <version>${canova.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>canova-spark</artifactId>
-            <version>${canova.version}</version>
-        </dependency>
-
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-play_2.11</artifactId>
+            <version>${deeplearning4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
 
 </project>

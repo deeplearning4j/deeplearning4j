@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.util;
 
-import org.apache.spark.RangePartitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -32,9 +31,11 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
-import org.canova.api.records.reader.RecordReader;
-import org.canova.api.split.InputStreamInputSplit;
-import org.canova.api.writable.Writable;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.InputStreamInputSplit;
+import org.datavec.api.writable.Writable;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -54,6 +55,8 @@ import java.util.List;
 public class MLLibUtil {
 
 
+    private MLLibUtil() {}
+
     /**
      * This is for the edge case where
      * you have a single output layer
@@ -65,9 +68,9 @@ public class MLLibUtil {
     public static double toClassifierPrediction(Vector vector) {
         double max = Double.NEGATIVE_INFINITY;
         int maxIndex = 0;
-        for(int i = 0; i < vector.size(); i++) {
+        for (int i = 0; i < vector.size(); i++) {
             double curr = vector.apply(i);
-            if(curr > max) {
+            if (curr > max) {
                 maxIndex = i;
                 max = curr;
             }
@@ -83,7 +86,7 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static INDArray toMatrix(Matrix arr) {
-        return Nd4j.create(arr.toArray(), new int[]{arr.numRows(), arr.numCols()});
+        return Nd4j.create(arr.toArray(), new int[] {arr.numRows(), arr.numCols()});
     }
 
     /**
@@ -103,7 +106,7 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static Matrix toMatrix(INDArray arr) {
-        if(!arr.isMatrix()) {
+        if (!arr.isMatrix()) {
             throw new IllegalArgumentException("passed in array must be a matrix");
         }
         return Matrices.dense(arr.rows(), arr.columns(), arr.data().asDouble());
@@ -115,11 +118,11 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static Vector toVector(INDArray arr) {
-        if(!arr.isVector()) {
+        if (!arr.isVector()) {
             throw new IllegalArgumentException("passed in array must be a vector");
         }
         double[] ret = new double[arr.length()];
-        for(int i = 0; i < arr.length(); i++) {
+        for (int i = 0; i < arr.length(); i++) {
             ret[i] = arr.getDouble(i);
         }
 
@@ -134,14 +137,19 @@ public class MLLibUtil {
      * @param reader the reader to use
      * @return the labeled points based on the given rdd
      */
-    public static JavaRDD<LabeledPoint> fromBinary(JavaPairRDD<String, PortableDataStream> binaryFiles,final RecordReader reader) {
-        JavaRDD<Collection<Writable>> records = binaryFiles.map(new Function<Tuple2<String, PortableDataStream>, Collection<Writable>>() {
-            @Override
-            public Collection<Writable> call(Tuple2<String, PortableDataStream> stringPortableDataStreamTuple2) throws Exception {
-                reader.initialize(new InputStreamInputSplit(stringPortableDataStreamTuple2._2().open(),stringPortableDataStreamTuple2._1()));
-                return reader.next();
-            }
-        });
+    public static JavaRDD<LabeledPoint> fromBinary(JavaPairRDD<String, PortableDataStream> binaryFiles,
+                    final RecordReader reader) {
+        JavaRDD<Collection<Writable>> records =
+                        binaryFiles.map(new Function<Tuple2<String, PortableDataStream>, Collection<Writable>>() {
+                            @Override
+                            public Collection<Writable> call(
+                                            Tuple2<String, PortableDataStream> stringPortableDataStreamTuple2)
+                                            throws Exception {
+                                reader.initialize(new InputStreamInputSplit(stringPortableDataStreamTuple2._2().open(),
+                                                stringPortableDataStreamTuple2._1()));
+                                return reader.next();
+                            }
+                        });
 
         JavaRDD<LabeledPoint> ret = records.map(new Function<Collection<Writable>, LabeledPoint>() {
             @Override
@@ -159,7 +167,8 @@ public class MLLibUtil {
      * @param reader the reader to use
      * @return the labeled points based on the given rdd
      */
-    public static JavaRDD<LabeledPoint> fromBinary(JavaRDD<Tuple2<String, PortableDataStream>> binaryFiles, final RecordReader reader) {
+    public static JavaRDD<LabeledPoint> fromBinary(JavaRDD<Tuple2<String, PortableDataStream>> binaryFiles,
+                    final RecordReader reader) {
         return fromBinary(JavaPairRDD.fromJavaRDD(binaryFiles), reader);
     }
 
@@ -175,16 +184,16 @@ public class MLLibUtil {
         double[] ret = new double[writables.size() - 1];
         int count = 0;
         double target = 0;
-        for(Writable w : writables) {
-            if(count < writables.size() - 1)
+        for (Writable w : writables) {
+            if (count < writables.size() - 1)
                 ret[count++] = Float.parseFloat(w.toString());
             else
                 target = Float.parseFloat(w.toString());
         }
 
-        if(target < 0)
+        if (target < 0)
             throw new IllegalStateException("Target must be >= 0");
-        return new LabeledPoint(target,Vectors.dense(ret));
+        return new LabeledPoint(target, Vectors.dense(ret));
     }
 
     /**
@@ -197,36 +206,44 @@ public class MLLibUtil {
      * @param batchSize the batch size
      * @return the new rdd
      */
-    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,int batchSize) {
-       //map by index
-        JavaPairRDD<Long,LabeledPoint> dataWithIndex = data.zipWithIndex().mapToPair(new PairFunction<Tuple2<LabeledPoint, Long>, Long, LabeledPoint>() {
-           @Override
-           public Tuple2<Long, LabeledPoint> call(Tuple2<LabeledPoint, Long> labeledPointLongTuple2) throws Exception {
-               return new Tuple2<>(labeledPointLongTuple2._2(),labeledPointLongTuple2._1());
-           }
-       });
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,
+                    int batchSize) {
+        //map by index
+        JavaPairRDD<Long, LabeledPoint> dataWithIndex = data.zipWithIndex()
+                        .mapToPair(new PairFunction<Tuple2<LabeledPoint, Long>, Long, LabeledPoint>() {
+                            @Override
+                            public Tuple2<Long, LabeledPoint> call(Tuple2<LabeledPoint, Long> labeledPointLongTuple2)
+                                            throws Exception {
+                                return new Tuple2<>(labeledPointLongTuple2._2(), labeledPointLongTuple2._1());
+                            }
+                        });
 
-        JavaPairRDD<Long,DataSet> mappedData = dataWithIndex.mapToPair(new PairFunction<Tuple2<Long, LabeledPoint>, Long, DataSet>() {
-            @Override
-            public Tuple2<Long, DataSet> call(Tuple2<Long, LabeledPoint> longLabeledPointTuple2) throws Exception {
-                return new Tuple2<>(longLabeledPointTuple2._1(), MLLibUtil.fromLabeledPoint(longLabeledPointTuple2._2(), numPossibleLabels));
-            }
-        });
+        JavaPairRDD<Long, DataSet> mappedData =
+                        dataWithIndex.mapToPair(new PairFunction<Tuple2<Long, LabeledPoint>, Long, DataSet>() {
+                            @Override
+                            public Tuple2<Long, DataSet> call(Tuple2<Long, LabeledPoint> longLabeledPointTuple2)
+                                            throws Exception {
+                                return new Tuple2<>(longLabeledPointTuple2._1(), MLLibUtil
+                                                .fromLabeledPoint(longLabeledPointTuple2._2(), numPossibleLabels));
+                            }
+                        });
 
-        JavaPairRDD<Long,DataSet> aggregated = mappedData.reduceByKey(new Function2<DataSet, DataSet, DataSet>() {
+        JavaPairRDD<Long, DataSet> aggregated = mappedData.reduceByKey(new Function2<DataSet, DataSet, DataSet>() {
             @Override
             public DataSet call(DataSet v1, DataSet v2) throws Exception {
-                return new DataSet(Nd4j.vstack(v1.getFeatureMatrix(), v2.getFeatureMatrix()), Nd4j.vstack(v1.getLabels(), v2.getLabels()));
+                return new DataSet(Nd4j.vstack(v1.getFeatureMatrix(), v2.getFeatureMatrix()),
+                                Nd4j.vstack(v1.getLabels(), v2.getLabels()));
             }
         }, (int) (mappedData.count() / batchSize));
 
 
-        JavaRDD<DataSet> data2 = aggregated.flatMap(new FlatMapFunction<Tuple2<Long, DataSet>, DataSet>() {
-            @Override
-            public Iterable<DataSet> call(Tuple2<Long, DataSet> longDataSetTuple2) throws Exception {
-                return longDataSetTuple2._2();
-            }
-        });
+        JavaRDD<DataSet> data2 = aggregated.flatMap(new BaseFlatMapFunctionAdaptee<Tuple2<Long, DataSet>, DataSet>(
+                        new FlatMapFunctionAdapter<Tuple2<Long, DataSet>, DataSet>() {
+                            @Override
+                            public Iterable<DataSet> call(Tuple2<Long, DataSet> longDataSetTuple2) throws Exception {
+                                return longDataSetTuple2._2();
+                            }
+                        }));
 
         return data2;
     }
@@ -237,10 +254,41 @@ public class MLLibUtil {
      * @param data the data to convert
      * @param numPossibleLabels the number of possible labels
      * @return
+     * @deprecated Use {@link #fromLabeledPoint(JavaRDD, int)}
      */
-    public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc,JavaRDD<LabeledPoint> data,int numPossibleLabels) {
-        List<DataSet> list  = fromLabeledPoint(data.collect(), numPossibleLabels);
-        return sc.parallelize(list);
+    @Deprecated
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data,
+                    final int numPossibleLabels) {
+        return data.map(
+                new Function<LabeledPoint, DataSet>() {
+                    @Override
+                    public DataSet call(LabeledPoint lp) {
+                        return fromLabeledPoint(lp, numPossibleLabels);
+                    }
+                });
+    }
+
+    /**
+     * Convert rdd labeled points to a rdd dataset with continuous features
+     * @param data the java rdd labeled points ready to convert
+     * @return a JavaRDD<Dataset> with a continuous label
+     * @deprecated Use {@link #fromContinuousLabeledPoint(JavaRDD)}
+     */
+    @Deprecated
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
+
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return convertToDataset(lp);
+            }
+        });
+    }
+
+    private static DataSet convertToDataset(LabeledPoint lp) {
+        Vector features = lp.features();
+        double label = lp.label();
+        return new DataSet(Nd4j.create(features.toArray()), Nd4j.create(new double[] {label}));
     }
 
     /**
@@ -248,12 +296,19 @@ public class MLLibUtil {
      * @param sc the spark context to use
      * @param data the dataset to convert
      * @return an rdd of labeled point
+     * @deprecated Use {@link #fromDataSet(JavaRDD)}
+     *
      */
-    public static JavaRDD<LabeledPoint> fromDataSet(JavaSparkContext sc,JavaRDD<DataSet> data) {
-        List<LabeledPoint> list  = toLabeledPoint(data.collect());
-        return sc.parallelize(list);
-    }
+    @Deprecated
+    public static JavaRDD<LabeledPoint> fromDataSet(JavaSparkContext sc, JavaRDD<DataSet> data) {
 
+        return data.map(new Function<DataSet, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(DataSet pt) {
+                return toLabeledPoint(pt);
+            }
+        });
+    }
 
     /**
      * Convert a list of dataset in to a list of labeled points
@@ -262,7 +317,7 @@ public class MLLibUtil {
      */
     private static List<LabeledPoint> toLabeledPoint(List<DataSet> labeledPoints) {
         List<LabeledPoint> ret = new ArrayList<>();
-        for(DataSet point : labeledPoints) {
+        for (DataSet point : labeledPoints) {
             ret.add(toLabeledPoint(point));
         }
         return ret;
@@ -274,14 +329,98 @@ public class MLLibUtil {
      * @return the labeled point derived from this dataset
      */
     private static LabeledPoint toLabeledPoint(DataSet point) {
-        if(!point.getFeatureMatrix().isVector()) {
+        if (!point.getFeatureMatrix().isVector()) {
             throw new IllegalArgumentException("Feature matrix must be a vector");
         }
 
         Vector features = toVector(point.getFeatureMatrix().dup());
 
         double label = Nd4j.getBlasWrapper().iamax(point.getLabels());
-        return new LabeledPoint(label,features);
+        return new LabeledPoint(label, features);
+    }
+
+    /**
+     * Converts a continuous JavaRDD LabeledPoint to a JavaRDD DataSet.
+     * @param data JavaRDD LabeledPoint
+     * @return JavaRdd DataSet
+     */
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaRDD<LabeledPoint> data) {
+        return fromContinuousLabeledPoint(data, false);
+    }
+
+    /**
+     * Converts a continuous JavaRDD LabeledPoint to a JavaRDD DataSet.
+     * @param data JavaRdd LabeledPoint
+     * @param preCache boolean pre-cache rdd before operation
+     * @return
+     */
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaRDD<LabeledPoint> data, boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return convertToDataset(lp);
+            }
+        });
+    }
+
+    /**
+     * Converts JavaRDD labeled points to JavaRDD datasets.
+     * @param data JavaRDD LabeledPoints
+     * @param numPossibleLabels number of possible labels
+     * @return
+     */
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels) {
+        return fromLabeledPoint(data, numPossibleLabels, false);
+    }
+
+    /**
+     * Converts JavaRDD labeled points to JavaRDD DataSets.
+     * @param data JavaRDD LabeledPoints
+     * @param numPossibleLabels number of possible labels
+     * @param preCache boolean pre-cache rdd before operation
+     * @return
+     */
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,
+                    boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return fromLabeledPoint(lp, numPossibleLabels);
+            }
+        });
+    }
+
+    /**
+     * Convert an rdd of data set in to labeled point.
+     * @param data the dataset to convert
+     * @return an rdd of labeled point
+     */
+    public static JavaRDD<LabeledPoint> fromDataSet(JavaRDD<DataSet> data) {
+        return fromDataSet(data, false);
+    }
+
+    /**
+     * Convert an rdd of data set in to labeled point.
+     * @param data the dataset to convert
+     * @param preCache boolean pre-cache rdd before operation
+     * @return an rdd of labeled point
+     */
+    public static JavaRDD<LabeledPoint> fromDataSet(JavaRDD<DataSet> data, boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<DataSet, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(DataSet dataSet) {
+                return toLabeledPoint(dataSet);
+            }
+        });
     }
 
 
@@ -291,9 +430,9 @@ public class MLLibUtil {
      * @param numPossibleLabels
      * @return List of {@link DataSet}
      */
-    private static List<DataSet> fromLabeledPoint(List<LabeledPoint> labeledPoints,int numPossibleLabels) {
+    private static List<DataSet> fromLabeledPoint(List<LabeledPoint> labeledPoints, int numPossibleLabels) {
         List<DataSet> ret = new ArrayList<>();
-        for(LabeledPoint point : labeledPoints) {
+        for (LabeledPoint point : labeledPoints) {
             ret.add(fromLabeledPoint(point, numPossibleLabels));
         }
         return ret;
@@ -305,10 +444,11 @@ public class MLLibUtil {
      * @param numPossibleLabels
      * @return {@link DataSet}
      */
-    private static DataSet fromLabeledPoint(LabeledPoint point,int numPossibleLabels) {
+    private static DataSet fromLabeledPoint(LabeledPoint point, int numPossibleLabels) {
         Vector features = point.features();
         double label = point.label();
-        return new DataSet(Nd4j.create(features.toArray()), FeatureUtil.toOutcomeVector((int) label, numPossibleLabels));
+        return new DataSet(Nd4j.create(features.toArray()),
+                        FeatureUtil.toOutcomeVector((int) label, numPossibleLabels));
     }
 
 

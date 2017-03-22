@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,74 +18,78 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import java.io.Serializable;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+public class Point implements Serializable {
 
-public class Point  implements Serializable {
+    private static final long serialVersionUID = -6658028541426027226L;
 
-	private static final long	serialVersionUID = -6658028541426027226L;
+    private String id = UUID.randomUUID().toString();
+    private String label;
+    private INDArray array;
 
-	private String id = UUID.randomUUID().toString();
-	private String label;
-	private INDArray array;
+    protected Point() {
+        // no-op for serialization only
+    }
 
-	public Point(INDArray array) {
-		super();
-		this.array = array;
-	}
+    public Point(INDArray array) {
+        super();
+        this.array = array;
+    }
 
-	public Point(String id, INDArray array) {
-		super();
-		this.id = id;
-		this.array = array;
-	}
+    public Point(String id, INDArray array) {
+        super();
+        this.id = id;
+        this.array = array;
+    }
 
-	public Point(String id, String label, double[] data) {
-		this(id, label, Nd4j.create(data));
-	}
-	
-	public Point(String id, String label, INDArray array) {
-		super();
-		this.id = id;
-		this.label = label;
-		this.array = array;
-	}
+    public Point(String id, String label, double[] data) {
+        this(id, label, Nd4j.create(data));
+    }
 
-	public static List<Point> toPoints(List<INDArray> vectors) {
-		List<Point> points = new ArrayList<>();
-		for (INDArray vector : vectors)
-			points.add(new Point(vector));
-		return points;
-	}
+    public Point(String id, String label, INDArray array) {
+        super();
+        this.id = id;
+        this.label = label;
+        this.array = array;
+    }
 
-	public String getId() {
-		return id;
-	}
+    public static List<Point> toPoints(List<INDArray> vectors) {
+        List<Point> points = new ArrayList<>();
+        for (INDArray vector : vectors)
+            points.add(new Point(vector));
+        return points;
+    }
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public String getLabel() {
-		return label;
-	}
+    public void setId(String id) {
+        this.id = id;
+    }
 
-	public void setLabel(String label) {
-		this.label = label;
-	}
+    public String getLabel() {
+        return label;
+    }
 
-	public INDArray getArray() {
-		return array;
-	}
+    public void setLabel(String label) {
+        this.label = label;
+    }
 
-	public void setArray(INDArray array) {
-		this.array = array;
-	}
+    public INDArray getArray() {
+        return array;
+    }
+
+    public void setArray(INDArray array) {
+        this.array = array;
+    }
 
 
 }

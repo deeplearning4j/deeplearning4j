@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,46 +20,54 @@ package org.deeplearning4j.clustering.algorithm.iteration;
 
 import org.deeplearning4j.clustering.cluster.info.ClusterSetInfo;
 
-public class IterationInfo {
+import java.io.Serializable;
 
-	private int							index;
-	private ClusterSetInfo				clusterSetInfo;
-	private boolean						strategyApplied;
-	
-	
-	public IterationInfo(int index) {
-		super();
-		this.index = index;
-	}
-	
-	public IterationInfo(int index, ClusterSetInfo clusterSetInfo) {
-		super();
-		this.index = index;
-		this.clusterSetInfo = clusterSetInfo;
-	}
-	
-	
+public class IterationInfo implements Serializable {
 
-	public int getIndex() {
-		return index;
-	}
-	public void setIndex(int index) {
-		this.index = index;
-	}
-	public ClusterSetInfo getClusterSetInfo() {
-		return clusterSetInfo;
-	}
-	public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
-		this.clusterSetInfo = clusterSetInfo;
-	}
+    private int index;
+    private ClusterSetInfo clusterSetInfo;
+    private boolean strategyApplied;
 
-	public boolean isStrategyApplied() {
-		return strategyApplied;
-	}
+    protected IterationInfo() {
+        // no-op for serialization only
+    }
 
-	public void setStrategyApplied(boolean optimizationApplied) {
-		this.strategyApplied = optimizationApplied;
-	}
+    public IterationInfo(int index) {
+        super();
+        this.index = index;
+    }
 
-	
+    public IterationInfo(int index, ClusterSetInfo clusterSetInfo) {
+        super();
+        this.index = index;
+        this.clusterSetInfo = clusterSetInfo;
+    }
+
+
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public ClusterSetInfo getClusterSetInfo() {
+        return clusterSetInfo;
+    }
+
+    public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
+        this.clusterSetInfo = clusterSetInfo;
+    }
+
+    public boolean isStrategyApplied() {
+        return strategyApplied;
+    }
+
+    public void setStrategyApplied(boolean optimizationApplied) {
+        this.strategyApplied = optimizationApplied;
+    }
+
+
 }

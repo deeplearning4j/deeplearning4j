@@ -4,7 +4,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author Adam Gibson
@@ -31,16 +31,16 @@ public class AssertWeightsDifferentIerationListener implements IterationListener
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        if(lastWeights == null)
+        if (lastWeights == null)
             lastWeights = model.getParam(param).dup();
         else {
             count++;
 
-            if(count < 2)
+            if (count < 2)
                 return;
 
-            if(count > 2)
-                assertNotEquals(lastWeights,model.getParam(param));
+            if (count > 2)
+                assertNotEquals(lastWeights, model.getParam(param));
             lastWeights = model.getParam(param).dup();
         }
     }

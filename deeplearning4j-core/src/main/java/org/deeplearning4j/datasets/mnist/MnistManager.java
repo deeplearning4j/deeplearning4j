@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -24,9 +24,6 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 
 /**
@@ -95,19 +92,23 @@ public class MnistManager {
     public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
         if (imagesFile != null) {
             images = new MnistImageFile(imagesFile, "r");
-            if(train) imagesArr = new MnistImageFile(imagesFile, "r").readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
-            else imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
+            if (train)
+                imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
+            else
+                imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         if (labelsFile != null) {
             labels = new MnistLabelFile(labelsFile, "r");
-            if(train) labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES);
-            else labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES_TEST);
+            if (train)
+                labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES);
+            else
+                labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         System.out.println();
     }
 
-    public MnistManager(String imagesFile, String labelsFile) throws IOException{
-        this(imagesFile,labelsFile,true);
+    public MnistManager(String imagesFile, String labelsFile) throws IOException {
+        this(imagesFile, labelsFile, true);
     }
 
     /**
@@ -123,7 +124,7 @@ public class MnistManager {
         return images.readImage();
     }
 
-    public byte[] readImageUnsafe(int i){
+    public byte[] readImageUnsafe(int i) {
         return imagesArr[i];
     }
 
@@ -150,7 +151,7 @@ public class MnistManager {
         return labels.readLabel();
     }
 
-    public int readLabel(int i){
+    public int readLabel(int i) {
         return labelsArr[i];
     }
 
@@ -176,16 +177,18 @@ public class MnistManager {
      * Close any resources opened by the manager.
      */
     public void close() {
-        if(images != null) {
+        if (images != null) {
             try {
                 images.close();
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             images = null;
         }
-        if(labels != null) {
+        if (labels != null) {
             try {
                 labels.close();
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             labels = null;
         }
     }

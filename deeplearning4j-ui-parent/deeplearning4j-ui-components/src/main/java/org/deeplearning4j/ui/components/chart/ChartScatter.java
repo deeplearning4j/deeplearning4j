@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,7 +17,7 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -40,14 +40,14 @@ public class ChartScatter extends Chart {
     private List<double[]> y;
     private List<String> seriesNames;
 
-    private ChartScatter(Builder builder){
+    private ChartScatter(Builder builder) {
         super(COMPONENT_TYPE, builder);
         x = builder.x;
         y = builder.y;
         seriesNames = builder.seriesNames;
     }
 
-    public ChartScatter(){
+    public ChartScatter() {
         super(COMPONENT_TYPE);
         //no-arg constructor for Jackson
     }
@@ -59,7 +59,7 @@ public class ChartScatter extends Chart {
         private List<double[]> y = new ArrayList<>();
         private List<String> seriesNames = new ArrayList<>();
 
-        public Builder(String title, StyleChart style){
+        public Builder(String title, StyleChart style) {
             super(title, style);
         }
 
@@ -70,41 +70,44 @@ public class ChartScatter extends Chart {
          * @param yValues       Array of y values (such that a single point i has coordinates (x[i],y[i]))
          * @return
          */
-        public Builder addSeries(String seriesName, double[] xValues, double[] yValues){
+        public Builder addSeries(String seriesName, double[] xValues, double[] yValues) {
             x.add(xValues);
             y.add(yValues);
             seriesNames.add(seriesName);
             return this;
         }
 
-        public ChartScatter build(){
+        public ChartScatter build() {
             return new ChartScatter(this);
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartScatter(x=[");
         boolean first = true;
-        if(x != null) {
+        if (x != null) {
             for (double[] d : x) {
-                if (!first) sb.append(",");
+                if (!first)
+                    sb.append(",");
                 sb.append(Arrays.toString(d));
                 first = false;
             }
         }
         sb.append("],y=[");
         first = true;
-        if(y != null) {
+        if (y != null) {
             for (double[] d : y) {
-                if (!first) sb.append(",");
+                if (!first)
+                    sb.append(",");
                 sb.append(Arrays.toString(d));
                 first = false;
             }
         }
         sb.append("],seriesNames=");
-        if(seriesNames != null) sb.append(seriesNames);
+        if (seriesNames != null)
+            sb.append(seriesNames);
         sb.append(")");
         return sb.toString();
     }

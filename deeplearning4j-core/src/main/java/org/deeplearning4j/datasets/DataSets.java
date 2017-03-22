@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,37 +18,39 @@
 
 package org.deeplearning4j.datasets;
 
-import java.io.IOException;
-
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.io.IOException;
+
 public class DataSets {
 
-	public static DataSet mnist() {
-		return mnist(60000);
-	}
-	
-	public static DataSet mnist(int num) {
-		try {
-			MnistDataFetcher fetcher = new MnistDataFetcher();
-			fetcher.fetch(num);
-			return fetcher.next();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    private DataSets() {}
 
-	
-	public static DataSet iris() {
-		return iris(150);
-	}
+    public static DataSet mnist() {
+        return mnist(60000);
+    }
 
-	public static DataSet iris(int num) {
-		IrisDataFetcher fetcher = new IrisDataFetcher();
-		fetcher.fetch(num);
-		return fetcher.next();
-	}
+    public static DataSet mnist(int num) {
+        try {
+            MnistDataFetcher fetcher = new MnistDataFetcher();
+            fetcher.fetch(num);
+            return fetcher.next();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static DataSet iris() {
+        return iris(150);
+    }
+
+    public static DataSet iris(int num) {
+        IrisDataFetcher fetcher = new IrisDataFetcher();
+        fetcher.fetch(num);
+        return fetcher.next();
+    }
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,16 +20,9 @@ package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
-import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Adam Gibson
@@ -43,9 +36,10 @@ public class GloveParam implements Serializable {
     private double negative;
     private double xMax;
     private double maxCount;
-    private Broadcast<CounterMap<String,String>> coOccurrenceCounts;
+    private Broadcast<CounterMap<String, String>> coOccurrenceCounts;
 
-    public GloveParam(int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax, double maxCount, Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+    public GloveParam(int vectorLength, boolean useAdaGrad, double lr, Random gen, double negative, double xMax,
+                    double maxCount, Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -112,11 +106,11 @@ public class GloveParam implements Serializable {
         this.maxCount = maxCount;
     }
 
-    public Broadcast< CounterMap<String,String> > getCoOccurrenceCounts() {
+    public Broadcast<CounterMap<String, String>> getCoOccurrenceCounts() {
         return coOccurrenceCounts;
     }
 
-    public void setCoOccurrenceCounts(Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+    public void setCoOccurrenceCounts(Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
         this.coOccurrenceCounts = coOccurrenceCounts;
     }
 
@@ -129,7 +123,7 @@ public class GloveParam implements Serializable {
         private double negative = 5;
         private double xMax = 0.75;
         private double maxCount = 100;
-        private Broadcast< CounterMap<String,String> > coOccurrenceCounts;
+        private Broadcast<CounterMap<String, String>> coOccurrenceCounts;
 
         public Builder vectorLength(int vectorLength) {
             this.vectorLength = vectorLength;
@@ -166,7 +160,7 @@ public class GloveParam implements Serializable {
             return this;
         }
 
-        public Builder coOccurrenceCounts(Broadcast< CounterMap<String,String> > coOccurrenceCounts) {
+        public Builder coOccurrenceCounts(Broadcast<CounterMap<String, String>> coOccurrenceCounts) {
             this.coOccurrenceCounts = coOccurrenceCounts;
             return this;
         }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,13 +17,12 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -98,22 +97,24 @@ public class ChartHorizontalBar extends Chart {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartHorizontalBar(labels=");
-        if(labels != null){
+        if (labels != null) {
             sb.append(labels);
         } else {
             sb.append("[]");
         }
         sb.append(",values=");
-        if(values != null){
+        if (values != null) {
             sb.append(values);
         } else {
             sb.append("[]");
         }
-        if(xmin != null) sb.append(",xMin=").append(xmin);
-        if(xmax != null) sb.append(",xMax=").append(xmax);
+        if (xmin != null)
+            sb.append(",xMin=").append(xmin);
+        if (xmax != null)
+            sb.append(",xMax=").append(xmax);
 
         sb.append(")");
         return sb.toString();

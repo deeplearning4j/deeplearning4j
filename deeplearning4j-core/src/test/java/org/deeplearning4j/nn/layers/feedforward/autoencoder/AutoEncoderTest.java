@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,23 +18,22 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
-import java.util.Arrays;
-
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,17 +41,15 @@ public class AutoEncoderTest {
 
     @Test
     public void testAutoEncoderBiasInit() {
-        org.deeplearning4j.nn.conf.layers.AutoEncoder build = new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                .nIn(1)
-                .nOut(3)
-                .biasInit(1)
-                .build();
+        org.deeplearning4j.nn.conf.layers.AutoEncoder build =
+                        new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(1).nOut(3).biasInit(1).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(build)
-                .build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
 
-        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+        //        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -63,55 +60,50 @@ public class AutoEncoderTest {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(1)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).learningRate(1e-1f)
+                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
+                                        .corruptionLevel(0.6)
+                                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                        .build();
 
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-        assertEquals(da.params(),da.params());
-        assertEquals(471784,da.params().length());
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf,
+                        Arrays.<IterationListener>asList(new ScoreIterationListener(1)), 0, params, true);
+        assertEquals(da.params(), da.params());
+        assertEquals(471784, da.params().length());
         da.setParams(da.params());
         da.fit(input);
     }
 
 
 
-
-
     @Test
     public void testBackProp() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
+        //        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(100)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
+                        .learningRate(1e-1f)
+                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
+                                        .corruptionLevel(0.6)
+                                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                        .build();
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = layerFactory.create(conf);
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf, null, 0, params, true);
         Gradient g = new DefaultGradient();
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(input)).sub(input));
-
     }
-
-
 
 }

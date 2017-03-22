@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,26 +18,33 @@
 
 package org.deeplearning4j.clustering.sptree;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson
  */
 public class SPTreeTest {
 
+    @Before
+    public void setUp() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
     @Test
     public void testStructure() {
-        INDArray data = Nd4j.create(new double[][]{
-                {1,2,3},{4,5,6}
-        });
+        INDArray data = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
 
         SpTree tree = new SpTree(data);
-        assertEquals(Nd4j.create(new double[]{2.5,3.5,4.5}),tree.getCenterOfMass());
+        assertEquals(Nd4j.create(new double[] {2.5, 3.5, 4.5}), tree.getCenterOfMass());
         assertEquals(2, tree.getCumSize());
         assertEquals(8, tree.getNumChildren());
         assertTrue(tree.isCorrect());
@@ -45,9 +52,10 @@ public class SPTreeTest {
     }
 
     @Test
+    @Ignore
     public void testLargeTree() {
         int num = 100000;
-        INDArray arr = Nd4j.linspace(1,num,num).reshape(num,1);
+        INDArray arr = Nd4j.linspace(1, num, num).reshape(num, 1);
         SpTree tree = new SpTree(arr);
     }
 

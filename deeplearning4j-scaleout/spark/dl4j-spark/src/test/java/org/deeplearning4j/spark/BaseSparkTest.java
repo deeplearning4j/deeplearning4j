@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -25,8 +25,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.After;
 import org.junit.Before;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,8 +43,7 @@ import java.util.Random;
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest  implements Serializable
-{
+public abstract class BaseSparkTest implements Serializable {
     protected transient JavaSparkContext sc;
     protected transient INDArray labels;
     protected transient INDArray input;
@@ -59,13 +60,13 @@ public abstract class BaseSparkTest  implements Serializable
         sc = getContext();
         Random r = new Random(12345);
         labels = Nd4j.create(nRows, nOut);
-        input = Nd4j.rand(nRows,nIn);
+        input = Nd4j.rand(nRows, nIn);
         rowSums = input.sum(1);
         input.diviColumnVector(rowSums);
 
-        for( int i=0; i<nRows; i++ ){
+        for (int i = 0; i < nRows; i++) {
             int x1 = r.nextInt(nOut);
-            labels.putScalar(new int[]{i, x1}, 1.0);
+            labels.putScalar(new int[] {i, x1}, 1.0);
         }
 
         sparkData = getBasicSparkDataSet(nRows, input, labels);
@@ -82,13 +83,10 @@ public abstract class BaseSparkTest  implements Serializable
      * @return
      */
     public JavaSparkContext getContext() {
-        if(sc != null)
+        if (sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"false")
-                .set(SparkDl4jMultiLayer.ACCUM_GRADIENT,"false").set(SparkDl4jMultiLayer.DIVIDE_ACCUM_GRADIENT,"false")
-                .setMaster("local[*]")
-                .setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[" + numExecutors() + "]").setAppName("sparktest");
 
 
         sc = new JavaSparkContext(sparkConf);
@@ -96,13 +94,13 @@ public abstract class BaseSparkTest  implements Serializable
         return sc;
     }
 
-    protected JavaRDD<DataSet> getBasicSparkDataSet(int nRows, INDArray input, INDArray labels){
+    protected JavaRDD<DataSet> getBasicSparkDataSet(int nRows, INDArray input, INDArray labels) {
         List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<nRows; i++ ){
+        for (int i = 0; i < nRows; i++) {
             INDArray inRow = input.getRow(i).dup();
             INDArray outRow = labels.getRow(i).dup();
 
-            DataSet ds = new DataSet(inRow,outRow);
+            DataSet ds = new DataSet(inRow, outRow);
             list.add(ds);
         }
         list.iterator();
@@ -112,27 +110,25 @@ public abstract class BaseSparkTest  implements Serializable
     }
 
 
-    protected SparkDl4jMultiLayer getBasicNetwork(){
-        return new SparkDl4jMultiLayer(sc,getBasicConf());
+    protected SparkDl4jMultiLayer getBasicNetwork() {
+        return new SparkDl4jMultiLayer(sc, getBasicConf(),
+                        new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0));
     }
 
-    protected MultiLayerConfiguration getBasicConf(){
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(123)
-                .updater(Updater.NESTEROVS)
-                .learningRate(0.1)
-                .momentum(0.9)
-                .list()
-                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(nIn).nOut(3)
-                        .activation("tanh").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(nOut)
-                        .activation("softmax")
-                        .build())
-                .backprop(true)
-                .pretrain(false)
-                .build();
+    protected int numExecutors() {
+        int numProc = Runtime.getRuntime().availableProcessors();
+        return Math.min(4, numProc);
+    }
+
+    protected MultiLayerConfiguration getBasicConf() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).updater(Updater.NESTEROVS)
+                        .learningRate(0.1).momentum(0.9).list()
+                        .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
+                                                        .activation(Activation.SOFTMAX).build())
+                        .backprop(true).pretrain(false).build();
 
         return conf;
     }

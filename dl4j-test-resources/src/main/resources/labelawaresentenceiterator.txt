@@ -1,4 +1,0 @@
-SENT37;HttpOutputStream close Thread run
-SENT38;EMDClient getStreamResponseForRequest Thread run
-SENT39;PlainSocketImpl socketConnect HTTPConnection$EstablishConnection run
-SENT42;ProcessBuilder start Thread run

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,25 +17,28 @@
  */
 package org.deeplearning4j.ui.components.decorator.style;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 
 
-@NoArgsConstructor @Data
+@NoArgsConstructor
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleAccordion extends Style {
 
-    private StyleAccordion(Builder builder){
+    private StyleAccordion(Builder builder) {
         super(builder);
     }
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
 
-        public StyleAccordion build(){
+        public StyleAccordion build() {
             return new StyleAccordion(this);
         }
 

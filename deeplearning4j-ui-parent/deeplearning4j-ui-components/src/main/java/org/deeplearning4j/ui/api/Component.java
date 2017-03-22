@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,8 +17,8 @@
  */
 package org.deeplearning4j.ui.api;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import org.deeplearning4j.ui.components.chart.*;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
@@ -32,18 +32,17 @@ import org.deeplearning4j.ui.components.text.ComponentText;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = ChartHistogram.class, name = "ChartHistogram"),
-        @JsonSubTypes.Type(value = ChartHorizontalBar.class, name = "ChartHorizontalBar"),
-        @JsonSubTypes.Type(value = ChartLine.class, name = "ChartLine"),
-        @JsonSubTypes.Type(value = ChartScatter.class, name = "ChartScatter"),
-        @JsonSubTypes.Type(value = ChartStackedArea.class, name = "ChartStackedArea"),
-        @JsonSubTypes.Type(value = ComponentDiv.class, name = "ComponentDiv"),
-        @JsonSubTypes.Type(value = DecoratorAccordion.class, name = "DecoratorAccordion"),
-        @JsonSubTypes.Type(value = ComponentTable.class, name = "ComponentTable"),
-        @JsonSubTypes.Type(value = ComponentText.class, name = "ComponentText")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = ChartHistogram.class, name = "ChartHistogram"),
+                @JsonSubTypes.Type(value = ChartHorizontalBar.class, name = "ChartHorizontalBar"),
+                @JsonSubTypes.Type(value = ChartLine.class, name = "ChartLine"),
+                @JsonSubTypes.Type(value = ChartScatter.class, name = "ChartScatter"),
+                @JsonSubTypes.Type(value = ChartStackedArea.class, name = "ChartStackedArea"),
+                @JsonSubTypes.Type(value = ChartTimeline.class, name = "ChartTimeline"),
+                @JsonSubTypes.Type(value = ComponentDiv.class, name = "ComponentDiv"),
+                @JsonSubTypes.Type(value = DecoratorAccordion.class, name = "DecoratorAccordion"),
+                @JsonSubTypes.Type(value = ComponentTable.class, name = "ComponentTable"),
+                @JsonSubTypes.Type(value = ComponentText.class, name = "ComponentText")})
 @Data
 public abstract class Component {
 
@@ -52,7 +51,7 @@ public abstract class Component {
     protected final String componentType;
     protected final Style style;
 
-    public Component(String componentType, Style style){
+    public Component(String componentType, Style style) {
         this.componentType = componentType;
         this.style = style;
     }

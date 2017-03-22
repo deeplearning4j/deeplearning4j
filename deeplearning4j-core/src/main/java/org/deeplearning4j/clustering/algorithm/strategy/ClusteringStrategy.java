@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,25 +20,27 @@ package org.deeplearning4j.clustering.algorithm.strategy;
 
 import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
-import org.nd4j.linalg.api.ops.Accumulation;
 
 public interface ClusteringStrategy {
 
-	ClusteringStrategyType getType();
-	boolean isStrategyOfType(ClusteringStrategyType type);
-	
-	Integer getInitialClusterCount();
-	
-	String getDistanceFunction();
+    ClusteringStrategyType getType();
 
-	boolean isAllowEmptyClusters();
+    boolean isStrategyOfType(ClusteringStrategyType type);
 
-	ClusteringAlgorithmCondition getTerminationCondition();
-	
-	boolean isOptimizationDefined();
-	boolean isOptimizationApplicableNow(IterationHistory iterationHistory);
-	
-	BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount);
-	BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate);
-	
+    Integer getInitialClusterCount();
+
+    String getDistanceFunction();
+
+    boolean isAllowEmptyClusters();
+
+    ClusteringAlgorithmCondition getTerminationCondition();
+
+    boolean isOptimizationDefined();
+
+    boolean isOptimizationApplicableNow(IterationHistory iterationHistory);
+
+    BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount);
+
+    BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate);
+
 }

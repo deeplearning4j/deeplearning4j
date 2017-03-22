@@ -18,13 +18,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>spark</artifactId>
+        <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.8.1_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>dl4j-spark-nlp</artifactId>
+    <artifactId>dl4j-spark-nlp_2.11</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-nlp</name>
@@ -35,53 +34,44 @@
     </properties>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>../../../dl4j-test-resources/src/main/resources</directory>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>../../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
         <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-all</artifactId>
-            <version>${hazelcast.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp</artifactId>
-            <version>${project.version}</version>
+            <version>${deeplearning4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark</artifactId>
+            <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark_2.11</artifactId>
+            <version>${datavec.spark.version}</version>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
+
 </project>

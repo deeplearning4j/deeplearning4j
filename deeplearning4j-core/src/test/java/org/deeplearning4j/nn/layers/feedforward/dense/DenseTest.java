@@ -1,25 +1,21 @@
 package org.deeplearning4j.nn.layers.feedforward.dense;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,23 +31,19 @@ public class DenseTest {
 
     @Test
     public void testDenseBiasInit() {
-        DenseLayer build = new DenseLayer.Builder()
-                .nIn(1)
-                .nOut(3)
-                .biasInit(1)
-                .build();
+        DenseLayer build = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(build)
-                .build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
 
-        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
 
     @Test
-    public void testMLPMultiLayerPretrain(){
+    public void testMLPMultiLayerPretrain() {
         // Note CNN does not do pretrain
         MultiLayerNetwork model = getDenseMLNConfig(false, true);
         model.fit(iter);
@@ -79,7 +71,7 @@ public class DenseTest {
     }
 
     @Test
-    public void testMLPMultiLayerBackprop(){
+    public void testMLPMultiLayerBackprop() {
         MultiLayerNetwork model = getDenseMLNConfig(true, false);
         model.fit(iter);
 
@@ -114,30 +106,15 @@ public class DenseTest {
         int iterations = 10;
         long seed = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .iterations(iterations)
-                .learningRate(1e-3)
-                .l1(0.3)
-                .regularization(true).l2(1e-3)
-                .list()
-                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(numInputs)
-                        .nOut(3)
-                        .activation("tanh")
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                        .nIn(3).nOut(2)
-                        .activation("tanh")
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER)
-                        .nIn(2).nOut(outputNum).build())
-                .backprop(backprop)
-                .pretrain(pretrain)
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+                        .learningRate(1e-3).l1(0.3).regularization(true).l2(1e-3).list()
+                        .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(numInputs).nOut(3)
+                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(3).nOut(2)
+                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).build())
+                        .backprop(backprop).pretrain(pretrain).build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();

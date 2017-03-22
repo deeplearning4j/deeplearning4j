@@ -14,6 +14,14 @@ Eron Wright - Spark ml and infrastructure
 
 @raver119 - NLP and GPUs
 
+Samuel Audet - creator of JavaCPP
+
+Susan Eraly - responsible for numerous things
+
+Dae-Hyun Kim
+
+Ruben Fiszel - creator of RL4J, Deep-Q Learning on DL4J
+
 Mik Kocikowski - CLI
 
 Taisuke Oe - Android app

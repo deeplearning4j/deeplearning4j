@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -39,10 +39,13 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingGraphTrainer;
 import org.deeplearning4j.spark.earlystopping.SparkLossCalculatorComputationGraph;
-import org.deeplearning4j.spark.impl.computationgraph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -58,18 +61,15 @@ import static org.junit.Assert.*;
 
 public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
+
     @Test
     public void testEarlyStoppingIris() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD)
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0",new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(),"in")
-                .setOutputs("0")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                        .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -78,21 +78,24 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                .scoreCalculator(new SparkLossCalculatorComputationGraph(irisData.map(new DataSetToMultiDataSetFn()),true,sc.sc()))
-                .modelSaver(saver)
-                .build();
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new SparkLossCalculatorComputationGraph(
+                                        irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
+                        .modelSaver(saver).build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm,
+                        esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
 
         EarlyStoppingResult<ComputationGraph> result = trainer.fit();
         System.out.println(result);
 
         assertEquals(5, result.getTotalEpochs());
-        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
-        Map<Integer,Double> scoreVsIter = result.getScoreVsEpoch();
-        assertEquals(5,scoreVsIter.size());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
+        Map<Integer, Double> scoreVsIter = result.getScoreVsEpoch();
+        assertEquals(5, scoreVsIter.size());
         String expDetails = esConf.getEpochTerminationConditions().get(0).toString();
         assertEquals(expDetails, result.getTerminationDetails());
 
@@ -101,8 +104,9 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         //Check that best score actually matches (returned model vs. manually calculated score)
         ComputationGraph bestNetwork = result.getBestModel();
-        double score = bestNetwork.score(new IrisDataSetIterator(150,150).next());
-        assertEquals(result.getBestModelScore(), score, 1e-3);
+        double score = bestNetwork.score(new IrisDataSetIterator(150, 150).next());
+        double bestModelScore = result.getBestModelScore();
+        assertEquals(bestModelScore, score, 1e-3);
     }
 
     @Test
@@ -110,35 +114,35 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         //Test poor tuning (high LR): should terminate on MaxScoreIterationTerminationCondition
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(2.0)    //Intentionally huge LR
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(),"in")
-                .setOutputs("0")
-                .pretrain(false).backprop(true)
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).learningRate(2.0) //Intentionally huge LR
+                        .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
+                                        .lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
+                        .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
         JavaRDD<DataSet> irisData = getIris();
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
-                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
-                .scoreCalculator(new SparkLossCalculatorComputationGraph(irisData.map(new DataSetToMultiDataSetFn()),true,sc.sc()))
-                .modelSaver(saver)
-                .build();
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkLossCalculatorComputationGraph(
+                                        irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
+                        .modelSaver(saver).build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm,
+                        esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
-        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
+        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
+                        result.getTerminationReason());
         String expDetails = new MaxScoreIterationTerminationCondition(7.5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
@@ -148,17 +152,13 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         //test termination after max time
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(1e-6)
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(),"in")
-                .setOutputs("0")
-                .pretrain(false).backprop(true)
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).learningRate(1e-6).weightInit(WeightInit.XAVIER).graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                        .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -166,24 +166,28 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
-                .scoreCalculator(new SparkLossCalculatorComputationGraph(irisData.map(new DataSetToMultiDataSetFn()),true,sc.sc()))
-                .modelSaver(saver)
-                .build();
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkLossCalculatorComputationGraph(
+                                        irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
+                        .modelSaver(saver).build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm,
+                        esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         long startTime = System.currentTimeMillis();
         EarlyStoppingResult result = trainer.fit();
         long endTime = System.currentTimeMillis();
-        int durationSeconds = (int)(endTime-startTime)/1000;
+        int durationSeconds = (int) (endTime - startTime) / 1000;
 
         assertTrue(durationSeconds >= 3);
         assertTrue(durationSeconds <= 9);
 
-        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
-        String expDetails = new MaxTimeIterationTerminationCondition(3,TimeUnit.SECONDS).toString();
+        assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
+                        result.getTerminationReason());
+        String expDetails = new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
 
@@ -193,17 +197,13 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         //Simulate this by setting LR = 0.0
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(0.0)
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(),"in")
-                .setOutputs("0")
-                .pretrain(false).backprop(true)
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).learningRate(0.0).weightInit(WeightInit.XAVIER).graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                        .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -211,35 +211,34 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
-                        new ScoreImprovementEpochTerminationCondition(5))
-                .iterationTerminationConditions(new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
-                .scoreCalculator(new SparkLossCalculatorComputationGraph(irisData.map(new DataSetToMultiDataSetFn()),true,sc.sc()))
-                .modelSaver(saver)
-                .build();
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
+                                        new ScoreImprovementEpochTerminationCondition(5))
+                        .iterationTerminationConditions(new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkLossCalculatorComputationGraph(
+                                        irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
+                        .modelSaver(saver).build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm,
+                        esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
-        assertTrue(result.getTotalEpochs()<12);  //Normally expect 6 epochs exactly; get a little more than that here due to rounding + order of operations
-        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+        assertTrue(result.getTotalEpochs() < 12); //Normally expect 6 epochs exactly; get a little more than that here due to rounding + order of operations
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
 
     @Test
-    public void testListeners(){
+    public void testListeners() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD)
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build(),"in")
-                .setOutputs("0")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                        .setOutputs("0").pretrain(false).backprop(true).build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -248,20 +247,24 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                .scoreCalculator(new SparkLossCalculatorComputationGraph(irisData.map(new DataSetToMultiDataSetFn()),true,sc.sc()))
-                .modelSaver(saver)
-                .build();
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new SparkLossCalculatorComputationGraph(
+                                        irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
+                        .modelSaver(saver).build();
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5,listener);
+        TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(), tm,
+                        esConf, net, irisData.map(new DataSetToMultiDataSetFn()));
+        trainer.setListener(listener);
 
         trainer.fit();
 
-        assertEquals(1,listener.onStartCallCount);
-        assertEquals(5,listener.onEpochCallCount);
+        assertEquals(1, listener.onStartCallCount);
+        assertEquals(5, listener.onEpochCallCount);
         assertEquals(1, listener.onCompletionCallCount);
     }
 
@@ -280,24 +283,25 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         @Override
         public void onEpoch(int epochNum, double score, EarlyStoppingConfiguration esConfig, ComputationGraph net) {
-            log.info("EarlyStopping: onEpoch called (epochNum={}, score={}}",epochNum,score);
+            log.info("EarlyStopping: onEpoch called (epochNum={}, score={}}", epochNum, score);
             onEpochCallCount++;
         }
 
         @Override
         public void onCompletion(EarlyStoppingResult esResult) {
-            log.info("EorlyStopping: onCompletion called (result: {})",esResult);
+            log.info("EorlyStopping: onCompletion called (result: {})", esResult);
             onCompletionCallCount++;
         }
     }
 
-    private JavaRDD<DataSet> getIris(){
+    private JavaRDD<DataSet> getIris() {
 
         JavaSparkContext sc = getContext();
 
-        IrisDataSetIterator iter = new IrisDataSetIterator(1,150);
+        IrisDataSetIterator iter = new IrisDataSetIterator(1, 150);
         List<DataSet> list = new ArrayList<>(150);
-        while(iter.hasNext()) list.add(iter.next());
+        while (iter.hasNext())
+            list.add(iter.next());
 
         return sc.parallelize(list);
     }

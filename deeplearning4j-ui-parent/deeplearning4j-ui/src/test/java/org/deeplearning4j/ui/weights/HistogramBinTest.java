@@ -7,7 +7,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.math.BigDecimal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
@@ -23,9 +23,7 @@ public class HistogramBinTest {
     public void testGetBins() throws Exception {
         INDArray array = Nd4j.create(new double[] {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0});
 
-        HistogramBin histogram = new HistogramBin.Builder(array)
-                .setBinCount(10)
-                .build();
+        HistogramBin histogram = new HistogramBin.Builder(array).setBinCount(10).build();
 
         assertEquals(0.1, histogram.getMin(), 0.001);
         assertEquals(1.0, histogram.getMax(), 0.001);
@@ -39,9 +37,7 @@ public class HistogramBinTest {
     public void testGetData1() throws Exception {
         INDArray array = Nd4j.create(new double[] {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0});
 
-        HistogramBin histogram = new HistogramBin.Builder(array)
-                .setBinCount(10)
-                .build();
+        HistogramBin histogram = new HistogramBin.Builder(array).setBinCount(10).build();
 
         assertEquals(0.1, histogram.getMin(), 0.001);
         assertEquals(1.0, histogram.getMax(), 0.001);
@@ -55,9 +51,7 @@ public class HistogramBinTest {
     public void testGetData2() throws Exception {
         INDArray array = Nd4j.create(new double[] {-1.0f, -0.50f, 0.0f, 0.50f, 1.0f, -1.0f, -0.50f, 0.0f, 0.50f, 1.0f});
 
-        HistogramBin histogram = new HistogramBin.Builder(array)
-                .setBinCount(10)
-                .build();
+        HistogramBin histogram = new HistogramBin.Builder(array).setBinCount(10).build();
 
         assertEquals(-1.0, histogram.getMin(), 0.001);
         assertEquals(1.0, histogram.getMax(), 0.001);
@@ -73,9 +67,7 @@ public class HistogramBinTest {
     public void testGetData4() throws Exception {
         INDArray array = Nd4j.create(new double[] {-1.0f, -0.50f, 0.0f, 0.50f, 1.0f, -1.0f, -0.50f, 0.0f, 0.50f, 1.0f});
 
-        HistogramBin histogram = new HistogramBin.Builder(array)
-                .setBinCount(50)
-                .build();
+        HistogramBin histogram = new HistogramBin.Builder(array).setBinCount(50).build();
 
         assertEquals(-1.0, histogram.getMin(), 0.001);
         assertEquals(1.0, histogram.getMax(), 0.001);

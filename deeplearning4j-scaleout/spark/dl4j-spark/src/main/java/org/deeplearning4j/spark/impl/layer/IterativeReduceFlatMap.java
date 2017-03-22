@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,13 +18,12 @@
 
 package org.deeplearning4j.spark.impl.layer;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,7 +41,21 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,INDArray> {
+public class IterativeReduceFlatMap extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, INDArray> {
+
+    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params) {
+        super(new IterativeReduceFlatMapAdapter(json, params));
+    }
+}
+
+
+/**
+ * Iterative reduce with
+ * flat map using map partitions
+ *
+ * @author Adam Gibson
+ */
+class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, INDArray> {
 
     private String json;
     private Broadcast<INDArray> params;
@@ -53,7 +66,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
      * @param json json configuration for the network
      * @param params the parameters to use for the network
      */
-    public IterativeReduceFlatMap(String json, Broadcast<INDArray> params) {
+    public IterativeReduceFlatMapAdapter(String json, Broadcast<INDArray> params) {
         this.json = json;
         this.params = params;
     }
@@ -62,29 +75,31 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
 
     @Override
     public Iterable<INDArray> call(Iterator<DataSet> dataSetIterator) throws Exception {
-        if(!dataSetIterator.hasNext()) {
+        if (!dataSetIterator.hasNext()) {
             return Collections.singletonList(Nd4j.zeros(params.value().shape()));
         }
 
         List<DataSet> collect = new ArrayList<>();
-        while(dataSetIterator.hasNext()) {
+        while (dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect,false);
+        DataSet data = DataSet.merge(collect, false);
         log.debug("Training on " + data.labelCounts());
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
-        LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
-        Layer network = layerFactory.create(conf);
-        INDArray val = params.value().dup();
-        if(val.length() != network.numParams())
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray thisParams = Nd4j.create(1, numParams);
+        Layer network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
+        network.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
+        INDArray val = params.value().unsafeDuplication();
+        if (val.length() != network.numParams())
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
-       if(network instanceof OutputLayer) {
-           OutputLayer o = (OutputLayer) network;
-           o.fit(data);
-       }
-        else
+        if (network instanceof OutputLayer) {
+            OutputLayer o = (OutputLayer) network;
+            o.fit(data);
+        } else
             network.fit(data.getFeatureMatrix());
 
         return Collections.singletonList(network.params());

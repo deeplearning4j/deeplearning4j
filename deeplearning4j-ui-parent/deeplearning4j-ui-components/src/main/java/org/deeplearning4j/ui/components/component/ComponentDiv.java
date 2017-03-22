@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,11 +17,13 @@
  */
 package org.deeplearning4j.ui.components.component;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.Style;
+
+import java.util.Collection;
 
 /**
  * Div component (as in, HTML div)
@@ -29,19 +31,25 @@ import org.deeplearning4j.ui.api.Style;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentDiv extends Component {
     public static final String COMPONENT_TYPE = "ComponentDiv";
 
     private Component[] components;
 
-    public ComponentDiv(){
-        super(COMPONENT_TYPE,null);
+    public ComponentDiv() {
+        super(COMPONENT_TYPE, null);
     }
 
 
     public ComponentDiv(Style style, Component... components) {
         super(COMPONENT_TYPE, style);
         this.components = components;
+    }
+
+    public ComponentDiv(Style style, Collection<Component> componentCollection) {
+        this(style, (componentCollection == null ? null
+                        : componentCollection.toArray(new Component[componentCollection.size()])));
     }
 }

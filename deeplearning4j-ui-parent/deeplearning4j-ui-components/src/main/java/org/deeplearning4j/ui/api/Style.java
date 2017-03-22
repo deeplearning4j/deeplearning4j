@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,8 +17,8 @@
  */
 package org.deeplearning4j.ui.api;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,15 +36,15 @@ import java.awt.*;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),
-        @JsonSubTypes.Type(value = StyleTable.class, name = "StyleTable"),
-        @JsonSubTypes.Type(value = StyleText.class, name = "StyleText"),
-        @JsonSubTypes.Type(value = StyleAccordion.class, name = "StyleAccordion"),
-        @JsonSubTypes.Type(value = StyleDiv.class, name = "StyleDiv")
-})
-@Data @AllArgsConstructor @NoArgsConstructor
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),
+                @JsonSubTypes.Type(value = StyleTable.class, name = "StyleTable"),
+                @JsonSubTypes.Type(value = StyleText.class, name = "StyleText"),
+                @JsonSubTypes.Type(value = StyleAccordion.class, name = "StyleAccordion"),
+                @JsonSubTypes.Type(value = StyleDiv.class, name = "StyleDiv")})
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class Style {
 
     private Double width;
@@ -60,7 +60,7 @@ public abstract class Style {
 
     protected String backgroundColor;
 
-    public Style(Builder b){
+    public Style(Builder b) {
         this.width = b.width;
         this.height = b.height;
         this.widthUnit = b.widthUnit;
@@ -77,7 +77,7 @@ public abstract class Style {
 
 
     @SuppressWarnings("unchecked")
-    public static abstract class Builder<T extends Builder<T>>{
+    public static abstract class Builder<T extends Builder<T>> {
         protected Double width;
         protected Double height;
         protected LengthUnit widthUnit;
@@ -91,41 +91,42 @@ public abstract class Style {
 
         protected String backgroundColor;
 
-        public T width(double width, LengthUnit widthUnit){
+        public T width(double width, LengthUnit widthUnit) {
             this.width = width;
             this.widthUnit = widthUnit;
-            return (T)this;
+            return (T) this;
         }
 
-        public T height(double height, LengthUnit heightUnit){
+        public T height(double height, LengthUnit heightUnit) {
             this.height = height;
             this.heightUnit = heightUnit;
-            return (T)this;
+            return (T) this;
         }
 
-        public T margin(LengthUnit unit, Integer marginTop, Integer marginBottom, Integer marginLeft, Integer marginRight){
+        public T margin(LengthUnit unit, Integer marginTop, Integer marginBottom, Integer marginLeft,
+                        Integer marginRight) {
             return margin(unit, (marginTop != null ? marginTop.doubleValue() : null),
-                    (marginBottom != null ? marginBottom.doubleValue() : null),
-                    (marginLeft != null ? marginLeft.doubleValue() : null),
-                    (marginRight != null ? marginRight.doubleValue() : null));
+                            (marginBottom != null ? marginBottom.doubleValue() : null),
+                            (marginLeft != null ? marginLeft.doubleValue() : null),
+                            (marginRight != null ? marginRight.doubleValue() : null));
         }
 
-        public T margin(LengthUnit unit, Double marginTop, Double marginBottom, Double marginLeft, Double marginRight){
+        public T margin(LengthUnit unit, Double marginTop, Double marginBottom, Double marginLeft, Double marginRight) {
             this.marginUnit = unit;
             this.marginTop = marginTop;
             this.marginBottom = marginBottom;
             this.marginLeft = marginLeft;
             this.marginRight = marginRight;
-            return (T)this;
+            return (T) this;
         }
 
-        public T backgroundColor(Color color){
+        public T backgroundColor(Color color) {
             return backgroundColor(Utils.colorToHex(color));
         }
 
-        public T backgroundColor(String color){
+        public T backgroundColor(String color) {
             this.backgroundColor = color;
-            return (T)this;
+            return (T) this;
         }
     }
 }

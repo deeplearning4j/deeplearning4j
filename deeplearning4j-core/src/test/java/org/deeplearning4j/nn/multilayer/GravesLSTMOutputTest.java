@@ -17,7 +17,9 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -42,8 +44,8 @@ public class GravesLSTMOutputTest {
 
     @BeforeClass
     public static void setUp() {
-        type = Nd4j.dtype;
-        Nd4j.dtype = Type.FLOAT;
+        type = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(Type.FLOAT);
         log = LoggerFactory.getLogger(GravesLSTMOutputTest.class);
         data = getData();
     }
@@ -52,7 +54,7 @@ public class GravesLSTMOutputTest {
     public static void tearDown() {
         data = null;
         log = null;
-        Nd4j.dtype = type;
+        DataTypeUtil.setDTypeForContext(type);
     }
 
     @Test
@@ -71,7 +73,7 @@ public class GravesLSTMOutputTest {
         network.init();
         network.setListeners(new ScoreIterationListener(1));
         for (int i = 0; i < window / 100; i++) {
-            INDArray d = data.get(NDArrayIndex.interval(100 * i, 100 * (i+1)), NDArrayIndex.all());
+            INDArray d = data.get(NDArrayIndex.interval(100 * i, 100 * (i + 1)), NDArrayIndex.all());
             network.fit(reshapeInput(d.dup()), reshapeInput(d.dup()));
         }
         Evaluation ev = eval(network);
@@ -86,24 +88,24 @@ public class GravesLSTMOutputTest {
     }
 
     private MultiLayerConfiguration getNetworkConf(int iterations, boolean useTBPTT) {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.1)
-                .regularization(true)
-                .l2(0.0025)
-                .iterations(iterations)
-                .stepFunction(new NegativeDefaultStepFunction())
-                .list()
-                .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn).nOut(layerSize)
-                        .updater(Updater.ADAGRAD)
-                        .activation("tanh").build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .updater(Updater.ADAGRAD).nIn(layerSize).nOut(nIn)
-                        .activation("softmax").build())
-                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
-                .backprop(true)
-                .pretrain(false);
+        MultiLayerConfiguration.Builder builder =
+                        new NeuralNetConfiguration.Builder()
+                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                        .learningRate(0.1).regularization(true).l2(0.0025)
+                                        .iterations(iterations).stepFunction(
+                                                        new NegativeDefaultStepFunction())
+                                        .list()
+                                        .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
+                                                        .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn)
+                                                        .nOut(layerSize).updater(Updater.ADAGRAD)
+                                                        .activation(Activation.TANH).build())
+                                        .layer(1, new OutputLayer.Builder(
+                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                                                        .updater(Updater.ADAGRAD).nIn(layerSize)
+                                                                        .nOut(nIn).activation(Activation.SOFTMAX)
+                                                                        .build())
+                                        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).backprop(true)
+                                        .pretrain(false);
         if (useTBPTT) {
             builder.backpropType(BackpropType.TruncatedBPTT);
             builder.tBPTTBackwardLength(window / 3);

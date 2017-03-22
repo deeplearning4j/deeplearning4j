@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,20 +18,18 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
 
 
 /**
@@ -59,16 +57,16 @@ public class MnistDataFetcher extends BaseDataFetcher {
      * @throws IOException
      */
     public MnistDataFetcher(boolean binarize) throws IOException {
-        this(binarize,true,true,System.currentTimeMillis());
+        this(binarize, true, true, System.currentTimeMillis());
     }
 
     public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
-        if(!mnistExists()) {
+        if (!mnistExists()) {
             new MnistFetcher().downloadAndUntar();
         }
         String images;
         String labels;
-        if(train){
+        if (train) {
             images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
             labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
             totalExamples = NUM_EXAMPLES;
@@ -80,7 +78,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
         try {
             man = new MnistManager(images, labels, train);
-        }catch(Exception e) {
+        } catch (Exception e) {
             FileUtils.deleteDirectory(new File(MNIST_ROOT));
             new MnistFetcher().downloadAndUntar();
             man = new MnistManager(images, labels, train);
@@ -93,26 +91,31 @@ public class MnistDataFetcher extends BaseDataFetcher {
         this.train = train;
         this.shuffle = shuffle;
 
-        if(train){
+        if (train) {
             order = new int[NUM_EXAMPLES];
         } else {
             order = new int[NUM_EXAMPLES_TEST];
         }
-        for( int i=0; i<order.length; i++ ) order[i] = i;
+        for (int i = 0; i < order.length; i++)
+            order[i] = i;
         rng = new Random(rngSeed);
-        reset();    //Shuffle order
+        reset(); //Shuffle order
     }
 
-    private boolean mnistExists(){
+    private boolean mnistExists() {
         //Check 4 files:
-        File f = new File(MNIST_ROOT,MnistFetcher.trainingFilesFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.trainingFileLabelsFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFilesFilename_unzipped);
-        if(!f.exists()) return false;
-        f = new File(MNIST_ROOT,MnistFetcher.testFileLabelsFilename_unzipped);
-        if(!f.exists()) return false;
+        File f = new File(MNIST_ROOT, MnistFetcher.trainingFilesFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.trainingFileLabelsFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.testFilesFilename_unzipped);
+        if (!f.exists())
+            return false;
+        f = new File(MNIST_ROOT, MnistFetcher.testFileLabelsFilename_unzipped);
+        if (!f.exists())
+            return false;
         return true;
     }
 
@@ -122,48 +125,58 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     @Override
     public void fetch(int numExamples) {
-        if(!hasMore()) {
+        if (!hasMore()) {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
 
-        //we need to ensure that we don't overshoot the number of examples total
-        List<DataSet> toConvert = new ArrayList<>(numExamples);
-        for( int i=0; i<numExamples; i++, cursor++ ){
-            if(!hasMore()) {
+
+        float[][] featureData = new float[numExamples][0];
+        float[][] labelData = new float[numExamples][0];
+
+        int actualExamples = 0;
+        for (int i = 0; i < numExamples; i++, cursor++) {
+            if (!hasMore())
                 break;
-            }
 
             byte[] img = man.readImageUnsafe(order[cursor]);
-            INDArray in = Nd4j.create(1, img.length);
-            for( int j=0; j<img.length; j++ ){
-                in.putScalar(j, ((int)img[j]) & 0xFF);  //byte is loaded as signed -> convert to unsigned
-            }
+            int label = man.readLabel(order[cursor]);
 
-            if(binarize) {
-                for(int d = 0; d < in.length(); d++) {
-                    if(in.getDouble(d) > 30) {
-                        in.putScalar(d,1);
-                    }
-                    else {
-                        in.putScalar(d,0);
-                    }
+            float[] featureVec = new float[img.length];
+            featureData[actualExamples] = featureVec;
+            labelData[actualExamples] = new float[10];
+            labelData[actualExamples][label] = 1.0f;
+
+            for (int j = 0; j < img.length; j++) {
+                float v = ((int) img[j]) & 0xFF; //byte is loaded as signed -> convert to unsigned
+                if (binarize) {
+                    if (v > 30.0f)
+                        featureVec[j] = 1.0f;
+                    else
+                        featureVec[j] = 0.0f;
+                } else {
+                    featureVec[j] = v / 255.0f;
                 }
-            } else {
-                in.divi(255);
             }
 
-            INDArray out = createOutputVector(man.readLabel(order[cursor]));
-
-            toConvert.add(new DataSet(in,out));
+            actualExamples++;
         }
-        initializeCurrFromList(toConvert);
+
+        if (actualExamples < numExamples) {
+            featureData = Arrays.copyOfRange(featureData, 0, actualExamples);
+            labelData = Arrays.copyOfRange(labelData, 0, actualExamples);
+        }
+
+        INDArray features = Nd4j.create(featureData);
+        INDArray labels = Nd4j.create(labelData);
+        curr = new DataSet(features, labels);
     }
 
     @Override
     public void reset() {
         cursor = 0;
         curr = null;
-        if(shuffle) MathUtils.shuffleArray(order, rng);
+        if (shuffle)
+            MathUtils.shuffleArray(order, rng);
     }
 
     @Override

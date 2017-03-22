@@ -3,8 +3,6 @@ package org.deeplearning4j.ui;
 import lombok.Data;
 import lombok.NonNull;
 
-import java.util.Random;
-
 /**
  * POJO describing the location and credentials for DL4j UiServer instance
  *
@@ -38,10 +36,7 @@ public class UiConnectionInfo {
     public String getFirstPart() {
         StringBuilder builder = new StringBuilder();
 
-        builder
-                .append(useHttps ? "https" : "http").append("://")
-                .append(address).append(":")
-                .append(port).append("");
+        builder.append(useHttps ? "https" : "http").append("://").append(address).append(":").append(port).append("");
 
         return builder.toString();
     }
@@ -59,11 +54,11 @@ public class UiConnectionInfo {
 
         if (nPath != null) {
             nPath = nPath.replaceFirst("^/", "");
-            builder.append(path.endsWith("/") ? nPath : ("/" + nPath)).append("/");
+            builder.append(nPath.startsWith("/") ? nPath : ("/" + nPath)).append("/");
         }
 
 
-        return builder.toString().replaceAll("\\/{2,}","/");
+        return builder.toString().replaceAll("\\/{2,}", "/");
     }
 
     public String getFullAddress(String nPath) {
@@ -110,7 +105,8 @@ public class UiConnectionInfo {
         }
 
         public Builder setPort(int port) {
-            if (port <= 0) throw new IllegalStateException("UiServer port can't be <= 0");
+            if (port <= 0)
+                throw new IllegalStateException("UiServer port can't be <= 0");
             info.setPort(port);
             return this;
         }

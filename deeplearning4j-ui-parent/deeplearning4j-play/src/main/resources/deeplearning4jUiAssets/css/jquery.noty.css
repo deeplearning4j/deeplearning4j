@@ -1,0 +1,105 @@
+
+/* CORE STYLES */
+
+	/* noty bar */
+	.noty_bar {
+		position: fixed;
+		display: none;
+		z-index: 9999999;
+	}
+	
+	/* noty_message */
+	.noty_bar .noty_message {
+		text-align: center;
+	}
+	
+	/* noty close button */
+	.noty_bar .noty_close {
+		cursor: pointer;
+	}
+	
+	/* noty modal */
+	.noty_modal {
+		position: fixed;
+		width: 100%;
+		height: 100%;
+		background-color: #000;
+		z-index: 10000;
+		opacity: 0.6;
+		display: none;
+		left: 0;
+		top: 0;
+	}
+	
+	/* noty container for noty_layout_topLeft & noty_layout_topRight */
+	ul.noty_cont {
+		position: fixed;
+		z-index: 10000000;
+		margin: 0px;
+		padding: 0px;
+		list-style: none;
+		width: 300px;
+	}
+	ul.noty_cont li {
+		position: relative;
+		float: left;
+		clear: both;
+		list-style: none;
+		padding: 0px;
+		margin: 10px 0 0 0;
+		width: 300px; /* Fix for: http://bugs.jquery.com/ticket/2278 */
+	}
+	ul.noty_cont.noty_layout_topLeft {left:20px; top:20px;}
+	ul.noty_cont.noty_layout_topRight {right:40px; top:20px;}
+	ul.noty_cont.noty_layout_bottomLeft {left:20px; bottom:20px}
+	ul.noty_cont.noty_layout_bottomRight {right:40px; bottom:20px}
+	ul.noty_cont.noty_layout_topRight li {float:right}
+
+/* LAYOUTS */
+
+	/* noty_layout_top */
+	.noty_bar.noty_layout_top {
+		top: 0;
+		left: 0;
+		width: 100%;
+		-webkit-border-radius: 0px;
+		-moz-border-radius: 0px;
+		border-radius: 0px;
+	}
+
+	/* noty_layout_bottom */
+	.noty_bar.noty_layout_bottom {
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		-webkit-border-radius: 0px;
+		-moz-border-radius: 0px;
+		border-radius: 0px;
+	}
+
+	/* noty_layout_center */
+	.noty_bar.noty_layout_center {
+		top: 40%;
+	}
+	
+	/* noty_layout_topLeft & noty_layout_topRight */
+	.noty_bar.noty_layout_topLeft, 
+	.noty_bar.noty_layout_topRight,
+	.noty_bar.noty_layout_bottomLeft,
+	.noty_bar.noty_layout_bottomRight {
+		width: 100%;
+		clear: both;
+		position: relative;
+	}
+	
+	.noty_bar.noty_layout_topLeft .noty_message, 
+	.noty_bar.noty_layout_topRight .noty_message,
+	.noty_bar.noty_layout_bottomLeft .noty_message,
+	.noty_bar.noty_layout_bottomRight .noty_message {
+		text-align: left;
+	}
+	
+	/* noty_layout_topCenter */
+	.noty_bar.noty_layout_topCenter {
+		top: 20px;
+	}

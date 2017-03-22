@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,18 +28,11 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.List;
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
 
 
 /**
@@ -47,50 +40,30 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestSparkLayer extends BaseSparkTest {
 
-    private static final Logger log = LoggerFactory.getLogger(TestSparkLayer.class);
-
-
-
     @Test
     public void testIris2() throws Exception {
-
-
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(10)
-                .learningRate(1e-1)
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(4).nOut(3)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation("softmax").build())
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
+                        .learningRate(1e-1)
+                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                                        .activation(Activation.SOFTMAX).build())
+                        .build();
 
 
         System.out.println("Initializing network");
-        SparkDl4jLayer master = new SparkDl4jLayer(sc,conf);
-        DataSet d = new IrisDataSetIterator(150,150).next();
+        SparkDl4jLayer master = new SparkDl4jLayer(sc, conf);
+        DataSet d = new IrisDataSetIterator(150, 150).next();
         d.normalizeZeroMeanZeroUnitVariance();
         d.shuffle();
         List<DataSet> next = d.asList();
 
-
         JavaRDD<DataSet> data = sc.parallelize(next);
 
+        OutputLayer network2 = (OutputLayer) master.fitDataSet(data);
 
-
-        OutputLayer network2 =(OutputLayer) master.fitDataSet(data);
-
-        INDArray params = network2.params();
-        File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(params, writeTo.getAbsolutePath(), ",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
-        assertEquals(params, load);
-        writeTo.delete();
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
         System.out.println(evaluation.stats());
     }
-
-
-
 }

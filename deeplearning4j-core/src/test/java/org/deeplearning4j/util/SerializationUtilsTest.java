@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,10 +22,10 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.Point;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -48,7 +48,7 @@ public class SerializationUtilsTest {
 
         DataSet readDataSet = SerializationUtils.readObject(new File(irisData));
 
-        assertEquals(freshDataSet.getFeatureMatrix(),readDataSet.getFeatureMatrix());
+        assertEquals(freshDataSet.getFeatureMatrix(), readDataSet.getFeatureMatrix());
         assertEquals(freshDataSet.getLabels(), readDataSet.getLabels());
         try {
             FileUtils.forceDelete(new File(irisData));

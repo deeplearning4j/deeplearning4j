@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,12 +18,6 @@
 
 package org.deeplearning4j.clustering.algorithm;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.deeplearning4j.clustering.algorithm.iteration.IterationInfo;
@@ -41,6 +35,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+
 /**
  *
  * adapted to ndarray matrices
@@ -51,138 +51,146 @@ import org.slf4j.LoggerFactory;
  */
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {
 
-	private static final long serialVersionUID	= 338231277453149972L;
-	private static final Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
+    private static final long serialVersionUID = 338231277453149972L;
+    private static final Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
 
-	private ClusteringStrategy clusteringStrategy;
-	private IterationHistory iterationHistory;
-	private int	currentIteration = 0;
-	private ClusterSet	clusterSet;
-	private List<Point>	initialPoints;
-	private transient ExecutorService exec;
+    private ClusteringStrategy clusteringStrategy;
+    private IterationHistory iterationHistory;
+    private int currentIteration = 0;
+    private ClusterSet clusterSet;
+    private List<Point> initialPoints;
+    private transient ExecutorService exec;
 
-	protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
-		this.clusteringStrategy = clusteringStrategy;
-		this.exec = MultiThreadUtils.newExecutorService();
-	}
+    protected BaseClusteringAlgorithm() {
+        // no-op for serialization only
+    }
 
-	public static BaseClusteringAlgorithm setup(ClusteringStrategy clusteringStrategy) {
-		return new BaseClusteringAlgorithm(clusteringStrategy);
-	}
+    protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
+        this.clusteringStrategy = clusteringStrategy;
+        this.exec = MultiThreadUtils.newExecutorService();
+    }
 
-	public ClusterSet applyTo(List<Point> points) {
-		resetState(points);
-		initClusters();
-		iterations();
-		return clusterSet;
-	}
+    public static BaseClusteringAlgorithm setup(ClusteringStrategy clusteringStrategy) {
+        return new BaseClusteringAlgorithm(clusteringStrategy);
+    }
 
-	private void resetState(List<Point> points) {
-		this.iterationHistory = new IterationHistory();
-		this.currentIteration = 0;
-		this.clusterSet = null;
-		this.initialPoints = points;
-	}
+    public ClusterSet applyTo(List<Point> points) {
+        resetState(points);
+        initClusters();
+        iterations();
+        return clusterSet;
+    }
 
-	/** Run clustering iterations until a termination condition is hit.
-	 * This is done by first classifying all points, and then updating cluster centers based on those classified points
-	 */
-	private void iterations() {
-		int iterationCount = 0;
-		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) ||
-				iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
-			currentIteration++;
-			removePoints();
-			classifyPoints();
-			applyClusteringStrategy();
-			log.info("Completed clustering iteration {}", ++iterationCount);
-		}
-	}
+    private void resetState(List<Point> points) {
+        this.iterationHistory = new IterationHistory();
+        this.currentIteration = 0;
+        this.clusterSet = null;
+        this.initialPoints = points;
+    }
 
-	protected void classifyPoints() {
-		//Classify points. This also adds each point to the ClusterSet
-		ClusterSetInfo clusterSetInfo = ClusterUtils.classifyPoints(clusterSet, initialPoints, exec);
-		//Update the cluster centers, based on the points within each cluster
-		ClusterUtils.refreshClustersCenters(clusterSet, clusterSetInfo, exec);
-		iterationHistory.getIterationsInfos().put(currentIteration, new IterationInfo(currentIteration, clusterSetInfo));
-	}
+    /** Run clustering iterations until a termination condition is hit.
+     * This is done by first classifying all points, and then updating cluster centers based on those classified points
+     */
+    private void iterations() {
+        int iterationCount = 0;
+        while ((clusteringStrategy.getTerminationCondition() != null
+                        && !clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory))
+                        || iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
+            currentIteration++;
+            removePoints();
+            classifyPoints();
+            applyClusteringStrategy();
+            log.info("Completed clustering iteration {}", ++iterationCount);
+        }
+    }
 
-	/**Initialize the cluster centers at random
-	 */
-	protected void initClusters() {
-		log.info("Generating initial clusters");
-		List<Point> points = new ArrayList<>(initialPoints);
+    protected void classifyPoints() {
+        //Classify points. This also adds each point to the ClusterSet
+        ClusterSetInfo clusterSetInfo = ClusterUtils.classifyPoints(clusterSet, initialPoints, exec);
+        //Update the cluster centers, based on the points within each cluster
+        ClusterUtils.refreshClustersCenters(clusterSet, clusterSetInfo, exec);
+        iterationHistory.getIterationsInfos().put(currentIteration,
+                        new IterationInfo(currentIteration, clusterSetInfo));
+    }
 
-		//Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
-		Random random = new Random();
-		clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction());
-		clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
-		int initialClusterCount = clusteringStrategy.getInitialClusterCount();
+    /**Initialize the cluster centers at random
+     */
+    protected void initClusters() {
+        log.info("Generating initial clusters");
+        List<Point> points = new ArrayList<>(initialPoints);
 
-		//dxs: distances between each point and nearest cluster to that point
-		INDArray dxs = Nd4j.create(points.size());
-		dxs.addi(Double.MAX_VALUE);
+        //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
+        Random random = new Random();
+        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction());
+        clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
+        int initialClusterCount = clusteringStrategy.getInitialClusterCount();
 
-		//Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
-		//Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
-		while (clusterSet.getClusterCount() < initialClusterCount && points.size() > 0) {
-			dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
-			double r = random.nextFloat() * dxs.maxNumber().doubleValue();
-			for (int i = 0; i < dxs.length(); i++) {
-				if (dxs.getDouble(i) >= r) {
-					clusterSet.addNewClusterWithCenter(points.remove(i));
-					dxs = Nd4j.create(ArrayUtils.remove(dxs.data().asDouble(), i));
-					break;
-				}
-			}
-		}
+        //dxs: distances between each point and nearest cluster to that point
+        INDArray dxs = Nd4j.create(points.size());
+        dxs.addi(Double.MAX_VALUE);
 
-		ClusterSetInfo initialClusterSetInfo = ClusterUtils.computeClusterSetInfo(clusterSet);
-		iterationHistory.getIterationsInfos().put(currentIteration, new IterationInfo(currentIteration, initialClusterSetInfo));
-	}
+        //Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
+        //Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
+        while (clusterSet.getClusterCount() < initialClusterCount && !points.isEmpty()) {
+            dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
+            double r = random.nextFloat() * dxs.maxNumber().doubleValue();
+            for (int i = 0; i < dxs.length(); i++) {
+                if (dxs.getDouble(i) >= r) {
+                    clusterSet.addNewClusterWithCenter(points.remove(i));
+                    dxs = Nd4j.create(ArrayUtils.remove(dxs.data().asDouble(), i));
+                    break;
+                }
+            }
+        }
 
-	protected void applyClusteringStrategy() {
-		if (!isStrategyApplicableNow())
-			return;
+        ClusterSetInfo initialClusterSetInfo = ClusterUtils.computeClusterSetInfo(clusterSet);
+        iterationHistory.getIterationsInfos().put(currentIteration,
+                        new IterationInfo(currentIteration, initialClusterSetInfo));
+    }
 
-		ClusterSetInfo clusterSetInfo = iterationHistory.getMostRecentClusterSetInfo();
-		if (!clusteringStrategy.isAllowEmptyClusters()) {
-			int removedCount = removeEmptyClusters(clusterSetInfo);
-			if( removedCount>0 ) {
-				iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
-				
-				if (clusteringStrategy.isStrategyOfType(ClusteringStrategyType.FIXED_CLUSTER_COUNT) && clusterSet.getClusterCount() < clusteringStrategy.getInitialClusterCount()) {
-					int splitCount = ClusterUtils.splitMostSpreadOutClusters(clusterSet, clusterSetInfo, clusteringStrategy.getInitialClusterCount() - clusterSet.getClusterCount(),
-							exec);
-					if( splitCount>0 )
-						iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
-				}
-			}
-		}
-		if (clusteringStrategy.isStrategyOfType(ClusteringStrategyType.OPTIMIZATION))
-			optimize();
-	}
+    protected void applyClusteringStrategy() {
+        if (!isStrategyApplicableNow())
+            return;
 
-	protected void optimize() {
-		ClusterSetInfo clusterSetInfo = iterationHistory.getMostRecentClusterSetInfo();
-		OptimisationStrategy optimization = (OptimisationStrategy) clusteringStrategy;
-		boolean applied = ClusterUtils.applyOptimization(optimization, clusterSet, clusterSetInfo, exec);
-		iterationHistory.getMostRecentIterationInfo().setStrategyApplied(applied);
-	}
+        ClusterSetInfo clusterSetInfo = iterationHistory.getMostRecentClusterSetInfo();
+        if (!clusteringStrategy.isAllowEmptyClusters()) {
+            int removedCount = removeEmptyClusters(clusterSetInfo);
+            if (removedCount > 0) {
+                iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
 
-	private boolean isStrategyApplicableNow() {
-		return clusteringStrategy.isOptimizationDefined() && iterationHistory.getIterationCount() != 0
-				&& clusteringStrategy.isOptimizationApplicableNow(iterationHistory);
-	}
+                if (clusteringStrategy.isStrategyOfType(ClusteringStrategyType.FIXED_CLUSTER_COUNT)
+                                && clusterSet.getClusterCount() < clusteringStrategy.getInitialClusterCount()) {
+                    int splitCount = ClusterUtils.splitMostSpreadOutClusters(clusterSet, clusterSetInfo,
+                                    clusteringStrategy.getInitialClusterCount() - clusterSet.getClusterCount(), exec);
+                    if (splitCount > 0)
+                        iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
+                }
+            }
+        }
+        if (clusteringStrategy.isStrategyOfType(ClusteringStrategyType.OPTIMIZATION))
+            optimize();
+    }
 
-	protected int removeEmptyClusters(ClusterSetInfo clusterSetInfo) {
-		List<Cluster> removedClusters = clusterSet.removeEmptyClusters();
-		clusterSetInfo.removeClusterInfos(removedClusters);
-		return removedClusters.size();
-	}
+    protected void optimize() {
+        ClusterSetInfo clusterSetInfo = iterationHistory.getMostRecentClusterSetInfo();
+        OptimisationStrategy optimization = (OptimisationStrategy) clusteringStrategy;
+        boolean applied = ClusterUtils.applyOptimization(optimization, clusterSet, clusterSetInfo, exec);
+        iterationHistory.getMostRecentIterationInfo().setStrategyApplied(applied);
+    }
 
-	protected void removePoints() {
-		clusterSet.removePoints();
-	}
+    private boolean isStrategyApplicableNow() {
+        return clusteringStrategy.isOptimizationDefined() && iterationHistory.getIterationCount() != 0
+                        && clusteringStrategy.isOptimizationApplicableNow(iterationHistory);
+    }
+
+    protected int removeEmptyClusters(ClusterSetInfo clusterSetInfo) {
+        List<Cluster> removedClusters = clusterSet.removeEmptyClusters();
+        clusterSetInfo.removeClusterInfos(removedClusters);
+        return removedClusters.size();
+    }
+
+    protected void removePoints() {
+        clusterSet.removePoints();
+    }
 
 }

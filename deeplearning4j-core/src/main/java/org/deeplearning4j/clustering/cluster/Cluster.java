@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,108 +18,108 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import java.io.Serializable;
-
-import org.nd4j.linalg.factory.Nd4j;
-
 public class Cluster implements Serializable {
 
-	private String id = UUID.randomUUID().toString();
-	private String label;
+    private String id = UUID.randomUUID().toString();
+    private String label;
 
-	private Point center;
-	private List<Point>	points	= Collections.synchronizedList(new ArrayList<Point>());
+    private Point center;
+    private List<Point> points = Collections.synchronizedList(new ArrayList<Point>());
 
-	private String distanceFunction;
+    private String distanceFunction;
 
-	public Cluster() {
-		super();
-	}
-
-	public Cluster(Point center,String distanceFunction) {
-		this.distanceFunction = distanceFunction;
-		setCenter(center);
-	}
-
-	
-
-
-	public double getDistanceToCenter(Point point) {
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,center.getArray(),point.getArray())).currentResult().doubleValue();
+    public Cluster() {
+        super();
     }
 
-	public void addPoint(Point point) {
-		addPoint(point, true);
-	}
+    public Cluster(Point center, String distanceFunction) {
+        this.distanceFunction = distanceFunction;
+        setCenter(center);
+    }
 
-	public void addPoint(Point point, boolean moveClusterCenter) {
-		if (moveClusterCenter) {
-			center.getArray().muli(points.size()).addi(point.getArray()).divi(points.size() + 1);
-		}
-		getPoints().add(point);
-	}
 
-	public void removePoints() {
-		if (getPoints() != null)
-			getPoints().clear();
-	}
 
-	public boolean isEmpty() {
-		return points == null || points.size() == 0;
-	}
+    public double getDistanceToCenter(Point point) {
+        return Nd4j.getExecutioner().execAndReturn(
+                        Nd4j.getOpFactory().createAccum(distanceFunction, center.getArray(), point.getArray()))
+                        .getFinalResult().doubleValue();
+    }
 
-	public Point getPoint(String id) {
-		for (Point point : points)
-			if (id.equals(point.getId()))
-				return point;
-		return null;
-	}
+    public void addPoint(Point point) {
+        addPoint(point, true);
+    }
 
-	public Point removePoint(String id) {
-		Point removePoint = null;
-		for (Point point : points)
-			if (id.equals(point.getId()))
-				removePoint = point;
-		if (removePoint != null)
-			points.remove(removePoint);
-		return removePoint;
-	}
+    public void addPoint(Point point, boolean moveClusterCenter) {
+        if (moveClusterCenter) {
+            center.getArray().muli(points.size()).addi(point.getArray()).divi(points.size() + 1);
+        }
+        getPoints().add(point);
+    }
 
-	public Point getCenter() {
-		return center;
-	}
+    public void removePoints() {
+        if (getPoints() != null)
+            getPoints().clear();
+    }
 
-	public void setCenter(Point center) {
-		this.center = center;
-	}
+    public boolean isEmpty() {
+        return points == null || points.isEmpty();
+    }
 
-	public List<Point> getPoints() {
-		return points;
-	}
+    public Point getPoint(String id) {
+        for (Point point : points)
+            if (id.equals(point.getId()))
+                return point;
+        return null;
+    }
 
-	public void setPoints(List<Point> points) {
-		this.points = points;
-	}
+    public Point removePoint(String id) {
+        Point removePoint = null;
+        for (Point point : points)
+            if (id.equals(point.getId()))
+                removePoint = point;
+        if (removePoint != null)
+            points.remove(removePoint);
+        return removePoint;
+    }
 
-	public String getId() {
-		return id;
-	}
+    public Point getCenter() {
+        return center;
+    }
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public void setCenter(Point center) {
+        this.center = center;
+    }
 
-	public String getLabel() {
-		return label;
-	}
+    public List<Point> getPoints() {
+        return points;
+    }
 
-	public void setLabel(String label) {
-		this.label = label;
-	}
+    public void setPoints(List<Point> points) {
+        this.points = points;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
 
 }

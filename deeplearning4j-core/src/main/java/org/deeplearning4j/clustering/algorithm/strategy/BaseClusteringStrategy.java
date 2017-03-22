@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,86 +22,92 @@ import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCond
 import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
 
-public abstract class BaseClusteringStrategy implements ClusteringStrategy {
+import java.io.Serializable;
 
-	protected ClusteringStrategyType type;
-	protected Integer initialClusterCount;
-	protected ClusteringAlgorithmCondition optimizationPhaseCondition;
-	protected ClusteringAlgorithmCondition terminationCondition;
+public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
 
-	protected String	distanceFunction;
+    protected ClusteringStrategyType type;
+    protected Integer initialClusterCount;
+    protected ClusteringAlgorithmCondition optimizationPhaseCondition;
+    protected ClusteringAlgorithmCondition terminationCondition;
 
-	protected boolean allowEmptyClusters;
+    protected String distanceFunction;
 
-	protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
-			boolean allowEmptyClusters) {
-		super();
-		this.type = type;
-		this.initialClusterCount = initialClusterCount;
-		this.distanceFunction = distanceFunction;
-		this.allowEmptyClusters = allowEmptyClusters;
-	}
+    protected boolean allowEmptyClusters;
 
-	public BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount) {
-		setTerminationCondition(FixedIterationCountCondition.iterationCountGreaterThan(maxIterationCount));
-		return this;
-	}
+    protected BaseClusteringStrategy() {
+        // no-op for serialization only
+    }
 
-	public BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate) {
-		setTerminationCondition(ConvergenceCondition.distributionVariationRateLessThan(rate));
-		return this;
-	}
+    protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
+                    boolean allowEmptyClusters) {
+        super();
+        this.type = type;
+        this.initialClusterCount = initialClusterCount;
+        this.distanceFunction = distanceFunction;
+        this.allowEmptyClusters = allowEmptyClusters;
+    }
 
-	public boolean isStrategyOfType(ClusteringStrategyType type) {
-		return type.equals(this.type);
-	}
+    public BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount) {
+        setTerminationCondition(FixedIterationCountCondition.iterationCountGreaterThan(maxIterationCount));
+        return this;
+    }
 
-	public Integer getInitialClusterCount() {
-		return initialClusterCount;
-	}
+    public BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate) {
+        setTerminationCondition(ConvergenceCondition.distributionVariationRateLessThan(rate));
+        return this;
+    }
 
-	public void setInitialClusterCount(Integer clusterCount) {
-		this.initialClusterCount = clusterCount;
-	}
+    public boolean isStrategyOfType(ClusteringStrategyType type) {
+        return type.equals(this.type);
+    }
 
-	public String getDistanceFunction() {
-		return distanceFunction;
-	}
+    public Integer getInitialClusterCount() {
+        return initialClusterCount;
+    }
 
-	public void setDistanceFunction(String distanceFunction) {
-		this.distanceFunction = distanceFunction;
-	}
+    public void setInitialClusterCount(Integer clusterCount) {
+        this.initialClusterCount = clusterCount;
+    }
 
-	public boolean isAllowEmptyClusters() {
-		return allowEmptyClusters;
-	}
+    public String getDistanceFunction() {
+        return distanceFunction;
+    }
 
-	public void setAllowEmptyClusters(boolean allowEmptyClusters) {
-		this.allowEmptyClusters = allowEmptyClusters;
-	}
+    public void setDistanceFunction(String distanceFunction) {
+        this.distanceFunction = distanceFunction;
+    }
 
-	public ClusteringStrategyType getType() {
-		return type;
-	}
+    public boolean isAllowEmptyClusters() {
+        return allowEmptyClusters;
+    }
 
-	protected void setType(ClusteringStrategyType type) {
-		this.type = type;
-	}
+    public void setAllowEmptyClusters(boolean allowEmptyClusters) {
+        this.allowEmptyClusters = allowEmptyClusters;
+    }
 
-	public ClusteringAlgorithmCondition getOptimizationPhaseCondition() {
-		return optimizationPhaseCondition;
-	}
+    public ClusteringStrategyType getType() {
+        return type;
+    }
 
-	protected void setOptimizationPhaseCondition(ClusteringAlgorithmCondition optimizationPhaseCondition) {
-		this.optimizationPhaseCondition = optimizationPhaseCondition;
-	}
+    protected void setType(ClusteringStrategyType type) {
+        this.type = type;
+    }
 
-	public ClusteringAlgorithmCondition getTerminationCondition() {
-		return terminationCondition;
-	}
+    public ClusteringAlgorithmCondition getOptimizationPhaseCondition() {
+        return optimizationPhaseCondition;
+    }
 
-	protected void setTerminationCondition(ClusteringAlgorithmCondition terminationCondition) {
-		this.terminationCondition = terminationCondition;
-	}
+    protected void setOptimizationPhaseCondition(ClusteringAlgorithmCondition optimizationPhaseCondition) {
+        this.optimizationPhaseCondition = optimizationPhaseCondition;
+    }
+
+    public ClusteringAlgorithmCondition getTerminationCondition() {
+        return terminationCondition;
+    }
+
+    protected void setTerminationCondition(ClusteringAlgorithmCondition terminationCondition) {
+        this.terminationCondition = terminationCondition;
+    }
 
 }

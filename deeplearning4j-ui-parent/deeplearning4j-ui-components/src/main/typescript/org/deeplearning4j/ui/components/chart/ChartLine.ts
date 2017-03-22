@@ -32,12 +32,10 @@ class ChartLine extends Chart implements Renderable {
         var json = JSON.parse(jsonStr);
         if(!json["componentType"]) json = json[ComponentType[ComponentType.ChartLine]];
 
-
         this.xData = json['x'];
         this.yData = json['y'];
         this.seriesNames = json['seriesNames'];
     }
-
 
     render = (appendToObject: JQuery) => {
 
@@ -92,13 +90,13 @@ class ChartLine extends Chart implements Renderable {
         var xMax: number;
         var yMin: number;
         var yMax: number;
-        if(this.setXMin) xMin = this.setXMin;
+        if(this.setXMin != null) xMin = this.setXMin;
         else xMin = (this.xData ? TSUtils.min(this.xData) : 0);
-        if(this.setXMax) xMax = this.setXMax;
+        if(this.setXMax != null) xMax = this.setXMax;
         else xMax = (this.xData ? TSUtils.max(this.xData) : 1);
-        if(this.setYMin) yMin = this.setYMin;
+        if(this.setYMin != null) yMin = this.setYMin;
         else yMin = (this.yData ? TSUtils.min(this.yData) : 0);
-        if(this.setYMax) yMax = this.setYMax;
+        if(this.setYMax != null) yMax = this.setYMax;
         else yMax = (this.yData ? TSUtils.max(this.yData) : 1);
 
         xScale.domain([xMin, xMax]);
@@ -151,9 +149,7 @@ class ChartLine extends Chart implements Renderable {
                 var yValues = this.yData[i];
                 var lastX = values[values.length - 1];
                 var lastY = yValues[yValues.length - 1];
-                var toDisplay;
-                if (!lastX || !lastY) toDisplay = this.seriesNames[i] + " (no data)";
-                else toDisplay = this.seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                var toDisplay = this.seriesNames[i];
                 svg.append("text")
                     .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
                     .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)

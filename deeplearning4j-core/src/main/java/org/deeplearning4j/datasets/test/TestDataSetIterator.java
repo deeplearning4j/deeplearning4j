@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,9 +18,10 @@
 
 package org.deeplearning4j.datasets.test;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.DataSetPreProcessor;
+import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.List;
 
@@ -30,94 +31,105 @@ import java.util.List;
  *
  */
 public class TestDataSetIterator implements DataSetIterator {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -3042802726018263331L;
-	private DataSetIterator wrapped;
-	private int numDataSets = 0;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -3042802726018263331L;
+    private DataSetIterator wrapped;
+    private int numDataSets = 0;
+    @Getter
     private DataSetPreProcessor preProcessor;
-	
-	
-	public TestDataSetIterator(DataSetIterator wrapped) {
-		super();
-		this.wrapped = wrapped;
-	}
 
-	@Override
-	public boolean hasNext() {
-		return wrapped.hasNext();
-	}
 
-	@Override
-	public DataSet next() {
-		numDataSets++;
-		DataSet next = wrapped.next();
-        if(preProcessor != null)
+    public TestDataSetIterator(DataSetIterator wrapped) {
+        super();
+        this.wrapped = wrapped;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return wrapped.hasNext();
+    }
+
+    @Override
+    public DataSet next() {
+        numDataSets++;
+        DataSet next = wrapped.next();
+        if (preProcessor != null)
             preProcessor.preProcess(next);
         return next;
-	}
+    }
 
-	@Override
-	public void remove() {
-		wrapped.remove();
-	}
+    @Override
+    public void remove() {
+        wrapped.remove();
+    }
 
-	@Override
-	public int totalExamples() {
-		return wrapped.totalExamples();
-	}
+    @Override
+    public int totalExamples() {
+        return wrapped.totalExamples();
+    }
 
-	@Override
-	public int inputColumns() {
-		return wrapped.inputColumns();
-	}
+    @Override
+    public int inputColumns() {
+        return wrapped.inputColumns();
+    }
 
-	@Override
-	public int totalOutcomes() {
-		return wrapped.totalOutcomes();
-	}
+    @Override
+    public int totalOutcomes() {
+        return wrapped.totalOutcomes();
+    }
 
-	@Override
-	public void reset() {
-		wrapped.reset();
-	}
+    @Override
+    public boolean resetSupported() {
+        return wrapped.resetSupported();
+    }
 
-	@Override
-	public int batch() {
-		return wrapped.batch();
-	}
+    @Override
+    public boolean asyncSupported() {
+        return wrapped.asyncSupported();
+    }
 
-	@Override
-	public int cursor() {
-		return wrapped.cursor();
-	}
+    @Override
+    public void reset() {
+        wrapped.reset();
+    }
 
-	@Override
-	public int numExamples() {
-		return wrapped.numExamples();
-	}
+    @Override
+    public int batch() {
+        return wrapped.batch();
+    }
+
+    @Override
+    public int cursor() {
+        return wrapped.cursor();
+    }
+
+    @Override
+    public int numExamples() {
+        return wrapped.numExamples();
+    }
 
     @Override
     public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
         this.preProcessor = (DataSetPreProcessor) preProcessor;
     }
 
-	@Override
-	public List<String> getLabels() {
-		return null;
-	}
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
 
 
-	public synchronized int getNumDataSets() {
-		return numDataSets;
-	}
+    public synchronized int getNumDataSets() {
+        return numDataSets;
+    }
 
-	@Override
-	public DataSet next(int num) {
-		return wrapped.next(num);
-	}
-	
-	
-	
+    @Override
+    public DataSet next(int num) {
+        return wrapped.next(num);
+    }
+
+
+
 }

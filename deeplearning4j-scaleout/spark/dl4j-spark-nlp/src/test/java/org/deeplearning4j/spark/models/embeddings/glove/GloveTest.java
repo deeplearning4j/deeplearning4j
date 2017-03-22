@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,13 +18,9 @@
 
 package org.deeplearning4j.spark.models.embeddings.glove;
 
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
-
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
-import org.canova.api.util.ClassPathResource;
+import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -36,6 +32,10 @@ import org.deeplearning4j.spark.text.BaseSparkTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Collection;
+
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by agibsonccc on 1/31/15.
  */
@@ -44,17 +44,19 @@ public class GloveTest extends BaseSparkTest {
 
     @Test
     public void testGlove() throws Exception {
-        Glove glove = new Glove(true,5,100);
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath()).map(new Function<String, String>() {
-            @Override
-            public String call(String s) throws Exception {
-                return s.toLowerCase();
-            }
-        }).cache();
+        Glove glove = new Glove(true, 5, 100);
+        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath())
+                        .map(new Function<String, String>() {
+                            @Override
+                            public String call(String s) throws Exception {
+                                return s.toLowerCase();
+                            }
+                        });
 
 
-        Pair<VocabCache<VocabWord>,GloveWeightLookupTable> table = glove.train(corpus);
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), (VocabCache) table.getFirst()));
+        Pair<VocabCache<VocabWord>, GloveWeightLookupTable> table = glove.train(corpus);
+        WordVectors vectors = WordVectorSerializer
+                        .fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), (VocabCache) table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 20);
         assertTrue(words.contains("week"));
     }

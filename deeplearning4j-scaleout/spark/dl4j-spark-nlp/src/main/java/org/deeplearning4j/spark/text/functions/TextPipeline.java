@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,15 +29,14 @@ import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.spark.text.accumulators.WordFreqAccumulator;
-import org.deeplearning4j.text.stopwords.StopWords;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * A spark based text pipeline
  * with minimum word frequency and stop words
@@ -59,7 +58,7 @@ public class TextPipeline {
     private Broadcast<List<String>> stopWordBroadCast;
     // Return values
     private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
-    private VocabCache<VocabWord> vocabCache = new AbstractCache<VocabWord>();
+    private VocabCache<VocabWord> vocabCache = new AbstractCache<>();
     private Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast;
     private JavaRDD<List<VocabWord>> vocabWordListRDD;
     private JavaRDD<AtomicLong> sentenceCountRDD;
@@ -72,14 +71,13 @@ public class TextPipeline {
 
     // Constructor
     public TextPipeline(JavaRDD<String> corpusRDD, Broadcast<Map<String, Object>> broadcasTokenizerVarMap)
-            throws Exception {
+                    throws Exception {
         setRDDVarMap(corpusRDD, broadcasTokenizerVarMap);
         // Setup all Spark variables
         setup();
     }
 
-    public void setRDDVarMap(JavaRDD<String> corpusRDD,
-                                     Broadcast<Map<String, Object>> broadcasTokenizerVarMap) {
+    public void setRDDVarMap(JavaRDD<String> corpusRDD, Broadcast<Map<String, Object>> broadcasTokenizerVarMap) {
         Map<String, Object> tokenizerVarMap = broadcasTokenizerVarMap.getValue();
         this.corpusRDD = corpusRDD;
         this.numWords = (int) tokenizerVarMap.get("numWords");
@@ -90,9 +88,9 @@ public class TextPipeline {
         this.useUnk = (boolean) tokenizerVarMap.get("useUnk");
         this.configuration = (VectorsConfiguration) tokenizerVarMap.get("vectorsConfiguration");
         // Remove Stop words
-       // if ((boolean) tokenizerVarMap.get("removeStop")) {
-            stopWords = (List<String>) tokenizerVarMap.get("stopWords");
-    //    }
+        // if ((boolean) tokenizerVarMap.get("removeStop")) {
+        stopWords = (List<String>) tokenizerVarMap.get("stopWords");
+        //    }
     }
 
     private void setup() {
@@ -111,7 +109,8 @@ public class TextPipeline {
 
     public JavaRDD<Pair<List<String>, AtomicLong>> updateAndReturnAccumulatorVal(JavaRDD<List<String>> tokenizedRDD) {
         // Update the 2 accumulators
-        UpdateWordFreqAccumulatorFunction accumulatorClassFunction = new UpdateWordFreqAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
+        UpdateWordFreqAccumulatorFunction accumulatorClassFunction =
+                        new UpdateWordFreqAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = tokenizedRDD.map(accumulatorClassFunction);
 
         // Loop through each element to update accumulator. Count does the same job (verified).
@@ -148,8 +147,9 @@ public class TextPipeline {
 
     public void filterMinWordAddVocab(Counter<String> wordFreq) {
 
-        if (wordFreq.size() == 0) {
-            throw new IllegalStateException("IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
+        if (wordFreq.isEmpty()) {
+            throw new IllegalStateException(
+                            "IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 
         for (Entry<String, Double> entry : wordFreq.entrySet()) {
@@ -160,7 +160,8 @@ public class TextPipeline {
             stringToken = filterMinWord(stringToken, tokenCount);
             if (!useUnk && stringToken.equals("UNK")) {
                 // Turn tokens to vocab and add to vocab cache
-            } else addTokenToVocabCache(stringToken, tokenCount);
+            } else
+                addTokenToVocabCache(stringToken, tokenCount);
         }
     }
 
@@ -194,9 +195,9 @@ public class TextPipeline {
             throw new IllegalStateException("SentenceWordCountRDD must be defined first. Run buildLookupCache first.");
 
         vocabWordListRDD = sentenceWordsCountRDD.map(new WordsListToVocabWordsFunction(vocabCacheBroadcast))
-                .setName("vocabWordListRDD").cache();
-        sentenceCountRDD = sentenceWordsCountRDD.map(new GetSentenceCountFunction())
-                .setName("sentenceCountRDD").cache();
+                        .setName("vocabWordListRDD").cache();
+        sentenceCountRDD =
+                        sentenceWordsCountRDD.map(new GetSentenceCountFunction()).setName("sentenceCountRDD").cache();
         // Actions to fill vocabWordListRDD and sentenceCountRDD
         vocabWordListRDD.count();
         totalWordCount = sentenceCountRDD.reduce(new ReduceSentenceCount()).get();

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,8 +17,9 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -29,6 +30,7 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
  * @author Alex BLack
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Chart extends Component {
 
@@ -45,7 +47,7 @@ public abstract class Chart extends Component {
     private Double gridVerticalStrokeWidth;
     private Double gridHorizontalStrokeWidth;
 
-    public Chart(String componentType){
+    public Chart(String componentType) {
         super(componentType, null);
     }
 
@@ -54,6 +56,7 @@ public abstract class Chart extends Component {
         this.title = builder.title;
         this.suppressAxisHorizontal = builder.suppressAxisHorizontal;
         this.suppressAxisVertical = builder.suppressAxisVertical;
+        this.showLegend = builder.showLegend;
 
         this.setXMin = builder.setXMin;
         this.setXMax = builder.setXMax;
@@ -66,6 +69,7 @@ public abstract class Chart extends Component {
 
 
     @Getter
+    @SuppressWarnings("unchecked")
     public static abstract class Builder<T extends Builder<T>> {
 
         private String title;
@@ -169,7 +173,7 @@ public abstract class Chart extends Component {
          */
         public T setGridWidth(Integer gridVerticalStrokeWidth, Integer gridHorizontalStrokeWidth) {
             return setGridWidth((gridVerticalStrokeWidth != null ? gridVerticalStrokeWidth.doubleValue() : null),
-                    (gridHorizontalStrokeWidth != null ? gridHorizontalStrokeWidth.doubleValue() : null));
+                            (gridHorizontalStrokeWidth != null ? gridHorizontalStrokeWidth.doubleValue() : null));
         }
 
     }

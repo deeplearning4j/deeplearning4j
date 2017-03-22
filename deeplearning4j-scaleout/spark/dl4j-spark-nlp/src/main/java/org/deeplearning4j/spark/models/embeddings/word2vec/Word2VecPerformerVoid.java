@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,7 +31,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -41,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  */
 @Deprecated
-public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
+public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>, AtomicLong>> {
 
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";
@@ -68,7 +70,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
     private int iterations = 5;
     private static transient final Logger log = LoggerFactory.getLogger(Word2VecPerformerVoid.class);
     private int lastChecked = 0;
-    private  Broadcast<AtomicLong> wordCount;
+    private Broadcast<AtomicLong> wordCount;
     private InMemoryLookupTable weights;
     private double[] expTable = new double[1000];
     private int vectorLength;
@@ -88,12 +90,12 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
         alpha = conf.getDouble(ALPHA, 0.025f);
         minAlpha = conf.getDouble(MIN_ALPHA, 1e-2f);
         totalWords = conf.getInt(NUM_WORDS, 1);
-        iterations = conf.getInt(ITERATIONS,5);
-        vectorLength = conf.getInt(VECTOR_LENGTH,100);
+        iterations = conf.getInt(ITERATIONS, 5);
+        vectorLength = conf.getInt(VECTOR_LENGTH, 100);
 
         initExpTable();
 
-        if(negative > 0 && conf.contains(TABLE)) {
+        if (negative > 0 && conf.contains(TABLE)) {
             try {
                 ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
                 DataInputStream dis = new DataInputStream(bis);
@@ -243,7 +245,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(final List<VocabWord> sentence,double alpha) {
+    public void trainSentence(final List<VocabWord> sentence, double alpha) {
         if (sentence != null && !sentence.isEmpty()) {
             for (int i = 0; i < sentence.size(); i++) {
                 if (!sentence.get(i).getWord().endsWith("STOP")) {
@@ -261,7 +263,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
      * @param i
      * @param sentence
      */
-    public void skipGram(int i,List<VocabWord> sentence, int b,double alpha) {
+    public void skipGram(int i, List<VocabWord> sentence, int b, double alpha) {
 
         final VocabWord word = sentence.get(i);
         if (word != null && !sentence.isEmpty()) {
@@ -286,8 +288,8 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
-    public  void iterateSample(VocabWord w1, VocabWord w2,double alpha) {
-        if(w2 == null || w2.getIndex() < 0)
+    public void iterateSample(VocabWord w1, VocabWord w2, double alpha) {
+        if (w2 == null || w2.getIndex() < 0)
             return;
 
         //current word vector
@@ -297,13 +299,13 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
         //error for current word and context
         INDArray neu1e = Nd4j.create(vectorLength);
 
-        for(int i = 0; i < w1.getCodeLength(); i++) {
+        for (int i = 0; i < w1.getCodeLength(); i++) {
             int code = w1.getCodes().get(i);
             int point = w1.getPoints().get(i);
 
             INDArray syn1 = weights.getSyn1().slice(point);
 
-            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
+            double dot = Nd4j.getBlasWrapper().dot(l1, syn1);
 
             if (dot >= -MAX_EXP && dot < MAX_EXP) {
 
@@ -331,7 +333,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
 
 
         //negative sampling
-        if(negative > 0) {
+        if (negative > 0) {
             int target = w1.getIndex();
             int label;
             INDArray syn1Neg = weights.getSyn1Neg().slice(target);
@@ -353,41 +355,47 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
                 double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg);
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? w1.getGradient(target, (label - 1), this.alpha) : (label - 1) *  alpha;
+                    g = useAdaGrad ? w1.getGradient(target, (label - 1), this.alpha) : (label - 1) * alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  w1.getGradient(target, alpha, this.alpha) : alpha);
+                    g = label * (useAdaGrad ? w1.getGradient(target, alpha, this.alpha) : alpha);
                 else
-                    g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))], this.alpha) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
-                if(syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
+                    g = useAdaGrad ? w1
+                                    .getGradient(target,
+                                                    label - expTable[(int) ((f + MAX_EXP)
+                                                                    * (expTable.length / MAX_EXP / 2))],
+                                                    this.alpha)
+                                    : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
+                                                    * alpha;
+                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, neu1e, l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g, neu1e, l1);
 
-                if(syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg,l1);
+                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                    Nd4j.getBlasWrapper().axpy(g, syn1Neg, l1);
                 else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
+                    Nd4j.getBlasWrapper().axpy((float) g, syn1Neg, l1);
             }
         }
 
-        if(neu1e.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+        if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE)
+            Nd4j.getBlasWrapper().axpy(1.0, neu1e, l1);
 
         else
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+            Nd4j.getBlasWrapper().axpy(1.0f, neu1e, l1);
 
     }
 
     private void initExpTable() {
         for (int i = 0; i < expTable.length; i++) {
-            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
-            expTable[i]  = tmp / (tmp + 1.0);
+            double tmp = FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i] = tmp / (tmp + 1.0);
         }
     }
 
 
     @Override
-    public void call(Pair<List<VocabWord>,AtomicLong> pair) throws Exception {
+    public void call(Pair<List<VocabWord>, AtomicLong> pair) throws Exception {
         double numWordsSoFar = wordCount.getValue().doubleValue();
 
         List<VocabWord> sentence = pair.getFirst();
@@ -400,7 +408,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
 
         double newWords = totalNewWords + numWordsSoFar;
         double diff = Math.abs(newWords - lastChecked);
-        if(diff >= 10000) {
+        if (diff >= 10000) {
             lastChecked = (int) newWords;
             log.info("Words so far " + newWords + " out of " + totalWords);
         }

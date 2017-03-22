@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,41 +18,47 @@
 
 package org.deeplearning4j.clustering.cluster;
 
-public class PointClassification {
+import java.io.Serializable;
 
-	private Cluster	cluster;
-	private double	distanceFromCenter;
-	private boolean	newLocation;
+public class PointClassification implements Serializable {
 
-	public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
-		super();
-		this.cluster = cluster;
-		this.distanceFromCenter = distanceFromCenter;
-		this.newLocation = newLocation;
-	}
+    private Cluster cluster;
+    private double distanceFromCenter;
+    private boolean newLocation;
 
-	public Cluster getCluster() {
-		return cluster;
-	}
+    protected PointClassification() {
+        // no-op for serialization only
+    }
 
-	public void setCluster(Cluster cluster) {
-		this.cluster = cluster;
-	}
+    public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
+        super();
+        this.cluster = cluster;
+        this.distanceFromCenter = distanceFromCenter;
+        this.newLocation = newLocation;
+    }
 
-	public double getDistanceFromCenter() {
-		return distanceFromCenter;
-	}
+    public Cluster getCluster() {
+        return cluster;
+    }
 
-	public void setDistanceFromCenter(double distanceFromCenter) {
-		this.distanceFromCenter = distanceFromCenter;
-	}
+    public void setCluster(Cluster cluster) {
+        this.cluster = cluster;
+    }
 
-	public boolean isNewLocation() {
-		return newLocation;
-	}
+    public double getDistanceFromCenter() {
+        return distanceFromCenter;
+    }
 
-	public void setNewLocation(boolean newLocation) {
-		this.newLocation = newLocation;
-	}
+    public void setDistanceFromCenter(double distanceFromCenter) {
+        this.distanceFromCenter = distanceFromCenter;
+    }
+
+    public boolean isNewLocation() {
+        return newLocation;
+    }
+
+    public void setNewLocation(boolean newLocation) {
+        this.newLocation = newLocation;
+    }
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,11 +39,12 @@ public class DataPoint implements Serializable {
     private boolean invert = false;
 
 
-    public DataPoint(int index, INDArray point,boolean invert) {
-        this(index,point,"euclidean");
+    public DataPoint(int index, INDArray point, boolean invert) {
+        this(index, point, "euclidean");
         this.invert = invert;
     }
-    public DataPoint(int index, INDArray point,String functionName,boolean invert) {
+
+    public DataPoint(int index, INDArray point, String functionName, boolean invert) {
         this.index = index;
         this.point = point;
         this.functionName = functionName;
@@ -53,11 +54,11 @@ public class DataPoint implements Serializable {
 
 
     public DataPoint(int index, INDArray point) {
-        this(index,point,false);
+        this(index, point, false);
     }
 
-    public DataPoint(int index, INDArray point,String functionName) {
-       this(index,point,functionName,false);
+    public DataPoint(int index, INDArray point, String functionName) {
+        this(index, point, functionName, false);
     }
 
     /**
@@ -67,21 +68,26 @@ public class DataPoint implements Serializable {
      */
     public double distance(DataPoint point) {
         switch (functionName) {
-            case "euclidean" :
-                double ret =  Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+            case "euclidean":
+                double ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
+                                .getFinalResult().doubleValue();
                 return invert ? -ret : ret;
 
-            case "cosinesimilarity" :
-                double ret2 =  Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point,point.point)).currentResult().doubleValue();
+            case "cosinesimilarity":
+                double ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point, point.point))
+                                .getFinalResult().doubleValue();
                 return invert ? -ret2 : ret2;
 
-            case "manhattan" :
-                double ret3 =  Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point,point.point)).currentResult().doubleValue();
-              return invert ? -ret3 : ret3;
-            case "dot" :
-                double dotRet =  Nd4j.getBlasWrapper().dot(this.point,point.point);
+            case "manhattan":
+                double ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point, point.point))
+                                .getFinalResult().doubleValue();
+                return invert ? -ret3 : ret3;
+            case "dot":
+                double dotRet = Nd4j.getBlasWrapper().dot(this.point, point.point);
                 return invert ? -dotRet : dotRet;
-            default: double ret4 =  Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
+            default:
+                double ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
+                                .getFinalResult().doubleValue();
                 return invert ? -ret4 : ret4;
 
         }
@@ -89,12 +95,15 @@ public class DataPoint implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         DataPoint dataPoint = (DataPoint) o;
 
-        if (index != dataPoint.index) return false;
+        if (index != dataPoint.index)
+            return false;
         return !(point != null ? !point.equals(dataPoint.point) : dataPoint.point != null);
 
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,10 +38,11 @@ import java.util.List;
  */
 public class VPTree {
 
+    public static final String EUCLIDEAN = "euclidean";
     private List<DataPoint> items;
     private double tau;
     private Node root;
-    private CounterMap<DataPoint,DataPoint> distances;
+    private CounterMap<DataPoint, DataPoint> distances;
     private String similarityFunction;
     private boolean invert = true;
 
@@ -51,22 +52,24 @@ public class VPTree {
      * @param similarityFunction the similiarity function to use
      * @param invert whether to invert the distance (similarity functions have different min/max objectives)
      */
-    public VPTree(INDArray items,String similarityFunction,boolean invert) {
+    public VPTree(INDArray items, String similarityFunction, boolean invert) {
         List<DataPoint> thisItems = new ArrayList<>();
         this.similarityFunction = similarityFunction;
         this.invert = invert;
-        for(int i = 0; i < items.slices(); i++)
-            thisItems.add(new DataPoint(i,items.slice(i),this.similarityFunction,invert));
+        for (int i = 0; i < items.slices(); i++)
+            thisItems.add(new DataPoint(i, items.slice(i), this.similarityFunction, invert));
         this.items = thisItems;
+        final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public double count(DataPoint v1, DataPoint v2) {
+                Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
         });
 
 
-        root = buildFromPoints(0,this.items.size());
+        root = buildFromPoints(0, this.items.size());
     }
 
     /**
@@ -76,16 +79,17 @@ public class VPTree {
      * @param similarityFunction the similarity function to use
      * @param invert whether to invert the metric (different optimization objective)
      */
-    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction,boolean invert) {
+    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction,
+                    boolean invert) {
         this.items = items;
         this.distances = distances;
         this.invert = invert;
         this.similarityFunction = similarityFunction;
-        root = buildFromPoints(0,items.size());
+        root = buildFromPoints(0, items.size());
 
     }
 
-    public VPTree(List<DataPoint> items,String similarityFunction,boolean invert) {
+    public VPTree(List<DataPoint> items, String similarityFunction, boolean invert) {
         this.items = items;
         this.invert = invert;
         this.similarityFunction = similarityFunction;
@@ -95,41 +99,41 @@ public class VPTree {
                 return v1.distance(v2);
             }
         });
-        root = buildFromPoints(0,items.size());
+        root = buildFromPoints(0, items.size());
     }
 
 
-    public VPTree(INDArray items,String similarityFunction) {
-        this(items,similarityFunction,true);
+    public VPTree(INDArray items, String similarityFunction) {
+        this(items, similarityFunction, true);
     }
 
-    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances,String similarityFunction) {
-        this(items,distances,similarityFunction,true);
+    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction) {
+        this(items, distances, similarityFunction, true);
 
     }
 
-    public VPTree(List<DataPoint> items,String similarityFunction) {
-       this(items,similarityFunction,true);
+    public VPTree(List<DataPoint> items, String similarityFunction) {
+        this(items, similarityFunction, true);
     }
 
 
     public VPTree(INDArray items) {
-        this(items,"euclidean");
+        this(items, EUCLIDEAN);
     }
 
-    public VPTree(List<DataPoint> items,CounterMap<DataPoint,DataPoint> distances) {
-        this(items,distances,"euclidean");
+    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances) {
+        this(items, distances, EUCLIDEAN);
 
     }
 
     public VPTree(List<DataPoint> items) {
-        this(items,"euclidean");
+        this(items, EUCLIDEAN);
     }
 
     public static INDArray buildFromData(List<DataPoint> data) {
-        INDArray ret = Nd4j.create(data.size(),data.get(0).getD());
-        for(int i = 0; i < ret.slices(); i++)
-            ret.putSlice(i,data.get(i).getPoint());
+        INDArray ret = Nd4j.create(data.size(), data.get(0).getD());
+        for (int i = 0; i < ret.slices(); i++)
+            ret.putSlice(i, data.get(i).getPoint());
         return ret;
     }
 
@@ -142,22 +146,22 @@ public class VPTree {
         this.items = items;
     }
 
-    private double getDistance(DataPoint d1,DataPoint d2) {
-        double count =  distances.getCount(d1, d2);
-        if(count == 0) {
+    private double getDistance(DataPoint d1, DataPoint d2) {
+        double count = distances.getCount(d1, d2);
+        if (count == 0) {
             double realDistance = d1.distance(d2);
-            distances.setCount(d1,d2,realDistance);
-            distances.setCount(d2,d1,realDistance);
+            distances.setCount(d1, d2, realDistance);
+            distances.setCount(d2, d1, realDistance);
             return realDistance;
         }
         return count;
     }
 
-    private Node buildFromPoints(int lower,int upper) {
-        if(upper == lower)
+    private Node buildFromPoints(int lower, int upper) {
+        if (upper == lower)
             return null;
-        Node ret = new Node(lower,0);
-        if(upper - lower > 1) {
+        Node ret = new Node(lower, 0);
+        if (upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
             // Partition around the median distance
@@ -191,11 +195,10 @@ public class VPTree {
                 items.set(i + leftPoints.size(), rightPoints.get(i));
             }
 
-            ret.setThreshold(getDistance(items.get(lower),items.get(median)));
+            ret.setThreshold(getDistance(items.get(lower), items.get(median)));
             ret.setIndex(lower);
-            ret.setLeft(buildFromPoints(lower + 1,median));
-            ret.setRight(buildFromPoints(median,upper));
-
+            ret.setLeft(buildFromPoints(lower + 1, median));
+            ret.setRight(buildFromPoints(median, upper));
 
 
 
@@ -206,15 +209,15 @@ public class VPTree {
     }
 
 
-    public void search(DataPoint target,int k,List<DataPoint> results,List<Double> distances) {
+    public void search(DataPoint target, int k, List<DataPoint> results, List<Double> distances) {
         PriorityQueue<HeapItem> pq = new PriorityQueue<>();
         tau = Double.MAX_VALUE;
-        search(root,target,k,pq);
+        search(root, target, k, pq);
 
         results.clear();
         distances.clear();
 
-        while(!pq.isEmpty()) {
+        while (!pq.isEmpty()) {
             results.add(items.get(pq.peek().getIndex()));
             distances.add(pq.peek().getDistance());
             pq.next();
@@ -225,40 +228,39 @@ public class VPTree {
     }
 
 
-    public void search(Node node,DataPoint target,int k,PriorityQueue<HeapItem> pq) {
-        if(node == null)
+    public void search(Node node, DataPoint target, int k, PriorityQueue<HeapItem> pq) {
+        if (node == null)
             return;
         DataPoint get = items.get(node.getIndex());
         double distance = getDistance(get, target);
-        if(distance < tau) {
-            if(pq.size() == k)
+        if (distance < tau) {
+            if (pq.size() == k)
                 pq.next();
-            pq.add(new HeapItem(node.index,distance),distance);
-            if(pq.size() == k)
+            pq.add(new HeapItem(node.index, distance), distance);
+            if (pq.size() == k)
                 tau = pq.peek().getDistance();
 
 
         }
 
-        if(node.getLeft() == null && node.getRight() == null)
+        if (node.getLeft() == null && node.getRight() == null)
             return;
 
-        if(distance < node.getThreshold()) {
-            if(distance - tau <= node.getThreshold()) {         // if there can still be neighbors inside the ball, recursively search left child first
+        if (distance < node.getThreshold()) {
+            if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child first
                 search(node.getLeft(), target, k, pq);
             }
 
-            if(distance + tau >= node.getThreshold()) {         // if there can still be neighbors outside the ball, recursively search right child
+            if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child
                 search(node.getRight(), target, k, pq);
             }
 
-        }
-        else {
-            if(distance + tau >= node.getThreshold()) {         // if there can still be neighbors outside the ball, recursively search right child first
+        } else {
+            if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child first
                 search(node.getRight(), target, k, pq);
             }
 
-            if (distance - tau <= node.getThreshold()) {         // if there can still be neighbors inside the ball, recursively search left child
+            if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
                 search(node.getLeft(), target, k, pq);
             }
         }
@@ -276,7 +278,7 @@ public class VPTree {
     public static class Node {
         private int index;
         private double threshold;
-        private Node left,right;
+        private Node left, right;
 
         public Node(int index, double threshold) {
             this.index = index;
@@ -285,14 +287,19 @@ public class VPTree {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             Node node = (Node) o;
 
-            if (index != node.index) return false;
-            if (Double.compare(node.threshold, threshold) != 0) return false;
-            if (left != null ? !left.equals(node.left) : node.left != null) return false;
+            if (index != node.index)
+                return false;
+            if (Double.compare(node.threshold, threshold) != 0)
+                return false;
+            if (left != null ? !left.equals(node.left) : node.left != null)
+                return false;
             return !(right != null ? !right.equals(node.right) : node.right != null);
 
         }

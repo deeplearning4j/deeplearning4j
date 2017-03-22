@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,14 +20,21 @@ package org.deeplearning4j.spark.impl.common;
 
 import org.apache.spark.api.java.function.Function2;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Adds 2 ndarrays
  * @author Adam Gibson
  */
-public class Add implements Function2<INDArray,INDArray,INDArray> {
+public class Add implements Function2<INDArray, INDArray, INDArray> {
     @Override
     public INDArray call(INDArray v1, INDArray v2) throws Exception {
-        return v1.addi(v2);
+        INDArray res = v1.addi(v2);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        return res;
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -17,7 +17,7 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -48,7 +48,7 @@ public class ChartHistogram extends Chart {
     }
 
     //No arg constructor for Jackson
-    public ChartHistogram(){
+    public ChartHistogram() {
         super(COMPONENT_TYPE);
     }
 
@@ -82,22 +82,22 @@ public class ChartHistogram extends Chart {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ChartHistogram(lowerBounds=");
-        if(lowerBounds != null){
+        if (lowerBounds != null) {
             sb.append(lowerBounds);
         } else {
             sb.append("[]");
         }
         sb.append(",upperBounds=");
-        if(upperBounds!= null){
+        if (upperBounds != null) {
             sb.append(upperBounds);
         } else {
             sb.append("[]");
         }
         sb.append(",yValues=");
-        if(yValues != null){
+        if (yValues != null) {
             sb.append(yValues);
         } else {
             sb.append("[]");

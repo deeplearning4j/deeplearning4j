@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,19 +31,19 @@ import java.util.*;
  */
 @Deprecated
 public class Word2VecChange implements Serializable {
-    private Map<Integer,Set<INDArray>> changes = new HashMap<>();
+    private Map<Integer, Set<INDArray>> changes = new HashMap<>();
 
-    public Word2VecChange(List<Triple<Integer,Integer,Integer>> counterMap, Word2VecParam param) {
-        Iterator<Triple<Integer,Integer,Integer>> iter = counterMap.iterator();
+    public Word2VecChange(List<Triple<Integer, Integer, Integer>> counterMap, Word2VecParam param) {
+        Iterator<Triple<Integer, Integer, Integer>> iter = counterMap.iterator();
         while (iter.hasNext()) {
-            Triple<Integer,Integer,Integer> next = iter.next();
+            Triple<Integer, Integer, Integer> next = iter.next();
             Integer point = next.getFirst();
             Integer index = next.getSecond();
 
             Set<INDArray> changes = this.changes.get(point);
-            if(changes == null) {
+            if (changes == null) {
                 changes = new HashSet<>();
-                this.changes.put(point,changes);
+                this.changes.put(point, changes);
             }
 
             changes.add(param.getWeights().getSyn1().slice(index));
@@ -58,11 +58,10 @@ public class Word2VecChange implements Serializable {
      *              to apply the changes to
      */
     public void apply(InMemoryLookupTable table) {
-
-        for(Integer i : changes.keySet()) {
-            Set<INDArray> changes = this.changes.get(i);
-            INDArray toChange = table.getSyn0().slice(i);
-            for(INDArray syn1 : changes)
+        for (Map.Entry<Integer, Set<INDArray>> entry : changes.entrySet()) {
+            Set<INDArray> changes = entry.getValue();
+            INDArray toChange = table.getSyn0().slice(entry.getKey());
+            for (INDArray syn1 : changes)
                 Nd4j.getBlasWrapper().level1().axpy(toChange.length(), 1, syn1, toChange);
         }
     }

@@ -21,6 +21,7 @@ class StyleTable extends Style {
     private columnWidthUnit: string;
     private borderWidthPx: number;
     private headerColor: string;
+    private whitespaceMode: string;
 
     constructor( jsonObj: any ){
         super(jsonObj['StyleTable']);
@@ -31,6 +32,7 @@ class StyleTable extends Style {
             this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
             this.headerColor = jsonObj['StyleTable']['headerColor'];
             this.columnWidthUnit = jsonObj['StyleTable']['columnWidthUnit'];
+            this.whitespaceMode = jsonObj['StyleTable']['whitespaceMode'];
         }
     }
 
@@ -38,5 +40,5 @@ class StyleTable extends Style {
     getColumnWidthUnit = () => this.columnWidthUnit;
     getBorderWidthPx = () => this.borderWidthPx;
     getHeaderColor = () => this.headerColor;
-
+    getWhitespaceMode = () => this.whitespaceMode;
 }

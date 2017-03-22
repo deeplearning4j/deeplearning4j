@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -57,7 +57,8 @@ public class MnistLabelFile extends MnistDbFile {
     /** Read the specified number of labels from the current position*/
     public int[] readLabels(int num) throws IOException {
         int[] out = new int[num];
-        for( int i=0; i<num; i++ ) out[i] = readLabel();
+        for (int i = 0; i < num; i++)
+            out[i] = readLabel();
         return out;
     }
 
