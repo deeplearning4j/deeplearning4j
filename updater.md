@@ -71,7 +71,7 @@ AdaDelta also uses an exponentially decaying average of `g_t`, which was our sec
 
 ![Alt text](./img/updater_math8.png)
 
-* [AdaDeltaUpdater in Deepelearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaDeltaUpdater.html)
+* [AdaDeltaUpdater in Deeplearning4j](http://nd4j.org/doc/org/nd4j/linalg/learning/AdaDelta.html)
 
 ## ADAM
 
