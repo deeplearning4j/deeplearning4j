@@ -416,39 +416,22 @@
             </plugin>
 
             <plugin>
-              <groupId>org.commonjava.maven.plugins</groupId>
-              <artifactId>directory-maven-plugin</artifactId>
-              <version>0.1</version>
-              <executions>
-                <execution>
-                  <id>directories</id>
-                  <goals>
-                    <goal>highest-basedir</goal>
-                  </goals>
-                  <phase>validate</phase>
-                  <configuration>
-                    <property>datavecBasedir</property>
-                    <project>
-                      <groupId>org.datavec</groupId>
-                      <artifactId>datavec-parent</artifactId>
-                    </project>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
               <groupId>net.revelc.code.formatter</groupId>
               <artifactId>formatter-maven-plugin</artifactId>
               <version>2.0.0</version>
-              <!-- <executions> -->
-              <!--   <execution> -->
-              <!--     <goals> -->
-              <!--       <goal>validate</goal> -->
-              <!--     </goals> -->
-              <!--   </execution> -->
-              <!-- </executions> -->
               <configuration>
-                <configFile>${datavecBasedir}/contrib/formatter.xml</configFile>
+                <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
+                <directories>
+                  <directory>datavec-api</directory>
+                  <directory>datavec-data</directory>
+                  <directory>datavec-geo</directory>
+                  <directory>datavec-hadoop</directory>
+                  <directory>datavec-spark</directory>
+                  <directory>datavec-camel</directory>
+                  <directory>datavec-dataframe</directory>
+                  <directory>datavec-local</directory>
+                  <directory>datavec-spark-inference-server</directory>
+                </directories>
               </configuration>
             </plugin>
 
