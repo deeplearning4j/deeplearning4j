@@ -93,7 +93,7 @@ Pros and Cons
 
 * Google created TensorFlow to replace Theano. The two libraries are in fact quite similar. Some of the creators of Theano, such as Ian Goodfellow, went on to create Tensorflow at Google before leaving for OpenAI. 
 * For the moment, **TensorFlow** does not support so-called “inline” matrix operations, but forces you to copy a matrix in order to perform an operation on it. Copying very large matrices is costly in every sense. TF takes 4x as long as the state of the art deep learning tools. Google says it’s working on the problem. 
-* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run faster. It is not a solution for the Java and Scala communities. 
+* Like most deep-learning frameworks, TensorFlow is written with a Python API over a C/C++ engine that makes it run faster. Although there is experimental support for a Java API it is not currently considered stable, we do not consider this a solution for the Java and Scala communities. 
 * TensorFlow runs dramatically [slower than other frameworks](https://arxiv.org/pdf/1608.07249v7.pdf) such as CNTK and MxNet. 
 * TensorFlow is about more than deep learning. TensorFlow actually has tools to support reinforcement learning and other algos.
 * Google's acknowledged goal with Tensorflow seems to be recruiting, making their researchers' code shareable, standardizing how software engineers approach deep learning, and creating an additional draw to Google Cloud services, on which TensorFlow is optimized. 
