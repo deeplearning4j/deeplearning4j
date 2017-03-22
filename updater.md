@@ -79,4 +79,4 @@ ADAM uses both first-order moment mt and second-order moment `g_t`, but they bot
 
 ![Alt text](./img/updater_math9.png)
 
-* [AdamUpdater in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdamUpdater.html)
+* [AdamUpdater in Deeplearning4j](http://nd4j.org/doc/org/nd4j/linalg/learning/Adam.html)
