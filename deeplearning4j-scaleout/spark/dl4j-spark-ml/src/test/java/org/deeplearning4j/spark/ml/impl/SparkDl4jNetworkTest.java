@@ -52,15 +52,7 @@ public class SparkDl4jNetworkTest  {
         Pipeline p = new Pipeline().setStages(new PipelineStage[]{getAssembler(new String[]{"x", "y"}, "features")});
         DataFrame part2 = p.fit(df).transform(df).select("features", "label");
 
-        ParamSerializer ps = new ParamSerializer() {
-            public ParameterAveragingTrainingMaster apply() {
-                return new ParameterAveragingTrainingMaster.Builder(2)
-                        .averagingFrequency(2)
-                        .workerPrefetchNumBatches(2)
-                        .batchSizePerWorker(2)
-                        .build();
-            }
-        };
+        ParamSerializer ps = new ParamHelper();
         MultiLayerConfiguration mc = getNNConfiguration();
         Collection<IterationListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
@@ -103,5 +95,16 @@ public class SparkDl4jNetworkTest  {
         return new VectorAssembler()
                 .setInputCols(input)
                 .setOutputCol(output);
+    }
+
+    static public class ParamHelper implements ParamSerializer {
+
+        public ParameterAveragingTrainingMaster apply() {
+            return new ParameterAveragingTrainingMaster.Builder(2)
+                    .averagingFrequency(2)
+                    .workerPrefetchNumBatches(2)
+                    .batchSizePerWorker(2)
+                    .build();
+        }
     }
 }
