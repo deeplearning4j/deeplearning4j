@@ -29,6 +29,6 @@ interface ISparseMatrixFactory {
 
     void createLapack();
 
-    ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int nnz, int[] shape);
+    ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
 
 }
