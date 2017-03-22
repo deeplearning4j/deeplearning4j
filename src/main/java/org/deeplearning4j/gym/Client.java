@@ -80,9 +80,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
      * @return the StepReply containing the next observation, the reward, if it is a terminal state and optional information.
      */
     public StepReply<O> step(A action) {
-        JSONObject body = new JSONObject()
-                .put("action", getActionSpace().encode(action))
-                .put("render", render);
+        JSONObject body = new JSONObject().put("action", getActionSpace().encode(action)).put("render", render);
 
         JSONObject reply = ClientUtils.post(url + ENVS_ROOT + instanceId + STEP, body).getObject();
 
@@ -107,10 +105,10 @@ public class Client<O, A, AS extends ActionSpace<A>> {
     /*
     Present in the doc but not working currently server-side
     public void monitorStart(String directory) {
-
+    
         JSONObject json = new JSONObject()
                 .put("directory", directory);
-
+    
         monitorStartPost(json);
     }
     */
@@ -123,10 +121,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
      * @param resume    retain the training data already in this directory, which will be merged with our new data
      */
     public void monitorStart(String directory, boolean force, boolean resume) {
-        JSONObject json = new JSONObject()
-                .put("directory", directory)
-                .put("force", force)
-                .put("resume", resume);
+        JSONObject json = new JSONObject().put("directory", directory).put("force", force).put("resume", resume);
 
         monitorStartPost(json);
     }
@@ -150,10 +145,8 @@ public class Client<O, A, AS extends ActionSpace<A>> {
      * @param algorithmId an arbitrary string indicating the paricular version of the algorithm (including choices of parameters) you are running.
      **/
     public void upload(String trainingDir, String apiKey, String algorithmId) {
-        JSONObject json = new JSONObject()
-                .put("training_dir", trainingDir)
-                .put("api_key", apiKey)
-                .put("algorithm_id", algorithmId);
+        JSONObject json = new JSONObject().put("training_dir", trainingDir).put("api_key", apiKey).put("algorithm_id",
+                        algorithmId);
 
         uploadPost(json);
     }
@@ -165,9 +158,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
      * @param apiKey      personal OpenAI API key
      */
     public void upload(String trainingDir, String apiKey) {
-        JSONObject json = new JSONObject()
-                .put("training_dir", trainingDir)
-                .put("api_key", apiKey);
+        JSONObject json = new JSONObject().put("training_dir", trainingDir).put("api_key", apiKey);
 
         uploadPost(json);
     }

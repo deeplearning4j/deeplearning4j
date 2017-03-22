@@ -18,10 +18,7 @@ public class ClientUtils {
         HttpResponse<JsonNode> jsonResponse = null;
 
         try {
-            jsonResponse = Unirest.post(url)
-                    .header("content-type", "application/json")
-                    .body(json)
-                    .asJson();
+            jsonResponse = Unirest.post(url).header("content-type", "application/json").body(json).asJson();
         } catch (UnirestException e) {
             unirestCrash(e);
         }
@@ -34,9 +31,7 @@ public class ClientUtils {
         HttpResponse<JsonNode> jsonResponse = null;
 
         try {
-            jsonResponse = Unirest.get(url)
-                    .header("content-type", "application/json")
-                    .asJson();
+            jsonResponse = Unirest.get(url).header("content-type", "application/json").asJson();
         } catch (UnirestException e) {
             unirestCrash(e);
         }

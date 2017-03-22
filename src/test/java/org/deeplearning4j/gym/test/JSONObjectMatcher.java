@@ -24,8 +24,10 @@ public class JSONObjectMatcher extends ArgumentMatcher<JSONObject> {
 
     @Override
     public boolean matches(Object argument) {
-        if (expected == null) return argument == null;
-        if (!(argument instanceof JSONObject)) return false;
+        if (expected == null)
+            return argument == null;
+        if (!(argument instanceof JSONObject))
+            return false;
         JSONObject actual = (JSONObject) argument;
         return expected.toString().equals(actual.toString());
     }

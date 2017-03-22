@@ -20,12 +20,12 @@ public class HighLowDiscrete extends DiscreteSpace {
     }
 
     @Override
-    public Object encode(Integer a){
+    public Object encode(Integer a) {
         JSONArray jsonArray = new JSONArray();
         for (int i = 0; i < size; i++) {
             jsonArray.put(matrix.getDouble(i, 0));
         }
-        jsonArray.put(a-1, matrix.getDouble(a-1, 1));
+        jsonArray.put(a - 1, matrix.getDouble(a - 1, 1));
         return jsonArray;
     }
 
