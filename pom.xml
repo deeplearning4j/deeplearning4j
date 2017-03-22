@@ -293,7 +293,7 @@
         </profile>
     </profiles>
     <scm>
-        <connection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</connection>
+        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
         <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
         <tag>HEAD</tag>
@@ -512,39 +512,22 @@
             </plugin>
 
             <plugin>
-              <groupId>org.commonjava.maven.plugins</groupId>
-              <artifactId>directory-maven-plugin</artifactId>
-              <version>0.1</version>
-              <executions>
-                <execution>
-                  <id>directories</id>
-                  <goals>
-                    <goal>highest-basedir</goal>
-                  </goals>
-                  <phase>validate</phase>
-                  <configuration>
-                    <property>dl4jBasedir</property>
-                    <project>
-                      <groupId>org.deeplearning4j</groupId>
-                      <artifactId>deeplearning4j-parent</artifactId>
-                    </project>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
               <groupId>net.revelc.code.formatter</groupId>
               <artifactId>formatter-maven-plugin</artifactId>
               <version>2.0.0</version>
-              <executions>
-                <!-- <execution> -->
-                <!--   <goals> -->
-                <!--     <goal>validate</goal> -->
-                <!--   </goals> -->
-                <!-- </execution> -->
-              </executions>
               <configuration>
-                <configFile>${dl4jBasedir}/contrib/formatter.xml</configFile>
+                <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
+                <directories>
+                  <directory>deeplearning4j-core</directory>
+                  <directory>deeplearning4j-scaleout</directory>
+                  <directory>deeplearning4j-ui-parent</directory>
+                  <directory>deeplearning4j-graph</directory>
+                  <directory>deeplearning4j-cuda</directory>
+                  <directory>deeplearning4j-nlp-parent</directory>
+                  <directory>deeplearning4j-nn</directory>
+                  <directory>deeplearning4j-modelimport</directory>
+                  <directory>deeplearning4j-keras</directory>
+                </directories>
               </configuration>
             </plugin>
 
