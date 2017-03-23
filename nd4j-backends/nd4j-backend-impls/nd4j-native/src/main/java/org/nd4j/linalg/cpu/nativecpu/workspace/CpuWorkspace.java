@@ -31,6 +31,11 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
+    protected void clearExternalAllocations() {
+        // no-op since we use jcpp Pointer deallocation
+    }
+
+    @Override
     protected void resetWorkspace() {
         Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
     }

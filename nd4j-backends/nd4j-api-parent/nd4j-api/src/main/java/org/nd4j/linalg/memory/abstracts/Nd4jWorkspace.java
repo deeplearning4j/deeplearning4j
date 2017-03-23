@@ -142,7 +142,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 resetPlanned.set(true);
             }
 
-            log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+            //log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
@@ -223,9 +223,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
             deviceOffset.set(0);
-            externalAllocations.clear();
         }
     }
+
+    protected abstract void clearExternalAllocations();
 
     @Override
     public MemoryWorkspace notifyScopeEntered() {
@@ -236,7 +237,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
             deviceOffset.set(0);
-            externalAllocations.clear();
+
 
             if (currentSize.get() > 0)
                 resetWorkspace();
@@ -251,6 +252,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             log.info("Resetting workspace at the end of loop...");
         }
+
+        clearExternalAllocations();
+        externalAllocations.clear();
 
         cycleAllocations.set(0);
         disabledCounter.set(0);

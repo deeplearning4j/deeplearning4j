@@ -3,6 +3,8 @@ package org.nd4j.jita.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -92,12 +94,17 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
        //         log.info("Spilled DEVICE array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
+                AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
+
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
+                        //
+                        //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, true), numElements);
+                        //pointer.setLeaked(true);
 
-                        externalAllocations.add(new PointersPair(pointer, null));
+                        externalAllocations.add(new PointersPair(null, pointer));
 
                         return pointer;
                     case REALLOCATE: {
@@ -120,9 +127,15 @@ public class CudaWorkspace extends Nd4jWorkspace {
             } else {
            //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
+                AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
+
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case EXTERNAL:
+
+                        //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
+                        //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+                        //pointer.setLeaked(true);
 
                         externalAllocations.add(new PointersPair(pointer, null));
 
@@ -142,6 +155,16 @@ public class CudaWorkspace extends Nd4jWorkspace {
         //throw new ND4JIllegalStateException("Shouldn't ever reach this line");
     }
 
+    @Override
+    protected void clearExternalAllocations() {
+        for (PointersPair pair : externalAllocations) {
+            if (pair.getHostPointer() != null)
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+
+            if (pair.getDevicePointer() != null)
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+        }
+    }
 
     @Override
     protected void resetWorkspace() {

@@ -2,6 +2,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,11 +34,17 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
+    @Before
+    public void startUp() throws Exception {
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
+    }
+
     @After
     public void shutUp() throws Exception {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
+        Nd4j.getMemoryManager().togglePeriodicGc(true);
     }
 
     /**
@@ -50,15 +57,48 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
 
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
 
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
+
         AtomicLong counter = new AtomicLong(0);
         while (true) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace()){
+                long time1 = System.nanoTime();
                 INDArray array = Nd4j.create(1024 * 1024);
+                long time2 = System.nanoTime();
                 array.addi(1.0f);
                 assertEquals(1.0f, array.meanNumber().floatValue(), 0.1f);
 
                 if (counter.incrementAndGet() % 1000 == 0)
-                    log.info("{} iterations passed...", counter.get());
+                    log.info("{} iterations passed... Allocation time: {} ns", counter.get(), time2 - time1 );
+            }
+        }
+    }
+
+    /**
+     * This test checks for allocation from workspace AND spills
+     * @throws Exception
+     */
+    @Test
+    public void endlessTest2() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
+
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+        AtomicLong counter = new AtomicLong(0);
+        while (true) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace()){
+                long time1 = System.nanoTime();
+                INDArray array = Nd4j.create(2 * 1024 * 1024);
+                long time2 = System.nanoTime();
+                array.addi(1.0f);
+                assertEquals(1.0f, array.meanNumber().floatValue(), 0.1f);
+
+                long time3 = System.nanoTime();
+                INDArray array2 = Nd4j.create(2 * 1024 * 1024);
+                long time4 = System.nanoTime();
+
+                if (counter.incrementAndGet() % 1000 == 0)
+                    log.info("{} iterations passed... Allocation time: {} vs {} (ns)", counter.get(), time2 - time1, time4 - time3);
             }
         }
     }

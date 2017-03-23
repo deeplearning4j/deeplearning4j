@@ -95,6 +95,10 @@ public class AllocationPoint {
 
     private volatile ReentrantLock lock = new ReentrantLock();
 
+    public AllocationPoint() {
+        //
+    }
+
     public void acquireLock() {
         //lock.lock();
     }
