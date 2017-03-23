@@ -390,7 +390,7 @@ public class AtomicAllocator implements Allocator {
 
         if (buffer.isAttached()) {
             long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
-            log.info("Allocating {} bytes from attached memory...", reqMem);
+            //log.info("Allocating {} bytes from attached memory...", reqMem);
 
             CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 

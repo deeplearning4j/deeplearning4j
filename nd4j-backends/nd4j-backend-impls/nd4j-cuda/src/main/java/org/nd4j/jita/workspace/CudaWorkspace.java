@@ -40,7 +40,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         super.init();
 
         if (currentSize.get() > 0) {
-            log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
+            //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
             workspace.setHostPointer(new PagedPointer(nativeOps.mallocHost(currentSize.get() + 1024, 0)));
@@ -73,7 +73,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         }
 
 
-        log.info("Allocating {} memory from Workspace...", kind);
+//        log.info("Allocating {} memory from Workspace...", kind);
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
@@ -90,7 +90,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     resetPlanned.set(true);
                 }
 
-                log.info("Spilled DEVICE array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+       //         log.info("Spilled DEVICE array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case EXTERNAL:
@@ -118,7 +118,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 return workspace.getHostPointer().withOffset(prevOffset, numElements);
             } else {
-                log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+           //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case EXTERNAL:
@@ -155,7 +155,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-        log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
+        //log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + 1024, 0, context.getSpecialStream());
 
