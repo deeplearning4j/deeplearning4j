@@ -19,6 +19,7 @@ import java.util.Random;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.BaseImageTransform;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 
@@ -30,20 +31,23 @@ import static org.bytedeco.javacpp.opencv_core.*;
  */
 public class RandomCropTransform extends BaseImageTransform<Mat> {
 
-    int outputHeight, outputWidth;
+    protected int outputHeight, outputWidth;
+    protected org.nd4j.linalg.api.rng.Random rng;
 
     public RandomCropTransform(int height, int width) {
-        this(new Random(1234), height, width);
+        this(1234, height, width);
     }
 
     public RandomCropTransform(long seed, int height, int width) {
-        this(new Random(seed), height, width);
+        this(null, seed, height, width);
     }
 
-    public RandomCropTransform(Random random, int height, int width) {
+    public RandomCropTransform(Random random, long seed, int height, int width) {
         super(random);
         this.outputHeight = height;
         this.outputWidth = width;
+        this.rng = Nd4j.getRandom();
+        rng.setSeed(seed);
 
         converter = new OpenCVFrameConverter.ToMat();
     }
@@ -69,8 +73,8 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         int cropLeft = image.getFrame().imageWidth - outputWidth;
 
         Mat mat = converter.convert(image.getFrame());
-        int top = random.nextInt(cropTop + 1);
-        int left = random.nextInt(cropLeft + 1);
+        int top = rng.nextInt(cropTop + 1);
+        int left = rng.nextInt(cropLeft + 1);
 
         int y = Math.min(top, mat.rows() - 1);
         int x = Math.min(left, mat.cols() - 1);
