@@ -1,6 +1,7 @@
 package org.nd4j.linalg;
 
 import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
 import org.nd4j.linalg.api.ndarray.ISparseMatrix;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -49,11 +50,12 @@ public class SparseMatrixTest extends BaseNd4jTest{
         int[] expectedPointerE = {3, 5, 9, 12, 14};
         int[] expectedShape = {5, 5};
 
-        assert(expectedValues == values);
-        assert(expectedColumns == columns);
-        assert(expectedPointerB == pointerB);
-        assert(expectedPointerE == pointerE);
-        assert(expectedShape == shape);
+
+        assertArrayEquals(expectedValues, values, 0);
+        assertArrayEquals(expectedColumns, columns);
+        assertArrayEquals(expectedPointerB, pointerB);
+        assertArrayEquals(expectedPointerE,  pointerE);
+        assertArrayEquals(expectedShape,  shape);
     }
 
     @Test
@@ -74,12 +76,11 @@ public class SparseMatrixTest extends BaseNd4jTest{
         int[] expectedPointerE = {3, 5, 8, 11, 13};
         int[] expectedShape = {5, 5};
 
-        assert(expectedValues == values);
-        assert(expectedColumns == columns);
-        assert(expectedPointerB == pointerB);
-        assert(expectedPointerE == pointerE);
-        assert(expectedShape == shape);
-    }
+        assertArrayEquals(expectedValues, values, 0);
+        assertArrayEquals(expectedColumns, columns);
+        assertArrayEquals(expectedPointerB, pointerB);
+        assertArrayEquals(expectedPointerE,  pointerE);
+        assertArrayEquals(expectedShape,  shape);    }
 
     @Test
     public void shouldGetValueAtAGivenPosition(){
