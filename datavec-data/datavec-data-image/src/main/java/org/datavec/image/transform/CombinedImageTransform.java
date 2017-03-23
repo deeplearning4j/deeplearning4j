@@ -15,27 +15,8 @@
  */
 package org.datavec.image.transform;
 
-import javafx.util.Pair;
 import org.bytedeco.javacpp.opencv_core;
-import org.datavec.image.data.ImageWritable;
-import org.datavec.image.transform.BaseImageTransform;
-import org.datavec.image.transform.ImageTransform;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-
-/**
- * Allows creation of image transform pipelines, either sequentially or randomly.
- *
- * Pipelines are defined as a list of tuples, where each transform is assigned
- * a probability between 0.0-1.0 of being invoked. Pipeline can also be randomly
- * shuffled with each transform, further increasing the available dataset.
- *
- * @author Justin Long (@crockpotveggies)
- */
-import javafx.util.Pair;
-import org.bytedeco.javacpp.opencv_core;
+import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.BaseImageTransform;
 import org.datavec.image.transform.ImageTransform;
@@ -98,8 +79,8 @@ public class CombinedImageTransform extends BaseImageTransform<opencv_core.Mat> 
         // execute each item in the pipeline
         ImageWritable output = image;
         for(Pair<ImageTransform, Double> tuple : transforms) {
-            if(rng.nextDouble() < tuple.getValue()) { // probability of execution
-                output = tuple.getKey().transform(image);
+            if(rng.nextDouble() < tuple.getSecond()) { // probability of execution
+                output = tuple.getFirst().transform(image);
             }
         }
 
