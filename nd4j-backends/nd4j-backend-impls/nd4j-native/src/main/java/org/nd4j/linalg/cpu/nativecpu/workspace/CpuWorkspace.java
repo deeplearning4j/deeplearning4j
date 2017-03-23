@@ -5,7 +5,10 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * @author raver119@gmail.com
@@ -32,7 +35,10 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
-        // no-op since we use jcpp Pointer deallocation
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        for (PointersPair pair: externalAllocations) {
+            nativeOps.freeHost(pair.getHostPointer());
+        }
     }
 
     @Override

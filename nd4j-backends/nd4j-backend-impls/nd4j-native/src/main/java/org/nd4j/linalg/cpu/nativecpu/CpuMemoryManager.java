@@ -6,6 +6,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * @author raver119@gmail.com
@@ -21,10 +22,10 @@ public class CpuMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        Pointer ptr = new BytePointer(bytes);
+        Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 
         if (initialize)
-            ptr.fill(0);
+            Pointer.memset(ptr, 0, bytes);
 
         return ptr;
     }
