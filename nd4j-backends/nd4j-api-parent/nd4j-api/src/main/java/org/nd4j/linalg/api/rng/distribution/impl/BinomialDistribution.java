@@ -253,12 +253,12 @@ public class BinomialDistribution extends BaseDistribution {
         if (random.getStatePointer() != null) {
             if (p != null) {
                 return Nd4j.getExecutioner()
-                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(
+                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistributionEx(
                                                 Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, p),
                                                 random);
             } else {
                 return Nd4j.getExecutioner()
-                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(
+                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistributionEx(
                                                 Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials,
                                                 probabilityOfSuccess), random);
             }

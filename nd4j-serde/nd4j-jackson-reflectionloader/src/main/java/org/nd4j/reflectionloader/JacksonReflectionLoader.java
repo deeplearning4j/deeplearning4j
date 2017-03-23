@@ -24,7 +24,7 @@ public class JacksonReflectionLoader {
      * @return
      */
     public static ObjectMapper findTypesFor(List<Class<?>> types) {
-        return findTypesFor(types,true);
+        return findTypesFor(types, true);
     }
 
 
@@ -35,19 +35,20 @@ public class JacksonReflectionLoader {
      * @return a map containing a list of interface names to
      * implementation types
      */
-    public static Map<String,String> getImpls(List<Class<?>> types) {
-        Map<String,String> classes = new HashMap<>();
-        for(Class<?> type : types) {
+    public static Map<String, String> getImpls(List<Class<?>> types) {
+        Map<String, String> classes = new HashMap<>();
+        for (Class<?> type : types) {
             Reflections reflections = new Reflections();
             Set<Class<?>> subClasses = (Set<Class<?>>) reflections.getSubTypesOf(type);
-            if(subClasses.size() > 1) {
-                throw new IllegalArgumentException(String.format("Class " + type + " type can't be inferred. There is more than %d of sub class for the given class",subClasses.size()));
-            }
-            else if(subClasses.isEmpty())
+            if (subClasses.size() > 1) {
+                throw new IllegalArgumentException(String.format(
+                                "Class " + type + " type can't be inferred. There is more than %d of sub class for the given class",
+                                subClasses.size()));
+            } else if (subClasses.isEmpty())
                 throw new IllegalArgumentException("No class implementation found for " + type.getCanonicalName());
 
 
-            classes.put(type.getCanonicalName(),subClasses.iterator().next().getCanonicalName());
+            classes.put(type.getCanonicalName(), subClasses.iterator().next().getCanonicalName());
         }
 
         return classes;
@@ -59,8 +60,8 @@ public class JacksonReflectionLoader {
      * @param json
      * @return
      */
-    public static ObjectMapper findTypesFor(List<Class<?>> types,boolean json) {
-        return withTypes(json ? new ObjectMapper() : new ObjectMapper(new YAMLFactory()),getImpls(types));
+    public static ObjectMapper findTypesFor(List<Class<?>> types, boolean json) {
+        return withTypes(json ? new ObjectMapper() : new ObjectMapper(new YAMLFactory()), getImpls(types));
 
     }
 
@@ -70,20 +71,22 @@ public class JacksonReflectionLoader {
      * @param typeImpls
      * @return
      */
-    public static ObjectMapper withTypes(ObjectMapper objectMapper,Map<String,String> typeImpls) {
+    public static ObjectMapper withTypes(ObjectMapper objectMapper, Map<String, String> typeImpls) {
         SimpleAbstractTypeResolver abstractTypeResolver = new SimpleAbstractTypeResolver();
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.setAbstractTypes(abstractTypeResolver);
 
-        for(Map.Entry<String,String> types : typeImpls.entrySet()) {
+        for (Map.Entry<String, String> types : typeImpls.entrySet()) {
             try {
                 Class interfaceClazz = Class.forName(types.getKey());
-                if(!interfaceClazz.isInterface())
-                    throw new IllegalArgumentException("Class key must be an interface. Found " + interfaceClazz.getSimpleName());
+                if (!interfaceClazz.isInterface())
+                    throw new IllegalArgumentException(
+                                    "Class key must be an interface. Found " + interfaceClazz.getSimpleName());
                 Class implClazz = Class.forName(types.getValue());
-                if(Modifier.isAbstract(implClazz.getModifiers()) || implClazz.isInterface())
-                    throw new IllegalArgumentException("Class value must be a concrete  implementation. Found " + implClazz.getSimpleName());
-                abstractTypeResolver.addMapping(interfaceClazz,implClazz);
+                if (Modifier.isAbstract(implClazz.getModifiers()) || implClazz.isInterface())
+                    throw new IllegalArgumentException("Class value must be a concrete  implementation. Found "
+                                    + implClazz.getSimpleName());
+                abstractTypeResolver.addMapping(interfaceClazz, implClazz);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -103,8 +106,8 @@ public class JacksonReflectionLoader {
      * @return
      * @throws IOException
      */
-    public static <T> T instantiateType(Class<T> clazz,String json,ObjectMapper objectMapper) throws IOException {
-        return objectMapper.readValue(json,clazz);
+    public static <T> T instantiateType(Class<T> clazz, String json, ObjectMapper objectMapper) throws IOException {
+        return objectMapper.readValue(json, clazz);
     }
 
 }

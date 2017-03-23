@@ -3353,7 +3353,7 @@ public class Nd4j {
                 throw new ND4JIllegalStateException("Shape of the new array doesn't match data length");
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
@@ -3408,7 +3408,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
@@ -3528,7 +3528,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
@@ -3649,7 +3649,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
         logCreationIfNecessary(ret);
@@ -3677,7 +3677,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
@@ -3706,7 +3706,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
@@ -3935,7 +3935,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -3964,7 +3964,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
@@ -4223,7 +4223,7 @@ public class Nd4j {
             shape = new int[] {1, 1};
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4291,7 +4291,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4319,7 +4319,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -4347,7 +4347,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -4477,7 +4477,7 @@ public class Nd4j {
             shape = new int[] {1, 1};
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4527,7 +4527,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4928,7 +4928,7 @@ public class Nd4j {
                                 + " doesn't match data length: " + data.length);
         }
 
-        checkShapeValues(shape);
+        checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, offset);
         logCreationIfNecessary(ret);
