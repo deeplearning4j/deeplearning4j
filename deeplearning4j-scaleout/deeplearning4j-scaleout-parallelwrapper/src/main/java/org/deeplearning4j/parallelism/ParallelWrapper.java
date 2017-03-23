@@ -720,22 +720,16 @@ public class ParallelWrapper implements AutoCloseable {
 
                         ((MultiLayerNetwork) replicatedModel).init();
                         Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
                         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                        for (IterationListener listener : oldListeners) {
-                            if (listener instanceof RoutingIterationListener) {
-                                RoutingIterationListener routingListener =
-                                                ((RoutingIterationListener) listener).clone();
-                                routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
-                                routingListener.setWorkerID(uuid);
-                                routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                                replicatedListeners.add(routingListener);
-                            } else {
-                                replicatedListeners.add(listener);
-                            }
+                        if(ParallelWrapper.this.listeners != null){
+                            oldListeners.addAll(ParallelWrapper.this.listeners);
                         }
 
-                        ((MultiLayerNetwork) this.replicatedModel).setListeners(replicatedListeners);
+                        configureListeners(uuid, oldListeners, replicatedListeners);
+
+                        this.replicatedModel.setListeners(replicatedListeners);
                     }
                 } else if (originalModel instanceof ComputationGraph) {
                     if (!onRootModel) {
@@ -744,23 +738,16 @@ public class ParallelWrapper implements AutoCloseable {
 
                         ((ComputationGraph) this.replicatedModel).init();
                         Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
                         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
-                        for (IterationListener listener : oldListeners) {
-                            if (listener instanceof RoutingIterationListener) {
-                                RoutingIterationListener routingIterationListener =
-                                                ((RoutingIterationListener) listener).clone();
-                                routingIterationListener
-                                                .setSessionID(((RoutingIterationListener) listener).getSessionID());
-                                routingIterationListener.setWorkerID(uuid);
-                                routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
-                                replicatedListeners.add(routingIterationListener);
-                            } else {
-                                replicatedListeners.add(listener);
-                            }
+                        if(ParallelWrapper.this.listeners != null){
+                            oldListeners.addAll(ParallelWrapper.this.listeners);
                         }
 
-                        ((ComputationGraph) this.replicatedModel).setListeners(replicatedListeners);
+                        configureListeners(uuid, oldListeners, replicatedListeners);
+
+                        this.replicatedModel.setListeners(replicatedListeners);
                     }
                 }
 
@@ -815,6 +802,30 @@ public class ParallelWrapper implements AutoCloseable {
 
                 LockSupport.parkNanos(50000L);
             }
+        }
+    }
+
+    private static IterationListener cloneListener(IterationListener original){
+        if(original instanceof RoutingIterationListener){
+            return ((RoutingIterationListener) original).clone();
+        }
+        return original;
+    }
+
+    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
+                                    Collection<IterationListener> replicatedListeners){
+        for (IterationListener listener : oldListeners) {
+            IterationListener l = cloneListener(listener);
+
+            if (l instanceof RoutingIterationListener) {
+                RoutingIterationListener rl = (RoutingIterationListener)l;
+                //We're assuming session ID is set by the original RoutingIterationListener constructor, which means
+                // it will be synced across all cloned instances
+                rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                rl.setWorkerID(workerUUID);
+                rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+            }
+            replicatedListeners.add(l);
         }
     }
 }
