@@ -1,72 +1,44 @@
 ---
-title: Maven Configuration for IntelliJ
+title: IntelliJ中的Maven配置
 layout: cn-default
 ---
-# Rough Draft
+# 使用DeepLearning4J所需的Maven配置
 
-Questions. 
+本页将介绍在使用DeepLearning4J之前如何设置Maven以及pom.xml文件。 
 
-Is this what we advise for folks setting up IntelliJ? 
+Maven依赖一个名为pom.xml的配置文件。
 
-Is this page complete ? 
-
-Is this page bloated? 
-* maven-shade ??
-* Maven-exec ??
-* freechart ??
-* logback ??
-* guava ??
-* shaded classifier ??
+本页将协助您配置该文件中的依赖项。 
 
 
+## 从示例开始
 
+开发Deeplearning4J的同时，我们也在主动维护一系列实用Java示例。我们建议大家一开始先按照[快速入门指南](http://deeplearning4j.org/cn/quickstart)来下载示例，再将其作为一个IntelliJ项目安装。下载示例并验证工作环境之后，您可以从头开始新建一个项目，本页将详细介绍在使用Deeplearning4J之前如何对IntelliJ进行设置。 
 
-# Maven Configuration for DeepLearning4J
+## Maven中央仓库
 
-This page describes how to set up maven, and your pom.xml file for use of DeepLearning4J. 
-
-Maven relies on a configuration file pom.xml
-
-This page will assist you in configuring the dependencies in that file. 
-
-
-## Start with the Examples
-
-As Deeplearning4J is developed we actively maintain a collection of working Java Examples. We suggest that anyone getting started 
-begin by following the instructions to download and install the examples as a project in intellij [here](http://deeplearning4j.org/quickstart). 
-Once you have downloaded the examples and verified a working environment you may want to set up a project from scratch, this page 
-will walk you through setting up intellij for use with deeplearning4j. 
-
-## Maven Central
-
-You can go to Maven Central to view the available releases. Search examples for each 
+您可以前往Maven中央仓库查看可用版本。请用以下方式搜索每个示例 
 
 - https://mvnrepository.com/search?q=deeplearning4j-nlp
-- etc, etc, 
+- 以此类推 
 
-## Key Dependencies
-- Dl4j tools to configure train and implement Neural Networks
-- ND4J our library for manipulation of numerical arrays
-- DataVec our library for data ingestion
+## 关键依赖项
+- DL4J工具：用于配置、定型、实现各类神经网络
+- ND4J库：用于操作数值数列
+- DataVec库：用于数据摄取
 
-## GPU CPU considerations
+## GPU和CPU相关的考量
 
-Matrix calculations are resource intensive. GPU's will handle the processing much more efficiently.
-ND4J is configurable and will allow your Neural Net to make efficient use of either GPU or CPU by configuring
-<nd4j.backend>nd4j-native-platform</nd4j.backend> 
+矩阵计算需要消耗大量资源。GPU的矩阵处理效率要高得多。您可以配置ND4J，让神经网络高效利用GPU或CPU运行，方法是配置<nd4j.backend>nd4j-native-platform</nd4j.backend> 
 
 
-## Configuring your pom.xml
+## 配置pom.xml
 
-### First set some properties. 
+### 首先设定一些属性。 
 
-Maven properties are value placeholder, like properties in Ant. 
-Their values are accessible anywhere within a POM by using the notation ${X}, where X is the property.
+Maven属性是值的占位符，就像Ant中的属性一样。在POM文件内部任何位置均可以用${X}的形式引用属性值（X为属性名称）。
 
-Using a list of properties and referring to them later allow easy reading of the pom.xml because 
-all the settings are in one location one after another
-
-
+先列出所有属性，后面再分别引用，这样可以让pom.xml更加易读，因为所有的设置都集中到一处，一个接一个排列
 
 ``` xml
 <properties>
@@ -86,9 +58,10 @@ all the settings are in one location one after another
       <maven.minimum.version>3.3.1</maven.minimum.version>
     </properties>
 ```
-### Dependency Management
 
-This is useful if you have child poms. *note* Clarify this before publishing
+### 依赖项管理
+
+适用于有子pom文件的情况。
 
 ``` xml
 <dependencyManagement>
@@ -108,13 +81,13 @@ This is useful if you have child poms. *note* Clarify this before publishing
 
 
 ```
-### ND4J backend
 
-This is where you configure the use of either GPU or CPU. Note that all the dependency 
-tags will be nested in a single dependencies tag, full example at the end.
+### ND4J后端
+
+此处的配置决定系统使用GPU还是CPU。请注意，所有的dependency标签都要嵌套在一对dependencies标签内，完整的示例参见本页结尾处。
 
 ``` xml
-<!-- ND4J backend. You need one in every DL4J project. Normally define artifactId as either "nd4j-native-platform" or "nd4j-cuda-7.5-platform" -->
+<!-- ND4J后端。每个DL4J项目都需要一个。一般将artifactId指定为"nd4j-native-platform"或者"nd4j-cuda-7.5-platform" -->
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>${nd4j.backend}</artifactId>
@@ -123,10 +96,10 @@ tags will be nested in a single dependencies tag, full example at the end.
 
 ### DL4J
 
-Deeplearning4J core provides the tools to build Multi Layer Neural Nets. Of course you will need that. 
+Deeplearning4J核心组件包含构建多层神经网络的工具。这当然少不了。 
 
 ``` xml
- <!-- Core DL4J functionality -->
+ <!-- DL4J核心功能 -->
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
@@ -137,7 +110,7 @@ Deeplearning4J core provides the tools to build Multi Layer Neural Nets. Of cour
 
 ### DL4Jnlp 
 
-Natural Language Processing tools are included with this dependency
+自然语言处理工具包含在该依赖向内
 
 ``` xml
 
@@ -148,13 +121,13 @@ Natural Language Processing tools are included with this dependency
     </dependency>
 
 ```
-### Visualization
 
-Our User Interface, and HistogramIterationListener that provides visualization as training progresses
-may need pinned to a specific version of the guava libraries.
+### 可视化
+
+在定型过程中实现可视化的用户界面以及HistogramIterationListener（柱状图迭代侦听器）可能需要与某一特定版本的guava库绑定。
 
 ``` xml
-<!-- Force guava versions for using UI/HistogramIterationListener -->
+<!-- 强制指定使用UI/HistogramIterationListener时的guava版本 -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -162,12 +135,12 @@ may need pinned to a specific version of the guava libraries.
     </dependency>
 ```
 
-### Video Processing
+### 视频处理
 
-The examples include a video processing demonstration. This dependency provides the needed video codec.
+相关示例包括视频处理演示。该依赖项提供所需的视频编解码器。
 
 ``` xml
-    <!-- datavec-data-codec: used only in video example for loading video data -->
+    <!-- datavec-data-codec：仅用于在视频处理示例中加载视频数据 -->
     <dependency>
       <artifactId>datavec-data-codec</artifactId>
       <groupId>org.datavec</groupId>
@@ -175,13 +148,13 @@ The examples include a video processing demonstration. This dependency provides 
     </dependency>
 ```
 
-### Generating Charts
+### 生成图表
 
-A couple of our examples generate charts using the jfreechart libraries. 
+有些示例使用jfreechart库来生成图表。 
 
 ``` xml
 
-<!-- Used in the feedforward/classification/MLP* and feedforward/regression/RegressionMathFunctions example -->
+<!-- 用于前馈/分类/MLP*和前馈/回归/RegressionMathFunctions示例 -->
     <dependency>
       <groupId>jfree</groupId>
       <artifactId>jfreechart</artifactId>
@@ -190,12 +163,12 @@ A couple of our examples generate charts using the jfreechart libraries.
     
 ```
 
-### Arbiter
+## Arbiter
 
-Hyperparameter optimization. 
+超参数优化。 
 
 ``` xml
-   <!-- Arbiter: used for hyperparameter optimization examples -->
+   <!-- Arbiter：用于超参数优化示例 -->
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>arbiter-deeplearning4j</artifactId>
@@ -203,7 +176,7 @@ Hyperparameter optimization.
     </dependency>
 ```    
 
-### A complete pom.xml
+### 完整的pom.xml示例
 
 ``` xml
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -259,13 +232,13 @@ Hyperparameter optimization.
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
-    <!-- ND4J backend. You need one in every DL4J project. Normally define artifactId as either "nd4j-native-platform" or "nd4j-cuda-7.5-platform" -->
+    <!-- ND4J后端。每个DL4J项目都需要一个。一般将artifactId指定为"nd4j-native-platform"或者"nd4j-cuda-7.5-platform" -->
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>${nd4j.backend}</artifactId>
     </dependency>
 
-    <!-- Core DL4J functionality -->
+    <!-- DL4J核心功能 -->
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
@@ -278,35 +251,35 @@ Hyperparameter optimization.
       <version>${dl4j.version}</version>
     </dependency>
 
-    <!-- deeplearning4j-ui is used for HistogramIterationListener + visualization: see http://deeplearning4j.org/visualization -->
+    <!-- deeplearning4j-ui用于HistogramIterationListener + 可视化：参见http://deeplearning4j.org/cn/visualization -->
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-ui</artifactId>
       <version>${dl4j.version}</version>
     </dependency>
 
-    <!-- Force guava versions for using UI/HistogramIterationListener -->
+    <!-- 强制指定使用UI/HistogramIterationListener时的guava版本 -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
     </dependency>
 
-    <!-- datavec-data-codec: used only in video example for loading video data -->
+    <!-- datavec-data-codec：仅用于在视频处理示例中加载视频数据 -->
     <dependency>
       <artifactId>datavec-data-codec</artifactId>
       <groupId>org.datavec</groupId>
       <version>${datavec.version}</version>
     </dependency>
 
-    <!-- Used in the feedforward/classification/MLP* and feedforward/regression/RegressionMathFunctions example -->
+    <!-- 用于前馈/分类/MLP*和前馈/回归/RegressionMathFunctions示例 -->
     <dependency>
       <groupId>jfree</groupId>
       <artifactId>jfreechart</artifactId>
       <version>${jfreechart.version}</version>
     </dependency>
 
-    <!-- Arbiter: used for hyperparameter optimization examples -->
+    <!-- Arbiter：用于超参数优化示例 -->
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>arbiter-deeplearning4j</artifactId>
@@ -317,19 +290,17 @@ Hyperparameter optimization.
 
 ```
 
-## logback configuration
+## logback配置
 
-Deeplearning4j does not use the log4j logging mechanism. 
-It uses a system called logback, which gives very similar-looking output. Logback is controlled by a file 
-called logback.xml 
+Deeplearning4j不使用log4j日志机制，而是使用一种称为logback的系统，输出结果非常相似。logback通过一个名为logback.xml的文件控制 
 
-If there is no configuration file logback.xml in the classpath then you will receive a large number of warnings.
+如果类路径中没有logback.xml这一配置文件，就会出现大量警告消息。
 
-The examples repository includes a logback.xml file in the directory (src/main/resources/logback.xml). 
+我们的示例库目录（src/main/resources/logback.xml）中包含了一个logback.xml文件。 
 
-Copy that file to your resources directory or create/modify to suit your needs. 
+您可以将该文件复制到资源目录中，您也可以按自己的需求来创建或修改文件。 
 
-Here is an example logback.xml
+以下是logback.xml文件示例：
 
 ``` xml
 <configuration>
@@ -372,4 +343,3 @@ Here is an example logback.xml
 
 
 ```
-
