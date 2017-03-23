@@ -124,7 +124,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
-            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+
+            externalAllocations.add(new PointersPair(pointer, null));
+
             return pointer;
         }
 
@@ -147,10 +150,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
                     cycleAllocations.addAndGet(requiredMemory);
-                    PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
-
-                    if (initialize)
-                        Pointer.memset(pointer, 0, requiredMemory);
+                    PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
                     externalAllocations.add(new PointersPair(pointer, null));
 
