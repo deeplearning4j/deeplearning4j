@@ -1,0 +1,83 @@
+/*-
+ *  * Copyright 2016 Skymind, Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ */
+package org.datavec.image.transform;
+
+import java.util.Random;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.image.data.ImageWritable;
+import org.datavec.image.transform.BaseImageTransform;
+
+import static org.bytedeco.javacpp.opencv_core.*;
+
+/**
+ * Randomly crops an image to a desired output size. Will determine if
+ * output size is valid, otherwise will throw an error.
+ *
+ * @author Justin Long (@crockpotveggies)
+ */
+public class RandomCropTransform extends BaseImageTransform<Mat> {
+
+    int outputHeight, outputWidth;
+
+    public RandomCropTransform(int height, int width) {
+        this(new Random(1234), height, width);
+    }
+
+    public RandomCropTransform(long seed, int height, int width) {
+        this(new Random(seed), height, width);
+    }
+
+    public RandomCropTransform(Random random, int height, int width) {
+        super(random);
+        this.outputHeight = height;
+        this.outputWidth = width;
+
+        converter = new OpenCVFrameConverter.ToMat();
+    }
+
+    /**
+     * Takes an image and returns a randomly cropped image.
+     *
+     * @param image  to transform, null == end of stream
+     * @param random object to use (or null for deterministic)
+     * @return transformed image
+     */
+    @Override
+    public ImageWritable transform(ImageWritable image, Random random) {
+        if (image == null) {
+            return null;
+        }
+        // ensure that transform is valid
+        if(image.getFrame().imageHeight < outputHeight || image.getFrame().imageWidth < outputWidth)
+            throw new UnsupportedOperationException("Output height/width cannot be more than the input image. Requested: "+outputHeight+"+x"+outputWidth+", got "+image.getFrame().imageHeight+"+x"+image.getFrame().imageWidth);
+
+        // determine boundary to place random offset
+        int cropTop = image.getFrame().imageHeight - outputHeight;
+        int cropLeft = image.getFrame().imageWidth - outputWidth;
+
+        Mat mat = converter.convert(image.getFrame());
+        int top = random.nextInt(cropTop + 1);
+        int left = random.nextInt(cropLeft + 1);
+
+        int y = Math.min(top, mat.rows() - 1);
+        int x = Math.min(left, mat.cols() - 1);
+        Mat result = mat.apply(new Rect(x, y, outputWidth, outputHeight));
+
+
+        return new ImageWritable(converter.convert(result));
+    }
+
+}
