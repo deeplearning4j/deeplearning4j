@@ -396,8 +396,8 @@ public class AtomicAllocator implements Allocator {
 
             PointersPair pair = new PointersPair();
 
-            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType());
-            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType());
+            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
+            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
             pair.setDevicePointer(ptrDev);
             pair.setHostPointer(ptrHost);

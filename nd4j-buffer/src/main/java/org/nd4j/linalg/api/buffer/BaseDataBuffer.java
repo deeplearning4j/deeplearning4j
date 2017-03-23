@@ -197,7 +197,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
-        pointer = workspace.alloc(data.length * getElementSize(), dataType()).asFloatPointer().put(data);
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
         indexer = FloatIndexer.create((FloatPointer) pointer);
         //wrappedBuffer = pointer.asByteBuffer();
     }
@@ -497,7 +497,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType()).asDoublePointer(); //new DoublePointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asDoublePointer(); //new DoublePointer(length());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
             if (initialize)
                 fillPointerWithZero();
@@ -505,11 +505,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType()).asFloatPointer(); //new FloatPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
 
-            if (initialize)
-                fillPointerWithZero();
+//            if (initialize)
+//                fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length());

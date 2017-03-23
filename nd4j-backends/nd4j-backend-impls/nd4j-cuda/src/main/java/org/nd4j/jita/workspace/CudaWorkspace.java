@@ -51,12 +51,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type) {
-        return this.alloc(requiredMemory, MemoryKind.DEVICE, type);
+    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+        return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
     @Override
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         if (!isUsed.get()) {
@@ -64,10 +64,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
             if (kind == MemoryKind.DEVICE) {
-                PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, true), numElements);
+                PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
+                externalAllocations.add(new PointersPair(null, pointer));
                 return pointer;
             } else {
-                PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+                PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                externalAllocations.add(new PointersPair(pointer, null));
                 return pointer;
             }
 
@@ -101,7 +103,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         cycleAllocations.addAndGet(requiredMemory);
                         //
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, true), numElements);
+                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                         //pointer.setLeaked(true);
 
                         externalAllocations.add(new PointersPair(null, pointer));
@@ -134,7 +136,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                         //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
                         //pointer.setLeaked(true);
 
                         externalAllocations.add(new PointersPair(pointer, null));

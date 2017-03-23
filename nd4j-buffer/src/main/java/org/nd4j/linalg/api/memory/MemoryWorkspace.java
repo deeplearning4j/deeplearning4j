@@ -33,7 +33,7 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @param dataType dataType that is going to be used
      * @return
      */
-    PagedPointer alloc(long requiredMemory, DataBuffer.Type dataType);
+    PagedPointer alloc(long requiredMemory, DataBuffer.Type dataType, boolean initialize);
 
     /**
      * This method does allocation from a given Workspace
@@ -43,7 +43,7 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @param dataType dataType that is going to be used
      * @return
      */
-    PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType);
+    PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType, boolean initialize);
 
     /**
      * This method notifies given Workspace that new use cycle is starting now

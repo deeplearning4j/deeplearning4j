@@ -107,11 +107,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
     }
 
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type) {
-        return alloc(requiredMemory, MemoryKind.HOST, type);
+    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+        return alloc(requiredMemory, MemoryKind.HOST, type, initialize);
     }
 
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
         /*
             just two options here:
             1) reqMem + hostOffset < totalSize, we just return pointer + offset
@@ -148,6 +148,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 case EXTERNAL:
                     cycleAllocations.addAndGet(requiredMemory);
                     PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, true), numElements);
+
+                    if (initialize)
+                        Pointer.memset(pointer, 0, requiredMemory);
 
                     externalAllocations.add(new PointersPair(pointer, null));
 
