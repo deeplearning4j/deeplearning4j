@@ -20,6 +20,7 @@ package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
@@ -49,6 +50,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
     protected RecordReader recordReader;
     protected WritableConverter converter;
@@ -174,11 +176,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     sequenceIter = sequenceRecord.iterator();
                 }
 
-                List<Writable> record = sequenceIter.next();
-                DataSet d = getDataSet(record);
-                //account for transform process
-                if(d != null)
-                    dataSets.add(d);
+                try {
+                    List<Writable> record = sequenceIter.next();
+                    DataSet d = getDataSet(record);
+                    //account for transform process
+                    if (d != null)
+                        dataSets.add(d);
+                }catch(Exception e) {
+                    log.warn("Unable to get dataset ...skipping",e);
+                }
             } else {
                 if (collectMetaData) {
                     Record record = recordReader.nextRecord();
@@ -188,17 +194,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                         meta.add(record.getMetaData());
                     }
                 } else {
-                    List<Writable> record = recordReader.next();
-                    DataSet d = getDataSet(record);
-                    if(d != null)
-                        dataSets.add(d);
+                   try {
+                       List<Writable> record = recordReader.next();
+                       DataSet d = getDataSet(record);
+                       if (d != null)
+                           dataSets.add(d);
+                   }catch(Exception e) {
+                       log.warn("Unable to get dataset ...skipping",e);
+                   }
                 }
             }
         }
         batchNum++;
 
-        if (dataSets.isEmpty())
-            return new DataSet();
+        if (dataSets.isEmpty()) {
+            return null;
+        }
 
         DataSet ret = DataSet.merge(dataSets);
         if (collectMetaData) {
@@ -440,7 +451,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         if (dataSets.isEmpty()) {
-            return new DataSet();
+           return null;
         }
 
         DataSet ret = DataSet.merge(dataSets);

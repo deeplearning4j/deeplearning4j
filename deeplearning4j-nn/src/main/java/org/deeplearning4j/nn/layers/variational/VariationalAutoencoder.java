@@ -89,6 +89,13 @@ public class VariationalAutoencoder implements Layer {
                         .getNumSamples();
     }
 
+    /**
+     * Init the model
+     */
+    @Override
+    public void init() {
+
+    }
 
     @Override
     public void update(Gradient gradient) {

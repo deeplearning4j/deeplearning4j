@@ -215,7 +215,11 @@ public class ParallelWrapper implements AutoCloseable {
                 params.add(zoo[cnt].getModel().params());
                 score += zoo[cnt].getModel().score();
             }
+
             Nd4j.averageAndPropagate(model.params(), params);
+
+
+
         } else {
             INDArray params = Nd4j.zeros(model.params().shape());
             int cnt = 0;
@@ -249,7 +253,9 @@ public class ParallelWrapper implements AutoCloseable {
                         updaters.add(workerModel.getUpdater().getStateViewArray());
                         batchSize += workerModel.batchSize();
                     }
+
                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+
                 } else {
                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                     int cnt = 0;
@@ -317,11 +323,11 @@ public class ParallelWrapper implements AutoCloseable {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     if (rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
-                                        l);
+                                l);
                     } else if (!(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException(
-                                        "RoutingIterationListener provided with non-serializable storage router");
+                                "RoutingIterationListener provided with non-serializable storage router");
                     }
 
                 }
@@ -362,10 +368,10 @@ public class ParallelWrapper implements AutoCloseable {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
-                                    Nd4j.getAffinityManager().getNumberOfDevices());
+                            Nd4j.getAffinityManager().getNumberOfDevices());
 
                 MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL)
-                                .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+                        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
                 iterator = new AsyncDataSetIterator(source, prefetchSize, queue);
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
@@ -387,7 +393,7 @@ public class ParallelWrapper implements AutoCloseable {
             int pos = locker.getAndIncrement();
             if (zoo == null)
                 throw new IllegalStateException(
-                                "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+                        "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
             zoo[pos].feedDataSet(dataSet);
 
             /*
@@ -426,8 +432,11 @@ public class ParallelWrapper implements AutoCloseable {
                                         updaters.add(workerModel.getUpdater().getStateViewArray());
                                         batchSize += workerModel.batchSize();
                                     }
+
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                } else {
+
+                                }
+                                else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -442,7 +451,8 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
-                    } else if (model instanceof ComputationGraph) {
+                    }
+                    else if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
                     }
 
@@ -452,6 +462,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     }
                 }
+
                 locker.set(0);
             }
         }
@@ -718,14 +729,14 @@ public class ParallelWrapper implements AutoCloseable {
 
                         this.replicatedModel = new MultiLayerNetwork(conf);
 
-                        ((MultiLayerNetwork) replicatedModel).init();
+                        replicatedModel.init();
                         Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
                         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
                         for (IterationListener listener : oldListeners) {
                             if (listener instanceof RoutingIterationListener) {
                                 RoutingIterationListener routingListener =
-                                                ((RoutingIterationListener) listener).clone();
+                                        ((RoutingIterationListener) listener).clone();
                                 routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
                                 routingListener.setWorkerID(uuid);
                                 routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
@@ -735,23 +746,23 @@ public class ParallelWrapper implements AutoCloseable {
                             }
                         }
 
-                        ((MultiLayerNetwork) this.replicatedModel).setListeners(replicatedListeners);
+                        this.replicatedModel.setListeners(replicatedListeners);
                     }
                 } else if (originalModel instanceof ComputationGraph) {
                     if (!onRootModel) {
                         this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
 
 
-                        ((ComputationGraph) this.replicatedModel).init();
+                        this.replicatedModel.init();
                         Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
                         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
                         for (IterationListener listener : oldListeners) {
                             if (listener instanceof RoutingIterationListener) {
                                 RoutingIterationListener routingIterationListener =
-                                                ((RoutingIterationListener) listener).clone();
+                                        ((RoutingIterationListener) listener).clone();
                                 routingIterationListener
-                                                .setSessionID(((RoutingIterationListener) listener).getSessionID());
+                                        .setSessionID(((RoutingIterationListener) listener).getSessionID());
                                 routingIterationListener.setWorkerID(uuid);
                                 routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
                                 replicatedListeners.add(routingIterationListener);
@@ -760,7 +771,7 @@ public class ParallelWrapper implements AutoCloseable {
                             }
                         }
 
-                        ((ComputationGraph) this.replicatedModel).setListeners(replicatedListeners);
+                        this.replicatedModel.setListeners(replicatedListeners);
                     }
                 }
 
@@ -771,7 +782,12 @@ public class ParallelWrapper implements AutoCloseable {
 
                             //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
                             //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
-
+                            if(replicatedModel == null)
+                                throw new IllegalStateException("Replicated model was null");
+                            if(dataSet == null) {
+                               log.warn("Data set was null. Returning");
+                                return;
+                            }
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                             } else if (replicatedModel instanceof ComputationGraph) {
