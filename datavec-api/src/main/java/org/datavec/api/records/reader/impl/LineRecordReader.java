@@ -62,6 +62,7 @@ public class LineRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        this.conf = conf;
         initialize(split);
     }
 
