@@ -310,28 +310,29 @@ public class ParallelWrapper implements AutoCloseable {
      */
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
-        StatsStorageRouterProvider routerProvider = null;
         if (listeners != null) {
             for (IterationListener l : listeners) {
                 if (l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
-                    if (rl.getStorageRouter() == null) {
+                    if (statsStorage == null && rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
-                                        l);
-                    } else if (!(rl.getStorageRouter() instanceof Serializable)) {
+                                l);
+                    } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException(
-                                        "RoutingIterationListener provided with non-serializable storage router");
+                                "RoutingIterationListener provided with non-serializable storage router "
+                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
+                                        + "\nStatsStorageRouter class: "
+                                        + rl.getStorageRouter().getClass().getName());
                     }
-
                 }
             }
+            this.listeners.addAll(listeners);
+        } else {
+            this.listeners.clear();
         }
 
-
         this.storageRouter = statsStorage;
-        this.listeners.addAll(listeners);
-
     }
 
 
