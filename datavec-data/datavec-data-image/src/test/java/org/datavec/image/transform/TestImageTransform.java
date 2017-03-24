@@ -15,9 +15,12 @@
  */
 package org.datavec.image.transform;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.CanvasFrame;
+import org.datavec.api.berkeley.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.bytedeco.javacv.Frame;
@@ -130,7 +133,7 @@ public class TestImageTransform {
     public void testMultiImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new MultiImageTransform(rng, new CropImageTransform(10), new FlipImageTransform(),
+        ImageTransform transform = new PipelineImageTransform(seed, false, new CropImageTransform(10), new FlipImageTransform(),
                         new ScaleImageTransform(10), new WarpImageTransform(10));
 
         for (int i = 0; i < 100; i++) {
@@ -215,6 +218,43 @@ public class TestImageTransform {
         assertNotEquals(frame, newframe);
         assertEquals(null, transform.transform(null));
 
+    }
+
+    @Test
+    public void testRandomCropTransform() throws Exception {
+        ImageWritable writable = makeRandomImage(0, 0, 1);
+        Frame frame = writable.getFrame();
+        ImageTransform transform = new RandomCropTransform(frame.imageHeight / 2, frame.imageWidth / 2);
+
+        for (int i = 0; i < 100; i++) {
+            ImageWritable w = transform.transform(writable);
+            Frame f = w.getFrame();
+            assertTrue(f.imageHeight == frame.imageHeight/2);
+            assertTrue(f.imageWidth == frame.imageWidth/2);
+        }
+        assertEquals(null, transform.transform(null));
+    }
+
+    @Test
+    public void testProbabilisticPipelineTransform() throws Exception {
+        ImageWritable writable = makeRandomImage(0, 0, 3);
+        Frame frame = writable.getFrame();
+
+        ImageTransform randCrop = new RandomCropTransform(frame.imageHeight / 2, frame.imageWidth / 2);
+        ImageTransform flip = new FlipImageTransform();
+        List<Pair<ImageTransform, Double>> pipeline = new LinkedList<>();
+        pipeline.add(new Pair<>(randCrop, 1.0));
+        pipeline.add(new Pair<>(flip, 0.5));
+        ImageTransform transform = new PipelineImageTransform(pipeline, true);
+
+        for (int i = 0; i < 100; i++) {
+            ImageWritable w = transform.transform(writable);
+            Frame f = w.getFrame();
+            assertTrue(f.imageHeight == frame.imageHeight/2);
+            assertTrue(f.imageWidth == frame.imageWidth/2);
+            assertEquals(f.imageChannels, frame.imageChannels);
+        }
+        assertEquals(null, transform.transform(null));
     }
 
     public static ImageWritable makeRandomImage(int height, int width, int channels) {
