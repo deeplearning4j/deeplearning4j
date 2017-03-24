@@ -1024,7 +1024,7 @@ public class VariationalAutoencoder implements Layer {
      */
     public INDArray generateRandomGivenZ(INDArray latentSpaceValues) {
         INDArray pxzDistributionPreOut = decodeGivenLatentSpaceValues(latentSpaceValues);
-        return reconstructionDistribution.generateRandom(latentSpaceValues);
+        return reconstructionDistribution.generateRandom(pxzDistributionPreOut);
     }
 
     private INDArray decodeGivenLatentSpaceValues(INDArray latentSpaceValues) {

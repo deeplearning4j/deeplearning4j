@@ -2350,6 +2350,9 @@ public class ComputationGraph implements Serializable, Model {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
+        
+        if (!iterator.hasNext()) 
+            iterator.reset();
 
         if (labelsList == null)
             labelsList = iterator.getLabels();

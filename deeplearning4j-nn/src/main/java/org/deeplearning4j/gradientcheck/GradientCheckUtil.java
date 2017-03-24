@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -14,6 +15,8 @@ import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -41,9 +44,8 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Slf4j
 public class GradientCheckUtil {
-
-    private static Logger log = LoggerFactory.getLogger(GradientCheckUtil.class);
 
     private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
                     Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
@@ -81,6 +83,13 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
         if (!(mln.getOutputLayer() instanceof IOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
+
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
 
         //Check network configuration:
 
@@ -241,6 +250,13 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException(
                             "Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
 
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
+
         //Check configuration
         int layerCount = 0;
         for (String vertexName : graph.getConfiguration().getVertices().keySet()) {
@@ -390,10 +406,14 @@ public class GradientCheckUtil {
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
+
         //Check network configuration:
-
-        int layerCount = 0;
-
         layer.setInput(input);
         Nd4j.getRandom().setSeed(rngSeed);
         layer.computeGradientAndScore();
@@ -492,5 +512,4 @@ public class GradientCheckUtil {
 
         return totalNFailures == 0;
     }
-
 }

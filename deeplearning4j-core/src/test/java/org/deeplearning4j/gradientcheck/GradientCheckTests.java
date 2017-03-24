@@ -43,8 +43,6 @@ public class GradientCheckTests {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        //Force Nd4j initialization, then set data type to double:
-        Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 

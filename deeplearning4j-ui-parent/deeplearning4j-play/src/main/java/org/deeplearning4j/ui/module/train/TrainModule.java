@@ -1132,11 +1132,30 @@ public class TrainModule implements UIModule {
         return new Triple<>(iterCounts, mean, stdev);
     }
 
+    private static final Map<String, Object> EMPTY_LR_MAP = new HashMap<>();
+    static {
+        EMPTY_LR_MAP.put("iterCounts", new int[0]);
+        EMPTY_LR_MAP.put("paramNames", Collections.EMPTY_LIST);
+        EMPTY_LR_MAP.put("lrs", Collections.EMPTY_MAP);
+    }
+
     private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi,
                     List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return Collections.emptyMap();
         }
+
+        List<String> origNames = gi.getOriginalVertexName();
+
+        String type = gi.getVertexTypes().get(layerIdx); //Index may be for an input, for example
+        if ("input".equalsIgnoreCase(type)) {
+            return EMPTY_LR_MAP;
+        }
+
+        if (layerIdx < 0 || layerIdx >= origNames.size()) {
+            return EMPTY_LR_MAP;
+        }
+
         String layerName = gi.getOriginalVertexName().get(layerIdx);
 
         int size = (updates == null ? 0 : updates.size());
