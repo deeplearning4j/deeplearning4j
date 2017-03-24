@@ -98,4 +98,7 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @return
      */
     long getMaxCycleAllocations();
+
+    @Override
+    void close();
 }
