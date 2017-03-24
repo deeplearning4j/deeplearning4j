@@ -1,7 +1,9 @@
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,11 +11,10 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Audrey Loeffel
  */
+@Slf4j
 public class BaseSparseMatrix implements ISparseMatrix {
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
-    protected static final Logger log = LoggerFactory.getLogger(ISparseMatrix.class);
-
 
     protected transient volatile long nnz = -1;
     protected int nbRows, nbColumns;
@@ -30,6 +31,9 @@ public class BaseSparseMatrix implements ISparseMatrix {
         } else if (buffer instanceof IntBuffer) {
             newBuffer = new IntBuffer(newSize);
             newBuffer.setData(buffer.asInt());
+        }else if (buffer instanceof FloatBuffer) {
+            newBuffer = new FloatBuffer(newSize);
+            newBuffer.setData(buffer.asFloat());
         }
         return newBuffer;
     }

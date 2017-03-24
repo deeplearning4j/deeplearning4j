@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
@@ -12,9 +13,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Audrey Loeffel
  */
+@Slf4j
 public class CpuCSRSparseMatrix extends BaseSparseMatrix {
 
-    protected static final Logger log = LoggerFactory.getLogger(CpuCSRSparseMatrix.class);
     protected transient volatile DoubleBuffer values;
     protected transient volatile DoubleBuffer columns;
     protected transient volatile IntBuffer pointerB;
