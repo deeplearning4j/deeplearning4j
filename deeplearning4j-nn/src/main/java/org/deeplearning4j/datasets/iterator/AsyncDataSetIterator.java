@@ -332,11 +332,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
                     DataSet ds = null;
 
-                    try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
+                    //try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
                         ds = baseIterator.next();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    //} catch (Exception e) {
+  //                      throw new RuntimeException(e);
+//                    }
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

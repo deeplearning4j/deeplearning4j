@@ -747,7 +747,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         activations.add(currInput);
 
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(100L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(15L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
 
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
