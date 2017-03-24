@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
@@ -17,6 +18,9 @@ import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,10 +29,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +52,7 @@ public class TestListeners {
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
-        testListenersForModel(model);
+        testListenersForModel(model, Collections.singletonList(new TestListener()));
     }
 
     @Test
@@ -69,10 +70,56 @@ public class TestListeners {
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
 
-        testListenersForModel(model);
+        testListenersForModel(model, Collections.singletonList(new TestListener()));
     }
 
-    private static void testListenersForModel(Model model){
+    @Test
+    public void testListenersViaModel(){
+        TestListener.clearCounts();
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .nIn(10).nOut(10).activation(Activation.TANH).build());
+
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        StatsStorage ss = new InMemoryStatsStorage();
+        model.setListeners(new TestListener(), new StatsListener(ss));
+
+        testListenersForModel(model, null);
+
+        assertEquals(1, ss.listSessionIDs().size());
+        assertEquals(2, ss.listWorkerIDsForSession(ss.listSessionIDs().get(0)).size());
+    }
+
+    @Test
+    public void testListenersViaModelGraph(){
+        TestListener.clearCounts();
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .nIn(10).nOut(10).activation(Activation.TANH).build(), "in")
+                .setOutputs("0")
+                .build();
+
+        ComputationGraph model = new ComputationGraph(conf);
+        model.init();
+
+        StatsStorage ss = new InMemoryStatsStorage();
+        model.setListeners(new TestListener(), new StatsListener(ss));
+
+        testListenersForModel(model, null);
+
+        assertEquals(1, ss.listSessionIDs().size());
+        assertEquals(2, ss.listWorkerIDsForSession(ss.listSessionIDs().get(0)).size());
+    }
+
+    private static void testListenersForModel(Model model, List<IterationListener> listeners ){
 
         int nWorkers = 2;
         ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
@@ -82,7 +129,9 @@ public class TestListeners {
                 .useLegacyAveraging(true)
                 .build();
 
-        wrapper.setListeners(new TestListener());
+        if(listeners != null){
+            wrapper.setListeners(listeners);
+        }
 
         List<DataSet> data = new ArrayList<>();
         for( int i=0; i<nWorkers; i++ ){

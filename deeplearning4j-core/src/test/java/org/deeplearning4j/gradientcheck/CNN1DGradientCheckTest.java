@@ -32,8 +32,6 @@ public class CNN1DGradientCheckTest {
     public static final int finalNOut = 4;
 
     static {
-        //Force Nd4j initialization, then set data type to double:
-        Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 

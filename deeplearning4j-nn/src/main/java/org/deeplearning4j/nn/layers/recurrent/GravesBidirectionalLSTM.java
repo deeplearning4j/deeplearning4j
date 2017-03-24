@@ -45,8 +45,6 @@ import java.util.Map;
  * "Hybrid Speech Recognition with Deep Bidirectional LSTM"
  *  http://www.cs.toronto.edu/~graves/asru_2013.pdf
  *
- * PLEASE NOTE that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
- * Additionally, variable length data sets will also not work with the bidirectional layer.
  *
  * @author Alex Black
  * @author Benjamin Joseph
