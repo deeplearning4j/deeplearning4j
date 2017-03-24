@@ -15,11 +15,9 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+import lombok.NonNull;
 import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
@@ -110,4 +108,60 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         return image;
     }
 
+    /**
+     * Optional builder helper for PipelineImageTransform
+     */
+    public static class Builder {
+        protected List<Pair<ImageTransform, Double>> imageTransforms = new ArrayList<>();
+        protected Long seed = null;
+
+        /**
+         * This method sets RNG seet for this pipeline
+         *
+         * @param seed
+         * @return
+         */
+        public Builder setSeed(long seed) {
+            this.seed = new Long(seed);
+            return this;
+        }
+
+        /**
+         * This method adds given transform with 100% invocation probability to this pipelien
+         *
+         * @param transform
+         * @return
+         */
+        public Builder addImageTransform(@NonNull ImageTransform transform) {
+            return addImageTransform(transform, 1.0);
+        }
+
+        /**
+         * This method adds given transform with given invocation probability to this pipelien
+         *
+         * @param transform
+         * @param probability
+         * @return
+         */
+        public Builder addImageTransform(@NonNull ImageTransform transform, Double probability) {
+            if (probability < 0.0)
+                probability = 0.0;
+            if (probability > 1.0)
+                probability = 1.0;
+
+            imageTransforms.add(Pair.makePair(transform, probability));
+            return this;
+        }
+
+        /**
+         * This method returns new PipelineImageTransform instance
+         * @return
+         */
+        public PipelineImageTransform build() {
+            if (seed != null)
+                return new PipelineImageTransform(seed, imageTransforms);
+            else
+                return new PipelineImageTransform(imageTransforms);
+        }
+    }
 }
