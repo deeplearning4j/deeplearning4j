@@ -181,9 +181,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         //log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
 
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
-
         NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + SAFETY_OFFSET, 0, context.getSpecialStream());
+
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
 
         context.getSpecialStream().synchronize();
     }

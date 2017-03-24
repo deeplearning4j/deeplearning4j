@@ -253,6 +253,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             if (currentSize.get() > 0)
                 resetWorkspace();
+
         } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() ) && currentSize.get() > 0) {
             hostOffset.set(0);
             deviceOffset.set(0);
@@ -270,11 +271,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         cycleAllocations.set(0);
         disabledCounter.set(0);
-
-
-        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT)
-            Pointer.memset(workspace.getHostPointer(), 0, currentSize.get());
-
 
         if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
             initializeWorkspace();
