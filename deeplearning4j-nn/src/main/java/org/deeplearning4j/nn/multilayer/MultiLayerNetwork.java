@@ -2442,7 +2442,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
     }
 
     /**
@@ -2464,24 +2464,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             INDArray features = next.getFeatures();
             INDArray labels = next.getLabels();
+            INDArray lMask = next.getLabelsMaskArray();
 
             INDArray out;
             if (next.hasMaskArrays()) {
                 INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
                 out = this.output(features, false, fMask, lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                evaluation.evalTimeSeries(labels, out, lMask);
             } else {
                 out = this.output(features, false);
-                if (labels.rank() == 3)
-                    evaluation.evalTimeSeries(labels, out, null);
-                else {
-                    List<Serializable> meta = next.getExampleMetaData();
-                    evaluation.eval(labels, out, meta);
-                }
             }
+
+            evaluation.eval(labels, out, lMask);
         }
 
         return evaluation;

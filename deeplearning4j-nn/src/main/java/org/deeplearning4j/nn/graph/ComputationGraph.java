@@ -2455,18 +2455,24 @@ public class ComputationGraph implements Serializable, Model {
 
 
         while (iterator.hasNext()) {
-            org.nd4j.linalg.dataset.DataSet next = iterator.next();
+            DataSet next = iterator.next();
 
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+            if (next.getFeatures() == null || next.getLabels() == null)
                 break;
 
+            //Assuming single output here
             INDArray features = next.getFeatures();
+            INDArray featuresMask = next.getFeaturesMaskArray();
             INDArray labels = next.getLabels();
             INDArray labelMask = next.getLabelsMaskArray();
 
-            INDArray[] out;
-            out = output(false, features);
+            setLayerMaskArrays(
+                    featuresMask == null ? null : new INDArray[]{featuresMask},
+                    labelMask == null ? null : new INDArray[]{labelMask});
+            INDArray[] out = output(false, features);
             evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
         }
 
         return evaluation;
@@ -2501,12 +2507,16 @@ public class ComputationGraph implements Serializable, Model {
 
             //Assuming single output here
             INDArray[] features = next.getFeatures();
+            INDArray[] featuresMasks = next.getFeaturesMaskArrays();
             INDArray labels = next.getLabels(0);
+            INDArray[] labelMasks = next.getLabelsMaskArrays();
             INDArray labelMask = next.getLabelsMaskArray(0);
 
-            INDArray[] out;
-            out = output(false, features);
+            setLayerMaskArrays(featuresMasks, labelMasks);
+            INDArray[] out = output(false, features);
             evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
         }
 
         return evaluation;
