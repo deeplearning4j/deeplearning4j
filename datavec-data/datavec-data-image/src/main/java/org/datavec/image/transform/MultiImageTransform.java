@@ -27,4 +27,9 @@ public class MultiImageTransform extends BaseImageTransform<Mat> {
     public ImageWritable transform(ImageWritable image, Random random) {
         return random == null ? transform.transform(image) : transform.transform(image, random);
     }
+
+    @Override
+    public ImageWritable transform(ImageWritable image) {
+        return transform.transform(image);
+    }
 }
