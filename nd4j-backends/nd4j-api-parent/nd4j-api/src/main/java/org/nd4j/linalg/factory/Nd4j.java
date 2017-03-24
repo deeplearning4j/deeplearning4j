@@ -48,10 +48,7 @@ import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
-import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.ISparseMatrix;
-import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
+import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -5113,8 +5110,9 @@ public class Nd4j {
         return ret;
     }
     // TODO change to INDArray
-    public static ISparseMatrix/*INDArray*/ createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static ISparseMatrix /*INDArray*/ createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         ISparseMatrix matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+
         return matrix;
     }
 
@@ -5981,6 +5979,7 @@ public class Nd4j {
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             // TODO set SPARSE_INSTANCE
+            SPARSE_INSTANCE = iSparseMatrixFactoryclazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();

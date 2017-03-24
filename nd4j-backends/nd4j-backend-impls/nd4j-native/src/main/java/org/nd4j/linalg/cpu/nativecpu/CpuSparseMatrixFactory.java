@@ -40,7 +40,7 @@ public class CpuSparseMatrixFactory extends BaseISparseMatrixFactory {
 
     @Override
     public ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
-        return new CpuSparseMatrix(data, columns, pointerB, pointerE, shape);
+        return new CpuCSRSparseMatrix(data, columns, pointerB, pointerE, shape);
     }
 
 }
