@@ -94,11 +94,46 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
                 assertEquals(1.0f, array.meanNumber().floatValue(), 0.1f);
 
                 long time3 = System.nanoTime();
-                INDArray array2 = Nd4j.create(2 * 1024 * 1024);
+                INDArray array2 = Nd4j.create(3 * 1024 * 1024);
                 long time4 = System.nanoTime();
 
-                if (counter.incrementAndGet() % 1000 == 0)
+                if (counter.incrementAndGet() % 1000 == 0) {
                     log.info("{} iterations passed... Allocation time: {} vs {} (ns)", counter.get(), time2 - time1, time4 - time3);
+                    System.gc();
+                }
+            }
+        }
+    }
+
+    /**
+     * This endless test checks for nested workspaces and cross-workspace memory use
+     *
+     * @throws Exception
+     */
+    @Test
+    public void endlessTest3() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
+
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
+        AtomicLong counter = new AtomicLong(0);
+        while (true) {
+            try (MemoryWorkspace workspace1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS_1")){
+                INDArray array1 = Nd4j.create(2 * 1024 * 1024);
+                array1.assign(1.0);
+
+                try (MemoryWorkspace workspace2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS_2")){
+                    INDArray array2 = Nd4j.create(2 * 1024 * 1024);
+                    array2.assign(1.0);
+
+                    array1.addi(array2);
+
+                    assertEquals(2.0f, array1.meanNumber().floatValue(), 0.01);
+
+                    if (counter.incrementAndGet() % 1000 == 0) {
+                        log.info("{} iterations passed...", counter.get());
+                        System.gc();
+                    }
+                }
             }
         }
     }

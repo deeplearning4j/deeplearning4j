@@ -173,7 +173,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (currentSize.get() < 1)
             return;
 
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -181,6 +181,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
         //log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
+
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + 1024, 0, context.getSpecialStream());
 
