@@ -42,8 +42,6 @@ public class BNGradientCheckTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-9;
 
     static {
-        //Force Nd4j initialization, then set data type to double:
-        Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
