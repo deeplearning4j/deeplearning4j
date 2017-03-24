@@ -137,6 +137,39 @@ public class KerasLayerTest {
     }
 
     @Test
+    public void testBuildConvolution1DLayer() throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_CONVOLUTION_1D);
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(LAYER_FIELD_INIT, INIT_KERAS);
+        Map<String, Object> W_reg = new HashMap<String, Object>();
+        W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
+        W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
+        config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
+        config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
+        config.put(LAYER_FIELD_FILTER_LENGTH, KERNEL_SIZE[0]);
+        config.put(LAYER_FIELD_SUBSAMPLE_LENGTH, STRIDE[0]);
+        config.put(LAYER_FIELD_NB_FILTER, N_OUT);
+        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
+        layerConfig.put(LAYER_FIELD_CONFIG, config);
+
+        Convolution1DLayer layer = new KerasConvolution1D(layerConfig).getConvolution1DLayer();
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
+        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
+        assertEquals(KERNEL_SIZE[0], layer.getKernelSize()[0]);
+        assertEquals(STRIDE[0], layer.getStride()[0]);
+        assertEquals(N_OUT, layer.getNOut());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
+    }
+
+    @Test
     public void testBuildSubsamplingLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_MAX_POOLING_2D);
@@ -160,6 +193,26 @@ public class KerasLayerTest {
         assertEquals(POOLING_TYPE, layer.getPoolingType());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+    }
+
+    @Test
+    public void testBuildSubsampling1DLayer() throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_MAX_POOLING_1D);
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(LAYER_FIELD_POOL_LENGTH, KERNEL_SIZE[0]);
+        config.put(LAYER_FIELD_STRIDE, STRIDE[0]);
+        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
+        layerConfig.put(LAYER_FIELD_CONFIG, config);
+
+        Subsampling1DLayer layer = new KerasPooling1D(layerConfig).getSubsampling1DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(KERNEL_SIZE[0], layer.getKernelSize()[0]);
+        assertEquals(STRIDE[0], layer.getStride()[0]);
+        assertEquals(POOLING_TYPE, layer.getPoolingType());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
     }
 
     @Test
