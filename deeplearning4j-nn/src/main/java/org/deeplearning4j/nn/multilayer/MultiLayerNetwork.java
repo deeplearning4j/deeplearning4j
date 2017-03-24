@@ -2420,10 +2420,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-        RegressionEvaluation e = new RegressionEvaluation(iterator.totalOutcomes());
-        doEvaluation(iterator, e);
-
-        return e;
+        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
     }
 
     /**
@@ -2434,9 +2431,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        ROC roc = new ROC(rocThresholdSteps);
-        doEvaluation(iterator, roc);
-        return roc;
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
     }
 
     /**
@@ -2447,9 +2442,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        ROCMultiClass roc = new ROCMultiClass(rocThresholdSteps);
-        doEvaluation(iterator, roc);
-        return roc;
+        doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
     }
 
     /**
@@ -2458,7 +2451,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param iterator   data to evaluate on
      * @param evaluation IEvaluation instance to perform evaluation with
      */
-    public void doEvaluation(DataSetIterator iterator, IEvaluation evaluation) {
+    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
         if (!iterator.hasNext() && iterator.resetSupported()) {
             iterator.reset();
         }
@@ -2490,6 +2483,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
             }
         }
+
+        return evaluation;
     }
 
     /**
