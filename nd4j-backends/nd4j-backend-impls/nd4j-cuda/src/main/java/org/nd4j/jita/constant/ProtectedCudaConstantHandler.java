@@ -280,7 +280,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            logger.info("Creating new constant buffer...");
+            //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
             buffer.setConstant(true);
 
@@ -313,7 +313,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-                 logger.info("Creating new constant buffer...");
+                 //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBufferDetached(array);
             buffer.setConstant(true);
 
@@ -346,7 +346,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            logger.info("Creating new constant buffer...");
+            //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBufferDetached(array);
             buffer.setConstant(true);
 

@@ -43,10 +43,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (currentSize.get() > 0) {
             //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-            workspace.setHostPointer(new PagedPointer(nativeOps.mallocHost(currentSize.get() + 1024, 0)));
-            workspace.setDevicePointer(new PagedPointer(nativeOps.mallocDevice(currentSize.get() + 1024, null, 0)));
+            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
+            workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, true)));
         }
     }
 
@@ -182,9 +181,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         //log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
 
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + 1024, 0, context.getSpecialStream());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + SAFETY_OFFSET, 0, context.getSpecialStream());
 
         context.getSpecialStream().synchronize();
     }

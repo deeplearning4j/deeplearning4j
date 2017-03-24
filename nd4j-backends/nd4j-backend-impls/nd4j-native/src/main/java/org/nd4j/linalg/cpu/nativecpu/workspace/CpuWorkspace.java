@@ -27,9 +27,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
         super.init();
 
         if (currentSize.get() > 0) {
-            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + 1024, MemoryKind.HOST, true)));
-
-            Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
         }
     }
 
@@ -43,6 +41,6 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void resetWorkspace() {
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + 1024);
+        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
     }
 }

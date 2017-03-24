@@ -138,6 +138,25 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void endlessValidation1() throws Exception {
+        Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+        AtomicLong counter = new AtomicLong(0);
+        while (true) {
+            INDArray array1 = Nd4j.create(2 * 1024 * 1024);
+            array1.assign(1.0);
+
+            assertEquals(1.0f, array1.meanNumber().floatValue(), 0.01);
+
+            if (counter.incrementAndGet() % 1000 == 0) {
+                log.info("{} iterations passed...", counter.get());
+                System.gc();
+            }
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

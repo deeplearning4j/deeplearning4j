@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -30,6 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
     protected long threadId;
+
+    protected static final long SAFETY_OFFSET = 1024;
 
     @Getter protected String id;
 
@@ -199,6 +202,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         isOpen.set(false);
         /*
@@ -233,6 +239,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeEntered() {
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
         isOpen.set(true);

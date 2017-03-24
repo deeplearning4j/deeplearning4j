@@ -34,6 +34,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
+        //log.info("Allocating {} bytes in {} memory...", bytes, kind);
+
         if (kind == MemoryKind.HOST) {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 

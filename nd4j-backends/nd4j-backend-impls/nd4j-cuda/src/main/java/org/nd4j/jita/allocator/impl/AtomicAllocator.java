@@ -636,6 +636,11 @@ public class AtomicAllocator implements Allocator {
                         if (!allocationsMap.containsKey(point.getObjectId()))
                             throw new RuntimeException();
 
+                        getFlowController().waitTillReleased(point);
+
+                        getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+                        getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
+
                         allocationsMap.remove(point.getObjectId());
 
                         continue;
