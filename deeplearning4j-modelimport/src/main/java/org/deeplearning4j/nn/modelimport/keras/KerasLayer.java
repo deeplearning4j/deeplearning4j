@@ -79,9 +79,13 @@ public class KerasLayer {
     public static final String LAYER_FIELD_NB_FILTER = "nb_filter";
     public static final String LAYER_FIELD_NB_ROW = "nb_row";
     public static final String LAYER_FIELD_NB_COL = "nb_col";
-    public static final String LAYER_FIELD_POOL_SIZE = "pool_size";
+    public static final String LAYER_FIELD_FILTER_LENGTH = "filter_length";
     public static final String LAYER_FIELD_SUBSAMPLE = "subsample";
+    public static final String LAYER_FIELD_SUBSAMPLE_LENGTH = "subsample_length";
+    public static final String LAYER_FIELD_POOL_SIZE = "pool_size";
+    public static final String LAYER_FIELD_POOL_LENGTH = "pool_length";
     public static final String LAYER_FIELD_STRIDES = "strides";
+    public static final String LAYER_FIELD_STRIDE = "stride";
     public static final String LAYER_FIELD_BORDER_MODE = "border_mode";
 
     /* Keras convolution border modes. */
@@ -213,13 +217,18 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_LSTM:
                 layer = new KerasLstm(layerConfig, enforceTrainingConfig);
                 break;
+            case LAYER_CLASS_NAME_CONVOLUTION_1D:
+                layer = new KerasConvolution1D(layerConfig, enforceTrainingConfig);
+                break;
             case LAYER_CLASS_NAME_CONVOLUTION_2D:
-                /* TODO: Add support for 1D, 3D convolutional layersOrdered? */
                 layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
+                break;
+            case LAYER_CLASS_NAME_MAX_POOLING_1D:
+            case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
+                layer = new KerasPooling1D(layerConfig, enforceTrainingConfig);
                 break;
             case LAYER_CLASS_NAME_MAX_POOLING_2D:
             case LAYER_CLASS_NAME_AVERAGE_POOLING_2D:
-                /* TODO: Add support for 1D, 3D pooling layersOrdered? */
                 layer = new KerasPooling(layerConfig, enforceTrainingConfig);
                 break;
             case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
@@ -246,9 +255,6 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_ZERO_PADDING_2D:
                 layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
                 break;
-            case LAYER_CLASS_NAME_CONVOLUTION_1D:
-            case LAYER_CLASS_NAME_MAX_POOLING_1D:
-            case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
             case LAYER_CLASS_NAME_ZERO_PADDING_1D:
             default:
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
@@ -707,17 +713,19 @@ public class KerasLayer {
     public static PoolingType mapPoolingType(String className) throws UnsupportedKerasConfigurationException {
         PoolingType poolingType;
         switch (className) {
+            case LAYER_CLASS_NAME_MAX_POOLING_1D:
             case LAYER_CLASS_NAME_MAX_POOLING_2D:
             case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
             case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
                 poolingType = PoolingType.MAX;
                 break;
+            case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
             case LAYER_CLASS_NAME_AVERAGE_POOLING_2D:
             case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
             case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
                 poolingType = PoolingType.AVG;
                 break;
-            /* TODO: 1D (and 3D?) shaped pooling layers. */
+            /* TODO: 3D shaped pooling layers. */
             default:
                 throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
         }
@@ -1081,13 +1089,21 @@ public class KerasLayer {
             /* Convolutional layers. */
             List<Integer> stridesList = (List<Integer>) innerConfig.get(LAYER_FIELD_SUBSAMPLE);
             strides = ArrayUtil.toArray(stridesList);
+        } else if (innerConfig.containsKey(LAYER_FIELD_SUBSAMPLE_LENGTH)) {
+            /* 1D Convolutional layers. */
+            int subsample_length = (int) innerConfig.get(LAYER_FIELD_SUBSAMPLE_LENGTH);
+            strides = new int[]{ subsample_length };
         } else if (innerConfig.containsKey(LAYER_FIELD_STRIDES)) {
             /* Pooling layers. */
             List<Integer> stridesList = (List<Integer>) innerConfig.get(LAYER_FIELD_STRIDES);
             strides = ArrayUtil.toArray(stridesList);
+        } else if (innerConfig.containsKey(LAYER_FIELD_STRIDE)) {
+            /* 1D Pooling layers. */
+            int stride = (int) innerConfig.get(LAYER_FIELD_STRIDE);
+            strides = new int[]{ stride };
         } else
             throw new InvalidKerasConfigurationException("Could not determine layer stride: no " + LAYER_FIELD_SUBSAMPLE
-                            + " or " + LAYER_FIELD_STRIDES + " field found");
+                            + " or " + LAYER_FIELD_SUBSAMPLE_LENGTH + " or " + LAYER_FIELD_STRIDES + " field found");
         return strides;
     }
 
@@ -1108,13 +1124,22 @@ public class KerasLayer {
             kernelSizeList.add((Integer) innerConfig.get(LAYER_FIELD_NB_ROW));
             kernelSizeList.add((Integer) innerConfig.get(LAYER_FIELD_NB_COL));
             kernelSize = ArrayUtil.toArray(kernelSizeList);
+        } else if (innerConfig.containsKey(LAYER_FIELD_FILTER_LENGTH)) {
+            /* 1D Convolutional layers. */
+            int filter_length = (int) innerConfig.get(LAYER_FIELD_FILTER_LENGTH);
+            kernelSize = new int[]{ filter_length };
         } else if (innerConfig.containsKey(LAYER_FIELD_POOL_SIZE)) {
             /* Pooling layers. */
             List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(LAYER_FIELD_POOL_SIZE);
             kernelSize = ArrayUtil.toArray(kernelSizeList);
+        } else if (innerConfig.containsKey(LAYER_FIELD_POOL_LENGTH)) {
+            /* 1D Pooling layers. */
+            int pool_length = (int) innerConfig.get(LAYER_FIELD_POOL_LENGTH);
+            kernelSize = new int[]{ pool_length };
         } else
             throw new InvalidKerasConfigurationException("Could not determine kernel size: no " + LAYER_FIELD_NB_ROW
-                            + ", " + LAYER_FIELD_NB_COL + ", or " + LAYER_FIELD_POOL_SIZE + " field found");
+                            + ", " + LAYER_FIELD_NB_COL + " or " + LAYER_FIELD_POOL_LENGTH + " or "
+                            + LAYER_FIELD_POOL_SIZE + " or " + LAYER_FIELD_SUBSAMPLE_LENGTH + " field found");
         return kernelSize;
     }
 
