@@ -45,6 +45,10 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -642,12 +646,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).policyLearning(LearningPolicy.OVER_TIME).build();
+
         for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput, training);
-            //applies drop connect to the activation
-            activations.add(currInput);
+            log.info("Activating layer: {}", i);
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
+                log.info("Last loop allocation: {} bytes", workspace.getLastCycleAllocations());
+                currInput = zFromPrevLayer(i, currInput, training);
+                //applies drop connect to the activation
+                activations.add(currInput.detach());
+
+
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
         }
 
+        log.info("Max loop: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getMaxCycleAllocations());
+
+        if (1>0)
+            throw new RuntimeException();
 
         return activations;
     }
@@ -728,11 +746,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
+        //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(100L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+
         for (int i = 0; i <= layerNum; i++) {
-            currInput = activationFromPrevLayer(i, currInput, train);
-            //applies drop connect to the activation
-            activations.add(currInput);
+           // log.info("Activating layer: {}", i);
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")) {
+          //      log.info("Last loop allocation: {} bytes", workspace.getLastCycleAllocations());
+                currInput = activationFromPrevLayer(i, currInput, train).detach();
+                //applies drop connect to the activation
+                activations.add(currInput);
+            }
         }
+
+        //log.info("Last loop allocation: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getLastCycleAllocations());
+        //log.info("Max loop: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getMaxCycleAllocations());
+
+       // if (1>0)
+       //     throw new RuntimeException();
+
+
         return activations;
     }
 
