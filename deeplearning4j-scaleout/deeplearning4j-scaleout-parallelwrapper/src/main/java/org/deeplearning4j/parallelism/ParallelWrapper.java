@@ -824,7 +824,16 @@ public class ParallelWrapper implements AutoCloseable {
                 // it will be synced across all cloned instances
                 rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
                 rl.setWorkerID(workerUUID);
-                rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+
+                StatsStorageRouter currentRouter = ((RoutingIterationListener)listener).getStorageRouter();
+                if(currentRouter != null){
+                    //User has set router on the listener/model, instead of via the
+                    // setListeners(StatsStorageRouter, ...) method
+                    rl.setStorageRouter(currentRouter);
+                } else {
+                    rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+                }
+
             }
             replicatedListeners.add(l);
         }
