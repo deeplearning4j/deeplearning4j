@@ -430,6 +430,28 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testAllocation6() throws Exception {
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(basicConfig);
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+
+        assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getHostOffset());
+
+        INDArray array = Nd4j.rand(100, 10, 10);
+
+        // checking if allocation actually happened
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+
+        INDArray dup = array.dup();
+
+        assertEquals(2000 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+
+        //assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
+    }
+
+    @Test
     public void testAllocation5() throws Exception {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(basicConfig);
 
