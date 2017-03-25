@@ -80,11 +80,23 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
+                long div = requiredMemory % 8;
+                if (div!= 0)
+                    requiredMemory += div;
+
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
-                // FIXME: handle alignment here
+                PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
-                return workspace.getDevicePointer().withOffset(prevOffset, numElements);
+                if (initialize) {
+                    CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, requiredMemory, 0, context.getSpecialStream());
+
+                    context.syncSpecialStream();
+                }
+
+                return ptr;
             } else {
                 // spill
                 spilledAllocations.addAndGet(requiredMemory);
@@ -120,11 +132,18 @@ public class CudaWorkspace extends Nd4jWorkspace {
             }
         } else if (kind == MemoryKind.HOST) {
             if (hostOffset.get() + requiredMemory <= currentSize.get()) {
+                long div = requiredMemory % 8;
+                if (div!= 0)
+                    requiredMemory += div;
+
                 long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
-                // FIXME: handle alignment here
+                PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                return workspace.getHostPointer().withOffset(prevOffset, numElements);
+                if (initialize)
+                    Pointer.memset(ptr, 0, requiredMemory);
+
+                return ptr;
             } else {
            //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
@@ -173,7 +192,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             return;
 
 
-
+/*
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
@@ -186,5 +205,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
         Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
 
         context.getSpecialStream().synchronize();
+        */
     }
 }

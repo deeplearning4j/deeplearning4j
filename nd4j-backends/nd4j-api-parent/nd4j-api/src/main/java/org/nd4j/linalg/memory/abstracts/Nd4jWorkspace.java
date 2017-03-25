@@ -120,6 +120,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             1) reqMem + hostOffset < totalSize, we just return pointer + offset
             2) go for either realloc or external allocation
          */
+        long div = requiredMemory % 8;
+        if (div!= 0)
+            requiredMemory += div;
+
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // shortcut made to skip workspace
@@ -135,12 +139,18 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         if (hostOffset.get() + requiredMemory <= currentSize.get()) {
-            // FIXME: check for alignment here
+            // just alignment to 8 bytes
+
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
             //log.info("Allocating array of {} bytes, capacity of {} elements, prevOffset:", requiredMemory, numElements);
 
-            return workspace.getHostPointer().withOffset(prevOffset, numElements);
+            PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
+
+            if (initialize)
+                Pointer.memset(ptr, 0, requiredMemory);
+
+            return ptr;
         } else {
             spilledAllocations.addAndGet(requiredMemory);
 
@@ -202,8 +212,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+//        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+//            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         isOpen.set(false);
@@ -239,8 +250,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public MemoryWorkspace notifyScopeEntered() {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        // we should block stuff since we're going to invalidate spilled allocations
+        // TODO: block on spilled allocations probably?
+        if (externalAllocations.size() > 0) {
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        }
 
         previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(this);

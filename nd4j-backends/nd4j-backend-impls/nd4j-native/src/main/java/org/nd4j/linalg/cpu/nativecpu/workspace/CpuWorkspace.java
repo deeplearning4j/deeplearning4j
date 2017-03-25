@@ -41,6 +41,6 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void resetWorkspace() {
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
+        //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
     }
 }

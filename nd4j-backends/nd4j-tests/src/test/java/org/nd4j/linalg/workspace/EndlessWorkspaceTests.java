@@ -15,6 +15,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -155,6 +158,47 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
                 System.gc();
             }
         }
+    }
+
+
+    @Test
+    public void testPerf1() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(50000L).build());
+
+        MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS_1");
+
+        INDArray tmp = Nd4j.create(64 * 64 + 1);
+
+        //Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+        List<Long> results = new ArrayList<>();
+        List<Long> resultsOp = new ArrayList<>();
+        for(int i = 0; i < 1000000; i++) {
+            long time1 = System.nanoTime();
+            long time3 = 0;
+            long time4 = 0;
+            //MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS_1");
+            try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS_1")) {
+                INDArray array = Nd4j.createUninitialized(64 * 64 + 1);
+                INDArray arrayx = Nd4j.createUninitialized(64 * 64 + 1);
+
+                time3 = System.nanoTime();
+                arrayx.addi(1.01);
+                time4 = System.nanoTime();
+
+            }
+            //workspace.notifyScopeLeft();
+            long time2 = System.nanoTime();
+
+            results.add(time2 - time1);
+            resultsOp.add(time4 - time3);
+        }
+        Collections.sort(results);
+        Collections.sort(resultsOp);
+
+        int pos = (int) (results.size() * 0.9);
+
+        log.info("Block: {} ns; Op: {} ns;", results.get(pos), resultsOp.get(pos));
     }
 
     @Override

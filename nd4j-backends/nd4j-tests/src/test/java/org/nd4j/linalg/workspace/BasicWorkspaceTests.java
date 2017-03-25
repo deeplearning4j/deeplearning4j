@@ -613,8 +613,6 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(6.0, array.getFloat(4), 0.01);
     }
 
-
-
     @Override
     public char ordering() {
         return 'c';
