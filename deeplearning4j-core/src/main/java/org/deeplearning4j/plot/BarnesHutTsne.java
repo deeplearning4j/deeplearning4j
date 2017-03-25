@@ -1,3 +1,4 @@
+
 /*-
  *
  *  * Copyright 2015 Skymind,Inc.
@@ -414,6 +415,14 @@ public class BarnesHutTsne implements Model {
         return new Pair<>(currP, h);
     }
 
+
+    /**
+     * Init the model
+     */
+    @Override
+    public void init() {
+
+    }
 
     /**
      * Set the IterationListeners for the ComputationGraph (and all layers in the network)

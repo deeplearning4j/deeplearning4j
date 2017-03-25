@@ -768,6 +768,14 @@ public class TestOptimizers {
             this.conf = conf;
         }
 
+        /**
+         * Init the model
+         */
+        @Override
+        public void init() {
+
+        }
+
         @Override
         public INDArray preOutput(INDArray x, TrainingMode training) {
             return null;
