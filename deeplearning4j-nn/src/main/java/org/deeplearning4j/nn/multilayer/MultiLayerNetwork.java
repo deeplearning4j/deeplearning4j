@@ -747,7 +747,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         activations.add(currInput);
 
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(15L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(50L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
 
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
@@ -1115,25 +1115,28 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
-            currLayer = getLayer(j);
-            if (currLayer instanceof FrozenLayer)
-                break;
-            currPair = currLayer.backpropGradient(currPair.getSecond());
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("1")) {
+                currLayer = getLayer(j);
+                if (currLayer instanceof FrozenLayer)
+                    break;
+                currPair = currLayer.backpropGradient(currPair.getSecond());
+                currPair.setSecond(currPair.getSecond().detach());
 
-            LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
-            for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-                String origName = entry.getKey();
-                multiGradientKey = String.valueOf(j) + "_" + origName;
-                tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
-                                currPair.getFirst().flatteningOrderForVariable(origName)));
+                LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
+                for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+                    String origName = entry.getKey();
+                    multiGradientKey = String.valueOf(j) + "_" + origName;
+                    tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
+                            currPair.getFirst().flatteningOrderForVariable(origName)));
+                }
+                for (Triple<String, INDArray, Character> triple : tempList)
+                    gradientList.addFirst(triple);
+
+                //Pass epsilon through input processor before passing to next layer (if applicable)
+                if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
+                    currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
+                            .backprop(currPair.getSecond(), getInputMiniBatchSize()));
             }
-            for (Triple<String, INDArray, Character> triple : tempList)
-                gradientList.addFirst(triple);
-
-            //Pass epsilon through input processor before passing to next layer (if applicable)
-            if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.getSecond(), getInputMiniBatchSize()));
         }
 
         //Add gradients to Gradients (map), in correct order
