@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism.trainer;
 
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
@@ -38,34 +39,22 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Builder
 @Slf4j
+@NoArgsConstructor
 public class DefaultTrainer extends Thread implements Trainer {
-    private Model originalModel;
-    private Model replicatedModel;
-    private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
-    private LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
-    private AtomicInteger running = new AtomicInteger(0);
-    private int threadId;
-    private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
-    private AtomicBoolean shouldStop = new AtomicBoolean(false);
-    private Exception thrownException;
-    private volatile boolean useMDS = false;
-    private final String uuid = UUID.randomUUID().toString();
-    private boolean onRootModel = false;
-    private ParallelWrapper parallelWrapper;
+    protected Model originalModel;
+    protected Model replicatedModel;
+    protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+    protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
+    protected AtomicInteger running = new AtomicInteger(0);
+    protected int threadId;
+    protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
+    protected AtomicBoolean shouldStop = new AtomicBoolean(false);
+    protected Exception thrownException;
+    protected volatile boolean useMDS = false;
+    protected final String uuid = UUID.randomUUID().toString();
+    protected boolean onRootModel = false;
+    protected ParallelWrapper parallelWrapper;
 
-
-    private void setupIfNeccessary() {
-        if(queue == null)
-            queue = new LinkedBlockingQueue<>();
-        if(queueMDS == null)
-            queueMDS = new LinkedBlockingQueue<>();
-        if(running == null)
-            running = new AtomicInteger(0);
-        if(shouldStop == null)
-            shouldStop = new AtomicBoolean(false);
-        if(shouldUpdate == null)
-            shouldUpdate = new AtomicBoolean(false);
-    }
 
 
     @Override
@@ -125,6 +114,22 @@ public class DefaultTrainer extends Thread implements Trainer {
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+    }
+
+
+
+
+    protected void setupIfNeccessary() {
+        if(queue == null)
+            queue = new LinkedBlockingQueue<>();
+        if(queueMDS == null)
+            queueMDS = new LinkedBlockingQueue<>();
+        if(running == null)
+            running = new AtomicInteger(0);
+        if(shouldStop == null)
+            shouldStop = new AtomicBoolean(false);
+        if(shouldUpdate == null)
+            shouldUpdate = new AtomicBoolean(false);
     }
 
     @Override
@@ -241,7 +246,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
 
 
-    private static IterationListener cloneListener(IterationListener original){
+    protected static IterationListener cloneListener(IterationListener original){
         if(original instanceof RoutingIterationListener){
             return ((RoutingIterationListener) original).clone();
         }
@@ -249,7 +254,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
 
-    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
+    protected void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
                                     Collection<IterationListener> replicatedListeners){
         for (IterationListener listener : oldListeners) {
             IterationListener l = cloneListener(listener);
