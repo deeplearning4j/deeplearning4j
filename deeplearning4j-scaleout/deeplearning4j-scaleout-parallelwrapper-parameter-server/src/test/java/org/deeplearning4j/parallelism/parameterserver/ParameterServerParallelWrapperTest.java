@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -67,13 +68,15 @@ public class ParameterServerParallelWrapperTest {
         model.init();
 
         ParallelWrapper parameterServerParallelWrapper =
-                new ParallelWrapper.Builder(model).trainerFactory(new ParameterServerTrainerContext())
+                new ParallelWrapper.Builder(model)
+                        .trainerFactory(new ParameterServerTrainerContext())
                         .workers(Runtime.getRuntime().availableProcessors())
+                        .reportScoreAfterAveraging(true).useMQ(true)
                         .prefetchBuffer(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
-        parameterServerParallelWrapper.close();
 
-        Thread.sleep(30000);
+        Thread.sleep(60000);
+        parameterServerParallelWrapper.close();
 
 
 
