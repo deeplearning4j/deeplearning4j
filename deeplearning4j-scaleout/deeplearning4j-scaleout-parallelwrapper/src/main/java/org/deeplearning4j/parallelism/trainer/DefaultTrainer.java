@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism.trainer;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -40,6 +41,7 @@ import java.util.concurrent.locks.LockSupport;
 @Builder
 @Slf4j
 @NoArgsConstructor
+@AllArgsConstructor
 public class DefaultTrainer extends Thread implements Trainer {
     protected Model originalModel;
     protected Model replicatedModel;
@@ -279,4 +281,11 @@ public class DefaultTrainer extends Thread implements Trainer {
             replicatedListeners.add(l);
         }
     }
+
+
+    public static class DefaultTrainerBuilder {
+        public DefaultTrainerBuilder() {
+        }
+    }
+
 }

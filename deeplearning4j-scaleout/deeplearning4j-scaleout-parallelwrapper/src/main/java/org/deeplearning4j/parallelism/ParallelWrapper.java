@@ -14,8 +14,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.parallelism.factory.DefaultTrainerFactory;
-import org.deeplearning4j.parallelism.factory.TrainerFactory;
+import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
+import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -51,7 +51,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected int prefetchSize = 2;
     protected int averagingFrequency = 1;
     protected Trainer[] zoo;
-    private TrainerFactory trainerFactory = new DefaultTrainerFactory();
+    private TrainerContext trainerContext = new DefaultTrainerContext();
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected boolean reportScore = false;
     protected boolean averageUpdaters = true;
@@ -61,6 +61,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected List<IterationListener> listeners = new ArrayList<>();
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
+    private Object[] trainerContextArgs;
 
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
@@ -311,8 +312,10 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 }
             }
+
             this.listeners.addAll(listeners);
-        } else {
+        }
+        else {
             this.listeners.clear();
         }
 
@@ -397,8 +400,10 @@ public class ParallelWrapper implements AutoCloseable {
                                         updaters.add(workerModel.getUpdater().getStateViewArray());
                                         batchSize += workerModel.batchSize();
                                     }
+
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                } else {
+                                }
+                                else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -438,10 +443,11 @@ public class ParallelWrapper implements AutoCloseable {
 
     private void createZooIfNeccessary(boolean useMDS) {
         if (zoo == null) {
+            trainerContext.init(model,trainerContextArgs);
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = trainerFactory.create(cnt,
+                zoo[cnt] = trainerContext.create(cnt,
                         model,
                         Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                         useMDS,
@@ -461,20 +467,33 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean averageUpdaters = true;
         protected boolean legacyAveraging = true;
         protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
-        protected TrainerFactory trainerFactory = new DefaultTrainerFactory();
+        protected TrainerContext trainerContext = new DefaultTrainerContext();
+        protected Object[] trainerContextArgs;
 
         /**
-         * Specify a {@link TrainerFactory}
+         * Transer context args are for calling a
+         * {@link TrainerContext} init method
+         * when {@link ParallelWrapper} starts training
+         * @param trainerContextArgs the args to use (maybe null)
+         * @return
+         */
+        public Builder trainerContextArgs(Object...trainerContextArgs) {
+            this.trainerContextArgs = trainerContextArgs;
+            return this;
+        }
+
+        /**
+         * Specify a {@link TrainerContext}
          * for the given {@link ParallelWrapper}
          * instance.
-         * Defaults to {@link DefaultTrainerFactory}
+         * Defaults to {@link DefaultTrainerContext}
          * otherwise
-         * @param trainerFactory the trainer factory to use
+         * @param trainerContext the trainer factory to use
          * @return builder pattern
          */
-        public Builder trainerFactory(TrainerFactory trainerFactory) {
-            Preconditions.checkNotNull(trainerFactory);
-            this.trainerFactory = trainerFactory;
+        public Builder trainerFactory(TrainerContext trainerContext) {
+            Preconditions.checkNotNull(trainerContext);
+            this.trainerContext = trainerContext;
             return this;
         }
         /**

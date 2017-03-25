@@ -12,7 +12,18 @@ import org.deeplearning4j.parallelism.trainer.Trainer;
  * instances for use with {@link ParallelWrapper}
  * @author Adam Gibson
  */
-public class DefaultTrainerFactory implements TrainerFactory {
+public class DefaultTrainerContext implements TrainerContext {
+    /**
+     * Initialize the context
+     *
+     * @param model
+     * @param args the arguments to initialize with (maybe null)
+     */
+    @Override
+    public void init(Model model, Object... args) {
+
+    }
+
     /**
      * Create a {@link Trainer}
      * based on the given parameters

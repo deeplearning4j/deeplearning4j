@@ -1,6 +1,8 @@
 package org.deeplearning4j.parallelism.parameterserver;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
@@ -25,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Builder
 @Slf4j
+@AllArgsConstructor
+@NoArgsConstructor
 public class ParameterServerTrainer extends DefaultTrainer {
     private ParameterServerClient parameterServerClient;
 

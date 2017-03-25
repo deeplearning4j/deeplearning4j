@@ -10,8 +10,15 @@ import org.deeplearning4j.parallelism.trainer.Trainer;
  *
  * @author Adam Gibson
  */
-public interface TrainerFactory {
+public interface TrainerContext {
 
+
+    /**
+     * Initialize the context
+     * @param model
+     * @param args the arguments to initialize with (maybe null)
+     */
+    void init(Model model, Object... args);
 
     /**
      * Create a {@link Trainer}
