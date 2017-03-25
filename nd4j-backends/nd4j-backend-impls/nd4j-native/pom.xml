@@ -30,8 +30,14 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas-platform</artifactId>
+            <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.classifier}</classifier>
         </dependency>
 
         <dependency>

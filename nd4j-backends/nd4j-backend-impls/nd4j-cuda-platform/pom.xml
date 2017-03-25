@@ -16,6 +16,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cuda-platform</artifactId>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
