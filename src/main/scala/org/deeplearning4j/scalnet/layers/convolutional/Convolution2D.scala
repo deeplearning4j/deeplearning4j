@@ -37,7 +37,7 @@ class Convolution2D(
     nChannels: Int = 0,
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0),
-    val weightInit: WeightInit = WeightInit.VI,
+    val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
     val activation: String = "identity",
     val regularizer: WeightRegularizer = NoRegularizer(),
     val dropOut: Double = 0.0,

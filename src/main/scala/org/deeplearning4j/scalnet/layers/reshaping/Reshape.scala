@@ -19,9 +19,12 @@
 package org.deeplearning4j.scalnet.layers.reshaping
 
 import org.deeplearning4j.nn.conf.InputPreProcessor
-import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor
+import org.deeplearning4j.nn.conf.inputs.InputType
+import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor
 import org.deeplearning4j.scalnet.layers.Node
 import org.deeplearning4j.scalnet.layers.Preprocessor
+import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.util.ArrayUtil
 
 
 /**
@@ -35,6 +38,35 @@ class Reshape(
   extends Node with Preprocessor {
   inputShape = oldInputShape
   _outputShape = newOutputShape
+
+  private class ReshapePreProcessor(private var fromShape: Array[Int],
+                                    private val toShape: Array[Int], private val dynamic: Boolean = true)
+    extends BaseInputPreProcessor with Cloneable {
+
+    override def preProcess(input: INDArray, miniBatchSize: Int): INDArray = {
+      if (dynamic && fromShape != null) fromShape(0) = input.shape()(0)
+      if (input.shape().length == toShape.length) input else input.reshape(toShape: _*)
+    }
+
+    override def backprop(output: INDArray, miniBatchSize: Int): INDArray = {
+      if (fromShape == null || outputShape.length == fromShape.length) output
+      else if (output.length() != fromShape.reduce(_ * _)) throw new IllegalStateException("Illegal shape")
+      else output.reshape(fromShape: _*)
+    }
+
+    override def getOutputType(inputType: InputType): InputType = {
+      toShape.length match {
+        case 2 | 3 => InputType.feedForward(toShape(1))
+        case 4 => InputType.convolutional(toShape(3), toShape(2), toShape(1))
+        case _ => throw new IllegalStateException("Output shape not understood.")
+      }
+    }
+
+  }
+
+  private object ReshapePreProcessor{
+    def apply(toShape: Int*): ReshapePreProcessor = new ReshapePreProcessor(null, toShape.toArray, true)
+  }
 
   override def compile: InputPreProcessor = {
     if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0))

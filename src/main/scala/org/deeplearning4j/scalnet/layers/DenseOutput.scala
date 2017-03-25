@@ -32,7 +32,7 @@ class DenseOutput(
     activation: String,
     lossFunction: LossFunction,
     nIn: Int = 0,
-    weightInit: WeightInit = WeightInit.VI,
+    weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
     regularizer: WeightRegularizer = NoRegularizer(),
     dropOut: Double = 0.0,
     override val name: String = null)

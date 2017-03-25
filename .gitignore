@@ -1,5 +1,6 @@
 *.class
 *.log
+*.iml
 
 # sbt specific
 .cache
@@ -16,4 +17,4 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 .idea
-deeplearning4s.iml
+

@@ -55,8 +55,8 @@
     <scala.version>2.11.8</scala.version>
     <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
     <dl4j.version>0.7.3-SNAPSHOT</dl4j.version>
-    <slf4j.version>1.7.21</slf4j.version>
-    <logback.version>1.1.7</logback.version>
+    <slf4j.version>1.7.24</slf4j.version>
+    <logback.version>1.2.1</logback.version>
   </properties>
 
   <repositories>
@@ -106,6 +106,12 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
       <version>${logback.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <version>3.0.1</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -251,6 +257,35 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+          <junitxml>.</junitxml>
+          <filereports>WDF TestSuite.txt</filereports>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
   <reporting>
