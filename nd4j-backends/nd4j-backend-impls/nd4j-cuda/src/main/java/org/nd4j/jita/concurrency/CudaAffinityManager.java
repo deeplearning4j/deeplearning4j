@@ -75,6 +75,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForThread(long threadId) {
+        if (getNumberOfDevices() == 1)
+            return 0;
+
         if (!affinityMap.containsKey(threadId)) {
             Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
