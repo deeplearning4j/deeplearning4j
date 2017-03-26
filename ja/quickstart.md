@@ -1,7 +1,7 @@
 ---
 title: "Deeplearning 4 j のクイックスタートガイド"
 layout: ja-default
-redirect_from: /ja-quickstart
+redirect_from: ja/ja-quickstart
 ---
 
 <!-- Begin Inspectlet Embed Code -->
@@ -150,7 +150,7 @@ IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があり�
   * [Tuning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)は、ニューラルネットワークを始めた人々のために設けられています。初心者の方々は是非ご参加ください!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)は、弊社の次のリリースのチェックや改善のお手伝いをしてくださっている方々向けです。注意：このコミュニティーは経験者向けです。
 2.[Introduction to deep neural networks（ディープニューラルネットワークについて）](ja-neuralnet-overview)または[弊社の詳細チュートリアルの一つ](../tutorials)をお読みください。
-3.より詳細の[Comprehensive Setup Guide（セットアップ全ガイド）](ja-gettingstarted)をお読みください。
+3.より詳細の[Comprehensive Setup Guide（セットアップ全ガイド）](gettingstarted)をお読みください。
 4.[DL4Jのガイド集](./documentation)をご覧ください。
 
 ### その他のリンク

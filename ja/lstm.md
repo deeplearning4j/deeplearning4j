@@ -1,7 +1,7 @@
 ---
 title: "再帰型ネットワークと長・短期記憶についての初心者ガイド"
 layout: ja-default
-redirect_from: /ja-lstm
+redirect_from: ja/ja-lstm
 ---
 
 # 再帰型ネットワークと長・短期記憶についての初心者ガイド
@@ -27,7 +27,7 @@ redirect_from: /ja-lstm
 
 ## <a name="feedforward">フィードフォワードネットワークとは？</a>
 
-再帰型ネットワークを理解するには、まず最初に[フィードフォワード（順伝播型）ニューラルネットワーク](ja/ja-restrictedboltzmannmachine)の基礎を理解する必要があります。これらのネットワークの名前の由来は、ノードでの一連の数学演算を使った情報の通過方法に関連しています。フィードフォワードは、前方への一方向のみに情報を通過させ（同じノードを再び通過することはない）、再帰型は、情報を繰り返しループ状に通過させます。
+再帰型ネットワークを理解するには、まず最初に[フィードフォワード（順伝播型）ニューラルネットワーク](ja/restrictedboltzmannmachine)の基礎を理解する必要があります。これらのネットワークの名前の由来は、ノードでの一連の数学演算を使った情報の通過方法に関連しています。フィードフォワードは、前方への一方向のみに情報を通過させ（同じノードを再び通過することはない）、再帰型は、情報を繰り返しループ状に通過させます。
 
 フィードフォワードニューラルネットワークの場合、入力されたexampleは、ネットワークに入り、教師付きの学習を行い、出力にラベルが付きます。入力画像に「猫」や「象」などとラベルを付けるように指示する信号を送るパターンを認識し、生のデータをカテゴリーにマッピングします。
 
@@ -199,12 +199,12 @@ redirect_from: /ja-lstm
 * [LSTM: A Search Space Oddyssey（長・短期記憶：検索スペースオデュッセイア）](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">その他の初心者用ガイド</a>
-* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](ja-restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy（固有値、共分散、PCA、エントロピー）](ja-eigenvector)
+* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy（固有値、共分散、PCA、エントロピー）](eigenvector)
 * [Word2vec](ja-word2vec)
 * [Neural Networks（ニューラルネットワーク）](ja-neuralnet-overview)
-* [Neural Networks and Regression（ニューラルネットワークと回帰）](ja-linear-regression)
-* [Convolutional Networks（畳み込みネットワーク）](ja-convolutionalnets)
+* [Neural Networks and Regression（ニューラルネットワークと回帰）](linear-regression)
+* [Convolutional Networks（畳み込みネットワーク）](convolutionalnets)
 
 ### 脚注
 

@@ -1,14 +1,14 @@
 ---
-layout: ja-default
 title: "Deeplearning4jのフルインストール"
-redirect_from: /ja-gettingstarted
+layout: ja-default
+redirect_from: ja/ja-gettingstarted
 ---
 
 # フルインストール
 
 このインストールは複数の段階の手順に従って行います。質問やコメント等は、是非、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)でお聞かせください。弊社のスタッフがお手伝いいたします。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、[ディープラーニングの初心者ガイド](../deeplearningforbeginners)もご用意いたしました。
 
-exampleを簡単なステップで走らせるには、[クイックスタート](ja-quickstart)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。
+exampleを簡単なステップで走らせるには、[クイックスタート](quickstart)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。
 
 Deeplearning4jのインストールに必要なものは、[ND4Jを「はじめましょう」](http://nd4j.org/ja-getstarted.html)でご紹介しています。ND4Jとは、DL4Jのニューラルネットワークが使用する線形代数の計算エンジンです。
 
@@ -160,6 +160,6 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](ja-neuralnet-overview)にて詳細をお読みください。
 
-*ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../ja/ja-restrictedboltzmannmachine)をお読みください。
+*ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../ja/restrictedboltzmannmachine)をお読みください。
 
 新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/ja-getstarted)をお読みください。
