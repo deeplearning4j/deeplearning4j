@@ -105,7 +105,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     resetPlanned.set(true);
                 }
 
-       //         log.info("Spilled DEVICE array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+                log.info("Spilled DEVICE array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
