@@ -1518,6 +1518,14 @@ public interface NDArrayFactory {
     INDArray createUninitialized(int[] shape, char ordering);
 
     /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     * @param shape
+     * @param ordering
+     * @return
+     */
+    INDArray createUninitializedDetached(int[] shape, char ordering);
+
+    /**
      *
      * @param data
      * @param newShape

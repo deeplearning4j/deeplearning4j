@@ -4840,6 +4840,28 @@ public class Nd4j {
     }
 
     /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param shape
+     * @param ordering
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
+        } else if (shape.length == 1) {
+            shape = new int[] {1, shape[0]};
+        }
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
      * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
      *
@@ -4850,6 +4872,18 @@ public class Nd4j {
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
+    }
+
+    /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param shape
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int[] shape) {
+        checkShapeValues(shape);
+        //ensure shapes that wind up being scalar end up with the write shape
+        return createUninitializedDetached(shape, Nd4j.order());
     }
 
     /**
@@ -4867,6 +4901,23 @@ public class Nd4j {
         int[] shape = new int[] {1, length};
 
         INDArray ret = INSTANCE.createUninitialized(shape, order());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param length
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int length) {
+        if (length < 1)
+            throw new IllegalStateException("INDArray length should be positive value");
+
+        int[] shape = new int[] {1, length};
+
+        INDArray ret = INSTANCE.createUninitializedDetached(shape, order());
         logCreationIfNecessary(ret);
         return ret;
     }

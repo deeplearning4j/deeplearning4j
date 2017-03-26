@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -250,6 +251,15 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
         return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+    }
+
+    @Override
+    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+        return ret;
     }
 
     @Override

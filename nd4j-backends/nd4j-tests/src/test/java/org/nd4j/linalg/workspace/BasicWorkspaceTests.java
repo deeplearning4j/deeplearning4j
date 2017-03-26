@@ -87,6 +87,21 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
     }
 
+    @Test
+    public void testCreateDetached1() throws Exception {
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+
+            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+            INDArray array2 = Nd4j.createUninitializedDetached(5);
+
+            array2.assign(array1);
+
+            long reqMemory = 5 * Nd4j.sizeOfDataType();
+            assertEquals(reqMemory + reqMemory % 8, wsI.getHostOffset());
+            assertEquals(array1, array2);
+        }
+    }
 
 
     @Test
