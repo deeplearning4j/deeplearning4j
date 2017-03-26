@@ -259,7 +259,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 }
 
                 Nd4jWorkspace ws2 = (Nd4jWorkspace)  Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2");
-                assertEquals(x * Nd4j.sizeOfDataType(), ws2.getLastCycleAllocations());
+                long reqMemory = x * Nd4j.sizeOfDataType();
+                assertEquals(reqMemory + reqMemory % 8, ws2.getLastCycleAllocations());
             }
 
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").initializeWorkspace();
