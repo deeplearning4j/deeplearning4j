@@ -1,9 +1,9 @@
 ---
 title: 심층학습(딥러닝) 활용 사례
 layout: kr-default
-redirect_from: /kr-use_cases
+redirect_from: kr/kr-use-cases
 ---
-
+ 
 # 심층학습(딥러닝) 활용 사례
 
 심층학습은 사진, 그림, 음성, 음악, 비디오, 문서 등 데이터에서 패턴을 인식하는데 아주 뛰어납니다.
@@ -75,9 +75,9 @@ redirect_from: /kr-use_cases
 
 ### 다른 초보자 가이드
 
-* [심층 신경망 소개](kr-neuralnet-overview)
-* [초보자를 위한 RNNs과 LSTM 가이드](kr-lstm)
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](kr-eigenvector)
+* [심층 신경망 소개](neuralnet-overview)
+* [초보자를 위한 RNNs과 LSTM 가이드](lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](eigenvector)
 * [컨볼루션 네트워크](kr-convolutionalnets)
-* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](kr-restrictedboltzmannmachine)
+* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](restrictedboltzmannmachine)
 * [Neural Networks & Regression](linear-regression)

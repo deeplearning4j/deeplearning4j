@@ -1,7 +1,7 @@
 ---
 title: "Computation Graph를 이용해 복잡한 신경망 만들기"
 layout: kr-default
-redirect_from: /kr-compgraph
+redirect_from: kr/kr-compgraph
 ---
 
 # Computation Graph를 이용해 복잡한 신경망 만들기
@@ -57,7 +57,7 @@ DL4J의 심층 신경망에는 두 종류가 있습니다.
 
 ### <a name="vertextypes">그래프 꼭지점의 종류</a>
 
-ComputationGraph는 층이 아니라 여러 개의 [GraphVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java)를 연결하여 신경망을 구성합니다. 층([LayerVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/LayerVertex.java) objects)도 여러가지 그래프 꼭지점 중 한 유형이며 그 외에도, 
+ComputationGraph는 층이 아니라 여러 개의 [GraphVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java)를 연결하여 신경망을 구성합니다. 층([LayerVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/LayerVertex.java) objects)도 여러가지 그래프 꼭지점 중 한 유형이며 그 외에도,
 
 - Input Vertices (입력)
 - Element-wise operation vertices (성분별 연산)
@@ -113,7 +113,7 @@ net.init();
 
 ![Computation Graph with Merge Vertex](./img/compgraph_merge.png)
 
-이 구조를 보면 병합 꼭지점은 층 L1과 L2의 출력을 입력으로 받습니다. 그리고 이 둘을 이어 붙입니다. 예를 들어 L1과 L2가 각각 4개의 출력을 가지고 있었따면 병합 꼭지점은 8개의 출력을 가집니다. 
+이 구조를 보면 병합 꼭지점은 층 L1과 L2의 출력을 입력으로 받습니다. 그리고 이 둘을 이어 붙입니다. 예를 들어 L1과 L2가 각각 4개의 출력을 가지고 있었따면 병합 꼭지점은 8개의 출력을 가집니다.
 
 이런 구조의 신경망은 아래와 같이 구성합니다.
 
@@ -162,7 +162,7 @@ ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 
 1. 우선, 이 메쏘드는 현재 상황에 필요한 [InputPreProcessor(전처리기)](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)를 추가합니다. 전처리기는 서로 다른 유형의 신경망의 연결을 도와줍니다. 예를 들어 컨볼루션 층과 RNN을 연결해줍니다.
 
-2. 또 입력 데이터의 개수를 계산해줍니다. 다시 말해,  ```setInputTypes(InputType...)``` 메쏘드를 사용하면 ```.nIn(x)```을 설정해줄 필요가 없습니다. 만일 .nIn(x)를 별도로 설정하는 경우엔 그 값을 활용합니다. 즉 함수 override가 일어나지 않습니다. 
+2. 또 입력 데이터의 개수를 계산해줍니다. 다시 말해,  ```setInputTypes(InputType...)``` 메쏘드를 사용하면 ```.nIn(x)```을 설정해줄 필요가 없습니다. 만일 .nIn(x)를 별도로 설정하는 경우엔 그 값을 활용합니다. 즉 함수 override가 일어나지 않습니다.
 
 예를 들어, 신경망이 컨볼루션 입력과 feed-forward 입력을 갖는 경우에 ```.setInputTypes(InputType.convolutional(depth,width,height), InputType.feedForward(feedForwardInputSize))```을 사용하면 됩니다.
 
@@ -174,7 +174,7 @@ ComputationGraph에서 사용할 수 있는 학습 데이터는 두 가지 유�
 
 DataSet과 DataSetIterator 클래스는 원래 MultiLayerNetwork에서 사용합니다. 하지만 입력과 출력이 각각 하나인 경우라면 ComputationGraph에서도 사용할 수 있습니다. 만일 다중 입/출력 구조의 신경망이라면 MultiDataset/MultiDatasetIterator를 사용합니다.
 
-DataSet 객체는 학습 데이터의 x와 y에 해당하는 2개의 INDArrays로 구성됩니다. 또, RNN 학습을 위해 마스킹 정보를 담고있는 어레이를 추가로 포함할 수 있습니다. DataSetIterator는 DataSet객체의 iterator입니다. 
+DataSet 객체는 학습 데이터의 x와 y에 해당하는 2개의 INDArrays로 구성됩니다. 또, RNN 학습을 위해 마스킹 정보를 담고있는 어레이를 추가로 포함할 수 있습니다. DataSetIterator는 DataSet객체의 iterator입니다.
 
 
 
@@ -188,12 +188,12 @@ MultiDataSetIterator 사용 방법은 두 가지 입니다.
 - [RecordReaderMultiDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIterator.java)와 DataVec record reader를 같이 사용하는 방법이 있습니다.
 
 
-RecordReaderMultiDataSetIterator엔 몇 가지 옵션이 있습니다. 
+RecordReaderMultiDataSetIterator엔 몇 가지 옵션이 있습니다.
 
 - 여러 개의 DataVec RecordReader를 동시에 사용할 수 있습니다.
 - 여러 개를 사용하는 경우에 다양한 유형의 RecordReader를 사용할 수 있습니다. 예를 들어 입력이 문자열인 RecordReader와 이미지인 RecordReader를 동시에 사용할 수 있습니다.
 - CSV를 이용하는 경우에 여러 열(Column)을 다른 목적으로 사용할 수 있습니다. 예를 들어 0-9열을 입력 데이터로, 10-14열을 출력으로 사용할 수 있습니다.
-- 정수로 된 단일 열의 인덱스를 one-hot 벡터로 변환할 수 있습니다. 
+- 정수로 된 단일 열의 인덱스를 one-hot 벡터로 변환할 수 있습니다.
 
 
 아래에 있는 RecordReaderMultiDataSetIterator 예제를 참고하십시오. [이 테스트 코드](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIteratorTest.java)도 다양한 예제를 포함하고 있습니다.
@@ -251,5 +251,3 @@ MultiDataSetIterator iterator = new RecordReaderMultiDataSetIterator.Builder(bat
         .addOutputOneHot("csvLabels", 4, numClasses)   //Output 2: column 4 -> convert to one-hot for classification
         .build();
 ```
-
-

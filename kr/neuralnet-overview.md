@@ -186,10 +186,10 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 
 인공 신경망 초보자들을 위한 강좌를 모아놓았으니 참고하시기 바랍니다.
 
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)](kr-eigenvector)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)](eigenvector)
 * [RBMs: Restricted Boltzmann Machines](kr-restrictedboltzmannmachine)
-* [컨볼루션 네트워크](kr-convolutionnets)
-* [RNNs과 LSTMs](kr-lstm)
+* [컨볼루션 네트워크](convolutionnets)
+* [RNNs과 LSTMs](lstm)
 * [Word2vec과 자연어 처리](kr-word2vec)
 * [Deeplearing4j 퀵 스타트 가이드 (Quick Start Guide)](kr-quickstart)
 * [심층 신경망/인공 신경망 용어 사전](../glossary)

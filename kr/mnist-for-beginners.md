@@ -1,6 +1,7 @@
 ---
 title: 초보자를 위한 MNIST
-layout: default
+layout: kr-default
+redirct_from: kr/kr-mnist-for-beginners
 ---
 
 <header>
