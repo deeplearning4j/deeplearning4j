@@ -1,6 +1,7 @@
 ---
 title: 딥러닝의 정확도
-layout: default
+layout: kr-default
+redirect_from: kr/kr-accuracy
 ---
 
 # 딥러닝의 정확도
