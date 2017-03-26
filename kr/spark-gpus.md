@@ -212,7 +212,7 @@ Deeplearning4j는 스파크와 통합되어있어 쉽게 인공 신경망을 분
 
 실제로 심층 신경망을 분산GPU와 스파크로 학습하려면 다음의 두 가지 설정을 해줘야합니다.
 
-1. [퀵 스타트 가이드](http://deeplearning4j.org/kr-quickstart)에 나온 DL4J 기본 설정
+1. [퀵 스타트 가이드](http://deeplearning4j.org/quickstart)에 나온 DL4J 기본 설정
 2. [스파크 안내](http://deeplearning4j.org/spark)의 스파크 설정 및 코드 예제 참고
 
 더 자세한 질문이 있다면 [DL4J gitter 대화방](https://gitter.im/deeplearning4j/deeplearning4j)을 이용하시길 바랍니다.

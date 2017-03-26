@@ -1,6 +1,7 @@
 ---
 title: Keras에서 Deeplearning4j로 모델 가져오기
-layout: default
+layout: kr-default
+redirect_from: kr/kr-model-import-keras
 ---
 
 # Keras에서 Deeplearning4j로 모델 가져오기

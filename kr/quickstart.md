@@ -1,7 +1,7 @@
 ---
 title: "퀵 스타트 가이드 (Quick Start Guide)"
 layout: kr-default
-redirect_from: /kr-quickstart
+redirect_from: kr/kr-quickstart
 ---
 <!-- Begin Inspectlet Embed Code -->
 <script type="text/javascript" id="inspectletjs">
@@ -23,7 +23,7 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ? (window.attachEvent
 
 #### 맛보기 코드
 
-Deeplearning4j는 여러 층(Layer)으로 구성된 심층 신경망(Deep neural networks)을 구성하는데 사용되는 언어입니다. 우선 `MultiLayerConfiguration`을 설정해야 합니다. 여기에서는 여러분이 사용할 신경망의 층 개수와 같은 하이퍼 파라미터(Hyperparameter)를 설정합니다. 
+Deeplearning4j는 여러 층(Layer)으로 구성된 심층 신경망(Deep neural networks)을 구성하는데 사용되는 언어입니다. 우선 `MultiLayerConfiguration`을 설정해야 합니다. 여기에서는 여러분이 사용할 신경망의 층 개수와 같은 하이퍼 파라미터(Hyperparameter)를 설정합니다.
 
 하이퍼 파라미터는 신경망의 구조와 학습 방법을 결정하는 매개변수입니다. 예를 들어 학습중인 모델의 계수를 몇 번 업데이트 할 지, 어떻게 계수를 초기화 할지, 어떤 활성 함수를 사용할지, 어떤 최적화 알고리듬을 사용할지 등을 결정합니다. 아래 예제 코드를 참고하십시오.
 
@@ -107,7 +107,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
         $ cd dl4j-examples/
         $ mvn clean install
 
-2. 인텔리J를 실행하고 Import Project 메뉴를 실행합니다. 그리고 'dl4j-examples' 디렉토리를 선택하십시오. 그림은 예전에 사용하던 이름인 dl4j-0.4-examples로 되어있습니다. 
+2. 인텔리J를 실행하고 Import Project 메뉴를 실행합니다. 그리고 'dl4j-examples' 디렉토리를 선택하십시오. 그림은 예전에 사용하던 이름인 dl4j-0.4-examples로 되어있습니다.
 
 ![select directory](../img/Install_IntJ_1.png)
 
@@ -131,11 +131,11 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 인텔리J를 실행하면 Deeplearning4j 예제를 골라 실행할 수 있습니다. 가장 간단한 예제를 원한다면 `MLPClassifierLinear`를 추천합니다. 예제 파일은 [여기](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)에 있습니다.
 
-예제를 실행하려면 우클릭 후 메뉴에서 초록색 버튼을 클릭하십시오. 그러면 하단의 창에 여러 가지 숫자가 출력됩니다. 가장 우측에 있는 숫자는 현재 사용하는 신경망의 분류 결과의 오차율입니다. 만일 학습이 잘 되고 있다면 오차율은 감소하게 됩니다. 이 창으로 실행중인 신경망 모델이 얼마나 정확하게 학습중인지 알 수 있습니다. 
+예제를 실행하려면 우클릭 후 메뉴에서 초록색 버튼을 클릭하십시오. 그러면 하단의 창에 여러 가지 숫자가 출력됩니다. 가장 우측에 있는 숫자는 현재 사용하는 신경망의 분류 결과의 오차율입니다. 만일 학습이 잘 되고 있다면 오차율은 감소하게 됩니다. 이 창으로 실행중인 신경망 모델이 얼마나 정확하게 학습중인지 알 수 있습니다.
 
 ![run IntelliJ example](../img/mlp_classifier_results.png)
 
-다른 창에는 인공 신경망이 어떻게 데이터를 분류하고 있는지를 그래프로 보여줍니다. 
+다른 창에는 인공 신경망이 어떻게 데이터를 분류하고 있는지를 그래프로 보여줍니다.
 
 ![run IntelliJ example](../img/mlp_classifier_viz.png)
 
@@ -146,8 +146,8 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 1. 저희 Gitter 채널에 들어오십시오. 현재 3개의 채널을 운영중입니다.
   * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j): DL4J 기본 채널입니다.
   * [Tuning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp): 인공 신경망 초보자를 위한 채널입니다.
-  * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters): DL4J 개발과 관련된 채널입니다. 
-2. [심층 신경망 소개](./neuralnet-overview) 및 [튜토리알](./tutorials) 페이지도 참고하십시오. 
+  * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters): DL4J 개발과 관련된 채널입니다.
+2. [심층 신경망 소개](./neuralnet-overview) 및 [튜토리알](./tutorials) 페이지도 참고하십시오.
 3. [더 자세한 설치 안내](./gettingstarted)도 있습니다.
 4. [DL4J 문서](./documentation)를 참고하십시오.
 

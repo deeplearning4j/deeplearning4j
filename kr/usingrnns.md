@@ -1,12 +1,12 @@
 ---
 title: "DL4J와 RNNs (Recurrent Neural Networks)"
 layout: kr-default
-redirect_from: /kr-usingrnns
+redirect_from: kr/kr-usingrnns
 ---
 
 # DL4J와 RNNs (Recurrent Neural Networks)
 
-이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](kr-lstm)를 참고하십시오.
+이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](lstm)를 참고하십시오.
 
 **내용**
 

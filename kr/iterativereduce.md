@@ -1,6 +1,7 @@
 ---
 title: "Iterative Reduce With DL4J on Hadoop and Spark"
-layout: default
+layout: kr-default
+redirect_from: kr/kr-iterativereduce
 ---
 
 # Hadoop과 Spark 기반의 DL4J를 사용한 반복적인 리듀스(Iterative Reduce) 작업
@@ -15,7 +16,7 @@ layout: default
 
 예를 들어, 가장 단순한 형태로 맵과 리듀스를 이해하기 위해 문장 안에 있는 각 단어의 개수를 세는 예제를 보여드리겠습니다. 주어진 문장에서, 맵은 모든 단어를 잘라내서 키-값 쌍으로 만들고 모든 단어에 1이라는 값을 반영하는 과정입니다. 리듀스 과정에서는 잘라낸 값들을 보면서 같은 단어가 발견될 경우 1로 입력한 값들을 더해가도록 하면서 각 단어가 몇개가 있는지 합계를 구합니다.
 
-실제로 맵리듀스는 이보다 큰 스케일의 환경에서 적용되고 있습니다. 맵 과정에서는 데이터를 여러 코어로 분산시킨 뒤, 나눠진 데이터 파편들에 같은 명령을 수행시키는 방법으로 큰 단위의 작업을 분리합니다. 리듀스 과정에서는 분리되어 변형된 데이터 조각들을 통합하여 하나의 데이터 셋으로 만들고 한곳으로 모아 추가적인 작업을 수행합니다. Map explodes and Reduce collapses, like a star expands to become a Red Giant, and shrinks to a White Dwarf. 
+실제로 맵리듀스는 이보다 큰 스케일의 환경에서 적용되고 있습니다. 맵 과정에서는 데이터를 여러 코어로 분산시킨 뒤, 나눠진 데이터 파편들에 같은 명령을 수행시키는 방법으로 큰 단위의 작업을 분리합니다. 리듀스 과정에서는 분리되어 변형된 데이터 조각들을 통합하여 하나의 데이터 셋으로 만들고 한곳으로 모아 추가적인 작업을 수행합니다. Map explodes and Reduce collapses, like a star expands to become a Red Giant, and shrinks to a White Dwarf.
 
 ## 반복적인 맵리듀스
 
@@ -45,4 +46,3 @@ Deeplearning4j considers distributed run-times to be interchangeable (but not ne
 
 Hadoop과 Spark이 포함된 확장에 대한 모든 양식은 우리의 [확장 repository](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout)에 포함되어 있습니다.
 예를 들어 Deeplearning4j 코드는 Spark와 혼용되어 사용될 수 있으며, DL4J 명령들은 다른 것과 동일하게 분산되어 처리될 것입니다.
-

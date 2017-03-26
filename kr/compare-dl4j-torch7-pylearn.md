@@ -1,6 +1,7 @@
 ---
 title: "프레임 워크 비교 : Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras 및 CNTK"
-layout: default
+layout: kr-default
+redirect_from: kr/kr-compare-dl4j-torch7-pylearn
 ---
 
 # 프레임 워크 비교 : Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras 및 CNTK

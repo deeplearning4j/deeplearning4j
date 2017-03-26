@@ -1,7 +1,7 @@
 ---
 title: "Word2vec: Java에서 인공 신경망으로 Word Embeddings 구현하기"
 layout: kr-default
-redirect_from: /kr-word2vec
+redirect_from: kr/kr-word2vec
 ---
 
 # Word2Vec
@@ -22,9 +22,9 @@ redirect_from: /kr-word2vec
 
 ## <a name="intro">Word2Vec 소개</a>
 
-Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [심층 신경망](kr-neuralnet-overview)은 아니지만 심층 신경망은 전처리 단계로 많이 쓰입니다.
+Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [심층 신경망](neuralnet-overview)은 아니지만 심층 신경망은 전처리 단계로 많이 쓰입니다.
 
-Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](kr-quickstart)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
+Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](quickstart)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
 
 Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습은 사람이 관여하지 않으며 말뭉치 데이터만을 사용합니다.
 
@@ -46,7 +46,7 @@ Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 
 
 즉, word embeddings은 사람의 언어를 컴퓨터의 언어로 번역하는 것 입니다.
 
-단어를 같은 의미지만 다른 표현인 벡터로 바꿔준다는 점에서 Word2vec은 오토인코더와 비슷한 면이 있습니다. 하지만 [RBM(restricted Boltzmann machines)](kr-restrictedboltzmannmachine)의 [재구성(reconstruction)](kr-restrictedboltzmannmachine.html#reconstruct) 과정과 Word2vec의 학습 과정은 좀 다릅니다. Word2vec은 입력한 말뭉치의 문장에 있는 단어와 인접 단어의 관계를 이용해 단어의 의미를 학습합니다.
+단어를 같은 의미지만 다른 표현인 벡터로 바꿔준다는 점에서 Word2vec은 오토인코더와 비슷한 면이 있습니다. 하지만 [RBM(restricted Boltzmann machines)](restrictedboltzmannmachine)의 [재구성(reconstruction)](restrictedboltzmannmachine.html#reconstruct) 과정과 Word2vec의 학습 과정은 좀 다릅니다. Word2vec은 입력한 말뭉치의 문장에 있는 단어와 인접 단어의 관계를 이용해 단어의 의미를 학습합니다.
 
 Word2vec의 학습 방법은 두 종류가 있습니다. CBOW(Continous Bag Of Words) 방식은 주변 단어가 만드는 맥락을 이용해 타겟 단어를 예측하는 것이고 skip-gram은 한 단어를 기준으로 주변에 올 수 있는 단어를 예측하는 것 입니다. 대규모 데이터셋에서는 skip-gram이 더 정확한 것으로 알려져있으며 저희도 이 방식을 이용합니다.
 
@@ -128,7 +128,7 @@ Word2vec은 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2ve
 
 ## <a name="setup">Word2Vec 설정</a>
 
-Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](kr-quickstart)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
+Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](quickstart)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
 
 ```java
 <properties>
@@ -347,7 +347,7 @@ Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
 
 `import java.io.File;`을 import한 패키지에 추가하는 것을 잊지 마십시오.
 
-대형 모델들과 작업 시 힙 메모리를 조절해야 합니다. 구글 모델은 대략 10G의 메모리가 필요한데 JVM은 가본적으로 256 MB의 공간을 할당하기 때문입니다. `bash_profile`에서 설정을 하거나 (저희의 [Troubleshooting 섹션](kr-gettingstarted.html#trouble)을 참고하세요) IntelliJ 설정을 바꿔주면 됩니다.
+대형 모델들과 작업 시 힙 메모리를 조절해야 합니다. 구글 모델은 대략 10G의 메모리가 필요한데 JVM은 가본적으로 256 MB의 공간을 할당하기 때문입니다. `bash_profile`에서 설정을 하거나 (저희의 [Troubleshooting 섹션](gettingstarted.html#trouble)을 참고하세요) IntelliJ 설정을 바꿔주면 됩니다.
 
 ```java
 //아래 메뉴를 실행한 뒤,
@@ -370,7 +370,7 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 이제 여러분께서는 Word2Vec 코드의 설정 방법을 대략 이해하고 계실 것 입니다. 이제 이 Word2vec이 어떻게 DL4J의 다른 API에서 쓰이는지를 보여주는 [예제](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java)를 참고하시기 바랍니다.
 
-[퀵 스타트 가이드](kr-quickstart)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다.
+[퀵 스타트 가이드](quickstart)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다.
 
 ### <a name="trouble">문제 해결 및 Word2Vec 튜닝하기</a>
 
@@ -470,13 +470,13 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 
 ### 다른 초보자 가이드
 
-* [심층 신경망 소개](kr-neuralnet-overview)
-* [초보자를 위한 RNNs과 LSTM 가이드](kr-lstm)
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](kr-eigenvector)
+* [심층 신경망 소개](neuralnet-overview)
+* [초보자를 위한 RNNs과 LSTM 가이드](lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](eigenvector)
 * [컨볼루션 네트워크](kr-convolutionalnets)
-* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](kr-restrictedboltzmannmachine)
+* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](restrictedboltzmannmachine)
 * [Neural Networks & Regression](../linear-regression)
-* [심층학습(딥러닝) 활용 사례](kr-use_cases)
+* [심층학습(딥러닝) 활용 사례](use-cases)
 
 ### <a name="doctorow">문학 속의 Word2Vec</a>
 
