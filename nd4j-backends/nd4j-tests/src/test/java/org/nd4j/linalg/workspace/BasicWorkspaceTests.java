@@ -99,17 +99,18 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             // despite we're allocating this array in workspace, it's empty yet, so it's external allocation
             assertTrue(array.isInScope());
             assertTrue(array.isAttached());
-            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+            long reqMemory = 5 * Nd4j.sizeOfDataType();
+            assertEquals(reqMemory + reqMemory % 8, wsI.getHostOffset());
 
             copy = array.detach();
 
             assertTrue(array.isInScope());
             assertTrue(array.isAttached());
-            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+            assertEquals(reqMemory + reqMemory % 8, wsI.getHostOffset());
 
             assertFalse(copy.isAttached());
             assertTrue(copy.isInScope());
-            assertEquals(5 * Nd4j.sizeOfDataType(), wsI.getHostOffset());
+            assertEquals(reqMemory + reqMemory % 8, wsI.getHostOffset());
         }
 
         assertEquals(15.0f, copy.sumNumber().floatValue(), 0.01f);
@@ -403,7 +404,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         workspace.initializeWorkspace();
-        assertEquals(11 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        long reqMemory = 11 * Nd4j.sizeOfDataType();
+        assertEquals(reqMemory + reqMemory % 8, workspace.getCurrentSize());
 
 
         log.info("-----------------------");
@@ -464,13 +466,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        long reqMemory = 5 * Nd4j.sizeOfDataType();
+        assertEquals(reqMemory + reqMemory % 8, workspace.getHostOffset());
 
         array.assign(1.0f);
 
         INDArray dup = array.dup();
 
-        assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        assertEquals((reqMemory + reqMemory % 8) * 2, workspace.getHostOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
     }
@@ -500,7 +503,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        long reqMem = 5 * Nd4j.sizeOfDataType();
+        assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
         try {
             INDArray array2 = Nd4j.create(10000000);
@@ -509,11 +513,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             assertTrue(true);
         }
 
-        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
         INDArray array2 = Nd4j.create(new int[] {1,5}, 'c');
 
-        assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        assertEquals((reqMem + reqMem % 8) * 2, workspace.getHostOffset());
     }
 
     @Test
@@ -529,7 +533,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new int[] {1,5}, 'c');
 
         // checking if allocation actually happened
-        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        long reqMem = 5 * Nd4j.sizeOfDataType();
+        assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
         array.assign(1.0f);
 
@@ -549,7 +554,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(5);
 
         // checking if allocation actually happened
-        assertEquals(5 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        long reqMem = 5 * Nd4j.sizeOfDataType();
+        assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
         array.assign(1.0f);
 
@@ -567,7 +573,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         // checking if allocation actually happened
-        assertEquals(20, workspace.getHostOffset());
+        assertEquals(24, workspace.getHostOffset());
 
         // checking stuff at native side
         double sum = array.sumNumber().doubleValue();
