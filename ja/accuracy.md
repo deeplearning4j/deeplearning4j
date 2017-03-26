@@ -1,6 +1,7 @@
 ---
 title: ディープラーニングの精度
-layout: default
+layout: ja-default
+redirect_from: ja/ja-accuracy
 ---
 
 # ディープラーニングの精度
