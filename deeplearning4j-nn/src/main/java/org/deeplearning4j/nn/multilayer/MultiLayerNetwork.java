@@ -657,8 +657,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 activations.add(currInput.detach());
 
 
-            } catch (Exception e) {
-                throw new RuntimeException();
             }
         }
 
@@ -988,6 +986,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
 
         if (layerWiseConfigurations.isPretrain()) {
+            // TODO: pratrain should be wrapped into workspace
             pretrain(iter);
             if (iter.resetSupported()) {
                 iter.reset();
@@ -1011,11 +1010,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
 
+                // TODO: basically we want to wrap internals of this loop into workspace
+                //try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("EXTERNAL_LOOP")) {
+
+
                 boolean hasMaskArrays = next.hasMaskArrays();
 
                 if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
-                                    next.getLabelsMaskArray());
+                            next.getLabelsMaskArray());
                 } else {
                     if (hasMaskArrays)
                         setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
@@ -1030,7 +1033,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 if (hasMaskArrays)
                     clearLayerMaskArrays();
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
+                //}
             }
         } else if (layerWiseConfigurations.isPretrain()) {
             log.warn("Warning: finetune is not applied.");
