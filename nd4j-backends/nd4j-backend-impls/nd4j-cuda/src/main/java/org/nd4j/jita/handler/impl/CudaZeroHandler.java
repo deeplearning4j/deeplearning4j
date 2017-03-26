@@ -41,9 +41,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,7 +95,8 @@ public class CudaZeroHandler implements MemoryHandler {
     // FIXME: CopyOnWriteArrayList is BAD here. Really BAD. B A D.
     // Table thread safety is guaranteed by reentrant read/write locks :(
     //private Table<Long, Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = HashBasedTable.create();
-    private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new ConcurrentHashMap<>();
+    //private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new ConcurrentHashMap<>();
+    private final List<ConcurrentHashMap<Long, Long>> deviceAllocations = new ArrayList<>();
 
     /*
         map for Thread, Object allocations in zero memory.
@@ -146,6 +145,11 @@ public class CudaZeroHandler implements MemoryHandler {
                 break;
             default:
                 throw new RuntimeException("Unknown AllocationModel: [" + configuration.getAllocationModel() + "]");
+        }
+
+        int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
+        for (int i = 0; i < numDevices; i++) {
+            deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
         }
     }
 
@@ -978,8 +982,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public long getAllocatedDeviceObjects(Integer deviceId) {
-        if (!deviceAllocations.containsKey(deviceId))
-            return 0L;
         return deviceAllocations.get(deviceId).size();
     }
 
@@ -1018,8 +1020,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public Set<Long> getDeviceTrackingPoints(Integer deviceId) {
-        if (!deviceAllocations.containsKey(deviceId))
-            return new HashSet<>();
         return deviceAllocations.get(deviceId).keySet();
     }
 
@@ -1101,10 +1101,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public Integer getDeviceId() {
         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-        if (!deviceAllocations.containsKey(deviceId)) {
-            deviceAllocations.put(deviceId, new ConcurrentHashMap<Long, Long>());
-        }
 
         return deviceId;
     }
