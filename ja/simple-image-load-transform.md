@@ -1,7 +1,7 @@
 ---
 title: ディープニューラルネットワークに画像を読み込むためにカスタマイズされたデータパイプライン
 layout: ja-default
-redirect_from: /ja-simple-image-load-transform
+redirect_from: ja/ja-simple-image-load-transform
 ---
 
 # 画像向け等にカスタマイズされたデータパイプライン

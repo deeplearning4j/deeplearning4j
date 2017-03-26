@@ -1,7 +1,7 @@
 ---
 title: "制限付きボルツマンマシンの初心者向けガイド"
 layout: ja-default
-redirect_from: /ja-restrictedboltzmannmachine
+redirect_from: ja/ja-restrictedboltzmannmachine
 ---
 
 # 制限付きボルツマンマシンの初心者向けガイド
@@ -19,7 +19,7 @@ redirect_from: /ja-restrictedboltzmannmachine
 
 ## <a name="define">定義と構造</a>
 
-Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、[回帰](ja-linear-regression)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](ja-neuralnet-overview)、さらに具体的な例を知りたい方は[ユースケース](ja-use_cases)のページをご覧ください。）
+Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、[回帰](linear-regression)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](ja-neuralnet-overview)、さらに具体的な例を知りたい方は[ユースケース](ja-use_cases)のページをご覧ください。）
 
 制限付きボルツマンマシンは比較的シンプルなので、ニューラルネットワークを学ぶならまずここから取り組むのがよいでしょう。以下の段落では、図と簡単な文章で、制限付きボルツマンマシンがどのように機能するのかを解説していきます。
 
@@ -245,6 +245,6 @@ RBMの出力数は割合として解釈することができます。復元の�
 ### Other Beginner's Guides
 
 * [Neural Networks](ja-neuralnet-overview)
-* [Eigenvectors, PCA and Entropy](ja-eigenvector)
-* [Neural Networks & Regression](ja-linear-regression)
-* [Convolutional Networks](ja-convolutionalnets)
+* [Eigenvectors, PCA and Entropy](eigenvector)
+* [Neural Networks & Regression](linear-regression)
+* [Convolutional Networks](convolutionalnets)

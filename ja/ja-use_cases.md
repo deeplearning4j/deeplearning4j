@@ -1,7 +1,7 @@
 ---
 title: "ディープラーニングのユースケース"
 layout: ja-default
-redirect_from: /ja-use_cases
+redirect_from: ja/ja-use-cases
 ---
 
 # ディープラーニングのユースケース
@@ -9,7 +9,7 @@ redirect_from: /ja-use_cases
 ディープラーニングの優れた点は、画像、音声、ビデオ、テキストなどのメディアとして知られる構造化されていないデータのパターンを識別できるというところです。
 ここでは、サンプルとなるユースケースをその関連部門とともにご紹介しましょう。
 
-![Alt text](../img/ja-use_cases.png)
+![Alt text](../img/.png)
 
 ## 特徴のイントロスペクション（内省）
 

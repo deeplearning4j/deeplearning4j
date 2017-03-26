@@ -1,11 +1,12 @@
 ---
 title: "Sparkを使ったDeeplearning4j"
 layout: ja-default
+redirect_from: ja/ja-spark
 ---
 
 # Sparkを使ったDeeplearning4j
 
-ディープラーニングは、多くの計算処理を必要とするため、かなり大規模なデータセットを使用する場合は、そのスピードの速さが重要になってきます。より速度を早めるには、高速なハードウェア（通常、GPU）、最適化されたコード、ある種の並列処理によって対処することができます。 
+ディープラーニングは、多くの計算処理を必要とするため、かなり大規模なデータセットを使用する場合は、そのスピードの速さが重要になってきます。より速度を早めるには、高速なハードウェア（通常、GPU）、最適化されたコード、ある種の並列処理によって対処することができます。
 
 データ並列処理は大規模なデータセットを複数のサブセットに分け、それらを別々のニューラルネットワーク、コアに提供します。Deeplearning4jは、この作業をSparkを使って行います。複数のモデルを並行してトレーニングし、中央のモデルに産出するパラメータの[繰り返し平均化処理](./iterativereduce.html)を行います。(モデルの並列処理は、[Jeff Dean et alによって論じられていますが](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf)、これにより、大規模データセットの平均を出さなくてもモデルは別々のパッチを処理することができます。）
 
@@ -52,7 +53,7 @@ Sparkのクラスター上で行う一般的なトレーニングの流れ（Spa
 **注意**単一の機械によるトレーニングに、Spark localを使用することは*可能*ですが、あまりおすすめはできません（Sparkの同期化とシリアライゼーションのオーバーヘッドが発生するため）。その代わりに、以下を考えてみてください。
 
 * 単一のCPU/GPUシステムの場合、標準的なMultiLayerNetworkまたはComputationGraphのトレーニングを使用する。
-* 複数のCPU/GPUシステムには、[ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java)を使用する。これは、機能的にはSparkをローカルモードで実行するのに等しいですが、オーバーヘッドが軽減します（このためトレーニングのパフォーマンスが向上します）。 
+* 複数のCPU/GPUシステムには、[ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java)を使用する。これは、機能的にはSparkをローカルモードで実行するのに等しいですが、オーバーヘッドが軽減します（このためトレーニングのパフォーマンスが向上します）。
 
 ## <a name="how">DL4JのSpark上での分散ネットワークのトレーニング</a>
 
@@ -99,7 +100,7 @@ DL4Jの現在のバージョンでは、ネットワークのトレーニング�
 
 ## <a name="configuring">TrainingMasterの設定</a>
 
-DL4JのTrainingMasterは、SparkDl4jMultiLayerやSparkComputationGraphに使用する複数の異なるトレーニングが実装できる抽象化（インターフェイス）です。 
+DL4JのTrainingMasterは、SparkDl4jMultiLayerやSparkComputationGraphに使用する複数の異なるトレーニングが実装できる抽象化（インターフェイス）です。
 
 現在、DL4JにはParameterAveragingTrainingMaster一つのみが実装されています。上図でご紹介したパラメータ平均化処理を実装しています。
 これを作成するには、以下のビルダーパターンを使用してください。
@@ -133,7 +134,7 @@ ParameterAveragingTrainingMasterは、どのようにしてトレーニングを
 * **repartitionStrategy**:どの再分割を行うべきかについてのストラテジー。
     * SparkDefault:Sparkによって使用される標準的な再分割ストラテジー。基本的に最初のRDD(Resilient Distributed Dataset、耐障害性分散データセット）の中にある各オブジェクトはN個のRDDにランダムにマッピングされます。このため、パーティションはバランスが最適な状態にない場合があります。特に問題となるのは、前処理されたデータセットオブジェクトに使用されたり、平均化期間が頻繁な（単にランダムサンプリングのバリエ―ションが原因で）小さめのRDDの場合です。
     * Balanced:これはDL4Jが設定したカスタム再分割ストラテジーです。SparkDefaultオプションと比べて各パーティションのバランスがもっと取れている（オブジェクトの数という点において）ことを確保しようとします。しかし、実際は、場合によってはこれにはさらにカウント動作が必要になります（小規模なネットワークまたはミニバッチ一つにつき少しの計算）。より優れた再分割を行うことによって生じるオーバ―ヘッドにその利点が見合わない可能性があります。   
-    
+
 
 
 
@@ -149,7 +150,7 @@ DL4JをSparkで使用するには、deeplearning4j-sparkの依存関係を含め
         </dependency>
 ```
 
-```_${scala.binary.version}```は```_2.10```または```_2.11```であるべきで、ご利用のSparkのバージョンと一致していなければならないことにご注意ください。 
+```_${scala.binary.version}```は```_2.10```または```_2.11```であるべきで、ご利用のSparkのバージョンと一致していなければならないことにご注意ください。
 
 
 ## <a name="examples">Sparkを使った例のリポジトリ</a>
@@ -262,11 +263,11 @@ Create Cluster（クラスタの作成）-> Advanced Options（詳細オプシ�
 ```
 [
     {
-        "Classification":"hadoop-env", 
+        "Classification":"hadoop-env",
         "Configurations":[
             {
-                "Classification":"export", 
-                "Configurations":[], 
+                "Classification":"export",
+                "Configurations":[],
                 "Properties":{
                     "MKL_THREADING_LAYER":"GNU",
                     "LD_PRELOAD":"/usr/lib64/libgomp.so.1"

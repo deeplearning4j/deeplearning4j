@@ -1,7 +1,7 @@
 ---
 title: "Javaでの畳み込みネットワーク"
 layout: ja-default
-redirect_from: /ja-convolutionalnets
+redirect_from: ja/ja-convolutionalnets
 ---
 
 # 畳み込みネットワーク
@@ -159,14 +159,14 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 
 ### <a name="beginner">その他のDeeplearning4jのチュートリアル</a>
 * [Introduction to Neural Networks（ディープニューラルネットワークについて）](ja-neuralnet-overview)
-* [LSTMs and Recurrent Networks（LSTMとリカレントネットワーク）](ja-lstm)
+* [LSTMs and Recurrent Networks（LSTMとリカレントネットワーク）](lstm)
 * [Word2vec](ja-word2vec)
-* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](ja-restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy（固有ベクトル、PCA、共分散、エントロピー）](ja-eigenvector)
-* [Neural Networks and Regression（ニューラルネットワークと回帰）](ja-linear-regression)
+* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy（固有ベクトル、PCA、共分散、エントロピー）](eigenvector)
+* [Neural Networks and Regression（ニューラルネットワークと回帰）](linear-regression)
 
 ## <a name="resource">その他のリソース</a>
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf)。ニューヨーク大学（New York University）の教授であり、フェイスブックのリサーチ部門のディレクター。機械ビジョン作業で多く使用される畳み込みネットワークの使用を促進させるための多大なる貢献をして来られました。
 * [Andrej Karpathy氏によるスタンフォード大学の畳み込みネットワークに関するコース](https://cs231n.github.io/)は非常に素晴らしいので、畳み込みネットワークの基礎を学びたい方々にはかなりおすすめです。（*Pythonでの練習*）
-* DL4Jの畳み込みネットワークを見たい方は、[Quickstart page（クイックスタートページ）](ja-quickstart)の指示に従った後、弊社の[examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/)をご覧ください。
+* DL4Jの畳み込みネットワークを見たい方は、[Quickstart page（クイックスタートページ）](quickstart)の指示に従った後、弊社の[examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/)をご覧ください。

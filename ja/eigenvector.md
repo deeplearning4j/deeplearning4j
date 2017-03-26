@@ -1,7 +1,7 @@
 ---
 title: "固有ベクトル、主成分分析、共分散、エントロピー入門"
 layout: ja-default
-redirect_from: /ja-eigenvector
+redirect_from: ja/ja-eigenvector
 ---
 
 # 固有ベクトル、主成分分析、共分散、エントロピー入門
@@ -196,7 +196,7 @@ vs.
 
 サイコロに細工されたことを理解することは、データ集合で主成分を見つけることに似ています。根底にあるパターンを探し出せばいいのです。
 
-情報が、「私たちがシステムについて知らないこと」から「知っていること」へと移ることは、エントロピーの変化を示します。知見はシステムへのエントロピーを減らします。情報を得て、エントロピーを減すことが、情報の取得なのです。しかも、このタイプのエントロピーは恣意的であり、システムについて知っていることに左右されます。（あくまでも私的意見ですが、[情報の取得](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)は、カルバック・ライブラー情報量と同じことだと思います。これについては、別の記事[restricted Boltzmann machines](ja-restrictedboltzmannmachine)で少しだけ考察しています。）
+情報が、「私たちがシステムについて知らないこと」から「知っていること」へと移ることは、エントロピーの変化を示します。知見はシステムへのエントロピーを減らします。情報を得て、エントロピーを減すことが、情報の取得なのです。しかも、このタイプのエントロピーは恣意的であり、システムについて知っていることに左右されます。（あくまでも私的意見ですが、[情報の取得](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)は、カルバック・ライブラー情報量と同じことだと思います。これについては、別の記事[restricted Boltzmann machines](restrictedboltzmannmachine)で少しだけ考察しています。）
 
 分布したデータを分析する主成分は、意外性という意味でシステムのエントロピーの減少を示しています。
 
@@ -209,8 +209,8 @@ vs.
 ## その他の初心者用手引
 
 * [Word2Vecとは？](ja-word2vec)
-* [制限付きボルツマンマシンの初心者向けガイド](ja-restrictedboltzmannmachine)
+* [制限付きボルツマンマシンの初心者向けガイド](restrictedboltzmannmachine)
 * [ディープニューラルネットワークについて](ja-neuralnet-overview)
-* [Regression & Neural Networks](ja-linear-regression.html)
+* [Regression & Neural Networks](linear-regression.html)
 
 場合によっては、行列に固有ベクトルがフルセットで存在しないかもしれません。行列には、対応する固有値あるいは次元の数だけの線形従属の固有ベクトルが存在できます。

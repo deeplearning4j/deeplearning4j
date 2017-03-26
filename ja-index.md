@@ -9,7 +9,7 @@ Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレ
 
 DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定よりも非研究者でも手軽にプロトタイピングできるように作られています。DL4Jはスケーラブルでカスタマイズ可能です。Apache 2.0で配布されており、DL4Jの派生物はすべてその著者に帰属します。
 
-弊社の[クイックスタート](ja/ja-quickstart)にある手順に従いさえすれば、初めてのニューラルネットワークのexampleを数分で使用することができます。
+弊社の[クイックスタート](ja/quickstart)にある手順に従いさえすれば、初めてのニューラルネットワークのexampleを数分で使用することができます。
 
 ### [Deep Learningのユースケース](ja/ja-use_cases)
 
@@ -19,7 +19,7 @@ DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定�
 * スパムフィルタ
 * 不正検出
 * レコメンダーシステム（CRM、adtech、解約防止）
-* [回帰](ja/ja-linear-regression)
+* [回帰](ja/linear-regression)
 
 ### なぜDeeplearning4jなのか?
 
@@ -33,9 +33,9 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 
 ### DL4Jのニューラルネットワーク
 
-* [制限付きボルツマン・マシン](ja/ja-restrictedboltzmannmachine)
-* [畳込みネットワーク](ja/ja-convolutionalnets) （画像）
-* [回帰ネットワーク](ja/ja-usingrnns)/[LSTMs](ja/ja-lstm) （時系列、センサーデータ）
+* [制限付きボルツマン・マシン](ja/restrictedboltzmannmachine)
+* [畳込みネットワーク](ja/convolutionalnets) （画像）
+* [回帰ネットワーク](ja/ja-usingrnns)/[LSTMs](ja/lstm) （時系列、センサーデータ）
 * [再帰的オートエンコーダー](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [ディープ・ビリーフ・ネットワーク](deepbeliefnetwork)
 * [Deepオートエンコーダー](http://deeplearning4j.org/deepautoencoder.html) （質問-回答/データ圧縮）
@@ -56,11 +56,11 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 ### Deeplearning4jのチュートリアル
 
 * [ディープ・ニューラル・ネットワークのご紹介](ja/ja-neuralnet-overview)
-* [制限付きボルツマン・マシン](ja/ja-restrictedboltzmannmachine)
-* [固有ベクトル、PCA（主成分分析）、エントリピー](ja/ja-eigenvector)
+* [制限付きボルツマン・マシン](ja/restrictedboltzmannmachine)
+* [固有ベクトル、PCA（主成分分析）、エントリピー](ja/eigenvector)
 * [Word2vec](ja/ja-word2vec)
-* [畳込みネットワークのチュートリアル](ja/ja-convolutionalnets)
-* [LSTMと回帰ネットワークのチュートリアル](ja/ja-lstm)
+* [畳込みネットワークのチュートリアル](ja/convolutionalnets)
+* [LSTMと回帰ネットワークのチュートリアル](ja/lstm)
 * [回帰ネットワークをDL4Jに使用しましょう](ja/ja-usingrnns)
 * [ディープ・ビリーフ・ネットワークとMNIST](deepbeliefnetwork)
 * [Customizing Data Pipelines With Canovaを使った Data Pipelineのカスタマイズ](image-data-pipeline)

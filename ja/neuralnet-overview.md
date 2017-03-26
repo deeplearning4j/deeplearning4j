@@ -1,7 +1,7 @@
 ---
-layout: ja-default
 title: "ディープニューラルネットワークについて"
-redirect_from: /ja-neuralnet-overview
+layout: ja-default
+redirect_from: ja/ja-neuralnet-overview
 ---
 
 # ディープニューラルネットワークについて
@@ -21,7 +21,7 @@ redirect_from: /ja-neuralnet-overview
 
 ニューラルネットワークは、人間の脳を模倣したアルゴリズムの一式で、パターン認識をするように設計されています。一種の機械知覚により感覚データを解釈し、生の入力情報にラベルを付け、クラスタリングします。その認識するパターンは数値で表されたもので、ベクトルにあります。実際の社会にあるすべてのデータは、画像、音、テキスト、時系列であっても、このような数値に変換されます。
 
-ニューラルネットワークは、人間に代わってデータをクラスタリングし、分類します。そして、ニューラルネットワークは層を成していて、クラスタリングや分類作業を保管や管理されるデータの上で行っていると思っていただいて結構です。exampleの入力情報を、類似性に基づいてラベル付けされていないデータをグループ化します。そして、ラベル付けが終了し、トレーニング可能なデータの一式が準備できると、データを分類します。（正確に言うと、ニューラルネットワークが特徴を抽出すると、それらの特徴が他のアルゴリズムに入力され、クラスタリングや分類が行われます。従って、ディープ・ニューラル・ネットワークは、[強化学習（reinforcement learning）](../reinforcementlearning.html)、分類、[回帰（regression）](ja-linear-regression.html)を行うためのアルゴリズムが導入された、より大型の機械学習アプリケーションのコンポーネントであると考えていただいていいでしょう。）
+ニューラルネットワークは、人間に代わってデータをクラスタリングし、分類します。そして、ニューラルネットワークは層を成していて、クラスタリングや分類作業を保管や管理されるデータの上で行っていると思っていただいて結構です。exampleの入力情報を、類似性に基づいてラベル付けされていないデータをグループ化します。そして、ラベル付けが終了し、トレーニング可能なデータの一式が準備できると、データを分類します。（正確に言うと、ニューラルネットワークが特徴を抽出すると、それらの特徴が他のアルゴリズムに入力され、クラスタリングや分類が行われます。従って、ディープ・ニューラル・ネットワークは、[強化学習（reinforcement learning）](../reinforcementlearning.html)、分類、[回帰（regression）](linear-regression.html)を行うためのアルゴリズムが導入された、より大型の機械学習アプリケーションのコンポーネントであると考えていただいていいでしょう。）
 
 ディープラーニングが扱うことができる課題を一つ考える際には、どんなカテゴリーが気になっているのか、どの情報に基づいて行動するのがいいと思うか、考えてみてください。その答えが、データに適用されるラベルに当たります。例えば、`spam`か`not_spam`、`good_guy`か`bad_guy`、`angry_customer`か`happy_customer`などです。次に、自分は、それらのラベルを伴うデータを持っているか、ラベルの付いたデータを見つけることができるか、ラベルの付いたデータセットを作成することができるか、考えてみてください。
 
@@ -186,13 +186,13 @@ redirect_from: /ja-neuralnet-overview
 
 ディープラーニングの初心者の方には、以下のチュートリアルやビデオがフィードフォワードニューラルネットワークの基礎を学ぶのに役に立ちます。是非お役立てください。
 
-* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](ja-restrictedboltzmannmachine)
-* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](ja-eigenvector)
+* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](restrictedboltzmannmachine)
+* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](eigenvector)
 * [Glossary of Deep-Learning and Neural-Net Terms（ディープラーニングとニューラルネットワーク用語集）](../glossary)
-* [Convolutional Networks（畳み込みネットアーク）](ja-convolutionalnets)
-* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](ja-lstm)
+* [Convolutional Networks（畳み込みネットアーク）](convolutionalnets)
+* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](lstm)
 * [Word2vec and Natural-Language Processing（Word2vecと自然言語処理）](ja-word2vec)
-* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](ja-quickstart)
+* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](quickstart)
 * [Neural Networks Demystified（ニューラルネットワークの解明ガイド）](https://www.youtube.com/watch?v=bxe2T-V8XRs)（7本の連続ビデオ）
 * [A Neural Network in 11 Lines of Python（パイソンの11のコマンドラインで実装するニューラルネットワーク）](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example（ステップごとに見る誤差逆伝播法の例）](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
