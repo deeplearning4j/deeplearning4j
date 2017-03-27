@@ -28,6 +28,8 @@ import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +48,14 @@ public class Solver {
     private StepFunction stepFunction;
 
     public void optimize() {
-        if (optimizer == null)
+        if (optimizer == null) {
+            MemoryWorkspace cws = Nd4j.getMemoryManager().getCurrentWorkspace();
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
             optimizer = getOptimizer();
+
+            Nd4j.getMemoryManager().setCurrentWorkspace(cws);
+        }
         optimizer.optimize();
 
     }

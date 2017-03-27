@@ -743,8 +743,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceFeedForward)) {
-          //      log.info("Last loop allocation: {} bytes", workspace.getLastCycleAllocations());
                 currInput = activationFromPrevLayer(i, currInput, train).leverage();
+                //currInput = activationFromPrevLayer(i, currInput, train);
                 //applies drop connect to the activation
                 activations.add(currInput);
             }
@@ -995,7 +995,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(100 * 1024L * 1024L)
+                .initialSize(200 * 1024L * 1024L)
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
@@ -1023,8 +1023,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         setInput(next.getFeatureMatrix());
                         setLabels(next.getLabels());
                         if (solver == null) {
+                            MemoryWorkspace cws = Nd4j.getMemoryManager().getCurrentWorkspace();
+                            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
                             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+
+                            Nd4j.getMemoryManager().setCurrentWorkspace(cws);
                         }
+
                         solver.optimize();
                     }
 
@@ -1946,8 +1952,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void setInput(INDArray input) {
         this.input = input;
-        if (this.layers == null)
+        if (this.layers == null) {
+            log.info("setInput: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
             this.initializeLayers(getInput());
+        }
         if (input != null) {
             if (input.length() == 0)
                 throw new IllegalArgumentException(

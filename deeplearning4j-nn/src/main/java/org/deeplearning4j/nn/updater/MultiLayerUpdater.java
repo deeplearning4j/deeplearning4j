@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -116,25 +117,30 @@ public class MultiLayerUpdater implements Updater {
         MultiLayerNetwork mln = (MultiLayerNetwork) layer;
 
         Gradient[] layerGradients = new Gradient[layerUpdaters.length];
-        for (int i = 0; i < layerGradients.length; i++)
-            layerGradients[i] = new DefaultGradient();
 
-        for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
-            String key = gradientPair.getKey();
-            int idx = key.indexOf('_');
-            if (idx == -1)
-                throw new IllegalStateException(
-                                "Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key
-                                                + "\"");
-            int layerIdx = Integer.parseInt(key.substring(0, idx));
 
-            String newKey = key.substring(idx + 1);
-            layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
-        }
+            for (int i = 0; i < layerGradients.length; i++)
+                layerGradients[i] = new DefaultGradient();
 
-        for (int i = 0; i < layerUpdaters.length; i++) {
-            layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
-        }
+
+            for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+                String key = gradientPair.getKey();
+                int idx = key.indexOf('_');
+                if (idx == -1)
+                    throw new IllegalStateException(
+                            "Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key
+                                    + "\"");
+                int layerIdx = Integer.parseInt(key.substring(0, idx));
+
+                String newKey = key.substring(idx + 1);
+                layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
+            }
+
+        //try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            for (int i = 0; i < layerUpdaters.length; i++) {
+                layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
+            }
+        //}
     }
 
     @Override
