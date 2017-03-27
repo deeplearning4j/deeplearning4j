@@ -5,14 +5,12 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Audrey Loeffel
  */
 @Slf4j
-public class BaseSparseMatrix implements ISparseMatrix {
+public class BaseSparseNDArray implements ISparseNDArray {
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
 

@@ -152,7 +152,7 @@ public class Nd4j {
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
-    protected static Class<? extends ISparseMatrixFactory> iSparseMatrixFactoryclazz;
+    protected static Class<? extends ISparseNDArrayFactory> iSparseMatrixFactoryclazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
@@ -169,7 +169,7 @@ public class Nd4j {
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
-    protected static ISparseMatrixFactory SPARSE_INSTANCE;
+    protected static ISparseNDArrayFactory SPARSE_INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
@@ -508,7 +508,7 @@ public class Nd4j {
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
     }
-    public static void setiSparseMatrixFactoryclazz(Class<? extends ISparseMatrixFactory> clazz) {
+    public static void setiSparseMatrixFactoryclazz(Class<? extends ISparseNDArrayFactory> clazz) {
         iSparseMatrixFactoryclazz = clazz;
     }
     /**
@@ -1425,7 +1425,7 @@ public class Nd4j {
         INSTANCE = factory;
     }
 
-    public static void setSparseFactory(ISparseMatrixFactory factory) {
+    public static void setSparseFactory(ISparseNDArrayFactory factory) {
         SPARSE_INSTANCE = factory;
     }
 
@@ -5110,8 +5110,8 @@ public class Nd4j {
         return ret;
     }
     // TODO change to INDArray
-    public static ISparseMatrix /*INDArray*/ createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
-        ISparseMatrix matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+    public static ISparseNDArray /*INDArray*/ createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        ISparseNDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }

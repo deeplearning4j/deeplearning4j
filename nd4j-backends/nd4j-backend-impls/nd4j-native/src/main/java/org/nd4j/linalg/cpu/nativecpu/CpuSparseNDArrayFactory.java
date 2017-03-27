@@ -1,16 +1,16 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
-import org.nd4j.linalg.api.ndarray.ISparseMatrix;
+import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
-import org.nd4j.linalg.factory.BaseISparseMatrixFactory;
+import org.nd4j.linalg.factory.BaseSparseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author Audrey Loeffel
  */
-public class CpuSparseMatrixFactory extends BaseISparseMatrixFactory {
+public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
-    public CpuSparseMatrixFactory(){}
+    public CpuSparseNDArrayFactory(){}
 
     static{
         Nd4j.getBlasWrapper();
@@ -39,8 +39,8 @@ public class CpuSparseMatrixFactory extends BaseISparseMatrixFactory {
     }
 
     @Override
-    public ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
-        return new CpuCSRSparseMatrix(data, columns, pointerB, pointerE, shape);
+    public ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
+        return new CpuCSRSparseNDArray(data, columns, pointerB, pointerE, shape);
     }
 
 }

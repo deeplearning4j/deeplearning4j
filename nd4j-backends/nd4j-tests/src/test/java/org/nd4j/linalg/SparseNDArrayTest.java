@@ -2,15 +2,14 @@ package org.nd4j.linalg;
 
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
-import org.nd4j.linalg.api.ndarray.ISparseMatrix;
-import org.nd4j.linalg.cpu.nativecpu.CpuCSRSparseMatrix;
-import org.nd4j.linalg.cpu.nativecpu.CpuSparseMatrixFactory;
+import org.nd4j.linalg.api.ndarray.ISparseNDArray;
+import org.nd4j.linalg.cpu.nativecpu.CpuCSRSparseNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author Audrey Loeffel
  */
-public class SparseMatrixTest{
+public class SparseNDArrayTest {
 
     /*
     * [[1 -1 0 -3 0]
@@ -30,7 +29,7 @@ public class SparseMatrixTest{
 
     @Test
     public void shouldCreateSparseMatrix() {
-        ISparseMatrix matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         //TODO
     }
 
@@ -43,9 +42,9 @@ public class SparseMatrixTest{
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseMatrix matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(matrix instanceof CpuCSRSparseMatrix) {
-            CpuCSRSparseMatrix csrMatrix = (CpuCSRSparseMatrix) matrix;
+        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        if(matrix instanceof CpuCSRSparseNDArray) {
+            CpuCSRSparseNDArray csrMatrix = (CpuCSRSparseNDArray) matrix;
             csrMatrix.putScalar(2, 1, 3);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 3, 4, 6, 4, -4, 2, 7, 8, -5};
@@ -72,9 +71,9 @@ public class SparseMatrixTest{
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseMatrix matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(matrix instanceof CpuCSRSparseMatrix) {
-            CpuCSRSparseMatrix csrMatrix = (CpuCSRSparseMatrix) matrix;
+        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        if(matrix instanceof CpuCSRSparseNDArray) {
+            CpuCSRSparseNDArray csrMatrix = (CpuCSRSparseNDArray) matrix;
             csrMatrix.putScalar(2, 2, 10);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 10, 6, 4, -4, 2, 7, 8, -5};

@@ -4,17 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
-import org.nd4j.linalg.api.ndarray.BaseSparseMatrix;
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.ISparseMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 
 /**
  * @author Audrey Loeffel
  */
 @Slf4j
-public class CpuCSRSparseMatrix extends BaseSparseMatrix {
+public class CpuCSRSparseNDArray extends BaseSparseNDArray {
 
     protected transient volatile DoubleBuffer values;
     protected transient volatile DoubleBuffer columns;
@@ -35,7 +33,7 @@ public class CpuCSRSparseMatrix extends BaseSparseMatrix {
  *                 element in the values array that is last non-zero element in a row j of A.
  * @param shape Shape of the matrix A
 */
-    public CpuCSRSparseMatrix(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public CpuCSRSparseNDArray(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         assert(data.length == columns.length);
         assert(pointerB.length == pointerE.length);
 
@@ -65,7 +63,7 @@ public class CpuCSRSparseMatrix extends BaseSparseMatrix {
         this.pointerE.setData(pointerE);
     }
 
-    public ISparseMatrix putScalar(int row, int col, double value){
+    public ISparseNDArray putScalar(int row, int col, double value){
         // TODO use shape information to get the corresponding index ?
 
         assert(row < nbRows);

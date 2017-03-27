@@ -1,12 +1,12 @@
 package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.api.blas.*;
-import org.nd4j.linalg.api.ndarray.ISparseMatrix;
+import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 
 /**
  * @author Audrey Loeffel
  */
-interface ISparseMatrixFactory {
+interface ISparseNDArrayFactory {
 
 
     Blas blas();
@@ -29,6 +29,6 @@ interface ISparseMatrixFactory {
 
     void createLapack();
 
-    ISparseMatrix createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
 
 }
