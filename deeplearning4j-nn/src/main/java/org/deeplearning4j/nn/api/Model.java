@@ -36,6 +36,11 @@ import java.util.Map;
  */
 public interface Model {
 
+    /**
+     * Init the model
+     */
+    void init();
+
 
     /**
      * Set the IterationListeners for the ComputationGraph (and all layers in the network)
