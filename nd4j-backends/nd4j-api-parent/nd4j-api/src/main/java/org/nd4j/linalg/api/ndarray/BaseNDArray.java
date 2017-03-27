@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.common.primitives.Ints;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -4998,12 +4999,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          2) we're out of any workspace
         */
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
-            return this.dup(this.ordering());
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+
+            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+            return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
         } else {
             MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
-            INDArray copy = this.dup(this.ordering());
+
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+
+            //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
+            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+            INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer()); //this.dup(this.ordering());
 
             Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 

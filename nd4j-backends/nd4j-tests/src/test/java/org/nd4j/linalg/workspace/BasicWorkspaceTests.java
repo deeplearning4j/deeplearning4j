@@ -10,6 +10,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -85,6 +86,27 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         array.addi(1.0);
 
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
+    }
+
+
+    @Test
+    public void testNoShape1() {
+        int outDepth = 50;
+        int miniBatch = 64;
+        int outH = 8;
+        int outW = 8;
+
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            INDArray delta = Nd4j.create(new int[]{50, 64, 8, 8}, new int[]{64, 3200, 8, 1}, 'c');
+            delta = delta.permute(1, 0, 2, 3);
+
+            assertArrayEquals(new int[]{64, 50, 8, 8}, delta.shape());
+            assertArrayEquals(new int[]{3200, 64, 8, 1}, delta.stride());
+
+            INDArray delta2d = Shape.newShapeNoCopy(delta, new int[]{outDepth, miniBatch * outH * outW}, false);
+
+            assertNotNull(delta2d);
+        }
     }
 
     @Test
