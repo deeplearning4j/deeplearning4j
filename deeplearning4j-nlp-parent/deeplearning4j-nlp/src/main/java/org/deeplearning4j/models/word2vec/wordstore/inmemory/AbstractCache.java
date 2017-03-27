@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     // map for label->object dictionary
@@ -44,7 +46,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     private AtomicLong totalWordCount = new AtomicLong(0);
 
-    private Logger logger = LoggerFactory.getLogger(AbstractCache.class);
+
 
     private static final int MAX_CODE_LENGTH = 40;
 
@@ -419,7 +421,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
                 totalWordCount.addAndGet(value);
             }
         }
-        logger.info("Updated counter: [" + totalWordCount.get() + "]");
+        log.info("Updated counter: [" + totalWordCount.get() + "]");
     }
 
     @Override

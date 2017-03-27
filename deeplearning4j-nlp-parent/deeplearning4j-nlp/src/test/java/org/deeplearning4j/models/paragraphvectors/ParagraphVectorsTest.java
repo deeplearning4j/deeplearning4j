@@ -991,7 +991,7 @@ public class ParagraphVectorsTest {
 
                             ParagraphVectors vec = new ParagraphVectors.Builder()
                                     .seed(42)
-                                    .batchSize(10)
+                                    //.batchSize(10)
                                     .minWordFrequency(1)
                                     .iterations(1)
                                     .epochs(5)
@@ -1003,6 +1003,7 @@ public class ParagraphVectorsTest {
                                     .allowParallelTokenization(false)
                                     //.vocabCache(cache)
                                     .tokenizerFactory(t)
+                                    .workers(1)
                                     .iterate(sic)
                                     .build();
 

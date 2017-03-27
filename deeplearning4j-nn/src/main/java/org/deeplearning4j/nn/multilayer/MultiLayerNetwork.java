@@ -649,22 +649,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).policyLearning(LearningPolicy.OVER_TIME).build();
 
         for (int i = 0; i < layers.length; i++) {
-            log.info("Activating layer: {}", i);
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
-                log.info("Last loop allocation: {} bytes", workspace.getLastCycleAllocations());
-                currInput = zFromPrevLayer(i, currInput, training);
+                currInput = zFromPrevLayer(i, currInput, training).detach();
                 //applies drop connect to the activation
-                activations.add(currInput.detach());
-
-
+                activations.add(currInput);
             }
         }
-
-        log.info("Max loop: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getMaxCycleAllocations());
-
-        if (1>0)
-            throw new RuntimeException();
-
         return activations;
     }
 
@@ -1000,6 +990,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //                finetune();
             //            }
         }
+
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(100 * 1024L * 1024L)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
             if (!iter.hasNext() && iter.resetSupported()) {
@@ -1011,7 +1007,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
-                //try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("EXTERNAL_LOOP")) {
+                //try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,"EXTERNAL_LOOP")) {
 
 
                 boolean hasMaskArrays = next.hasMaskArrays();
@@ -1063,8 +1059,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Gradients and the error (epsilon) at the input
      */
     protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
+            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
             initGradientsView();
+            Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+        }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
