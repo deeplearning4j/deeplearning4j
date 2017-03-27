@@ -58,55 +58,55 @@ public class ScalarMin extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "max_scalar";
+        return "min_scalar";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public float op(float origin, float other) {
-        return FastMath.max(origin, num.floatValue());
+        return FastMath.min(origin, num.floatValue());
     }
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.max(origin, num.doubleValue());
+        return FastMath.min(origin, num.doubleValue());
     }
 
     @Override
     public double op(double origin) {
-        return FastMath.max(origin, num.doubleValue());
+        return FastMath.min(origin, num.doubleValue());
 
     }
 
     @Override
     public float op(float origin) {
-        return FastMath.max(origin, num.floatValue());
+        return FastMath.min(origin, num.floatValue());
 
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
