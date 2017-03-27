@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -12,12 +15,21 @@ import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
  * Created by Alex on 21/02/2017.
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 @Builder(builderClassName = "Builder")
 public class FineTuneConfiguration {
 
@@ -360,5 +372,38 @@ public class FineTuneConfiguration {
             confBuilder.setLrPolicyPower(lrPolicyPower);
 
         return confBuilder;
+    }
+
+
+    public String toJson(){
+        try{
+            return NeuralNetConfiguration.mapper().writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toYaml(){
+        try{
+            return NeuralNetConfiguration.mapperYaml().writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static FineTuneConfiguration fromJson(String json){
+        try{
+            return NeuralNetConfiguration.mapper().readValue(json, FineTuneConfiguration.class);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static FineTuneConfiguration fromYaml(String yaml){
+        try{
+            return NeuralNetConfiguration.mapperYaml().readValue(yaml, FineTuneConfiguration.class);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 }
