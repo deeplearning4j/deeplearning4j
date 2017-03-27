@@ -137,6 +137,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 assertNotEquals(null, copy);
 
                 assertTrue(copy.isAttached());
+
+                assertEquals(15.0f, copy.sumNumber().floatValue(), 0.01f);
             }
         }
     }
