@@ -1,7 +1,7 @@
 ---
 title: "再帰型ニューラルネットワークをDL4Jで使用"
 layout: ja-default
-redirect_from: /ja-usingrnns
+redirect_from: ja/ja-usingrnns
 ---
 
 # 再帰型ニューラルネットワークをDL4Jで使用

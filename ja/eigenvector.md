@@ -204,13 +204,13 @@ vs.
 
 ## とにかくコードが欲しい方へ
 
-[ND4J](http://nd4j.org/ja-index)はn次元配列を扱うJVM向け数値計算ライブラリで、Numpyに主に触発されています。ND4Jがどのように固有ベクトルを扱っているかをご覧いただけます。ND4Jには、Javaと[Scala](https://github.com/deeplearning4j/nd4s)のAPIがあり、HadoopとSparkで実行し、[Numpy/Cythonの約2倍も速く](http://nd4j.org/benchmarking)大きな行列を処理できます。
+[ND4J](http://nd4j.org/index)はn次元配列を扱うJVM向け数値計算ライブラリで、Numpyに主に触発されています。ND4Jがどのように固有ベクトルを扱っているかをご覧いただけます。ND4Jには、Javaと[Scala](https://github.com/deeplearning4j/nd4s)のAPIがあり、HadoopとSparkで実行し、[Numpy/Cythonの約2倍も速く](http://nd4j.org/benchmarking)大きな行列を処理できます。
 
 ## その他の初心者用手引
 
-* [Word2Vecとは？](ja-word2vec)
+* [Word2Vecとは？](word2vec)
 * [制限付きボルツマンマシンの初心者向けガイド](restrictedboltzmannmachine)
-* [ディープニューラルネットワークについて](ja-neuralnet-overview)
+* [ディープニューラルネットワークについて](neuralnet-overview)
 * [Regression & Neural Networks](linear-regression.html)
 
 場合によっては、行列に固有ベクトルがフルセットで存在しないかもしれません。行列には、対応する固有値あるいは次元の数だけの線形従属の固有ベクトルが存在できます。

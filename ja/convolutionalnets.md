@@ -158,9 +158,9 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=43:87"></script>
 
 ### <a name="beginner">その他のDeeplearning4jのチュートリアル</a>
-* [Introduction to Neural Networks（ディープニューラルネットワークについて）](ja-neuralnet-overview)
+* [Introduction to Neural Networks（ディープニューラルネットワークについて）](neuralnet-overview)
 * [LSTMs and Recurrent Networks（LSTMとリカレントネットワーク）](lstm)
-* [Word2vec](ja-word2vec)
+* [Word2vec](word2vec)
 * [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy（固有ベクトル、PCA、共分散、エントロピー）](eigenvector)
 * [Neural Networks and Regression（ニューラルネットワークと回帰）](linear-regression)
