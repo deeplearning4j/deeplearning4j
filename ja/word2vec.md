@@ -1,7 +1,7 @@
 ---
 title: "Word2Vecとは？"
 layout: ja-default
-redirect_from: /ja-word2vec
+redirect_from: ja/ja-word2vec
 ---
 
 # Word2Vecとは？
@@ -22,7 +22,7 @@ redirect_from: /ja-word2vec
 
 ## <a name="intro">Word2Vecとは？</a>
 
-Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](ja-neuralnet-overview)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。
+Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](neuralnet-overview)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。
 
 Word2vecのアプリケーションが適用できる分野は、世間で使われる文の構文解析だけにとどまりません。パターンが識別される可能性のある<a href="#sequence">遺伝子、コード、再生リスト、ソーシャルメディアのグラフ、その他の文字列や記号列</a>にも適用できるのです。[Deeplearning4j](quickstart.html)は、SparkやGPUで動作するJavaや[Scala](../scala.html)用の分散型Word2vecを実装しています。
 

@@ -158,7 +158,7 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ### <a name="next">次のステップ:ニューラルネットワークの構築</a>
 
-ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](ja-neuralnet-overview)にて詳細をお読みください。
+ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](neuralnet-overview)にて詳細をお読みください。
 
 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../ja/restrictedboltzmannmachine)をお読みください。
 

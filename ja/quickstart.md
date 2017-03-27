@@ -149,7 +149,7 @@ IntelliJ内では、最初に実行するDeeplearning4jを選ぶ必要があり�
   * [DL4J Live Chat（ライブチャット）](https://gitter.im/deeplearning4j/deeplearning4j)は、DL4Jのすべてのことについてを扱うメインチャンネルです。ほとんどの人々はこのチャットを使っています。
   * [Tuning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)は、ニューラルネットワークを始めた人々のために設けられています。初心者の方々は是非ご参加ください!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)は、弊社の次のリリースのチェックや改善のお手伝いをしてくださっている方々向けです。注意：このコミュニティーは経験者向けです。
-2.[Introduction to deep neural networks（ディープニューラルネットワークについて）](ja-neuralnet-overview)または[弊社の詳細チュートリアルの一つ](../tutorials)をお読みください。
+2.[Introduction to deep neural networks（ディープニューラルネットワークについて）](neuralnet-overview)または[弊社の詳細チュートリアルの一つ](../tutorials)をお読みください。
 3.より詳細の[Comprehensive Setup Guide（セットアップ全ガイド）](gettingstarted)をお読みください。
 4.[DL4Jのガイド集](./documentation)をご覧ください。
 
