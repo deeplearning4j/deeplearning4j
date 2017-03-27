@@ -109,6 +109,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     protected transient Solver solver; //Used to call optimizers during backprop
 
+    protected final static String workspaceExternal = "LOOP_ITER";
+    protected final static String workspaceFeedForward = "LOOP_FF";
+    protected final static String workspaceBackProp = "LOOP_BP";
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
@@ -650,7 +653,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for (int i = 0; i < layers.length; i++) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
-                currInput = zFromPrevLayer(i, currInput, training).detach();
+                currInput = zFromPrevLayer(i, currInput, training).leverage();
                 //applies drop connect to the activation
                 activations.add(currInput);
             }
@@ -739,9 +742,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceFeedForward)) {
           //      log.info("Last loop allocation: {} bytes", workspace.getLastCycleAllocations());
-                currInput = activationFromPrevLayer(i, currInput, train).detach();
+                currInput = activationFromPrevLayer(i, currInput, train).leverage();
                 //applies drop connect to the activation
                 activations.add(currInput);
             }
@@ -1007,29 +1010,28 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
-                //try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,"EXTERNAL_LOOP")) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
 
+                    boolean hasMaskArrays = next.hasMaskArrays();
 
-                boolean hasMaskArrays = next.hasMaskArrays();
-
-                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
-                            next.getLabelsMaskArray());
-                } else {
-                    if (hasMaskArrays)
-                        setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
-                    setInput(next.getFeatureMatrix());
-                    setLabels(next.getLabels());
-                    if (solver == null) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                        doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
+                                next.getLabelsMaskArray());
+                    } else {
+                        if (hasMaskArrays)
+                            setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+                        setInput(next.getFeatureMatrix());
+                        setLabels(next.getLabels());
+                        if (solver == null) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        }
+                        solver.optimize();
                     }
-                    solver.optimize();
+
+                    if (hasMaskArrays)
+                        clearLayerMaskArrays();
+
                 }
-
-                if (hasMaskArrays)
-                    clearLayerMaskArrays();
-
-                //}
             }
         } else if (layerWiseConfigurations.isPretrain()) {
             log.warn("Warning: finetune is not applied.");
@@ -1118,12 +1120,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("1")) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceFeedForward)) {
                 currLayer = getLayer(j);
                 if (currLayer instanceof FrozenLayer)
                     break;
                 currPair = currLayer.backpropGradient(currPair.getSecond());
-                currPair.setSecond(currPair.getSecond().detach());
+                currPair.setSecond(currPair.getSecond().leverage());
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
                 for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
