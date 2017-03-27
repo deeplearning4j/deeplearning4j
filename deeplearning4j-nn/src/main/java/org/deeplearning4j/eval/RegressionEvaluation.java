@@ -109,7 +109,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         if (columnNames.size() != labels.size(1) || columnNames.size() != predictions.size(1)) {
             throw new IllegalArgumentException(
-                    "Number of columns of the labels and predictions must match specification (" + columnNames.size() +
+                    "Number of the columns of labels and predictions must match specification (" + columnNames.size() +
                             "). Got " + labels.size(1) + " and " + predictions.size(1));
         }
         labelsSumPerColumn.addi(labels.sum(0));
