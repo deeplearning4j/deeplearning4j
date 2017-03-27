@@ -86,6 +86,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         init();
     }
 
+    /**
+     * This method returns parent Workspace, if any. Null if there's none.
+     *
+     * @return
+     */
+    @Override
+    public MemoryWorkspace getParentWorkspace() {
+        return previousWorkspace;
+    }
+
     public long getHostOffset() {
         return hostOffset.get();
     }

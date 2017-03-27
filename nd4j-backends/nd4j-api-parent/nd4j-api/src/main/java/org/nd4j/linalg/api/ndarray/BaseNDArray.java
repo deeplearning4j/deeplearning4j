@@ -5021,4 +5021,41 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return copy;
         }
     }
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
+     * <p>
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
+     *
+     * @return
+     */
+    @Override
+    public INDArray leverage() {
+        if (!isAttached())
+            return this;
+
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if (workspace == null) {
+            return this.detach();
+        }
+
+        MemoryWorkspace parentWorkspace = workspace.getParentWorkspace();
+        // if there's no parent ws - just detach
+        if (parentWorkspace == null)
+            return this.detach();
+        else {
+            // temporary set parent ws as current ws
+            Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
+
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+            INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+
+            // restore current ws
+            Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+            return copy;
+        }
+    }
 }

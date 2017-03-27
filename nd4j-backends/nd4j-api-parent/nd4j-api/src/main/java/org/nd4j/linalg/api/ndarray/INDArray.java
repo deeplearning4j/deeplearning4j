@@ -2412,4 +2412,14 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray detach();
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
+     *
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
+     *
+     * @return
+     */
+    INDArray leverage();
 }

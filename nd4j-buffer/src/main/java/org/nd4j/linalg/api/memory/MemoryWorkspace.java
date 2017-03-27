@@ -101,4 +101,10 @@ public interface MemoryWorkspace extends AutoCloseable {
 
     @Override
     void close();
+
+    /**
+     * This method returns parent Workspace, if any. Null if there's none.
+     * @return
+     */
+    MemoryWorkspace getParentWorkspace();
 }

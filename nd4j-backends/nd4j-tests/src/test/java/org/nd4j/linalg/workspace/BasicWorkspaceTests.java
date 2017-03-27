@@ -88,6 +88,32 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
     }
 
+    @Test
+    public void testLeverage1() throws Exception {
+        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+
+            assertEquals(0, wsOne.getHostOffset());
+
+            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+
+                INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+                assertEquals(0, wsOne.getHostOffset());
+
+                long reqMemory = 5 * Nd4j.sizeOfDataType();
+                assertEquals(reqMemory + reqMemory % 8, wsTwo.getHostOffset());
+
+                INDArray copy = array.leverage();
+
+                assertEquals(reqMemory + reqMemory % 8, wsTwo.getHostOffset());
+                assertEquals(reqMemory + reqMemory % 8, wsOne.getHostOffset());
+
+                assertNotEquals(null, copy);
+
+                assertTrue(copy.isAttached());
+            }
+        }
+    }
 
     @Test
     public void testNoShape1() {
