@@ -117,7 +117,7 @@ public class DefaultGradient implements Gradient {
 
     @Override
     public INDArray setGradientFor(String variable, INDArray newGradient) {
-        INDArray last = gradients.put(variable, newGradient);
+        INDArray last = gradients.put(variable, newGradient.detach());
         // TODO revisit whether setGradientFor should update the gradient that can be pulled from this object in any form - currently does not update flattened
         // use of unitialized var for flattengradient in backprop is generating an error in gradient calc if bellow is used
         //        flattenGradient();

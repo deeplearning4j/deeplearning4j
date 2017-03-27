@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -79,18 +80,26 @@ public class LayerUpdater implements Updater {
         if (layer instanceof FrozenLayer)
             return;
 
+
         preApply(layer, gradient, iteration);
+
+
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
             if (!layer.conf().isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName.split("_")[0]))
                 continue;
+
             gradientOrig = gradientPair.getValue();
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None
                             || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
                 applyLrDecayPolicy(decay, layer, iteration, paramName);
+
             updater = init(paramName, layer);
-            gradient2 = updater.getGradient(gradientOrig, iteration);
+            //try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                gradient2 = updater.getGradient(gradientOrig, iteration);
+            //}
+
             postApply(layer, gradient2, paramName, miniBatchSize);
             gradient.setGradientFor(paramName, gradient2);
         }

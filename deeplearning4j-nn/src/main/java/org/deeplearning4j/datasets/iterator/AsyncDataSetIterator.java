@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
@@ -40,6 +41,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private Thread thread;
     private IteratorRunnable runnable;
 
+    private MemoryWorkspace workspace;
+
     protected static final Logger logger = LoggerFactory.getLogger(AsyncDataSetIterator.class);
 
     /**
@@ -66,11 +69,30 @@ public class AsyncDataSetIterator implements DataSetIterator {
         if (queueSize < 2)
             queueSize = 2;
 
+        if (iterator.resetSupported()) {
+            iterator.reset();
+
+            DataSet ds = iterator.next();
+
+            long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
+
+            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                    .initialSize(initSize)
+                    .overallocationLimit(1.0)
+                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                    .build();
+
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ASDI_ITER");
+            this.workspace = workspace;
+        } else workspace = null;
+
         this.baseIterator = iterator;
         if (this.baseIterator.resetSupported())
             this.baseIterator.reset();
         blockingQueue = queue;
-        runnable = new IteratorRunnable(baseIterator.hasNext());
+
+        runnable = new IteratorRunnable(baseIterator.hasNext(), workspace);
         thread = runnable;
 
         /**
@@ -146,7 +168,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         //Clear the queue, reset the base iterator, set up a new thread
         blockingQueue.clear();
         baseIterator.reset();
-        runnable = new IteratorRunnable(baseIterator.hasNext());
+        runnable = new IteratorRunnable(baseIterator.hasNext(), this.workspace);
         thread = runnable;
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -281,9 +303,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private Semaphore runCompletedSemaphore = new Semaphore(0);
         private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
         private AtomicLong feeder = new AtomicLong(0);
+        private MemoryWorkspace workspace;
 
-        public IteratorRunnable(boolean hasNext) {
+        public IteratorRunnable(boolean hasNext, MemoryWorkspace workspace) {
             this.isAlive.set(hasNext);
+            this.workspace  = workspace;
             this.setName("AsyncIterator thread");
             this.setDaemon(true);
         }
@@ -320,11 +344,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
         @Override
         public void run() {
             try {
-                WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                        .initialSize(20 * 1024L * 1024L)
-                        .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                        .policyAllocation(AllocationPolicy.STRICT)
-                        .build();
 
                 while (!killRunnable && baseIterator.hasNext()) {
                     feeder.incrementAndGet();
@@ -332,11 +351,12 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
                     DataSet ds = null;
 
-                    //try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
-                        ds = baseIterator.next();
-                    //} catch (Exception e) {
-  //                      throw new RuntimeException(e);
-//                    }
+                    if (workspace != null) {
+                        try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
+                            ds = baseIterator.next();
+                        }
+                    } else ds = baseIterator.next();
+
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
