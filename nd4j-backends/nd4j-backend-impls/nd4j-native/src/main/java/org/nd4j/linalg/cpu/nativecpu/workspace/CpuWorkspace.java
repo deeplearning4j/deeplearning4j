@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -13,6 +14,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CpuWorkspace extends Nd4jWorkspace {
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);

@@ -58,6 +58,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong maxCycle = new AtomicLong(0);
     protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
     protected AtomicBoolean isOpen = new AtomicBoolean(false);
+    protected AtomicBoolean isInit = new AtomicBoolean(false);
 
     protected AtomicInteger tagScope = new AtomicInteger(0);
 
@@ -109,9 +110,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected void init() {
         //  we want params validation here
+        isInit.set(true);
 
-
-        log.info("Allocating workspace of {} bytes...", currentSize.get());
+        log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
         if (currentSize.get() > 0) {
             if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
@@ -165,13 +166,15 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             return ptr;
         } else {
-            spilledAllocations.addAndGet(requiredMemory);
-
             if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
-                resetPlanned.set(true);
+                hostOffset.set(0);
+                deviceOffset.set(0);
+                return alloc(requiredMemory, kind, type, initialize);
             }
 
-            //log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+            spilledAllocations.addAndGet(requiredMemory);
+
+            log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
@@ -205,7 +208,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             else
                 currentSize.set(maxCycle.get());
 
-            init();
+            if (!isInit.get())
+                init();
         }
     }
 
@@ -284,7 +288,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             hostOffset.set(0);
             deviceOffset.set(0);
 
-
             if (currentSize.get() > 0)
                 resetWorkspace();
 
@@ -293,11 +296,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             deviceOffset.set(0);
             resetPlanned.set(false);
 
-            if (currentSize.get() > 0)
-                resetWorkspace();
+            //if (currentSize.get() > 0)
+                //resetWorkspace();
 
-
-            log.info("Resetting workspace at the end of loop...");
+            log.info("Resetting workspace at the end of loop... {} bytes ", hostOffset.get());
         }
 
         clearExternalAllocations();
