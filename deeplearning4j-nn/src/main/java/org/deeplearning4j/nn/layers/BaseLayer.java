@@ -80,6 +80,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return input;
     }
 
+    /**
+     * Init the model
+     */
+    @Override
+    public void init() {
+
+    }
+
     @Override
     public void setInput(INDArray input) {
         this.input = input;

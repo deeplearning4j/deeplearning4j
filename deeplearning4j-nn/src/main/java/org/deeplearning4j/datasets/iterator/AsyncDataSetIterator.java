@@ -126,7 +126,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public synchronized void reset() {
         if (!resetSupported())
             throw new UnsupportedOperationException(
-                            "Cannot reset Async iterator wrapping iterator that does not support reset");
+                    "Cannot reset Async iterator wrapping iterator that does not support reset");
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if (runnable.isAlive.get()) {
@@ -246,7 +246,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     if (runnable.exception != null)
                         throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
                     throw new IllegalStateException(
-                                    "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                            "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
@@ -327,8 +327,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 
                     lock.writeLock().unlock();
-
-                    blockingQueue.put(ds);
+                    if(ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
+                        blockingQueue.put(ds);
                 }
                 isAlive.set(false);
             } catch (InterruptedException e) {

@@ -347,6 +347,14 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         insideLayer.clear();
     }
 
+    /**
+     * Init the model
+     */
+    @Override
+    public void init() {
+
+    }
+
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
         insideLayer.setListeners(listeners);

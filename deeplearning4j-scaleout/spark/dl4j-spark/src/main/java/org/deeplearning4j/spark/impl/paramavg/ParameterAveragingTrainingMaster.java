@@ -63,8 +63,10 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 /**
- * ParameterAveragingTrainingMaster: A {@link TrainingMaster} implementation for training networks on Spark.
- * This is standard parameter averaging with a configurable averaging period.
+ * ParameterAveragingTrainingMaster: A {@link TrainingMaster}
+ * implementation for training networks on Spark.
+ * This is standard parameter averaging with a
+ * configurable averaging period.
  *
  * @author Alex Black
  */
