@@ -26,7 +26,7 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
@@ -2318,7 +2318,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Evaluate the network (classification performance)
+     * Evaluate the network (classification performance - single output ComputationGraphs only)
      *
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
@@ -2328,12 +2328,34 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+     * Evaluate the network (classification performance - single output ComputationGraphs only)
+     *
+     * @param iterator Iterator to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator) {
+        return evaluate(iterator, null);
+    }
+
+    /**
+     * Evaluate the network on the provided data set (single output ComputationGraphs only). Used for evaluating
+     * the performance of classifiers
      *
      * @param iterator Data to undertake evaluation on
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList) {
+        return evaluate(iterator, labelsList, 1);
+    }
+
+    /**
+     * Evaluate the network on the provided data set (single output ComputationGraphs only). Used for evaluating
+     * the performance of classifiers
+     *
+     * @param iterator Data to undertake evaluation on
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList) {
         return evaluate(iterator, labelsList, 1);
     }
 
@@ -2347,34 +2369,191 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList, int topN) {
+        if (labelsList == null)
+            labelsList = iterator.getLabels();
+        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+    }
+
+    /**
+     * Evaluate the network (for classification) on the provided data set, with top N accuracy in addition to standard accuracy.
+     * For 'standard' accuracy evaluation only, use topN = 1
+     *
+     * @param iterator   Iterator (data) to evaluate on
+     * @param labelsList List of labels. May be null.
+     * @param topN       N value for top N accuracy evaluation
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
+        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
+        return evaluateRegression(iterator, null);
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator) {
+        return evaluateRegression(iterator, null);
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+    }
+
+    /**
+     * Perform evaluation on the given data (DataSetIterator) with the given {@link IEvaluation} instance
+     *
+     * @param iterator   Test data to evaluate on
+     * @param evaluation IEvaluation insntance
+     * @param <T>        Type of the IEvaluation instance
+     * @return           The input IEvaluation instance, after performing evaluation on the test data
+     */
+    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation){
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
-        
-        if (!iterator.hasNext()) 
+
+        if( getNumOutputArrays() != 1){
+            throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
+        }
+
+        if (!iterator.hasNext())
             iterator.reset();
 
-        if (labelsList == null)
-            labelsList = iterator.getLabels();
 
-        Evaluation e = new Evaluation(labelsList, topN);
         while (iterator.hasNext()) {
-            org.nd4j.linalg.dataset.DataSet next = iterator.next();
+            DataSet next = iterator.next();
 
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+            if (next.getFeatures() == null || next.getLabels() == null)
                 break;
 
+            //Assuming single output here
             INDArray features = next.getFeatures();
+            INDArray featuresMask = next.getFeaturesMaskArray();
             INDArray labels = next.getLabels();
+            INDArray labelMask = next.getLabelsMaskArray();
 
-            INDArray[] out;
-            out = output(false, features);
-            if (labels.rank() == 3)
-                e.evalTimeSeries(labels, out[0]);
-            else
-                e.eval(labels, out[0]);
+            setLayerMaskArrays(
+                    featuresMask == null ? null : new INDArray[]{featuresMask},
+                    labelMask == null ? null : new INDArray[]{labelMask});
+            INDArray[] out = output(false, features);
+            evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
         }
-        return e;
+
+        return evaluation;
+    }
+
+    /**
+     * Perform evaluation on the given data (MultiDataSetIterator) with the given {@link IEvaluation} instance
+     *
+     * @param iterator   Test data to evaluate on
+     * @param evaluation IEvaluation insntance
+     * @param <T>        Type of the IEvaluation instance
+     * @return           The input IEvaluation instance, after performing evaluation on the test data
+     */
+    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation){
+        if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
+            throw new IllegalStateException("Cannot evaluate network with no output layer");
+        }
+
+        if( getNumOutputArrays() != 1){
+            throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
+        }
+
+        if (!iterator.hasNext())
+            iterator.reset();
+
+
+        while (iterator.hasNext()) {
+            MultiDataSet next = iterator.next();
+
+            if (next.getFeatures() == null || next.getLabels() == null)
+                break;
+
+            //Assuming single output here
+            INDArray[] features = next.getFeatures();
+            INDArray[] featuresMasks = next.getFeaturesMaskArrays();
+            INDArray labels = next.getLabels(0);
+            INDArray[] labelMasks = next.getLabelsMaskArrays();
+            INDArray labelMask = next.getLabelsMaskArray(0);
+
+            setLayerMaskArrays(featuresMasks, labelMasks);
+            INDArray[] out = output(false, features);
+            evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
+        }
+
+        return evaluation;
     }
 
     /**
