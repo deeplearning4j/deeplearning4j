@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -57,6 +58,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicLong maxCycle = new AtomicLong(0);
     protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
     protected AtomicBoolean isOpen = new AtomicBoolean(false);
+
+    protected AtomicInteger tagScope = new AtomicInteger(0);
 
     @Getter protected final WorkspaceConfiguration workspaceConfiguration;
 
@@ -222,6 +225,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        if (tagScope.get() > 0) {
+            if (tagScope.decrementAndGet() == 0){
+                Nd4j.getMemoryManager().setCurrentWorkspace(this);
+            }
+            return;
+        }
 
 //        if (Nd4j.getExecutioner() instanceof GridExecutioner)
 //            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -336,5 +345,19 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public boolean isScopeActive() {
         return isOpen.get();
+    }
+
+    @Override
+    public MemoryWorkspace tagOutOfScopeUse() {
+        tagScope.incrementAndGet();
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "Nd4jWorkspace{" +
+                "id='" + id + '\'' +
+                ", currentSize=" + currentSize.get() +
+                '}';
     }
 }

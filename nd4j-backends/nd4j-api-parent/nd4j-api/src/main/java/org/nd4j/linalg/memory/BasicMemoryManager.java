@@ -5,6 +5,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -34,6 +36,10 @@ public class BasicMemoryManager implements MemoryManager {
     protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
 
     private ThreadLocal<MemoryWorkspace> workspace = new ThreadLocal<>();
+
+    private ThreadLocal<MemoryWorkspace> tempWorkspace = new ThreadLocal<>();
+
+    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
 
     /**
      * This method returns
@@ -173,4 +179,14 @@ public class BasicMemoryManager implements MemoryManager {
     }
 
 
+    @Override
+    public MemoryWorkspace scopeOutOfWorkspaces() {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if (workspace == null)
+            return dummyWorkspace;
+        else {
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            return workspace.tagOutOfScopeUse();
+        }
+    }
 }

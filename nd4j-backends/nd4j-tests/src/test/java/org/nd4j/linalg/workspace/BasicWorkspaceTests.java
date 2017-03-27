@@ -89,6 +89,32 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testOutOfScope1() throws Exception {
+        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+            long reqMemory = 5 * Nd4j.sizeOfDataType();
+            assertEquals(reqMemory + reqMemory % 8, wsOne.getHostOffset());
+
+            INDArray array2;
+
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            }
+            assertFalse(array2.isAttached());
+
+            INDArray array3 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+            reqMemory = 5 * Nd4j.sizeOfDataType();
+            assertEquals((reqMemory + reqMemory % 8) * 2, wsOne.getHostOffset());
+
+            array1.addi(array2);
+
+            assertEquals(30.0f, array1.sumNumber().floatValue(), 0.01f);
+        }
+    }
+
+    @Test
     public void testLeverage1() throws Exception {
         try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
 

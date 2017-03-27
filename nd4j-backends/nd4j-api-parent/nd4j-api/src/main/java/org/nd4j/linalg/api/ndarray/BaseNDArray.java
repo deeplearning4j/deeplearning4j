@@ -1503,7 +1503,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray neg() {
-        return dup().negi();
+        return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.shape(), this.ordering()))).z();
     }
 
     /**
@@ -1517,7 +1517,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rdiv(Number n, INDArray result) {
-        return dup().rdivi(n, result);
+        return rdivi(n, result);
     }
 
     @Override
@@ -1533,7 +1533,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rsub(Number n, INDArray result) {
-        return dup().rsubi(n, result);
+        return rsubi(n, result);
     }
 
     @Override
@@ -1551,7 +1551,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray div(Number n, INDArray result) {
-        return dup().divi(n, result);
+        return divi(n, result);
     }
 
     @Override
@@ -1570,7 +1570,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray mul(Number n, INDArray result) {
-        return dup().muli(n, result);
+        return muli(n, result);
     }
 
     @Override
@@ -1587,7 +1587,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sub(Number n, INDArray result) {
-        return dup().subi(n, result);
+        return subi(n, result);
     }
 
     @Override
@@ -1605,7 +1605,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray add(Number n, INDArray result) {
-        return dup().addi(n, result);
+        return addi(n, result);
     }
 
     @Override
@@ -2741,7 +2741,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other, INDArray result) {
-        return dup().mmuli(other, result);
+        return mmuli(other, result);
     }
 
     /**
@@ -2752,7 +2752,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray div(INDArray other) {
-        return dup().divi(other);
+        return divi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     /**
@@ -2764,7 +2764,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray div(INDArray other, INDArray result) {
-        return dup().divi(other, result);
+        return divi(other, result);
     }
 
     /**
@@ -2775,7 +2775,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mul(INDArray other) {
-        return dup().muli(other);
+        return muli(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     /**
@@ -2787,7 +2787,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mul(INDArray other, INDArray result) {
-        return dup().muli(other, result);
+        return muli(other, result);
     }
 
     /**
@@ -2798,7 +2798,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sub(INDArray other) {
-        return dup().subi(other);
+        return subi(other, Nd4j.createUninitialized(other.shape(), other.ordering()));
     }
 
     /**
@@ -2810,7 +2810,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sub(INDArray other, INDArray result) {
-        return dup().subi(other, result);
+        return subi(other, result);
     }
 
     /**
@@ -3372,7 +3372,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rdiv(Number n) {
-        return dup().rdivi(n);
+        //return dup().rdivi(n);
+        return rdivi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override
@@ -3382,7 +3383,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rsub(Number n) {
-        return dup().rsubi(n);
+        //return dup().rsubi(n);
+        return rsubi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override
@@ -3392,7 +3394,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray div(Number n) {
-        return dup().divi(n);
+        //return dup().divi(n);
+        return divi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override
@@ -3402,7 +3405,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray mul(Number n) {
-        return dup().muli(n);
+        // return dup().muli(n);
+        return muli(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override
@@ -3412,7 +3416,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sub(Number n) {
-        return dup().subi(n);
+        //return dup().subi(n);
+        return subi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override
@@ -3422,7 +3427,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray add(Number n) {
-        return dup().addi(n);
+        //return dup().addi(n);
+        return addi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
     }
 
     @Override

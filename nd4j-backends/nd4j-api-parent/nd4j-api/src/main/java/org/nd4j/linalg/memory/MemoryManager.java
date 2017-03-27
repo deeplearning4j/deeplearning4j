@@ -124,4 +124,6 @@ public interface MemoryManager {
     void purgeCaches();
 
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
+
+    MemoryWorkspace scopeOutOfWorkspaces();
 }
