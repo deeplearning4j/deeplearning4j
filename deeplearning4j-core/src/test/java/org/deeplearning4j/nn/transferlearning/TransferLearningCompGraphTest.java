@@ -6,10 +6,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -386,4 +383,77 @@ public class TransferLearningCompGraphTest {
 
     }
 
+
+    @Test
+    public void testTransferGlobalPool(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
+                .weightInit(WeightInit.XAVIER)
+                .learningRate(0.1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("blstm1", new GravesBidirectionalLSTM.Builder()
+                        .nIn(10).nOut(10)
+                        .activation(Activation.TANH)
+                        .build(), "in")
+                .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
+                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
+                .addLayer("out", new OutputLayer.Builder()
+                        .nIn(10).nOut(10)
+                        .activation(Activation.IDENTITY)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build(), "dense")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph g = new ComputationGraph(conf);
+        g.init();
+
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder()
+                .seed(12345)
+                .learningRate(0.01)
+                .build();
+
+        ComputationGraph graph = new TransferLearning.GraphBuilder(g)
+                .fineTuneConfiguration(fineTuneConfiguration)
+                .removeVertexKeepConnections("out")
+                .setFeatureExtractor("dense")
+                .addLayer("out", new OutputLayer.Builder()
+                        .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .nIn(10)
+                        .nOut(5)
+                        .build(), "dense")
+                .build();
+
+        ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
+                .weightInit(WeightInit.XAVIER)
+                .learningRate(0.01)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("blstm1", new GravesBidirectionalLSTM.Builder()
+                        .nIn(10).nOut(10)
+                        .activation(Activation.TANH)
+                        .build(), "in")
+                .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
+                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
+                .addLayer("out", new OutputLayer.Builder()
+                        .nIn(10).nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .build(), "dense")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph modelExpected = new ComputationGraph(confExpected);
+        modelExpected.init();
+
+        assertEquals(confExpected, graph.getConfiguration());
+    }
 }
