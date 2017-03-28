@@ -110,7 +110,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected void init() {
         //  we want params validation here
-        isInit.set(true);
 
         log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
@@ -166,7 +165,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             return ptr;
         } else {
-            if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+            if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
                 hostOffset.set(0);
                 deviceOffset.set(0);
                 return alloc(requiredMemory, kind, type, initialize);

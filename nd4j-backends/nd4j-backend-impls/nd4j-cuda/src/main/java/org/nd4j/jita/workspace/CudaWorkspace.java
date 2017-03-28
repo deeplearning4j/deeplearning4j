@@ -43,6 +43,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (currentSize.get() > 0) {
             //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
+            isInit.set(true);
 
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
             workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, true)));
