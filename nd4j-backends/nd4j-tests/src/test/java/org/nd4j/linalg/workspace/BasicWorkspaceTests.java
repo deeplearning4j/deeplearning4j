@@ -69,7 +69,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @After

@@ -309,6 +309,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(long length, boolean initialize);
 
+    DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create a float data buffer
      *
@@ -470,6 +472,24 @@ public interface DataBufferFactory {
     DataBuffer createDouble(double[] data, boolean copy);
 
     /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, MemoryWorkspace workspace);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace);
+
+
+
+    /**
      * Creates a float data buffer
      *
      * @param data the data to create the buffer from
@@ -543,6 +563,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createHalf(long length, boolean initialize);
 
+    DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Creates a half-precision data buffer
      *
@@ -550,6 +572,12 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createHalf(float[] data, boolean copy);
+
+    DataBuffer createHalf(float[] data, MemoryWorkspace workspace);
+
+    DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace);
+
+
 
     /**
      * Creates a half-precision data buffer

@@ -202,6 +202,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
+    public BaseDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
+        indexer = DoubleIndexer.create((DoublePointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
 
     /**
      *

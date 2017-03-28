@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -59,12 +60,20 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, 8, initialize);
     }
 
+    public CudaDoubleDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, 8, initialize, workspace);
+    }
+
     public CudaDoubleDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
 
     public CudaDoubleDataBuffer(long length, int elementSize, long offset) {
         super(length, elementSize, offset);
+    }
+
+    public CudaDoubleDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy,0, workspace);
     }
 
     /**

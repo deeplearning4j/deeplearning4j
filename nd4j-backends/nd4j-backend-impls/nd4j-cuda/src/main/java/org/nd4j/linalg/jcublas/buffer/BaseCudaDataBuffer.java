@@ -115,6 +115,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         set(data, this.length, offset, offset);
     }
 
+    public BaseCudaDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        this(data.length, 8, workspace);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+        set(data, this.length, offset, offset);
+    }
+
     public BaseCudaDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         this(data.length, 4, workspace);
         this.offset = offset;

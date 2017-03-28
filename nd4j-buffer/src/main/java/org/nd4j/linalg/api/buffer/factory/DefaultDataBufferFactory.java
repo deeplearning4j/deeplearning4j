@@ -192,6 +192,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         return new DoubleBuffer(ArrayUtil.toDoubles(data), copy, offset);
     }
 
+
+
     @Override
     public DataBuffer createFloat(int offset, float[] data, boolean copy) {
         return new FloatBuffer(data, copy, offset);
@@ -330,6 +332,21 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createDouble(double[] data, boolean copy) {
         return new DoubleBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createDouble(double[] data, MemoryWorkspace workspace) {
+        return createDouble(data, true, workspace);
+    }
+
+    @Override
+    public DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace) {
+        return new DoubleBuffer(data, copy, workspace);
+    }
+
+    @Override
+    public DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new DoubleBuffer(length, initialize, workspace);
     }
 
     @Override
@@ -603,6 +620,21 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(byte[] data, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, MemoryWorkspace workspace) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
         throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 }

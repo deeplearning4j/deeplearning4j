@@ -1326,9 +1326,9 @@ public class Nd4j {
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
         logCreationIfNecessary(ret);
         return ret;
     }

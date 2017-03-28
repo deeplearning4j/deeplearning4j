@@ -613,4 +613,48 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     public DataBuffer createHalf(byte[] data, int length) {
         return new CudaHalfDataBuffer(data, length);
     }
+
+    @Override
+    public DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaDoubleDataBuffer(length, initialize, workspace);
+    }
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data      the data to create the buffer from
+     * @param workspace
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createDouble(double[] data, MemoryWorkspace workspace) {
+        return createDouble(data, true, workspace);
+    }
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data      the data to create the buffer from
+     * @param copy
+     * @param workspace @return the new buffer
+     */
+    @Override
+    public DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaDoubleDataBuffer(data, copy, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaHalfDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, MemoryWorkspace workspace) {
+        return createHalf(data, true, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaHalfDataBuffer(data, copy, workspace);
+    }
 }
