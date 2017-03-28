@@ -79,13 +79,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
-        // TODO: to be implemented
         return createFloat(data, true, workspace);
     }
 
     @Override
     public DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace) {
-        // TODO: to be implemented
         return new CudaFloatDataBuffer(data, copy, workspace);
     }
 

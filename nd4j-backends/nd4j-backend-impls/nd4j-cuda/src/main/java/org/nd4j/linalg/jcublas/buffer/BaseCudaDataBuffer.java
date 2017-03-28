@@ -107,7 +107,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy, long offset) {
-        this(data.length, 4);
+        this(data.length, 4, false);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -116,7 +116,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        this(data.length, 8, workspace);
+        this(data.length, 8, false, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -125,7 +125,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        this(data.length, 4, workspace);
+        this(data.length, 4,false, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -138,7 +138,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy, long offset) {
-        this(data.length, 8);
+        this(data.length, 8, false);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -151,7 +151,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(int[] data, boolean copy, long offset) {
-        this(data.length, 4);
+        this(data.length, 4, false);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -206,10 +206,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                new AllocationShape(length, elementSize, dataType()), initialize);
+                new AllocationShape(length, this.elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
-        this.elementSize = elementSize;
+        //this.elementSize = elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
@@ -429,7 +429,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             FloatPointer pointer = new FloatPointer(data);
             Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //            log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
+            //log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
+
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
             // we're keeping pointer reference for JVM

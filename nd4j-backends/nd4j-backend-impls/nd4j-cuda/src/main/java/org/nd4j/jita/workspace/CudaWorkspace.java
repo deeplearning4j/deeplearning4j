@@ -77,13 +77,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
         }
 
 
-//        log.info("Allocating {} memory from Workspace...", kind);
+        long div = requiredMemory % 8;
+        if (div!= 0)
+            requiredMemory += div;
+
+//        log.info("Allocating {} memory from Workspace... reqMem: {} bytes; Type: {}", kind, requiredMemory, type);
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
-                long div = requiredMemory % 8;
-                if (div!= 0)
-                    requiredMemory += div;
 
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
@@ -92,7 +93,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 if (initialize) {
                     CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, requiredMemory, 0, context.getSpecialStream());
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
 
                     context.syncSpecialStream();
                 }
@@ -133,9 +134,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
             }
         } else if (kind == MemoryKind.HOST) {
             if (hostOffset.get() + requiredMemory <= currentSize.get()) {
-                long div = requiredMemory % 8;
-                if (div!= 0)
-                    requiredMemory += div;
 
                 long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
