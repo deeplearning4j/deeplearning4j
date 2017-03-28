@@ -41,7 +41,7 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public PagedPointer alloc(long requiredMemory, DataBuffer.Type dataType, boolean initialize) {
-        return null;
+        throw new UnsupportedOperationException("DummyWorkspace shouldn't be used for allocation");
     }
 
     /**
@@ -55,7 +55,7 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType, boolean initialize) {
-        return null;
+        throw new UnsupportedOperationException("DummyWorkspace shouldn't be used for allocation");
     }
 
     /**
@@ -65,7 +65,7 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public MemoryWorkspace notifyScopeEntered() {
-        return null;
+        return this;
     }
 
     /**
@@ -75,7 +75,8 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public MemoryWorkspace notifyScopeLeft() {
-        return null;
+        close();
+        return this;
     }
 
     /**
