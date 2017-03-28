@@ -257,11 +257,11 @@ public class CudaZeroHandler implements MemoryHandler {
                     point.setAllocationStatus(AllocationStatus.HOST);
                     point.setPointers(tmpPair);
                 }
-
+/*
                 if (reqMemory < configuration.getMaximumSingleHostAllocation()
                                 && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration
                                                 .getMaximumDeviceAllocation()) {
-
+*/
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId,
                                     reqMemory)) {
                         point.setDeviceId(deviceId);
@@ -327,7 +327,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                         }
                     }
-                } else {
+               /* } else {
                     log.warn("Soft limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]",
                                     deviceId);
 
@@ -337,7 +337,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     } catch (Exception e) {
 
                     }
-                }
+                }*/
 
                 return returnPair;
             }

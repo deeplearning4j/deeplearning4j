@@ -139,7 +139,7 @@ public class Nd4j {
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
-    public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") == null ? false : true;
+    public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") != null;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
@@ -5794,10 +5794,8 @@ public class Nd4j {
             }
 
             Nd4j.backend = backend;
+            updateNd4jContext();
             props = Nd4jContext.getInstance().getConf();
-            InputStream is = backend.getConfigurationResource().getInputStream();
-            Nd4jContext.getInstance().updateProperties(is);
-            is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
                             : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
@@ -5883,15 +5881,12 @@ public class Nd4j {
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
 
-            String fallback = System.getenv("ND4J_FALLBACK");
-            if (fallback != null && !fallback.isEmpty()) {
-                if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
-                    fallbackMode.set(true);
-                    showAttractiveMessage(getMessageForFallback());
-                } else
-                    fallbackMode.set(false);
-            } else
+            if (isFallback()) {
+                fallbackMode.set(true);
+                showAttractiveMessage(getMessageForFallback());
+            } else {
                 fallbackMode.set(false);
+            }
 
             OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
         } catch (Exception e) {
@@ -5933,6 +5928,20 @@ public class Nd4j {
     private String[] getMessageForNativeHalfPrecision() {
         return new String[] {"Half-precision data type isn't support for nd4j-native",
                         "Please, consider using FLOAT or DOUBLE data type instead"};
+    }
+
+    private void updateNd4jContext() throws IOException {
+        try (InputStream is = backend.getConfigurationResource().getInputStream()) {
+            Nd4jContext.getInstance().updateProperties(is);
+        }
+    }
+
+    private boolean isFallback() {
+        String fallback = System.getenv("ND4J_FALLBACK");
+        if (fallback == null) {
+            return false;
+        }
+        return (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1"));
     }
 
     /**

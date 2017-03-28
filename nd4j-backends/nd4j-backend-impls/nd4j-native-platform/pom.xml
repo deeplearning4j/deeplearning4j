@@ -10,10 +10,17 @@
     <name>nd4j-native-platform</name>
 
     <properties>
+        <openblas.version>0.2.19</openblas.version>
         <nd4j.backend>nd4j-native</nd4j.backend>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas-platform</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>

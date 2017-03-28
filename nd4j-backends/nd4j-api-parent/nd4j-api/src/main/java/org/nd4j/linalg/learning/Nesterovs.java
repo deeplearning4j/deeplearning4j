@@ -3,7 +3,9 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
@@ -74,15 +76,21 @@ public class Nesterovs implements Serializable, GradientUpdater {
         if (v == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        INDArray vPrev = v;
-        v = vPrev.mul(momentum).subi(gradient.mul(learningRate));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v
         //i.e., we do params -= updatedGradient, not params += updatedGradient
 
+        //v = mu * v - lr * gradient
+        INDArray vPrev = v.dup();
+        v.muli(momentum).subi(gradient.mul(learningRate));              //Modify state array in-place
+
+        /*
+        Next line is equivalent to:
         INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
         gradient.assign(ret);
+        */
+        Nd4j.getExecutioner().exec(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
 
         return gradient;
     }

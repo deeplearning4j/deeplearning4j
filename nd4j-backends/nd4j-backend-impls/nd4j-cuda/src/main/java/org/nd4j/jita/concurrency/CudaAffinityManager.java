@@ -50,8 +50,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForCurrentThread() {
-        long tid = Thread.currentThread().getId();
-        return getDeviceForThread(tid);
+        return getDeviceForThread(Thread.currentThread().getId());
     }
 
     /**

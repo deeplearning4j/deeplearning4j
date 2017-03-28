@@ -181,8 +181,14 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>cuda-platform</artifactId>
+            <artifactId>cuda</artifactId>
             <version>${cuda.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cuda</artifactId>
+            <version>${cuda.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.classifier}</classifier>
         </dependency>
 
         <dependency>
