@@ -730,6 +730,11 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(dataSetIterator);
         }
 
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
             while (dataSetIterator.hasNext()) {
@@ -737,31 +742,34 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                boolean hasMaskArrays = next.hasMaskArrays();
-                if (hasMaskArrays) {
-                    INDArray[] fMask = (next.getFeaturesMaskArray() != null
-                                    ? new INDArray[] {next.getFeaturesMaskArray()} : null);
-                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[] {next.getLabelsMaskArray()}
-                                    : null);
-                    setLayerMaskArrays(fMask, lMask);
-                }
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
 
-                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(new INDArray[] {next.getFeatures()}, new INDArray[] {next.getLabels()},
-                                    (hasMaskArrays ? new INDArray[] {next.getFeaturesMaskArray()} : null),
-                                    (hasMaskArrays ? new INDArray[] {next.getLabelsMaskArray()} : null));
-                } else {
-                    setInput(0, next.getFeatures());
-                    setLabel(0, next.getLabels());
-                    if (solver == null) {
-                        solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
-                                        .listeners(listeners).model(this).build();
+                    boolean hasMaskArrays = next.hasMaskArrays();
+                    if (hasMaskArrays) {
+                        INDArray[] fMask = (next.getFeaturesMaskArray() != null
+                                ? new INDArray[]{next.getFeaturesMaskArray()} : null);
+                        INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
+                                : null);
+                        setLayerMaskArrays(fMask, lMask);
                     }
-                    solver.optimize();
-                }
 
-                if (hasMaskArrays) {
-                    clearLayerMaskArrays();
+                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                        doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
+                                (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
+                                (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                    } else {
+                        setInput(0, next.getFeatures());
+                        setLabel(0, next.getLabels());
+                        if (solver == null) {
+                            solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
+                                    .listeners(listeners).model(this).build();
+                        }
+                        solver.optimize();
+                    }
+
+                    if (hasMaskArrays) {
+                        clearLayerMaskArrays();
+                    }
                 }
 
                 Nd4j.getMemoryManager().invokeGcOccasionally();
@@ -1239,8 +1247,11 @@ public class ComputationGraph implements Serializable, Model {
      *                         learning situations.
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 

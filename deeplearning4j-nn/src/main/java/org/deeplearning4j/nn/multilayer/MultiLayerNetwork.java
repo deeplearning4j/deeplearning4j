@@ -1508,17 +1508,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
-                            data.getLabelsMaskArray());
-        } else {
-            //Standard training
-            boolean hasMaskArrays = data.hasMaskArrays();
-            if (hasMaskArrays)
-                setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-            fit(data.getFeatures(), data.getLabels());
-            if (hasMaskArrays)
-                clearLayerMaskArrays();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
+            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
+                        data.getLabelsMaskArray());
+            } else {
+                //Standard training
+                boolean hasMaskArrays = data.hasMaskArrays();
+                if (hasMaskArrays)
+                    setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+                fit(data.getFeatures(), data.getLabels());
+                if (hasMaskArrays)
+                    clearLayerMaskArrays();
+            }
         }
     }
 
