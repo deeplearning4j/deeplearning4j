@@ -16,10 +16,9 @@
 
 package org.datavec.api.split;
 
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
-
 import org.junit.Rule;
 
 
@@ -34,6 +33,11 @@ public class FileSplitTest {
     private static String testPath = localPath + "test" + File.separator;
 
     // These cannot run on TravisCI - uncomment when checking locally
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEmptySplit() {
+        new FileSplit(new File(""));
+    }
 
     @Rule
     public TemporaryFolder mainFolder = new TemporaryFolder();

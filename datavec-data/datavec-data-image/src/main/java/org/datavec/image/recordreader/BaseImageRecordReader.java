@@ -140,7 +140,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
-        }
+        } else
+            throw new IllegalArgumentException("No path locations found in the split.");
+
         if (split instanceof FileSplit) {
             //remove the root directory
             FileSplit split1 = (FileSplit) split;
