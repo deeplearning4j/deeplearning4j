@@ -272,7 +272,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public INDArray params() {
-        return Nd4j.toFlattened('f', params.values());
+        return paramsFlattened;
     }
 
     @Override
