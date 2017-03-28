@@ -31,6 +31,7 @@
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
+        <dependency.platform></dependency.platform>
         <javacpp.platform.android-arm>android-arm</javacpp.platform.android-arm>
         <javacpp.platform.android-x86>android-x86</javacpp.platform.android-x86>
         <javacpp.platform.linux-x86_64>linux-x86_64</javacpp.platform.linux-x86_64>
@@ -143,6 +144,7 @@
             </activation>
             <properties>
                 <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
+                <dependency.platform>${javacpp.platform}</dependency.platform>
             </properties>
         </profile>
 
