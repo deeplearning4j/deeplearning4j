@@ -37,7 +37,7 @@
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.classifier}</classifier>
+            <classifier>${dependency.platform}</classifier>
         </dependency>
 
         <dependency>
