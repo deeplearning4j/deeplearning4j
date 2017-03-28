@@ -32,6 +32,7 @@ import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -850,7 +851,6 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 
-
         int deviceId = getDeviceId();
 
 
@@ -864,6 +864,27 @@ public class CudaZeroHandler implements MemoryHandler {
 
         if (!dstPoint.isActualOnHostSide())
             throw new RuntimeException("Buffer synchronization failed");
+
+        if (buffer.isAttached()) {
+            // if this buffer is Attached, we just relocate to new workspace
+            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+            //if (workspace != null)
+                //log.info("ThreadName: [{}]; deviceId: [{}]; Buffer from: [{}]; Relocating {} bytes to workspace [{}]...", Thread.currentThread().getName(), deviceId, dstPoint.getDeviceId(), buffer.length() * Nd4j.sizeOfDataType(buffer.dataType()), workspace.getId());
+
+
+            BaseCudaDataBuffer nBuffer = (BaseCudaDataBuffer) Nd4j.createBuffer(buffer.length());
+
+            Nd4j.getMemoryManager().memcpy(nBuffer, buffer);
+
+            dstPoint.getPointers().setDevicePointer(nBuffer.getAllocationPoint().getDevicePointer());
+            dstPoint.getPointers().setHostPointer(nBuffer.getAllocationPoint().getHostPointer());
+            dstPoint.setDeviceId(deviceId);
+
+            dstPoint.tickDeviceRead();
+            dstPoint.tickHostRead();
+            return;
+        }
 
         if (buffer.isConstant()) {
             // we can't relocate or modify buffers
