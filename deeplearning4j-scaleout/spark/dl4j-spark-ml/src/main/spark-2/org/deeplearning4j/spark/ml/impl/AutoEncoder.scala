@@ -20,6 +20,11 @@ class AutoEncoder(uid: String) extends AutoEncoderWrapper[AutoEncoder, AutoEncod
 
     override def mapVectorFunc = row => org.apache.spark.mllib.linalg.Vectors.fromML(row.get(0).asInstanceOf[Vector])
 
+    /**
+      * Fits a dataset to the specified network configuration
+      * @param dataset DataFrame
+      * @return Returns an autoencoder model, which can run transformations on the vector
+      */
     override def fit(dataset: Dataset[_]) : AutoEncoderModel = {
         val sparkdl4j = fitter(DatasetFacade.dataRows(dataset))
         new AutoEncoderModel(uid, sparkdl4j)
@@ -47,14 +52,29 @@ class AutoEncoderModel(uid: String, sparkDl4jMultiLayer: SparkDl4jMultiLayer) ex
         Vectors.dense(values)
     })
 
+    /**
+      * copys an autoencoder model, including the param map
+      * @param extra ParamMap
+      * @return returns a copy of the autoencoder model
+      */
     override def copy(extra: ParamMap) : AutoEncoderModel = {
         copyValues(new AutoEncoderModel(uid, sparkDl4jMultiLayer)).setParent(parent)
     }
 
+    /**
+      * Transforms an incoming dataset
+      * @param dataFrame DataFrame
+      * @return Returns a transformed dataframe.
+      */
     override def transform(dataFrame: Dataset[_]) : Dataset[Row] = {
         dataFrame.withColumn($(outputCol), udfTransformer(col($(inputCol))))
     }
 
+    /**
+      * Updates the schema from the new dataset
+      * @param schema StructType
+      * @return Returns a struct type
+      */
     override def transformSchema(schema: StructType) : StructType = {
         SchemaUtils.appendColumn(schema, $(outputCol), VectorType, false)
     }

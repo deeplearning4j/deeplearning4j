@@ -50,26 +50,51 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
         sparkNet
     }
 
+    /**
+      * The compressed layer of the autoencoder
+      * @param value 0 based index of the compressed layer
+      * @return Returns the class that extends the wrapper
+      */
     def setCompressedLayer(value: Int) : E = {
         set(compressedLayer, value)
         this.asInstanceOf[E]
     }
 
+    /**
+      * The input column name
+      * @param value name of the input column
+      * @return Returns the class that extends the wrapper
+      */
     def setInputCol(value: String) : E = {
         set(inputCol, value)
         this.asInstanceOf[E]
     }
 
+    /**
+      * The output column name
+      * @param value name of the output column
+      * @return Returns the class that extends the wrapper
+      */
     def setOutputCol(value: String) : E = {
         set(outputCol, value)
         this.asInstanceOf[E]
     }
 
+    /**
+      * The multilayer configuration of the autoencoder
+      * @param multiLayerConfiguration MultiLayerConfiguration
+      * @return Returns the class that extends the wrapper
+      */
     def setMultiLayerConfiguration(multiLayerConfiguration: MultiLayerConfiguration) : E = {
         this._multiLayerConfiguration = multiLayerConfiguration
         this.asInstanceOf[E]
     }
 
+    /**
+      * The training master configuration for the spark network
+      * @param tm ParamSerializer -> a wrapper around the Training Master
+      * @return Returns the class that extends the wrapper
+      */
     def setTrainingMaster(tm: ParamSerializer) : E = {
         this._trainingMaster = tm
         this.asInstanceOf[E]
@@ -90,18 +115,37 @@ abstract class AutoEncoderModelWrapper[E <: AutoEncoderModelWrapper[E]](override
 
     protected def udfTransformer : UserDefinedFunction
 
+    /**
+      *
+      * @return Returns the multiLayerNetwork
+      */
     def getNetwork : MultiLayerNetwork = sparkDl4jMultiLayer.getNetwork
 
+    /**
+      * The compressed layer of the autoencoder
+      * @param value Int
+      * @return Returns the class that extends the wrapper
+      */
     def setCompressedLayer(value: Int) : E = {
         set(compressedLayer, value)
         this.asInstanceOf[E]
     }
 
+    /**
+      * The input column name
+      * @param value name of the input column
+      * @return Returns the class that extends the wrapper
+      */
     def setInputCol(value: String) : E = {
         set(inputCol, value)
         this.asInstanceOf[E]
     }
 
+    /**
+      * The output column name
+      * @param value name of the output column
+      * @return Returns the class that extends the wrapper
+      */
     def setOutputCol(value: String) : E = {
         set(outputCol, value)
         this.asInstanceOf[E]
@@ -122,6 +166,11 @@ trait AutoEncoderModelLoader extends MLReadable[AutoEncoderModel] {
 
     override def read: MLReader[AutoEncoderModel] = new AutoEncoderReader
 
+    /**
+      * Loads the autoencoder model
+      * @param path where to load the model
+      * @return AutoEncoderModel
+      */
     override def load(path: String) : AutoEncoderModel = super.load(path)
 
     private class AutoEncoderReader extends MLReader[AutoEncoderModel] {

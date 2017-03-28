@@ -24,6 +24,11 @@ class AutoEncoder(uid: String) extends AutoEncoderWrapper[AutoEncoder, AutoEncod
         SchemaUtils.appendColumn(schema, $(outputCol), new VectorUDT(), false)
     }
 
+    /**
+      * Fits a dataframe to the specified network configuration
+      * @param dataset DataFrame
+      * @return Returns an autoencoder model, which can run transformations on the vector
+      */
     override def fit(dataset: DataFrame) : AutoEncoderModel = {
         val sparkdl4j = fitter(DatasetFacade.dataRows(dataset))
         new AutoEncoderModel(uid, sparkdl4j)
@@ -48,14 +53,29 @@ class AutoEncoderModel(uid: String, sparkDl4jMultiLayer: SparkDl4jMultiLayer) ex
         Vectors.dense(values)
     })
 
+    /**
+      * copys an autoencoder model, including the param map
+      * @param extra ParamMap
+      * @return returns a copy of the autoencoder model
+      */
     override def copy(extra: ParamMap) : AutoEncoderModel = {
         copyValues(new AutoEncoderModel(uid, sparkDl4jMultiLayer)).setParent(parent)
     }
 
+    /**
+      * Transforms an incoming dataframe
+      * @param dataFrame DataFrame
+      * @return Returns a transformed dataframe.
+      */
     override def transform(dataFrame: DataFrame) : DataFrame = {
         dataFrame.withColumn($(outputCol), udfTransformer(col($(inputCol))))
     }
 
+    /**
+      * Updates the schema from the new dataframe
+      * @param schema StructType
+      * @return Returns a struct type
+      */
     override def transformSchema(schema: StructType) : StructType = {
         SchemaUtils.appendColumn(schema, $(outputCol), new VectorUDT(), false)
     }
