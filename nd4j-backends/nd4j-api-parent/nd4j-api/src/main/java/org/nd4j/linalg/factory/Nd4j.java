@@ -1307,9 +1307,9 @@ public class Nd4j {
         else if (dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         logCreationIfNecessary(ret);
         return ret;

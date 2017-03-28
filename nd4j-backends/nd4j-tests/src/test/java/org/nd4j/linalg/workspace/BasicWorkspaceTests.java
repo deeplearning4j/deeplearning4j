@@ -69,7 +69,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
     }
 
     @After
@@ -664,7 +664,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         // checking if allocation actually happened
-        assertEquals(24, workspace.getHostOffset());
+        long reqMem = 5 * Nd4j.sizeOfDataType();
+        assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
         // checking stuff at native side
         double sum = array.sumNumber().doubleValue();
