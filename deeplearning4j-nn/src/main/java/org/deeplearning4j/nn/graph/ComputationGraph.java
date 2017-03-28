@@ -51,6 +51,10 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -89,6 +93,10 @@ public class ComputationGraph implements Serializable, Model {
     protected double score;
     @Setter
     private boolean initDone = false;
+
+    protected final static String workspaceExternal = "LOOP_ITER";
+    protected final static String workspaceFeedForward = "LOOP_FF";
+    protected final static String workspaceBackProp = "LOOP_BP";
 
     /**
      * All GraphVertex objects in the network.
@@ -1089,44 +1097,53 @@ public class ComputationGraph implements Serializable, Model {
     private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(50L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
-            if (current.isInputVertex()) {
-                VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getVertexIndex()];
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceFeedForward)) {
 
-                layerActivations.put(current.getVertexName(), input);
+                if (current.isInputVertex()) {
+                    VertexIndices[] inputsTo = current.getOutputVertices();
+                    // pushing out copy to parent workspace
+                    INDArray input = inputs[current.getVertexIndex()].leverage();
 
-                for (VertexIndices v : inputsTo) {
-                    int vIdx = v.getVertexIndex();
-                    int vIdxInputNum = v.getVertexEdgeNumber();
-                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup());
-                }
+                    layerActivations.put(current.getVertexName(), input);
 
-            } else {
-                //Do forward pass:
-                if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer()
-                                && current.getLayer() instanceof IOutputLayer) {
-                    //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
-                    // we only need to ensure the input to the output layers is set properly
-                    continue;
-                }
-                INDArray out = current.doForward(train);
-
-                if (current.hasLayer()) {
-                    layerActivations.put(current.getVertexName(), out);
-                }
-
-                //Now, set the inputs for the next vertices:
-                VertexIndices[] outputsTo = current.getOutputVertices();
-                if (outputsTo != null) {
-                    for (VertexIndices v : outputsTo) {
+                    for (VertexIndices v : inputsTo) {
                         int vIdx = v.getVertexIndex();
-                        int inputNum = v.getVertexEdgeNumber();
-                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(inputNum, out);
+                        int vIdxInputNum = v.getVertexEdgeNumber();
+                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                        // we're pushing input copies to outer workspace
+                        // FIXME: do we REALLY need this dup()?
+                        vertices[vIdx].setInput(vIdxInputNum, input.leverage());
+                    }
+
+                } else {
+                    //Do forward pass:
+                    if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer()
+                            && current.getLayer() instanceof IOutputLayer) {
+                        //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
+                        // we only need to ensure the input to the output layers is set properly
+                        continue;
+                    }
+                    // once again, pushing stuff out of this workspace
+                    INDArray out = current.doForward(train).leverage();
+
+                    if (current.hasLayer()) {
+                        layerActivations.put(current.getVertexName(), out);
+                    }
+
+                    //Now, set the inputs for the next vertices:
+                    VertexIndices[] outputsTo = current.getOutputVertices();
+                    if (outputsTo != null) {
+                        for (VertexIndices v : outputsTo) {
+                            int vIdx = v.getVertexIndex();
+                            int inputNum = v.getVertexEdgeNumber();
+                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                            vertices[vIdx].setInput(inputNum, out);
+                        }
                     }
                 }
             }
