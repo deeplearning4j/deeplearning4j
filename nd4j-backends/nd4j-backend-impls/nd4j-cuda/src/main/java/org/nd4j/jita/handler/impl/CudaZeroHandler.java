@@ -890,6 +890,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 dstPoint.tickDeviceWrite();
             } else {
                 // this call will automagically take care of workspaces, so it'll be either
+                //log.info("Relocating to deviceId [{}], workspace [{}]...", deviceId, workspace.getId());
                 BaseCudaDataBuffer nBuffer = (BaseCudaDataBuffer) Nd4j.createBuffer(buffer.length());
 
                 Nd4j.getMemoryManager().memcpy(nBuffer, buffer);

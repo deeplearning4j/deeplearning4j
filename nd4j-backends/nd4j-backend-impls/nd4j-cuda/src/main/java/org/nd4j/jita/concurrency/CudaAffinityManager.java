@@ -87,25 +87,29 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
             if (threadId == Thread.currentThread().getId()) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-//                logger.error("setDevice({}) called for thread {}", deviceId, threadId);
+                //logger.error("setDevice({}) called for thread {}", deviceId, Thread.currentThread().getName());
                 affiliated.get().set(true);
             }
 
             return deviceId;
-        } else return aff;
-/*
-        if (threadId == Thread.currentThread().getId()) {
-            if (affiliated.get() == null)
-                affiliated.set(new AtomicBoolean(false));
+        } else {
 
-            if (!affiliated.get().get()) {
-                int deviceId = affinityMap.get(threadId);
-                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-                logger.error("SCARY setDevice({}) called for thread {}", deviceId, threadId);
-                affiliated.get().set(true);
-                return deviceId;
+            if (threadId == Thread.currentThread().getId()) {
+                if (affiliated.get() == null)
+                    affiliated.set(new AtomicBoolean(false));
+
+                if (!affiliated.get().get()) {
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(aff));
+                  //  logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
+                    affiliated.get().set(true);
+                    return aff;
+                }
             }
+
+            return aff;
         }
+/*
+
 
         return affinityMap.get(threadId);
 */
