@@ -5804,6 +5804,10 @@ public class Nd4j {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
+            if (Nd4j.dataType() != dtype){
+                DataTypeUtil.setDTypeForContext(dtype);
+            }
+
             compressDebug = Boolean.parseBoolean(props.getProperty(COMPRESSION_DEBUG, "false"));
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
