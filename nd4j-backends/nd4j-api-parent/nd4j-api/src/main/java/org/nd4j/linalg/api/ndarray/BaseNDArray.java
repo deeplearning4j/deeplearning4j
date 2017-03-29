@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -5063,5 +5064,36 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
             return copy;
         }
+    }
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
+     *
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public INDArray leverageTo(String id) {
+        if (!isAttached())
+            return this;
+
+        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id))
+            throw new ND4JIllegalStateException("Requested workspace ["+id+"] doesn't exist yet");
+
+        MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
+        Nd4j.getMemoryManager().setCurrentWorkspace(target);
+
+        DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+        Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+        INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(current);
+
+        return copy;
     }
 }

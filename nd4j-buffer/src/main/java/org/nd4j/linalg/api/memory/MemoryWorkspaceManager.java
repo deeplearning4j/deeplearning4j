@@ -113,4 +113,12 @@ public interface MemoryWorkspaceManager {
      * @return
      */
     MemoryWorkspace getAndActivateWorkspace(WorkspaceConfiguration configuration, String id);
+
+    /**
+     * This method checks, if Workspace with a given Id was created before this call
+     *
+     * @param id
+     * @return
+     */
+    boolean checkIfWorkspaceExists(String id);
 }

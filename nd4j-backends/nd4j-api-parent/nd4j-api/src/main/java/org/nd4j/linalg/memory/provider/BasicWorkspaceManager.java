@@ -133,4 +133,15 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public MemoryWorkspace getAndActivateWorkspace(@NonNull WorkspaceConfiguration configuration,@NonNull String id) {
         return getWorkspaceForCurrentThread(configuration, id).notifyScopeEntered();
     }
+
+    /**
+     * This method checks, if Workspace with a given Id was created before this call
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public boolean checkIfWorkspaceExists(@NonNull String id) {
+        return backingMap.get().containsKey(id);
+    }
 }

@@ -2422,4 +2422,12 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray leverage();
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
+     *
+     * @param id
+     * @return
+     */
+    INDArray leverageTo(String id);
 }
