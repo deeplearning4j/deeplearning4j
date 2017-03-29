@@ -19,6 +19,8 @@ package org.datavec.api.split;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import java.io.File;
+import java.util.UUID;
+
 import org.junit.Rule;
 
 
@@ -36,7 +38,7 @@ public class FileSplitTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testEmptySplit() {
-        new FileSplit(new File(""));
+        new FileSplit(new File("THE_TEST_WILL_PASS_UNLESS_YOU_CAN_PREDICT_THIS_UUID: "+ UUID.randomUUID()));
     }
 
     @Rule
