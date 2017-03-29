@@ -150,6 +150,8 @@ public class DefaultTrainer extends Thread implements Trainer {
 
     @Override
     public void run() {
+        setupIfNeccessary();
+        
         try {
             // we create fresh network, with the same configuration, as initially created by user
             // however, we don't need clone or anything here
