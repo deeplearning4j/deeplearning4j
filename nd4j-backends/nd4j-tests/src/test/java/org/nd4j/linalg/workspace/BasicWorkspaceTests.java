@@ -323,7 +323,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+        //Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
         assertEquals(0, workspace.getCurrentSize());
 

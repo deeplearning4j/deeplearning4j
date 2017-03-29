@@ -277,7 +277,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-        if (previousWorkspace == this) {
+        if (previousWorkspace == this && isOpen.get()) {
             tagScope.incrementAndGet();
             return this;
         }

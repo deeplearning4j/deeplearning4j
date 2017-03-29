@@ -5070,6 +5070,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
      *
      * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If Workspace with target Id wasn't created before - this array will be returned unmodified.
+     * PLEASE NOTE: If target workspace is the current one - this array will be returned unmodified.
      *
      * @param id
      * @return
@@ -5080,11 +5082,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id))
-            throw new ND4JIllegalStateException("Requested workspace ["+id+"] doesn't exist yet");
+            return this;
 
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
+
+        if (current == target)
+            return this;
+
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
 
         DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
