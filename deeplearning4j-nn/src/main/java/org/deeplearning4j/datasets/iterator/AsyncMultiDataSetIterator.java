@@ -1,6 +1,11 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -28,6 +33,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private final LinkedBlockingQueue<MultiDataSet> queue;
     private IteratorRunnable runnable;
     private Thread thread;
+    private MemoryWorkspace workspace;
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
         if (queueLength <= 0)
@@ -36,12 +42,30 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         if (queueLength < 2)
             queueLength = 2;
 
+        if (iterator.resetSupported()) {
+            iterator.reset();
+
+            MultiDataSet ds = iterator.next();
+
+            long initSize = Math.max(ds.getMemoryFootprint() * queueLength, 10 * 1024L * 1024L);
+
+            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                    .initialSize(initSize)
+                    .overallocationLimit(2.0)
+                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                    .build();
+
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ASDI_ITER");
+            this.workspace = workspace;
+        } else workspace = null;
+
         this.iterator = iterator;
         if (this.iterator.resetSupported())
             this.iterator.reset();
         this.queue = new LinkedBlockingQueue<>(queueLength);
 
-        runnable = new IteratorRunnable(iterator.hasNext());
+        runnable = new IteratorRunnable(iterator.hasNext(), workspace);
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -93,7 +117,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         //Clear the queue, reset the base iterator, set up a new thread
         queue.clear();
         iterator.reset();
-        runnable = new IteratorRunnable(iterator.hasNext());
+        runnable = new IteratorRunnable(iterator.hasNext(), workspace);
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -195,9 +219,12 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private Semaphore runCompletedSemaphore = new Semaphore(0);
         private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
         private AtomicLong feeder = new AtomicLong(0);
+        private MemoryWorkspace workspace;
 
-        public IteratorRunnable(boolean hasNext) {
+
+        public IteratorRunnable(boolean hasNext, MemoryWorkspace workspace) {
             this.isAlive = hasNext;
+            this.workspace = workspace;
         }
 
         public boolean hasLatch() {
@@ -235,7 +262,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     feeder.incrementAndGet();
 
                     lock.writeLock().lock();
-                    MultiDataSet ds = iterator.next();
+                    MultiDataSet ds = null;
+
+                    if (workspace != null) {
+                        try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
+                            ds = iterator.next();
+                        }
+                    } else ds = iterator.next();
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
