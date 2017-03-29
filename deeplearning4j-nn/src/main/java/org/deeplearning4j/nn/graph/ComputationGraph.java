@@ -731,8 +731,10 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(200 * 1024L * 1024L)
-                .policyLearning(LearningPolicy.NONE)
+                .initialSize(0)
+                .overallocationLimit(2.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
 
         if (configuration.isBackprop()) {
@@ -1105,7 +1107,12 @@ public class ComputationGraph implements Serializable, Model {
     private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(50L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .build();
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1156,6 +1163,8 @@ public class ComputationGraph implements Serializable, Model {
                 }
             }
         }
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return layerActivations;
     }
@@ -1252,71 +1261,84 @@ public class ComputationGraph implements Serializable, Model {
                 initGradientsView();
             }
         }
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(2.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .build();
+
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-            GraphVertex current = vertices[topologicalOrder[i]];
+            try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, workspaceBackProp)) {
+                GraphVertex current = vertices[topologicalOrder[i]];
 
-            if (current.isInputVertex())
-                continue; //No op
-            //FIXME: make the frozen vertex feature extraction more flexible
-            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
-                break;
+                if (current.isInputVertex())
+                    continue; //No op
+                //FIXME: make the frozen vertex feature extraction more flexible
+                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
+                    break;
 
-            if (current.isOutputVertex()) {
-                //Two reasons for a vertex to be an output vertex:
-                //(a) it's an output layer (i.e., instanceof IOutputLayer), or
-                //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
+                if (current.isOutputVertex()) {
+                    //Two reasons for a vertex to be an output vertex:
+                    //(a) it's an output layer (i.e., instanceof IOutputLayer), or
+                    //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
-                int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                if (current.getLayer() instanceof IOutputLayer) {
-                    IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
+                    int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
+                    if (current.getLayer() instanceof IOutputLayer) {
+                        IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
 
-                    INDArray currLabels = labels[thisOutputNumber];
-                    outputLayer.setLabels(currLabels);
-                } else {
-                    current.setEpsilon(externalEpsilons[thisOutputNumber]);
-                    setVertexEpsilon[topologicalOrder[i]] = true;
-                }
-            }
-
-            Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
-            INDArray[] epsilons = pair.getSecond();
-
-            //Inputs to the current GraphVertex:
-            VertexIndices[] inputVertices = current.getInputVertices();
-
-            //Set epsilons for the vertices that provide inputs to this vertex:
-            if (inputVertices != null) {
-                int j = 0;
-                for (VertexIndices v : inputVertices) {
-                    GraphVertex gv = vertices[v.getVertexIndex()];
-                    if (setVertexEpsilon[gv.getVertexIndex()]) {
-                        //This vertex: must output to multiple vertices... we want to add the epsilons here
-                        INDArray currentEps = gv.getEpsilon();
-                        gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                        INDArray currLabels = labels[thisOutputNumber];
+                        outputLayer.setLabels(currLabels);
                     } else {
-                        gv.setEpsilon(epsilons[j++]);
+                        current.setEpsilon(externalEpsilons[thisOutputNumber]);
+                        setVertexEpsilon[topologicalOrder[i]] = true;
                     }
-                    setVertexEpsilon[gv.getVertexIndex()] = true;
-
                 }
-            }
 
-            if (pair.getFirst() != null) {
-                Gradient g = pair.getFirst();
-                Map<String, INDArray> map = g.gradientForVariable();
-                LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
-                for (Map.Entry<String, INDArray> entry : map.entrySet()) {
-                    String origName = entry.getKey();
-                    String newName = current.getVertexName() + "_" + origName;
-                    tempList.addFirst(new Triple<>(newName, entry.getValue(), g.flatteningOrderForVariable(origName)));
+                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
+                INDArray[] epsilons = pair.getSecond();
+
+                for (int x = 0; x < epsilons.length; x++) {
+                    epsilons[x] = epsilons[x].leverage();
                 }
-                for (Triple<String, INDArray, Character> t : tempList)
-                    gradients.addFirst(t);
+
+                //Inputs to the current GraphVertex:
+                VertexIndices[] inputVertices = current.getInputVertices();
+
+                //Set epsilons for the vertices that provide inputs to this vertex:
+                if (inputVertices != null) {
+                    int j = 0;
+                    for (VertexIndices v : inputVertices) {
+                        GraphVertex gv = vertices[v.getVertexIndex()];
+                        if (setVertexEpsilon[gv.getVertexIndex()]) {
+                            //This vertex: must output to multiple vertices... we want to add the epsilons here
+                            INDArray currentEps = gv.getEpsilon().leverage();
+                            gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                        } else {
+                            gv.setEpsilon(epsilons[j++]);
+                        }
+                        setVertexEpsilon[gv.getVertexIndex()] = true;
+
+                    }
+                }
+
+                if (pair.getFirst() != null) {
+                    Gradient g = pair.getFirst();
+                    Map<String, INDArray> map = g.gradientForVariable();
+                    LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
+                    for (Map.Entry<String, INDArray> entry : map.entrySet()) {
+                        String origName = entry.getKey();
+                        String newName = current.getVertexName() + "_" + origName;
+                        tempList.addFirst(new Triple<>(newName, entry.getValue().leverage(), g.flatteningOrderForVariable(origName)));
+                    }
+                    for (Triple<String, INDArray, Character> t : tempList)
+                        gradients.addFirst(t);
+                }
             }
         }
 
@@ -1325,6 +1347,8 @@ public class ComputationGraph implements Serializable, Model {
         for (Triple<String, INDArray, Character> t : gradients) {
             gradient.setGradientFor(t.getFirst(), t.getSecond(), t.getThird());
         }
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp).initializeWorkspace();
 
         this.gradient = gradient;
     }
