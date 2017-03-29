@@ -738,7 +738,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         activations.add(currInput);
 
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(50L * 1024L * 1024L).overallocationLimit(0.3).policyReset(ResetPolicy.BLOCK_LEFT).policyLearning(LearningPolicy.NONE).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(2.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .build();
 
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
@@ -749,6 +754,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 activations.add(currInput);
             }
         }
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         //log.info("Last loop allocation: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getLastCycleAllocations());
         //log.info("Max loop: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getMaxCycleAllocations());
@@ -995,8 +1002,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(200 * 1024L * 1024L)
-                .policyLearning(LearningPolicy.NONE)
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
         if (layerWiseConfigurations.isBackprop()) {
@@ -1030,13 +1039,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
                             Nd4j.getMemoryManager().setCurrentWorkspace(cws);
                         }
-
                         solver.optimize();
                     }
 
                     if (hasMaskArrays)
                         clearLayerMaskArrays();
-
                 }
             }
         } else if (layerWiseConfigurations.isPretrain()) {
@@ -1124,9 +1131,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layerFrom = numLayers - 1;
         }
 
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(2.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .build();
+
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceFeedForward)) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceBackProp)) {
                 currLayer = getLayer(j);
                 if (currLayer instanceof FrozenLayer)
                     break;
@@ -1149,6 +1163,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                             .backprop(currPair.getSecond(), getInputMiniBatchSize()));
             }
         }
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceBackProp).initializeWorkspace();
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {
@@ -1509,8 +1525,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(200 * 1024L * 1024L)
-                .policyLearning(LearningPolicy.NONE)
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {

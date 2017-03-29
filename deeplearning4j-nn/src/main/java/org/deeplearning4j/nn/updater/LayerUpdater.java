@@ -263,7 +263,6 @@ public class LayerUpdater implements Updater {
     public GradientUpdater init(String variable, Layer layer) {
         GradientUpdater updater = updaterForVariable.get(variable);
         if (updater == null) {
-            System.out.println("Init updater: " + Nd4j.getMemoryManager().getCurrentWorkspace());
             org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
             switch (u) {
                 case SGD:
