@@ -164,6 +164,27 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspaces5() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+        try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+
+            INDArray array1 = Nd4j.create(100);
+            try(Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+
+                INDArray array2 = Nd4j.create(100);
+            }
+
+            long reqMem = 200 * Nd4j.sizeOfDataType();
+            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+
+            INDArray array3 = Nd4j.create(100);
+
+            reqMem = 300 * Nd4j.sizeOfDataType();
+            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+        }
+    }
+
+    @Test
     public void testNestedWorkspaces4() throws Exception {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 

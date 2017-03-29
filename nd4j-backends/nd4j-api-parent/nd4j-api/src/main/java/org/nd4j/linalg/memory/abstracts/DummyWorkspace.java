@@ -11,6 +11,9 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author raver119@gmail.com
  */
 public class DummyWorkspace implements MemoryWorkspace {
+
+    protected MemoryWorkspace parentWorkspace;
+
     /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance
      *
@@ -65,6 +68,9 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public MemoryWorkspace notifyScopeEntered() {
+        parentWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
         return this;
     }
 
@@ -140,7 +146,7 @@ public class DummyWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
     }
 
     /**
