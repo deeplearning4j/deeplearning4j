@@ -1467,6 +1467,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
     public void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+
         setInput(features);
         setLabels(labels);
         if (featuresMask != null || labelsMask != null) {
@@ -1477,21 +1478,29 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(features);
         }
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
 
-        if (layerWiseConfigurations.isBackprop()) {
-            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(features, labels, featuresMask, labelsMask);
-            } else {
-                if (solver == null) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
+            if (layerWiseConfigurations.isBackprop()) {
+                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(features, labels, featuresMask, labelsMask);
+                } else {
+                    if (solver == null) {
+                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    }
+
+                    solver.optimize();
                 }
-
-                solver.optimize();
             }
-        }
 
-        if (featuresMask != null || labelsMask != null) {
-            clearLayerMaskArrays();
+            if (featuresMask != null || labelsMask != null) {
+                clearLayerMaskArrays();
+            }
         }
     }
 

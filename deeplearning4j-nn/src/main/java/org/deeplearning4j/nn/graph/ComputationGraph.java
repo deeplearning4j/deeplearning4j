@@ -812,35 +812,45 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(multiDataSetIterator);
         }
 
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
         if (configuration.isBackprop()) {
             while (multiDataSetIterator.hasNext()) {
                 MultiDataSet next = multiDataSetIterator.next();
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
-                                    next.getLabelsMaskArrays());
-                } else {
-                    boolean hasMaskArrays = next.hasMaskArrays();
-                    if (hasMaskArrays) {
-                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
+
+                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                        doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
+                                next.getLabelsMaskArrays());
+                    } else {
+                        boolean hasMaskArrays = next.hasMaskArrays();
+                        if (hasMaskArrays) {
+                            setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                        }
+
+                        setInputs(next.getFeatures());
+                        setLabels(next.getLabels());
+                        if (solver == null) {
+                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
+                                    .build();
+                        }
+                        solver.optimize();
+
+                        if (hasMaskArrays) {
+                            clearLayerMaskArrays();
+                        }
                     }
 
-                    setInputs(next.getFeatures());
-                    setLabels(next.getLabels());
-                    if (solver == null) {
-                        solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
-                                        .build();
-                    }
-                    solver.optimize();
-
-                    if (hasMaskArrays) {
-                        clearLayerMaskArrays();
-                    }
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
                 }
-
-                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         }
     }
@@ -879,20 +889,29 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(iter);
         }
 
-        if (configuration.isBackprop()) {
-            if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
-            } else {
-                if (solver == null) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(2.0)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
+            if (configuration.isBackprop()) {
+                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
+                } else {
+                    if (solver == null) {
+                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    }
+
+                    solver.optimize();
                 }
-
-                solver.optimize();
             }
-        }
 
-        if (featureMaskArrays != null || labelMaskArrays != null) {
-            clearLayerMaskArrays();
+            if (featureMaskArrays != null || labelMaskArrays != null) {
+                clearLayerMaskArrays();
+            }
         }
     }
 
