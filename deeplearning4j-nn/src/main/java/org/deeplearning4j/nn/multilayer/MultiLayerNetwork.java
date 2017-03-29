@@ -27,12 +27,10 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -60,6 +58,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,6 +111,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected final static String workspaceExternal = "LOOP_ITER";
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
+    protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
@@ -738,16 +738,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         activations.add(currInput);
 
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(2.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
+
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceFeedForward)) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currInput = activationFromPrevLayer(i, currInput, train).leverage();
                 //currInput = activationFromPrevLayer(i, currInput, train);
                 //applies drop connect to the activation
@@ -755,14 +759,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
-
-        //log.info("Last loop allocation: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getLastCycleAllocations());
-        //log.info("Max loop: {} bytes", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("1").getMaxCycleAllocations());
-
-       // if (1>0)
-       //     throw new RuntimeException();
-
+        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return activations;
     }
@@ -1010,6 +1008,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
             if (!iter.hasNext() && iter.resetSupported()) {
@@ -1021,7 +1021,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                     boolean hasMaskArrays = next.hasMaskArrays();
 
@@ -1133,16 +1133,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layerFrom = numLayers - 1;
         }
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(2.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceBackProp)) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currLayer = getLayer(j);
                 if (currLayer instanceof FrozenLayer)
                     break;
@@ -1166,7 +1170,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceBackProp).initializeWorkspace();
+        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {
@@ -1487,7 +1492,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             if (layerWiseConfigurations.isBackprop()) {
                 if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(features, labels, featuresMask, labelsMask);
@@ -1542,7 +1549,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration,workspaceExternal)) {
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
                         data.getLabelsMaskArray());

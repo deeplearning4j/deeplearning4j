@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -68,6 +69,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,6 +99,8 @@ public class ComputationGraph implements Serializable, Model {
     protected final static String workspaceExternal = "LOOP_ITER";
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
+
+    protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
     /**
      * All GraphVertex objects in the network.
@@ -737,6 +741,8 @@ public class ComputationGraph implements Serializable, Model {
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
+
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
             while (dataSetIterator.hasNext()) {
@@ -744,7 +750,7 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -819,13 +825,15 @@ public class ComputationGraph implements Serializable, Model {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
+
         if (configuration.isBackprop()) {
             while (multiDataSetIterator.hasNext()) {
                 MultiDataSet next = multiDataSetIterator.next();
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                     if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                         doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
@@ -896,7 +904,9 @@ public class ComputationGraph implements Serializable, Model {
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf,workspaceExternal)) {
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             if (configuration.isBackprop()) {
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
@@ -1126,17 +1136,21 @@ public class ComputationGraph implements Serializable, Model {
     private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(1.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
+
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceFeedForward)) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
@@ -1183,7 +1197,8 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
-        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return layerActivations;
     }
@@ -1287,13 +1302,17 @@ public class ComputationGraph implements Serializable, Model {
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-            try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, workspaceBackProp)) {
+            try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 GraphVertex current = vertices[topologicalOrder[i]];
 
                 if (current.isInputVertex())
@@ -1367,7 +1386,8 @@ public class ComputationGraph implements Serializable, Model {
             gradient.setGradientFor(t.getFirst(), t.getSecond(), t.getThird());
         }
 
-        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp).initializeWorkspace();
+        if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
 
         this.gradient = gradient;
     }
