@@ -40,7 +40,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
-        return new CpuCSRSparseNDArray(data, columns, pointerB, pointerE, shape);
+        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
 
 }

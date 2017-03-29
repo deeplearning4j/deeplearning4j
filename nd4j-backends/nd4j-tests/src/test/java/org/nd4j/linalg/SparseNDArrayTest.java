@@ -3,7 +3,7 @@ package org.nd4j.linalg;
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
-import org.nd4j.linalg.cpu.nativecpu.CpuCSRSparseNDArray;
+import org.nd4j.linalg.cpu.nativecpu.SparseNDArrayCSR;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -43,8 +43,8 @@ public class SparseNDArrayTest {
         *  [ 0 8 0 0 -5]]
         * */
         ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(sparseNDArray instanceof CpuCSRSparseNDArray) {
-            CpuCSRSparseNDArray sparseCSRArray = (CpuCSRSparseNDArray) sparseNDArray;
+        if(sparseNDArray instanceof SparseNDArrayCSR) {
+            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 1, 3);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 3, 4, 6, 4, -4, 2, 7, 8, -5};
@@ -72,8 +72,8 @@ public class SparseNDArrayTest {
         *  [ 0 8 0 0 -5]]
         * */
         ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(sparseNDArray instanceof CpuCSRSparseNDArray) {
-            CpuCSRSparseNDArray sparseCSRArray = (CpuCSRSparseNDArray) sparseNDArray;
+        if(sparseNDArray instanceof SparseNDArrayCSR) {
+            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 2, 10);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 10, 6, 4, -4, 2, 7, 8, -5};

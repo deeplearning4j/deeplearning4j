@@ -5,6 +5,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author Audrey Loeffel
@@ -13,7 +14,6 @@ import org.nd4j.linalg.api.buffer.IntBuffer;
 public class BaseSparseNDArray implements ISparseNDArray {
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
-
     protected transient volatile long nnz = -1;
     protected int nbRows, nbColumns;
     protected Boolean isVector = null;
@@ -24,16 +24,15 @@ public class BaseSparseNDArray implements ISparseNDArray {
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
         DataBuffer newBuffer = null;
         if (buffer instanceof DoubleBuffer){
-            newBuffer = new DoubleBuffer(newSize);
+            newBuffer = Nd4j.createBuffer(newSize);
             newBuffer.setData(buffer.asDouble());
         } else if (buffer instanceof IntBuffer) {
-            newBuffer = new IntBuffer(newSize);
+            newBuffer = Nd4j.createBuffer(newSize);
             newBuffer.setData(buffer.asInt());
         }else if (buffer instanceof FloatBuffer) {
-            newBuffer = new FloatBuffer(newSize);
+            newBuffer = Nd4j.createBuffer(newSize);
             newBuffer.setData(buffer.asFloat());
         }
         return newBuffer;
     }
-
 }

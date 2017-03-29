@@ -7,17 +7,19 @@ import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
+import org.nd4j.linalg.api.ndarray.SparseFormat;
 
 /**
  * @author Audrey Loeffel
  */
 @Slf4j
-public class CpuCSRSparseNDArray extends BaseSparseNDArray {
-
+public class SparseNDArrayCSR extends BaseSparseNDArray {
+    protected static final SparseFormat format = SparseFormat.CSR;
     protected transient volatile DoubleBuffer values;
     protected transient volatile DoubleBuffer columns;
     protected transient volatile IntBuffer pointerB;
     protected transient volatile IntBuffer pointerE;
+
 
 /**
  *
@@ -33,7 +35,8 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
  *                 element in the values array that is last non-zero element in a row j of A.
  * @param shape Shape of the matrix A
 */
-    public CpuCSRSparseNDArray(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        check
         assert(data.length == columns.length);
         assert(pointerB.length == pointerE.length);
 
@@ -121,6 +124,9 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
     }
     public int[] getPointersE(){
         return pointerE.asInt();
+    }
+    public SparseFormat getFormat(){
+        return format;
     }
 
     private void add(DataBuffer buffer, int value){
