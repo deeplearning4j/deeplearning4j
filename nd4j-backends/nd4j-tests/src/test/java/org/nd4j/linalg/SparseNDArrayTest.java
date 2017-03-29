@@ -42,22 +42,22 @@ public class SparseNDArrayTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(matrix instanceof CpuCSRSparseNDArray) {
-            CpuCSRSparseNDArray csrMatrix = (CpuCSRSparseNDArray) matrix;
-            csrMatrix.putScalar(2, 1, 3);
+        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        if(sparseNDArray instanceof CpuCSRSparseNDArray) {
+            CpuCSRSparseNDArray sparseCSRArray = (CpuCSRSparseNDArray) sparseNDArray;
+            sparseCSRArray.putScalar(2, 1, 3);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 3, 4, 6, 4, -4, 2, 7, 8, -5};
-            int[] expectedColumns = {0, 1, 3, 0, 1, 1, 2, 3, 4, 0, 2, 3, 1, 4};
+            double[] expectedColumns = {0, 1, 3, 0, 1, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 9, 12};
             int[] expectedPointerE = {3, 5, 9, 12, 14};
             int[] expectedShape = {5, 5};
 
 
-            assertArrayEquals(expectedValues, values, 0);
-            assertArrayEquals(expectedColumns, columns);
-            assertArrayEquals(expectedPointerB, pointerB);
-            assertArrayEquals(expectedPointerE, pointerE);
+            assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
+            assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);
+            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointersB());
+            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointersE());
             assertArrayEquals(expectedShape, shape);
         }
     }
@@ -71,21 +71,21 @@ public class SparseNDArrayTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(matrix instanceof CpuCSRSparseNDArray) {
-            CpuCSRSparseNDArray csrMatrix = (CpuCSRSparseNDArray) matrix;
-            csrMatrix.putScalar(2, 2, 10);
+        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        if(sparseNDArray instanceof CpuCSRSparseNDArray) {
+            CpuCSRSparseNDArray sparseCSRArray = (CpuCSRSparseNDArray) sparseNDArray;
+            sparseCSRArray.putScalar(2, 2, 10);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 10, 6, 4, -4, 2, 7, 8, -5};
-            int[] expectedColumns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
+            double[] expectedColumns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 8, 11};
             int[] expectedPointerE = {3, 5, 8, 11, 13};
             int[] expectedShape = {5, 5};
 
-            assertArrayEquals(expectedValues, values, 0);
-            assertArrayEquals(expectedColumns, columns);
-            assertArrayEquals(expectedPointerB, pointerB);
-            assertArrayEquals(expectedPointerE, pointerE);
+            assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
+            assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);
+            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointersB());
+            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointersE());
             assertArrayEquals(expectedShape, shape);
         }
     }

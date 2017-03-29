@@ -82,7 +82,9 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
             values = addAtPosition(values, nnz, idx, value);
             columns = addAtPosition(columns, nnz, idx, col);
             nnz ++;
+
             // shift the indices of the next rows
+            pointerE.put(row, pointerE.getInt(row) + 1);
             for(int i = row + 1; i < nbRows; i ++){
                 pointerB.put(i, pointerB.getInt(i) + 1);
                 pointerE.put(i, pointerE.getInt(i) + 1);
@@ -92,7 +94,7 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
     }
 
     /*
-    * TODO Should return a view of the current matrix
+    * TODO Should take an index in parameter and should return a view of the current matrix
     * */
     public INDArray get(int r, int c) {
 //        DataBuffer ret = new FloatBuffer()
@@ -106,6 +108,21 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
         return null;
     }
 
+    public double[] getDoubleValues(){
+        return values.getDoublesAt(0, (int) nnz);
+    }
+
+    public double[] getColumns(){
+        return columns.getDoublesAt(0, (int) nnz);
+    }
+
+    public int[] getPointersB(){
+        return pointerB.asInt();
+    }
+    public int[] getPointersE(){
+        return pointerE.asInt();
+    }
+
     private void add(DataBuffer buffer, int value){
         // TODO add value and the end of the array
     }
@@ -116,8 +133,7 @@ public class CpuCSRSparseNDArray extends BaseSparseNDArray {
         double[] tail = buffer.getDoublesAt(pos, (int) dataSize - pos);
 
         buffer.put(pos, value);
-
-        for(int i = 0; i <= tail.length; i++) {
+        for(int i = 0; i < tail.length; i++) {
             buffer.put(i + pos + 1, tail[i]);
         }
         return (DoubleBuffer) buffer;
