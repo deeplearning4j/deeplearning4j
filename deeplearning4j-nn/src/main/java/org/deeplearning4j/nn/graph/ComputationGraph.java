@@ -1155,7 +1155,7 @@ public class ComputationGraph implements Serializable, Model {
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
                     // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getVertexIndex()].leverage();
+                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal);
 
                     layerActivations.put(current.getVertexName(), input);
 
@@ -1165,7 +1165,7 @@ public class ComputationGraph implements Serializable, Model {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        vertices[vIdx].setInput(vIdxInputNum, input.leverage());
+                        vertices[vIdx].setInput(vIdxInputNum, input.leverageTo(workspaceExternal));
                     }
 
                 } else {
@@ -1177,7 +1177,7 @@ public class ComputationGraph implements Serializable, Model {
                         continue;
                     }
                     // once again, pushing stuff out of this workspace
-                    INDArray out = current.doForward(train).leverage();
+                    INDArray out = current.doForward(train).leverageTo(workspaceExternal);
 
                     if (current.hasLayer()) {
                         layerActivations.put(current.getVertexName(), out);
@@ -1342,7 +1342,7 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray[] epsilons = pair.getSecond();
 
                 for (int x = 0; x < epsilons.length; x++) {
-                    epsilons[x] = epsilons[x].leverage();
+                    epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
                 }
 
                 //Inputs to the current GraphVertex:
@@ -1355,7 +1355,7 @@ public class ComputationGraph implements Serializable, Model {
                         GraphVertex gv = vertices[v.getVertexIndex()];
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-                            INDArray currentEps = gv.getEpsilon().leverage();
+                            INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
                             gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                         } else {
                             gv.setEpsilon(epsilons[j++]);
@@ -1372,7 +1372,7 @@ public class ComputationGraph implements Serializable, Model {
                     for (Map.Entry<String, INDArray> entry : map.entrySet()) {
                         String origName = entry.getKey();
                         String newName = current.getVertexName() + "_" + origName;
-                        tempList.addFirst(new Triple<>(newName, entry.getValue().leverage(), g.flatteningOrderForVariable(origName)));
+                        tempList.addFirst(new Triple<>(newName, entry.getValue().leverageTo(workspaceExternal), g.flatteningOrderForVariable(origName)));
                     }
                     for (Triple<String, INDArray, Character> t : tempList)
                         gradients.addFirst(t);

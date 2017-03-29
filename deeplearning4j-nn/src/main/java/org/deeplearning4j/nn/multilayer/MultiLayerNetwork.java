@@ -653,7 +653,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for (int i = 0; i < layers.length; i++) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
-                currInput = zFromPrevLayer(i, currInput, training).leverage();
+                currInput = zFromPrevLayer(i, currInput, training).leverageTo(workspaceExternal);
                 //applies drop connect to the activation
                 activations.add(currInput);
             }
@@ -752,7 +752,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                currInput = activationFromPrevLayer(i, currInput, train).leverage();
+                currInput = activationFromPrevLayer(i, currInput, train).leverageTo(workspaceExternal);
                 //currInput = activationFromPrevLayer(i, currInput, train);
                 //applies drop connect to the activation
                 activations.add(currInput);
@@ -1151,7 +1151,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 if (currLayer instanceof FrozenLayer)
                     break;
                 currPair = currLayer.backpropGradient(currPair.getSecond());
-                currPair.setSecond(currPair.getSecond().leverage());
+                currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
                 for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
