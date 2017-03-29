@@ -108,7 +108,7 @@ public class Nd4j {
     public final static String NATIVE_OPS = "native.ops";
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    public final static String ISPARSE_NDARRAY_FACTORY_CLASS = "isparsendarrayfactoy.class";
+    public final static String ISPARSE_NDARRAY_FACTORY_CLASS = "isparsendarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
