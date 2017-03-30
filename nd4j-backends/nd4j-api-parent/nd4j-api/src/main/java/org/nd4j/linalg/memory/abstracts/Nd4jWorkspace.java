@@ -85,7 +85,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         currentSize.set(workspaceConfiguration.getInitialSize());
 
         if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
-            log.warn("Workspace initialization OVER_TIME was selected, but number of cycles isn't positive value!");
+            log.warn("Workspace [{}]: initialization OVER_TIME was selected, but number of cycles isn't positive value!", id);
 
         init();
     }
@@ -142,6 +142,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
+            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
+
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
             externalAllocations.add(new PointersPair(pointer, null));
@@ -154,7 +156,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
-            //log.info("Allocating array of {} bytes, capacity of {} elements, prevOffset:", requiredMemory, numElements);
+            log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset:", id, requiredMemory, numElements);
 
             PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 

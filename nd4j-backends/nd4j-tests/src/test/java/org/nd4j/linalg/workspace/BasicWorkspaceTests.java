@@ -88,6 +88,33 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
     }
 
+
+    @Test
+    public void testLeverageTo2() throws Exception {
+        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopOverTimeConfig, "EXT")) {
+            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            INDArray array3 = null;
+
+            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+                INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+                long reqMemory = 5 * Nd4j.sizeOfDataType();
+
+                array3 = array2.leverageTo("EXT");
+
+                assertEquals(0, wsOne.getCurrentSize());
+
+                assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
+            }
+
+            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+                INDArray array2 = Nd4j.create(100);
+            }
+
+            assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
+        }
+    }
+
     @Test
     public void testLeverageTo1() throws Exception {
         try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
@@ -104,8 +131,6 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 assertEquals((reqMemory + reqMemory % 8) * 2, wsOne.getHostOffset());
             }
         }
-
-
     }
 
     @Test
@@ -260,6 +285,39 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
         assertFalse(array.isInScope());
+    }
+
+    @Test
+    public void testIsAttached3() {
+        INDArray array = Nd4j.create(100);
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            INDArray arrayL = array.leverageTo("ITER");
+
+            assertFalse(array.isAttached());
+            assertFalse(arrayL.isAttached());
+
+        }
+
+        INDArray array2 = Nd4j.create(100);
+
+        assertFalse(array.isAttached());
+        assertFalse(array2.isAttached());
+    }
+
+    @Test
+    public void testIsAttached2() {
+        INDArray array = Nd4j.create(100);
+        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+            INDArray arrayL = array.leverageTo("ITER");
+
+            assertFalse(array.isAttached());
+            assertFalse(arrayL.isAttached());
+        }
+
+        INDArray array2 = Nd4j.create(100);
+
+        assertFalse(array.isAttached());
+        assertFalse(array2.isAttached());
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -5000,6 +5001,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!isAttached())
             return this;
 
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         /*
          two options here
          1) we're within some workspace
@@ -5052,6 +5056,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (parentWorkspace == null)
             return this.detach();
         else {
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
             // temporary set parent ws as current ws
             Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
 
@@ -5090,6 +5097,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (current == target)
             return this;
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
 
