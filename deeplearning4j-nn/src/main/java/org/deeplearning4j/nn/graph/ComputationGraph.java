@@ -54,6 +54,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1138,8 +1139,9 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(1.0)
+                .overallocationLimit(5.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
@@ -1240,7 +1242,8 @@ public class ComputationGraph implements Serializable, Model {
         INDArray[] outputs = new INDArray[numOutputArrays];
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
-            outputs[i++] = activations.get(s);
+            log.info("ATT: {} -> {}", s, activations.get(s).isAttached());
+            outputs[i++] = activations.get(s).detach();
         }
         return outputs;
     }
@@ -1297,7 +1300,7 @@ public class ComputationGraph implements Serializable, Model {
         }
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(2.0)
+                .overallocationLimit(5.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
