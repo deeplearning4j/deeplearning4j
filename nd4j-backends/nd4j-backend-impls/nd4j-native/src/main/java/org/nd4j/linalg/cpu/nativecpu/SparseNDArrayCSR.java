@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.api.ndarray.SparseFormat;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * @author Audrey Loeffel
  */
@@ -36,9 +38,9 @@ public class SparseNDArrayCSR extends BaseSparseNDArray {
  * @param shape Shape of the matrix A
 */
     public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
-        check
-        assert(data.length == columns.length);
-        assert(pointerB.length == pointerE.length);
+
+        checkArgument(data.length == columns.length);
+        checkArgument(pointerB.length == pointerE.length);
 
         if (shape.length == 2) {
             nbRows = shape[0];
@@ -69,8 +71,8 @@ public class SparseNDArrayCSR extends BaseSparseNDArray {
     public ISparseNDArray putScalar(int row, int col, double value){
         // TODO use shape information to get the corresponding index ?
 
-        assert(row < nbRows);
-        assert(col < nbColumns);
+        checkArgument(row < nbRows);
+        checkArgument(col < nbColumns);
 
         int idx = pointerB.getInt(row);
         int idxNextRow = pointerB.getInt(row + 1);
