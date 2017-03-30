@@ -1,4 +1,4 @@
-package org.deeplearning4j.keras;
+package org.deeplearning4j.keras.hdf5;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
@@ -53,6 +53,13 @@ public class NDArrayHDF5Reader {
         int nbDims = space.getSimpleExtentNdims();
         long[] shape = new long[nbDims];
         space.getSimpleExtentDims(shape);
-        return ArrayUtil.toInts(shape);
+
+        // convert long to int
+        int[] intShape = new int[nbDims];
+        for(int i = 0; i < shape.length; i++) {
+            intShape[i] = (int) shape[i];
+        }
+
+        return intShape;
     }
 }
