@@ -80,7 +80,7 @@
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
-        <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
+        <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
         <maven-surefire.version>2.19.1</maven-surefire.version>
         <dl4j-test-resources.version>0.8.1-SNAPSHOT</dl4j-test-resources.version>
