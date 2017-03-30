@@ -53,6 +53,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     MemoryWorkspace notifyScopeEntered();
 
     /**
+     * This method TEMPORARY enters this workspace, without reset applied
+     *
+     * @return
+     */
+    MemoryWorkspace notifyScopeBorrowed();
+
+    /**
      * This method notifies given Workspace that use cycle just ended
      *
      * @return

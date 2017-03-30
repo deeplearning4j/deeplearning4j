@@ -18,9 +18,7 @@ import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -159,6 +157,34 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                     continue;
 
                 assertFalse(workspaces.get(x) == workspaces.get(y));
+            }
+        }
+    }
+
+    @Test
+    public void testNestedWorkspacesOverlap1() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+        try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+            INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+            long reqMem = 5 * Nd4j.sizeOfDataType();
+            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            try(Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").notifyScopeEntered()) {
+
+                INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+                reqMem = 5 * Nd4j.sizeOfDataType();
+                assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+
+                try(Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeBorrowed()) {
+                    assertTrue(ws1 == ws3);
+
+                    INDArray array3 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+                    assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+                }
             }
         }
     }

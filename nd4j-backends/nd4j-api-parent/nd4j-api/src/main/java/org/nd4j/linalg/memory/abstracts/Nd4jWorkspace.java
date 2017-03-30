@@ -59,6 +59,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
     protected AtomicBoolean isOpen = new AtomicBoolean(false);
     protected AtomicBoolean isInit = new AtomicBoolean(false);
+    protected AtomicBoolean isBorrowed = new AtomicBoolean(false);
 
     protected AtomicInteger tagScope = new AtomicInteger(0);
 
@@ -68,6 +69,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected List<PointersPair> externalAllocations = new ArrayList<>();
 
     protected MemoryWorkspace previousWorkspace;
+    protected MemoryWorkspace borrowingWorkspace;
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 
@@ -142,7 +144,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
-            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
+//            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
 
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
@@ -156,7 +158,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
-            log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset:", id, requiredMemory, numElements);
+//            log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset:", id, requiredMemory, numElements);
 
             PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
@@ -228,9 +230,29 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         maxCycle.set(0);
     }
 
+    /**
+     * This method TEMPORARY enters this workspace, without reset applied
+     *
+     * @return
+     */
+    @Override
+    public MemoryWorkspace notifyScopeBorrowed() {
+        if (isBorrowed.get())
+            throw new ND4JIllegalStateException("Workspace ["+id+"]: Can't borrow from borrowed workspace");
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(this);
+
+        return this;
+    }
 
     @Override
     public void close() {
+        if (isBorrowed.get()) {
+            isBorrowed.set(false);
+            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
+            return;
+        }
+
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);

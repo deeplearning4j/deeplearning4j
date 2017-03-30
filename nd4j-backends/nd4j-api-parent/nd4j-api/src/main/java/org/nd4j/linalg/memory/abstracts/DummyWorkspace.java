@@ -75,6 +75,16 @@ public class DummyWorkspace implements MemoryWorkspace {
     }
 
     /**
+     * This method TEMPORARY enters this workspace, without reset applied
+     *
+     * @return
+     */
+    @Override
+    public MemoryWorkspace notifyScopeBorrowed() {
+        return null;
+    }
+
+    /**
      * This method notifies given Workspace that use cycle just ended
      *
      * @return
