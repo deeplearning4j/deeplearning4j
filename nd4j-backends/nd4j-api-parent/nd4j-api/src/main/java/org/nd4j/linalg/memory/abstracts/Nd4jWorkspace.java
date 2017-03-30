@@ -173,7 +173,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             spilledAllocations.addAndGet(requiredMemory);
 
-            log.info("Spilled array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
@@ -206,6 +206,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
             else
                 currentSize.set(maxCycle.get());
+
+            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
+                currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
 
             if (!isInit.get())
                 init();
