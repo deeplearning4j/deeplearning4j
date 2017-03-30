@@ -45,7 +45,6 @@ class AutoEncoderModel(uid: String, multiLayerNetwork: MultiLayerNetwork) extend
         val out = multiLayerNetwork.feedForwardToLayer($(compressedLayer), Nd4j.create(vec.toArray))
         val mainLayer = out.get(out.size() - 1)
         val size = mainLayer.size(1)
-        println(size)
         val values = Array.fill(size)(0.0)
         for (i <- 0 until size) {
             values(i) = mainLayer.getDouble(i)
