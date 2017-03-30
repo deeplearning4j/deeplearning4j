@@ -97,7 +97,7 @@ public class ComputationGraph implements Serializable, Model {
     @Setter
     private boolean initDone = false;
 
-    protected final static String workspaceExternal = "LOOP_ITER";
+    protected final static String workspaceExternal = "LOOP_EXTERNAL";
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
 
@@ -737,7 +737,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(2.0)
+                .overallocationLimit(0.3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
@@ -821,8 +821,9 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .overallocationLimit(0.15)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
@@ -900,7 +901,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(2.0)
+                .overallocationLimit(0.5)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
@@ -1139,7 +1140,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(5.0)
+                .overallocationLimit(0.5)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .policyLearning(LearningPolicy.OVER_TIME)
@@ -1159,6 +1160,7 @@ public class ComputationGraph implements Serializable, Model {
                     // pushing out copy to parent workspace
                     INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal);
 
+
                     layerActivations.put(current.getVertexName(), input);
 
                     for (VertexIndices v : inputsTo) {
@@ -1167,7 +1169,10 @@ public class ComputationGraph implements Serializable, Model {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        vertices[vIdx].setInput(vIdxInputNum, input.leverageTo(workspaceExternal));
+
+                        try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                            vertices[vIdx].setInput(vIdxInputNum, input.dup());
+                        }
                     }
 
                 } else {
@@ -1192,7 +1197,9 @@ public class ComputationGraph implements Serializable, Model {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            vertices[vIdx].setInput(inputNum, out);
+                            try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                vertices[vIdx].setInput(inputNum, out);
+                            }
                         }
                     }
                 }
@@ -1300,7 +1307,7 @@ public class ComputationGraph implements Serializable, Model {
         }
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(5.0)
+                .overallocationLimit(0.5)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
@@ -1345,6 +1352,9 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray[] epsilons = pair.getSecond();
 
                 for (int x = 0; x < epsilons.length; x++) {
+                    if (epsilons[x] == null)
+                        continue;
+
                     epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
                 }
 

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -26,6 +27,7 @@ import java.util.Arrays;
  * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
  */
 @Data
+@Slf4j
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
@@ -43,6 +45,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             return input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
         if (shape[2] == 1)
             return input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+
         INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
         return permuted.reshape('f', shape[0] * shape[2], shape[1]);
     }
