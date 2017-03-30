@@ -55,6 +55,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, 8);
     }
 
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
+        this(iterator, queueSize, queue, true);
+    }
+
     /**
      * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
      * single additional DataSet)
@@ -63,13 +67,13 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param queueSize
      * @param queue BlockingQueue instance that will be used as backing queue. MagicQueue probably?
      */
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
         if (queueSize < 2)
             queueSize = 2;
 
-        if (iterator.resetSupported()) {
+        if (iterator.resetSupported() && useWorkspace) {
             iterator.reset();
 
             DataSet ds = iterator.next();
@@ -83,7 +87,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ASDI_ITER");
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
             this.workspace = workspace;
         } else workspace = null;
 
@@ -114,6 +118,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
      */
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize));
+    }
+
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace);
     }
 
 

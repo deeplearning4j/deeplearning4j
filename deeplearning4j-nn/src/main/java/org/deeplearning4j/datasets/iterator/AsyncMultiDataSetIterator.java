@@ -36,13 +36,17 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private MemoryWorkspace workspace;
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
+        this(iterator, queueLength, true);
+    }
+
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, boolean useWorkspace) {
         if (queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
         if (queueLength < 2)
             queueLength = 2;
 
-        if (iterator.resetSupported()) {
+        if (iterator.resetSupported() && useWorkspace) {
             iterator.reset();
 
             MultiDataSet ds = iterator.next();
@@ -56,7 +60,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ASDI_ITER");
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "AMDSI_ITER");
             this.workspace = workspace;
         } else workspace = null;
 
