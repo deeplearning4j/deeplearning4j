@@ -37,7 +37,7 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
 
     override def copy(extra: ParamMap) : E = defaultCopy(extra)
 
-    protected def fitter(datasetFacade: DatasetFacade) : SparkDl4jMultiLayer = {
+    protected def fitter(datasetFacade: DatasetFacade) : MultiLayerNetwork = {
         validator()
         val dataset = datasetFacade.get
         val sparkNet = new SparkDl4jMultiLayer(dataset.sqlContext.sparkContext, _multiLayerConfiguration, _trainingMaster())
@@ -48,7 +48,7 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
         val set2 = dataset.select($(inputCol)).rdd.map(mapVectorFunc)
         val ds = set2.map(v => new DataSet(Nd4j.create(v.toArray), Nd4j.create(v.toArray)))
         val fitted = sparkNet.fit(ds)
-        sparkNet
+        fitted
     }
 
     /**
@@ -112,7 +112,7 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
 }
 
 abstract class AutoEncoderModelWrapper[E <: AutoEncoderModelWrapper[E]](override val uid : String,
-                                                                        sparkDl4jMultiLayer: SparkDl4jMultiLayer) extends Model[E] with MLWritable with AutoEncoderParams {
+                                                                        multiLayerNetwork: MultiLayerNetwork) extends Model[E] with MLWritable with AutoEncoderParams {
 
     protected def udfTransformer : UserDefinedFunction
 
@@ -120,7 +120,7 @@ abstract class AutoEncoderModelWrapper[E <: AutoEncoderModelWrapper[E]](override
       *
       * @return Returns the multiLayerNetwork
       */
-    def getNetwork : MultiLayerNetwork = sparkDl4jMultiLayer.getNetwork
+    def getNetwork : MultiLayerNetwork = multiLayerNetwork
 
     /**
       * The compressed layer of the autoencoder
@@ -183,7 +183,7 @@ trait AutoEncoderModelLoader extends MLReadable[AutoEncoderModel] {
             val mln = ModelSerializer.restoreMultiLayerNetwork(path)
             val model = new AutoEncoderModel(
                 Identifiable.randomUID("dl4j_autoencoder"),
-                new SparkDl4jMultiLayer(sc, mln, null)
+                mln
             )
             SparkDl4jUtil.getAndSetParams(model, metaData)
             model
