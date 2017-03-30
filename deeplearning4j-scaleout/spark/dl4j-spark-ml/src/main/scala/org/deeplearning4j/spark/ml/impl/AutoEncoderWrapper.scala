@@ -4,7 +4,8 @@ import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.ml.param.{IntParam, Param, ParamMap, Params}
 import org.apache.spark.ml.util._
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.sql.{Row, UserDefinedFunction}
+import org.apache.spark.sql._
+import org.apache.spark.sql.expressions._
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer

@@ -123,7 +123,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
+                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -136,6 +136,22 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <!--             the following needs to be present right besides a test run that -->
+            <!-- requires Spark-version specific sources, otherwise old generated .class files -->
+            <!-- will be picked up erroneously in a run of ./buildmultiplescalaversions.sh -->
+            <plugin>
+              <artifactId>maven-clean-plugin</artifactId>
+              <version>3.0.0</version>
+              <executions>
+                <execution>
+                  <id>auto-clean</id>
+                  <phase>initialize</phase>
+                  <goals>
+                    <goal>clean</goal>
+                  </goals>
+                </execution>
+              </executions>
             </plugin>
         </plugins>
     </build>
