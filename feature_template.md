@@ -42,6 +42,8 @@ etc.
 
 A well-written recipe presents ingredients in the order in which they will be used. Once you've laid out the steps in the best order possible, confirm that your prerequisite are ordered accordingly.
 
+At the end of the setup, include a link to the feature **javadoc**.
+
 ## Troubleshooting
 
 Q&A for fixing common problems. Feel free to include material from the DL4J channel or come up with your own.
