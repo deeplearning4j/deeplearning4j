@@ -624,5 +624,239 @@ public class ParallelWrapper implements AutoCloseable {
 
 
 
+        public Trainer(int threadId, Model model, int rootDevice, boolean useMDS) {
+            this(threadId, model, rootDevice);
+            this.useMDS = useMDS;
+        }
+
+        public Trainer(int threadId, Model model, int rootDevice) {
+            this.threadId = threadId;
+            this.setDaemon(true);
+            this.setName("ParallelWrapper trainer " + threadId);
+
+            this.originalModel = model;
+            //if (rootDevice != threadId) {
+                /*if (model instanceof MultiLayerNetwork) {
+                    this.replicatedModel = ((MultiLayerNetwork) model).clone();
+
+                } else if (model instanceof ComputationGraph) {
+                    this.replicatedModel = ((ComputationGraph) model).clone();
+                }
+                */
+            /*} else {
+                this.onRootModel = true;
+                this.replicatedModel = model;
+            }*/
+        }
+
+        public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+            running.incrementAndGet();
+            queueMDS.add(dataSet);
+        }
+
+        public void feedDataSet(@NonNull DataSet dataSet) {
+            running.incrementAndGet();
+            queue.add(dataSet);
+        }
+
+        public Model getModel() {
+            return replicatedModel;
+        }
+
+        public void updateModel(@NonNull Model model) {
+
+            this.shouldUpdate.set(true);
+
+            if (replicatedModel instanceof MultiLayerNetwork) {
+                replicatedModel.setParams(model.params().dup());
+
+                Updater updater = ((MultiLayerNetwork) model).getUpdater();
+                INDArray view = updater.getStateViewArray();
+
+                if (view != null) {
+                    updater = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                    INDArray viewD = view.dup();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                    updater.setStateViewArray((MultiLayerNetwork) replicatedModel, viewD, false);
+                }
+            } else if (replicatedModel instanceof ComputationGraph) {
+                replicatedModel.setParams(model.params().dup());
+
+                ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                INDArray view = updater.getStateViewArray();
+
+                if (view != null) {
+                    INDArray viewD = view.dup();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                    updater = ((ComputationGraph) replicatedModel).getUpdater();
+                    updater.setStateViewArray(viewD);
+                }
+            }
+
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        }
+
+        public boolean isRunning() {
+            // if Trainer thread got exception during training - rethrow it here
+            if (thrownException != null)
+                throw new RuntimeException(thrownException);
+
+            return running.get() == 0;
+        }
+
+        public void shutdown() {
+            shouldStop.set(true);
+        }
+
+        @Override
+        public void run() {
+            try {
+                // we create fresh network, with the same configuration, as initially created by user
+                // however, we don't need clone or anything here
+                if (originalModel instanceof MultiLayerNetwork) {
+                    if (!onRootModel) {
+                        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
+
+                        this.replicatedModel = new MultiLayerNetwork(conf);
+
+                        ((MultiLayerNetwork) replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                        if(ParallelWrapper.this.listeners != null){
+                            oldListeners.addAll(ParallelWrapper.this.listeners);
+                        }
+
+                        configureListeners(uuid, oldListeners, replicatedListeners);
+
+                        this.replicatedModel.setListeners(replicatedListeners);
+                    }
+                } else if (originalModel instanceof ComputationGraph) {
+                    if (!onRootModel) {
+                        this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
+
+
+                        ((ComputationGraph) this.replicatedModel).init();
+                        Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
+                        Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                        if(ParallelWrapper.this.listeners != null){
+                            oldListeners.addAll(ParallelWrapper.this.listeners);
+                        }
+
+                        configureListeners(uuid, oldListeners, replicatedListeners);
+
+                        this.replicatedModel.setListeners(replicatedListeners);
+                    }
+                }
+
+                if (!useMDS) {
+                    while (!shouldStop.get()) {
+                        DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                        if (dataSet != null) {
+
+                            //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
+                            //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
+
+                            if (replicatedModel instanceof MultiLayerNetwork) {
+                                ((MultiLayerNetwork) replicatedModel).fit(dataSet);
+
+                                MultiLayerConfiguration conf = ((MultiLayerNetwork)replicatedModel).getLayerWiseConfigurations();
+                                int numUpdates = ((MultiLayerNetwork)replicatedModel).conf().getNumIterations() * averagingFrequency;
+                                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+
+                            } else if (replicatedModel instanceof ComputationGraph) {
+                                ((ComputationGraph) replicatedModel).fit(dataSet);
+
+                                ComputationGraphConfiguration conf = ((ComputationGraph) replicatedModel).getConfiguration();
+                                int numUpdates = ((ComputationGraph) replicatedModel).conf().getNumIterations() * averagingFrequency;
+                                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+                            }
+
+                            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                            running.decrementAndGet();
+                        }
+                    }
+                } else {
+                    // loop for MultiDataSet
+                    while (!shouldStop.get()) {
+                        MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
+                        if (dataSet != null) {
+                            if (replicatedModel instanceof ComputationGraph) {
+                                ((ComputationGraph) replicatedModel).fit(dataSet);
+
+                                ComputationGraphConfiguration conf = ((ComputationGraph) replicatedModel).getConfiguration();
+                                int numUpdates = ((ComputationGraph) replicatedModel).conf().getNumIterations() * averagingFrequency;
+                                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+                            } else
+                                throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
+
+                            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                            running.decrementAndGet();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                this.thrownException = e;
+            }
+        }
+
+        public void waitTillRunning() {
+            while (running.get() != 0) {
+
+                // if Trainer thread got exception during training - rethrow it here
+                if (thrownException != null)
+                    throw new RuntimeException(thrownException);
+
+                LockSupport.parkNanos(50000L);
+            }
+        }
+    }
+
+    private static IterationListener cloneListener(IterationListener original){
+        if(original instanceof RoutingIterationListener){
+            return ((RoutingIterationListener) original).clone();
+        }
+        return original;
+    }
+
+    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
+                                    Collection<IterationListener> replicatedListeners){
+        for (IterationListener listener : oldListeners) {
+            IterationListener l = cloneListener(listener);
+
+            if (l instanceof RoutingIterationListener) {
+                RoutingIterationListener rl = (RoutingIterationListener)l;
+                //We're assuming session ID is set by the original RoutingIterationListener constructor, which means
+                // it will be synced across all cloned instances
+                rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                rl.setWorkerID(workerUUID);
+
+                StatsStorageRouter currentRouter = ((RoutingIterationListener)listener).getStorageRouter();
+                if(currentRouter != null){
+                    //User has set router on the listener/model, instead of via the
+                    // setListeners(StatsStorageRouter, ...) method
+                    rl.setStorageRouter(currentRouter);
+                } else {
+                    rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+                }
+
+            }
+            replicatedListeners.add(l);
+        }
+    }
 }
 
