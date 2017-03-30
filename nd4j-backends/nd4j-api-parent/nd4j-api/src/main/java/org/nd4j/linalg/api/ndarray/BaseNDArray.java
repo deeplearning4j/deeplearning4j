@@ -5062,10 +5062,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // temporary set parent ws as current ws
             Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
 
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
-            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+            INDArray copy = null;
+            if (!this.isView()) {
+                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+                Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
-            INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+                copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+            } else {
+                copy = this.dup(this.ordering());
+            }
 
             // restore current ws
             Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
@@ -5102,11 +5107,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
+        INDArray copy = null;
+        if (!this.isView()) {
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+            Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
-        DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
-        Nd4j.getMemoryManager().memcpy(buffer, this.data());
-
-        INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+            copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+        } else {
+            copy = this.dup(this.ordering());
+        }
 
         Nd4j.getMemoryManager().setCurrentWorkspace(current);
 
