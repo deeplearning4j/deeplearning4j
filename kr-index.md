@@ -9,9 +9,9 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 세계 �
 
 Deeplearning4j는 최신 기술을 간편하게 사용하는 데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
 
-지금 바로 Deeplearning4j 예제 코드를 실행해 보세요. [퀵 스타트 가이드](kr/kr-quickstart)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
+지금 바로 Deeplearning4j 예제 코드를 실행해 보세요. [퀵 스타트 가이드](kr/quickstart)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
 
-### [심층 학습 활용 사례](kr/kr-use_cases)
+### [심층 학습 활용 사례](kr/use-cases)
 
 * 얼굴/이미지 인식
 * 음성 검색
@@ -30,14 +30,14 @@ Deeplearning4j는 최신 기술을 간편하게 사용하는 데 초점을 두�
 * [ND4J: Numpy의 두 배 속도를 자랑하는 선형 대수 라이브러리](http://nd4j.org/benchmarking)
 
 Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합니다. 분산 시스템에서 학습하는 경우 동시에 여러 서버 클러스터에서 학습을 진행할 수 있으며, 결과적으로 대량의 데이터를 신속하게 처리할 수 있습니다.
-인공 신경망은 [Iterative Reduce (반복적인 리듀스 작업)](kr/kr-iterativereduce)를 통해 병렬로 학습되는데, 이 학습 작업은 자바, [스칼라](http://nd4j.org/scala.html) 및 [Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)와 모두 호환됩니다. 이렇게 오픈 스택에서 편하게 사용할 수 있도록 모듈화된 구조 덕분에 Deeplearning4j를 이용해 마이크로 서비스 아키텍처에 최초로 딥러닝 기술을 적용하고 있습니다.
+인공 신경망은 [Iterative Reduce (반복적인 리듀스 작업)](kr/iterativereduce)를 통해 병렬로 학습되는데, 이 학습 작업은 자바, [스칼라](http://nd4j.org/scala.html) 및 [Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)와 모두 호환됩니다. 이렇게 오픈 스택에서 편하게 사용할 수 있도록 모듈화된 구조 덕분에 Deeplearning4j를 이용해 마이크로 서비스 아키텍처에 최초로 딥러닝 기술을 적용하고 있습니다.
 
 ### DL4J의 인공 신경망(Neural Networks)
 
-* [RBMs: Restricted Boltzmann Machines](kr/kr-restrictedboltzmannmachine)
-* [인공 신경망](kr/kr-neuralnet-overview)
-* [자연어처리: Word2vec](kr/kr-word2vec)
-* [컨볼루션 네트워크(CNNs, Convolutional Networks)](kr/kr-convolutionnets)
+* [RBMs: Restricted Boltzmann Machines](kr/restrictedboltzmannmachine)
+* [인공 신경망](kr/neuralnet-overview)
+* [자연어처리: Word2vec](kr/word2vec)
+* [컨볼루션 네트워크(CNNs, Convolutional Networks)](kr/convolutionnets)
 * 재귀 오토인코더([Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java))
 * [Deep-belief networks](deepbeliefnetwork)
 * 딥 오토인코더([Deep autoencoders](http://deeplearning4j.org/deepautoencoder.html)) (자동 질의응답, 데이터 압축에 적용)
@@ -46,7 +46,7 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 * 더 자세한 내용은 "[적절한 인공 신경망을 선택하는 방법](neuralnetworktable)"을 참고하십시오.
 
 
-심층 신경망은 여러 가지 기계학습 작업에서 [최고의 정확도](accuracy)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](kr/kr-neuralnet-overview) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 층을 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (층을 조합하는 방법에 따라 RBM, 오토 인코더, CNNs, RNNs 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
+심층 신경망은 여러 가지 기계학습 작업에서 [최고의 정확도](accuracy)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](kr/neuralnet-overview) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 층을 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (층을 조합하는 방법에 따라 RBM, 오토 인코더, CNNs, RNNs 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
 
 저희가 그동안 개발한 라이브러리와 그 적용 방법은 아래와 같습니다.
 

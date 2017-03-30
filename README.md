@@ -1,8 +1,8 @@
-#WEBSITE GUIDELINE
+# WEBSITE GUIDELINE
 
-##PERMALINK
+## PERMALINK
 
-**DEFAULT ENGLISH** = deeplearning4j.org/**title** 
+**DEFAULT ENGLISH** = deeplearning4j.org/**title**
 
 **OTHER LANGUAGE** = deeplearning4j.org/*lang*/**title**
 
@@ -15,7 +15,7 @@
 
 ---
 
-##WEBSITE STRUCTURE
+## WEBSITE STRUCTURE
 
 The deeplearning4j.org website divided into the following sections:
 
@@ -28,13 +28,13 @@ The deeplearning4j.org website divided into the following sections:
 
 ---
 
-###Landing Page 
+### Landing Page
 
 To edit the Landing Page, edit the html file located at **"_layouts/index.html"**
 
 ---
 
-###Content Page
+### Content Page
 
 The default content layout is located at **"_layouts/default.html"**. The default layout contains html blocks from **"_includes/"**:
 
@@ -62,15 +62,15 @@ In example:
 
 ---
 
-###Header
+### Header
 
 Header html file located at **"_includes/header.html"**
 
-**NOTE:** You shouldn't edit this file unless needed. 
+**NOTE:** You shouldn't edit this file unless needed.
 
 ---
 
-###Navigation
+### Navigation
 
 Navigation html file located at **"_includes/navigation.html"**
 
@@ -78,7 +78,7 @@ If you are modifying the Navigation file for other language, then duplicated the
 
 ---
 
-###Sidebar
+### Sidebar
 
 Navigation html file located at **"_includes/sidebar.html"**
 
@@ -86,21 +86,21 @@ If you are modifying the Navigation file for other language, then duplicated the
 
 ---
 
-###Footer
+### Footer
 
 Footer html file located at **"_includes/footer.html"**
 
-**NOTE:** You shouldn't edit this file unless needed. 
+**NOTE:** You shouldn't edit this file unless needed.
 
 ---
 
-##STYLING (Standard)
+## STYLING (Standard)
 
-###For Image Use the following code:
+### For Image Use the following code:
 
 &lt;img class="img-responsive center-block" src="../img/**your-image-name-here.png**" alt="deeplearning4j"&gt;
 
-###If you are putting up the dl4j or other code, use the following:
+### If you are putting up the dl4j or other code, use the following:
 
 **More than one line:**
 
@@ -116,7 +116,7 @@ Footer html file located at **"_includes/footer.html"**
 
 
 
-**Only one line:** 
+**Only one line:**
 
 &lt;pre&gt;&lt;code class="language-java"&gt;
 
@@ -124,4 +124,4 @@ Footer html file located at **"_includes/footer.html"**
 
 &lt;/code&gt;&lt;/pr&gt;
 
-**NOTE**: Please use **&amp;lt;** for **&lt;**, and **&amp;gt;** for **&gt;** in order not to mess up with the html coding. 
+**NOTE**: Please use **&amp;lt;** for **&lt;**, and **&amp;gt;** for **&gt;** in order not to mess up with the html coding.

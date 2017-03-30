@@ -417,4 +417,34 @@ var PAGES = [{
 "title": "DL4J核心概念简介",
 "description": "本页内容假设您已安装最新版本的DL4J。如果您不确定最新的版本是什么，请克隆快速入门指南中的示例，然后查看其中的pom.xml文件。",
 "tags": ["数据加工", "标准化", "dataset", "indarray", "模型", "构建", "定型", "评估"]
+},
+{
+"url": "https://deeplearning4j.org/cn/vocabcache",
+"title": "词汇缓存的工作原理",
+"description": "词汇缓存即词汇表缓存，是Deeplearning4j用于处理TF-IDF、词向量和某些信息提取方法等自然语言分析任务的一种通用机制",
+"tags": ["词汇", "词汇缓存", "tfidf", "word2vec", "nlp", "自然语言"]
+},
+{
+"url": "https://deeplearning4j.org/cn/philosophy",
+"title": "我们的理念",
+"description": "Deeplearning4j不是一个科研框架。虽然它可以用于研究，而且我们也鼓励人们这样做（Apache许可协议），但我们很注重具体的用例。",
+"tags": ["理念", "研究", "research", "数据加工", "spark", "jvm", "jni"]
+},
+{
+"url": "https://deeplearning4j.org/cn/dbn-iris-tutorial",
+"title": "深度置信网络教程：鸢尾花数据集",
+"description": "鸢尾花数据集的规模比较小，所以用该数据集定型的神经网络的输出可能各不相同。",
+"tags": ["iris", "鸢尾花", "dbn", "深度置信网络", "神经网络", "deep belief network", "用例"]
+},
+{
+"url": "https://deeplearning4j.org/cn/model-import-keras",
+"title": "将Keras模型导入Deeplearning4j",
+"description": "keras-modelimport模块中包含的例程让用户可以导入用Keras配置、定型的神经网络模型。",
+"tags": ["keras", "keras 模型", "python", "tensorflow", "theano", "caffe", "torch", "模型导入"]
+},
+{
+"url": "https://deeplearning4j.org/cn/examples-tour",
+"title": "DeepLearning4j示例一览",
+"description": "Deeplearning4j的Github代码库中有许多演示各种功能的示例。快速入门指南中介绍了设置Intellij并克隆代码库的方法。本页概述其中的部分示例。",
+"tags": ["示例", "用例", "datavec", "rl4j", "example", "deeplearning4j", "video", "视频", "模型", "保存", "加载", "自然语言", "可视化", "spark", "nd4j"]
 }];
