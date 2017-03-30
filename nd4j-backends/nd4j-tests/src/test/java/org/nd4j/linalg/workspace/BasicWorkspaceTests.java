@@ -88,6 +88,24 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(10f, array.sumNumber().floatValue(), 0.01f);
     }
 
+    @Test
+    public void testLeverage3() throws Exception {
+        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+            INDArray array = null;
+            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+                INDArray matrix = Nd4j.create(32, 1, 40);
+
+                INDArray view = matrix.tensorAlongDimension(0, 1, 2);
+                view.assign(1.0f);
+                assertEquals(40.0f, matrix.sumNumber().floatValue(), 0.01f);
+                assertEquals(40.0f, view.sumNumber().floatValue(), 0.01f);
+                array = view.leverageTo("EXT");
+            }
+
+            assertEquals(40.0f, array.sumNumber().floatValue(), 0.01f);
+        }
+    }
+
 
     @Test
     public void testLeverageTo2() throws Exception {
