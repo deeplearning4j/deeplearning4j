@@ -111,8 +111,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected void init() {
         //  we want params validation here
 
-        log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
-
         if (currentSize.get() > 0) {
             if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
                 currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
@@ -207,8 +205,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             else
                 currentSize.set(maxCycle.get());
 
-            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
-                currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+//            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
+  //              currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
 
             if (!isInit.get())
                 init();

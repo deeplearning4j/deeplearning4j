@@ -30,6 +30,9 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
         if (currentSize.get() > 0) {
             isInit.set(true);
+
+            log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
         }
     }
