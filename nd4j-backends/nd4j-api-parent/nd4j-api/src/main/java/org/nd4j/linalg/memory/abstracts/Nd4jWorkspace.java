@@ -173,7 +173,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             spilledAllocations.addAndGet(requiredMemory);
 
-            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
+            log.info("Workspace [{}]: spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case EXTERNAL:
