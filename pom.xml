@@ -215,7 +215,7 @@
                 <snapshotRepository>
                     <id>bintray-deeplearning4j-maven</id>
                     <name>deeplearning4j-maven-snapshots</name>
-                    <url>https://oss.jfrog.org/artifactory/libs-snapshot/</url>
+                    <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
                 </snapshotRepository>
                 <repository>
                     <id>bintray-deeplearning4j-maven</id>
