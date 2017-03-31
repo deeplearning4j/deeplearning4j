@@ -21,7 +21,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected Boolean isScalar = null;
 
     protected DataBuffer reallocate(DataBuffer buffer) {
-        System.out.print("initial size: " + buffer.length());
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
         DataBuffer newBuffer = Nd4j.createBuffer(newSize);
 
@@ -44,7 +43,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             default:
                 break;
         }
-        System.out.print("new size: " + newBuffer.length());
         return newBuffer;
     }
 }
