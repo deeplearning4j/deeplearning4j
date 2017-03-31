@@ -12,6 +12,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -399,6 +400,40 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expectedMaskIn1, merged.getFeaturesMaskArray(1));
         assertEquals(expectedMaskOut0, merged.getLabelsMaskArray(0));
         assertEquals(expectedMaskOut1, merged.getLabelsMaskArray(1));
+    }
+
+    @Test
+    public void testPerOutputMasking(){
+
+        //Test 2d mask merging, 2d data
+        //features
+        INDArray f2d1 = Nd4j.create(new double[]{1, 2, 3});
+        INDArray f2d2 = Nd4j.create(new double[][]{{4, 5, 6}, {7, 8, 9}});
+        //labels
+        INDArray l2d1 = Nd4j.create(new double[]{1.5, 2.5, 3.5});
+        INDArray l2d2 = Nd4j.create(new double[][]{{4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
+        //feature masks
+        INDArray fm2d1 = Nd4j.create(new double[]{0, 1, 1});
+        INDArray fm2d2 = Nd4j.create(new double[][]{{1, 0, 1}, {0, 1, 0}});
+        //label masks
+        INDArray lm2d1 = Nd4j.create(new double[]{1, 1, 0});
+        INDArray lm2d2 = Nd4j.create(new double[][]{{1, 0, 0}, {0, 1, 1}});
+
+        MultiDataSet mds2d1 = new MultiDataSet(f2d1, l2d1, fm2d1, lm2d1);
+        MultiDataSet mds2d2 = new MultiDataSet(f2d2, l2d2, fm2d2, lm2d2);
+        MultiDataSet merged = MultiDataSet.merge(Arrays.asList(mds2d1, mds2d2));
+
+        INDArray expFeatures2d = Nd4j.create(new double[][]{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
+        INDArray expLabels2d = Nd4j.create(new double[][]{{1.5, 2.5, 3.5}, {4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
+        INDArray expFM2d = Nd4j.create(new double[][]{{0, 1, 1}, {1, 0, 1}, {0, 1, 0}});
+        INDArray expLM2d = Nd4j.create(new double[][]{{1, 1, 0}, {1, 0, 0}, {0, 1, 1}});
+
+        MultiDataSet mdsExp2d = new MultiDataSet(expFeatures2d, expLabels2d, expFM2d, expLM2d);
+        assertEquals(mdsExp2d, merged);
+
+        //Test 3d mask merging, 3d data
+
+
     }
 
     @Test

@@ -30,7 +30,15 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     /** MultiDataSet constructor with single features/labels input, no mask arrays */
     public MultiDataSet(INDArray features, INDArray labels) {
-        this((features != null ? new INDArray[] {features} : null), (labels != null ? new INDArray[] {labels} : null));
+        this(features, labels, null, null);
+    }
+
+    /** MultiDataSet constructor with single features/labels input, single mask arrays */
+    public MultiDataSet(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+        this((features != null ? new INDArray[] {features} : null),
+                (labels != null ? new INDArray[] {labels} : null),
+                (featuresMask != null ? new INDArray[]{featuresMask} : null),
+                (labelsMask != null ? new INDArray[]{labelsMask} : null));
     }
 
     /** MultiDataSet constructor with no mask arrays */
@@ -431,39 +439,69 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     private static Pair<INDArray, INDArray> merge(INDArray[][] arrays, INDArray[][] masks, int column) {
         int rank = arrays[0][column].rank();
+
         if (rank == 2) {
-            return new Pair<>(merge2d(arrays, column), null);
+            return merge2d(arrays, masks, column);
         } else if (rank == 3) {
             return mergeTimeSeries(arrays, masks, column);
         } else if (rank == 4) {
-            return new Pair<>(merge4d(arrays, column), null);
+            return merge4d(arrays, masks, column);
         } else {
             throw new UnsupportedOperationException(
                             "Cannot merge arrays with rank 5 or more (input/output number: " + column + ")");
         }
     }
 
-    private static INDArray merge2d(INDArray[][] arrays, int inOutIdx) {
-        //Merge 2d data. Mask arrays don't really make sense for 2d, hence are not used here
+    private static Pair<INDArray,INDArray> merge2d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
+
         int nExamples = 0;
         int cols = arrays[0][inOutIdx].columns();
+
+        INDArray[] temp = new INDArray[arrays.length];
+        boolean hasMasks = false;
         for (int i = 0; i < arrays.length; i++) {
             nExamples += arrays[i][inOutIdx].rows();
             if (arrays[i][inOutIdx].columns() != cols) {
                 throw new IllegalStateException("Cannot merge 2d arrays with different numbers of columns (firstNCols="
                                 + cols + ", ithNCols=" + arrays[i][inOutIdx].columns() + ")");
             }
+
+            temp[i] = arrays[i][inOutIdx];
+
+            if(masks != null && masks[i] != null && masks[i][inOutIdx] != null){
+                hasMasks = true;
+            }
         }
-        INDArray out = Nd4j.create(nExamples, cols);
+
+        INDArray out = Nd4j.vstack(temp);
+        INDArray outMask = null;
+        if(hasMasks){
+            outMask = mergePerOutputMasks2d(out.shape(), arrays, masks, inOutIdx);
+        }
+
+        return new Pair<>(out, outMask);
+    }
+
+    private static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[][] arrays, INDArray[][] masks, int inOutIdx){
+        int[] numExamplesPerArr = new int[arrays.length];
+        for( int i=0; i<numExamplesPerArr.length; i++ ){
+            numExamplesPerArr[i] = arrays[i][inOutIdx].size(0);
+        }
+
+        INDArray outMask = Nd4j.ones(outShape);   //Initialize to 'all present' (1s)
 
         int rowsSoFar = 0;
-        for (int i = 0; i < arrays.length; i++) {
-            int thisRows = arrays[i][inOutIdx].rows();
-            out.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows), NDArrayIndex.all()},
-                            arrays[i][inOutIdx]);
+        for (int i = 0; i < masks.length; i++) {
+            int thisRows = numExamplesPerArr[i];  //Mask itself may be null -> all present, but may include multiple examples
+            if(masks[i][inOutIdx] == null){
+                continue;
+            }
+
+            outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows), NDArrayIndex.all()},
+                    masks[i][inOutIdx]);
             rowsSoFar += thisRows;
         }
-        return out;
+        return outMask;
     }
 
     private static Pair<INDArray, INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
@@ -472,6 +510,8 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         //Complications with time series:
         //(a) They may have different lengths (if so: need input + output masking arrays)
         //(b) Even if they are all the same length, they may have masking arrays (if so: merge the masking arrays too)
+        //(c) Furthermore: mask arrays can be per-time-step (2d) or per output (3d). Per-input masks (3d feature masks)
+        //    are not supported, however
 
         int firstLength = arrays[0][inOutIdx].size(2);
         int size = arrays[0][inOutIdx].size(1);
@@ -550,11 +590,13 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         return new Pair<>(arr, mask);
     }
 
-    private static INDArray merge4d(INDArray[][] arrays, int inOutIdx) {
-        //4d -> images. Mask arrays for images: not really used
+    private static Pair<INDArray,INDArray> merge4d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
+        //4d -> images. May have 2d mask arrays (per-output masking)
 
         int nExamples = 0;
         int[] shape = arrays[0][inOutIdx].shape();
+        INDArray[] temp = new INDArray[arrays.length];
+        boolean hasMasks = false;
         for (int i = 0; i < arrays.length; i++) {
             nExamples += arrays[i][inOutIdx].size(0);
             int[] thisShape = arrays[i][inOutIdx].shape();
@@ -569,17 +611,24 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
                                                     + ", data[" + i + "][" + inOutIdx + "].shape = "
                                                     + Arrays.toString(thisShape));
             }
-        }
-        INDArray out = Nd4j.create(nExamples, shape[1], shape[2], shape[3]);
 
-        int rowsSoFar = 0;
-        for (int i = 0; i < arrays.length; i++) {
-            int thisRows = arrays[i][inOutIdx].size(0);
-            out.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows), NDArrayIndex.all(),
-                            NDArrayIndex.all(), NDArrayIndex.all()}, arrays[i][inOutIdx]);
-            rowsSoFar += thisRows;
+            temp[i] = arrays[i][inOutIdx];
+            if(masks != null && masks[i] != null && masks[i][inOutIdx] != null){
+                hasMasks = true;
+                if(masks[i][inOutIdx].rank() != 2){
+                    throw new UnsupportedOperationException("Cannot merged 4d arrays with masks that are not rank 2."
+                            + " Got mask array with rank: " + masks[i][inOutIdx].rank());
+                }
+            }
         }
-        return out;
+
+        INDArray out = Nd4j.concat(0, temp);
+        INDArray outMask = null;
+        if(hasMasks){
+            outMask = mergePerOutputMasks2d(out.shape(), arrays, masks, inOutIdx);
+        }
+
+        return new Pair<>(out, outMask);
     }
 
 
