@@ -98,7 +98,7 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true);
 
 
 
@@ -111,7 +111,7 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -187,7 +187,7 @@ public class GravesBidirectionalLSTM
                                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                                         getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training,
                                         null, null, forBackprop, true,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray);
+                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true);
 
         final FwdPassReturn backwardsEval =
                         LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
@@ -195,7 +195,7 @@ public class GravesBidirectionalLSTM
                                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                                         getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training,
                                         null, null, forBackprop, false,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray);
+                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true);
 
 
         //sum outputs
@@ -221,7 +221,7 @@ public class GravesBidirectionalLSTM
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                        prevMemCellState, forBackprop, forwards, inputKey, maskArray);
+                        prevMemCellState, forBackprop, forwards, inputKey, maskArray, true);
 
     }
 

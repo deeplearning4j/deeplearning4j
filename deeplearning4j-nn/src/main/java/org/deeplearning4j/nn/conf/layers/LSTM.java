@@ -73,7 +73,6 @@ public class LSTM extends AbstractLSTM {
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
         @SuppressWarnings("unchecked")

@@ -286,7 +286,8 @@ public class LSTMHelpers {
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
-                    final Map<String, INDArray> gradientViews, INDArray maskArray //Input mask: should only be used with bidirectional RNNs + variable length
+                    final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                    final boolean hasPeepholeConnections            //True for GravesLSTM, false for LSTM
     ) {
 
 
@@ -297,9 +298,15 @@ public class LSTMHelpers {
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
         int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
-        INDArray wFFTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize)).transpose();
-        INDArray wOOTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize + 1)).transpose();
-        INDArray wGGTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize + 2)).transpose();
+        INDArray wFFTranspose = null;
+        INDArray wOOTranspose = null;
+        INDArray wGGTranspose = null;
+        if(hasPeepholeConnections){
+            wFFTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize)).transpose();
+            wOOTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize + 1)).transpose();
+            wGGTranspose = recurrentWeights.get(NDArrayIndex.all(), point(4 * hiddenLayerSize + 2)).transpose();
+        }
+
 
         INDArray wIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize));
         //F order here so that content for time steps are together
@@ -354,7 +361,7 @@ public class LSTMHelpers {
 
             //First: calclate the components of nablaCellState that relies on the next time step deltas, so we can overwrite the deltas
             INDArray nablaCellState;
-            if (iTimeIndex != timeSeriesLength - 1) {
+            if (iTimeIndex != timeSeriesLength - 1 && hasPeepholeConnections) {
                 nablaCellState = deltafNext.dup('f').muliRowVector(wFFTranspose);
                 l1BLAS.axpy(nablaCellState.length(), 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose),
                                 nablaCellState);
@@ -394,8 +401,10 @@ public class LSTMHelpers {
             //Memory cell error:
             INDArray temp = afn.backprop(currMemCellState.dup('f'), ao.muli(nablaOut)).getFirst(); //TODO activation functions with params
             l1BLAS.axpy(nablaCellState.length(), 1.0, temp, nablaCellState);
-            INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
-            l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
+            if(hasPeepholeConnections) {
+                INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
+                l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
+            }
             if (iTimeIndex != timeSeriesLength - 1) {
                 INDArray nextForgetGateAs = fwdPass.fa[time + inext];
                 int length = nablaCellState.length();
