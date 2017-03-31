@@ -1172,7 +1172,8 @@ public class ComputationGraph implements Serializable, Model {
                         // FIXME: do we REALLY need this dup()?
 
                         try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                            vertices[vIdx].setInput(vIdxInputNum, input);
+                            // FIXME: we don't really want detach here
+                            vertices[vIdx].setInput(vIdxInputNum, input.detach());
                         }
                     }
 
@@ -1199,7 +1200,8 @@ public class ComputationGraph implements Serializable, Model {
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
                             try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                                vertices[vIdx].setInput(inputNum, out);
+                                // FIXME: we don't really want detach here.
+                                vertices[vIdx].setInput(inputNum, out.detach());
                             }
                         }
                     }
