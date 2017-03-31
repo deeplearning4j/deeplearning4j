@@ -721,7 +721,7 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
-            dataSetIterator = new AsyncDataSetIterator(iterator, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            dataSetIterator = iterator; //new AsyncDataSetIterator(iterator, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
         } else
             dataSetIterator = iterator;
 
@@ -736,10 +736,11 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(0)
+                .initialSize(100 * 1024L * 1024L)
                 .overallocationLimit(0.3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
+                //.cyclesBeforeInitialization(3)
+                //.policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
@@ -1171,7 +1172,7 @@ public class ComputationGraph implements Serializable, Model {
                         // FIXME: do we REALLY need this dup()?
 
                         try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                            vertices[vIdx].setInput(vIdxInputNum, input.dup());
+                            vertices[vIdx].setInput(vIdxInputNum, input);
                         }
                     }
 
@@ -1302,6 +1303,7 @@ public class ComputationGraph implements Serializable, Model {
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
             try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                log.info("InitGradients: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
                 initGradientsView();
             }
         }
@@ -1352,8 +1354,9 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray[] epsilons = pair.getSecond();
 
                 for (int x = 0; x < epsilons.length; x++) {
-                    if (epsilons[x] == null)
+                    if (epsilons[x] == null) {
                         continue;
+                    }
 
                     epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
                 }
@@ -1385,7 +1388,7 @@ public class ComputationGraph implements Serializable, Model {
                     for (Map.Entry<String, INDArray> entry : map.entrySet()) {
                         String origName = entry.getKey();
                         String newName = current.getVertexName() + "_" + origName;
-                        tempList.addFirst(new Triple<>(newName, entry.getValue().leverageTo(workspaceExternal), g.flatteningOrderForVariable(origName)));
+                        tempList.addFirst(new Triple<>(newName, entry.getValue(), g.flatteningOrderForVariable(origName)));
                     }
                     for (Triple<String, INDArray, Character> t : tempList)
                         gradients.addFirst(t);
