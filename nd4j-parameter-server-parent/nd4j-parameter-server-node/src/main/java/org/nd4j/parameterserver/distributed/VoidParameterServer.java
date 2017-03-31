@@ -418,7 +418,7 @@ public class VoidParameterServer {
     /**
      * This method dispatches TrainingMessage to ParameterServer network
      *
-     * PLEASE NOTE: This method is synchonized and *periodically* becomes blocking by design
+     * PLEASE NOTE: This method is synchronized and *periodically* becomes blocking by design
      * @param message
      */
     public synchronized void execDistributed(@NonNull TrainingMessage message) {
