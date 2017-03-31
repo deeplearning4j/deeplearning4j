@@ -136,7 +136,14 @@ public class DataSetUtil {
         Nd4j.getExecutioner().exec(new BroadcastMulOp(data, mask, data, 0, 2));
     }
 
-    public static Pair<INDArray,INDArray> mergeFeatures(INDArray[] featuresToMerge, INDArray[] featureMasksToMerge){
+    /**
+     * Merge the specified features and mask arrays (i.e., concatenate the examples)
+     *
+     * @param featuresToMerge     Features to merge
+     * @param featureMasksToMerge Mask arrays to merge. May be null
+     * @return Merged features and mask. Mask may be null
+     */
+    public static Pair<INDArray,INDArray> mergeFeatures(@NonNull INDArray[] featuresToMerge, INDArray[] featureMasksToMerge){
         int rankFeatures = featuresToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -153,12 +160,26 @@ public class DataSetUtil {
         }
     }
 
+    /**
+     * Extract out the specified column, and merge the specified features and mask arrays (i.e., concatenate the examples)
+     *
+     * @param featuresToMerge     Features to merge. Will use featuresToMerge[all][inOutIdx]
+     * @param featureMasksToMerge Mask arrays to merge. May be null
+     * @return Merged features and mask. Mask may be null
+     */
     public static Pair<INDArray,INDArray> mergeFeatures(INDArray[][] featuresToMerge,
                                                         INDArray[][] featureMasksToMerge, int inOutIdx){
         Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(featuresToMerge, featureMasksToMerge, inOutIdx);
         return mergeFeatures(p.getFirst(), p.getSecond());
     }
 
+    /**
+     * Merge the specified labels and label mask arrays (i.e., concatenate the examples)
+     *
+     * @param labelsToMerge     Features to merge
+     * @param labelMasksToMerge Mask arrays to merge. May be null
+     * @return Merged features and mask. Mask may be null
+     */
     public static Pair<INDArray,INDArray> mergeLabels(INDArray[] labelsToMerge, INDArray[] labelMasksToMerge){
         int rankFeatures = labelsToMerge[0].rank();
 
@@ -176,13 +197,22 @@ public class DataSetUtil {
         }
     }
 
-    public static Pair<INDArray,INDArray> mergeLabels(INDArray[][] featuresToMerge,
-                                                        INDArray[][] featureMasksToMerge, int inOutIdx){
-        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(featuresToMerge, featureMasksToMerge, inOutIdx);
+    /**
+     * Extract out the specified column, and merge the specified label and label mask arrays
+     * (i.e., concatenate the examples)
+     *
+     * @param labelsToMerge     Features to merge. Will use featuresToMerge[all][inOutIdx]
+     * @param labelMasksToMerge Mask arrays to merge. May be null
+     * @return Merged features and mask. Mask may be null
+     */
+    public static Pair<INDArray,INDArray> mergeLabels(@NonNull INDArray[][] labelsToMerge,
+                                                        INDArray[][] labelMasksToMerge, int inOutIdx){
+        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(labelsToMerge, labelMasksToMerge, inOutIdx);
         return mergeLabels(p.getFirst(), p.getSecond());
     }
 
-    private static Pair<INDArray[], INDArray[]> selectColumnFromMDSData(INDArray[][] arrays, INDArray[][] masks, int inOutIdx){
+    private static Pair<INDArray[], INDArray[]> selectColumnFromMDSData(@NonNull INDArray[][] arrays, INDArray[][] masks,
+                                                                        int inOutIdx){
         INDArray[] a = new INDArray[arrays.length];
         INDArray[] m = new INDArray[a.length];
         for( int i=0; i<a.length; i++ ){
@@ -194,11 +224,28 @@ public class DataSetUtil {
         return new Pair<>(a,m);
     }
 
-    public static Pair<INDArray,INDArray> merge2d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
+    /**
+     * Merge the specified 2d arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @param inOutIdx Index to extract out before merging
+     * @return Merged arrays and mask
+     */
+    public static Pair<INDArray,INDArray> merge2d(@NonNull INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
         Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return merge2d(p.getFirst(), p.getSecond());
     }
 
+    /**
+     * Merge the specified 2d arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @return Merged arrays and mask
+     */
     public static Pair<INDArray,INDArray> merge2d(INDArray[] arrays, INDArray[] masks) {
         int cols = arrays[0].columns();
 
@@ -254,11 +301,28 @@ public class DataSetUtil {
         return outMask;
     }
 
+    /**
+     * Merge the specified time series (3d) arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @param inOutIdx Index to extract out before merging
+     * @return Merged arrays and mask
+     */
     public static Pair<INDArray, INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
         Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return mergeTimeSeries(p.getFirst(), p.getSecond());
     }
 
+    /**
+     * Merge the specified time series (3d) arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @return Merged arrays and mask
+     */
     public static Pair<INDArray, INDArray> mergeTimeSeries(INDArray[] arrays, INDArray[] masks) {
         //Merge time series data, and handle masking etc for different length arrays
 
@@ -375,11 +439,28 @@ public class DataSetUtil {
         return new Pair<>(arr, mask);
     }
 
+    /**
+     * Merge the specified 4d arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @param inOutIdx Index to extract out before merging
+     * @return Merged arrays and mask
+     */
     public static Pair<INDArray,INDArray> merge4d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
         Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return merge4d(p.getFirst(), p.getSecond());
     }
 
+    /**
+     * Merge the specified 4d arrays and masks. See {@link #mergeFeatures(INDArray[], INDArray[])}
+     * and {@link #mergeLabels(INDArray[], INDArray[])}
+     *
+     * @param arrays   Arrays to merge
+     * @param masks    Mask arrays to merge
+     * @return Merged arrays and mask
+     */
     public static Pair<INDArray,INDArray> merge4d(INDArray[] arrays, INDArray[] masks) {
         //4d -> images. In principle: could have 2d mask arrays (per-example masks)
 

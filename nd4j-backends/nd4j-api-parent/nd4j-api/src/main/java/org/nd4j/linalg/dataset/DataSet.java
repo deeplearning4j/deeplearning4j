@@ -189,7 +189,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray featuresMaskOut;
         INDArray labelsMaskOut;
 
-        Pair<INDArray,INDArray> fp = DataSetUtil.mergeFeatures(featuresToMerge, labelsToMerge);
+        Pair<INDArray,INDArray> fp = DataSetUtil.mergeFeatures(featuresToMerge, featuresMasksToMerge);
         featuresOut = fp.getFirst();
         featuresMaskOut = fp.getSecond();
 
