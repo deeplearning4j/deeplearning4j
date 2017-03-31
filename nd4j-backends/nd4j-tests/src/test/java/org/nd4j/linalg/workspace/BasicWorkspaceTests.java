@@ -89,6 +89,46 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testBreakout2() throws Exception {
+
+        assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        INDArray scoped = outScope2();
+
+        assertEquals(null, scoped);
+
+        assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Test
+    public void testBreakout1() throws Exception {
+
+        assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        INDArray scoped = outScope1();
+
+        assertEquals(true, scoped.isAttached());
+
+        assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    private INDArray outScope2() {
+        try {
+            try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+                throw new RuntimeException();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private INDArray outScope1() {
+        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+         return Nd4j.create(10);
+        }
+    }
+
+    @Test
     public void testLeverage3() throws Exception {
         try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
             INDArray array = null;
