@@ -231,11 +231,6 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>0.8.1-SNAPSHOT</version>
-        </dependency>
 
     </dependencies>
 
