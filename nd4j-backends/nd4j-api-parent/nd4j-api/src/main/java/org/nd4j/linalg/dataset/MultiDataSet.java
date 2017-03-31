@@ -3,6 +3,7 @@ package org.nd4j.linalg.dataset;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -414,7 +415,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
         boolean needFeaturesMasks = false;
         for (i = 0; i < nInArrays; i++) {
-            Pair<INDArray, INDArray> pair = merge(features, featuresMasks, i);
+            Pair<INDArray, INDArray> pair = DataSetUtil.mergeFeatures(features, featuresMasks, i);  //merge(features, featuresMasks, i);
             mergedFeatures[i] = pair.getFirst();
             mergedFeaturesMasks[i] = pair.getSecond();
             if (mergedFeaturesMasks[i] != null)
@@ -425,7 +426,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
         boolean needLabelsMasks = false;
         for (i = 0; i < nOutArrays; i++) {
-            Pair<INDArray, INDArray> pair = merge(labels, labelsMasks, i);
+            Pair<INDArray, INDArray> pair = DataSetUtil.mergeLabels(labels, labelsMasks, i);
             mergedLabels[i] = pair.getFirst();
             mergedLabelsMasks[i] = pair.getSecond();
             if (mergedLabelsMasks[i] != null)
@@ -435,230 +436,6 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             mergedLabelsMasks = null;
 
         return new MultiDataSet(mergedFeatures, mergedLabels, mergedFeaturesMasks, mergedLabelsMasks);
-    }
-
-    private static Pair<INDArray, INDArray> merge(INDArray[][] arrays, INDArray[][] masks, int column) {
-        int rank = arrays[0][column].rank();
-
-        if (rank == 2) {
-            return merge2d(arrays, masks, column);
-        } else if (rank == 3) {
-            return mergeTimeSeries(arrays, masks, column);
-        } else if (rank == 4) {
-            return merge4d(arrays, masks, column);
-        } else {
-            throw new UnsupportedOperationException(
-                            "Cannot merge arrays with rank 5 or more (input/output number: " + column + ")");
-        }
-    }
-
-    private static Pair<INDArray,INDArray> merge2d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-
-        int nExamples = 0;
-        int cols = arrays[0][inOutIdx].columns();
-
-        INDArray[] temp = new INDArray[arrays.length];
-        boolean hasMasks = false;
-        for (int i = 0; i < arrays.length; i++) {
-            nExamples += arrays[i][inOutIdx].rows();
-            if (arrays[i][inOutIdx].columns() != cols) {
-                throw new IllegalStateException("Cannot merge 2d arrays with different numbers of columns (firstNCols="
-                                + cols + ", ithNCols=" + arrays[i][inOutIdx].columns() + ")");
-            }
-
-            temp[i] = arrays[i][inOutIdx];
-
-            if(masks != null && masks[i] != null && masks[i][inOutIdx] != null){
-                hasMasks = true;
-            }
-        }
-
-        INDArray out = Nd4j.vstack(temp);
-        INDArray outMask = null;
-        if(hasMasks){
-            outMask = mergePerOutputMasks2d(out.shape(), arrays, masks, inOutIdx);
-        }
-
-        return new Pair<>(out, outMask);
-    }
-
-    private static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[][] arrays, INDArray[][] masks, int inOutIdx){
-        int[] numExamplesPerArr = new int[arrays.length];
-        for( int i=0; i<numExamplesPerArr.length; i++ ){
-            numExamplesPerArr[i] = arrays[i][inOutIdx].size(0);
-        }
-
-        INDArray outMask = Nd4j.ones(outShape);   //Initialize to 'all present' (1s)
-
-        int rowsSoFar = 0;
-        for (int i = 0; i < masks.length; i++) {
-            int thisRows = numExamplesPerArr[i];  //Mask itself may be null -> all present, but may include multiple examples
-            if(masks[i][inOutIdx] == null){
-                continue;
-            }
-
-            outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows), NDArrayIndex.all()},
-                    masks[i][inOutIdx]);
-            rowsSoFar += thisRows;
-        }
-        return outMask;
-    }
-
-    private static Pair<INDArray, INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        //Merge time series data, and handle masking etc for different length arrays
-
-        //Complications with time series:
-        //(a) They may have different lengths (if so: need input + output masking arrays)
-        //(b) Even if they are all the same length, they may have masking arrays (if so: merge the masking arrays too)
-        //(c) Furthermore: mask arrays can be per-time-step (2d) or per output (3d). Per-input masks (3d feature masks)
-        //    are not supported, however
-
-        int firstLength = arrays[0][inOutIdx].size(2);
-        int size = arrays[0][inOutIdx].size(1);
-        int maxLength = firstLength;
-
-        boolean hasMask = false;
-        int maskRank = -1;
-        boolean lengthsDiffer = false;
-        int totalExamples = 0;
-        for (int i = 0; i < arrays.length; i++) {
-            totalExamples += arrays[i][inOutIdx].size(0);
-            int thisLength = arrays[i][inOutIdx].size(2);
-            maxLength = Math.max(maxLength, thisLength);
-            if (thisLength != firstLength)
-                lengthsDiffer = true;
-            if (masks != null && masks[i] != null && masks[i][inOutIdx] != null) {
-                maskRank = masks[i][inOutIdx].rank();
-                hasMask = true;
-            }
-
-            if (arrays[i][inOutIdx].size(1) != size) {
-                throw new IllegalStateException(
-                                "Cannot merge time series with different size for dimension 1 (first shape: "
-                                                + Arrays.toString(arrays[0][inOutIdx].shape()) + ", " + i + "th shape: "
-                                                + Arrays.toString(arrays[i][inOutIdx].shape()));
-            }
-        }
-
-        boolean needMask = hasMask || lengthsDiffer;
-        INDArray arr = Nd4j.create(totalExamples, size, maxLength);
-        INDArray mask = (needMask && maskRank != 3 ? Nd4j.ones(totalExamples, maxLength) : null);
-
-        //Now, merge the time series (and if necessary, mask arrays):
-        int examplesSoFar = 0;
-        if (!lengthsDiffer && !needMask) {
-            //Simplest case: same length, no mask arrays
-            for (int i = 0; i < arrays.length; i++) {
-                int thisNExamples = arrays[i][inOutIdx].size(0);
-                arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.all(), NDArrayIndex.all()}, arrays[i][inOutIdx]);
-                examplesSoFar += thisNExamples;
-            }
-            return new Pair<>(arr, null);
-        } else {
-            //Either different length, or have mask arrays (or, both)
-            if((lengthsDiffer && !hasMask) || maskRank == 2) {
-                //Standard per-example masking required
-                for (int i = 0; i < arrays.length; i++) {
-                    INDArray a = arrays[i][inOutIdx];
-                    int thisNExamples = a.size(0);
-                    int thisLength = a.size(2);
-                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
-
-                    if (masks != null && masks[i] != null && masks[i][inOutIdx] != null) {
-                        INDArray origMask = masks[i][inOutIdx];
-                        int maskLength = origMask.size(1);
-                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.interval(0, maskLength)}, origMask);
-                        if (maskLength < maxLength) {
-                            //Set end mask array to zero...
-                            mask.put(new INDArrayIndex[]{
-                                            NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                            NDArrayIndex.interval(maskLength, maxLength)},
-                                    Nd4j.zeros(thisNExamples, maxLength - maskLength));
-                        }
-                    } else {
-                        if (thisLength < maxLength) {
-                            //Mask the end
-                            mask.put(new INDArrayIndex[]{
-                                            NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                            NDArrayIndex.interval(thisLength, maxLength)},
-                                    Nd4j.zeros(thisNExamples, maxLength - thisLength));
-                        }
-                    }
-
-                    examplesSoFar += thisNExamples;
-                }
-            } else if(maskRank == 3){
-                //Per output masking required. May also be variable length
-                mask = Nd4j.create(arr.shape());
-                for( int i=0; i<arrays.length; i++ ){
-                    INDArray m = masks[i][inOutIdx];
-                    INDArray a = arrays[i][inOutIdx];
-                    int thisNExamples = a.size(0);
-                    int thisLength = a.size(2);
-                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
-
-                    if(m == null){
-                        //This mask is null -> equivalent to "all present"
-                        mask.get(NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0,thisLength)).assign(1);
-                    } else {
-                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.all(), NDArrayIndex.interval(0,thisLength)}, m);
-                    }
-
-                    examplesSoFar += thisNExamples;
-                }
-            } else {
-                throw new UnsupportedOperationException("Cannot merge time series with mask rank " + maskRank);
-            }
-        }
-
-        return new Pair<>(arr, mask);
-    }
-
-    private static Pair<INDArray,INDArray> merge4d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        //4d -> images. May have 2d mask arrays (per-output masking)
-
-        int nExamples = 0;
-        int[] shape = arrays[0][inOutIdx].shape();
-        INDArray[] temp = new INDArray[arrays.length];
-        boolean hasMasks = false;
-        for (int i = 0; i < arrays.length; i++) {
-            nExamples += arrays[i][inOutIdx].size(0);
-            int[] thisShape = arrays[i][inOutIdx].shape();
-            if (thisShape.length != 4) {
-                throw new IllegalStateException("Cannot merge 4d arrays with non 4d arrays");
-            }
-            for (int j = 1; j < 4; j++) {
-                if (thisShape[j] != shape[j])
-                    throw new IllegalStateException(
-                                    "Cannot merge 4d arrays with different shape (other than # examples): "
-                                                    + " data[0][" + inOutIdx + "].shape = " + Arrays.toString(shape)
-                                                    + ", data[" + i + "][" + inOutIdx + "].shape = "
-                                                    + Arrays.toString(thisShape));
-            }
-
-            temp[i] = arrays[i][inOutIdx];
-            if(masks != null && masks[i] != null && masks[i][inOutIdx] != null){
-                hasMasks = true;
-                if(masks[i][inOutIdx].rank() != 2){
-                    throw new UnsupportedOperationException("Cannot merged 4d arrays with masks that are not rank 2."
-                            + " Got mask array with rank: " + masks[i][inOutIdx].rank());
-                }
-            }
-        }
-
-        INDArray out = Nd4j.concat(0, temp);
-        INDArray outMask = null;
-        if(hasMasks){
-            outMask = mergePerOutputMasks2d(out.shape(), arrays, masks, inOutIdx);
-        }
-
-        return new Pair<>(out, outMask);
     }
 
 

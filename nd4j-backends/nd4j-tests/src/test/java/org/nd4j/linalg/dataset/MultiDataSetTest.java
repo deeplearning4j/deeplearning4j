@@ -405,7 +405,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testPerOutputMasking(){
+    public void testMergingWithPerOutputMasking(){
 
         //Test 2d mask merging, 2d data
         //features
