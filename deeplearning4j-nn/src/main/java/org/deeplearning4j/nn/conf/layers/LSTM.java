@@ -23,9 +23,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
+import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,12 +41,12 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class GravesLSTM extends AbstractLSTM {
+public class LSTM extends AbstractLSTM {
 
     private double forgetGateBiasInit;
     private IActivation gateActivationFn = new ActivationSigmoid();
 
-    private GravesLSTM(Builder builder) {
+    private LSTM(Builder builder) {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
@@ -56,8 +56,8 @@ public class GravesLSTM extends AbstractLSTM {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("GravesLSTM", getLayerName(), layerIndex, getNIn(), getNOut());
-        org.deeplearning4j.nn.layers.recurrent.GravesLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+        org.deeplearning4j.nn.layers.recurrent.LSTM ret =
+                        new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -69,7 +69,7 @@ public class GravesLSTM extends AbstractLSTM {
 
     @Override
     public ParamInitializer initializer() {
-        return GravesLSTMParamInitializer.getInstance();
+        return LSTMParamInitializer.getInstance();
     }
 
     @AllArgsConstructor
@@ -77,8 +77,8 @@ public class GravesLSTM extends AbstractLSTM {
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
         @SuppressWarnings("unchecked")
-        public GravesLSTM build() {
-            return new GravesLSTM(this);
+        public LSTM build() {
+            return new LSTM(this);
         }
     }
 

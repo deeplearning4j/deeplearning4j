@@ -36,18 +36,18 @@ import java.util.Map;
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
-public class GravesLSTMParamInitializer implements ParamInitializer {
+public class LSTMParamInitializer implements ParamInitializer {
 
-    private static final GravesLSTMParamInitializer INSTANCE = new GravesLSTMParamInitializer();
+    private static final LSTMParamInitializer INSTANCE = new LSTMParamInitializer();
 
-    public static GravesLSTMParamInitializer getInstance() {
+    public static LSTMParamInitializer getInstance() {
         return INSTANCE;
     }
 
     /** Weights for previous time step -> current time step connections */
-    public final static String RECURRENT_WEIGHT_KEY = LSTMParamInitializer.RECURRENT_WEIGHT_KEY;
-    public final static String BIAS_KEY = LSTMParamInitializer.BIAS_KEY;
-    public final static String INPUT_WEIGHT_KEY = LSTMParamInitializer.INPUT_WEIGHT_KEY;
+    public final static String RECURRENT_WEIGHT_KEY = "RW";
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
@@ -58,7 +58,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         int nParams = nLast * (4 * nL) //"input" weights
-                        + nL * (4 * nL + 3) //recurrent weights
+                        + nL * (4 * nL) //recurrent weights
                         + 4 * nL; //bias
 
         return nParams;
@@ -86,7 +86,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
         int nParamsIn = nLast * (4 * nL);
-        int nParamsRecurrent = nL * (4 * nL + 3);
+        int nParamsRecurrent = nL * (4 * nL);
         int nBias = 4 * nL;
         INDArray inputWeightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn));
         INDArray recurrentWeightView = paramsView.get(NDArrayIndex.point(0),
@@ -98,7 +98,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             int fanIn = nL;
             int fanOut = nLast + nL;
             int[] inputWShape = new int[] {nLast, 4 * nL};
-            int[] recurrentWShape = new int[] {nL, 4 * nL + 3};
+            int[] recurrentWShape = new int[] {nL, 4 * nL};
 
             params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
                             layerConf.getWeightInit(), dist, inputWeightView));
@@ -118,7 +118,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         } else {
             params.put(INPUT_WEIGHT_KEY, WeightInitUtil.reshapeWeights(new int[] {nLast, 4 * nL}, inputWeightView));
             params.put(RECURRENT_WEIGHT_KEY,
-                            WeightInitUtil.reshapeWeights(new int[] {nL, 4 * nL + 3}, recurrentWeightView));
+                            WeightInitUtil.reshapeWeights(new int[] {nL, 4 * nL}, recurrentWeightView));
             params.put(BIAS_KEY, biasView);
         }
 
@@ -139,13 +139,13 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());
 
         int nParamsIn = nLast * (4 * nL);
-        int nParamsRecurrent = nL * (4 * nL + 3);
+        int nParamsRecurrent = nL * (4 * nL);
         int nBias = 4 * nL;
         INDArray inputWeightGradView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);
         INDArray recurrentWeightGradView = gradientView
                         .get(NDArrayIndex.point(0), NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent))
-                        .reshape('f', nL, 4 * nL + 3);
+                        .reshape('f', nL, 4 * nL);
         INDArray biasGradView = gradientView.get(NDArrayIndex.point(0),
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias)); //already a row vector
 

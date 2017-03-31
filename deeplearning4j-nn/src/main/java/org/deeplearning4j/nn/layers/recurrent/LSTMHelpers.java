@@ -61,7 +61,8 @@ public class LSTMHelpers {
                     final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray //Input mask: should only be used with bidirectional RNNs + variable length
+                    final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                    final boolean hasPeepholeConnections            //True for GravesLSTM, false for LSTM
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -95,20 +96,25 @@ public class LSTMHelpers {
             inputWeights = Dropout.applyDropConnect(layer, inputWeightKey);
         }
 
+        INDArray wFFTranspose = null;
+        INDArray wOOTranspose = null;
+        INDArray wGGTranspose = null;
 
-        INDArray wFFTranspose = recurrentWeights
-                        .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize, 4 * hiddenLayerSize + 1)).transpose(); //current
-        INDArray wOOTranspose = recurrentWeights
-                        .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize + 1, 4 * hiddenLayerSize + 2))
-                        .transpose(); //current
-        INDArray wGGTranspose = recurrentWeights
-                        .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize + 2, 4 * hiddenLayerSize + 3))
-                        .transpose(); //previous
+        if(hasPeepholeConnections){
+            wFFTranspose = recurrentWeights
+                    .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize, 4 * hiddenLayerSize + 1)).transpose(); //current
+            wOOTranspose = recurrentWeights
+                    .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize + 1, 4 * hiddenLayerSize + 2))
+                    .transpose(); //current
+            wGGTranspose = recurrentWeights
+                    .get(NDArrayIndex.all(), interval(4 * hiddenLayerSize + 2, 4 * hiddenLayerSize + 3))
+                    .transpose(); //previous
 
-        if (timeSeriesLength > 1 || forBackprop) {
-            wFFTranspose = Shape.toMmulCompatible(wFFTranspose);
-            wOOTranspose = Shape.toMmulCompatible(wOOTranspose);
-            wGGTranspose = Shape.toMmulCompatible(wGGTranspose);
+            if (timeSeriesLength > 1 || forBackprop) {
+                wFFTranspose = Shape.toMmulCompatible(wFFTranspose);
+                wOOTranspose = Shape.toMmulCompatible(wOOTranspose);
+                wGGTranspose = Shape.toMmulCompatible(wGGTranspose);
+            }
         }
 
         //Allocate arrays for activations:
@@ -185,8 +191,10 @@ public class LSTMHelpers {
 
             INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(hiddenLayerSize, 2 * hiddenLayerSize));
-            INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
-            l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations); //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
+            if(hasPeepholeConnections) {
+                INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
+                l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations); //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
+            }
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
             if (forBackprop && !sigmoidGates) {
                 toReturn.fz[time] = forgetGateActivations.dup('f'); //Forget gate pre-out (z)
@@ -199,8 +207,10 @@ public class LSTMHelpers {
 
             INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(3 * hiddenLayerSize, 4 * hiddenLayerSize));
-            INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
-            l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations); //inputModGateActivations.addi(pmcellWGG)
+            if(hasPeepholeConnections) {
+                INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
+                l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations); //inputModGateActivations.addi(pmcellWGG)
+            }
             if (forBackprop && !sigmoidGates) {
                 toReturn.gz[time] = inputModGateActivations.dup('f'); //Input modulation gate pre-out (z)
             }
@@ -222,8 +232,10 @@ public class LSTMHelpers {
 
             INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(2 * hiddenLayerSize, 3 * hiddenLayerSize));
-            INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
-            l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations); //outputGateActivations.addi(pmcellWOO)
+            if(hasPeepholeConnections) {
+                INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
+                l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations); //outputGateActivations.addi(pmcellWOO)
+            }
             if (forBackprop && !sigmoidGates) {
                 toReturn.oz[time] = outputGateActivations.dup('f'); //Output gate activations
             }
