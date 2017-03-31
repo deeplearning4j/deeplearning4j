@@ -240,6 +240,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (isBorrowed.get())
             throw new ND4JIllegalStateException("Workspace ["+id+"]: Can't borrow from borrowed workspace");
 
+        borrowingWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        isBorrowed.set(true);
+
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
 
         return this;

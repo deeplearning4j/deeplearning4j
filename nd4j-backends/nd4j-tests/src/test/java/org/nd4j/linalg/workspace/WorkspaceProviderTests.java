@@ -162,6 +162,44 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspacesOverlap2() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+        try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
+            INDArray array = Nd4j.create(new float[]{6f, 3f, 1f, 9f, 21f});
+            INDArray array3 = null;
+
+            long reqMem = 5 * Nd4j.sizeOfDataType();
+            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            try(Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").notifyScopeEntered()) {
+
+                INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+                reqMem = 5 * Nd4j.sizeOfDataType();
+                assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+
+                try(Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeBorrowed()) {
+                    assertTrue(ws1 == ws3);
+                    assertTrue(ws1 == Nd4j.getMemoryManager().getCurrentWorkspace());
+
+                    array3 = array2.unsafeDuplication();
+
+                    assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+                }
+
+                log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
+                assertTrue(ws2 == Nd4j.getMemoryManager().getCurrentWorkspace());
+
+                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+                assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+
+                assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
+            }
+        }
+    }
+
+    @Test
     public void testNestedWorkspacesOverlap1() throws Exception {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
         try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
