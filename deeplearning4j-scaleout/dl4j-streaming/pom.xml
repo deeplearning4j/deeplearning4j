@@ -137,22 +137,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--             the following needs to be present right besides a test run that -->
-            <!-- requires Spark-version specific sources, otherwise old generated .class files -->
-            <!-- will be picked up erroneously in a run of ./buildmultiplescalaversions.sh -->
-            <plugin>
-              <artifactId>maven-clean-plugin</artifactId>
-              <version>3.0.0</version>
-              <executions>
-                <execution>
-                  <id>auto-clean</id>
-                  <phase>initialize</phase>
-                  <goals>
-                    <goal>clean</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
         </plugins>
     </build>
 
