@@ -82,7 +82,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                     .initialSize(initSize)
-                    .overallocationLimit(2.0)
+                    .overallocationLimit(1.0)
                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();

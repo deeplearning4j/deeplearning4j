@@ -721,7 +721,7 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
-            dataSetIterator = iterator; //new AsyncDataSetIterator(iterator, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            dataSetIterator = new AsyncDataSetIterator(iterator, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
         } else
             dataSetIterator = iterator;
 
