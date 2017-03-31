@@ -35,13 +35,14 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
+ * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11.
+ * <p>
+ * When 'hasPeepholeConnections' is true, this is the "vanilla" variant in said paper<br>
+ * When 'hasPeepholeConnections' is false, this is the "no peephole" variant<br>
  * http://arxiv.org/pdf/1503.04069.pdf
  *
- * Please note that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
- * Additionally, variable length data sets will also not work with the bidirectional layer.
  *
- * @author Alex Black (LSTM implementation)
+ * @author Alex Black (LSTM implementations)
  * @author Benjamin Joseph (refactoring for bidirectional LSTM)
  */
 public class LSTMHelpers {

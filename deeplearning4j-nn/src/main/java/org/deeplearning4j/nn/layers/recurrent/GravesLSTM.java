@@ -37,6 +37,7 @@ import java.util.Map;
  * http://arxiv.org/pdf/1503.04069.pdf
  *
  * @author Alex Black
+ * @see LSTM LSTM class, for the version without peephole connections
  */
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";

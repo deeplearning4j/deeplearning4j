@@ -30,13 +30,13 @@ import java.util.Map;
 
 /**
  * LSTM layer implementation.
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ *
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
+ * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "no peephole" variant in said paper
  * http://arxiv.org/pdf/1503.04069.pdf
  *
  * @author Alex Black
+ * @see GravesLSTM GravesLSTM class, for the version with peephole connections
  */
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
