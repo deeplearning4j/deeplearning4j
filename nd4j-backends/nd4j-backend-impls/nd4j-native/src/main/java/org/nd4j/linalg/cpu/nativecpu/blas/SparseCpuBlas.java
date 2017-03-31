@@ -1,11 +1,11 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
-import org.nd4j.nativeblas.Nd4jBlas;
+import org.nd4j.nativeblas.SparseNd4jBlas;
 
 /**
- * Created by audrey on 3/13/17.
+ * @author Audrey Loeffel
  */
-public class SparseCpuBlas extends Nd4jBlas {
+public class SparseCpuBlas extends SparseNd4jBlas {
     // TODO : conversion char parameters <-> MKL constants
     // TODO : max threads
     @Override

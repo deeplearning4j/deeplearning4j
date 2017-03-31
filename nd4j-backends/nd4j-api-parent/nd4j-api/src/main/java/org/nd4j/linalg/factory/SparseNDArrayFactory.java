@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 /**
  * @author Audrey Loeffel
  */
-interface ISparseNDArrayFactory {
+public interface SparseNDArrayFactory {
 
 
     Blas blas();

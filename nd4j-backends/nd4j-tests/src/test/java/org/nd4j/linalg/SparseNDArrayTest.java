@@ -1,10 +1,13 @@
 package org.nd4j.linalg;
 
 import org.junit.Test;
-import static org.junit.Assert.assertArrayEquals;
+
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.cpu.nativecpu.SparseNDArrayCSR;
 import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.Assert.*;
+
 
 /**
  * @author Audrey Loeffel
@@ -60,6 +63,24 @@ public class SparseNDArrayTest {
             assertArrayEquals(expectedPointerE, sparseCSRArray.getPointersE());
             assertArrayEquals(expectedShape, shape);
         }
+    }
+
+    @Test
+    public void shouldReallocate(){
+        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        if(sparseNDArray instanceof SparseNDArrayCSR) {
+            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
+            int initialSize = sparseCSRArray.getDoubleValues().length;
+
+            for(int i = 0; i< shape[0]; i++){
+                for(int j = 0; j< shape[1]; j++){
+                    sparseCSRArray.putScalar(i, j, i+j);
+                }
+            }
+            int finalSize = sparseCSRArray.getDoubleValues().length;
+            assert(finalSize > initialSize);
+        }
+
     }
 
     @Test

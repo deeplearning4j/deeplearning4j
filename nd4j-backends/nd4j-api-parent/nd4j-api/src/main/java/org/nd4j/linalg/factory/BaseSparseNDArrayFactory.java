@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.blas.*;
 /**
  * @author Audrey Loeffel
  */
-public abstract class BaseSparseNDArrayFactory implements ISparseNDArrayFactory {
+public abstract class BaseSparseNDArrayFactory implements SparseNDArrayFactory {
     protected char order; // c or f
     protected Blas blas;
     protected Level1 level1;

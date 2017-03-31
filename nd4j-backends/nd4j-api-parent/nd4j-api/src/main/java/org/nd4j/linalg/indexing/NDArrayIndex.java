@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class NDArrayIndex implements    INDArrayIndex {
+public class NDArrayIndex implements INDArrayIndex {
 
     private int[] indices = new int[1];
     private boolean isInterval = false;

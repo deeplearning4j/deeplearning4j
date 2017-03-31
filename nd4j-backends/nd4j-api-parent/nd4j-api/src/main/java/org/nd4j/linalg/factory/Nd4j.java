@@ -153,7 +153,7 @@ public class Nd4j {
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
-    protected static Class<? extends ISparseNDArrayFactory> sparseNDArrayClazz;
+    protected static Class<? extends SparseNDArrayFactory> sparseNDArrayClazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
@@ -170,7 +170,7 @@ public class Nd4j {
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
-    protected static ISparseNDArrayFactory SPARSE_INSTANCE;
+    protected static SparseNDArrayFactory SPARSE_INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
@@ -509,7 +509,7 @@ public class Nd4j {
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
     }
-    public static void setSparseNDArrayClazz(Class<? extends ISparseNDArrayFactory> clazz) {
+    public static void setSparseNDArrayClazz(Class<? extends SparseNDArrayFactory> clazz) {
         sparseNDArrayClazz = clazz;
     }
     /**
@@ -885,6 +885,9 @@ public class Nd4j {
         return INSTANCE;
     }
 
+    public static SparseNDArrayFactory sparseFactory(){
+        return SPARSE_INSTANCE;
+    }
     public static INDArray cumsum(INDArray compute) {
         return compute.cumsum(Integer.MAX_VALUE);
     }
@@ -1426,7 +1429,7 @@ public class Nd4j {
         INSTANCE = factory;
     }
 
-    public static void setSparseFactory(ISparseNDArrayFactory factory) {
+    public static void setSparseFactory(SparseNDArrayFactory factory) {
         SPARSE_INSTANCE = factory;
     }
 
@@ -5932,7 +5935,7 @@ public class Nd4j {
                     .forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                     System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
-            sparseNDArrayClazz = (Class<? extends ISparseNDArrayFactory>) Class.forName(
+            sparseNDArrayClazz = (Class<? extends SparseNDArrayFactory>) Class.forName(
                     System.getProperty(ISPARSE_NDARRAY_FACTORY_CLASS, props.getProperty(ISPARSE_NDARRAY_FACTORY_CLASS).toString()));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));

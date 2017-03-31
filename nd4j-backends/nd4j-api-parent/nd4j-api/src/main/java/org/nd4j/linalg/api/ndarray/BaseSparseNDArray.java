@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Audrey Loeffel
  */
 @Slf4j
-public class BaseSparseNDArray implements ISparseNDArray {
+public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
     protected transient volatile long nnz = -1;
@@ -21,18 +21,30 @@ public class BaseSparseNDArray implements ISparseNDArray {
     protected Boolean isScalar = null;
 
     protected DataBuffer reallocate(DataBuffer buffer) {
+        System.out.print("initial size: " + buffer.length());
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
-        DataBuffer newBuffer = null;
-        if (buffer instanceof DoubleBuffer){
-            newBuffer = Nd4j.createBuffer(newSize);
-            newBuffer.setData(buffer.asDouble());
-        } else if (buffer instanceof IntBuffer) {
-            newBuffer = Nd4j.createBuffer(newSize);
-            newBuffer.setData(buffer.asInt());
-        }else if (buffer instanceof FloatBuffer) {
-            newBuffer = Nd4j.createBuffer(newSize);
-            newBuffer.setData(buffer.asFloat());
+        DataBuffer newBuffer = Nd4j.createBuffer(newSize);
+
+        switch(buffer.dataType()){
+            case INT:
+                newBuffer.setData(buffer.asInt());
+                break;
+            case DOUBLE:
+                newBuffer.setData(buffer.asDouble());
+                break;
+            case FLOAT:
+                newBuffer.setData(buffer.asFloat());
+                break;
+            case HALF:
+                // ??
+                break;
+            case COMPRESSED:
+                // ??
+                break;
+            default:
+                break;
         }
+        System.out.print("new size: " + newBuffer.length());
         return newBuffer;
     }
 }
