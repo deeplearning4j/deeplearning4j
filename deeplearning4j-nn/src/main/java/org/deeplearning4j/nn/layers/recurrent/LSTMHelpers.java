@@ -341,9 +341,14 @@ public class LSTMHelpers {
 
         INDArray rwGradientsIFOG =
                         rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize));
-        INDArray rwGradientsFF = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize));
-        INDArray rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
-        INDArray rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
+        INDArray rwGradientsFF = null;
+        INDArray rwGradientsOO = null;
+        INDArray rwGradientsGG = null;
+        if(hasPeepholeConnections){
+            rwGradientsFF = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize));
+            rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
+            rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
+        }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = conf.getLayer().getActivationFn();
@@ -488,14 +493,18 @@ public class LSTMHelpers {
 
                 //Shape: [1,n^L]. sum(0) is sum over examples in mini-batch.
                 //Can use axpy here because result of sum and rwGradients[4 to 6] have order Nd4j.order(), via Nd4j.create()
-                INDArray dLdwFF = deltaf.dup('f').muli(prevMemCellState).sum(0); //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
-                l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwFF, rwGradientsFF); //rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
-                INDArray dLdwGG = deltag.dup('f').muli(prevMemCellState).sum(0);
-                l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwGG, rwGradientsGG); //rwGradients[6].addi(dLdwGG);
+                if(hasPeepholeConnections) {
+                    INDArray dLdwFF = deltaf.dup('f').muli(prevMemCellState).sum(0); //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
+                    l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwFF, rwGradientsFF); //rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
+                    INDArray dLdwGG = deltag.dup('f').muli(prevMemCellState).sum(0);
+                    l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwGG, rwGradientsGG); //rwGradients[6].addi(dLdwGG);
+                }
             }
 
-            INDArray dLdwOO = deltao.dup('f').muli(currMemCellState).sum(0); //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
-            l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
+            if(hasPeepholeConnections) {
+                INDArray dLdwOO = deltao.dup('f').muli(currMemCellState).sum(0); //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
+                l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
+            }
 
             if (iTimeIndex > 0) {
                 l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
