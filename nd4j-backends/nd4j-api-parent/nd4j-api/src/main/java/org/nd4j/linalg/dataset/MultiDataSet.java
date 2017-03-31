@@ -518,6 +518,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         int maxLength = firstLength;
 
         boolean hasMask = false;
+        int maskRank = -1;
         boolean lengthsDiffer = false;
         int totalExamples = 0;
         for (int i = 0; i < arrays.length; i++) {
@@ -526,8 +527,10 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             maxLength = Math.max(maxLength, thisLength);
             if (thisLength != firstLength)
                 lengthsDiffer = true;
-            if (masks != null && masks[i] != null && masks[i][inOutIdx] != null)
+            if (masks != null && masks[i] != null && masks[i][inOutIdx] != null) {
+                maskRank = masks[i][inOutIdx].rank();
                 hasMask = true;
+            }
 
             if (arrays[i][inOutIdx].size(1) != size) {
                 throw new IllegalStateException(
@@ -539,7 +542,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
         boolean needMask = hasMask || lengthsDiffer;
         INDArray arr = Nd4j.create(totalExamples, size, maxLength);
-        INDArray mask = (needMask ? Nd4j.ones(totalExamples, maxLength) : null);
+        INDArray mask = (needMask && maskRank != 3 ? Nd4j.ones(totalExamples, maxLength) : null);
 
         //Now, merge the time series (and if necessary, mask arrays):
         int examplesSoFar = 0;
@@ -554,36 +557,63 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             return new Pair<>(arr, null);
         } else {
             //Either different length, or have mask arrays (or, both)
-            for (int i = 0; i < arrays.length; i++) {
-                INDArray a = arrays[i][inOutIdx];
-                int thisNExamples = a.size(0);
-                int thisLength = a.size(2);
-                arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
+            if((lengthsDiffer && !hasMask) || maskRank == 2) {
+                //Standard per-example masking required
+                for (int i = 0; i < arrays.length; i++) {
+                    INDArray a = arrays[i][inOutIdx];
+                    int thisNExamples = a.size(0);
+                    int thisLength = a.size(2);
+                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
-                if (masks != null && masks[i] != null && masks[i][inOutIdx] != null) {
-                    INDArray origMask = masks[i][inOutIdx];
-                    int maskLength = origMask.size(1);
-                    mask.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                    NDArrayIndex.interval(0, maskLength)}, origMask);
-                    if (maskLength < maxLength) {
-                        //Set end mask array to zero...
-                        mask.put(new INDArrayIndex[] {
-                                        NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                        NDArrayIndex.interval(maskLength, maxLength)},
-                                        Nd4j.zeros(thisNExamples, maxLength - maskLength));
+                    if (masks != null && masks[i] != null && masks[i][inOutIdx] != null) {
+                        INDArray origMask = masks[i][inOutIdx];
+                        int maskLength = origMask.size(1);
+                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                NDArrayIndex.interval(0, maskLength)}, origMask);
+                        if (maskLength < maxLength) {
+                            //Set end mask array to zero...
+                            mask.put(new INDArrayIndex[]{
+                                            NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                            NDArrayIndex.interval(maskLength, maxLength)},
+                                    Nd4j.zeros(thisNExamples, maxLength - maskLength));
+                        }
+                    } else {
+                        if (thisLength < maxLength) {
+                            //Mask the end
+                            mask.put(new INDArrayIndex[]{
+                                            NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                            NDArrayIndex.interval(thisLength, maxLength)},
+                                    Nd4j.zeros(thisNExamples, maxLength - thisLength));
+                        }
                     }
-                } else {
-                    if (thisLength < maxLength) {
-                        //Mask the end
-                        mask.put(new INDArrayIndex[] {
-                                        NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                        NDArrayIndex.interval(thisLength, maxLength)},
-                                        Nd4j.zeros(thisNExamples, maxLength - thisLength));
-                    }
+
+                    examplesSoFar += thisNExamples;
                 }
+            } else if(maskRank == 3){
+                //Per output masking required. May also be variable length
+                mask = Nd4j.create(arr.shape());
+                for( int i=0; i<arrays.length; i++ ){
+                    INDArray m = masks[i][inOutIdx];
+                    INDArray a = arrays[i][inOutIdx];
+                    int thisNExamples = a.size(0);
+                    int thisLength = a.size(2);
+                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
-                examplesSoFar += thisNExamples;
+                    if(m == null){
+                        //This mask is null -> equivalent to "all present"
+                        mask.get(NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples), NDArrayIndex.all(),
+                                NDArrayIndex.interval(0,thisLength)).assign(1);
+                    } else {
+                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                NDArrayIndex.all(), NDArrayIndex.interval(0,thisLength)}, m);
+                    }
+
+                    examplesSoFar += thisNExamples;
+                }
+            } else {
+                throw new UnsupportedOperationException("Cannot merge time series with mask rank " + maskRank);
             }
         }
 

@@ -5,6 +5,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -431,9 +433,48 @@ public class MultiDataSetTest extends BaseNd4jTest {
         MultiDataSet mdsExp2d = new MultiDataSet(expFeatures2d, expLabels2d, expFM2d, expLM2d);
         assertEquals(mdsExp2d, merged);
 
+        //Test 4d features, 2d labels, 2d masks
+        INDArray f4d1 = Nd4j.create(1,3,5,5);
+        INDArray f4d2 = Nd4j.create(2,3,5,5);
+        MultiDataSet mds4d1 = new MultiDataSet(f4d1, l2d1, null, lm2d1);
+        MultiDataSet mds4d2 = new MultiDataSet(f4d2, l2d2, null, lm2d2);
+        MultiDataSet merged4d = MultiDataSet.merge(Arrays.asList(mds4d1, mds4d2));
+        assertEquals(expLabels2d, merged4d.getLabels(0));
+        assertEquals(expLM2d, merged4d.getLabelsMaskArray(0));
+
         //Test 3d mask merging, 3d data
+        INDArray f3d1 = Nd4j.create(1,3,4);
+        INDArray f3d2 = Nd4j.create(1,3,3);
+        INDArray l3d1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(1,3,4),0.5));
+        INDArray l3d2 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(2,3,3),0.5));
+        INDArray lm3d1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(1,3,4),0.5));
+        INDArray lm3d2 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(2,3,3),0.5));
+        MultiDataSet mds3d1 = new MultiDataSet(f3d1, l3d1, null, lm3d1);
+        MultiDataSet mds3d2 = new MultiDataSet(f3d2, l3d2, null, lm3d2);
+
+        INDArray expLabels3d = Nd4j.create(3,3,4);
+        expLabels3d.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.interval(0,4)}, l3d1 );
+        expLabels3d.put(new INDArrayIndex[]{NDArrayIndex.interval(1,2,true),
+                        NDArrayIndex.all(), NDArrayIndex.interval(0,3)}, l3d2 );
+        INDArray expLM3d = Nd4j.create(3,3,4);
+        expLM3d.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all(),
+                NDArrayIndex.interval(0,4)}, lm3d1 );
+        expLM3d.put(new INDArrayIndex[]{NDArrayIndex.interval(1,2,true),
+                NDArrayIndex.all(), NDArrayIndex.interval(0,3)}, lm3d2 );
 
 
+        MultiDataSet merged3d = MultiDataSet.merge(Arrays.asList(mds3d1, mds3d2));
+        assertEquals(expLabels3d, merged3d.getLabels(0));
+        assertEquals(expLM3d, merged3d.getLabelsMaskArray(0));
+
+        //Test 3d features, 2d masks, 2d output (for example: RNN -> global pooling w/ per-output masking)
+        MultiDataSet mds3d2d1 = new MultiDataSet(f3d1, l2d1, null, lm2d1);
+        MultiDataSet mds3d2d2 = new MultiDataSet(f3d2, l2d2, null, lm2d2);
+        MultiDataSet merged3d2d = MultiDataSet.merge(Arrays.asList(mds3d2d1, mds3d2d2));
+
+        assertEquals(expLabels2d, merged3d2d.getLabels(0));
+        assertEquals(expLM2d, merged3d2d.getLabelsMaskArray(0));
     }
 
     @Test
