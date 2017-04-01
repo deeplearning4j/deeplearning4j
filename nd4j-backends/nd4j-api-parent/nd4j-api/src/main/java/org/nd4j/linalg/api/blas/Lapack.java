@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Lapack interface
  *
  * @author Adam Gibson
+ * @author rcorbish
  */
 public interface Lapack {
 

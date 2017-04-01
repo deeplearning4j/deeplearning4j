@@ -19,6 +19,7 @@ README.md~
 *~
 *.iml
 .pydevproject
+.vscode
 release.properties
 .idea/
 *.iml
