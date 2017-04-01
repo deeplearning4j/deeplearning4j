@@ -19,7 +19,8 @@ public class CpuLapack extends BaseLapack {
     protected static int getLda(INDArray A) {
         return A.ordering() == 'f' ? A.rows() : A.columns();
     }
-
+//=========================    
+// L U DECOMP
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         int status = LAPACKE_sgetrf(getColumnOrder(A), M, N, A.data().asNioFloat(), getLda(A), IPIV.data().asNioInt());
@@ -30,7 +31,35 @@ public class CpuLapack extends BaseLapack {
         int status = LAPACKE_dgetrf(getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), IPIV.data().asNioInt());
     }
 
+//=========================    
+// Q R DECOMP
+    @Override
+    public void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
+        int status = LAPACKE_sgeqrf(getColumnOrder(A), M, N, A.data().asNioFloat(), getLda(A), R.data().asNioFloat());
+    }
 
+    @Override
+    public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
+        int status = LAPACKE_dgeqrf(getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), R.data().asNioDouble());
+    }
+
+//=========================    
+// CHOLESKY DECOMP
+    @Override
+    public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+        int status = LAPACKE_spotrf(getColumnOrder(A), uplo, N, A.data().asNioFloat(), getLda(A) );
+    }
+
+    @Override
+    public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+        int status = LAPACKE_dpotrf(getColumnOrder(A), uplo, N, A.data().asNioDouble(), getLda(A) );
+    }
+
+
+
+
+//=========================    
+// U S V' DECOMP  (aka SVD)
     @Override
     public void sgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {

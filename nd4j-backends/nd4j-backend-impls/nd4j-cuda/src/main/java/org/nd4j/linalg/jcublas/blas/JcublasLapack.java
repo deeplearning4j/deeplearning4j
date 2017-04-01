@@ -167,6 +167,298 @@ public class JcublasLapack extends BaseLapack {
     }
 
 
+//=========================    
+// Q R DECOMP
+    @Override
+    public void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
+        INDArray a = A;
+        INDArray r = R;
+
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT getrf called in DOUBLE environment");
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+        if (R.ordering() == 'c')
+            r = R.dup('f');
+
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            if (result != 0)
+                throw new IllegalStateException("solverSetStream failed");
+
+            // transfer the INDArray into GPU memory
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
+            CublasPointer xRPointer = new CublasPointer(r, ctx);
+
+            // this output - indicates how much memory we'll need for the real operation
+            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+            int stat = cusolverDnSgeqrf_bufferSize(solverDn, M, N, 
+                        (FloatPointer) xAPointer.getDevicePointer(), M,
+                        (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
+            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSgeqrf_bufferSize failed with code: " + stat);
+            }
+
+            int worksize = worksizeBuffer.getInt(0);
+            // Now allocate memory for the workspace, the permutation matrix and a return code
+            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            // Do the actual QR decomp
+            stat = cusolverDnSgeqrf(solverDn, M, N, 
+                            (FloatPointer) xAPointer.getDevicePointer(), M,
+                            (FloatPointer) xRPointer.getDevicePointer(),
+                            new CudaPointer(workspace).asFloatPointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSgeqrf failed with code: " + stat);
+            }
+        }
+        allocator.registerAction(ctx, a);
+        allocator.registerAction(ctx, r);
+        allocator.registerAction(ctx, INFO);
+
+        if (a != A)
+            A.assign(a);
+        if (r != R)
+            R.assign(r);
+
+        logger.info("A: {}", A);
+        logger.info("R: {}", R);
+    }
+
+    @Override
+    public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
+        INDArray a = A;
+        INDArray r = R;
+
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("FLOAT getrf called in DOUBLE environment");
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+        if (R.ordering() == 'c')
+            r = R.dup('f');
+
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            int result = cusolverDnSetStream(
+                new cusolverDnContext(handle), 
+                new CUstream_st(ctx.getOldStream())
+            );
+            if (result != 0)
+                throw new IllegalStateException("solverSetStream failed");
+
+            // transfer the INDArray into GPU memory
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
+            CublasPointer xRPointer = new CublasPointer(r, ctx);
+
+            // this output - indicates how much memory we'll need for the real operation
+            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+            int stat = cusolverDnDgeqrf_bufferSize(solverDn, M, N, 
+                        (DoublePointer) xAPointer.getDevicePointer(), M,
+                        (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
+            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSgeqrf_bufferSize failed with code: " + stat);
+            }
+
+            int worksize = worksizeBuffer.getInt(0);
+            // Now allocate memory for the workspace, the permutation matrix and a return code
+            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            // Do the actual QR decomp
+            stat = cusolverDnDgeqrf(solverDn, M, N, 
+                            (DoublePointer) xAPointer.getDevicePointer(), M,
+                            (DoublePointer) xRPointer.getDevicePointer(),
+                            new CudaPointer(workspace).asDoublePointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnDgeqrf failed with code: " + stat);
+            }
+        }
+        allocator.registerAction(ctx, a);
+        allocator.registerAction(ctx, r);
+        allocator.registerAction(ctx, INFO);
+
+        if (a != A)
+            A.assign(a);
+        if (r != R)
+            R.assign(r);
+
+        logger.info("A: {}", A);
+        logger.info("R: {}", R);
+    }
+
+//=========================    
+// CHOLESKY DECOMP
+    @Override
+    public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+        INDArray a = A;
+
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("DOUBLE potrf called in FLOAT environment");
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            if (result != 0)
+                throw new IllegalStateException("solverSetStream failed");
+
+            // transfer the INDArray into GPU memory
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
+
+            // this output - indicates how much memory we'll need for the real operation
+            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+            int stat = cusolverDnSpotrf_bufferSize(solverDn, uplo, N, 
+                        (FloatPointer) xAPointer.getDevicePointer(), N,
+                        (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
+            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSpotrf_bufferSize failed with code: " + stat);
+            }
+
+            int worksize = worksizeBuffer.getInt(0);
+            // Now allocate memory for the workspace, the permutation matrix and a return code
+            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            // Do the actual decomp
+            stat = cusolverDnSpotrf(solverDn, uplo, N, 
+                            (FloatPointer) xAPointer.getDevicePointer(), N,
+                            new CudaPointer(workspace).asFloatPointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSpotrf failed with code: " + stat);
+            }
+        }
+        allocator.registerAction(ctx, a);
+        allocator.registerAction(ctx, INFO);
+
+        if (a != A)
+            A.assign(a);
+
+        logger.info("A: {}", A);
+    }
+
+    @Override
+    public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+        INDArray a = A;
+
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            logger.warn("FLOAT getrf called in DOUBLE environment");
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), 
+                            new CUstream_st(ctx.getOldStream()));
+            if (result != 0)
+                throw new IllegalStateException("solverSetStream failed");
+
+            // transfer the INDArray into GPU memory
+            CublasPointer xAPointer = new CublasPointer(a, ctx);
+
+            // this output - indicates how much memory we'll need for the real operation
+            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+            int stat = cusolverDnDpotrf_bufferSize(solverDn, uplo, N, 
+                        (DoublePointer) xAPointer.getDevicePointer(), N,
+                        (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
+            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnDpotrf_bufferSize failed with code: " + stat);
+            }
+
+            int worksize = worksizeBuffer.getInt(0);
+            // Now allocate memory for the workspace, the permutation matrix and a return code
+            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            // Do the actual decomp
+            stat = cusolverDnDpotrf(solverDn, uplo, N, 
+                            (DoublePointer) xAPointer.getDevicePointer(), N,
+                            new CudaPointer(workspace).asDoublePointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnDpotrf failed with code: " + stat);
+            }
+        }
+        allocator.registerAction(ctx, a);
+        allocator.registerAction(ctx, INFO);
+
+        if (a != A)
+            A.assign(a);
+
+        logger.info("A: {}", A);
+    }
+
 
     /**
      * Generate inverse ggiven LU decomp
