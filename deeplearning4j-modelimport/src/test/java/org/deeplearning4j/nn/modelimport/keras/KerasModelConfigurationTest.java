@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -88,7 +89,7 @@ public class KerasModelConfigurationTest {
         model.init();
     }
 
-    @Test
+    @Ignore
     public void importMnistCnnTensorFlowConfigurationTest() throws Exception {
         ClassPathResource configResource =
                         new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_config.json",
