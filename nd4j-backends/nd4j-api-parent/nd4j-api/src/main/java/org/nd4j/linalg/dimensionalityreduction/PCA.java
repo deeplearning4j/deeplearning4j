@@ -32,7 +32,6 @@ public class PCA {
     private PCA() {}
 
 
-
     /**
      * Calculates pca vectors of a matrix, for a fixed number of reduced features
      * returns the reduced feature set
@@ -42,7 +41,6 @@ public class PCA {
      * then project A onto a reduced set of features. It is possible to 
      * reconstruct the original data ( losing information, but having the same
      * dimensionality )
-<<<<<<< HEAD
      *
      * <pre>
      * {@code
@@ -53,74 +51,12 @@ public class PCA {
      * }
      * </pre>
      *
-=======
-     *
-     * <pre>
-     * {@code
-     *
-     * INDArray Areduced = A.mmul( factor ) ;
-     * INDArray Aoriginal = Areduced.mmul( factor.transpose() ) ;
-     * 
-     * }
-     * </pre>
-     *
->>>>>>> upstream/master
      * @param A the array of features, rows are results, columns are features - will be changed
      * @param nDims the number of components on which to project the features 
      * @param normalize whether to normalize (adjust each feature to have zero mean)
      * @return the reduced parameters of A
      */
     public static INDArray pca(INDArray A, int nDims, boolean normalize) {
-<<<<<<< HEAD
-	INDArray factor = pca_factor( A, nDims, normalize ) ;
-	return A.mmul( factor ) ;
-    }
-
-
-
-    /**
-     * Calculates pca factors of a matrix, for a fixed number of reduced features
-     * returns the factors to scale observations 
-     *
-     * The return is a factor matrix to reduce (normalized) feature sets
-     *
-     * @see pca(INDArray, int, boolean)
-     *
-     * @param A the array of features, rows are results, columns are features - will be changed
-     * @param nDims the number of components on which to project the features 
-     * @param normalize whether to normalize (adjust each feature to have zero mean)
-     * @return the reduced feature set
-     */
-    public static INDArray pca_factor(INDArray A, int nDims, boolean normalize) {
-
-	if( normalize ) {
-		// Normalize to mean 0 for each feature ( each column has 0 mean )
-		INDArray mean = A.mean(0) ;		
-		A.subiRowVector( mean ) ;
-	}
-
-	int m = A.rows() ;
-	int n = A.columns() ;
-
-	// The prepare SVD results, we'll decomp A to UxSxV'
-        INDArray s  = Nd4j.create( m<n?m:n ) ;
-        INDArray VT  = Nd4j.create( n, n, 'f' ) ;
-
-        // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, null, VT );
-         
-	// for comparison k & nDims are the equivalent values in both methods implementing PCA
-
-        // So now let's rip out the appropriate number of left singular vectors from
-        // the V output (note we pulls rows since VT is a transpose of V)
-	INDArray V = VT.transpose() ;
-        INDArray factor = Nd4j.create( n, nDims, 'f' ) ;
-        for( int i=0 ; i<nDims ; i++ ) {
-        	factor.putColumn( i, V.getColumn(i) ) ;
-        }
-
-	return factor ;
-=======
         INDArray factor = pca_factor(A, nDims, normalize);
         return A.mmul(factor);
     }
@@ -156,7 +92,7 @@ public class PCA {
         INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+        Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
 
         // for comparison k & nDims are the equivalent values in both methods implementing PCA
 
@@ -169,7 +105,6 @@ public class PCA {
         }
 
         return factor;
->>>>>>> upstream/master
     }
 
 
@@ -188,13 +123,8 @@ public class PCA {
      * @return the matrix representing  a reduced feature set
      */
     public static INDArray pca(INDArray A, double variance, boolean normalize) {
-<<<<<<< HEAD
-	INDArray factor = pca_factor( A, variance, normalize ) ;
-	return A.mmul( factor ) ;
-=======
         INDArray factor = pca_factor(A, variance, normalize);
         return A.mmul(factor);
->>>>>>> upstream/master
     }
 
 
@@ -216,19 +146,11 @@ public class PCA {
      * @return the matrix to mulitiply a feature by to get a reduced feature set
      */
     public static INDArray pca_factor(INDArray A, double variance, boolean normalize) {
-<<<<<<< HEAD
-	if( normalize ) {
-		// Normalize to mean 0 for each feature ( each column has 0 mean )
-		INDArray mean = A.mean(0) ;		
-		A.subiRowVector( mean ) ;
-	}
-=======
         if (normalize) {
             // Normalize to mean 0 for each feature ( each column has 0 mean )
             INDArray mean = A.mean(0);
             A.subiRowVector(mean);
         }
->>>>>>> upstream/master
 
         int m = A.rows();
         int n = A.columns();
@@ -238,7 +160,7 @@ public class PCA {
         INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+        Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
 
         // Now convert the eigs of X into the eigs of the covariance matrix
         for (int i = 0; i < s.length(); i++) {
@@ -257,13 +179,8 @@ public class PCA {
                 break;
             }
         }
-<<<<<<< HEAD
-        if( k == -1 ) {   // if we need everything
-            throw new RuntimeException( "No reduction possible for reqd. variance - use smaller variance" ) ;
-=======
         if (k == -1) { // if we need everything
             throw new RuntimeException("No reduction possible for reqd. variance - use smaller variance");
->>>>>>> upstream/master
         }
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
