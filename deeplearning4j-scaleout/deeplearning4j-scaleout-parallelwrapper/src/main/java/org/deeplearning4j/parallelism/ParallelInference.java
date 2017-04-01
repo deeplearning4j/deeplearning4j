@@ -4,7 +4,9 @@ import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.jetbrains.annotations.NotNull;
+import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
+import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
+import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,8 +28,9 @@ public class ParallelInference {
     private int batchLimit;
     private InferenceMode inferenceMode;
 
-
     private AtomicLong sequenceId = new AtomicLong(0);
+
+    private InferenceWorker[] zoo;
 
 
     public enum InferenceMode {
@@ -49,11 +52,33 @@ public class ParallelInference {
     }
 
     public INDArray output(INDArray input) {
+        // basically, depending on model type we either throw stuff to specific model, or wait for batch
+        return output(new INDArray[]{input})[0];
+    }
 
-
+    public INDArray[] output(INDArray... input) {
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
-        return null;
+        if (inferenceMode == InferenceMode.SEQUENTIAL) {
+
+            BasicInferenceObserver observer = new BasicInferenceObserver();
+            BasicInferenceObservable observable = new BasicInferenceObservable();
+
+            observable.addObserver(observer);
+            // submit query to processing
+
+            // and block until Observable returns
+            try {
+                observer.wait();
+                // observer.waitTillDone();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return observable.getOutput();
+        } else {
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
     }
 
 
@@ -167,11 +192,11 @@ public class ParallelInference {
      *
      */
     private class InferenceWorker extends Thread implements Runnable {
-        private BlockingQueue<INDArray> inputQueue;
+        private BlockingQueue<InferenceObservable> inputQueue;
         private AtomicBoolean shouldWork = new AtomicBoolean(true);
         private AtomicBoolean isStopped = new AtomicBoolean(false);
         private Model protoModel;
-        private ComputationGraph replicatedModel;
+        private Model replicatedModel;
 
         private InferenceWorker (int id) {
 
@@ -185,10 +210,17 @@ public class ParallelInference {
                 // model should be replicated & initialized here
 
                 while (shouldWork.get()) {
-                    INDArray array = inputQueue.poll(100, TimeUnit.NANOSECONDS);
+                    InferenceObservable request = inputQueue.poll(100, TimeUnit.NANOSECONDS);
 
-                    if (array != null) {
-                        INDArray[] output = replicatedModel.output(false, array);
+                    if (request != null) {
+                        // FIXME: get rid of instanceof here, model won't change during runtime anyway
+                        if (replicatedModel instanceof ComputationGraph) {
+                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
+                            request.setOutput(output);
+                        } else if (replicatedModel instanceof MultiLayerNetwork) {
+                           INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
+                           request.setOutput(output);
+                        }
                     } else {
                         // just do nothing, i guess and hope for next round?
                     }
@@ -209,44 +241,4 @@ public class ParallelInference {
         }
     }
 
-    /**
-     * This class holds reference
-     */
-    private static class InferenceQuery {
-        private INDArray[] input;
-        private long id;
-
-        private InferenceQuery(INDArray... inputs) {
-            this.input = inputs;
-        }
-    }
-
-
-    private static class InferenceFuture implements Future<INDArray> {
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDone() {
-            return false;
-        }
-
-        @Override
-        public INDArray get() throws InterruptedException, ExecutionException {
-            return null;
-        }
-
-        @Override
-        public INDArray get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return null;
-        }
-    }
 }

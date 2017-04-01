@@ -1,0 +1,29 @@
+package org.deeplearning4j.parallelism.inference.observers;
+
+import lombok.Data;
+import lombok.Getter;
+import org.deeplearning4j.parallelism.inference.InferenceObservable;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Observable;
+
+/**
+ * This class holds reference input, and implements basic use case: SEQUENTIAL inference
+ */
+public class BasicInferenceObservable extends Observable implements InferenceObservable {
+    @Getter private INDArray[] input;
+    @Getter private long id;
+    @Getter private INDArray[] output;
+
+
+    public BasicInferenceObservable(INDArray... inputs) {
+        super();
+        this.input = inputs;
+    }
+
+
+    public void setOutput(INDArray... output) {
+        this.output = output;
+        notifyObservers();
+    }
+}
