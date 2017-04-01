@@ -38,7 +38,7 @@ public class InMemoryNDArrayHolder implements NDArrayHolder {
      */
     @Override
     public void setArray(INDArray arr) {
-        if(this.arr.get() == null)
+        if (this.arr.get() == null)
             this.arr.set(arr);
     }
 
@@ -75,6 +75,6 @@ public class InMemoryNDArrayHolder implements NDArrayHolder {
      */
     @Override
     public INDArray getTad(int idx, int... dimensions) {
-        return arr.get().tensorAlongDimension(idx,dimensions);
+        return arr.get().tensorAlongDimension(idx, dimensions);
     }
 }

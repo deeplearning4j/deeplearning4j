@@ -37,8 +37,8 @@ public class AeronNDArraySubscriber implements AutoCloseable {
     private int fragmentLimitCount;
     // Create a context, needed for client connection to media driver
     // A separate media driver process need to run prior to running this application
-    private  Aeron.Context ctx;
-    private  AtomicBoolean running = new AtomicBoolean(true);
+    private Aeron.Context ctx;
+    private AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean init = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(AeronNDArraySubscriber.class);
     private NDArrayCallback ndArrayCallback;
@@ -49,14 +49,13 @@ public class AeronNDArraySubscriber implements AutoCloseable {
 
 
 
-
     private void init() {
         ctx = ctx == null ? new Aeron.Context() : ctx;
-        channel = channel == null ?  "aeron:udp?endpoint=localhost:40123" : channel;
+        channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         fragmentLimitCount = fragmentLimitCount == 0 ? 1000 : fragmentLimitCount;
         streamId = streamId == 0 ? 10 : streamId;
         running = running == null ? new AtomicBoolean(true) : running;
-        if(ndArrayCallback == null)
+        if (ndArrayCallback == null)
             throw new IllegalStateException("NDArray callback must be specified in the builder.");
         init.set(true);
         log.info("Channel subscriber " + channel + " and stream id " + streamId);
@@ -69,8 +68,8 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * is launched or not
      * @return true if the subscriber is launched, false otherwise
      */
-    public   boolean launched() {
-        if(launched == null)
+    public boolean launched() {
+        if (launched == null)
             launched = new AtomicBoolean(false);
         return launched.get();
     }
@@ -81,10 +80,10 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * @throws Exception
      */
     public void launch() throws Exception {
-        if(init.get())
+        if (init.get())
             return;
         // Register a SIGINT handler for graceful shutdown.
-        if(!init.get())
+        if (!init.get())
             init();
 
         log.info("Subscribing to " + channel + " on stream Id " + streamId);
@@ -102,27 +101,23 @@ public class AeronNDArraySubscriber implements AutoCloseable {
         //The first one is a  normal 1 subscription listener.
         //The second one is when we want to send responses
 
-        if(channel == null)
+        if (channel == null)
             throw new IllegalStateException("No channel for subscriber defined");
-        if(streamId <= 0)
+        if (streamId <= 0)
             throw new IllegalStateException("No stream for subscriber defined");
-        if(aeron == null)
+        if (aeron == null)
             throw new IllegalStateException("No aeron instance defined");
         boolean started = false;
-        while(!started) {
+        while (!started) {
             try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                 this.subscription = subscription;
                 log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-                AeronUtil.subscriberLoop(
-                        new FragmentAssembler(new NDArrayFragmentHandler(ndArrayCallback)),
-                        fragmentLimitCount,
-                        running,launched)
-                        .accept(subscription);
+                AeronUtil.subscriberLoop(new FragmentAssembler(new NDArrayFragmentHandler(ndArrayCallback)),
+                                fragmentLimitCount, running, launched).accept(subscription);
                 started = true;
 
-            }
-            catch(Exception e) {
-                log.warn("Unable to connect...trying again on channel " + channel,e);
+            } catch (Exception e) {
+                log.warn("Unable to connect...trying again on channel " + channel, e);
             }
         }
 
@@ -134,10 +129,10 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * @return
      */
     public String connectionUrl() {
-        String[] split = channel.replace("aeron:udp?endpoint=","").split(":");
+        String[] split = channel.replace("aeron:udp?endpoint=", "").split(":");
         String host = split[0];
         int port = Integer.parseInt(split[1]);
-        return AeronConnectionInformation.of(host,port,streamId).toString();
+        return AeronConnectionInformation.of(host, port, streamId).toString();
     }
 
 
@@ -152,20 +147,11 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * @param streamId the stream id to subscribe to
      * @return the subscriber reference
      */
-    public static AeronNDArraySubscriber startSubscriber(Aeron aeron,
-                                                         String host,
-                                                         int port,
-                                                         NDArrayCallback callback,
-                                                         int streamId,
-                                                         AtomicBoolean running) {
+    public static AeronNDArraySubscriber startSubscriber(Aeron aeron, String host, int port, NDArrayCallback callback,
+                    int streamId, AtomicBoolean running) {
 
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber
-                .builder()
-                .streamId(streamId)
-                .aeron(aeron)
-                .channel(AeronUtil.aeronChannel(host,port))
-                .running(running)
-                .ndArrayCallback(callback).build();
+        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId).aeron(aeron)
+                        .channel(AeronUtil.aeronChannel(host, port)).running(running).ndArrayCallback(callback).build();
 
 
         Thread t = new Thread(() -> {
@@ -193,20 +179,11 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * @param streamId the stream id to subscribe to
      * @return the subscriber reference
      */
-    public static AeronNDArraySubscriber startSubscriber(Aeron.Context context,
-                                                         String host,
-                                                         int port,
-                                                         NDArrayCallback callback,
-                                                         int streamId,
-                                                         AtomicBoolean running) {
+    public static AeronNDArraySubscriber startSubscriber(Aeron.Context context, String host, int port,
+                    NDArrayCallback callback, int streamId, AtomicBoolean running) {
 
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber
-                .builder()
-                .streamId(streamId)
-                .ctx(context)
-                .channel(AeronUtil.aeronChannel(host,port))
-                .running(running)
-                .ndArrayCallback(callback).build();
+        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId).ctx(context)
+                        .channel(AeronUtil.aeronChannel(host, port)).running(running).ndArrayCallback(callback).build();
 
 
         Thread t = new Thread(() -> {
@@ -272,10 +249,8 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        CloseHelper.close(subscription);
+        CloseHelper.quietClose(subscription);
     }
 }
-
-
 
 

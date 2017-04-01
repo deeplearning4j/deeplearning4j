@@ -2,10 +2,8 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * An interface for data normalizers.
@@ -14,13 +12,7 @@ import java.io.IOException;
  *
  * @author Adam Gibson
  */
-public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPreProcessor {
-    /**
-     * Fit a dataset (only compute based on the statistics from this dataset)
-     * @param dataSet the dataset to compute on
-     */
-    void fit(DataSet dataSet);
-
+public interface DataNormalization extends Normalizer<DataSet>, DataSetPreProcessor {
     /**
      * Iterates over a dataset
      * accumulating statistics for normalization
@@ -31,12 +23,6 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
 
     @Override
     void preProcess(DataSet toPreProcess);
-
-    /**
-     * Transform the dataset
-     * @param toPreProcess the dataset to re process
-     */
-    void transform(DataSet toPreProcess);
 
     /**
      * Transform the dataset
@@ -60,13 +46,6 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
      * Transform the labels. If {@link #isFitLabel()} == false, this is a no-op
      */
     void transformLabel(INDArray labels, INDArray labelsMask);
-
-    /**
-     * Undo (revert) the normalization applied by this DataNormalization instance (arrays are modified in-place)
-     *
-     * @param toRevert    DataSet to revert the normalization on
-     */
-    void revert(DataSet toRevert);
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
@@ -113,19 +92,4 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
      * @return True if labels will be
      */
     boolean isFitLabel();
-
-    /**
-     * Load the statistics
-     * for the data normalizer
-     * @param statistics the files to persist
-     * @throws IOException
-     */
-    void load(File...statistics) throws IOException;
-
-    /**
-     * Save the accumulated statistics
-     * @param statistics the statistics to save
-     * @throws IOException
-     */
-    void save(File...statistics) throws IOException;
 }

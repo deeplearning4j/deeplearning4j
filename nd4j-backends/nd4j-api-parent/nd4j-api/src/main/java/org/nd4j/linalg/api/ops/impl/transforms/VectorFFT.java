@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,31 +42,30 @@ public class VectorFFT extends BaseTransformOp {
     private int originalN = -1;
     protected boolean executed = false;
 
-    public VectorFFT() {
-    }
+    public VectorFFT() {}
 
-    public VectorFFT(INDArray x, INDArray z,int fftLength) {
+    public VectorFFT(INDArray x, INDArray z, int fftLength) {
         super(x, z);
         this.fftLength = fftLength;
         this.n = fftLength;
         exec();
     }
 
-    public VectorFFT(INDArray x, INDArray z, long n,int fftLength) {
+    public VectorFFT(INDArray x, INDArray z, long n, int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
         this.n = fftLength;
         exec();
     }
 
-    public VectorFFT(INDArray x, INDArray y, INDArray z, long n,int fftLength) {
+    public VectorFFT(INDArray x, INDArray y, INDArray z, long n, int fftLength) {
         super(x, y, z, n);
         this.z = z;
         this.fftLength = fftLength;
         exec();
     }
 
-    public VectorFFT(INDArray x,int fftLength) {
+    public VectorFFT(INDArray x, int fftLength) {
         super(x);
         this.z = x;
         this.fftLength = fftLength;
@@ -74,7 +73,7 @@ public class VectorFFT extends BaseTransformOp {
     }
 
     public VectorFFT(INDArray x) {
-        this(x,x.length());
+        this(x, x.length());
     }
 
 
@@ -132,9 +131,11 @@ public class VectorFFT extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorFFT(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorFFT(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), fftLength);
         else
-            return new VectorFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),
+                            fftLength);
 
     }
 
@@ -142,17 +143,19 @@ public class VectorFFT extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorFFT(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorFFT(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), fftLength);
         else
-            return new VectorFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),
+                            fftLength);
 
     }
 
     @Override
     public void exec() {
-        if(!x.isVector())
+        if (!x.isVector())
             return;
-        if(executed)
+        if (executed)
             return;
 
         executed = true;
@@ -162,7 +165,7 @@ public class VectorFFT extends BaseTransformOp {
         int desiredElementsAlongDimension = ret.length();
 
         if (len > desiredElementsAlongDimension) {
-            ret = ComplexNDArrayUtil.padWithZeros(ret, new int[]{fftLength});
+            ret = ComplexNDArrayUtil.padWithZeros(ret, new int[] {fftLength});
         } else if (len < desiredElementsAlongDimension) {
             ret = ComplexNDArrayUtil.truncate(ret, fftLength, 0);
         }
@@ -173,7 +176,7 @@ public class VectorFFT extends BaseTransformOp {
         INDArray n2 = Nd4j.arange(0, this.fftLength).reshape(1, this.fftLength);
 
         //column vector
-        INDArray k = n2.reshape(n2.length(),1);
+        INDArray k = n2.reshape(n2.length(), 1);
         INDArray kTimesN = k.mmul(n2);
         //here
         IComplexNDArray c1 = kTimesN.muli(c2);
@@ -181,7 +184,7 @@ public class VectorFFT extends BaseTransformOp {
         IComplexNDArray M = (IComplexNDArray) exp(c1);
 
 
-        IComplexNDArray reshaped = ret.reshape(new int[]{1,ret.length()});
+        IComplexNDArray reshaped = ret.reshape(new int[] {1, ret.length()});
         IComplexNDArray matrix = reshaped.mmul(M);
         if (originalN > 0)
             matrix = ComplexNDArrayUtil.truncate(matrix, originalN, 0);

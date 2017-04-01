@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class SigmoidDerivative extends BaseTransformOp {
 
-    public SigmoidDerivative() {
-    }
+    public SigmoidDerivative() {}
 
     public SigmoidDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -65,42 +64,42 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin, float other) {
-        return (float)sigmoidDeriv(origin);
+        return (float) sigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin) {
-    	return (float)sigmoidDeriv(origin);
+        return (float) sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	return sigmoidDeriv(origin);
+        return sigmoidDeriv(origin);
     }
 
     @Override
@@ -108,9 +107,12 @@ public class SigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SigmoidDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -119,21 +121,24 @@ public class SigmoidDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SigmoidDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SigmoidDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new SigmoidDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SigmoidDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-    
+
     private static double sigmoidDeriv(double input) {
         double sigmoid = 1 / (1 + FastMath.exp(-input));
-    	double out = sigmoid * (1.0 - sigmoid);
+        double out = sigmoid * (1.0 - sigmoid);
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY && (Double.isNaN(out) || Double.isInfinite(out))) {
             out = Nd4j.EPS_THRESHOLD;
         }
         return out;
     }
-    
+
     private static IComplexNumber sigmoidDeriv(IComplexNumber number) {
         double arg = number.complexArgument().doubleValue();
         double sigArg = 1 / 1 + (FastMath.exp(-arg)) - 1 + .5f;

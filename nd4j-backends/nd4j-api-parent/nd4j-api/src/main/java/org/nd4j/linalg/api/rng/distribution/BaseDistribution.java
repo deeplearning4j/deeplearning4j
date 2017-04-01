@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.rng.distribution;
 
-import java.util.Iterator;
-
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.solvers.UnivariateSolverUtils;
 import org.apache.commons.math3.exception.NotStrictlyPositiveException;
@@ -32,6 +30,8 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Iterator;
 
 /**
  * Base distribution derived from apache commons math
@@ -71,11 +71,9 @@ public abstract class BaseDistribution implements Distribution {
      * @since 3.1
      */
 
-    public double probability(double x0,
-                              double x1) {
+    public double probability(double x0, double x1) {
         if (x0 > x1) {
-            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_ENDPOINT_ABOVE_UPPER_ENDPOINT,
-                    x0, x1, true);
+            throw new NumberIsTooLargeException(LocalizedFormats.LOWER_ENDPOINT_ABOVE_UPPER_ENDPOINT, x0, x1, true);
         }
         return cumulativeProbability(x1) - cumulativeProbability(x0);
     }
@@ -136,8 +134,7 @@ public abstract class BaseDistribution implements Distribution {
         final double mu = getNumericalMean();
         final double sig = FastMath.sqrt(getNumericalVariance());
         final boolean chebyshevApplies;
-        chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
-                Double.isInfinite(sig) || Double.isNaN(sig));
+        chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) || Double.isInfinite(sig) || Double.isNaN(sig));
 
         if (lowerBound == Double.NEGATIVE_INFINITY) {
             if (chebyshevApplies) {
@@ -168,10 +165,7 @@ public abstract class BaseDistribution implements Distribution {
             }
         };
 
-        double x = UnivariateSolverUtils.solve(toSolve,
-                lowerBound,
-                upperBound,
-                getSolverAbsoluteAccuracy());
+        double x = UnivariateSolverUtils.solve(toSolve, lowerBound, upperBound, getSolverAbsoluteAccuracy());
 
         if (!isSupportConnected()) {
             /* Test for plateau. */
@@ -236,8 +230,7 @@ public abstract class BaseDistribution implements Distribution {
     @Override
     public double[] sample(int sampleSize) {
         if (sampleSize <= 0) {
-            throw new NotStrictlyPositiveException(LocalizedFormats.NUMBER_OF_SAMPLES,
-                    sampleSize);
+            throw new NotStrictlyPositiveException(LocalizedFormats.NUMBER_OF_SAMPLES, sampleSize);
         }
         double[] out = new double[sampleSize];
         for (int i = 0; i < sampleSize; i++) {
@@ -260,10 +253,10 @@ public abstract class BaseDistribution implements Distribution {
     @Override
     public INDArray sample(int[] shape) {
         INDArray ret = Nd4j.create(shape);
-        Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
+        Iterator<int[]> idxIter = new NdIndexIterator(shape); //For consistent values irrespective of c vs. fortran ordering
         int len = ret.length();
-        for( int i=0; i<len; i++ ){
-        	ret.putScalar(idxIter.next(), sample());
+        for (int i = 0; i < len; i++) {
+            ret.putScalar(idxIter.next(), sample());
         }
         return ret;
     }

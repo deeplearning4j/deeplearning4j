@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.shape.loop.one;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.shape.loop.four.*;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
 
 /**
@@ -18,5 +17,6 @@ public interface LoopFunction1 {
      * @param b the second buffer
      * @param bOffset the second buffer offset
      */
-    void perform(int i, RawArrayIterationInformation4 info, DataBuffer a, int aOffset, DataBuffer b, int bOffset, DataBuffer c, int cOffset, DataBuffer d, int dOffset);
+    void perform(int i, RawArrayIterationInformation4 info, DataBuffer a, int aOffset, DataBuffer b, int bOffset,
+                    DataBuffer c, int cOffset, DataBuffer d, int dOffset);
 }

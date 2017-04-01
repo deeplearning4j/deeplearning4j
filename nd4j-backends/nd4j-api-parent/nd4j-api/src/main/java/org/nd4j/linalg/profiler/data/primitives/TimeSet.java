@@ -20,7 +20,7 @@ public class TimeSet implements Comparable<TimeSet> {
 
     public long getSum() {
         if (sum == 0) {
-            for (ComparableAtomicLong time: times) {
+            for (ComparableAtomicLong time : times) {
                 sum += time.get();
             }
         }
@@ -45,7 +45,7 @@ public class TimeSet implements Comparable<TimeSet> {
 
     public long getMinimum() {
         long min = Long.MAX_VALUE;
-        for (ComparableAtomicLong time: times) {
+        for (ComparableAtomicLong time : times) {
             if (time.get() < min)
                 min = time.get();
         }
@@ -55,7 +55,7 @@ public class TimeSet implements Comparable<TimeSet> {
 
     public long getMaximum() {
         long max = Long.MIN_VALUE;
-        for (ComparableAtomicLong time: times) {
+        for (ComparableAtomicLong time : times) {
             if (time.get() > max)
                 max = time.get();
         }

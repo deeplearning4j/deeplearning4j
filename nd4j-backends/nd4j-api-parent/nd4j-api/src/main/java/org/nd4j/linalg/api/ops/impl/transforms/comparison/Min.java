@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Min extends BaseTransformOp {
 
-    public Min() {
-    }
+    public Min() {}
 
     public Min(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -110,7 +109,8 @@ public class Min extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Min(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Min(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Min(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -121,7 +121,8 @@ public class Min extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Min(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Min(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Min(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

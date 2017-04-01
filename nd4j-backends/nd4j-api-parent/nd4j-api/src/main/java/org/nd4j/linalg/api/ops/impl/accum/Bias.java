@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,8 +35,7 @@ public class Bias extends BaseAccumulation {
 
     private double mean;
 
-    public Bias() {
-    }
+    public Bias() {}
 
     public Bias(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -114,17 +113,17 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum + x;
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + x;
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum + x;
     }
 
@@ -134,22 +133,22 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x) {
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x);
     }
 
@@ -164,23 +163,23 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         return first + second;
     }
 
     @Override
-    public float combineSubResults(float first, float second){
+    public float combineSubResults(float first, float second) {
         return first + second;
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return first.add(second);
     }
 
     @Override
     public boolean isPassThrough() {
-       return false;
+        return false;
     }
 
     @Override
@@ -196,8 +195,9 @@ public class Bias extends BaseAccumulation {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i = 0; i < nOps; i++ ){
-            double d = Nd4j.getExecutioner().execAndReturn((Bias)opForDimension(i,dimension)).getFinalResult().doubleValue();
+        for (int i = 0; i < nOps; i++) {
+            double d = Nd4j.getExecutioner().execAndReturn((Bias) opForDimension(i, dimension)).getFinalResult()
+                            .doubleValue();
             z.putScalar(i, d);
         }
     }

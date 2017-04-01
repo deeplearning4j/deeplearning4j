@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class RSubOp extends BaseTransformOp {
-    public RSubOp() {
-    }
+    public RSubOp() {}
 
     public RSubOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -110,7 +109,8 @@ public class RSubOp extends BaseTransformOp {
 
 
         if (y() != null)
-            return new RSubOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RSubOp(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new RSubOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -122,7 +122,8 @@ public class RSubOp extends BaseTransformOp {
 
 
         if (y() != null)
-            return new RSubOp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new RSubOp(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new RSubOp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

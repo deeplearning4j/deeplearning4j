@@ -1,6 +1,5 @@
 package org.nd4j.rng;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -47,7 +46,7 @@ public abstract class NativeRandom implements Random {
     protected NativePack pack;
 
 
-    public long getBufferSize(){
+    public long getBufferSize() {
         return numberOfElements;
     }
 
@@ -134,12 +133,10 @@ public abstract class NativeRandom implements Random {
     public int nextInt(int to) {
         int r = nextInt();
         int m = to - 1;
-        if ((to & m) == 0)  // i.e., bound is a power of 2
+        if ((to & m) == 0) // i.e., bound is a power of 2
             r = (int) ((to * (long) r) >> 31);
         else {
-            for (int u = r;
-                 u - (r = u % to) + m < 0;
-                 u = nextInt());
+            for (int u = r; u - (r = u % to) + m < 0; u = nextInt());
         }
         return r;
     }
@@ -174,12 +171,12 @@ public abstract class NativeRandom implements Random {
 
     @Override
     public float nextFloat() {
-        return  (float) nextInt() / (float)  Integer.MAX_VALUE;
+        return (float) nextInt() / (float) Integer.MAX_VALUE;
     }
 
     @Override
     public double nextDouble() {
-        return (double) nextInt() / (double)  Integer.MAX_VALUE;
+        return (double) nextInt() / (double) Integer.MAX_VALUE;
     }
 
     @Override

@@ -3,14 +3,18 @@ package org.nd4j.linalg.cache;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
- * This interface describes memory reuse strategy for java-originated arrays.
+ * This interface describes
+ * memory reuse strategy
+ * for java-originated arrays.
  *
  * @author raver119@gmail.com
  */
 public interface ConstantHandler {
 
     /**
-     * If specific hardware supports dedicated constant memory, this method forces DataBuffer passed in to be moved to that constant memory.
+     * If specific hardware supports dedicated constant memory,
+     * this method forces DataBuffer passed in to be moved
+     * to that constant memory.
      *
      * PLEASE NOTE: This method implementation is hardware-dependant.
      *
@@ -30,9 +34,12 @@ public interface ConstantHandler {
     DataBuffer relocateConstantSpace(DataBuffer dataBuffer);
 
     /**
-     * This method returns DataBuffer with contant equal to input array.
+     * This method returns DataBuffer with
+     * constant equal to input array.
      *
-     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     * PLEASE NOTE: This method assumes that
+     * you'll never ever change values
+     * within result DataBuffer
      *
      * @param array
      * @return
@@ -40,9 +47,11 @@ public interface ConstantHandler {
     DataBuffer getConstantBuffer(int[] array);
 
     /**
-     * This method returns DataBuffer with contant equal to input array.
+     * This method returns DataBuffer
+     * with constant equal to input array.
      *
-     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     * PLEASE NOTE: This method assumes that you'll
+     * never ever change values within result DataBuffer
      *
      * @param array
      * @return

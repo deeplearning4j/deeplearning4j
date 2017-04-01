@@ -1,14 +1,7 @@
 package org.nd4j.linalg.util;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
+import java.util.*;
 
 public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializable {
     private static final long serialVersionUID = 3801124242820219131L;
@@ -28,7 +21,7 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
 
     public void add(K key, V value) {
         List<V> values = this.targetMap.get(key);
-        if(values == null) {
+        if (values == null) {
             values = new LinkedList<>();
             this.targetMap.put(key, values);
         }
@@ -38,7 +31,7 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
 
     public V getFirst(K key) {
         List<V> values = this.targetMap.get(key);
-        return values != null?values.get(0):null;
+        return values != null ? values.get(0) : null;
     }
 
     public void set(K key, V value) {
@@ -50,8 +43,8 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
     public void setAll(Map<K, V> values) {
         Iterator i$ = values.entrySet().iterator();
 
-        while(i$.hasNext()) {
-            Entry<K,V> entry = (Entry)i$.next();
+        while (i$.hasNext()) {
+            Entry<K, V> entry = (Entry) i$.next();
             this.set(entry.getKey(), entry.getValue());
         }
 
@@ -61,9 +54,9 @@ public class LinkedMultiValueMap<K, V> implements MultiValueMap<K, V>, Serializa
         LinkedHashMap singleValueMap = new LinkedHashMap(this.targetMap.size());
         Iterator i$ = this.targetMap.entrySet().iterator();
 
-        while(i$.hasNext()) {
-            Entry entry = (Entry)i$.next();
-            singleValueMap.put(entry.getKey(), ((List)entry.getValue()).get(0));
+        while (i$.hasNext()) {
+            Entry entry = (Entry) i$.next();
+            singleValueMap.put(entry.getKey(), ((List) entry.getValue()).get(0));
         }
 
         return singleValueMap;

@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class LinearViewBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public LinearViewBenchmarkPerformer(int nTimes) {
-        super(new LinearViewOpRunner(),nTimes);
+        super(new LinearViewOpRunner(), nTimes);
     }
 
 

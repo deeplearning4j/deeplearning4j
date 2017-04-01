@@ -18,12 +18,14 @@ public interface StatusStorage {
      * @return the list of ids for the given state
      */
     List<Integer> ids();
+
     /**
      * Returns the number of states
      * held by this storage
      * @return
      */
     int numStates();
+
     /**
      * Get the state given an id.
      * The integer represents a stream id

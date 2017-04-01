@@ -15,7 +15,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by raver on 08.05.2016.

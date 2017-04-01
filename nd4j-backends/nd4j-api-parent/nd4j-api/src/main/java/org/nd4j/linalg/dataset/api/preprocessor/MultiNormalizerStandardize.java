@@ -3,9 +3,10 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiStandardizeSerializerStrategy;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerStandardizeSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class MultiNormalizerStandardize extends AbstractMultiDataSetNormalizer<D
     /**
      * @param featureFiles target files for features, requires 2 files per input, alternating mean and stddev files
      * @param labelFiles   target files for labels, requires 2 files per output, alternating mean and stddev files
-     * @deprecated use {@link MultiNormalizerStandardizeSerializer} instead
+     * @deprecated use {@link MultiStandardizeSerializerStrategy} instead
      * <p>
      * Save the current means and standard deviations to the file system
      */
@@ -83,15 +84,17 @@ public class MultiNormalizerStandardize extends AbstractMultiDataSetNormalizer<D
     private void saveStats(List<DistributionStats> stats, List<File> files) throws IOException {
         int requiredFiles = stats.size() * 2;
         if (requiredFiles != files.size()) {
-            throw new RuntimeException(String.format(
-                "Need twice as many files as inputs / outputs (%d), got %d",
-                requiredFiles,
-                files.size()
-            ));
+            throw new RuntimeException(String.format("Need twice as many files as inputs / outputs (%d), got %d",
+                            requiredFiles, files.size()));
         }
 
         for (int i = 0; i < stats.size(); i++) {
             stats.get(i).save(files.get(i * 2), files.get(i * 2 + 1));
         }
+    }
+
+    @Override
+    public NormalizerType getType() {
+        return NormalizerType.MULTI_STANDARDIZE;
     }
 }

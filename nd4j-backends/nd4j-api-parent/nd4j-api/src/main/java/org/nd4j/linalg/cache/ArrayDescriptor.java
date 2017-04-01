@@ -12,11 +12,9 @@ public class ArrayDescriptor {
     float[] floatArray = null;
     double[] doubleArray = null;
     long[] longArray = null;
+
     private enum DTYPE {
-        INT,
-        FLOAT,
-        DOUBLE,
-        LONG
+        INT, FLOAT, DOUBLE, LONG
     }
 
     private DTYPE dtype;
@@ -43,8 +41,10 @@ public class ArrayDescriptor {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ArrayDescriptor that = (ArrayDescriptor) o;
 
@@ -67,13 +67,13 @@ public class ArrayDescriptor {
     @Override
     public int hashCode() {
         if (intArray != null) {
-            return intArray.getClass().hashCode()    + 31 * Arrays.hashCode(intArray);
+            return intArray.getClass().hashCode() + 31 * Arrays.hashCode(intArray);
         } else if (floatArray != null) {
-            return floatArray.getClass().hashCode()  + 31 * Arrays.hashCode(floatArray);
+            return floatArray.getClass().hashCode() + 31 * Arrays.hashCode(floatArray);
         } else if (doubleArray != null) {
             return doubleArray.getClass().hashCode() + 31 * Arrays.hashCode(doubleArray);
         } else if (longArray != null) {
-            return longArray.getClass().hashCode()   + 31 * Arrays.hashCode(longArray);
+            return longArray.getClass().hashCode() + 31 * Arrays.hashCode(longArray);
         } else {
             return 0;
         }

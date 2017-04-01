@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,9 +19,9 @@
 
 package org.nd4j.linalg.util;
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * To change this template, choose Tools | Templates and open the template in the editor.
  */
+
 // package org.nevec.rjm ;
 
 import java.math.BigDecimal;
@@ -38,8 +38,8 @@ class Rational implements Cloneable {
 
     /* The maximum and minimum value of a standard Java integer, 2^31.
      */
-    static BigInteger MAX_INT = new BigInteger("2147483647");
-    static BigInteger MIN_INT = new BigInteger("-2147483648");
+    static BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
+    static BigInteger MIN_INT = BigInteger.valueOf(Integer.MIN_VALUE);
     static Rational ONE = new Rational(1, 1);
     static Rational ZERO = new Rational();
     /**
@@ -78,7 +78,7 @@ class Rational implements Cloneable {
      */
     public Rational(BigInteger a) {
         this.a = a;
-        b = new BigInteger("1");
+        b = BigInteger.valueOf(1);
     }
 
     /**
@@ -88,7 +88,7 @@ class Rational implements Cloneable {
      * @param b the denominator.
      */
     public Rational(int a, int b) {
-        this(new BigInteger("" + a), new BigInteger("" + b));
+        this(BigInteger.valueOf(a), BigInteger.valueOf(b));
     }
 
     /**
@@ -140,7 +140,7 @@ class Rational implements Cloneable {
             return Rational.ONE;
         }
         Rational bin = n;
-        for (BigInteger i = new BigInteger("2"); i.compareTo(m) != 1; i = i.add(BigInteger.ONE)) {
+        for (BigInteger i = BigInteger.valueOf(2); i.compareTo(m) != 1; i = i.add(BigInteger.ONE)) {
             bin = bin.multiply(n.subtract(i.subtract(BigInteger.ONE))).divide(i);
         }
         return bin;
@@ -210,7 +210,7 @@ class Rational implements Cloneable {
      * @return the product of this with the value.
      */
     public Rational multiply(final int val) {
-        BigInteger tmp = new BigInteger("" + val);
+        BigInteger tmp = BigInteger.valueOf(val);
         return multiply(tmp);
     } /* Rational.multiply */
 
@@ -582,7 +582,7 @@ class Rational implements Cloneable {
      * @return Gamma(this+n)/GAMMA(this).
      */
     public Rational Pochhammer(int n) {
-        return Pochhammer(new BigInteger("" + n));
+        return Pochhammer(BigInteger.valueOf(n));
     } /* Rational.pochhammer */
 
 

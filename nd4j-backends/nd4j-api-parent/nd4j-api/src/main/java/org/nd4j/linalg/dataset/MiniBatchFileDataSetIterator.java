@@ -33,21 +33,25 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      * @param batchSize the batch size to split by
      * @throws IOException
      */
-    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize) throws IOException {
-        this(baseData,batchSize,true);
+    public MiniBatchFileDataSetIterator(DataSet baseData, int batchSize) throws IOException {
+        this(baseData, batchSize, true);
 
     }
+
     /**
      *
      * @param baseData the base dataset
      * @param batchSize the batch size to split by
      * @throws IOException
      */
-    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete,File rootDir) throws IOException {
+    public MiniBatchFileDataSetIterator(DataSet baseData, int batchSize, boolean delete, File rootDir)
+                    throws IOException {
+        if (baseData.numExamples() < batchSize)
+            throw new IllegalAccessError("Number of examples smaller than batch size");
         this.batchSize = batchSize;
-        this.rootDir = new File(rootDir,UUID.randomUUID().toString());
+        this.rootDir = new File(rootDir, UUID.randomUUID().toString());
         this.rootDir.mkdirs();
-        if(delete)
+        if (delete)
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -64,11 +68,12 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         totalLabels = baseData.numOutcomes();
         int offset = 0;
         totalBatches = baseData.numExamples() / batchSize;
-        for(int i = 0; i < baseData.numExamples() / batchSize; i++) {
-            paths.add(writeData(new DataSet(baseData.getFeatureMatrix().get(NDArrayIndex.interval(offset, offset + batchSize))
-                    , baseData.getLabels().get(NDArrayIndex.interval(offset, offset + batchSize)))));
+        for (int i = 0; i < baseData.numExamples() / batchSize; i++) {
+            paths.add(writeData(new DataSet(
+                            baseData.getFeatureMatrix().get(NDArrayIndex.interval(offset, offset + batchSize)),
+                            baseData.getLabels().get(NDArrayIndex.interval(offset, offset + batchSize)))));
             offset += batchSize;
-            if(offset >= totalExamples)
+            if (offset >= totalExamples)
                 break;
         }
     }
@@ -79,7 +84,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      * @param batchSize the batch size to split by
      * @throws IOException
      */
-    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete) throws IOException {
+    public MiniBatchFileDataSetIterator(DataSet baseData, int batchSize, boolean delete) throws IOException {
         this(baseData, batchSize, delete, new File(System.getProperty("java.io.tmpdir")));
     }
 
@@ -104,7 +109,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 
@@ -161,8 +166,8 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         try {
-            DataSet ret =  read(currIdx);
-            if(dataSetPreProcessor != null)
+            DataSet ret = read(currIdx);
+            if (dataSetPreProcessor != null)
                 dataSetPreProcessor.preProcess(ret);
             currIdx++;
 
@@ -177,7 +182,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
         DataInputStream dis = new DataInputStream(bis);
         BufferedInputStream labelInputStream = new BufferedInputStream(new FileInputStream(paths.get(idx)[1]));
         DataInputStream labelDis = new DataInputStream(labelInputStream);
-        DataSet d = new DataSet(Nd4j.read(dis),Nd4j.read(labelDis));
+        DataSet d = new DataSet(Nd4j.read(dis), Nd4j.read(labelDis));
         dis.close();
         labelDis.close();
         return d;
@@ -187,20 +192,22 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     private String[] writeData(DataSet write) throws IOException {
         String[] ret = new String[2];
         String dataSetId = UUID.randomUUID().toString();
-        BufferedOutputStream dataOut = new BufferedOutputStream(new FileOutputStream(new File(rootDir,dataSetId + ".bin")));
+        BufferedOutputStream dataOut =
+                        new BufferedOutputStream(new FileOutputStream(new File(rootDir, dataSetId + ".bin")));
         DataOutputStream dos = new DataOutputStream(dataOut);
-        Nd4j.write(write.getFeatureMatrix(),dos);
+        Nd4j.write(write.getFeatureMatrix(), dos);
         dos.flush();
         dos.close();
 
 
-        BufferedOutputStream dataOutLabels = new BufferedOutputStream(new FileOutputStream(new File(rootDir,dataSetId + ".labels.bin")));
+        BufferedOutputStream dataOutLabels =
+                        new BufferedOutputStream(new FileOutputStream(new File(rootDir, dataSetId + ".labels.bin")));
         DataOutputStream dosLabels = new DataOutputStream(dataOutLabels);
         Nd4j.write(write.getLabels(), dosLabels);
         dosLabels.flush();
         dosLabels.close();
-        ret[0] = new File(rootDir,dataSetId + ".bin").getAbsolutePath();
-        ret[1] = new File(rootDir,dataSetId + ".labels.bin").getAbsolutePath();
+        ret[0] = new File(rootDir, dataSetId + ".bin").getAbsolutePath();
+        ret[1] = new File(rootDir, dataSetId + ".labels.bin").getAbsolutePath();
         return ret;
 
     }

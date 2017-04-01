@@ -31,7 +31,7 @@ public class LockedRing implements Ring {
             float rates = 0.0f;
             int x = 0;
             int existing = 0;
-            for (x = 0; x <ring.length; x++ ) {
+            for (x = 0; x < ring.length; x++) {
                 rates += ring[x];
                 if (ring[x] > 0) {
                     existing++;

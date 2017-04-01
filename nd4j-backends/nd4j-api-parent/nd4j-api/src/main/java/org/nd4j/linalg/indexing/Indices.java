@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,9 +21,9 @@ package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -55,11 +55,11 @@ public class Indices {
      * @param arr the array
      * @return the linear offset
      */
-    public static int rowNumber(int index,INDArray arr) {
+    public static int rowNumber(int index, INDArray arr) {
         double otherTest = ((double) index) / arr.size(-1);
         int test = (int) Math.floor(otherTest);
         int vectors = arr.vectorsAlongDimension(-1);
-        if(test >= vectors)
+        if (test >= vectors)
             return vectors - 1;
         return test;
     }
@@ -83,15 +83,14 @@ public class Indices {
      * @param arr the array
      * @return the linear offset
      */
-    public static int linearOffset(int index,INDArray arr) {
-        if(arr.ordering() == NDArrayFactory.C) {
+    public static int linearOffset(int index, INDArray arr) {
+        if (arr.ordering() == NDArrayFactory.C) {
             double otherTest = ((double) index) % arr.size(-1);
             int test = (int) Math.floor(otherTest);
-            INDArray vec = arr.vectorAlongDimension(test,-1);
-            int otherDim = arr.vectorAlongDimension(test,-1).offset() + index;
+            INDArray vec = arr.vectorAlongDimension(test, -1);
+            int otherDim = arr.vectorAlongDimension(test, -1).offset() + index;
             return otherDim;
-        }
-        else {
+        } else {
             int majorStride = arr.stride(-2);
             int vectorsAlongDimension = arr.vectorsAlongDimension(-1);
             double rowCalc = (double) (index * majorStride) / (double) arr.length();
@@ -116,13 +115,13 @@ public class Indices {
      * @param indices the indices
      * @return the offsets for the given set of indices
      */
-    public static int[] offsets(int[] shape,INDArrayIndex...indices) {
+    public static int[] offsets(int[] shape, INDArrayIndex... indices) {
         //offset of zero for every new axes
         int[] ret = new int[shape.length];
 
-        if(indices.length == shape.length) {
+        if (indices.length == shape.length) {
             for (int i = 0; i < indices.length; i++) {
-                if(indices[i] instanceof NDArrayIndexEmpty)
+                if (indices[i] instanceof NDArrayIndexEmpty)
                     ret[i] = 0;
                 else {
                     ret[i] = indices[i].offset();
@@ -130,30 +129,29 @@ public class Indices {
 
             }
 
-            if(ret.length == 1) {
-                ret = new int[] {ret[0],0};
+            if (ret.length == 1) {
+                ret = new int[] {ret[0], 0};
             }
         }
 
         else {
             int numPoints = NDArrayIndex.numPoints(indices);
-            if(numPoints > 0) {
+            if (numPoints > 0) {
                 List<Integer> nonZeros = new ArrayList<>();
-                for(int i = 0; i < indices.length; i++)
-                    if(indices[i].offset() > 0)
+                for (int i = 0; i < indices.length; i++)
+                    if (indices[i].offset() > 0)
                         nonZeros.add(indices[i].offset());
-                if(nonZeros.size() > shape.length)
+                if (nonZeros.size() > shape.length)
                     throw new IllegalStateException("Non zeros greater than shape unable to continue");
                 else {
                     //push all zeros to the back
-                    for(int i = 0; i < nonZeros.size(); i++)
+                    for (int i = 0; i < nonZeros.size(); i++)
                         ret[i] = nonZeros.get(i);
                 }
-            }
-            else {
+            } else {
                 int shapeIndex = 0;
                 for (int i = 0; i < indices.length; i++) {
-                    if(indices[i] instanceof NDArrayIndexEmpty)
+                    if (indices[i] instanceof NDArrayIndexEmpty)
                         ret[i] = 0;
                     else {
                         ret[i] = indices[shapeIndex++].offset();
@@ -163,11 +161,10 @@ public class Indices {
             }
 
 
-            if(ret.length == 1) {
-                ret = new int[] {ret[0],0};
+            if (ret.length == 1) {
+                ret = new int[] {ret[0], 0};
             }
         }
-
 
 
 
@@ -213,8 +210,8 @@ public class Indices {
      * @param indexes       the indexes to adjust
      * @return the  adjusted indices
      */
-    public static INDArrayIndex[] adjustIndices(int[] originalShape, INDArrayIndex...indexes) {
-        if(Shape.isVector(originalShape) && indexes.length == 1)
+    public static INDArrayIndex[] adjustIndices(int[] originalShape, INDArrayIndex... indexes) {
+        if (Shape.isVector(originalShape) && indexes.length == 1)
             return indexes;
 
         if (indexes.length < originalShape.length)
@@ -305,12 +302,12 @@ public class Indices {
      * start and end indices
      */
     public static INDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end) {
-        if(start.length() != end.length())
+        if (start.length() != end.length())
             throw new IllegalArgumentException("Start length must be equal to end length");
         else {
             INDArrayIndex[] indexes = new INDArrayIndex[start.length()];
-            for(int i = 0; i < indexes.length; i++) {
-                indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i));
+            for (int i = 0; i < indexes.length; i++) {
+                indexes[i] = NDArrayIndex.interval(start.getInt(i), end.getInt(i));
             }
             return indexes;
         }
@@ -328,12 +325,12 @@ public class Indices {
      * each dimension
      */
     public static INDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end, boolean inclusive) {
-        if(start.length() != end.length())
+        if (start.length() != end.length())
             throw new IllegalArgumentException("Start length must be equal to end length");
         else {
             INDArrayIndex[] indexes = new INDArrayIndex[start.length()];
-            for(int i = 0; i < indexes.length; i++) {
-                indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i),inclusive);
+            for (int i = 0; i < indexes.length; i++) {
+                indexes[i] = NDArrayIndex.interval(start.getInt(i), end.getInt(i), inclusive);
             }
             return indexes;
         }
@@ -354,7 +351,7 @@ public class Indices {
      * @param indices the indices to calculate the shape for
      * @return the shape for the given indices
      */
-    public static int[] shape(int[] shape,INDArrayIndex...indices) {
+    public static int[] shape(int[] shape, INDArrayIndex... indices) {
         int newAxesPrepend = 0;
         boolean encounteredAll = false;
         List<Integer> accumShape = new ArrayList<>();
@@ -363,20 +360,20 @@ public class Indices {
         //list of indexes to prepend to for new axes
         //if all is encountered
         List<Integer> prependNewAxes = new ArrayList<>();
-        for(int i = 0; i < indices.length; i++) {
+        for (int i = 0; i < indices.length; i++) {
             INDArrayIndex idx = indices[i];
             if (idx instanceof NDArrayIndexAll)
                 encounteredAll = true;
             //point: do nothing but move the shape counter
-            if(idx instanceof PointIndex) {
+            if (idx instanceof PointIndex) {
                 shapeIndex++;
                 continue;
             }
             //new axes encountered, need to track whether to prepend or
             //to set the new axis in the middle
-            else if(idx instanceof NewAxis) {
+            else if (idx instanceof NewAxis) {
                 //prepend the new axes at different indexes
-                if(encounteredAll) {
+                if (encounteredAll) {
                     prependNewAxes.add(i);
                 }
                 //prepend to the beginning
@@ -389,7 +386,8 @@ public class Indices {
 
             //points and intervals both have a direct desired length
 
-            else if(idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll) || idx instanceof SpecifiedIndex) {
+            else if (idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll)
+                            || idx instanceof SpecifiedIndex) {
                 accumShape.add(idx.length());
                 shapeIndex++;
                 continue;
@@ -400,26 +398,26 @@ public class Indices {
 
         }
 
-        while(shapeIndex < shape.length) {
+        while (shapeIndex < shape.length) {
             accumShape.add(shape[shapeIndex++]);
         }
 
 
-        while(accumShape.size() < 2) {
+        while (accumShape.size() < 2) {
             accumShape.add(1);
         }
 
         //only one index and matrix, remove the first index rather than the last
         //equivalent to this is reversing the list with the prepended one
-        if(indices.length == 1 && indices[0] instanceof PointIndex && shape.length == 2) {
+        if (indices.length == 1 && indices[0] instanceof PointIndex && shape.length == 2) {
             Collections.reverse(accumShape);
         }
 
         //prepend for new axes; do this first before
         //doing the indexes to prepend to
-        if(newAxesPrepend > 0) {
-            for(int i = 0; i < newAxesPrepend; i++)
-                accumShape.add(0,1);
+        if (newAxesPrepend > 0) {
+            for (int i = 0; i < newAxesPrepend; i++)
+                accumShape.add(0, 1);
         }
 
         /**
@@ -438,8 +436,8 @@ public class Indices {
          * When prepend new axes for in the middle is triggered
          * i is already > 0
          */
-        for(int i = 0; i < prependNewAxes.size(); i++) {
-            accumShape.add(prependNewAxes.get(i) - i,1);
+        for (int i = 0; i < prependNewAxes.size(); i++) {
+            accumShape.add(prependNewAxes.get(i) - i, 1);
         }
 
 
@@ -456,20 +454,19 @@ public class Indices {
      * @param shape the shape of the output
      * @return the strides used for indexing
      */
-    public static int[] stride(INDArray arr,INDArrayIndex[] indexes, int... shape) {
+    public static int[] stride(INDArray arr, INDArrayIndex[] indexes, int... shape) {
         List<Integer> strides = new ArrayList<>();
         int strideIndex = 0;
         //list of indexes to prepend to for new axes
         //if all is encountered
         List<Integer> prependNewAxes = new ArrayList<>();
 
-        for(int i = 0; i < indexes.length; i++) {
+        for (int i = 0; i < indexes.length; i++) {
             //just like the shape, drops the stride
-            if(indexes[i] instanceof PointIndex) {
+            if (indexes[i] instanceof PointIndex) {
                 strideIndex++;
                 continue;
-            }
-            else if(indexes[i] instanceof NewAxis) {
+            } else if (indexes[i] instanceof NewAxis) {
 
             }
         }
@@ -490,8 +487,8 @@ public class Indices {
          * When prepend new axes for in the middle is triggered
          * i is already > 0
          */
-        for(int i = 0; i < prependNewAxes.size(); i++) {
-            strides.add(prependNewAxes.get(i) - i,1);
+        for (int i = 0; i < prependNewAxes.size(); i++) {
+            strides.add(prependNewAxes.get(i) - i, 1);
         }
 
         return Ints.toArray(strides);
@@ -508,16 +505,16 @@ public class Indices {
      * @return true if the given indexes are searching
      * for a scalar false otherwise
      */
-    public static boolean isScalar(INDArray indexOver,INDArrayIndex...indexes) {
+    public static boolean isScalar(INDArray indexOver, INDArrayIndex... indexes) {
         boolean allOneLength = true;
-        for(int i = 0; i < indexes.length; i++) {
+        for (int i = 0; i < indexes.length; i++) {
             allOneLength = allOneLength && indexes[i].length() == 1;
         }
 
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
-        if(allOneLength && numNewAxes == 0 && indexes.length == indexOver.rank())
+        if (allOneLength && numNewAxes == 0 && indexes.length == indexOver.rank())
             return true;
-        else if(allOneLength && indexes.length == indexOver.rank() - numNewAxes) {
+        else if (allOneLength && indexes.length == indexOver.rank() - numNewAxes) {
             return allOneLength;
         }
 

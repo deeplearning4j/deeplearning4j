@@ -1,4 +1,4 @@
-/*
+/*-
  * Copyright 2014 - 2016 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,8 +50,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
  *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-4] identity=12345
  * </code>
  */
-public class AeronStat
-{
+public class AeronStat {
     /**
      * Types of the counters.
      * <ul>
@@ -90,14 +89,8 @@ public class AeronStat
     private final Pattern streamFilter;
     private final Pattern channelFilter;
 
-    public AeronStat(
-        final CountersReader counters,
-        final Pattern typeFilter,
-        final Pattern identityFilter,
-        final Pattern sessionFilter,
-        final Pattern streamFilter,
-        final Pattern channelFilter)
-    {
+    public AeronStat(final CountersReader counters, final Pattern typeFilter, final Pattern identityFilter,
+                    final Pattern sessionFilter, final Pattern streamFilter, final Pattern channelFilter) {
         this.counters = counters;
         this.typeFilter = typeFilter;
         this.identityFilter = identityFilter;
@@ -106,8 +99,7 @@ public class AeronStat
         this.channelFilter = channelFilter;
     }
 
-    public AeronStat(final CountersReader counters)
-    {
+    public AeronStat(final CountersReader counters) {
         this.counters = counters;
         this.typeFilter = null;
         this.identityFilter = null;
@@ -116,8 +108,7 @@ public class AeronStat
         this.channelFilter = null;
     }
 
-    public static CountersReader mapCounters()
-    {
+    public static CountersReader mapCounters() {
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);
 
@@ -125,33 +116,27 @@ public class AeronStat
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
+        if (CncFileDescriptor.CNC_VERSION != cncVersion) {
             throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
         }
 
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+        return new CountersReader(createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+                        createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 
-    public static void main(final String[] args) throws Exception
-    {
+    public static void main(final String[] args) throws Exception {
         Pattern typeFilter = null;
         Pattern identityFilter = null;
         Pattern sessionFilter = null;
         Pattern streamFilter = null;
         Pattern channelFilter = null;
 
-        if (0 != args.length)
-        {
+        if (0 != args.length) {
             checkForHelp(args);
 
-            for (final String arg : args)
-            {
+            for (final String arg : args) {
                 final int equalsIndex = arg.indexOf('=');
-                if (-1 == equalsIndex)
-                {
+                if (-1 == equalsIndex) {
                     System.out.println("Arguments must be in name=pattern format: Invalid '" + arg + "'");
                     return;
                 }
@@ -159,8 +144,7 @@ public class AeronStat
                 final String argName = arg.substring(0, equalsIndex);
                 final String argValue = arg.substring(equalsIndex + 1);
 
-                switch (argName)
-                {
+                switch (argName) {
                     case COUNTER_TYPE_ID:
                         typeFilter = Pattern.compile(argValue);
                         break;
@@ -188,13 +172,12 @@ public class AeronStat
             }
         }
 
-        final AeronStat aeronStat = new AeronStat(
-            mapCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
+        final AeronStat aeronStat = new AeronStat(mapCounters(), typeFilter, identityFilter, sessionFilter,
+                        streamFilter, channelFilter);
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        while (running.get())
-        {
+        while (running.get()) {
             System.out.print("\033[H\033[2J");
 
             System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat%n", new Date());
@@ -207,64 +190,44 @@ public class AeronStat
         }
     }
 
-    public void print(final PrintStream out)
-    {
-        counters.forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                if (filter(typeId, keyBuffer))
-                {
-                    final long value = counters.getCounterValue(counterId);
-                    out.format("%3d: %,20d - %s%n", counterId, value, label);
-                }
-            });
+    public void print(final PrintStream out) {
+        counters.forEach((counterId, typeId, keyBuffer, label) -> {
+            if (filter(typeId, keyBuffer)) {
+                final long value = counters.getCounterValue(counterId);
+                out.format("%3d: %,20d - %s%n", counterId, value, label);
+            }
+        });
     }
 
-    private static void checkForHelp(final String[] args)
-    {
-        for (final String arg : args)
-        {
-            if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
-            {
-                System.out.format(
-                    "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
-                        "\tfilter by optional regex patterns:%n" +
-                        "\t[type=<pattern>]%n" +
-                        "\t[identity=<pattern>]%n" +
-                        "\t[sessionId=<pattern>]%n" +
-                        "\t[streamId=<pattern>]%n" +
-                        "\t[channel=<pattern>]%n");
+    private static void checkForHelp(final String[] args) {
+        for (final String arg : args) {
+            if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg)) {
+                System.out.format("Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n"
+                                + "\tfilter by optional regex patterns:%n" + "\t[type=<pattern>]%n"
+                                + "\t[identity=<pattern>]%n" + "\t[sessionId=<pattern>]%n" + "\t[streamId=<pattern>]%n"
+                                + "\t[channel=<pattern>]%n");
 
                 System.exit(0);
             }
         }
     }
 
-    private boolean filter(final int typeId, final DirectBuffer keyBuffer)
-    {
-        if (!match(typeFilter, () -> Integer.toString(typeId)))
-        {
+    private boolean filter(final int typeId, final DirectBuffer keyBuffer) {
+        if (!match(typeFilter, () -> Integer.toString(typeId))) {
             return false;
         }
 
-        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, () -> Integer.toString(keyBuffer.getInt(0))))
-        {
+        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, () -> Integer.toString(keyBuffer.getInt(0)))) {
             return false;
-        }
-        else if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID)
-        {
-            if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
-                !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
-                !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
-                !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
-            {
+        } else if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) {
+            if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET)))
+                            || !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET)))
+                            || !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET)))
+                            || !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET))) {
                 return false;
             }
-        }
-        else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
-        {
-            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatus.CHANNEL_OFFSET)))
-            {
+        } else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID) {
+            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatus.CHANNEL_OFFSET))) {
                 return false;
             }
         }
@@ -272,8 +235,7 @@ public class AeronStat
         return true;
     }
 
-    private static boolean match(final Pattern pattern, final Supplier<String> supplier)
-    {
+    private static boolean match(final Pattern pattern, final Supplier<String> supplier) {
         return null == pattern || pattern.matcher(supplier.get()).find();
     }
 }

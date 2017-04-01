@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,8 +36,7 @@ public class Stabilize extends BaseTransformOp {
     double cutOff = FastMath.log(realMin);
     double k;
 
-    public Stabilize() {
-    }
+    public Stabilize() {}
 
     public Stabilize(INDArray x, INDArray z, double k) {
         super(x, z);
@@ -141,16 +140,18 @@ public class Stabilize extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{k};
+        this.extraArgs = new Object[] {k};
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new Stabilize(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
+            return new Stabilize(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
         else
-            return new Stabilize(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), k);
+            return new Stabilize(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),
+                            k);
 
     }
 
@@ -158,9 +159,11 @@ public class Stabilize extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new Stabilize(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), k);
+            return new Stabilize(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), k);
         else
-            return new Stabilize(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), k);
+            return new Stabilize(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),
+                            k);
 
     }
 

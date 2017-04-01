@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,12 +19,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
@@ -146,7 +144,7 @@ public class CompareAndSet extends BaseTransformOp {
      * @param eps
      */
     public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps) {
-        super(x,z);
+        super(x, z);
         this.compare = compare;
         this.set = set;
         this.eps = eps;
@@ -164,7 +162,7 @@ public class CompareAndSet extends BaseTransformOp {
      * @param eps
      */
     public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps, long n) {
-        super(x,z,n);
+        super(x, z, n);
         this.compare = compare;
         this.set = set;
         this.eps = eps;
@@ -228,9 +226,11 @@ public class CompareAndSet extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CompareAndSet(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new CompareAndSet(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps,
+                            xAlongDimension.length());
         else
-            return new CompareAndSet(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new CompareAndSet(xAlongDimension, z.vectorAlongDimension(index, dimension), compare, set, eps,
+                            xAlongDimension.length());
     }
 
     @Override
@@ -238,16 +238,18 @@ public class CompareAndSet extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CompareAndSet(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new CompareAndSet(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps,
+                            xAlongDimension.length());
         else
-            return new CompareAndSet(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps, xAlongDimension.length());
+            return new CompareAndSet(xAlongDimension, z.tensorAlongDimension(index, dimension), compare, set, eps,
+                            xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 }
 

@@ -12,6 +12,6 @@ public class LinearViewOpRunner implements OpRunner {
 
     @Override
     public void runOp() {
-        Nd4j.create(1000000).reshape(2,num / 2).resetLinearView();
+        Nd4j.create(1000000).reshape(2, num / 2).resetLinearView();
     }
 }

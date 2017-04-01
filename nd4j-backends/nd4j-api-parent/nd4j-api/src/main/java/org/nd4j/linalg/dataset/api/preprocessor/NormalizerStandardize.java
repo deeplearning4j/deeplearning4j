@@ -3,9 +3,10 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +25,8 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
         fitLabel(false);
     }
 
-    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd, @NonNull INDArray labelMean,
-                                 @NonNull INDArray labelStd) {
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd,
+                    @NonNull INDArray labelMean, @NonNull INDArray labelStd) {
         this();
         setFeatureStats(new DistributionStats(featureMean, featureStd));
         setLabelStats(new DistributionStats(labelMean, labelStd));
@@ -61,7 +62,6 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
      *
      * @param files the files to load from. Needs 4 files if normalizing labels, otherwise 2.
      */
-    @Override
     public void load(File... files) throws IOException {
         setFeatureStats(DistributionStats.load(files[0], files[1]));
         if (isFitLabel()) {
@@ -71,11 +71,10 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
 
     /**
      * @param files the files to save to. Needs 4 files if normalizing labels, otherwise 2.
-     * @deprecated use {@link NormalizerStandardizeSerializer} instead
+     * @deprecated use {@link NormalizerSerializer} instead
      * <p>
      * Save the current means and standard deviations to the file system
      */
-    @Override
     public void save(File... files) throws IOException {
         getFeatureStats().save(files[0], files[1]);
         if (isFitLabel()) {
@@ -86,5 +85,10 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
     @Override
     protected NormalizerStats.Builder newBuilder() {
         return new DistributionStats.Builder();
+    }
+
+    @Override
+    public NormalizerType getType() {
+        return NormalizerType.STANDARDIZE;
     }
 }

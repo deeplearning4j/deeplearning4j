@@ -13,7 +13,7 @@ public class SumOpRunner implements OpRunner {
 
     @Override
     public void runOp() {
-       arr.sum(Integer.MAX_VALUE);
+        arr.sum(Integer.MAX_VALUE);
     }
 
 

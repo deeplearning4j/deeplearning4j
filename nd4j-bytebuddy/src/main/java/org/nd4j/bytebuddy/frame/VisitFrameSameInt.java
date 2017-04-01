@@ -10,7 +10,7 @@ import net.bytebuddy.jar.asm.Opcodes;
  */
 public class VisitFrameSameInt implements StackManipulation {
     private int nLocal = -1;
-    private  int nStack = -1;
+    private int nStack = -1;
 
     public VisitFrameSameInt(int nLocal, int nStack) {
         this.nLocal = nLocal;
@@ -25,17 +25,20 @@ public class VisitFrameSameInt implements StackManipulation {
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
         methodVisitor.visitFrame(Opcodes.F_SAME1, nLocal, null, nStack, new Object[] {Opcodes.INTEGER});
-        return new Size(0,0);
+        return new Size(0, 0);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         VisitFrameSameInt that = (VisitFrameSameInt) o;
 
-        if (nLocal != that.nLocal) return false;
+        if (nLocal != that.nLocal)
+            return false;
         return nStack == that.nStack;
 
     }

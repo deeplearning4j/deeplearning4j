@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,12 +20,10 @@
 package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.io.Resource;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.util.Paths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.io.ClassPathResource;
 
 /**
  *
@@ -40,7 +38,7 @@ public class JCublasBackend extends Nd4jBackend {
     public boolean isAvailable() {
         // execute SimpleJCublas static initializer to confirm that the library is usable
         try {
-            if(!canRun())
+            if (!canRun())
                 return false;
         } catch (Throwable e) {
             throw new RuntimeException(e);

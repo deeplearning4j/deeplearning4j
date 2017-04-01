@@ -2,7 +2,14 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -10,40 +17,112 @@ import java.util.Arrays;
 /**Utility functions for the DefaultOpExecutioner
  * @author Alex Black
  */
+@Slf4j
 public class OpExecutionerUtil {
 
-    private OpExecutionerUtil() {
-    }
+    private OpExecutionerUtil() {}
 
     /** Can we do the op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first?
      * In general, this is possible if the elements of X are contiguous in the buffer, OR if every element
      * of X is at position offset+i*elementWiseStride in the buffer
      * */
     public static boolean canDoOpDirectly(INDArray x) {
-        if(x.elementWiseStride() < 1)
+        if (x.elementWiseStride() < 1)
             return false;
-        if(x.isVector()) return true;
+        if (x.isVector())
+            return true;
 
         //For a single NDArray all we require is that the elements are contiguous in the buffer or every nth element
 
         //Full buffer -> implies all elements are contiguous (and match)
         long l1 = x.lengthLong();
         long dl1 = x.data().length();
-        if(l1 == dl1)
+        if (l1 == dl1)
             return true;
 
         //Strides are same as a zero offset NDArray -> all elements are contiguous (even if not offset 0)
         int[] shape1 = x.shape();
-        int[] stridesAsInit = (x.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+        int[] stridesAsInit =
+                        (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
         boolean stridesSameAsInit = Arrays.equals(x.stride(), stridesAsInit);
         return stridesSameAsInit;
     }
 
+    public static void checkForNaN(INDArray z){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        int match = 0;
+        if (!z.isScalar()) {
+            MatchCondition condition = new MatchCondition(z, Conditions.isNan());
+            match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        } else {
+            if (z.data().dataType() == DataBuffer.Type.DOUBLE) {
+                if (Double.isNaN(z.getDouble(0)))
+                    match = 1;
+            } else {
+                if (Float.isNaN(z.getFloat(0)))
+                    match = 1;
+            }
+        }
+
+        if (match > 0)
+            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s): ");
+    }
+
+    public static void checkForAny(INDArray z) {
+        checkForNaN(z);
+        checkForInf(z);
+    }
+
+    public static void checkForInf(INDArray z){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        int match = 0;
+        if (!z.isScalar()) {
+            MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
+            match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        } else {
+            if (z.data().dataType() == DataBuffer.Type.DOUBLE) {
+                if (Double.isInfinite(z.getDouble(0)))
+                    match = 1;
+            } else {
+                if (Float.isInfinite(z.getFloat(0)))
+                    match = 1;
+            }
+        }
+
+        if (match > 0)
+            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
+
+    }
+
+    public static void checkForNaN(Op op){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        if (op.z() != null && !(op instanceof MatchCondition)) {
+            checkForNaN(op.z());
+        }
+    }
+
+    public static void checkForInf(Op op){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        if (op.z() != null && !(op instanceof MatchCondition)) {
+            checkForInf(op.z());
+        }
+    }
+
     /** Can we do the transform op (X = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
-    public static boolean canDoOpDirectly(INDArray x, INDArray y){
-        if(x.isVector()) return true;
-        if(x.ordering() != y.ordering()) return false; //other than vectors, elements in f vs. c NDArrays will never line up
-        if(x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
+    public static boolean canDoOpDirectly(INDArray x, INDArray y) {
+        if (x.isVector())
+            return true;
+        if (x.ordering() != y.ordering())
+            return false; //other than vectors, elements in f vs. c NDArrays will never line up
+        if (x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
             return false;
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         //Need strides to match, otherwise elements in buffer won't line up (i.e., c vs. f order arrays)
@@ -54,13 +133,14 @@ public class OpExecutionerUtil {
         int[] strides1 = x.stride();
         int[] strides2 = y.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2);
-        if(l1 == dl1 && l2 == dl2 && equalStrides)
+        if (l1 == dl1 && l2 == dl2 && equalStrides)
             return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
-        if(equalStrides) {
+        if (equalStrides) {
             int[] shape1 = x.shape();
-            int[] stridesAsInit = (x.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+            int[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
+                            : ArrayUtil.calcStridesFortran(shape1));
             boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
             return stridesSameAsInit;
         }
@@ -69,10 +149,12 @@ public class OpExecutionerUtil {
     }
 
     /** Can we do the transform op (Z = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
-    public static boolean canDoOpDirectly(INDArray x, INDArray y, INDArray z){
-        if(x.isVector()) return true;
-        if(x.ordering() != y.ordering() || x.ordering() != z.ordering() ) return false; //other than vectors, elements in f vs. c NDArrays will never line up
-        if(x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
+    public static boolean canDoOpDirectly(INDArray x, INDArray y, INDArray z) {
+        if (x.isVector())
+            return true;
+        if (x.ordering() != y.ordering() || x.ordering() != z.ordering())
+            return false; //other than vectors, elements in f vs. c NDArrays will never line up
+        if (x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
             return false;
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         long l1 = x.lengthLong();
@@ -84,14 +166,15 @@ public class OpExecutionerUtil {
         int[] strides1 = x.stride();
         int[] strides2 = y.stride();
         int[] strides3 = z.stride();
-        boolean equalStrides = Arrays.equals(strides1, strides2) && Arrays.equals(strides1,strides3);
-        if(l1 == dl1 && l2 == dl2 && l3 == dl3 && equalStrides)
+        boolean equalStrides = Arrays.equals(strides1, strides2) && Arrays.equals(strides1, strides3);
+        if (l1 == dl1 && l2 == dl2 && l3 == dl3 && equalStrides)
             return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
-        if(equalStrides) {
+        if (equalStrides) {
             int[] shape1 = x.shape();
-            int[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+            int[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
+                            : ArrayUtil.calcStridesFortran(shape1));
             boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
             return stridesSameAsInit;
         }
@@ -114,8 +197,8 @@ public class OpExecutionerUtil {
      * @return The best dimension to split on
      */
     public static int chooseElementWiseTensorDimension(INDArray x) {
-        if(x.isVector())
-            return ArrayUtil.argMax(x.shape());    //Execute along the vector
+        if (x.isVector())
+            return ArrayUtil.argMax(x.shape()); //Execute along the vector
 
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -127,7 +210,7 @@ public class OpExecutionerUtil {
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
 
         //Edge cases: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if(x.isVector() || x.size(opAlongDimensionMinStride) == 1)
+        if (x.isVector() || x.size(opAlongDimensionMinStride) == 1)
             return opAlongDimensionMaxLength;
 
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
@@ -136,7 +219,7 @@ public class OpExecutionerUtil {
         //Might be able to do better than this with some additional thought
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
+        if (nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
             return opAlongDimensionMinStride;
         else
             return opAlongDimensionMaxLength;
@@ -148,8 +231,8 @@ public class OpExecutionerUtil {
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y) {
-        if(x.isVector())
-            return ArrayUtil.argMax(x.shape());    //Execute along the vector
+        if (x.isVector())
+            return ArrayUtil.argMax(x.shape()); //Execute along the vector
 
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -161,7 +244,7 @@ public class OpExecutionerUtil {
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
 
         //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if(opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride)==1)
+        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride) == 1)
             return opAlongDimensionMaxLength;
 
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
@@ -170,28 +253,32 @@ public class OpExecutionerUtil {
         //Might be able to do better than this with some additional thought
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
+        if (nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
             return opAlongDimensionMinStride;
-        else return opAlongDimensionMaxLength;
+        else
+            return opAlongDimensionMaxLength;
     }
 
     /**Choose tensor dimension for operations with 3 arguments: z=Op(x,y) or similar<br>
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
-    public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z){
-        if(x.isVector()) return ArrayUtil.argMax(x.shape());
+    public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z) {
+        if (x.isVector())
+            return ArrayUtil.argMax(x.shape());
 
-        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(),y.stride(),z.stride());
+        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(), y.stride(), z.stride());
 
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
         //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if(opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride)==1)
+        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride) == 1)
             return opAlongDimensionMaxLength;
 
         int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
-        if(nOpsAlongMinStride <= 10 * nOpsAlongMaxLength) return opAlongDimensionMinStride;
-        else return opAlongDimensionMaxLength;
+        if (nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
+            return opAlongDimensionMinStride;
+        else
+            return opAlongDimensionMaxLength;
     }
 
 
@@ -201,7 +288,7 @@ public class OpExecutionerUtil {
      * Note that this can only (generally) be used for 2d NDArrays. For certain 3+d NDArrays, the tensor starts may not
      * be in increasing order
      */
-    public static Tensor1DStats get1DTensorStats(INDArray array, int...dimension) {
+    public static Tensor1DStats get1DTensorStats(INDArray array, int... dimension) {
         int tensorLength = array.size(dimension[0]);
 
         //As per tensorssAlongDimension:
@@ -212,8 +299,8 @@ public class OpExecutionerUtil {
 
         //Next: Need to work out the separation between the start (first element) of each 1d tensor
         int tensorStartSeparation;
-        int elementWiseStride;  //Separation in buffer between elements in the tensor
-        if(numTensors == 1) {
+        int elementWiseStride; //Separation in buffer between elements in the tensor
+        if (numTensors == 1) {
             tensorStartSeparation = -1; //Not applicable
             elementWiseStride = array.elementWiseStride();
         } else {
@@ -222,8 +309,7 @@ public class OpExecutionerUtil {
             elementWiseStride = secondTensor.elementWiseStride();
         }
 
-        return new Tensor1DStats(firstTensorOffset,tensorStartSeparation,
-                numTensors,tensorLength,elementWiseStride);
+        return new Tensor1DStats(firstTensorOffset, tensorStartSeparation, numTensors, tensorLength, elementWiseStride);
     }
 
     /** Simple class containing values used for calculating various quantities related to 1d tensors.<br>

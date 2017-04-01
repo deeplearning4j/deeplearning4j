@@ -10,7 +10,7 @@ import org.nd4j.bytebuddy.method.reference.LoadReferenceParamImplementation;
 import org.nd4j.bytebuddy.returnref.ReturnAppender;
 import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Adam Gibson
@@ -18,26 +18,25 @@ import static org.junit.Assert.*;
 public class RelativeRetrieveTest {
     @Test
     public void testRetrieveFromArray() throws Exception {
-        DynamicType.Unloaded<RetrieveFromArray> arr = new ByteBuddy()
-                .subclass(RetrieveFromArray.class).method(ElementMatchers.isDeclaredBy(RetrieveFromArray.class))
-                .intercept(new Implementation.Compound(
-                        new LoadReferenceParamImplementation(1),
-                        new RelativeRetrieveArrayImplementation(1),
-                        new ReturnAppenderImplementation(ReturnAppender.ReturnType.INT)))
-                .make();
+        DynamicType.Unloaded<RetrieveFromArray> arr = new ByteBuddy().subclass(RetrieveFromArray.class)
+                        .method(ElementMatchers.isDeclaredBy(RetrieveFromArray.class))
+                        .intercept(new Implementation.Compound(new LoadReferenceParamImplementation(1),
+                                        new RelativeRetrieveArrayImplementation(1),
+                                        new ReturnAppenderImplementation(ReturnAppender.ReturnType.INT)))
+                        .make();
 
 
         Class<?> dynamicType = arr.load(RetrieveFromArray.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
+                        .getLoaded();
 
         RetrieveFromArray test = (RetrieveFromArray) dynamicType.newInstance();
-        int result = test.returnVal(0,1);
-        assertEquals(1,result);
+        int result = test.returnVal(0, 1);
+        assertEquals(1, result);
 
     }
 
     public interface RetrieveFromArray {
-        int returnVal(int...array);
+        int returnVal(int... array);
     }
 
 

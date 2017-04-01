@@ -3,7 +3,6 @@ package org.nd4j.parameterserver.updater;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
@@ -19,9 +18,10 @@ public class ParameterServerUpdaterTests {
     @Test
     public void synchronousTest() {
         int cores = Runtime.getRuntime().availableProcessors();
-        ParameterServerUpdater updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(Nd4j.zeros(2,2)),cores);
-        for(int i = 0; i < cores; i++) {
-            updater.update(NDArrayMessage.wholeArrayUpdate(Nd4j.ones(2,2)));
+        ParameterServerUpdater updater = new SynchronousParameterUpdater(new NoUpdateStorage(),
+                        new InMemoryNDArrayHolder(Nd4j.zeros(2, 2)), cores);
+        for (int i = 0; i < cores; i++) {
+            updater.update(NDArrayMessage.wholeArrayUpdate(Nd4j.ones(2, 2)));
         }
 
         assertTrue(updater.shouldReplicate());

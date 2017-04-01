@@ -19,13 +19,13 @@ public class Linspace extends BaseRandomOp {
     }
 
     public Linspace(double from, double to, int length) {
-        this(Nd4j.createUninitialized(new int[]{1,length}, Nd4j.order()), from, to);
+        this(Nd4j.createUninitialized(new int[] {1, length}, Nd4j.order()), from, to);
     }
 
     public Linspace(@NonNull INDArray z, double from, double to) {
         this.from = from;
         this.to = to;
-        init(null, null, z, z.length());
+        init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
     }
 

@@ -10,11 +10,11 @@ public class AbsValueLessThan extends BaseCondition {
     /**
      * Special constructor for pairwise boolean operations.
      */
-    public AbsValueLessThan(){
+    public AbsValueLessThan() {
         super(0.0);
     }
 
-    public AbsValueLessThan(Number value){
+    public AbsValueLessThan(Number value) {
         super(value);
     }
 

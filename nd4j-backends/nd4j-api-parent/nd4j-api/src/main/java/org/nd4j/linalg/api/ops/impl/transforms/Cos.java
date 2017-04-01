@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Cos extends BaseTransformOp {
-    public Cos() {
-    }
+    public Cos() {}
 
     public Cos(INDArray x, INDArray z) {
         super(x, z);
@@ -106,7 +105,8 @@ public class Cos extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Cos(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Cos(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Cos(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -117,7 +117,8 @@ public class Cos extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Cos(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Cos(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Cos(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

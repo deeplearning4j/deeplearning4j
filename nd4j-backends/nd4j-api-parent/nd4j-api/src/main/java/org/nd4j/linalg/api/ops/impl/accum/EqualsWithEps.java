@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,22 +32,21 @@ import org.nd4j.linalg.api.ops.Op;
 public class EqualsWithEps extends BaseAccumulation {
     private double eps;
 
-    public EqualsWithEps() {
-    }
+    public EqualsWithEps() {}
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, long n, double eps) {
         super(x, y, z, n);
-        this.extraArgs = new Object[]{eps};
+        this.extraArgs = new Object[] {eps};
     }
 
     public EqualsWithEps(INDArray x, INDArray y, long n, double eps) {
         super(x, y, n);
-        this.extraArgs = new Object[]{eps};
+        this.extraArgs = new Object[] {eps};
     }
 
     public EqualsWithEps(INDArray x, INDArray y, double eps) {
         super(x, y);
-        this.extraArgs = new Object[]{eps};
+        this.extraArgs = new Object[] {eps};
     }
 
     @Override
@@ -64,7 +63,8 @@ public class EqualsWithEps extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new EqualsWithEps(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new EqualsWithEps(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
     }
@@ -73,7 +73,8 @@ public class EqualsWithEps extends BaseAccumulation {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new EqualsWithEps(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new EqualsWithEps(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             throw new UnsupportedOperationException("This Op is suited only as comparison for two arrays");
     }
@@ -119,42 +120,42 @@ public class EqualsWithEps extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         throw new UnsupportedOperationException();
     }
 
@@ -164,17 +165,17 @@ public class EqualsWithEps extends BaseAccumulation {
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public float combineSubResults(float first, float second){
+    public float combineSubResults(float first, float second) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         throw new UnsupportedOperationException();
     }
 }

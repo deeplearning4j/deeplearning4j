@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Max extends BaseTransformOp {
-    public Max() {
-    }
+    public Max() {}
 
     public Max(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -110,7 +109,8 @@ public class Max extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Max(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Max(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -121,7 +121,8 @@ public class Max extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Max(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Max(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Max(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

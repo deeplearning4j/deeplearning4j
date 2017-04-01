@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -55,7 +55,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, 4);
     }
 
-    public CudaFloatDataBuffer(long length, boolean initialize){
+    public CudaFloatDataBuffer(long length, boolean initialize) {
         super(length, 4, initialize);
     }
 
@@ -134,10 +134,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-         /*   long offset = indices[0];
+            /*   long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
             */
@@ -152,7 +153,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             /*long offset = indices[0];
@@ -193,7 +195,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         float[] data = asFloat();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        for(int i = 0; i < data.length; i++)
+        for (int i = 0; i < data.length; i++)
             try {
                 dos.writeFloat(data[i]);
             } catch (IOException e) {

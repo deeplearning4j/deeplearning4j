@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.rng.distribution.impl;
 
-import java.util.Iterator;
-
 import org.apache.commons.math3.exception.NotPositiveException;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
@@ -33,6 +31,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Iterator;
 
 /**
  * Base distribution derived from apache commons math
@@ -77,14 +77,11 @@ public class BinomialDistribution extends BaseDistribution {
      * @throws org.apache.commons.math3.exception.OutOfRangeException  if {@code p < 0} or {@code p > 1}.
      * @since 3.1
      */
-    public BinomialDistribution(Random rng,
-                                int trials,
-                                double p) {
+    public BinomialDistribution(Random rng, int trials, double p) {
         super(rng);
 
         if (trials < 0) {
-            throw new NotPositiveException(LocalizedFormats.NUMBER_OF_TRIALS,
-                    trials);
+            throw new NotPositiveException(LocalizedFormats.NUMBER_OF_TRIALS, trials);
         }
         if (p < 0 || p > 1) {
             throw new OutOfRangeException(p, 0, 1);
@@ -127,9 +124,8 @@ public class BinomialDistribution extends BaseDistribution {
         if (x < 0 || x > numberOfTrials) {
             ret = 0.0;
         } else {
-            ret = FastMath.exp(SaddlePointExpansion.logBinomialProbability(x,
-                    numberOfTrials, probabilityOfSuccess,
-                    1.0 - probabilityOfSuccess));
+            ret = FastMath.exp(SaddlePointExpansion.logBinomialProbability(x, numberOfTrials, probabilityOfSuccess,
+                            1.0 - probabilityOfSuccess));
         }
         return ret;
     }
@@ -145,8 +141,7 @@ public class BinomialDistribution extends BaseDistribution {
         } else if (x >= numberOfTrials) {
             ret = 1.0;
         } else {
-            ret = 1.0 - Beta.regularizedBeta(probabilityOfSuccess,
-                    x + 1.0, numberOfTrials - x);
+            ret = 1.0 - Beta.regularizedBeta(probabilityOfSuccess, x + 1.0, numberOfTrials - x);
         }
         return ret;
     }
@@ -257,22 +252,34 @@ public class BinomialDistribution extends BaseDistribution {
     public INDArray sample(int[] shape) {
         if (random.getStatePointer() != null) {
             if (p != null) {
-                return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, p), random);
+                return Nd4j.getExecutioner()
+                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistributionEx(
+                                                Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, p),
+                                                random);
             } else {
-                return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, probabilityOfSuccess), random);
+                return Nd4j.getExecutioner()
+                                .exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistributionEx(
+                                                Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials,
+                                                probabilityOfSuccess), random);
             }
         } else {
             INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
-            Iterator<int[]> idxIter = new NdIndexIterator(shape);    //For consistent values irrespective of c vs. fortran ordering
+            Iterator<int[]> idxIter = new NdIndexIterator(shape); //For consistent values irrespective of c vs. fortran ordering
             int len = ret.length();
             if (p != null) {
                 for (int i = 0; i < len; i++) {
                     int[] idx = idxIter.next();
-                    org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, p.getDouble(idx));
+                    org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution =
+                                    new org.apache.commons.math3.distribution.BinomialDistribution(
+                                                    (RandomGenerator) Nd4j.getRandom(), numberOfTrials,
+                                                    p.getDouble(idx));
                     ret.putScalar(idx, binomialDistribution.sample());
                 }
             } else {
-                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, probabilityOfSuccess);
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution =
+                                new org.apache.commons.math3.distribution.BinomialDistribution(
+                                                (RandomGenerator) Nd4j.getRandom(), numberOfTrials,
+                                                probabilityOfSuccess);
                 for (int i = 0; i < len; i++) {
                     ret.putScalar(idxIter.next(), binomialDistribution.sample());
                 }

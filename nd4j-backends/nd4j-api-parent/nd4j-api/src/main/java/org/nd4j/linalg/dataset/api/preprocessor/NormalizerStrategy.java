@@ -10,7 +10,7 @@ import java.io.Serializable;
  *
  * @author Ede Meijer
  */
-interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
+public interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
     /**
      * Normalize a data array
      *
@@ -26,4 +26,12 @@ interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
      * @param stats statistics of the data population
      */
     void revert(INDArray array, INDArray maskArray, S stats);
+
+    /**
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * belongs to the current NormalizerStrategy implementation
+     * 
+     * @return the new builder
+     */
+    S.Builder newStatsBuilder();
 }

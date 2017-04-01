@@ -4,7 +4,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.benchmark.api.OpRunner;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.fft.FFT;
 
 /**
  * @author Adam Gibson
@@ -15,6 +14,6 @@ public class ConvolutionOpRunner implements OpRunner {
 
     @Override
     public void runOp() {
-        Convolution.conv2d(arr,arr, Convolution.Type.FULL);
+        Convolution.conv2d(arr, arr, Convolution.Type.FULL);
     }
 }

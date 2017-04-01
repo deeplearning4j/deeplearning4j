@@ -13,8 +13,7 @@ import static org.agrona.concurrent.UnsafeBuffer.DISABLE_BOUNDS_CHECKS_PROP_NAME
  */
 public class LowLatencyMediaDriver {
 
-    private LowLatencyMediaDriver() {
-    }
+    private LowLatencyMediaDriver() {}
 
     @SuppressWarnings("checkstyle:UncommentedMain")
     public static void main(final String... args) {
@@ -26,13 +25,11 @@ public class LowLatencyMediaDriver {
         setProperty("aeron.socket.so_rcvbuf", "2097152");
         setProperty("aeron.rcv.initial.window.length", "2097152");
 
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .dirsDeleteOnStart(true)
-                .termBufferSparseFile(false)
-                .conductorIdleStrategy(new BusySpinIdleStrategy())
-                .receiverIdleStrategy(new BusySpinIdleStrategy())
-                .senderIdleStrategy(new BusySpinIdleStrategy());
+        final MediaDriver.Context ctx =
+                        new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED).dirsDeleteOnStart(true)
+                                        .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
+                                        .receiverIdleStrategy(new BusySpinIdleStrategy())
+                                        .senderIdleStrategy(new BusySpinIdleStrategy());
 
         try (MediaDriver ignored = MediaDriver.launch(ctx)) {
             new SigIntBarrier().await();

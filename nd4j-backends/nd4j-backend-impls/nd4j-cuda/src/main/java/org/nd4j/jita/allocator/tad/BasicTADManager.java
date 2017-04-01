@@ -32,8 +32,8 @@ public class BasicTADManager implements TADManager {
 
             int dimensionLength = dimension.length;
 
-
-            int targetRank = dimensionLength <= 1 ? 2 : dimensionLength;
+            // FIXME: this is fast triage, remove it later
+            int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
             int offsetLength = 0;
             int tadLength = 1;
             for (int i = 0; i < dimensionLength; i++) {
@@ -42,8 +42,8 @@ public class BasicTADManager implements TADManager {
 
             offsetLength = array.length() / tadLength;
 
-       //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
-        //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
+            //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
+            //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
             DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);
@@ -55,12 +55,13 @@ public class BasicTADManager implements TADManager {
             Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
             Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
 
-            nativeOps.tadOnlyShapeInfo((IntPointer)xShapeInfo, (IntPointer)dimensionPointer, dimensionLength, (IntPointer)targetPointer, (IntPointer)offsetsPointer);
+            nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimensionLength,
+                            (IntPointer) targetPointer, (IntPointer) offsetsPointer);
 
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
             AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
 
-        //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+            //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
             // now we need to copy this buffer to either device global memory or device cache
 
             return new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);

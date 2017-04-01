@@ -30,14 +30,13 @@ public class IntArrayCreationTest {
 
     @Test
     public void testCreateArrayOfLength2() throws Exception {
-        Class<?> dynamicType = new ByteBuddy()
-                .subclass(CreateArray.class).method(ElementMatchers.isDeclaredBy(CreateArray.class))
-                .intercept(new IntArrayCreation(5)).make()
-                .load(CreateArray.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
+        Class<?> dynamicType = new ByteBuddy().subclass(CreateArray.class)
+                        .method(ElementMatchers.isDeclaredBy(CreateArray.class)).intercept(new IntArrayCreation(5))
+                        .make().load(CreateArray.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                        .getLoaded();
         CreateArray addition = (CreateArray) dynamicType.newInstance();
         int[] arr2 = addition.create();
-        assertEquals(5,arr2.length);
+        assertEquals(5, arr2.length);
     }
 
     public interface CreateArray {

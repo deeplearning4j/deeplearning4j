@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Floor extends BaseTransformOp {
 
-    public Floor() {
-    }
+    public Floor() {}
 
     public Floor(INDArray x, INDArray z) {
         super(x, z);
@@ -107,7 +106,8 @@ public class Floor extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Floor(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Floor(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Floor(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
@@ -118,7 +118,8 @@ public class Floor extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Floor(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Floor(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Floor(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 

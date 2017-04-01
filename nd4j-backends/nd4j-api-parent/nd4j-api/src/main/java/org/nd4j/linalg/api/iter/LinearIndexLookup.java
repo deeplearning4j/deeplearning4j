@@ -21,7 +21,7 @@ public class LinearIndexLookup implements Serializable {
      * @param shape the shape of the linear index
      * @param ordering the ordering of the linear index
      */
-    public LinearIndexLookup(int[] shape,char ordering) {
+    public LinearIndexLookup(int[] shape, char ordering) {
         this.shape = shape;
         this.ordering = ordering;
         numIndexes = ArrayUtil.prod(shape);
@@ -36,12 +36,12 @@ public class LinearIndexLookup implements Serializable {
      * @return the sub for the given index
      */
     public int[] lookup(int index) {
-        if(exists[index]) {
+        if (exists[index]) {
             return indexes[index];
-        }
-        else {
+        } else {
             exists[index] = true;
-            indexes[index] = ordering == 'c' ? Shape.ind2subC(shape,index,numIndexes) : Shape.ind2sub(shape,index,numIndexes);
+            indexes[index] = ordering == 'c' ? Shape.ind2subC(shape, index, numIndexes)
+                            : Shape.ind2sub(shape, index, numIndexes);
             return indexes[index];
         }
     }

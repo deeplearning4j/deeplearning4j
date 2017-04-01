@@ -1,6 +1,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -19,15 +20,16 @@ import java.nio.file.Paths;
  * Created by susaneraly on 6/18/16.
  */
 @RunWith(Parameterized.class)
-public class TestJSON extends BaseNd4jTest{
+public class TestJSON extends BaseNd4jTest {
     public TestJSON(Nd4jBackend backend) {
         super(backend);
     }
 
     @Test
+    @Ignore
     public void TestReadWrite() {
-        INDArray origArr = Nd4j.rand('c',10,10).muli(100); //since we write only two decimal points..
-        NdArrayJSONWriter.write(origArr,"someArr.json");
+        INDArray origArr = Nd4j.rand('c', 10, 10).muli(100); //since we write only two decimal points..
+        NdArrayJSONWriter.write(origArr, "someArr.json");
 
         NdArrayJSONReader jsonReader = new NdArrayJSONReader();
         INDArray readBack = jsonReader.read(new File("someArr.json"));
@@ -38,15 +40,15 @@ public class TestJSON extends BaseNd4jTest{
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
             Files.delete(Paths.get("someArr.json"));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     @Test
     public void TestReadWriteSimple() {
-        INDArray origArr = Nd4j.rand(1,1).muli(100); //since we write only two decimal points..
-        NdArrayJSONWriter.write(origArr,"someArr.json");
+        INDArray origArr = Nd4j.rand(1, 1).muli(100); //since we write only two decimal points..
+        NdArrayJSONWriter.write(origArr, "someArr.json");
 
         NdArrayJSONReader jsonReader = new NdArrayJSONReader();
         INDArray readBack = jsonReader.read(new File("someArr.json"));
@@ -57,15 +59,15 @@ public class TestJSON extends BaseNd4jTest{
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
             Files.delete(Paths.get("someArr.json"));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
     @Test
     public void TestReadWriteNd() {
-        INDArray origArr = Nd4j.rand(13,2,11,3,7,19).muli(100); //since we write only two decimal points..
-        NdArrayJSONWriter.write(origArr,"someArr.json");
+        INDArray origArr = Nd4j.rand(13, 2, 11, 3, 7, 19).muli(100); //since we write only two decimal points..
+        NdArrayJSONWriter.write(origArr, "someArr.json");
 
         NdArrayJSONReader jsonReader = new NdArrayJSONReader();
         INDArray readBack = jsonReader.read(new File("someArr.json"));
@@ -76,16 +78,15 @@ public class TestJSON extends BaseNd4jTest{
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
             Files.delete(Paths.get("someArr.json"));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     @Test
     public void TestWierdShape() {
-        INDArray origArr = Nd4j.rand(1,1,2,1,1).muli(100); //since we write only two decimal points..
-        NdArrayJSONWriter.write(origArr,"someArr.json");
+        INDArray origArr = Nd4j.rand(1, 1, 2, 1, 1).muli(100); //since we write only two decimal points..
+        NdArrayJSONWriter.write(origArr, "someArr.json");
 
         NdArrayJSONReader jsonReader = new NdArrayJSONReader();
         INDArray readBack = jsonReader.read(new File("someArr.json"));
@@ -96,8 +97,7 @@ public class TestJSON extends BaseNd4jTest{
         Assert.isTrue(Transforms.abs(origArr.subi(readBack)).maxNumber().doubleValue() < 0.09);
         try {
             Files.delete(Paths.get("someArr.json"));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

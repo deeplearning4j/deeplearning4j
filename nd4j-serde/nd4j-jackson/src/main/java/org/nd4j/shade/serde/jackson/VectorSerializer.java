@@ -1,12 +1,12 @@
 package org.nd4j.shade.serde.jackson;
 
 
-import org.nd4j.shade.jackson.core.JsonGenerator;
-import org.nd4j.shade.jackson.databind.JsonSerializer;
-import org.nd4j.shade.jackson.databind.SerializerProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.core.JsonGenerator;
+import org.nd4j.shade.jackson.databind.JsonSerializer;
+import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
@@ -15,26 +15,27 @@ import java.io.IOException;
  */
 public class VectorSerializer extends JsonSerializer<INDArray> {
     @Override
-    public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                    throws IOException {
         if (indArray.isView())
             indArray = indArray.dup(indArray.ordering());
         jsonGenerator.writeStartObject();
         DataBuffer view = indArray.data();
         jsonGenerator.writeArrayFieldStart("dataBuffer");
-        for(int i = 0; i < view.length(); i++) {
+        for (int i = 0; i < view.length(); i++) {
             jsonGenerator.writeNumber(view.getDouble(i));
         }
 
         jsonGenerator.writeEndArray();
 
         jsonGenerator.writeArrayFieldStart("shapeField");
-        for(int i = 0; i < indArray.rank(); i++) {
+        for (int i = 0; i < indArray.rank(); i++) {
             jsonGenerator.writeNumber(indArray.size(i));
         }
         jsonGenerator.writeEndArray();
 
         jsonGenerator.writeArrayFieldStart("strideField");
-        for(int i = 0; i < indArray.rank(); i++)
+        for (int i = 0; i < indArray.rank(); i++)
             jsonGenerator.writeNumber(indArray.stride(i));
         jsonGenerator.writeEndArray();
 

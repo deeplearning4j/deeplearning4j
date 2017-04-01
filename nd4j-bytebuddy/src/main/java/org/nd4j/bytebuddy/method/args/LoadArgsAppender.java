@@ -22,8 +22,13 @@ public class LoadArgsAppender implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        StackManipulation.Size size = loadThis ? MethodVariableAccess.loadThisReferenceAndArguments(instrumentedMethod).apply(methodVisitor, implementationContext) : MethodVariableAccess.loadArguments(instrumentedMethod).apply(methodVisitor, implementationContext);
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
+        StackManipulation.Size size = loadThis
+                        ? MethodVariableAccess.loadThisReferenceAndArguments(instrumentedMethod).apply(methodVisitor,
+                                        implementationContext)
+                        : MethodVariableAccess.loadArguments(instrumentedMethod).apply(methodVisitor,
+                                        implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

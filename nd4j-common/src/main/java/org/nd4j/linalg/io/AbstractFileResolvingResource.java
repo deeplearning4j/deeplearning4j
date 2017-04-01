@@ -10,52 +10,57 @@ import java.net.URLConnection;
 
 
 public abstract class AbstractFileResolvingResource extends AbstractResource {
-    public AbstractFileResolvingResource() {
-    }
+    public AbstractFileResolvingResource() {}
 
     public File getFile() throws IOException {
         URL url = this.getURL();
-        return url.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(url).getFile():ResourceUtils.getFile(url, this.getDescription());
+        return url.getProtocol().startsWith("vfs")
+                        ? AbstractFileResolvingResource.VfsResourceDelegate.getResource(url).getFile()
+                        : ResourceUtils.getFile(url, this.getDescription());
     }
 
     protected File getFileForLastModifiedCheck() throws IOException {
         URL url = this.getURL();
-        if(ResourceUtils.isJarURL(url)) {
+        if (ResourceUtils.isJarURL(url)) {
             URL actualUrl = ResourceUtils.extractJarFileURL(url);
-            return actualUrl.getProtocol().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(actualUrl).getFile():ResourceUtils.getFile(actualUrl, "Jar URL");
+            return actualUrl.getProtocol().startsWith("vfs")
+                            ? AbstractFileResolvingResource.VfsResourceDelegate.getResource(actualUrl).getFile()
+                            : ResourceUtils.getFile(actualUrl, "Jar URL");
         } else {
             return this.getFile();
         }
     }
 
     protected File getFile(URI uri) throws IOException {
-        return uri.getScheme().startsWith("vfs")?AbstractFileResolvingResource.VfsResourceDelegate.getResource(uri).getFile():ResourceUtils.getFile(uri, this.getDescription());
+        return uri.getScheme().startsWith("vfs")
+                        ? AbstractFileResolvingResource.VfsResourceDelegate.getResource(uri).getFile()
+                        : ResourceUtils.getFile(uri, this.getDescription());
     }
 
     public boolean exists() {
         try {
             URL ex = this.getURL();
-            if(ResourceUtils.isFileURL(ex)) {
+            if (ResourceUtils.isFileURL(ex)) {
                 return this.getFile().exists();
             } else {
                 URLConnection con = ex.openConnection();
                 ResourceUtils.useCachesIfNecessary(con);
-                HttpURLConnection httpCon = con instanceof HttpURLConnection?(HttpURLConnection)con:null;
-                if(httpCon != null) {
+                HttpURLConnection httpCon = con instanceof HttpURLConnection ? (HttpURLConnection) con : null;
+                if (httpCon != null) {
                     httpCon.setRequestMethod("HEAD");
                     int is = httpCon.getResponseCode();
-                    if(is == 200) {
+                    if (is == 200) {
                         return true;
                     }
 
-                    if(is == 404) {
+                    if (is == 404) {
                         return false;
                     }
                 }
 
-                if(con.getContentLength() >= 0) {
+                if (con.getContentLength() >= 0) {
                     return true;
-                } else if(httpCon != null) {
+                } else if (httpCon != null) {
                     httpCon.disconnect();
                     return false;
                 } else {
@@ -72,7 +77,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
     public boolean isReadable() {
         try {
             URL ex = this.getURL();
-            if(!ResourceUtils.isFileURL(ex)) {
+            if (!ResourceUtils.isFileURL(ex)) {
                 return true;
             } else {
                 File file = this.getFile();
@@ -85,26 +90,26 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
 
     public long contentLength() throws IOException {
         URL url = this.getURL();
-        if(ResourceUtils.isFileURL(url)) {
+        if (ResourceUtils.isFileURL(url)) {
             return this.getFile().length();
         } else {
             URLConnection con = url.openConnection();
             ResourceUtils.useCachesIfNecessary(con);
-            if(con instanceof HttpURLConnection) {
-                ((HttpURLConnection)con).setRequestMethod("HEAD");
+            if (con instanceof HttpURLConnection) {
+                ((HttpURLConnection) con).setRequestMethod("HEAD");
             }
 
-            return (long)con.getContentLength();
+            return (long) con.getContentLength();
         }
     }
 
     public long lastModified() throws IOException {
         URL url = this.getURL();
-        if(!ResourceUtils.isFileURL(url) && !ResourceUtils.isJarURL(url)) {
+        if (!ResourceUtils.isFileURL(url) && !ResourceUtils.isJarURL(url)) {
             URLConnection con = url.openConnection();
             ResourceUtils.useCachesIfNecessary(con);
-            if(con instanceof HttpURLConnection) {
-                ((HttpURLConnection)con).setRequestMethod("HEAD");
+            if (con instanceof HttpURLConnection) {
+                ((HttpURLConnection) con).setRequestMethod("HEAD");
             }
 
             return con.getLastModified();
@@ -114,8 +119,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
     }
 
     private static class VfsResourceDelegate {
-        private VfsResourceDelegate() {
-        }
+        private VfsResourceDelegate() {}
 
         public static Resource getResource(URL url) throws IOException {
             return new VfsResource(VfsUtils.getRoot(url));

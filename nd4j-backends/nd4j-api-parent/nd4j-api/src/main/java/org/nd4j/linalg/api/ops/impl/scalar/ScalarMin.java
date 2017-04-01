@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class ScalarMin extends BaseScalarOp {
-    public ScalarMin() {
-    }
+    public ScalarMin() {}
 
     public ScalarMin(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -59,55 +58,55 @@ public class ScalarMin extends BaseScalarOp {
 
     @Override
     public String name() {
-        return "max_scalar";
+        return "min_scalar";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
 
     @Override
     public float op(float origin, float other) {
-        return FastMath.max(origin, num.floatValue());
+        return FastMath.min(origin, num.floatValue());
     }
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.max(origin, num.doubleValue());
+        return FastMath.min(origin, num.doubleValue());
     }
 
     @Override
     public double op(double origin) {
-        return FastMath.max(origin, num.doubleValue());
+        return FastMath.min(origin, num.doubleValue());
 
     }
 
     @Override
     public float op(float origin) {
-        return FastMath.max(origin, num.floatValue());
+        return FastMath.min(origin, num.floatValue());
 
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if (origin.absoluteValue().doubleValue() > complexNumber.absoluteValue().doubleValue())
+        if (origin.absoluteValue().doubleValue() < complexNumber.absoluteValue().doubleValue())
             return origin;
         return complexNumber;
     }
@@ -132,9 +131,9 @@ public class ScalarMin extends BaseScalarOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (num != null)
-            this.extraArgs = new Object[]{num};
+            this.extraArgs = new Object[] {num};
         else
-            this.extraArgs = new Object[]{complexNumber};
+            this.extraArgs = new Object[] {complexNumber};
 
     }
 }

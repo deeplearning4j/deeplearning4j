@@ -13,7 +13,7 @@ public class GaussianDistribution extends BaseRandomOp {
     private double mean;
     private double stddev;
 
-    public GaussianDistribution(){
+    public GaussianDistribution() {
         super();
     }
 
@@ -24,24 +24,24 @@ public class GaussianDistribution extends BaseRandomOp {
      * @param stddev
      */
     public GaussianDistribution(@NonNull INDArray z, double mean, double stddev) {
-        init(z, z, z, z.length());
+        init(z, z, z, z.lengthLong());
         this.mean = mean;
         this.stddev = stddev;
-        this.extraArgs = new Object[]{this.mean, this.stddev};
+        this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
 
     public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
-        if (z.length() != means.length())
+        if (z.lengthLong() != means.lengthLong())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
         if (means.elementWiseStride() < 1)
             throw new IllegalStateException("Means array can't have negative EWS");
 
-        init(z, means, z, z.length());
+        init(z, means, z, z.lengthLong());
         this.mean = 0.0;
         this.stddev = stddev;
-        this.extraArgs = new Object[]{this.mean, this.stddev};
+        this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
     /**

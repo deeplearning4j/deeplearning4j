@@ -1,9 +1,7 @@
 package org.nd4j.jita.concurrency;
 
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
@@ -36,14 +34,15 @@ public class EventsProvider {
             e = new cudaEvent_t(NativeOpsHolder.getInstance().getDeviceNativeOps().createEvent());
             e.setDeviceId(deviceId);
             newCounter.incrementAndGet();
-        } else cacheCounter.incrementAndGet();
+        } else
+            cacheCounter.incrementAndGet();
 
         return e;
     }
 
     public void storeEvent(cudaEvent_t event) {
         if (event != null)
-//            NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(event);
+            //            NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(event);
             queue.get(event.getDeviceId()).add(event);
     }
 

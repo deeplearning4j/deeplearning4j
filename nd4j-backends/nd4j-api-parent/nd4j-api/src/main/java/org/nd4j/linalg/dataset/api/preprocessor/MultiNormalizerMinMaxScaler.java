@@ -1,6 +1,7 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 
@@ -26,11 +27,11 @@ public class MultiNormalizerMinMaxScaler extends AbstractMultiDataSetNormalizer<
     }
 
     public double getTargetMin() {
-        return ((MinMaxStrategy)strategy).getMinRange();
+        return ((MinMaxStrategy) strategy).getMinRange();
     }
 
     public double getTargetMax() {
-        return ((MinMaxStrategy)strategy).getMaxRange();
+        return ((MinMaxStrategy) strategy).getMaxRange();
     }
 
     @Override
@@ -52,5 +53,10 @@ public class MultiNormalizerMinMaxScaler extends AbstractMultiDataSetNormalizer<
 
     public INDArray getLabelMax(int output) {
         return getLabelStats(output).getUpper();
+    }
+
+    @Override
+    public NormalizerType getType() {
+        return NormalizerType.MULTI_MIN_MAX;
     }
 }

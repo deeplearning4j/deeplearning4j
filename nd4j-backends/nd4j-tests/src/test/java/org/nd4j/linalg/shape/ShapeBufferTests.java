@@ -10,12 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+import java.nio.IntBuffer;
 
 import static org.junit.Assert.*;
-
-
-import java.nio.IntBuffer;
 
 /**
  * Created by agibsoncccc on 1/30/16.
@@ -34,23 +31,23 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testRank() {
-        int[] shape = {2,4};
-        int[] stride = {1,2};
+        int[] shape = {2, 4};
+        int[] stride = {1, 2};
         IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
         int rank = 2;
-        assertEquals(rank,Shape.rank(buff));
+        assertEquals(rank, Shape.rank(buff));
 
     }
 
 
     @Test
     public void testArrCreationShape() {
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
-        for(int i = 0; i < 2; i++)
-            assertEquals(2,arr.size(i));
-        int[] stride = ArrayUtil.calcStrides(new int[]{2, 2});
-        for(int i = 0; i < stride.length; i++) {
-            assertEquals(stride[i],arr.stride(i));
+        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        for (int i = 0; i < 2; i++)
+            assertEquals(2, arr.size(i));
+        int[] stride = ArrayUtil.calcStrides(new int[] {2, 2});
+        for (int i = 0; i < stride.length; i++) {
+            assertEquals(stride[i], arr.stride(i));
         }
     }
 
@@ -66,13 +63,13 @@ public class ShapeBufferTests extends BaseNd4jTest {
         assertEquals('c', Shape.order(buff));
         assertEquals(1, Shape.elementWiseStride(buff));
         assertFalse(Shape.isVector(buff));
-        assertTrue(Shape.contentEquals(shape,Shape.shapeOf(buff)));
-        assertTrue(Shape.contentEquals(stride,Shape.stride(buff)));
+        assertTrue(Shape.contentEquals(shape, Shape.shapeOf(buff)));
+        assertTrue(Shape.contentEquals(stride, Shape.stride(buff)));
     }
 
     @Test
     public void testBuff() {
-        int[] shape = {1,2};
+        int[] shape = {1, 2};
         int[] stride = {1, 2};
         IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
         assertTrue(Shape.isVector(buff));

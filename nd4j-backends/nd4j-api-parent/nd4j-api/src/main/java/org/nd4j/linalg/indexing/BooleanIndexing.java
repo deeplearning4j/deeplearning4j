@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
+import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
@@ -32,7 +34,6 @@ import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -155,7 +156,7 @@ public class BooleanIndexing {
         boolean[] result = new boolean[arr.length()];
 
         for (int i = 0; i < arr.length(); i++) {
-            if (arr.getDouble(i) > 0 )
+            if (arr.getDouble(i) > 0)
                 result[i] = true;
             else
                 result[i] = false;
@@ -203,17 +204,18 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-          // keep original java implementation for dynamic
+    public static void applyWhere(final INDArray to, final Condition condition,
+                    final Function<Number, Number> function) {
+        // keep original java implementation for dynamic
 
-            Shape.iterate(to, new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    if (condition.apply(to.getDouble(coord[0])))
-                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
+        Shape.iterate(to, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                if (condition.apply(to.getDouble(coord[0])))
+                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
 
-                }
-            });
+            }
+        });
     }
 
     /**
@@ -232,7 +234,7 @@ public class BooleanIndexing {
         } else {
             final double value = number.doubleValue();
 
-            final Function<Number,Number> dynamic = new Function<Number, Number>() {
+            final Function<Number, Number> dynamic = new Function<Number, Number>() {
                 @Override
                 public Number apply(Number number) {
                     return value;
@@ -275,7 +277,7 @@ public class BooleanIndexing {
      * @param from
      * @param condition
      */
-    public static void replaceWhere(@NonNull INDArray to,@NonNull INDArray from, @NonNull Condition condition) {
+    public static void replaceWhere(@NonNull INDArray to, @NonNull INDArray from, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -293,7 +295,7 @@ public class BooleanIndexing {
      * @param set
      * @param condition
      */
-    public static void replaceWhere(@NonNull INDArray to,@NonNull Number set, @NonNull Condition condition) {
+    public static void replaceWhere(@NonNull INDArray to, @NonNull Number set, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -308,7 +310,8 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,final Function<Number, Number> alternativeFunction) {
+    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,
+                    final Function<Number, Number> alternativeFunction) {
         Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
@@ -330,7 +333,8 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(IComplexNDArray to, Condition condition, Function<IComplexNumber, IComplexNumber> function) {
+    public static void applyWhere(IComplexNDArray to, Condition condition,
+                    Function<IComplexNumber, IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();
         for (int i = 0; i < linear.linearView().length(); i++) {
             if (condition.apply(linear.getDouble(i))) {
@@ -339,5 +343,74 @@ public class BooleanIndexing {
         }
     }
 
+    /**
+     * This method returns first index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
+    public static INDArray firstIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
 
+        FirstIndex idx = new FirstIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
+
+    /**
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray firstIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        return Nd4j.getExecutioner().exec(new FirstIndex(array, condition), dimension);
+    }
+
+
+    /**
+     * This method returns last index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
+    public static INDArray lastIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        LastIndex idx = new LastIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
+
+    /**
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray lastIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        return Nd4j.getExecutioner().exec(new LastIndex(array, condition), dimension);
+    }
 }

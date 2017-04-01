@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -51,7 +51,8 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testHardTanhDerivative() {
-        assertTrue(Nd4j.getOpFactory().createTransform("hardtanh", Nd4j.ones(1)).derivative() instanceof HardTanhDerivative);
+        assertTrue(Nd4j.getOpFactory().createTransform("hardtanh", Nd4j.ones(1))
+                        .derivative() instanceof HardTanhDerivative);
 
         //HardTanh:
         //f(x) = 1 if x > 1
@@ -70,7 +71,8 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = (Math.abs(x) <= 1.0 ? 1 : 0);
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("hardtanh", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("hardtanh", z).derivative());
 
         for (int i = 0; i < 100; i++) {
             assertEquals(expOut[i], zPrime.getDouble(i), 1e-1);
@@ -96,7 +98,8 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = (x > 0 ? 1 : 0);
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
 
         for (int i = 0; i < 100; i++) {
             assertTrue(expOut[i] == zPrime.getDouble(i));
@@ -105,7 +108,8 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testSigmoidDerivative() {
-        assertTrue(Nd4j.getOpFactory().createTransform("sigmoid", Nd4j.ones(1)).derivative() instanceof SigmoidDerivative);
+        assertTrue(Nd4j.getOpFactory().createTransform("sigmoid", Nd4j.ones(1))
+                        .derivative() instanceof SigmoidDerivative);
 
         //Derivative of sigmoid: ds(x)/dx = s(x)*(1-s(x))
         //s(x) = 1 / (exp(-x) + 1)
@@ -118,24 +122,27 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = sigmoid * (1 - sigmoid);
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
             assertTrue(relError < REL_ERROR_TOLERANCE);
         }
     }
 
 
     @Test
-    public void testHardSigmoidDerivative(){
-        assertTrue(Nd4j.getOpFactory().createTransform("hardsigmoid", Nd4j.ones(1)).derivative() instanceof HardSigmoidDerivative);
+    public void testHardSigmoidDerivative() {
+        assertTrue(Nd4j.getOpFactory().createTransform("hardsigmoid", Nd4j.ones(1))
+                        .derivative() instanceof HardSigmoidDerivative);
 
         /*
         f(x) = min(1, max(0, 0.2*x + 0.5))
         or equivalently: clip 0.2*x+0.5 to range 0 to 1
         where clipping bounds are -2.5 and 2.5
-
+        
         Hard sigmoid derivative:
         f'(x) =
         0 if x < -2.5 or x > 2.5
@@ -144,35 +151,43 @@ public class DerivativeTests extends BaseNd4jTest {
 
         double[] expHSOut = new double[300];
         double[] expDerivOut = new double[300];
-        INDArray xArr = Nd4j.linspace(-3,3,300);
+        INDArray xArr = Nd4j.linspace(-3, 3, 300);
         for (int i = 0; i < xArr.length(); i++) {
             double x = xArr.getDouble(i);
             double hs = 0.2 * x + 0.5;
-            if(hs < 0) hs = 0;
-            if(hs > 1) hs = 1;
+            if (hs < 0)
+                hs = 0;
+            if (hs > 1)
+                hs = 1;
             expHSOut[i] = hs;
 
             double hsDeriv;
-            if( x < -2.5 || x > 2.5 ) hsDeriv = 0;
-            else hsDeriv = 0.2;
+            if (x < -2.5 || x > 2.5)
+                hsDeriv = 0;
+            else
+                hsDeriv = 0.2;
 
             expDerivOut[i] = hsDeriv;
         }
 
-        INDArray z = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()));
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()).derivative());
+        INDArray z = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()));
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()).derivative());
 
         System.out.println(xArr);
         System.out.println(z);
         System.out.println(zPrime);
 
         for (int i = 0; i < expHSOut.length; i++) {
-            double relErrorHS = Math.abs(expHSOut[i] - z.getDouble(i)) / (Math.abs(expHSOut[i]) + Math.abs(z.getDouble(i)));
-            if(!(expHSOut[i] == 0 && z.getDouble(i) == 0)) {
+            double relErrorHS =
+                            Math.abs(expHSOut[i] - z.getDouble(i)) / (Math.abs(expHSOut[i]) + Math.abs(z.getDouble(i)));
+            if (!(expHSOut[i] == 0 && z.getDouble(i) == 0)) {
                 assertTrue(relErrorHS < REL_ERROR_TOLERANCE);
             }
-            double relErrorDeriv = Math.abs(expDerivOut[i] - zPrime.getDouble(i)) / (Math.abs(expDerivOut[i]) + Math.abs(zPrime.getDouble(i)));
-            if(!(expDerivOut[i] == 0 && zPrime.getDouble(i) == 0)) {
+            double relErrorDeriv = Math.abs(expDerivOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expDerivOut[i]) + Math.abs(zPrime.getDouble(i)));
+            if (!(expDerivOut[i] == 0 && zPrime.getDouble(i) == 0)) {
                 assertTrue(relErrorDeriv < REL_ERROR_TOLERANCE);
             }
         }
@@ -181,11 +196,12 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testSoftMaxDerivative() {
-        assertTrue(Nd4j.getOpFactory().createTransform("softmax", Nd4j.ones(1)).derivative() instanceof SoftMaxDerivative);
+        assertTrue(Nd4j.getOpFactory().createTransform("softmax", Nd4j.ones(1))
+                        .derivative() instanceof SoftMaxDerivative);
 
         Random r = new Random(12345L);
 
-        int[] mb = new int[]{10, 2, 1};
+        int[] mb = new int[] {10, 2, 1};
         for (int minibatch : mb) {
             System.out.println("Minibatch size: " + minibatch);
             INDArray z = Nd4j.zeros(minibatch, 5);
@@ -196,7 +212,7 @@ public class DerivativeTests extends BaseNd4jTest {
                 double rowSumExp = 0.0;
                 for (int j = 0; j < 5; j++) {
                     in[i][j] = 10 * r.nextDouble();
-                    z.putScalar(new int[]{i, j}, in[i][j]);
+                    z.putScalar(new int[] {i, j}, in[i][j]);
                     rowSumExp += FastMath.exp(in[i][j]);
                 }
                 for (int j = 0; j < 5; j++) {
@@ -206,15 +222,17 @@ public class DerivativeTests extends BaseNd4jTest {
             }
 
             INDArray sm = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z.dup()));
-            INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
+            INDArray zPrime = Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
             System.out.println(Arrays.toString(sm.data().asDouble()));
             System.out.println(Arrays.toString(zPrime.data().asDouble()));
             assertNotEquals(sm, zPrime);
 
             for (int i = 0; i < minibatch; i++) {
                 for (int j = 0; j < 5; j++) {
-                    double relError = Math.abs(expOut[i][j] - zPrime.getDouble(i, j)) / (Math.abs(expOut[i][j]) + Math.abs(zPrime.getDouble(i, j)));
-//                    System.out.println("Error: " + relError);
+                    double relError = Math.abs(expOut[i][j] - zPrime.getDouble(i, j))
+                                    / (Math.abs(expOut[i][j]) + Math.abs(zPrime.getDouble(i, j)));
+                    //                    System.out.println("Error: " + relError);
                     assertTrue(relError < REL_ERROR_TOLERANCE);
                 }
             }
@@ -236,10 +254,12 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = 1.0 / (1.0 + FastMath.exp(-x));
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softplus", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("softplus", z).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
             assertTrue(relError < REL_ERROR_TOLERANCE);
         }
     }
@@ -259,10 +279,12 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = 1.0 - tanh * tanh;
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("tanh", z).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
             assertTrue(relError < REL_ERROR_TOLERANCE);
         }
     }
@@ -277,16 +299,18 @@ public class DerivativeTests extends BaseNd4jTest {
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
             z.putScalar(i, x);
-            expOut[i] = 3*x*x;
+            expOut[i] = 3 * x * x;
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("cube", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("cube", z).derivative());
 
         for (int i = 0; i < 100; i++) {
             double d1 = expOut[i];
             double d2 = zPrime.getDouble(i);
-            double relError = Math.abs(d1-d1) / (Math.abs(d1) + Math.abs(d2));
-            if(d1 == 0.0 && d2 == 0.0) relError = 0.0;
+            double relError = Math.abs(d1 - d1) / (Math.abs(d1) + Math.abs(d2));
+            if (d1 == 0.0 && d2 == 0.0)
+                relError = 0.0;
             String str = "exp=" + expOut[i] + ", act=" + zPrime.getDouble(i) + "; relError = " + relError;
             assertTrue(str, relError < REL_ERROR_TOLERANCE);
         }
@@ -294,7 +318,8 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testLeakyReLUDerivative() {
-        assertTrue(Nd4j.getOpFactory().createTransform("leakyrelu", Nd4j.ones(1)).derivative() instanceof LeakyReLUDerivative);
+        assertTrue(Nd4j.getOpFactory().createTransform("leakyrelu", Nd4j.ones(1))
+                        .derivative() instanceof LeakyReLUDerivative);
 
         //Derivative: 0.01 if x<0, 1 otherwise
         INDArray z = Nd4j.zeros(100);
@@ -302,20 +327,23 @@ public class DerivativeTests extends BaseNd4jTest {
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
             z.putScalar(i, x);
-            expOut[i] = (x >= 0 ? 1 : 0.01);
+            expOut[i] = (x >= 0 ? 1 : 0.25);
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("leakyrelu", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(new LeakyReLU(z, 0.25).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
             assertTrue(relError < REL_ERROR_TOLERANCE);
         }
     }
 
     @Test
     public void testSoftSignDerivative() {
-        assertTrue(Nd4j.getOpFactory().createTransform("softsign", Nd4j.ones(1)).derivative() instanceof SoftSignDerivative);
+        assertTrue(Nd4j.getOpFactory().createTransform("softsign", Nd4j.ones(1))
+                        .derivative() instanceof SoftSignDerivative);
 
         //Derivative: 1 / (1+abs(x))^2
         INDArray z = Nd4j.zeros(100);
@@ -327,10 +355,12 @@ public class DerivativeTests extends BaseNd4jTest {
             expOut[i] = 1.0 / (temp * temp);
         }
 
-        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softsign", z).derivative());
+        INDArray zPrime = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("softsign", z).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i))
+                            / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
             assertTrue(relError < REL_ERROR_TOLERANCE);
         }
     }
@@ -357,15 +387,19 @@ public class DerivativeTests extends BaseNd4jTest {
         }
 
         INDArray act = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("elu", z.dup()));
-        INDArray actDeriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("elu", z.dup()).derivative());
+        INDArray actDeriv = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("elu", z.dup()).derivative());
 
         System.out.println(act);
 
         for (int i = 0; i < 100; i++) {
             double relError1 = Math.abs(out[i] - act.getDouble(i)) / (Math.abs(out[i]) + Math.abs(act.getDouble(i)));
-            if (out[i] == 0.0 && act.getDouble(i) == 0.0) relError1 = 0.0;
-            double relError2 = Math.abs(outDeriv[i] - actDeriv.getDouble(i)) / (Math.abs(outDeriv[i]) + Math.abs(actDeriv.getDouble(i)));
-            if (outDeriv[i] == 0.0 && actDeriv.getDouble(i) == 0.0) relError2 = 0.0;
+            if (out[i] == 0.0 && act.getDouble(i) == 0.0)
+                relError1 = 0.0;
+            double relError2 = Math.abs(outDeriv[i] - actDeriv.getDouble(i))
+                            / (Math.abs(outDeriv[i]) + Math.abs(actDeriv.getDouble(i)));
+            if (outDeriv[i] == 0.0 && actDeriv.getDouble(i) == 0.0)
+                relError2 = 0.0;
             assertTrue(relError1 < REL_ERROR_TOLERANCE);
             assertTrue(relError2 < REL_ERROR_TOLERANCE);
         }
@@ -383,17 +417,18 @@ public class DerivativeTests extends BaseNd4jTest {
             http://stats.stackexchange.com/questions/79454/softmax-layer-in-a-neural-network
          */
         //random array represeting preout
-        INDArray X = Nd4j.rand(1,2);
+        INDArray X = Nd4j.rand(1, 2);
         //preout transformed to y_hat with softmax
         INDArray YHat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()));
 
         //hard coding something to construct a function with, using MSE
-        INDArray Y = Nd4j.create(new double[][] {{0.123,1-0.123}});
+        INDArray Y = Nd4j.create(new double[][] {{0.123, 1 - 0.123}});
 
         //This is the MSE now
-        double lossHere = Transforms.pow(Y.sub(YHat),2).sumNumber().doubleValue();
+        double lossHere = Transforms.pow(Y.sub(YHat), 2).sumNumber().doubleValue();
 
-        INDArray softmaxDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
+        INDArray softmaxDer = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
 
         //the way we apply the chain rule now is 2*(y-yhat)*softmaxder
         INDArray dLdY = Y.sub(YHat).mul(-2);
@@ -413,7 +448,7 @@ public class DerivativeTests extends BaseNd4jTest {
         // dy0/dx1 = -y0*(1-y0) = -y0*y1
         // dy1/dx1 = y1*(1-y1) = y0*y1
         //[ dL/dy0 dL/dy1] [[dy0/dx0 dy1/dx0] [dy0/dx1 dy1/dx1]]
-        double y0y1 = softmaxDer.getDouble(0,0);
+        double y0y1 = softmaxDer.getDouble(0, 0);
         //hack but this is what we need to implement, straightforward here but complicated for >2
         //INDArray mysoftmaxDer = Nd4j.create(new double[][] {{y0y1,y0y1*-1},{-1*y0y1,y0y1}});
         INDArray mysoftmaxDer = correctSoftmax(X);
@@ -424,26 +459,28 @@ public class DerivativeTests extends BaseNd4jTest {
         INDArray YHatplus, YHatminus;
         double lossplus, lossminus;
 
-        INDArray numGradient = Nd4j.zeros(1,2);
+        INDArray numGradient = Nd4j.zeros(1, 2);
 
-        for (int i=0;i<2;i++) {
+        for (int i = 0; i < 2; i++) {
             /* change X one value one at a time */
 
             // +epsilon
-            double x = X.getDouble(0,i);
+            double x = X.getDouble(0, i);
             Xiplus = X.dup();
-            Xiplus.put(0,i,x+epsilon);
-            YHatplus = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Xiplus.dup()));
-            lossplus = Transforms.pow(Y.sub(YHatplus),2).sumNumber().doubleValue();
+            Xiplus.put(0, i, x + epsilon);
+            YHatplus = Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Xiplus.dup()));
+            lossplus = Transforms.pow(Y.sub(YHatplus), 2).sumNumber().doubleValue();
 
             // -epsilon
             Ximinus = X.dup();
-            Ximinus.put(0,i,x-epsilon);
-            YHatminus = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Ximinus.dup()));
-            lossminus = Transforms.pow(Y.sub(YHatminus),2).sumNumber().doubleValue();
+            Ximinus.put(0, i, x - epsilon);
+            YHatminus = Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Ximinus.dup()));
+            lossminus = Transforms.pow(Y.sub(YHatminus), 2).sumNumber().doubleValue();
 
-            double gradienti = (lossplus - lossminus)/(2*epsilon);
-            numGradient.put(0,i,gradienti);
+            double gradienti = (lossplus - lossminus) / (2 * epsilon);
+            numGradient.put(0, i, gradienti);
         }
         System.out.println("=========================");
         System.out.println("NUMERICAL:");
@@ -451,8 +488,9 @@ public class DerivativeTests extends BaseNd4jTest {
         System.out.println("\nCURRENTLY:");
         System.out.println(currentGradient);
         System.out.println("\nMY GRADIENT:");
-        System.out.println(myGradient+"\n");
-        System.out.println("Because of the nature of the derivative of the softmax for length = 2, our current method will make it off by a factor of 2");
+        System.out.println(myGradient + "\n");
+        System.out.println(
+                        "Because of the nature of the derivative of the softmax for length = 2, our current method will make it off by a factor of 2");
         System.out.println("=========================");
     }
 
@@ -465,18 +503,19 @@ public class DerivativeTests extends BaseNd4jTest {
         //random array represeting preout
         int someLength = 7;
 
-        INDArray X = Nd4j.rand(1,someLength);
+        INDArray X = Nd4j.rand(1, someLength);
         //preout transformed to y_hat with softmax
         INDArray YHat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()));
 
         //hard coding something to construct a function with, using MSE
-        INDArray temp = Nd4j.rand(1,someLength);
+        INDArray temp = Nd4j.rand(1, someLength);
         INDArray Y = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", temp));
 
         //This is the MSE now
-        double lossHere = Transforms.pow(Y.sub(YHat),2).sumNumber().doubleValue();
+        double lossHere = Transforms.pow(Y.sub(YHat), 2).sumNumber().doubleValue();
 
-        INDArray softmaxDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
+        INDArray softmaxDer = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
 
         //the way we apply the chain rule now is 2*(y-yhat)*softmaxder
         INDArray dLdY = Y.sub(YHat).mul(-2);
@@ -490,26 +529,28 @@ public class DerivativeTests extends BaseNd4jTest {
         INDArray YHatplus, YHatminus;
         double lossplus, lossminus;
 
-        INDArray numGradient = Nd4j.zeros(1,someLength);
+        INDArray numGradient = Nd4j.zeros(1, someLength);
 
-        for (int i=0;i<someLength;i++) {
+        for (int i = 0; i < someLength; i++) {
             /* change X one value one at a time */
 
             // +epsilon
-            double x = X.getDouble(0,i);
+            double x = X.getDouble(0, i);
             Xiplus = X.dup();
-            Xiplus.put(0,i,x+epsilon);
-            YHatplus = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Xiplus.dup()));
-            lossplus = Transforms.pow(Y.sub(YHatplus),2).sumNumber().doubleValue();
+            Xiplus.put(0, i, x + epsilon);
+            YHatplus = Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Xiplus.dup()));
+            lossplus = Transforms.pow(Y.sub(YHatplus), 2).sumNumber().doubleValue();
 
             // -epsilon
             Ximinus = X.dup();
-            Ximinus.put(0,i,x-epsilon);
-            YHatminus = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Ximinus.dup()));
-            lossminus = Transforms.pow(Y.sub(YHatminus),2).sumNumber().doubleValue();
+            Ximinus.put(0, i, x - epsilon);
+            YHatminus = Nd4j.getExecutioner()
+                            .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", Ximinus.dup()));
+            lossminus = Transforms.pow(Y.sub(YHatminus), 2).sumNumber().doubleValue();
 
-            double gradienti = (lossplus - lossminus)/(2*epsilon);
-            numGradient.put(0,i,gradienti);
+            double gradienti = (lossplus - lossminus) / (2 * epsilon);
+            numGradient.put(0, i, gradienti);
         }
         System.out.println("=========================");
         System.out.println("NUMERICAL GRADIENT:");
@@ -533,16 +574,18 @@ public class DerivativeTests extends BaseNd4jTest {
 
         //so now pipj is correct except for the diagonal elements
         // which by the way is what our current softmax der gives us
-        INDArray diagp = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
+        INDArray diagp = Nd4j.getExecutioner()
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", X.dup()).derivative());
 
 
         //ugly for loop to correct diag elements
-        for (int i=0; i<X.length(); i++) {
-           pipj.put(i,i,diagp.getDouble(0,i));
+        for (int i = 0; i < X.length(); i++) {
+            pipj.put(i, i, diagp.getDouble(0, i));
         }
 
         return pipj;
     }
+
     @Override
     public char ordering() {
         return 'f';

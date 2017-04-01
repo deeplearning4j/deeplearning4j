@@ -2,20 +2,16 @@ package org.nd4j.jita.flow.impl;
 
 
 import lombok.Getter;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
-import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
-import org.nd4j.jita.handler.MemoryHandler;
-import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +30,8 @@ public class SynchronousFlowController implements FlowController {
     private volatile Allocator allocator;
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-    @Getter protected EventsProvider eventsProvider = new EventsProvider();
+    @Getter
+    protected EventsProvider eventsProvider = new EventsProvider();
 
     @Override
     public void init(Allocator allocator) {
@@ -55,22 +52,24 @@ public class SynchronousFlowController implements FlowController {
             if (!point.isConstant())
                 waitTillFinished(point);
 
-          //  log.info("Synchronization started... " + point.getShape());
+            //  log.info("Synchronization started... " + point.getShape());
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
 
-                if (nativeOps.memcpyAsync(point.getHostPointer(), point.getDevicePointer(), AllocationUtils.getRequiredMemory(point.getShape()), CudaConstants.cudaMemcpyDeviceToHost, context.getSpecialStream()) == 0)
+                if (nativeOps.memcpyAsync(point.getHostPointer(), point.getDevicePointer(),
+                                AllocationUtils.getRequiredMemory(point.getShape()),
+                                CudaConstants.cudaMemcpyDeviceToHost, context.getSpecialStream()) == 0)
                     throw new IllegalStateException("MemcpyAsync failed: " + point.getShape());
 
                 commitTransfer(context.getSpecialStream());
-            }// else log.info("Not [DEVICE] memory, skipping...");
+            } // else log.info("Not [DEVICE] memory, skipping...");
 
 
             // updating host read timer
             point.tickHostRead();
             //log.info("After sync... isActualOnHostSide: {}", point.isActualOnHostSide());
-        }// else log.info("Point is actual on host side! " + point.getShape());
+        } // else log.info("Point is actual on host side! " + point.getShape());
     }
 
     @Override
@@ -92,8 +91,9 @@ public class SynchronousFlowController implements FlowController {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         int cId = allocator.getDeviceId();
 
-        for (INDArray operand: operands) {
-            if (operand == null) continue;
+        for (INDArray operand : operands) {
+            if (operand == null)
+                continue;
 
             Nd4j.getCompressor().autoDecompress(operand);
 
@@ -103,12 +103,14 @@ public class SynchronousFlowController implements FlowController {
             pointData.acquireLock();
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data() : operand.data().originalDataBuffer();
+                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data()
+                                : operand.data().originalDataBuffer();
                 allocator.getMemoryHandler().relocateObject(buffer);
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(
+                                Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
             }
 
             prepareDelayedMemory(operand);
@@ -133,19 +135,22 @@ public class SynchronousFlowController implements FlowController {
 
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                DataBuffer buffer = result.data().originalDataBuffer() == null ? result.data() : result.data().originalDataBuffer();
+                DataBuffer buffer = result.data().originalDataBuffer() == null ? result.data()
+                                : result.data().originalDataBuffer();
                 allocator.getMemoryHandler().relocateObject(buffer);
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(
+                                Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
             }
 
             allocator.getAllocationPoint(result).setCurrentContext(context);
         }
 
-        for (INDArray operand: operands) {
-            if (operand == null) continue;
+        for (INDArray operand : operands) {
+            if (operand == null)
+                continue;
 
             Nd4j.getCompressor().autoDecompress(operand);
 
@@ -155,12 +160,14 @@ public class SynchronousFlowController implements FlowController {
             pointData.acquireLock();
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data() : operand.data().originalDataBuffer();
+                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data()
+                                : operand.data().originalDataBuffer();
                 allocator.getMemoryHandler().relocateObject(buffer);
-           }
+            }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(
+                                Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
             }
 
             prepareDelayedMemory(operand);
@@ -187,18 +194,18 @@ public class SynchronousFlowController implements FlowController {
         result.releaseLock();
 
 
-        for(AllocationPoint operand: operands) {
+        for (AllocationPoint operand : operands) {
             eventsProvider.storeEvent(operand.getLastReadEvent());
             operand.setLastReadEvent(eventsProvider.getEvent());
             operand.getLastReadEvent().register(context.getOldStream());
             operand.releaseLock();
         }
-     //   context.syncOldStream();
+        //   context.syncOldStream();
     }
 
     @Override
     public void registerActionAllWrite(CudaContext context, INDArray... operands) {
-        for (INDArray operand: operands) {
+        for (INDArray operand : operands) {
             if (operand == null)
                 continue;
 
@@ -212,7 +219,8 @@ public class SynchronousFlowController implements FlowController {
     }
 
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
-        if (result == null) return;
+        if (result == null)
+            return;
         AllocationPoint point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
         eventsProvider.storeEvent(point.getLastWriteEvent());
@@ -220,7 +228,7 @@ public class SynchronousFlowController implements FlowController {
         point.getLastWriteEvent().register(context.getOldStream());
         point.releaseLock();
 
-        for (INDArray operand: operands) {
+        for (INDArray operand : operands) {
             if (operand == null)
                 continue;
 
@@ -241,7 +249,7 @@ public class SynchronousFlowController implements FlowController {
             result.setCurrentContext(context);
         }
 
-        for (AllocationPoint operand: operands) {
+        for (AllocationPoint operand : operands) {
             if (operand == null)
                 continue;
             operand.acquireLock();

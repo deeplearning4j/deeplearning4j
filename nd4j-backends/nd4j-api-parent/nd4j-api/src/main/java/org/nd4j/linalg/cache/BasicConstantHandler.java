@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  *
  * @author raver119@gmail.com
  */
-public abstract class BasicConstantHandler implements ConstantHandler{
+public abstract class BasicConstantHandler implements ConstantHandler {
     @Override
     public long moveToConstantSpace(DataBuffer dataBuffer) {
         // no-op

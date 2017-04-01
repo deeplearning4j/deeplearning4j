@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,8 +37,7 @@ public class MatchCondition extends BaseAccumulation {
     double eps;
     int mode;
 
-    public MatchCondition() {
-    }
+    public MatchCondition() {}
 
 
     public MatchCondition(INDArray x, Condition condition) {
@@ -64,9 +63,9 @@ public class MatchCondition extends BaseAccumulation {
         return "match_condition";
     }
 
-     @Override
+    @Override
     public Op opForDimension(int index, int dimension) {
-       return null;
+        return null;
     }
 
     @Override

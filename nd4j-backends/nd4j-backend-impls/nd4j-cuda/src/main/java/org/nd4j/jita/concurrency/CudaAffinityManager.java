@@ -1,17 +1,16 @@
 package org.nd4j.jita.concurrency;
 
+import lombok.NonNull;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 public class CudaAffinityManager extends BasicAffinityManager {
-
-    private static final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-
     private static Logger logger = LoggerFactory.getLogger(CudaAffinityManager.class);
 
     private Map<Long, Integer> affinityMap = new ConcurrentHashMap<>();
@@ -42,6 +38,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     public CudaAffinityManager() {
         super();
+
     }
 
     /**
@@ -78,6 +75,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForThread(long threadId) {
+        if (getNumberOfDevices() == 1)
+            return 0;
+
         if (!affinityMap.containsKey(threadId)) {
             Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
@@ -85,7 +85,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
             if (threadId == Thread.currentThread().getId()) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-         //       logger.debug("setDevice({}) called for thread {}", deviceId, threadId);
+                //       logger.debug("setDevice({}) called for thread {}", deviceId, threadId);
                 affiliated.get().set(true);
             }
 
@@ -99,7 +99,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
             if (!affiliated.get().get()) {
                 int deviceId = affinityMap.get(threadId);
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-        //        logger.debug("SCARY setDevice({}) called for thread {}", deviceId, threadId);
+                //        logger.debug("SCARY setDevice({}) called for thread {}", deviceId, threadId);
                 affiliated.get().set(true);
                 return deviceId;
             }
@@ -127,8 +127,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
-        List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
-        logger.debug("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId , deviceId, devices.size());
+        List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
+        logger.debug("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId,
+                        devices.size());
         affinityMap.put(threadId, deviceId);
     }
 
@@ -140,19 +141,20 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     protected Integer getNextDevice(long threadId) {
         Integer device = null;
-        if (!configuration.isForcedSingleGPU() && getNumberOfDevices() > 0) {
+        if (!CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() && getNumberOfDevices() > 0) {
             // simple round-robin here
             synchronized (this) {
-                device = configuration.getAvailableDevices().get(devPtr.getAndIncrement());
+                device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(devPtr.getAndIncrement());
 
                 // We check only for number of entries here, not their actual values
-                if (devPtr.get() >= configuration.getAvailableDevices().size())
+                if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
                     devPtr.set(0);
 
-                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId , device, configuration.getAvailableDevices().size());
+                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId, device,
+                        CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
             }
         } else {
-            device = configuration.getAvailableDevices().get(0);
+            device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
             logger.debug("Single device is forced, mapping to device [{}]", device);
         }
 
@@ -234,7 +236,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
         int length = array.length();
 
         // we use this call to get device memory updated
-        AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        AtomicAllocator.getInstance().getPointer(array,
+                        (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
 
         int currentDeviceId = getDeviceForCurrentThread();
 
@@ -242,8 +245,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
         attachThreadToDevice(Thread.currentThread().getId(), deviceId);
 
 
-        DataBuffer newDataBuffer =  replicateToDevice(deviceId, array.data());
-        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, elementWiseStride, ordering);
+        DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
+                        elementWiseStride, ordering);
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
@@ -316,5 +320,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostRead();
         }
+    }
+
+    @Override
+    public Integer getDeviceForArray(@NonNull INDArray array) {
+        return AtomicAllocator.getInstance().getDeviceId(array);
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -158,8 +158,8 @@ public class CompareAndReplace extends BaseTransformOp {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 }
 

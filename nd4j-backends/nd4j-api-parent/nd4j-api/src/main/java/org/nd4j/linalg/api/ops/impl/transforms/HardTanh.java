@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class HardTanh extends BaseTransformOp {
-    public HardTanh() {
-    }
+    public HardTanh() {}
 
     public HardTanh(INDArray x, INDArray z) {
         super(x, z);
@@ -108,7 +107,7 @@ public class HardTanh extends BaseTransformOp {
     }
 
     private static float hardTanh(float num) {
-    	return num < -1.0f ? -1.0f : num > 1.0f ? 1.0f : num;
+        return num < -1.0f ? -1.0f : num > 1.0f ? 1.0f : num;
     }
 
     private static double hardTanh(double num) {
@@ -121,7 +120,8 @@ public class HardTanh extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanh(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanh(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new HardTanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -132,7 +132,8 @@ public class HardTanh extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanh(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanh(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new HardTanh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

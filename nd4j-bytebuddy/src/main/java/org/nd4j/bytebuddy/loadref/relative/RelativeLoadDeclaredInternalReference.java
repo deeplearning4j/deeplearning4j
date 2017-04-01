@@ -6,7 +6,6 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import net.bytebuddy.jar.asm.MethodVisitor;
-import org.nd4j.bytebuddy.util.OpCodeUtil;
 
 /**
  * Load a reference on the method stack
@@ -39,11 +38,12 @@ public class RelativeLoadDeclaredInternalReference implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         //references start with zero if its an instance or zero if its static
         //think of it like an implicit self in python without actually being defined
         StackManipulation arg0 = MethodVariableAccess.REFERENCE.loadOffset(refId);
-        StackManipulation.Size size =  arg0.apply(methodVisitor, implementationContext);
+        StackManipulation.Size size = arg0.apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

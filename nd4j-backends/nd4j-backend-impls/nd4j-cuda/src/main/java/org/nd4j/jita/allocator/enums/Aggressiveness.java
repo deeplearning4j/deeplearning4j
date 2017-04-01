@@ -5,7 +5,5 @@ package org.nd4j.jita.allocator.enums;
  */
 public enum Aggressiveness {
     PEACEFUL, // less actions
-    REASONABLE,
-    URGENT,
-    IMMEDIATE // more actions
+    REASONABLE, URGENT, IMMEDIATE // more actions
 }

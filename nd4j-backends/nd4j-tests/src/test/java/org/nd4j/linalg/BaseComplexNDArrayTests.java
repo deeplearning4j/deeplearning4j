@@ -7,15 +7,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.api.shape.Shape;
-
-
-import static org.junit.Assert.*;
-
 
 import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Base class for all complex ndarray tests
@@ -25,8 +23,7 @@ import java.util.Arrays;
  */
 @Ignore
 public abstract class BaseComplexNDArrayTests extends BaseNd4jTest {
-    public BaseComplexNDArrayTests() {
-    }
+    public BaseComplexNDArrayTests() {}
 
     public BaseComplexNDArrayTests(Nd4jBackend backend) {
         super(backend);
@@ -53,7 +50,7 @@ public abstract class BaseComplexNDArrayTests extends BaseNd4jTest {
 
     @Test
     public void testOtherLinearView() {
-        IComplexNDArray arr = Nd4j.complexLinSpace(1,8,8).reshape(2,4);
+        IComplexNDArray arr = Nd4j.complexLinSpace(1, 8, 8).reshape(2, 4);
         IComplexNDArray slices = arr.slice(0);
         IComplexNDArray slice1 = arr.slice(1);
         IComplexNDArray arrLinear = arr.linearView();
@@ -65,11 +62,11 @@ public abstract class BaseComplexNDArrayTests extends BaseNd4jTest {
     @Test
     public void testWrap() {
         IComplexNDArray c = Nd4j.createComplex(Nd4j.linspace(1, 4, 4).reshape(2, 2));
-        assertEquals(true, Arrays.equals(new int[]{2, 2}, c.shape()));
+        assertEquals(true, Arrays.equals(new int[] {2, 2}, c.shape()));
 
         IComplexNDArray vec = Nd4j.createComplex(Nd4j.linspace(1, 4, 4));
         assertEquals(true, vec.isVector());
-        assertEquals(true, Shape.shapeEquals(new int[]{4}, vec.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[] {4}, vec.shape()));
 
     }
 

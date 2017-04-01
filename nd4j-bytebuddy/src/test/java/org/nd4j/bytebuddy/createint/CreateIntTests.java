@@ -11,7 +11,6 @@ import org.nd4j.bytebuddy.load.LoadIntegerImplementation;
 import org.nd4j.bytebuddy.returnref.ReturnAppender;
 import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
 
-
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -21,22 +20,21 @@ public class CreateIntTests {
 
     @Test
     public void testCreateInt() throws Exception {
-        DynamicType.Unloaded<CreateAndAssignIntArray> arr = new ByteBuddy()
-                .subclass(CreateAndAssignIntArray.class).method(ElementMatchers.isDeclaredBy(CreateAndAssignIntArray.class))
-                .intercept(new Implementation.Compound(
-                        new ConstantIntImplementation(1),
-                        new StoreIntImplementation(0),
-                        new LoadIntegerImplementation(0),
-                        new ReturnAppenderImplementation(ReturnAppender.ReturnType.INT)))
-                .make();
+        DynamicType.Unloaded<CreateAndAssignIntArray> arr = new ByteBuddy().subclass(CreateAndAssignIntArray.class)
+                        .method(ElementMatchers.isDeclaredBy(CreateAndAssignIntArray.class))
+                        .intercept(new Implementation.Compound(new ConstantIntImplementation(1),
+                                        new StoreIntImplementation(0), new LoadIntegerImplementation(0),
+                                        new ReturnAppenderImplementation(ReturnAppender.ReturnType.INT)))
+                        .make();
 
 
-        Class<?> dynamicType = arr.load(CreateAndAssignIntArray.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
+        Class<?> dynamicType =
+                        arr.load(CreateAndAssignIntArray.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                                        .getLoaded();
 
         CreateAndAssignIntArray test = (CreateAndAssignIntArray) dynamicType.newInstance();
         int result = test.returnVal();
-        assertEquals(1,result);
+        assertEquals(1, result);
 
     }
 

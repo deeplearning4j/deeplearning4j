@@ -5,9 +5,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.ShortPointer;
-import org.bytedeco.javacpp.indexer.ByteRawIndexer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -16,15 +13,17 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * @author raver119@gmail.com
  */
 public class CompressedDataBuffer extends BaseDataBuffer {
-    @Getter @Setter protected CompressionDescriptor compressionDescriptor;
+    @Getter
+    @Setter
+    protected CompressionDescriptor compressionDescriptor;
     private static Logger logger = LoggerFactory.getLogger(CompressedDataBuffer.class);
 
     public CompressedDataBuffer(Pointer pointer, @NonNull CompressionDescriptor descriptor) {
@@ -47,10 +46,10 @@ public class CompressedDataBuffer extends BaseDataBuffer {
 
     @Override
     public void write(DataOutputStream out) throws IOException {
-//        logger.info("Writing out CompressedDataBuffer");
+        //        logger.info("Writing out CompressedDataBuffer");
         // here we should mimic to usual DataBuffer array
         out.writeUTF(allocationMode.name());
-        out.writeInt((int)compressionDescriptor.getCompressedLength());
+        out.writeInt((int) compressionDescriptor.getCompressedLength());
         out.writeUTF(Type.COMPRESSED.name());
         // at this moment we don't care about mimics anymore
         //ByteRawIndexer indexer = new ByteRawIndexer((BytePointer) pointer);
@@ -58,12 +57,11 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());
         out.writeLong(compressionDescriptor.getNumberOfElements());
-//        out.write(((BytePointer) pointer).getStringBytes());
+        //        out.write(((BytePointer) pointer).getStringBytes());
         for (int x = 0; x < pointer.capacity() * pointer.sizeof(); x++) {
             byte b = pointer.asByteBuffer().get(x);
             out.writeByte(b);
         }
-
 
 
 
@@ -94,7 +92,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                     temp[i] = s.readByte();
                 }
 
-                try(Pointer pointer = new BytePointer(temp)){
+                try (Pointer pointer = new BytePointer(temp)) {
                     CompressionDescriptor descriptor = new CompressionDescriptor();
                     descriptor.setCompressedLength(compressedLength);
                     descriptor.setCompressionAlgorithm(compressionAlgorithm);

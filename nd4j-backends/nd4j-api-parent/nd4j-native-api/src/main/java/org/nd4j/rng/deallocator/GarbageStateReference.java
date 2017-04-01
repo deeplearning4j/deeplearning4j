@@ -2,8 +2,6 @@ package org.nd4j.rng.deallocator;
 
 import lombok.Getter;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
-import org.nd4j.linalg.api.rng.Random;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -14,7 +12,8 @@ import java.lang.ref.WeakReference;
  * @author raver119@gmail.com
  */
 public class GarbageStateReference extends WeakReference<NativePack> {
-    @Getter private Pointer statePointer;
+    @Getter
+    private Pointer statePointer;
 
     public GarbageStateReference(NativePack referent, ReferenceQueue<? super NativePack> queue) {
         super(referent, queue);

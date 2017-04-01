@@ -5,7 +5,6 @@ import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.collection.ArrayAccess;
-import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.pool.TypePool;
 
@@ -34,7 +33,8 @@ public class AssignOpAppender implements ByteCodeAppender {
 
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         //resolve the type to store in the array and retrieve the store command
         StackManipulation store = ArrayAccess.of(typePool.describe("int").resolve()).store();
         StackManipulation.Size size = store.apply(methodVisitor, implementationContext);

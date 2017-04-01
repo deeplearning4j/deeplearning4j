@@ -29,7 +29,7 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
-        if(arr instanceof IComplexNDArray)
+        if (arr instanceof IComplexNDArray)
             return arr.elementWiseStride() / 2;
 
         return arr.elementWiseStride();
@@ -44,17 +44,16 @@ public class BlasBufferUtil {
      * @return the float data for this ndarray
      */
     public static float[] getFloatData(INDArray buf) {
-        if(buf.data().dataType() != DataBuffer.Type.FLOAT)
+        if (buf.data().dataType() != DataBuffer.Type.FLOAT)
             throw new IllegalArgumentException("Float data must be obtained from a float buffer");
 
-        if(buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
+        if (buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             return buf.data().asFloat();
-        }
-        else {
+        } else {
             float[] ret = new float[buf.length()];
             INDArray linear = buf.linearView();
 
-            for(int i = 0; i < buf.length(); i++)
+            for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getFloat(i);
             return ret;
         }
@@ -69,17 +68,16 @@ public class BlasBufferUtil {
      * @return the double data for this ndarray
      */
     public static double[] getDoubleData(INDArray buf) {
-        if(buf.data().dataType() != DataBuffer.Type.DOUBLE)
+        if (buf.data().dataType() != DataBuffer.Type.DOUBLE)
             throw new IllegalArgumentException("Double data must be obtained from a double buffer");
 
-        if(buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
+        if (buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             return buf.data().asDouble();
 
-        }
-        else {
+        } else {
             double[] ret = new double[buf.length()];
             INDArray linear = buf.linearView();
-            for(int i = 0; i < buf.length(); i++)
+            for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getDouble(i);
             return ret;
 
@@ -109,11 +107,10 @@ public class BlasBufferUtil {
      * for the given array
      */
     public static int getStrideForOrdering(INDArray arr) {
-        if(arr.ordering() == NDArrayFactory.FORTRAN) {
+        if (arr.ordering() == NDArrayFactory.FORTRAN) {
             return getBlasStride(arr);
-        }
-        else {
-            if(arr instanceof IComplexNDArray)
+        } else {
+            if (arr instanceof IComplexNDArray)
                 return arr.stride(1) / 2;
             return arr.stride(1);
         }
@@ -133,12 +130,12 @@ public class BlasBufferUtil {
      * @param defaultRows
      * @return
      */
-    public static int getDimension(INDArray arr,boolean defaultRows) {
+    public static int getDimension(INDArray arr, boolean defaultRows) {
         //ignore ordering for vectors
-        if(arr.isVector()) {
+        if (arr.isVector()) {
             return defaultRows ? arr.rows() : arr.columns();
         }
-        if(arr.ordering() == NDArrayFactory.C)
+        if (arr.ordering() == NDArrayFactory.C)
             return defaultRows ? arr.columns() : arr.rows();
         return defaultRows ? arr.rows() : arr.columns();
     }
@@ -157,7 +154,7 @@ public class BlasBufferUtil {
      */
     public static int getLd(INDArray arr) {
         //ignore ordering for vectors
-        if(arr.isVector()) {
+        if (arr.isVector()) {
             return arr.size(0);
         }
 
@@ -174,12 +171,11 @@ public class BlasBufferUtil {
      * @return the double data for this ndarray
      */
     public static float[] getFloatData(DataBuffer buf) {
-        if(buf.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+        if (buf.allocationMode() == DataBuffer.AllocationMode.HEAP) {
             return buf.asFloat();
-        }
-        else {
+        } else {
             float[] ret = new float[(int) buf.length()];
-            for(int i = 0; i < buf.length(); i++)
+            for (int i = 0; i < buf.length(); i++)
                 ret[i] = buf.getFloat(i);
             return ret;
         }
@@ -194,11 +190,11 @@ public class BlasBufferUtil {
      * @return the double data for this buffer
      */
     public static double[] getDoubleData(DataBuffer buf) {
-        if(buf.allocationMode() == DataBuffer.AllocationMode.HEAP)
+        if (buf.allocationMode() == DataBuffer.AllocationMode.HEAP)
             return buf.asDouble();
         else {
             double[] ret = new double[(int) buf.length()];
-            for(int i = 0; i < buf.length(); i++)
+            for (int i = 0; i < buf.length(); i++)
                 ret[i] = buf.getDouble(i);
             return ret;
 
@@ -225,46 +221,44 @@ public class BlasBufferUtil {
      * @param data the data to set
      * @param toSet the array to set the data to
      */
-    public static void setData(float[] data,INDArray toSet) {
-        if(toSet.data().dataType() != DataBuffer.Type.FLOAT) {
+    public static void setData(float[] data, INDArray toSet) {
+        if (toSet.data().dataType() != DataBuffer.Type.FLOAT) {
             throw new IllegalArgumentException("Unable to set double data for type " + toSet.data().dataType());
         }
 
-        if(toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
+        if (toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             Object array = toSet.data().array();
             //data is assumed to have already been updated
-            if(array == data)
+            if (array == data)
                 return;
             else {
                 //copy the data over directly to the underlying array
                 float[] d = (float[]) array;
 
-                if(toSet.offset() == 0 && toSet.length() == data.length)
-                    System.arraycopy(data,0,d,0,d.length);
+                if (toSet.offset() == 0 && toSet.length() == data.length)
+                    System.arraycopy(data, 0, d, 0, d.length);
                 else {
                     int count = 0;
                     //need to do strided access with offset
-                    for(int i = 0; i < data.length; i++) {
+                    for (int i = 0; i < data.length; i++) {
                         int dIndex = toSet.offset() + (i * toSet.majorStride());
                         d[dIndex] = data[count++];
                     }
                 }
             }
-        }
-        else {
+        } else {
             //assumes the underlying data is in the right order
             DataBuffer underlyingData = toSet.data();
-            if(data.length == toSet.length() && toSet.offset() == 0) {
-                for(int i = 0; i < toSet.length(); i++) {
-                    underlyingData.put(i,data[i]);
+            if (data.length == toSet.length() && toSet.offset() == 0) {
+                for (int i = 0; i < toSet.length(); i++) {
+                    underlyingData.put(i, data[i]);
                 }
-            }
-            else {
+            } else {
                 int count = 0;
                 //need to do strided access with offset
-                for(int i = 0; i < data.length; i++) {
+                for (int i = 0; i < data.length; i++) {
                     int dIndex = toSet.offset() + (i * toSet.majorStride());
-                    underlyingData.put(dIndex,data[count++]);
+                    underlyingData.put(dIndex, data[count++]);
                 }
             }
         }
@@ -290,46 +284,44 @@ public class BlasBufferUtil {
      * @param data the data to set
      * @param toSet the array to set the data to
      */
-    public static void setData(double[] data,INDArray toSet) {
-        if(toSet.data().dataType() != DataBuffer.Type.DOUBLE) {
+    public static void setData(double[] data, INDArray toSet) {
+        if (toSet.data().dataType() != DataBuffer.Type.DOUBLE) {
             throw new IllegalArgumentException("Unable to set double data for type " + toSet.data().dataType());
         }
 
-        if(toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
+        if (toSet.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             Object array = toSet.data().array();
             //data is assumed to have already been updated
-            if(array == data)
+            if (array == data)
                 return;
             else {
                 //copy the data over directly to the underlying array
                 double[] d = (double[]) array;
 
-                if(toSet.offset() == 0 && toSet.length() == data.length)
-                    System.arraycopy(data,0,d,0,d.length);
+                if (toSet.offset() == 0 && toSet.length() == data.length)
+                    System.arraycopy(data, 0, d, 0, d.length);
                 else {
                     int count = 0;
                     //need to do strided access with offset
-                    for(int i = 0; i < data.length; i++) {
+                    for (int i = 0; i < data.length; i++) {
                         int dIndex = toSet.offset() + (i * toSet.majorStride());
                         d[dIndex] = data[count++];
                     }
                 }
             }
-        }
-        else {
+        } else {
             //assumes the underlying data is in the right order
             DataBuffer underlyingData = toSet.data();
-            if(data.length == toSet.length() && toSet.offset() == 0) {
-                for(int i = 0; i < toSet.length(); i++) {
-                    underlyingData.put(i,data[i]);
+            if (data.length == toSet.length() && toSet.offset() == 0) {
+                for (int i = 0; i < toSet.length(); i++) {
+                    underlyingData.put(i, data[i]);
                 }
-            }
-            else {
+            } else {
                 int count = 0;
                 //need to do strided access with offset
-                for(int i = 0; i < data.length; i++) {
+                for (int i = 0; i < data.length; i++) {
                     int dIndex = toSet.offset() + (i * toSet.majorStride());
-                    underlyingData.put(dIndex,data[count++]);
+                    underlyingData.put(dIndex, data[count++]);
                 }
             }
         }

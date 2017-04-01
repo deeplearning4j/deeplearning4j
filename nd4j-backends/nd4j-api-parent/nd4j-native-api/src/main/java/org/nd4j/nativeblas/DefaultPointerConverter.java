@@ -22,9 +22,9 @@ public class DefaultPointerConverter implements PointerConverter {
 
     @Override
     public long toPointer(Buffer buffer) {
-        if(buffer.isDirect())
+        if (buffer.isDirect())
             try {
-                return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField());
+                return UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -36,12 +36,13 @@ public class DefaultPointerConverter implements PointerConverter {
                 switch (scale) {
                     case 4:
                         long factor = UnsafeHolder.is64Bit() ? 8 : 1;
-                        final long i1 = (UnsafeHolder.getUnsafe().getInt(buffer.array(), offset) & 0xFFFFFFFFL) * factor;
+                        final long i1 = (UnsafeHolder.getUnsafe().getInt(buffer.array(), offset) & 0xFFFFFFFFL)
+                                        * factor;
                         return i1;
                     case 8:
                         throw new AssertionError("Not supported");
                 }
-            }catch(Exception e) {
+            } catch (Exception e) {
                 throw new IllegalStateException("Unable to get address");
             }
         }

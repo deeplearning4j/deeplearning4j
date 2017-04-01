@@ -70,7 +70,7 @@ else
     mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 fi
 
-source change-scala-versions.sh 2.10
+source change-scala-versions.sh 2.11
 source change-cuda-versions.sh 8.0
 git commit -a -m "Update to version $RELEASE_VERSION"
 git tag -a -m "nd4j-$RELEASE_VERSION" "nd4j-$RELEASE_VERSION"

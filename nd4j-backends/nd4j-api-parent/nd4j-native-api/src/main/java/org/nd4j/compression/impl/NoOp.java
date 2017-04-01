@@ -1,9 +1,7 @@
 package org.nd4j.compression.impl;
 
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.FloatRawIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -61,7 +59,8 @@ public class NoOp extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressionType(getCompressionType());

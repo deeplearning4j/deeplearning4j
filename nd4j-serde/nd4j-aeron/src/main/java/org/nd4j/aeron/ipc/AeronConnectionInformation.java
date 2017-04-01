@@ -25,12 +25,13 @@ public class AeronConnectionInformation {
      * @param streamId
      * @return
      */
-    public static AeronConnectionInformation of(String connectionHost,int connectionPort,int streamId) {
-        return AeronConnectionInformation.builder().connectionHost(connectionHost).connectionPort(connectionPort).streamId(streamId).build();
+    public static AeronConnectionInformation of(String connectionHost, int connectionPort, int streamId) {
+        return AeronConnectionInformation.builder().connectionHost(connectionHost).connectionPort(connectionPort)
+                        .streamId(streamId).build();
     }
 
     @Override
     public String toString() {
-        return String.format("%s:%d:%d",connectionHost,connectionPort,streamId);
+        return String.format("%s:%d:%d", connectionHost, connectionPort, streamId);
     }
 }

@@ -19,8 +19,9 @@ public class BlasOpErrorMessage implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append("Op " + op.name() + " of length " + op.n()).append(" will fail with x of " + shapeInfo(op.x()));
-        if(op.y() != null) {
+        StringBuilder sb = new StringBuilder().append("Op " + op.name() + " of length " + op.n())
+                        .append(" will fail with x of " + shapeInfo(op.x()));
+        if (op.y() != null) {
             sb.append(" y of " + shapeInfo(op.y()));
         }
 
@@ -29,7 +30,8 @@ public class BlasOpErrorMessage implements Serializable {
     }
 
     private String shapeInfo(INDArray arr) {
-        return Arrays.toString(arr.shape()) + " and stride " + Arrays.toString(arr.stride()) + " and offset " + arr.offset() + " and blas stride of " + BlasBufferUtil.getBlasStride(arr);
+        return Arrays.toString(arr.shape()) + " and stride " + Arrays.toString(arr.stride()) + " and offset "
+                        + arr.offset() + " and blas stride of " + BlasBufferUtil.getBlasStride(arr);
     }
 
 

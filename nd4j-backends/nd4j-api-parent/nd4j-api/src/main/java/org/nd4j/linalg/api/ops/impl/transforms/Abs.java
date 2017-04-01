@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Abs extends BaseTransformOp {
 
-    public Abs() {
-    }
+    public Abs() {}
 
     public Abs(INDArray x, INDArray z) {
         super(x, z);
@@ -108,7 +107,8 @@ public class Abs extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Abs(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Abs(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Abs(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -119,7 +119,8 @@ public class Abs extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Abs(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Abs(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Abs(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

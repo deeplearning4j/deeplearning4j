@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,8 +36,7 @@ public class MaxOut extends BaseTransformOp {
     private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN, Double.NaN);
     private Number max = Double.NaN;
 
-    public MaxOut() {
-    }
+    public MaxOut() {}
 
     public MaxOut(INDArray x, INDArray z) {
         super(x, z);
@@ -129,7 +128,8 @@ public class MaxOut extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new MaxOut(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new MaxOut(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new MaxOut(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -140,7 +140,8 @@ public class MaxOut extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new MaxOut(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new MaxOut(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new MaxOut(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

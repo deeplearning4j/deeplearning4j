@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,9 +28,9 @@ import org.nd4j.linalg.factory.Nd4j;
 /**Leaky ReLU derivative. Default alpha = 0.01. Cutoff = 0
  */
 public class LeakyReLUDerivative extends BaseTransformOp {
-	private double alpha = 0.01;
-    private boolean alphaSpecified = false;
-    public LeakyReLUDerivative() { }
+    private double alpha = 0.01;
+
+    public LeakyReLUDerivative() {}
 
     public LeakyReLUDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -47,28 +47,29 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public LeakyReLUDerivative(INDArray x) {
         super(x);
     }
-    
+
     public LeakyReLUDerivative(INDArray x, INDArray z, double alpha) {
         super(x, z);
         this.alpha = alpha;
-        alphaSpecified = true;
+        init(x,y,z,n);  //Need to re-init to properly set alpha in extra args array
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, long n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
-        alphaSpecified = true;
+        init(x,y,z,n);
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
-        alphaSpecified = true;
+        init(x,y,z,n);
     }
 
     public LeakyReLUDerivative(INDArray x, double alpha) {
         super(x);
         this.alpha = alpha;
+        init(x,y,z,n);
     }
 
     @Override
@@ -88,12 +89,12 @@ public class LeakyReLUDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	return (origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0)); 
+        return (origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	return (origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0));
+        return (origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0));
     }
 
     @Override
@@ -103,22 +104,22 @@ public class LeakyReLUDerivative extends BaseTransformOp {
 
     @Override
     public double op(double origin, double other) {
-    	return (origin >= 0 ? 1.0 : alpha);
+        return (origin >= 0 ? 1.0 : alpha);
     }
 
     @Override
     public double op(double origin) {
-    	return (origin >= 0 ? 1.0 : alpha);
+        return (origin >= 0 ? 1.0 : alpha);
     }
 
     @Override
     public float op(float origin) {
-    	return (origin >= 0f ? 1.0f : (float)alpha);
+        return (origin >= 0f ? 1.0f : (float) alpha);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	return (origin.realComponent().doubleValue() >= 0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0));
+        return (origin.realComponent().doubleValue() >= 0 ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(alpha, 0));
     }
 
     @Override
@@ -126,9 +127,12 @@ public class LeakyReLUDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LeakyReLUDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
+            return new LeakyReLUDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length(), alpha);
         else
-            return new LeakyReLUDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
+            return new LeakyReLUDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
     }
 
     @Override
@@ -136,16 +140,17 @@ public class LeakyReLUDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
+            return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length(), alpha);
         else
-            return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),alpha);
+            return new LeakyReLUDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        if(!alphaSpecified)
-            alpha = 0.01;
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
     }
 }

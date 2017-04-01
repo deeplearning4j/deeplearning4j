@@ -38,11 +38,7 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void gemv( char order,
-               char transA,
-               double alpha,  INDArray A,
-               INDArray X, double beta,
-               INDArray Y);
+    void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y);
 
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations:
@@ -58,11 +54,8 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void gemv( char order,
-               char transA,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray X, IComplexNumber beta,
-               IComplexNDArray Y);
+    void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta,
+                    IComplexNDArray Y);
 
     /**
      * gbmv computes a matrix-vector product using a general band matrix and performs one of the following matrix-vector operations:
@@ -80,11 +73,7 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void gbmv(char order,
-              char TransA,
-              int KL,  int KU,  double alpha,
-              INDArray A,  INDArray X,
-              double beta, INDArray Y);
+    void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta, INDArray Y);
 
     /**
      * gbmv computes a matrix-vector product using a general band matrix and performs one of the following matrix-vector operations:
@@ -102,11 +91,8 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void gbmv(char order,
-              char TransA,
-              int KL,  int KU,  IComplexNumber alpha,
-              IComplexNDArray A,  IComplexNDArray X,
-              IComplexNumber beta, IComplexNDArray Y);
+    void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y);
 
 
     /**
@@ -118,9 +104,7 @@ public interface Level2 {
      * @param Y
      * @param A
      */
-    void ger( char order,
-              double alpha,  INDArray X,
-              INDArray Y, INDArray A);
+    void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A);
 
 
 
@@ -133,10 +117,7 @@ public interface Level2 {
      * @param Y
      * @param A
      */
-    void geru( char order,
-               IComplexNumber alpha,  IComplexNDArray X,
-               IComplexNDArray Y, IComplexNDArray A);
-
+    void geru(char order, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A);
 
 
 
@@ -149,7 +130,9 @@ public interface Level2 {
      * @param Y
      * @param A
      */
-    void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y);
+    void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta,
+                    IComplexNDArray Y);
+
     /**
      * hemv computes a matrix-vector product using a Hermitian matrix:
      y := alpha*a*x + beta*y.
@@ -162,7 +145,9 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y);
+    void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta,
+                    IComplexNDArray Y);
+
     /**
      * ?her2 performs a rank-2 update of an n-by-n Hermitian matrix a:
      a := alpha*x*conjg(y') + conjg(alpha)*y*conjg(x') + a.
@@ -174,6 +159,7 @@ public interface Level2 {
      * @param A
      */
     void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A);
+
     /**
      * ?hpmv computes a matrix-vector product using a Hermitian packed matrix:
      y := alpha*a*x + beta*y.
@@ -187,7 +173,8 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y);
+    void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y);
 
     /**
      * hpr2 performs a rank-2 update of an n-by-n packed Hermitian matrix a:
@@ -213,10 +200,7 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void sbmv( char order,  char Uplo,
-               double alpha,  INDArray A,
-               INDArray X,
-               double beta, INDArray Y);
+    void sbmv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y);
 
     /**
      *
@@ -228,10 +212,7 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void spmv( char order,  char Uplo,
-               double alpha,  INDArray Ap,
-               INDArray X,
-               double beta, INDArray Y);
+    void spmv(char order, char Uplo, double alpha, INDArray Ap, INDArray X, double beta, INDArray Y);
 
     /**
      * spr performs a rank-1 update of an n-by-n packed symmetric matrix a:
@@ -242,9 +223,7 @@ public interface Level2 {
      * @param X
      * @param Ap
      */
-    void spr( char order,  char Uplo,
-              double alpha,  INDArray X,
-              INDArray Ap);
+    void spr(char order, char Uplo, double alpha, INDArray X, INDArray Ap);
 
     /**
      * ?spr2 performs a rank-2 update of an n-by-n packed symmetric matrix a:
@@ -256,9 +235,7 @@ public interface Level2 {
      * @param Y
      * @param A
      */
-    void spr2(char order, char Uplo,
-              double alpha, INDArray X,
-              INDArray Y,INDArray A);
+    void spr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A);
 
     /**
      * symv computes a matrix-vector product for a symmetric matrix:
@@ -272,10 +249,7 @@ public interface Level2 {
      * @param beta
      * @param Y
      */
-    void symv(char order, char Uplo,
-              double alpha, INDArray A,
-              INDArray X,
-              double beta, INDArray Y);
+    void symv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y);
 
     /**
      * syr performs a rank-1 update of an n-by-n symmetric matrix a:
@@ -287,9 +261,7 @@ public interface Level2 {
      * @param X
      * @param A
      */
-    void syr( char order,  char Uplo,
-              int N,  double alpha,  INDArray X,
-              INDArray A);
+    void syr(char order, char Uplo, int N, double alpha, INDArray X, INDArray A);
 
     /**
      *
@@ -300,9 +272,7 @@ public interface Level2 {
      * @param Y
      * @param A
      */
-    void syr2( char order,  char Uplo,
-               double alpha,  INDArray X,
-              INDArray Y, INDArray A);
+    void syr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A);
 
     /**
      * syr2 performs a rank-2 update of an n-by-n symmetric matrix a:
@@ -314,10 +284,7 @@ public interface Level2 {
      * @param A
      * @param X
      */
-    void tbmv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray A,
-               INDArray X);
+    void tbmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X);
 
     /**
      * ?tbsv solves a system of linear equations whose coefficients are in a triangular band matrix.
@@ -328,10 +295,7 @@ public interface Level2 {
      * @param A
      * @param X
      */
-    void tbsv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray A,
-               INDArray X);
+    void tbsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X);
 
     /**
      * tpmv computes a matrix-vector product using a triangular packed matrix.
@@ -342,9 +306,7 @@ public interface Level2 {
      * @param Ap
      * @param X
      */
-    void tpmv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray Ap, INDArray X);
+    void tpmv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X);
 
     /**
      * tpsv solves a system of linear equations whose coefficients are in a triangular packed matrix.
@@ -355,9 +317,7 @@ public interface Level2 {
      * @param Ap
      * @param X
      */
-    void tpsv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray Ap, INDArray X);
+    void tpsv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X);
 
     /**
      * trmv computes a matrix-vector product using a triangular matrix.
@@ -368,10 +328,7 @@ public interface Level2 {
      * @param A
      * @param X
      */
-    void trmv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray A,
-               INDArray X);
+    void trmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X);
 
     /**
      * trsv solves a system of linear equations whose coefficients are in a triangular matrix.
@@ -382,7 +339,5 @@ public interface Level2 {
      * @param A
      * @param X
      */
-    void trsv( char order,  char Uplo,
-               char  TransA,  char  Diag,
-               INDArray A,INDArray X);
+    void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X);
 }

@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
  * @author Adam Gibson
  */
 public class BenchmarkRunnerApp {
-    @Option(name="--nTrials",usage="Number of trials to run",aliases = "-n")
+    @Option(name = "--nTrials", usage = "Number of trials to run", aliases = "-n")
     private int nTrials = 1000;
-    @Option(name="--run",usage="Trials to run",aliases   = "-r")
+    @Option(name = "--run", usage = "Trials to run", aliases = "-r")
     private String benchmarksToRun;
 
     /**
@@ -37,7 +37,7 @@ public class BenchmarkRunnerApp {
         CmdLineParser parser = new CmdLineParser(this);
         try {
             parser.parseArgument(args);
-        } catch(CmdLineException e) {
+        } catch (CmdLineException e) {
             System.err.println(e.getMessage());
             return;
         }
@@ -46,30 +46,33 @@ public class BenchmarkRunnerApp {
         Iterator<Nd4jBackend> backendIterator = backends.iterator();
         List<Nd4jBackend> allBackends = new ArrayList<>();
         Set<String> run = new HashSet<>();
-        if(benchmarksToRun != null) {
+        if (benchmarksToRun != null) {
             String[] split = benchmarksToRun.split(",");
-            for(String s : split)
+            for (String s : split)
                 run.add(s);
         }
-        while(backendIterator.hasNext())
+        while (backendIterator.hasNext())
             allBackends.add(backendIterator.next());
 
 
         Set<Class<? extends BenchMarkPerformer>> performers = reflections.getSubTypesOf(BenchMarkPerformer.class);
-        for(Class<? extends BenchMarkPerformer> perfClazz : performers) {
-            if(Modifier.isAbstract(perfClazz.getModifiers()) || !run.isEmpty() && !run.contains(perfClazz.getName()))
+        for (Class<? extends BenchMarkPerformer> perfClazz : performers) {
+            if (Modifier.isAbstract(perfClazz.getModifiers()) || !run.isEmpty() && !run.contains(perfClazz.getName()))
                 continue;
             String begin = "=========================";
             String end = "===========================";
             System.out.println(begin + " Benchmark: " + perfClazz.getName() + " " + end);
-            for(Nd4jBackend backend : backends) {
+            for (Nd4jBackend backend : backends) {
                 Nd4j nd4j = new Nd4j();
                 nd4j.initWithBackend(backend);
-                Constructor<BenchMarkPerformer> performerConstructor = (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
+                Constructor<BenchMarkPerformer> performerConstructor =
+                                (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
                 BenchMarkPerformer performer = performerConstructor.newInstance(nTrials);
                 System.out.println("Running " + backend.getClass().getName());
                 performer.run(backend);
-                System.out.println("Backend " + backend.getClass().getName() + " took (in nanoseconds) " + performer.averageTime() + " (in milliseconds) " + TimeUnit.MILLISECONDS.convert(performer.averageTime(),TimeUnit.NANOSECONDS));
+                System.out.println("Backend " + backend.getClass().getName() + " took (in nanoseconds) "
+                                + performer.averageTime() + " (in milliseconds) "
+                                + TimeUnit.MILLISECONDS.convert(performer.averageTime(), TimeUnit.NANOSECONDS));
             }
 
             System.out.println(begin + end);

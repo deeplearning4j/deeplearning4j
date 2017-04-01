@@ -3,10 +3,7 @@ package org.nd4j.linalg.heartbeat.utils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 
-import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -42,7 +39,7 @@ public class EnvironmentUtils {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
 
-            for (NetworkInterface networkInterface: interfaces) {
+            for (NetworkInterface networkInterface : interfaces) {
                 try {
                     byte[] arr = networkInterface.getHardwareAddress();
                     long seed = 0;
@@ -61,6 +58,6 @@ public class EnvironmentUtils {
             ; // do nothing here
         }
 
-        return ret ;
+        return ret;
     }
 }

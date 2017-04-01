@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class ManhattanDistance extends BaseAccumulation {
 
-    public ManhattanDistance() {
-    }
+    public ManhattanDistance() {}
 
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -70,37 +69,37 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + FastMath.abs(x - y);
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum + x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
-        return accum + FastMath.abs(x-y);
+    public float update(float accum, float x, float y) {
+        return accum + FastMath.abs(x - y);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x) {
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         return accum.add(FastMath.abs(x - y));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x.sub(y).absoluteValue());
     }
 
@@ -110,17 +109,17 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         return first + second;
     }
 
     @Override
-    public float combineSubResults(float first, float second){
+    public float combineSubResults(float first, float second) {
         return first + second;
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return first.add(second);
     }
 
@@ -187,7 +186,8 @@ public class ManhattanDistance extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         ManhattanDistance ret;
         if (y() != null)
-            ret = new ManhattanDistance(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), x.lengthLong());
+            ret = new ManhattanDistance(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), x.lengthLong());
         else
             ret = new ManhattanDistance(x.vectorAlongDimension(index, dimension));
         ret.setApplyFinalTransform(applyFinalTransform());
@@ -198,7 +198,8 @@ public class ManhattanDistance extends BaseAccumulation {
     public Op opForDimension(int index, int... dimension) {
         ManhattanDistance ret;
         if (y() != null)
-            ret = new ManhattanDistance(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), x.lengthLong());
+            ret = new ManhattanDistance(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), x.lengthLong());
         else
             ret = new ManhattanDistance(x.tensorAlongDimension(index, dimension));
         ret.setApplyFinalTransform(applyFinalTransform());

@@ -19,7 +19,8 @@ public class StoreInt implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         methodVisitor.visitVarInsn(Opcodes.ISTORE, idx);
         //add 1 for the store operation
         return new Size(1, 1);

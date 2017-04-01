@@ -52,7 +52,7 @@ public class IntArrayCreation implements Implementation {
      */
     public static StackManipulation intCreationOfLength(int length) {
         List<StackManipulation> manipulations = new ArrayList<>();
-        for(int i = 0; i < length; i++)
+        for (int i = 0; i < length; i++)
             manipulations.add(IntegerConstant.forValue(0));
         StackManipulation createArray = factory.withValues(manipulations);
         return createArray;

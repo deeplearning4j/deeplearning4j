@@ -1,6 +1,7 @@
 package org.nd4j.nativeblas;
 
 
+import org.bytedeco.javacpp.Loader;
 import org.nd4j.linalg.api.blas.Blas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,14 +14,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Nd4jBlas implements Blas {
 
-    public enum Vendor {
-        UNKNOWN,
-        CUBLAS,
-        OPENBLAS,
-        MKL,
-    }
-
-
     private static Logger logger = LoggerFactory.getLogger(Nd4jBlas.class);
 
     public Nd4jBlas() {
@@ -32,7 +25,12 @@ public abstract class Nd4jBlas implements Blas {
                 numThreads = Integer.parseInt(numThreadsString);
                 setMaxThreads(numThreads);
             } else {
-                numThreads = getCores(Runtime.getRuntime().availableProcessors());
+                int cores = Loader.totalCores();
+                int chips = Loader.totalChips();
+                if (cores > 0 && chips > 0)
+                    numThreads = Math.max(1, cores /chips);
+                else
+                    numThreads = getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);
             }
             logger.info("Number of threads used for BLAS: {}", getMaxThreads());
@@ -41,10 +39,12 @@ public abstract class Nd4jBlas implements Blas {
 
     private int getCores(int totals) {
         // that's special case for Xeon Phi
-        if (totals >= 256) return  64;
+        if (totals >= 256)
+            return 64;
 
         int ht_off = totals / 2; // we count off HyperThreading without any excuses
-        if (ht_off <= 4) return 4; // special case for Intel i5. and nobody likes i3 anyway
+        if (ht_off <= 4)
+            return 4; // special case for Intel i5. and nobody likes i3 anyway
 
         if (ht_off > 24) {
             int rounds = 0;
@@ -74,15 +74,18 @@ public abstract class Nd4jBlas implements Blas {
     }
 
     /**
-     * This method returns BLAS library vendor
+     * Returns the BLAS library vendor
      *
-     * @return
+     * @return the BLAS library vendor
      */
+    @Override
     public Vendor getBlasVendor() {
-        if (getVendor() > 3)
+        int vendor = getBlasVendorId();
+        boolean isUnknowVendor = ((vendor > Vendor.values().length - 1) || (vendor <= 0));
+        if (isUnknowVendor) {
             return Vendor.UNKNOWN;
-
-        return Vendor.values()[getVendor()];
+        }
+        return Vendor.values()[vendor];
     }
 
     private boolean isOdd(int value) {

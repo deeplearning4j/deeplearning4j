@@ -22,17 +22,20 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 public class AdaDelta implements Serializable, GradientUpdater {
-    private INDArray msg;       //E[g^2]_t by arxiv paper, algorithm 1
-    private INDArray msdx;      //E[delta x^2]_t by arxiv paper, algorithm 1
-    private double rho = 0.95;
-    private double epsilon = Nd4j.EPS_THRESHOLD;
+    public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;
+    public static final double DEFAULT_ADADELTA_RHO = 0.95;
+
+    private INDArray msg; //E[g^2]_t by arxiv paper, algorithm 1
+    private INDArray msdx; //E[delta x^2]_t by arxiv paper, algorithm 1
+    private double rho = DEFAULT_ADADELTA_RHO;
+    private double epsilon = DEFAULT_ADADELTA_EPSILON;
 
 
     public AdaDelta(double rho) {
         this.rho = rho;
     }
 
-    public AdaDelta(double rho, double epsilon){
+    public AdaDelta(double rho, double epsilon) {
         this.rho = rho;
         this.epsilon = epsilon;
     }
@@ -44,8 +47,10 @@ public class AdaDelta implements Serializable, GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(0);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(0);
         int length = viewArray.length();
         this.msg = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length / 2));
         this.msdx = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length / 2, length));
@@ -78,7 +83,7 @@ public class AdaDelta implements Serializable, GradientUpdater {
 
         //Line 4 of Algorithm 1: https://arxiv.org/pdf/1212.5701v1.pdf
         //E[g^2]_t = rho * E[g^2]_{t−1} + (1-rho)*g^2_t
-        msg.muli(rho).addi(gradient.mul(gradient).muli(1-rho));
+        msg.muli(rho).addi(gradient.mul(gradient).muli(1 - rho));
 
         //Calculate update:
         //dX = - g * RMS[delta x]_{t-1} / RMS[g]_t
@@ -88,7 +93,7 @@ public class AdaDelta implements Serializable, GradientUpdater {
         INDArray update = gradient.muli(rmsdx_t1.divi(rmsg_t));
 
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
-        msdx.muli(rho).addi(update.mul(update).muli(1-rho));
+        msdx.muli(rho).addi(update.mul(update).muli(1 - rho));
 
         return update;
     }
@@ -96,7 +101,8 @@ public class AdaDelta implements Serializable, GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         AdaDeltaAggregator ag = new AdaDeltaAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 

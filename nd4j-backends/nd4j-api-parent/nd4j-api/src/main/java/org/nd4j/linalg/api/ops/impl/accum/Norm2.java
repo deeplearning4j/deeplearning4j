@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 public class Norm2 extends BaseAccumulation {
 
-    public Norm2() {
-    }
+    public Norm2() {}
 
     public Norm2(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -99,12 +98,12 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum + x;
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + x;
     }
 
@@ -114,27 +113,27 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         return accum + x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x);
     }
 
@@ -144,17 +143,17 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         return first + second;
     }
 
     @Override
-    public float combineSubResults(float first, float second){
+    public float combineSubResults(float first, float second) {
         return first + second;
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return first.add(second);
     }
 
@@ -195,25 +194,23 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public double getAndSetFinalResult(double accum) {
-        if(applyFinalTransform()) {
+        if (applyFinalTransform()) {
             double d = FastMath.sqrt(accum);
             this.finalResult = d;
             return d;
-        }
-        else
+        } else
             return accum;
 
     }
 
     @Override
     public float getAndSetFinalResult(float accum) {
-        if(applyFinalTransform()) {
+        if (applyFinalTransform()) {
             float f = (float) FastMath.sqrt(accum);
             this.finalResult = f;
             return f;
-        }
-        else
-            return  accum;
+        } else
+            return accum;
 
     }
 
@@ -225,15 +222,15 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public double calculateFinalResult(double accum, long n) {
-        if(applyFinalTransform())
+        if (applyFinalTransform())
             return FastMath.sqrt(accum);
         return accum;
     }
 
     @Override
     public float calculateFinalResult(float accum, long n) {
-        if(applyFinalTransform())
-            return (float)FastMath.sqrt(accum);
+        if (applyFinalTransform())
+            return (float) FastMath.sqrt(accum);
         return accum;
     }
 }

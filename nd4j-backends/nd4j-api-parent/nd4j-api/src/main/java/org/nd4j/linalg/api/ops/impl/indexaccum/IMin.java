@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 public class IMin extends BaseIndexAccumulation {
-    public IMin() {
-    }
+    public IMin() {}
 
     public IMin(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -47,27 +46,27 @@ public class IMin extends BaseIndexAccumulation {
 
 
     @Override
-    public int update(double accum, int accumIdx, double x, int xIdx){
+    public int update(double accum, int accumIdx, double x, int xIdx) {
         return (accum <= x ? accumIdx : xIdx);
     }
 
     @Override
-    public int update(float accum, int accumIdx, float x, int xIdx){
+    public int update(float accum, int accumIdx, float x, int xIdx) {
         return (accum <= x ? accumIdx : xIdx);
     }
 
     @Override
-    public int update(double accum, int accumIdx, double x, double y, int idx){
+    public int update(double accum, int accumIdx, double x, double y, int idx) {
         return (accum <= x ? accumIdx : idx);
     }
 
     @Override
-    public int update(float accum, int accumIdx, float x, float y, int idx){
-        return (accum <=x ? accumIdx : idx);
+    public int update(float accum, int accumIdx, float x, float y, int idx) {
+        return (accum <= x ? accumIdx : idx);
     }
 
     @Override
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx){
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx) {
         return (accum.absoluteValue().doubleValue() <= x.absoluteValue().doubleValue() ? accumIdx : xIdx);
     }
 
@@ -81,7 +80,7 @@ public class IMin extends BaseIndexAccumulation {
         return (accum.absoluteValue().doubleValue() <= x ? accumIdx : idx);
     }
 
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx){
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx) {
         return (accum.absoluteValue().doubleValue() <= x.absoluteValue().doubleValue() ? accumIdx : idx);
     }
 
@@ -137,18 +136,23 @@ public class IMin extends BaseIndexAccumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return Float.MAX_VALUE;
     }
 
     @Override
-    public double zeroDouble(){
+    public double zeroDouble() {
         return Double.MAX_VALUE;
     }
 
     @Override
-    public IComplexNumber zeroComplex(){
-        return Nd4j.createComplexNumber(Double.MAX_VALUE,0);
+    public float zeroHalf() {
+        return 65503.0f;
+    }
+
+    @Override
+    public IComplexNumber zeroComplex() {
+        return Nd4j.createComplexNumber(Double.MAX_VALUE, 0);
     }
 
     @Override

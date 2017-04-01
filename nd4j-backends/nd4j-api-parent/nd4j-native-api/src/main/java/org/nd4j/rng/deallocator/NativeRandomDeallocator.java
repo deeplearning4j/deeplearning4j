@@ -2,7 +2,6 @@ package org.nd4j.rng.deallocator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.ref.ReferenceQueue;
@@ -10,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Since NativeRandom assumes some native resources, we have to track their use, and deallocate them as soon they are released by JVM GC
@@ -62,7 +62,8 @@ public class NativeRandomDeallocator {
         private final ReferenceQueue<NativePack> queue;
         private final Map<Long, GarbageStateReference> referenceMap;
 
-        protected DeallocatorThread(int threadId, @NonNull ReferenceQueue<NativePack> queue, Map<Long, GarbageStateReference> referenceMap) {
+        protected DeallocatorThread(int threadId, @NonNull ReferenceQueue<NativePack> queue,
+                        Map<Long, GarbageStateReference> referenceMap) {
             this.queue = queue;
             this.referenceMap = referenceMap;
             this.setName("NativeRandomDeallocator thread " + threadId);
@@ -79,12 +80,7 @@ public class NativeRandomDeallocator {
                         NativeOpsHolder.getInstance().getDeviceNativeOps().destroyRandom(reference.getStatePointer());
                     }
                 } else {
-                    try {
-                        // state buffer size is very small, so we don't really care if we'll sleep for 5 seconds
-                        Thread.sleep(5000);
-                    } catch (Exception e) {
-                        //
-                    }
+                    LockSupport.parkNanos(5000000L);
                 }
             }
         }

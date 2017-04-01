@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,11 +20,11 @@
 package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.lang3.RandomUtils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -44,9 +44,9 @@ public class ArrayUtil {
      * @return an array of length n filled with the
      * given value
      */
-    public static int[] nTimes(int n,int toReplicate) {
+    public static int[] nTimes(int n, int toReplicate) {
         int[] ret = new int[n];
-        Arrays.fill(ret,toReplicate);
+        Arrays.fill(ret, toReplicate);
         return ret;
     }
 
@@ -60,8 +60,8 @@ public class ArrayUtil {
      */
     public static boolean allUnique(int[] toTest) {
         Set<Integer> set = new HashSet<>();
-        for(int i : toTest) {
-            if(!set.contains(i))
+        for (int i : toTest) {
+            if (!set.contains(i))
                 set.add(i);
             else
                 return false;
@@ -119,20 +119,30 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static short fromFloat( float v ) {
-        if(Float.isNaN(v)) throw new UnsupportedOperationException("NaN to half conversion not supported!");
-        if(v == Float.POSITIVE_INFINITY) return(short)0x7c00;
-        if(v == Float.NEGATIVE_INFINITY) return(short)0xfc00;
-        if(v == 0.0f) return(short)0x0000;
-        if(v == -0.0f) return(short)0x8000;
-        if(v > 65504.0f) return 0x7bff;  // max value supported by half float
-        if(v < -65504.0f) return(short)( 0x7bff | 0x8000 );
-        if(v > 0.0f && v < 5.96046E-8f) return 0x0001;
-        if(v < 0.0f && v > -5.96046E-8f) return(short)0x8001;
+    public static short fromFloat(float v) {
+        if (Float.isNaN(v))
+            return (short) 0x7fff;
+        if (v == Float.POSITIVE_INFINITY)
+            return (short) 0x7c00;
+        if (v == Float.NEGATIVE_INFINITY)
+            return (short) 0xfc00;
+        if (v == 0.0f)
+            return (short) 0x0000;
+        if (v == -0.0f)
+            return (short) 0x8000;
+        if (v > 65504.0f)
+            return 0x7bff; // max value supported by half float
+        if (v < -65504.0f)
+            return (short) (0x7bff | 0x8000);
+        if (v > 0.0f && v < 5.96046E-8f)
+            return 0x0001;
+        if (v < 0.0f && v > -5.96046E-8f)
+            return (short) 0x8001;
 
         final int f = Float.floatToIntBits(v);
 
-        return(short)((( f>>16 ) & 0x8000 ) | (((( f & 0x7f800000 ) - 0x38000000 )>>13 ) & 0x7c00 ) | (( f>>13 ) & 0x03ff ));
+        return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
+                        | ((f >> 13) & 0x03ff));
     }
 
     public static int[] toInts(float[] data) {
@@ -149,6 +159,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static int[] toInts(long[] array) {
+        int[] retVal = new int[array.length];
+
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (int) array[i];
+        }
+
+        return retVal;
+    }
 
     /**
      * Calculate the offset for a given stride array
@@ -157,13 +176,14 @@ public class ArrayUtil {
      * @return the offset for the given
      * stride
      */
-    public static int offsetFor(int[] stride,int i) {
+    public static int offsetFor(int[] stride, int i) {
         int ret = 0;
-        for(int j = 0; j < stride.length; j++)
+        for (int j = 0; j < stride.length; j++)
             ret += (i * stride[j]);
         return ret;
 
     }
+
     /**
      * Sum of an int array
      * @param add the elements
@@ -178,6 +198,7 @@ public class ArrayUtil {
             ret += add.get(i);
         return ret;
     }
+
     /**
      * Sum of an int array
      * @param add the elements
@@ -192,6 +213,7 @@ public class ArrayUtil {
             ret += add[i];
         return ret;
     }
+
     /**
      * Product of an int array
      * @param mult the elements
@@ -214,7 +236,7 @@ public class ArrayUtil {
      *            to calculate the sum for
      * @return the product of this array
      */
-    public static int prod(int...mult) {
+    public static int prod(int... mult) {
         if (mult.length < 1)
             return 0;
         int ret = 1;
@@ -245,7 +267,7 @@ public class ArrayUtil {
      *            to calculate the sum for
      * @return the product of this array
      */
-    public static long prodLong(int...mult) {
+    public static long prodLong(int... mult) {
         if (mult.length < 1)
             return 0;
         long ret = 1;
@@ -282,7 +304,8 @@ public class ArrayUtil {
      */
     public static boolean isZero(int[] as) {
         for (int i = 0; i < as.length; i++) {
-            if (as[i] == 0) return true;
+            if (as[i] == 0)
+                return true;
         }
         return false;
     }
@@ -315,15 +338,15 @@ public class ArrayUtil {
      * @param strides the strides to compute
      * @return the offset for the given shape,offset,and strides
      */
-    public static int calcOffset(List<Integer> shape,List<Integer> offsets,List<Integer> strides) {
-        if(shape.size() != offsets.size() || shape.size() != strides.size())
+    public static int calcOffset(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
+        if (shape.size() != offsets.size() || shape.size() != strides.size())
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
         int ret = 0;
-        for(int i = 0; i < offsets.size(); i++) {
+        for (int i = 0; i < offsets.size(); i++) {
             //we should only do this in the general case, not on vectors
             //the reason for this is we force everything including scalars
             //to be 2d
-            if(shape.get(i) == 1 && offsets.size() > 2 && i > 0)
+            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
                 continue;
             ret += offsets.get(i) * strides.get(i);
         }
@@ -340,13 +363,13 @@ public class ArrayUtil {
      * @param strides the strides to compute
      * @return the offset for the given shape,offset,and strides
      */
-    public static int calcOffset(int[] shape,int[] offsets,int[] strides) {
-        if(shape.length != offsets.length || shape.length!= strides.length)
+    public static int calcOffset(int[] shape, int[] offsets, int[] strides) {
+        if (shape.length != offsets.length || shape.length != strides.length)
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
 
         int ret = 0;
-        for(int i = 0; i < offsets.length; i++) {
-            if(shape[i] == 1)
+        for (int i = 0; i < offsets.length; i++) {
+            if (shape[i] == 1)
                 continue;
             ret += offsets[i] * strides[i];
         }
@@ -362,17 +385,17 @@ public class ArrayUtil {
      * @param strides the strides to compute
      * @return the offset for the given shape,offset,and strides
      */
-    public static long calcOffsetLong(List<Integer> shape,List<Integer> offsets,List<Integer> strides) {
-        if(shape.size() != offsets.size() || shape.size() != strides.size())
+    public static long calcOffsetLong(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
+        if (shape.size() != offsets.size() || shape.size() != strides.size())
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
         long ret = 0;
-        for(int i = 0; i < offsets.size(); i++) {
+        for (int i = 0; i < offsets.size(); i++) {
             //we should only do this in the general case, not on vectors
             //the reason for this is we force everything including scalars
             //to be 2d
-            if(shape.get(i) == 1 && offsets.size() > 2 && i > 0)
+            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
                 continue;
-            ret += (long)offsets.get(i) * strides.get(i);
+            ret += (long) offsets.get(i) * strides.get(i);
         }
 
         return ret;
@@ -387,15 +410,15 @@ public class ArrayUtil {
      * @param strides the strides to compute
      * @return the offset for the given shape,offset,and strides
      */
-    public static long calcOffsetLong(int[] shape,int[] offsets,int[] strides) {
-        if(shape.length != offsets.length || shape.length!= strides.length)
+    public static long calcOffsetLong(int[] shape, int[] offsets, int[] strides) {
+        if (shape.length != offsets.length || shape.length != strides.length)
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
 
         long ret = 0;
-        for(int i = 0; i < offsets.length; i++) {
-            if(shape[i] == 1)
+        for (int i = 0; i < offsets.length; i++) {
+            if (shape[i] == 1)
                 continue;
-            ret += (long)offsets[i] * strides[i];
+            ret += (long) offsets[i] * strides[i];
         }
 
         return ret;
@@ -453,7 +476,7 @@ public class ArrayUtil {
             throw new IllegalArgumentException("Different array sizes");
 
         for (int i = 0; i < n; i++) {
-            result += (long)xs.get(i) * ys.get(i);
+            result += (long) xs.get(i) * ys.get(i);
         }
         return result;
     }
@@ -472,7 +495,7 @@ public class ArrayUtil {
             throw new IllegalArgumentException("Different array sizes");
 
         for (int i = 0; i < n; i++) {
-            result += (long)xs[i] * ys[i];
+            result += (long) xs[i] * ys[i];
         }
         return result;
     }
@@ -549,7 +572,7 @@ public class ArrayUtil {
      */
     public static double[] range(double[] data, int to, int stride, int numElementsEachStride) {
         double[] ret = new double[to / stride];
-        if(ret.length < 1)
+        if (ret.length < 1)
             ret = new double[1];
         int count = 0;
         for (int i = 0; i < data.length; i += stride) {
@@ -594,7 +617,7 @@ public class ArrayUtil {
     public static int[] range(int from, int to, int increment) {
         int diff = Math.abs(from - to);
         int[] ret = new int[diff / increment];
-        if(ret.length < 1)
+        if (ret.length < 1)
             ret = new int[1];
 
         if (from < to) {
@@ -695,14 +718,14 @@ public class ArrayUtil {
      * @return the new array with the omitted
      * item
      */
-    public static int[] keep(int[] data, int...index) {
-        if(index.length == data.length)
+    public static int[] keep(int[] data, int... index) {
+        if (index.length == data.length)
             return data;
 
         int[] ret = new int[index.length];
         int count = 0;
-        for(int i = 0; i < data.length; i++)
-            if(Ints.contains(index,i))
+        for (int i = 0; i < data.length; i++)
+            if (Ints.contains(index, i))
                 ret[count++] = data[i];
 
         return ret;
@@ -720,14 +743,14 @@ public class ArrayUtil {
      * @return the new array with the omitted
      * item
      */
-    public static int[] removeIndex(int[] data, int...index) {
-        if(index.length >= data.length)
+    public static int[] removeIndex(int[] data, int... index) {
+        if (index.length >= data.length)
             throw new IllegalStateException("Illegal remove: indexes.length > data.length");
         int offset = 0;
         /*
-            workaround for non-existant indexes (such as Integer.MAX_VALUE)
-
-
+            workaround for non-existent indexes (such as Integer.MAX_VALUE)
+        
+        
         for (int i = 0; i < index.length; i ++) {
             if (index[i] >= data.length || index[i] < 0) offset++;
         }
@@ -735,8 +758,8 @@ public class ArrayUtil {
 
         int[] ret = new int[data.length - index.length + offset];
         int count = 0;
-        for(int i = 0; i < data.length; i++)
-            if(!Ints.contains(index,i)) {
+        for (int i = 0; i < data.length; i++)
+            if (!Ints.contains(index, i)) {
                 ret[count++] = data[i];
             }
 
@@ -754,8 +777,8 @@ public class ArrayUtil {
     public static byte[] toByteArray(double[] doubleArray) {
         int times = Double.SIZE / Byte.SIZE;
         byte[] bytes = new byte[doubleArray.length * times];
-        for(int i = 0;i<doubleArray.length;i++){
-            ByteBuffer.wrap(bytes, i*times, times).putDouble(doubleArray[i]);
+        for (int i = 0; i < doubleArray.length; i++) {
+            ByteBuffer.wrap(bytes, i * times, times).putDouble(doubleArray[i]);
         }
         return bytes;
     }
@@ -768,8 +791,8 @@ public class ArrayUtil {
     public static double[] toDoubleArray(byte[] byteArray) {
         int times = Double.SIZE / Byte.SIZE;
         double[] doubles = new double[byteArray.length / times];
-        for(int i=0;i<doubles.length;i++){
-            doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getDouble();
+        for (int i = 0; i < doubles.length; i++) {
+            doubles[i] = ByteBuffer.wrap(byteArray, i * times, times).getDouble();
         }
         return doubles;
     }
@@ -783,13 +806,13 @@ public class ArrayUtil {
     public static byte[] toByteArray(float[] doubleArray) {
         int times = Float.SIZE / Byte.SIZE;
         byte[] bytes = new byte[doubleArray.length * times];
-        for(int i = 0;i<doubleArray.length;i++){
-            ByteBuffer.wrap(bytes, i*times, times).putFloat(doubleArray[i]);
+        for (int i = 0; i < doubleArray.length; i++) {
+            ByteBuffer.wrap(bytes, i * times, times).putFloat(doubleArray[i]);
         }
         return bytes;
     }
 
-    public static long[] toLongArray(int[] intArray){
+    public static long[] toLongArray(int[] intArray) {
         long[] ret = new long[intArray.length];
         for (int i = 0; i < intArray.length; i++) {
             ret[i] = intArray[i];
@@ -805,8 +828,8 @@ public class ArrayUtil {
     public static float[] toFloatArray(byte[] byteArray) {
         int times = Float.SIZE / Byte.SIZE;
         float[] doubles = new float[byteArray.length / times];
-        for(int i=0;i<doubles.length;i++){
-            doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getFloat();
+        for (int i = 0; i < doubles.length; i++) {
+            doubles[i] = ByteBuffer.wrap(byteArray, i * times, times).getFloat();
         }
         return doubles;
     }
@@ -819,8 +842,8 @@ public class ArrayUtil {
     public static byte[] toByteArray(int[] intArray) {
         int times = Integer.SIZE / Byte.SIZE;
         byte[] bytes = new byte[intArray.length * times];
-        for(int i = 0;i<intArray.length;i++){
-            ByteBuffer.wrap(bytes, i*times, times).putInt(intArray[i]);
+        for (int i = 0; i < intArray.length; i++) {
+            ByteBuffer.wrap(bytes, i * times, times).putInt(intArray[i]);
         }
         return bytes;
     }
@@ -833,7 +856,7 @@ public class ArrayUtil {
     public static int[] toIntArray(byte[] byteArray) {
         int times = Integer.SIZE / Byte.SIZE;
         int[] ints = new int[byteArray.length / times];
-        for(int i=0;i<ints.length;i++){
+        for (int i = 0; i < ints.length; i++) {
             ints[i] = ByteBuffer.wrap(byteArray, i * times, times).getInt();
         }
         return ints;
@@ -850,7 +873,7 @@ public class ArrayUtil {
      * item
      */
     public static int[] removeIndex(int[] data, int index) {
-        if(data == null)
+        if (data == null)
             return null;
 
         if (index >= data.length)
@@ -889,19 +912,17 @@ public class ArrayUtil {
      * @param length the length of the array to create
      * @return the given array
      */
-    public static int[] valueStartingAt(int valueStarting,int[] copy,int idxFrom,int idxAt,int length) {
+    public static int[] valueStartingAt(int valueStarting, int[] copy, int idxFrom, int idxAt, int length) {
         int[] ret = new int[length];
         Arrays.fill(ret, valueStarting);
-        for(int i = 0; i < length; i++) {
-            if(i + idxFrom >= copy.length || i + idxAt >= ret.length)
+        for (int i = 0; i < length; i++) {
+            if (i + idxFrom >= copy.length || i + idxAt >= ret.length)
                 break;
             ret[i + idxAt] = copy[i + idxFrom];
         }
 
         return ret;
     }
-
-
 
 
 
@@ -935,9 +956,9 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
-        if(shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
+        if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
-            Arrays.fill(ret,startNum);
+            Arrays.fill(ret, startNum);
             return ret;
         }
 
@@ -971,9 +992,9 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape, int startValue) {
-        if(shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
+        if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             int[] ret = new int[2];
-            Arrays.fill(ret,startValue);
+            Arrays.fill(ret, startValue);
             return ret;
         }
 
@@ -1000,10 +1021,10 @@ public class ArrayUtil {
      * @param second
      * @return
      */
-    public static boolean isInverse(int[] first,int[] second) {
+    public static boolean isInverse(int[] first, int[] second) {
         int backWardCount = second.length - 1;
-        for(int i = 0; i < first.length; i++) {
-            if(first[i] != second[backWardCount--])
+        for (int i = 0; i < first.length; i++) {
+            if (first[i] != second[backWardCount--])
                 return false;
         }
         return true;
@@ -1018,7 +1039,7 @@ public class ArrayUtil {
 
 
     public static int[] plus(int[] ints, int[] mult) {
-        if(ints.length != mult.length)
+        if (ints.length != mult.length)
             throw new IllegalArgumentException("Both arrays must have the same length");
         int[] ret = new int[ints.length];
         for (int i = 0; i < ints.length; i++)
@@ -1040,8 +1061,6 @@ public class ArrayUtil {
             ret[i] = ints[i] * mult[i];
         return ret;
     }
-
-
 
 
 
@@ -1146,8 +1165,8 @@ public class ArrayUtil {
      * @param arr the array to multily
      * @param mult the scalar to multiply by
      */
-    public static void multiplyBy(int[] arr,int mult) {
-        for(int i = 0; i < arr.length; i++)
+    public static void multiplyBy(int[] arr, int mult) {
+        for (int i = 0; i < arr.length; i++)
             arr[i] *= mult;
 
     }
@@ -1167,9 +1186,9 @@ public class ArrayUtil {
     }
 
 
-    public static List<double[]> zerosMatrix(int...dimensions) {
+    public static List<double[]> zerosMatrix(int... dimensions) {
         List<double[]> ret = new ArrayList<>();
-        for(int i = 0; i < dimensions.length; i++) {
+        for (int i = 0; i < dimensions.length; i++) {
             ret.add(new double[dimensions[i]]);
         }
         return ret;
@@ -1281,8 +1300,6 @@ public class ArrayUtil {
         }
         return ret;
     }
-
-
 
 
 
@@ -1438,8 +1455,9 @@ public class ArrayUtil {
     /** Convert an arbitrary-dimensional rectangular double array to flat vector.<br>
      * Can pass double[], double[][], double[][][], etc.
      */
-    public static double[] flattenDoubleArray( Object doubleArray ){
-        if( doubleArray instanceof double[] ) return (double[])doubleArray;
+    public static double[] flattenDoubleArray(Object doubleArray) {
+        if (doubleArray instanceof double[])
+            return (double[]) doubleArray;
 
         LinkedList<Object> stack = new LinkedList<>();
         stack.push(doubleArray);
@@ -1449,26 +1467,31 @@ public class ArrayUtil {
         double[] flat = new double[length];
         int count = 0;
 
-        while(!stack.isEmpty()){
+        while (!stack.isEmpty()) {
             Object current = stack.pop();
-            if( current instanceof double[] ){
-                double[] arr = (double[])current;
-                for( int i=0; i<arr.length; i++ ) flat[count++] = arr[i];
-            } else if(current instanceof Object[] ){
-                Object[] o = (Object[])current;
-                for( int i=o.length-1; i>=0; i-- ) stack.push(o[i]);
-            } else throw new IllegalArgumentException("Base array is not double[]");
+            if (current instanceof double[]) {
+                double[] arr = (double[]) current;
+                for (int i = 0; i < arr.length; i++)
+                    flat[count++] = arr[i];
+            } else if (current instanceof Object[]) {
+                Object[] o = (Object[]) current;
+                for (int i = o.length - 1; i >= 0; i--)
+                    stack.push(o[i]);
+            } else
+                throw new IllegalArgumentException("Base array is not double[]");
         }
 
-        if( count != flat.length ) throw new IllegalArgumentException("Fewer elements than expected. Array is ragged?");
+        if (count != flat.length)
+            throw new IllegalArgumentException("Fewer elements than expected. Array is ragged?");
         return flat;
     }
 
     /** Convert an arbitrary-dimensional rectangular float array to flat vector.<br>
      * Can pass float[], float[][], float[][][], etc.
      */
-    public static float[] flattenFloatArray( Object floatArray ){
-        if( floatArray instanceof float[] ) return (float[])floatArray;
+    public static float[] flattenFloatArray(Object floatArray) {
+        if (floatArray instanceof float[])
+            return (float[]) floatArray;
 
         LinkedList<Object> stack = new LinkedList<>();
         stack.push(floatArray);
@@ -1478,18 +1501,22 @@ public class ArrayUtil {
         float[] flat = new float[length];
         int count = 0;
 
-        while(!stack.isEmpty()){
+        while (!stack.isEmpty()) {
             Object current = stack.pop();
-            if( current instanceof float[] ){
-                float[] arr = (float[])current;
-                for( int i=0; i<arr.length; i++ ) flat[count++] = arr[i];
-            } else if(current instanceof Object[] ){
-                Object[] o = (Object[])current;
-                for( int i=o.length-1; i>=0; i-- ) stack.push(o[i]);
-            } else throw new IllegalArgumentException("Base array is not float[]");
+            if (current instanceof float[]) {
+                float[] arr = (float[]) current;
+                for (int i = 0; i < arr.length; i++)
+                    flat[count++] = arr[i];
+            } else if (current instanceof Object[]) {
+                Object[] o = (Object[]) current;
+                for (int i = o.length - 1; i >= 0; i--)
+                    stack.push(o[i]);
+            } else
+                throw new IllegalArgumentException("Base array is not float[]");
         }
 
-        if( count != flat.length ) throw new IllegalArgumentException("Fewer elements than expected. Array is ragged?");
+        if (count != flat.length)
+            throw new IllegalArgumentException("Fewer elements than expected. Array is ragged?");
         return flat;
     }
 
@@ -1499,10 +1526,10 @@ public class ArrayUtil {
      * Can pass any Java array type: double[], Object[][][], float[][], etc.<br>
      * Length of returned array is number of dimensions; returned[i] is size of ith dimension.
      */
-    public static int[] arrayShape(Object array){
+    public static int[] arrayShape(Object array) {
         int nDimensions = 0;
         Class<?> c = array.getClass().getComponentType();
-        while( c != null ){
+        while (c != null) {
             nDimensions++;
             c = c.getComponentType();
         }
@@ -1510,87 +1537,90 @@ public class ArrayUtil {
 
         int[] shape = new int[nDimensions];
         Object current = array;
-        for( int i=0; i<shape.length-1; i++ ){
-            shape[i] = ((Object[])current).length;
-            current = ((Object[])current)[0];
+        for (int i = 0; i < shape.length - 1; i++) {
+            shape[i] = ((Object[]) current).length;
+            current = ((Object[]) current)[0];
         }
 
-        if(current instanceof Object[]) {
-            shape[shape.length-1] = ((Object[])current).length;
-        }
-        else if(current instanceof double[]) {
-            shape[shape.length-1] = ((double[])current).length;
-        }
-        else if(current instanceof float[]) {
-            shape[shape.length-1] = ((float[])current).length;
-        }
-        else if(current instanceof long[]) {
-            shape[shape.length-1] = ((long[])current).length;
-        }
-        else if(current instanceof int[]) {
-            shape[shape.length-1] = ((int[])current).length;
-        }
-        else if(current instanceof byte[]) {
-            shape[shape.length-1] = ((byte[])current).length;
-        }
-        else if(current instanceof char[]) {
-            shape[shape.length-1] = ((char[])current).length;
-        }
-        else if( current instanceof boolean[] ){
-            shape[shape.length-1] = ((boolean[])current).length;
-        }
-        else if( current instanceof short[] ){
-            shape[shape.length-1] = ((short[])current).length;
-        }
-        else
-            throw new IllegalStateException("Unknown array type");	//Should never happen
+        if (current instanceof Object[]) {
+            shape[shape.length - 1] = ((Object[]) current).length;
+        } else if (current instanceof double[]) {
+            shape[shape.length - 1] = ((double[]) current).length;
+        } else if (current instanceof float[]) {
+            shape[shape.length - 1] = ((float[]) current).length;
+        } else if (current instanceof long[]) {
+            shape[shape.length - 1] = ((long[]) current).length;
+        } else if (current instanceof int[]) {
+            shape[shape.length - 1] = ((int[]) current).length;
+        } else if (current instanceof byte[]) {
+            shape[shape.length - 1] = ((byte[]) current).length;
+        } else if (current instanceof char[]) {
+            shape[shape.length - 1] = ((char[]) current).length;
+        } else if (current instanceof boolean[]) {
+            shape[shape.length - 1] = ((boolean[]) current).length;
+        } else if (current instanceof short[]) {
+            shape[shape.length - 1] = ((short[]) current).length;
+        } else
+            throw new IllegalStateException("Unknown array type"); //Should never happen
         return shape;
     }
 
 
     /** Returns the maximum value in the array */
-    public static int max(int[] in){
+    public static int max(int[] in) {
         int max = Integer.MIN_VALUE;
-        for( int i=0; i<in.length; i++ ) if(in[i]>max) max = in[i];
+        for (int i = 0; i < in.length; i++)
+            if (in[i] > max)
+                max = in[i];
         return max;
     }
 
     /** Returns the minimum value in the array */
-    public static int min(int[] in){
+    public static int min(int[] in) {
         int min = Integer.MAX_VALUE;
-        for( int i=0; i<in.length; i++ ) if(in[i]<min) min = in[i];
+        for (int i = 0; i < in.length; i++)
+            if (in[i] < min)
+                min = in[i];
         return min;
     }
 
     /** Returns the index of the maximum value in the array.
      * If two entries have same maximum value, index of the first one is returned. */
-    public static int argMax(int[] in){
+    public static int argMax(int[] in) {
         int maxIdx = 0;
-        for( int i=1; i<in.length; i++ ) if(in[i]>in[maxIdx]) maxIdx = i;
+        for (int i = 1; i < in.length; i++)
+            if (in[i] > in[maxIdx])
+                maxIdx = i;
         return maxIdx;
     }
 
     /** Returns the index of the minimum value in the array.
      * If two entries have same minimum value, index of the first one is returned. */
-    public static int argMin(int[] in){
+    public static int argMin(int[] in) {
         int minIdx = 0;
-        for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
+        for (int i = 1; i < in.length; i++)
+            if (in[i] < in[minIdx])
+                minIdx = i;
         return minIdx;
     }
 
     /** Returns the index of the maximum value in the array.
      * If two entries have same maximum value, index of the first one is returned. */
-    public static int argMax(long[] in){
+    public static int argMax(long[] in) {
         int maxIdx = 0;
-        for( int i=1; i<in.length; i++ ) if(in[i]>in[maxIdx]) maxIdx = i;
+        for (int i = 1; i < in.length; i++)
+            if (in[i] > in[maxIdx])
+                maxIdx = i;
         return maxIdx;
     }
 
     /** Returns the index of the minimum value in the array.
      * If two entries have same minimum value, index of the first one is returned. */
-    public static int argMin(long[] in){
+    public static int argMin(long[] in) {
         int minIdx = 0;
-        for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
+        for (int i = 1; i < in.length; i++)
+            if (in[i] < in[minIdx])
+                minIdx = i;
         return minIdx;
     }
 
@@ -1613,7 +1643,8 @@ public class ArrayUtil {
             if (i < result.length / 2) {
                 result[i] = indexes.get(0);
                 indexes.remove(0);
-            } else result[i] = -1;
+            } else
+                result[i] = -1;
         }
 
         return result;
@@ -1626,7 +1657,7 @@ public class ArrayUtil {
         List<Integer> odds = new ArrayList<>();
 
         // we add odd indexes only to list
-        for (int i = 1; i < result.length; i+=2) {
+        for (int i = 1; i < result.length; i += 2) {
             indexes.add(i);
             odds.add(i - 1);
         }
@@ -1639,7 +1670,8 @@ public class ArrayUtil {
                 int idx = indexes.get(0);
                 indexes.remove(0);
                 result[i] = idx;
-            } else result[i] = -1;
+            } else
+                result[i] = -1;
         }
 
         // for odd tad numbers, we add special random clause for last element
@@ -1669,12 +1701,12 @@ public class ArrayUtil {
         }
     }
 
-    public static int argMinOfMax(int[] first, int[] second){
+    public static int argMinOfMax(int[] first, int[] second) {
         int minIdx = 0;
-        int maxAtMinIdx = Math.max(first[0],second[0]);
-        for( int i=1; i<first.length; i++ ){
-            int maxAtIndex = Math.max(first[i],second[i]);
-            if(maxAtMinIdx > maxAtIndex){
+        int maxAtMinIdx = Math.max(first[0], second[0]);
+        for (int i = 1; i < first.length; i++) {
+            int maxAtIndex = Math.max(first[i], second[i]);
+            if (maxAtMinIdx > maxAtIndex) {
                 maxAtMinIdx = maxAtIndex;
                 minIdx = i;
             }
@@ -1682,17 +1714,17 @@ public class ArrayUtil {
         return minIdx;
     }
 
-    public static int argMinOfMax(int[]... arrays){
+    public static int argMinOfMax(int[]... arrays) {
         int minIdx = 0;
         int maxAtMinIdx = Integer.MAX_VALUE;
 
-        for( int i=0; i<arrays[0].length; i++ ){
+        for (int i = 0; i < arrays[0].length; i++) {
             int maxAtIndex = Integer.MIN_VALUE;
-            for( int j=0; j<arrays.length; j++ ){
-                maxAtIndex = Math.max(maxAtIndex,arrays[j][i]);
+            for (int j = 0; j < arrays.length; j++) {
+                maxAtIndex = Math.max(maxAtIndex, arrays[j][i]);
             }
 
-            if(maxAtMinIdx > maxAtIndex){
+            if (maxAtMinIdx > maxAtIndex) {
                 maxAtMinIdx = maxAtIndex;
                 minIdx = i;
             }
@@ -1700,12 +1732,12 @@ public class ArrayUtil {
         return minIdx;
     }
 
-    public static int argMinOfSum(int[] first, int[] second){
+    public static int argMinOfSum(int[] first, int[] second) {
         int minIdx = 0;
-        int sumAtMinIdx = first[0]+second[0];
-        for( int i=1; i<first.length; i++ ){
-            int sumAtIndex = first[i]+second[i];
-            if(sumAtMinIdx > sumAtIndex){
+        int sumAtMinIdx = first[0] + second[0];
+        for (int i = 1; i < first.length; i++) {
+            int sumAtIndex = first[i] + second[i];
+            if (sumAtMinIdx > sumAtIndex) {
                 sumAtMinIdx = sumAtIndex;
                 minIdx = i;
             }
@@ -1713,24 +1745,27 @@ public class ArrayUtil {
         return minIdx;
     }
 
-    public static <K, V extends Comparable<? super V>> Map<K, V> sortMapByValue( Map<K, V> map )
-    {
-        List<Map.Entry<K, V>> list =
-                new LinkedList<>( map.entrySet() );
-        Collections.sort( list, new Comparator<Map.Entry<K, V>>()
-        {
+    public static <K, V extends Comparable<? super V>> Map<K, V> sortMapByValue(Map<K, V> map) {
+        List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+        Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
             @Override
-            public int compare( Map.Entry<K, V> o1, Map.Entry<K, V> o2 )
-            {
-                return ( o1.getValue() ).compareTo( o2.getValue() );
+            public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+                return (o1.getValue()).compareTo(o2.getValue());
             }
-        } );
+        });
 
         Map<K, V> result = new LinkedHashMap<>();
-        for (Map.Entry<K, V> entry : list)
-        {
-            result.put( entry.getKey(), entry.getValue() );
+        for (Map.Entry<K, V> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
         }
         return result;
+    }
+
+
+    public static <T> T getRandomElement(List<T> list) {
+        if (list.size() < 1)
+            return null;
+
+        return list.get(RandomUtils.nextInt(0, list.size()));
     }
 }

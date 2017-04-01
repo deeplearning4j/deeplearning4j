@@ -89,10 +89,10 @@ public interface IndexAccumulation extends Op {
     int combineSubResults(float first, int idxFirst, float second, int idxSecond);
 
     /** @see #combineSubResults(double, int, double, int) */
-    Pair<Double,Integer> combineSubResults(Pair<Double,Integer> first, Pair<Double,Integer> second);
+    Pair<Double, Integer> combineSubResults(Pair<Double, Integer> first, Pair<Double, Integer> second);
 
     /** Set the final index/result of the accumulation. */
-    void setFinalResult( int idx );
+    void setFinalResult(int idx);
 
     /** Get the final result of the IndexAccumulation */
     int getFinalResult();
@@ -107,11 +107,16 @@ public interface IndexAccumulation extends Op {
      * */
     float zeroFloat();
 
+    /** Initial value for the index accumulation.
+     * @return the initial value
+     * */
+    float zeroHalf();
+
     /** The initial value and initial index to use
      * for the accumulation
      * @return
      */
-    Pair<Double,Integer> zeroPair();
+    Pair<Double, Integer> zeroPair();
 
     /**Complex initial value
      * @return the complex initial value

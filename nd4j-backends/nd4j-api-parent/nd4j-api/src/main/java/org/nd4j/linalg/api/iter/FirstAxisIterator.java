@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.iter;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Iterator;
 
@@ -34,7 +33,7 @@ public class FirstAxisIterator implements Iterator<Object> {
     @Override
     public Object next() {
         INDArray s = iterateOver.slice(i++);
-        if(s.isScalar()) {
+        if (s.isScalar()) {
             return s.getDouble(0);
         } else {
             return s;

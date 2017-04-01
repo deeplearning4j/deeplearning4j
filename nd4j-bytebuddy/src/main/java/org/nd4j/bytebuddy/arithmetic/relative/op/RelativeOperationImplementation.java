@@ -4,8 +4,6 @@ import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
-import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
-import net.bytebuddy.implementation.bytecode.member.MethodReturn;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.jar.asm.Opcodes;
 
@@ -41,13 +39,19 @@ public class RelativeOperationImplementation implements Implementation {
      * @return the stack manipulation for the given operation
      */
     public static StackManipulation opFor(Operation operation) {
-        switch(operation) {
-            case ADD: return IntegerAddition.INSTANCE;
-            case SUB: return IntegerSubtraction.INSTANCE;
-            case MUL: return IntegerMultiplication.INSTANCE;
-            case DIV: return IntegerDivision.INSTANCE;
-            case MOD: return IntegerMod.INSTANCE;
-            default: throw new IllegalArgumentException("Illegal type of operation ");
+        switch (operation) {
+            case ADD:
+                return IntegerAddition.INSTANCE;
+            case SUB:
+                return IntegerSubtraction.INSTANCE;
+            case MUL:
+                return IntegerMultiplication.INSTANCE;
+            case DIV:
+                return IntegerDivision.INSTANCE;
+            case MOD:
+                return IntegerMod.INSTANCE;
+            default:
+                throw new IllegalArgumentException("Illegal type of operation ");
         }
     }
 
@@ -63,7 +67,7 @@ public class RelativeOperationImplementation implements Implementation {
     }
 
     public enum Operation {
-        ADD,SUB,MUL,DIV,MOD
+        ADD, SUB, MUL, DIV, MOD
     }
 
     public enum IntegerSubtraction implements StackManipulation {
@@ -145,7 +149,6 @@ public class RelativeOperationImplementation implements Implementation {
             return new Size(-1, 0);
         }
     }
-
 
 
 

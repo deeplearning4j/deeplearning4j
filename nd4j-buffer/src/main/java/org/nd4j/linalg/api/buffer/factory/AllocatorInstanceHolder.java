@@ -7,7 +7,7 @@ public class AllocatorInstanceHolder {
     private static DataBufferFactory INSTANCE;
 
     public static DataBufferFactory getInstance() {
-        if(INSTANCE == null)
+        if (INSTANCE == null)
             INSTANCE = new DefaultDataBufferFactory();
         return INSTANCE;
     }

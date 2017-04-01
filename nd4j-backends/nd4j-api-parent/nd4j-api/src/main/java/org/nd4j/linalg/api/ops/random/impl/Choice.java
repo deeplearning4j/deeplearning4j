@@ -17,14 +17,15 @@ public class Choice extends BaseRandomOp {
     }
 
     public Choice(@NonNull INDArray source, @NonNull INDArray probabilities, @NonNull INDArray z) {
-        if (source.length() != probabilities.length())
-            throw new IllegalStateException("From & probabilities length mismatch: " + source.length() + "/" + probabilities.length());
+        if (source.lengthLong() != probabilities.lengthLong())
+            throw new IllegalStateException("From & probabilities length mismatch: " + source.lengthLong() + "/"
+                            + probabilities.lengthLong());
 
         if (probabilities.elementWiseStride() < 1 || source.elementWiseStride() < 1)
             throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
 
-        init(source, probabilities, z, z.length());
-        this.extraArgs = new Object[]{0.0};
+        init(source, probabilities, z, z.lengthLong());
+        this.extraArgs = new Object[] {0.0};
     }
 
     @Override

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.util.ComplexUtil;
 public class Pow extends BaseTransformOp {
     private double pow;
 
-    public Pow() {
-    }
+    public Pow() {}
 
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
@@ -119,7 +118,8 @@ public class Pow extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
+            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
         else
             return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), pow);
 
@@ -130,7 +130,8 @@ public class Pow extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
+            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
         else
             return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
 
@@ -138,7 +139,7 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{pow};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {pow};
     }
 }

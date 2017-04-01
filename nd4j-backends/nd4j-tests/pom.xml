@@ -21,19 +21,19 @@
     <parent>
         <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.7.2-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-tests</artifactId>
-    <version>0.7.2-SNAPSHOT</version>
+    <version>0.8.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-tests</name>
 
 
     <properties>
-        <scala.binary.version>2.10</scala.binary.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
     <build>
         <plugins>
@@ -128,4 +128,20 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.19.1</version>
+            </plugin>
+            <!-- Test coverage -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
+            </plugin>
+        </plugins>
+    </reporting>
+
 </project>

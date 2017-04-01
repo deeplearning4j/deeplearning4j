@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -68,7 +68,7 @@ public class InputStreamUtil {
      */
     public static int countLines(String filename) throws IOException {
         FileInputStream fis = new FileInputStream(filename);
-        try{
+        try {
             return countLines(new BufferedInputStream(fis));
         } finally {
             fis.close();

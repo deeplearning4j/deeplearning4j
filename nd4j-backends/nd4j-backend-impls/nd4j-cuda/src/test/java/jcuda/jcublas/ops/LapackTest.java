@@ -1,20 +1,14 @@
 package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
-import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
+ * // why i'm set as the author here? that's not my code
  */
 @Ignore
-public class CublasTests {
-
+public class LapackTest {
+/*
     java.util.Random rng = new java.util.Random(1230) ;
 
     @Test
@@ -87,4 +81,5 @@ public class CublasTests {
             }
         }
     }
+    */
 }

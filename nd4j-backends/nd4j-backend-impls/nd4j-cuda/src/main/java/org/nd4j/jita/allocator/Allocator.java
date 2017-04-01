@@ -2,10 +2,10 @@ package org.nd4j.jita.allocator;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPool;
+import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
-import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
@@ -77,7 +77,7 @@ public interface Allocator {
      * @param buffer
      * @param shape
      */
-     Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView, CudaContext context);
+    Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView, CudaContext context);
 
 
     /**
@@ -106,7 +106,7 @@ public interface Allocator {
      *
      * @return
      */
-     Integer getDeviceId();
+    Integer getDeviceId();
 
     /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
     Pointer getDeviceIdPointer();
@@ -116,7 +116,7 @@ public interface Allocator {
      *
      * @param requiredMemory
      */
-    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, boolean initialize);
+    AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, boolean initialize);
 
     /**
      * This method allocates required chunk of memory in specific location
@@ -126,7 +126,8 @@ public interface Allocator {
      * @param requiredMemory
      * @param location
      */
-    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location, boolean initialize);
+    AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, AllocationStatus location,
+                    boolean initialize);
 
 
     void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);

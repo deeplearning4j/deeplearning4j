@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class LessThanOrEqual extends BaseTransformOp {
 
-    public LessThanOrEqual() {
-    }
+    public LessThanOrEqual() {}
 
     public LessThanOrEqual(INDArray x, INDArray z) {
         super(x, z);
@@ -65,20 +64,23 @@ public class LessThanOrEqual extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         if (origin.isReal())
-            return origin.realComponent().doubleValue() <= other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+            return origin.realComponent().doubleValue() <= other ? Nd4j.createComplexNumber(1.0, 0.0)
+                            : Nd4j.createComplexNumber(0.0, 0.0);
         return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         if (origin.isReal())
-            return origin.realComponent().doubleValue() <= other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+            return origin.realComponent().doubleValue() <= other ? Nd4j.createComplexNumber(1.0, 0.0)
+                            : Nd4j.createComplexNumber(0.0, 0.0);
         return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return (origin.lt(other).eq(Nd4j.createComplexNumber(1.0, 0.0))||origin.eq(other)) ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+        return (origin.lt(other).eq(Nd4j.createComplexNumber(1.0, 0.0)) || origin.eq(other))
+                        ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
@@ -111,9 +113,11 @@ public class LessThanOrEqual extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LessThanOrEqual(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LessThanOrEqual(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new LessThanOrEqual(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LessThanOrEqual(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -122,9 +126,11 @@ public class LessThanOrEqual extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LessThanOrEqual(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LessThanOrEqual(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new LessThanOrEqual(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LessThanOrEqual(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 }

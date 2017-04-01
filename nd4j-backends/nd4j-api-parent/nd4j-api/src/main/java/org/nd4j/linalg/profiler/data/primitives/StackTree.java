@@ -14,9 +14,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class StackTree {
     protected Map<String, StackNode> basement = new HashMap<>();
-    protected AtomicLong eventsCount  = new AtomicLong(0);
+    protected AtomicLong eventsCount = new AtomicLong(0);
     protected Map<StackDescriptor, ComparableAtomicLong> branches = new HashMap<>();
-    @Getter protected StackDescriptor lastDescriptor;
+    @Getter
+    protected StackDescriptor lastDescriptor;
 
     public StackTree() {
         //
@@ -26,7 +27,7 @@ public class StackTree {
         StringBuilder builder = new StringBuilder();
 
         // we'll always have single entry here, but let's keep loop here
-        for (StackNode cNode: basement.values()) {
+        for (StackNode cNode : basement.values()) {
             cNode.traverse(0, displayCounts);
         }
 

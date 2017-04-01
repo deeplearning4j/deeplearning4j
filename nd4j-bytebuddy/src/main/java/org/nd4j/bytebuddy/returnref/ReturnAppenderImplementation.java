@@ -7,7 +7,7 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 /**
  * @author Adam Gibson
  */
-public class ReturnAppenderImplementation implements Implementation  {
+public class ReturnAppenderImplementation implements Implementation {
     private ReturnAppender.ReturnType returnType;
 
     public ReturnAppenderImplementation(ReturnAppender.ReturnType returnType) {

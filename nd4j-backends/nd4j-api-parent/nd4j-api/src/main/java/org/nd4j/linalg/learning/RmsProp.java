@@ -2,7 +2,6 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -18,14 +17,22 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @Data
 @NoArgsConstructor
 public class RmsProp implements GradientUpdater {
+    public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
+    public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;
+
     private INDArray lastGradient;
-    private double rmsDecay = 0.95;
+    private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
     private double learningRate = 1e-1;
-    private static final double epsilon = 1e-8;
+    private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
     public RmsProp(double learningRate, double rmsDecay) {
+        this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
+    }
+
+    public RmsProp(double learningRate, double rmsDecay, double epsilon) {
         this.learningRate = learningRate;
         this.rmsDecay = rmsDecay;
+        this.epsilon = epsilon;
     }
 
     @Override
@@ -35,13 +42,16 @@ public class RmsProp implements GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(epsilon);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(epsilon);
         this.lastGradient = viewArray;
 
         //Reshape to match the expected shape of the input gradient arrays
         this.lastGradient = Shape.newShapeNoCopy(this.lastGradient, gradientShape, gradientOrder == 'f');
-        if (lastGradient == null) throw new IllegalStateException("Could not correctly reshape gradient view array");
+        if (lastGradient == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view array");
     }
 
     @Override
@@ -53,7 +63,8 @@ public class RmsProp implements GradientUpdater {
 
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (lastGradient == null) throw new IllegalStateException("Updater has not been initialized with view state");
+        if (lastGradient == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / (sqrt(cache) + 1e-8)
@@ -63,7 +74,8 @@ public class RmsProp implements GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         RmsPropAggregator ag = new RmsPropAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 
@@ -82,7 +94,8 @@ public class RmsProp implements GradientUpdater {
 
         @Override
         public void aggregate(GradientUpdater updater) {
-            if (!(updater instanceof RmsProp)) throw new UnsupportedOperationException();
+            if (!(updater instanceof RmsProp))
+                throw new UnsupportedOperationException();
             RmsProp rmsProp = (RmsProp) updater;
             if (lastGradientSum == null) {
                 lastGradientSum = rmsProp.lastGradient.dup();

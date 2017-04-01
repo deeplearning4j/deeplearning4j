@@ -6,10 +6,9 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
 public class BroadcastDivOp extends BaseBroadcastOp {
 
-    public BroadcastDivOp() {
-    }
+    public BroadcastDivOp() {}
 
-    public BroadcastDivOp(INDArray x, INDArray y, INDArray z, int...dimension) {
+    public BroadcastDivOp(INDArray x, INDArray y, INDArray z, int... dimension) {
         super(x, y, z, dimension);
     }
 

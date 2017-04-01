@@ -29,7 +29,7 @@ public class MapDbStatusStorage extends BaseStatusStorage {
     }
 
     public MapDbStatusStorage() {
-        this(1000,1000);
+        this(1000, 1000);
     }
 
     /**
@@ -41,21 +41,14 @@ public class MapDbStatusStorage extends BaseStatusStorage {
     public Map<Integer, Long> createUpdatedMap() {
         if (storageFile == null) {
             //In-Memory Stats Storage
-            db = DBMaker
-                    .memoryDB()
-                    .make();
+            db = DBMaker.memoryDB().make();
         } else {
-            db = DBMaker
-                    .fileDB(storageFile)
-                    .closeOnJvmShutdown()
-                    .transactionEnable()    //Default to Write Ahead Log - lower performance, but has crash protection
-                    .make();
+            db = DBMaker.fileDB(storageFile).closeOnJvmShutdown().transactionEnable() //Default to Write Ahead Log - lower performance, but has crash protection
+                            .make();
         }
 
-        updated = db.hashMap("updated")
-                .keySerializer(Serializer.INTEGER)
-                .valueSerializer(Serializer.LONG)
-                .createOrOpen();
+        updated = db.hashMap("updated").keySerializer(Serializer.INTEGER).valueSerializer(Serializer.LONG)
+                        .createOrOpen();
         return updated;
     }
 
@@ -65,21 +58,14 @@ public class MapDbStatusStorage extends BaseStatusStorage {
     public Map<Integer, SubscriberState> createMap() {
         if (storageFile == null) {
             //In-Memory Stats Storage
-            db = DBMaker
-                    .memoryDB()
-                    .make();
+            db = DBMaker.memoryDB().make();
         } else {
-            db = DBMaker
-                    .fileDB(storageFile)
-                    .closeOnJvmShutdown()
-                    .transactionEnable()    //Default to Write Ahead Log - lower performance, but has crash protection
-                    .make();
+            db = DBMaker.fileDB(storageFile).closeOnJvmShutdown().transactionEnable() //Default to Write Ahead Log - lower performance, but has crash protection
+                            .make();
         }
 
-        statusStorageMap = db.hashMap("statusStorageMap")
-                .keySerializer(Serializer.INTEGER)
-                .valueSerializer(new StatusStorageSerializer())
-                .createOrOpen();
+        statusStorageMap = db.hashMap("statusStorageMap").keySerializer(Serializer.INTEGER)
+                        .valueSerializer(new StatusStorageSerializer()).createOrOpen();
         return statusStorageMap;
     }
 
@@ -97,7 +83,7 @@ public class MapDbStatusStorage extends BaseStatusStorage {
      */
     @Override
     public SubscriberState getState(int id) {
-        if(!statusStorageMap.containsKey(id))
+        if (!statusStorageMap.containsKey(id))
             return SubscriberState.empty();
         return statusStorageMap.get(id);
     }

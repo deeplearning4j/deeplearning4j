@@ -6,5 +6,5 @@ package org.nd4j.parameterserver.model;
  * @author Adam Gibson
  */
 public enum ServerState {
-    STARTED,STOPPED
+    STARTED, STOPPED
 }

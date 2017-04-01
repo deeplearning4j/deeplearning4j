@@ -59,7 +59,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
 
-        for (int cnt = 0; cnt < array.length(); cnt++ ){
+        for (int cnt = 0; cnt < array.length(); cnt++) {
             float a = array.getFloat(cnt);
             float c = compressed.getFloat(cnt);
             assertEquals(a, c, 0.01f);
@@ -109,7 +109,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
         assertFalse(newArray.isCompressed());
 
         Nd4j.getCompressor().decompressi(compressed);
-//        Nd4j.getCompressor().decompressi(newArray);
+        //        Nd4j.getCompressor().decompressi(newArray);
 
         assertEquals(array, compressed);
         assertEquals(array, newArray);

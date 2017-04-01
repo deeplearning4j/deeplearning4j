@@ -200,7 +200,7 @@ public class CompressedRamStorage<T extends Object> implements AbstractStorage<T
     @Override
     public long size() {
         try {
-            if(emulateIsAbsent)
+            if (emulateIsAbsent)
                 lock.readLock().lock();
 
             return compressedEntries.size();

@@ -12,7 +12,7 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
  *
  * @author Adam Gibson
  */
-@Platform(include="NativeBuffer.h",link = "buffer")
+@Platform(include = "NativeBuffer.h", link = "buffer")
 public class JavaCppFloatPointer extends FloatPointer {
 
     static {
@@ -41,8 +41,7 @@ public class JavaCppFloatPointer extends FloatPointer {
 
     }
 
-    public native void putFloat(int i,float val);
-
+    public native void putFloat(int i, float val);
 
 
 

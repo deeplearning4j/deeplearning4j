@@ -26,8 +26,10 @@ public class RelativeAssignNoValueImplementation implements Implementation {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RelativeAssignNoValueImplementation)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof RelativeAssignNoValueImplementation))
+            return false;
 
         RelativeAssignNoValueImplementation that = (RelativeAssignNoValueImplementation) o;
 

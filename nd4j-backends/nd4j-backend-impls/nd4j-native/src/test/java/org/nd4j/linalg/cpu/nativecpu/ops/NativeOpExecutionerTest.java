@@ -4,11 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -24,6 +27,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -31,7 +35,9 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -661,11 +667,29 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testCreate() {
+        INDArray array0 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9});
+        INDArray array0_1 = array0.dup();
+        INDArray array0_2 = array0.dup();
+        INDArray array0_3 = array0.dup();
         INDArray array1 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new int[]{3, 3}, 'c');
+        INDArray array1_1 = array1.dup();
+        INDArray array1_2 = array1.dup();
+        INDArray array1_3 = array1.dup();
         INDArray array2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9,10,11,12, 13,14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29}, new int[]{3, 3, 3}, 'c');
+        INDArray array2_1 = array2.dup();
+        INDArray array2_2 = array2.dup();
+        INDArray array2_3 = array2.dup();
 
         assertEquals(2, array1.rank());
         assertEquals(3, array2.rank());
+
+        INDArray array2D = Nd4j.vstack(array0, array0_1, array0_2, array0_3);
+        INDArray array3D = Nd4j.vstack(array1, array1_1, array1_2, array1_3);
+        INDArray array4D = Nd4j.vstack(array2, array2_1, array2_2, array2_3);
+
+        log.info("Output Array2D rank: {}", array2D.rank());
+        log.info("Output Array3D rank: {}", array3D.rank());
+        log.info("Output Array4D rank: {}", array4D.rank());
     }
 
     @Test
@@ -718,5 +742,144 @@ public class NativeOpExecutionerTest {
         }
 
         assertEquals(exp3d, arr3d);
+    }
+
+    @Test
+    public void testGet() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+
+        INDArray recurrentWeights = Nd4j.create(127, 511);
+
+        for (int i = 0; i < 5; i++) {
+            INDArray recurrentWeightsIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * 127)).dup('f');
+
+            log.info("orig: {}", Arrays.toString(recurrentWeights.shapeInfoDataBuffer().asInt()));
+            log.info("data: {}", Arrays.toString(recurrentWeightsIFOG.shapeInfoDataBuffer().asInt()));
+            log.info("--------------");
+        }
+    }
+
+    @Test
+    public void testInf() {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray x = Nd4j.create(10, 10);
+        x.minNumber();
+
+
+        MatchCondition condition = new MatchCondition(x, Conditions.isInfinite());
+        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+        log.info("Matches: {}", match);
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
+
+        x = Nd4j.create(10, 10);
+        x.minNumber();
+
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testMismatch() {
+        INDArray y = Nd4j.create(100, 100);
+        INDArray x = Nd4j.create(50, 50);
+
+        x.add(1.0, y);
+    }
+
+
+    @Test
+    public void testIsMax2Of3d(){
+        double[][][] slices = new double[3][][];
+        double[][][] isMax = new double[3][][];
+
+        slices[0] = new double[][]{
+                {1,10,2},
+                {3,4,5}};
+        slices[1] = new double[][]{
+                {-10,-9,-8},
+                {-7,-6,-5}};
+        slices[2] = new double[][]{
+                {4,3,2},
+                {1,0,-1}};
+
+        isMax[0] = new double[][]{
+                {0,1,0},
+                {0,0,0}};
+        isMax[1] = new double[][]{
+                {0,0,0},
+                {0,0,1}};
+        isMax[2] = new double[][]{
+                {1,0,0},
+                {0,0,0}};
+
+        INDArray arr = Nd4j.create(3,2,3);
+        INDArray expected = Nd4j.create(3,2,3);
+        for( int i=0; i<3; i++ ){
+            arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
+            expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(isMax[i]));
+        }
+
+        Nd4j.getExecutioner().exec(new IsMax(arr, 1,2));
+
+        assertEquals(expected, arr);
+    }
+
+
+    @Test
+    public void testPewPew2() throws Exception {
+        INDArray nd3 = Nd4j.create(new double[]{30,40,50},new int[]{3});
+    }
+
+
+    @Ignore
+    @Test
+    public void testPewPew3() throws Exception {
+        int hiddenDim = 200;
+        int numChar = 100;
+        int length = 500;
+        int batchSize = 50;
+
+        INDArray c2v = Nd4j.zeros(numChar, hiddenDim, 'f');
+
+        INDArray h0 = Nd4j.zeros(batchSize, hiddenDim, 'f');
+        INDArray c0 = Nd4j.zeros(batchSize, hiddenDim);
+
+        INDArray fwdmap = Nd4j.zeros(batchSize, numChar);
+
+        INDArray embed = fwdmap.mmul(c2v);
+
+        List<INDArray> embeds = new ArrayList<>();
+        List<INDArray> h0s = new ArrayList<>();
+        List<INDArray> fwdmaps = new ArrayList<>();
+        List<INDArray> c2vs = new ArrayList<>();
+        for (int x = 0; x < 1000; x++) {
+            embeds.add(Nd4j.createUninitialized(embed.shape(), embed.ordering()));
+            h0s.add(Nd4j.createUninitialized(h0.shape(), h0.ordering()));
+            c2vs.add(Nd4j.createUninitialized(c2v.shape(), c2v.ordering()));
+            fwdmaps.add(Nd4j.createUninitialized(fwdmap.shape(), fwdmap.ordering()));
+        }
+
+        log.info("GEMM tests:");
+
+        for (int x = 0; x < embeds.size(); x++) {
+            long time1 = System.nanoTime();
+            fwdmaps.get(x).mmul(c2vs.get(x));
+            long time2 = System.nanoTime();
+
+            if (x % 100 == 0)
+                log.info("Concat time: {} us", (time2 - time1) / 1000);
+        }
+
+        log.info("Concat tests:");
+
+        for (int x = 0; x < embeds.size(); x++) {
+            long time1 = System.nanoTime();
+            INDArray concat = Nd4j.concat(1, embeds.get(x), h0s.get(x));
+            long time2 = System.nanoTime();
+
+            if (x % 100 == 0)
+             log.info("Concat time: {} us", (time2 - time1) / 1000);
+        }
+
     }
 }

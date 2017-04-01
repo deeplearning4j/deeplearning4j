@@ -10,7 +10,9 @@ import java.io.Serializable;
 /**
  * Created by agibsonccc on 10/9/16.
  */
-@Builder @Data @NoArgsConstructor
+@Builder
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class ServerTypeJson implements Serializable {
     private String type;

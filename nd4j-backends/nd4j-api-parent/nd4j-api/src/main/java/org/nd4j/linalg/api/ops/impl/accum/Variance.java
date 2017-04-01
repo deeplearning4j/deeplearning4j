@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,10 +37,9 @@ import org.nd4j.linalg.util.ArrayUtil;
  */
 public class Variance extends BaseAccumulation {
     protected double mean, bias;
-    protected  boolean biasCorrected = true;
+    protected boolean biasCorrected = true;
 
-    public Variance() {
-    }
+    public Variance() {}
 
     public Variance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -99,12 +98,12 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum + x * x; //variance = 1/(n-1) * sum (x-mean)^2
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + x * x;
     }
 
@@ -115,29 +114,29 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public float update(float accum, float x, float y) {
-        return accum +  x * x;
+        return accum + x * x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x) {
+    public IComplexNumber update(IComplexNumber accum, double x) {
         double dev = x - mean;
-        return accum.add(dev*dev);
+        return accum.add(dev * dev);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y) {
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         double dev = x - mean;
-        return accum.add(dev*dev);
+        return accum.add(dev * dev);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x) {
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         IComplexNumber dev = x.sub(mean);
         return accum.add(dev.mul(dev));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         IComplexNumber dev = x.sub(mean);
         return accum.add(dev.mul(dev));
     }
@@ -181,7 +180,7 @@ public class Variance extends BaseAccumulation {
         if (y() != null)
             ret = new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            ret = new Variance(x.tensorAlongDimension(index, dimension),biasCorrected);
+            ret = new Variance(x.tensorAlongDimension(index, dimension), biasCorrected);
         ret.setApplyFinalTransform(applyFinalTransform());
         return ret;
     }
@@ -189,7 +188,7 @@ public class Variance extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        if(Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
+        if (Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
             if (biasCorrected)
                 this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
             mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
@@ -203,7 +202,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void exec(){
+    public void exec() {
         if (biasCorrected)
             this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
         this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
@@ -219,31 +218,31 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public void exec(int... dimension) {
-        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
+        if (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
             exec();
             return;
         }
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i = 0; i < nOps; i++ ) {
+        for (int i = 0; i < nOps; i++) {
             double d = Nd4j.getExecutioner().execAndReturn(opForDimension(i, dimension)).getFinalResult().doubleValue();
             z.putScalar(i, d);
         }
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         return first + second;
     }
 
     @Override
-    public float combineSubResults(float first, float second){
+    public float combineSubResults(float first, float second) {
         return first + second;
     }
 
     @Override
-    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return first.add(second);
     }
 
@@ -267,7 +266,7 @@ public class Variance extends BaseAccumulation {
 
     @Override
     public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
-   /*     if (biasCorrected)
+        /*     if (biasCorrected)
             finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
         else finalResultComplex = accum.divi(n - 1);
         return finalResultComplex;*/

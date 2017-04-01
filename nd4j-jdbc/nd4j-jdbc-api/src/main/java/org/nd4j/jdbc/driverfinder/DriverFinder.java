@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -87,11 +87,13 @@ public class DriverFinder {
 
                     String clazz = props.getProperty(JDBC_KEY);
                     if (clazz == null)
-                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a " + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
+                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
+                                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
                     try {
                         DriverFinder.clazz = (Class<? extends Driver>) Class.forName(clazz);
                     } catch (ClassNotFoundException e) {
-                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a " + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
+                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
+                                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
 
                     }
 

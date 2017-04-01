@@ -23,7 +23,7 @@ import java.util.Map;
 public class BalanceMinibatches {
     private DataSetIterator dataSetIterator;
     private int numLabels;
-    private Map<Integer,List<File>> paths = Maps.newHashMap();
+    private Map<Integer, List<File>> paths = Maps.newHashMap();
     private int miniBatchSize = -1;
     private File rootDir = new File("minibatches");
     private File rootSaveDir = new File("minibatchessave");
@@ -35,35 +35,36 @@ public class BalanceMinibatches {
      * dataset minibatch fileset.
      */
     public void balance() {
-        if(!rootDir.exists())
+        if (!rootDir.exists())
             rootDir.mkdirs();
-        if(!rootSaveDir.exists())
-            rootDir.mkdirs();
+        if (!rootSaveDir.exists())
+            rootSaveDir.mkdirs();
 
-        if(paths == null)
+        if (paths == null)
             paths = Maps.newHashMap();
-        if(labelRootDirs == null)
+        if (labelRootDirs == null)
             labelRootDirs = Lists.newArrayList();
 
-        for(int i = 0; i  < numLabels; i++) {
-            paths.put(i,new ArrayList<File>());
-            labelRootDirs.add(new File(rootDir,String.valueOf(i)));
+        for (int i = 0; i < numLabels; i++) {
+            paths.put(i, new ArrayList<File>());
+            labelRootDirs.add(new File(rootDir, String.valueOf(i)));
         }
 
 
         //lay out each example in their respective label directories tracking the paths along the way
-        while(dataSetIterator.hasNext()) {
+        while (dataSetIterator.hasNext()) {
             DataSet next = dataSetIterator.next();
             //infer minibatch size from iterator
-            if(miniBatchSize < 0)
+            if (miniBatchSize < 0)
                 miniBatchSize = next.numExamples();
-            for(int i = 0; i < next.numExamples(); i++) {
+            for (int i = 0; i < next.numExamples(); i++) {
                 DataSet currExample = next.get(i);
-                if(!labelRootDirs.get(currExample.outcome()).exists())
+                if (!labelRootDirs.get(currExample.outcome()).exists())
                     labelRootDirs.get(currExample.outcome()).mkdirs();
 
                 //individual example will be saved to: labelrootdir/examples.size()
-                File example = new File(labelRootDirs.get(currExample.outcome()),String.valueOf(paths.get(currExample.outcome()).size()));
+                File example = new File(labelRootDirs.get(currExample.outcome()),
+                                String.valueOf(paths.get(currExample.outcome()).size()));
                 currExample.save(example);
                 paths.get(currExample.outcome()).add(example);
             }
@@ -71,28 +72,27 @@ public class BalanceMinibatches {
 
         int numsSaved = 0;
         //loop till all file paths have been removed
-        while(!paths.isEmpty()) {
+        while (!paths.isEmpty()) {
             List<DataSet> miniBatch = new ArrayList<>();
-            while(miniBatch.size() < miniBatchSize && !paths.isEmpty()) {
-                for(int i = 0; i < numLabels; i++) {
-                    if(paths.get(i) != null && !paths.get(i).isEmpty()) {
+            while (miniBatch.size() < miniBatchSize && !paths.isEmpty()) {
+                for (int i = 0; i < numLabels; i++) {
+                    if (paths.get(i) != null && !paths.get(i).isEmpty()) {
                         DataSet d = new DataSet();
                         d.load(paths.get(i).remove(0));
                         miniBatch.add(d);
-                    }
-                    else
+                    } else
                         paths.remove(i);
                 }
             }
 
-            if(!rootSaveDir.exists())
+            if (!rootSaveDir.exists())
                 rootSaveDir.mkdirs();
             //save with an incremental count of the number of minibatches saved
-            if(!miniBatch.isEmpty()) {
+            if (!miniBatch.isEmpty()) {
                 DataSet merge = DataSet.merge(miniBatch);
-                if(dataNormalization != null)
+                if (dataNormalization != null)
                     dataNormalization.transform(merge);
-                merge.save(new File(rootSaveDir,String.format("dataset-%d.bin",numsSaved++)));
+                merge.save(new File(rootSaveDir, String.format("dataset-%d.bin", numsSaved++)));
             }
 
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Ceil extends BaseTransformOp {
-    public Ceil() {
-    }
+    public Ceil() {}
 
     public Ceil(INDArray x, INDArray z) {
         super(x, z);
@@ -106,7 +105,8 @@ public class Ceil extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Ceil(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Ceil(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Ceil(xAlongDimension, z.vectorAlongDimension(index, dimension));
 
@@ -117,7 +117,8 @@ public class Ceil extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Ceil(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Ceil(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Ceil(xAlongDimension, z.tensorAlongDimension(index, dimension));
 

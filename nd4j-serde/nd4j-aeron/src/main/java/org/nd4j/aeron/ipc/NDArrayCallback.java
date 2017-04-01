@@ -22,7 +22,7 @@ public interface NDArrayCallback {
      * @param idx the index for the tensor along dimension
      * @param dimensions the dimensions to act on for the tensor along dimension
      */
-    void onNDArrayPartial(INDArray arr, long idx, int...dimensions);
+    void onNDArrayPartial(INDArray arr, long idx, int... dimensions);
 
     /**
      * Setup an ndarray

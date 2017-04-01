@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,9 +39,10 @@ public abstract class BaseOp implements Op {
     protected Object[] extraArgs;
     protected boolean passThrough;
 
+    // cached instance, for dataType checks
+    protected DataBuffer extraArgz;
 
-    public BaseOp() {
-    }
+    public BaseOp() {}
 
     @Override
     public boolean isExecSpecial() {
@@ -63,12 +64,13 @@ public abstract class BaseOp implements Op {
         } else if (op instanceof Accumulation) {
             if (op.y() == null)
                 type = Op.Type.REDUCE;
-            else type = Op.Type.REDUCE3;
+            else
+                type = Op.Type.REDUCE3;
         } else if (op instanceof ScalarOp) {
             type = Op.Type.SCALAR;
-        } else if(op instanceof BroadcastOp) {
+        } else if (op instanceof BroadcastOp) {
             type = Op.Type.BROADCAST;
-        } else if(op instanceof IndexAccumulation) {
+        } else if (op instanceof IndexAccumulation) {
             type = Op.Type.INDEXREDUCE;
         } else if (op instanceof MetaOp) {
             type = Type.META;
@@ -79,7 +81,7 @@ public abstract class BaseOp implements Op {
         return type;
     }
 
-/*
+    /*
     op instanceof Variance
     op instanceof CosineSimilarity
     op instanceof Im2col
@@ -92,28 +94,33 @@ public abstract class BaseOp implements Op {
     op instanceof Step
     op instanceof SetRange
     op instanceof IsMax
-*/
+    */
 
     @Override
     public DataBuffer extraArgsDataBuff() {
-        if(extraArgs != null) {
+        if (extraArgz != null)
+            return extraArgz;
+
+        if (extraArgs != null) {
             DataBuffer.Type dtype = x != null ? x.data().dataType() : Nd4j.dataType();
-            if(dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.HALF) {
+            if (dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.HALF) {
                 float extraz[] = new float[extraArgs.length];
-                for(int i = 0; i < extraArgs.length; i++) {
+                for (int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
                     float val = arg.floatValue();
                     extraz[i] = val;
                 }
-                return Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                return extraArgz;
             } else if (dtype == DataBuffer.Type.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
-                for(int i = 0; i < extraArgs.length; i++) {
+                for (int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                return Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);;
+                return extraArgz;
             }
         }
         return null;
@@ -121,19 +128,18 @@ public abstract class BaseOp implements Op {
 
     @Override
     public Buffer extraArgsBuff() {
-        if(extraArgs != null) {
+        if (extraArgs != null) {
             DataBuffer retBuff;
-            if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+            if (x.data().dataType() == DataBuffer.Type.FLOAT) {
                 retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
-                for(int i = 0; i < extraArgs.length; i++) {
+                for (int i = 0; i < extraArgs.length; i++) {
                     Number val = (Number) extraArgs[i];
-                    retBuff.put(i,val.floatValue());
+                    retBuff.put(i, val.floatValue());
                 }
                 return retBuff.asNioFloat();
-            }
-            else {
+            } else {
                 retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
-                for(int i = 0; i < extraArgs.length; i++) {
+                for (int i = 0; i < extraArgs.length; i++) {
                     Number val = (Number) extraArgs[i];
                     retBuff.put(i, val.doubleValue());
                 }
@@ -152,7 +158,7 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setX(INDArray x) {
-        if(x == null)
+        if (x == null)
             throw new IllegalArgumentException("X must not be null");
         this.x = x;
         numProcessed = 0;
@@ -160,7 +166,7 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setZ(INDArray z) {
-        if(z == null)
+        if (z == null)
             throw new IllegalArgumentException("Z must not be null");
         this.z = z;
         numProcessed = 0;
@@ -168,7 +174,7 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setY(INDArray y) {
-        if(y == null)
+        if (y == null)
             throw new IllegalArgumentException("Y must not be null");
         this.y = y;
         numProcessed = 0;
@@ -197,7 +203,6 @@ public abstract class BaseOp implements Op {
 
 
     public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
-        this.n = n;
         init(x, y, z, n);
     }
 

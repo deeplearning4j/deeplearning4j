@@ -1,11 +1,6 @@
 package org.nd4j.linalg.io;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.UndeclaredThrowableException;
+import java.lang.reflect.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +25,7 @@ public abstract class ReflectionUtils {
         }
     };
 
-    public ReflectionUtils() {
-    }
+    public ReflectionUtils() {}
 
     public static Field findField(Class<?> clazz, String name) {
         return findField(clazz, name, null);
@@ -41,14 +35,15 @@ public abstract class ReflectionUtils {
         Assert.notNull(clazz, "Class must not be null");
         Assert.isTrue(name != null || type != null, "Either name or type of the field must be specified");
 
-        for(Class searchType = clazz; !Object.class.equals(searchType) && searchType != null; searchType = searchType.getSuperclass()) {
+        for (Class searchType = clazz; !Object.class.equals(searchType) && searchType != null; searchType =
+                        searchType.getSuperclass()) {
             Field[] fields = searchType.getDeclaredFields();
             Field[] arr$ = fields;
             int len$ = fields.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Field field = arr$[i$];
-                if((name == null || name.equals(field.getName())) && (type == null || type.equals(field.getType()))) {
+                if ((name == null || name.equals(field.getName())) && (type == null || type.equals(field.getType()))) {
                     return field;
                 }
             }
@@ -62,7 +57,8 @@ public abstract class ReflectionUtils {
             field.set(target, value);
         } catch (IllegalAccessException var4) {
             handleReflectionException(var4);
-            throw new IllegalStateException("Unexpected reflection exception - " + var4.getClass().getName() + ": " + var4.getMessage());
+            throw new IllegalStateException("Unexpected reflection exception - " + var4.getClass().getName() + ": "
+                            + var4.getMessage());
         }
     }
 
@@ -71,7 +67,8 @@ public abstract class ReflectionUtils {
             return field.get(target);
         } catch (IllegalAccessException var3) {
             handleReflectionException(var3);
-            throw new IllegalStateException("Unexpected reflection exception - " + var3.getClass().getName() + ": " + var3.getMessage());
+            throw new IllegalStateException("Unexpected reflection exception - " + var3.getClass().getName() + ": "
+                            + var3.getMessage());
         }
     }
 
@@ -83,14 +80,15 @@ public abstract class ReflectionUtils {
         Assert.notNull(clazz, "Class must not be null");
         Assert.notNull(name, "Method name must not be null");
 
-        for(Class searchType = clazz; searchType != null; searchType = searchType.getSuperclass()) {
-            Method[] methods = searchType.isInterface()?searchType.getMethods():searchType.getDeclaredMethods();
+        for (Class searchType = clazz; searchType != null; searchType = searchType.getSuperclass()) {
+            Method[] methods = searchType.isInterface() ? searchType.getMethods() : searchType.getDeclaredMethods();
             Method[] arr$ = methods;
             int len$ = methods.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Method method = arr$[i$];
-                if(name.equals(method.getName()) && (paramTypes == null || Arrays.equals(paramTypes, method.getParameterTypes()))) {
+                if (name.equals(method.getName())
+                                && (paramTypes == null || Arrays.equals(paramTypes, method.getParameterTypes()))) {
                     return method;
                 }
             }
@@ -122,8 +120,8 @@ public abstract class ReflectionUtils {
         } catch (IllegalAccessException var4) {
             handleReflectionException(var4);
         } catch (InvocationTargetException var5) {
-            if(var5.getTargetException() instanceof SQLException) {
-                throw (SQLException)var5.getTargetException();
+            if (var5.getTargetException() instanceof SQLException) {
+                throw (SQLException) var5.getTargetException();
             }
 
             handleInvocationTargetException(var5);
@@ -133,17 +131,17 @@ public abstract class ReflectionUtils {
     }
 
     public static void handleReflectionException(Exception ex) {
-        if(ex instanceof NoSuchMethodException) {
+        if (ex instanceof NoSuchMethodException) {
             throw new IllegalStateException("Method not found: " + ex.getMessage());
-        } else if(ex instanceof IllegalAccessException) {
+        } else if (ex instanceof IllegalAccessException) {
             throw new IllegalStateException("Could not access method: " + ex.getMessage());
         } else {
-            if(ex instanceof InvocationTargetException) {
-                handleInvocationTargetException((InvocationTargetException)ex);
+            if (ex instanceof InvocationTargetException) {
+                handleInvocationTargetException((InvocationTargetException) ex);
             }
 
-            if(ex instanceof RuntimeException) {
-                throw (RuntimeException)ex;
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
             } else {
                 throw new UndeclaredThrowableException(ex);
             }
@@ -155,20 +153,20 @@ public abstract class ReflectionUtils {
     }
 
     public static void rethrowRuntimeException(Throwable ex) {
-        if(ex instanceof RuntimeException) {
-            throw (RuntimeException)ex;
-        } else if(ex instanceof Error) {
-            throw (Error)ex;
+        if (ex instanceof RuntimeException) {
+            throw (RuntimeException) ex;
+        } else if (ex instanceof Error) {
+            throw (Error) ex;
         } else {
             throw new UndeclaredThrowableException(ex);
         }
     }
 
     public static void rethrowException(Throwable ex) throws Exception {
-        if(ex instanceof Exception) {
-            throw (Exception)ex;
-        } else if(ex instanceof Error) {
-            throw (Error)ex;
+        if (ex instanceof Exception) {
+            throw (Exception) ex;
+        } else if (ex instanceof Error) {
+            throw (Error) ex;
         } else {
             throw new UndeclaredThrowableException(ex);
         }
@@ -180,9 +178,9 @@ public abstract class ReflectionUtils {
         Class[] arr$ = declaredExceptions;
         int len$ = declaredExceptions.length;
 
-        for(int i$ = 0; i$ < len$; ++i$) {
+        for (int i$ = 0; i$ < len$; ++i$) {
             Class declaredException = arr$[i$];
-            if(declaredException.isAssignableFrom(exceptionType)) {
+            if (declaredException.isAssignableFrom(exceptionType)) {
                 return true;
             }
         }
@@ -196,7 +194,7 @@ public abstract class ReflectionUtils {
     }
 
     public static boolean isEqualsMethod(Method method) {
-        if(method != null && method.getName().equals("equals")) {
+        if (method != null && method.getName().equals("equals")) {
             Class[] paramTypes = method.getParameterTypes();
             return paramTypes.length == 1 && paramTypes[0] == Object.class;
         } else {
@@ -228,54 +226,60 @@ public abstract class ReflectionUtils {
     }
 
     public static void makeAccessible(Field field) {
-        if((!Modifier.isPublic(field.getModifiers()) || !Modifier.isPublic(field.getDeclaringClass().getModifiers()) || Modifier.isFinal(field.getModifiers())) && !field.isAccessible()) {
+        if ((!Modifier.isPublic(field.getModifiers()) || !Modifier.isPublic(field.getDeclaringClass().getModifiers())
+                        || Modifier.isFinal(field.getModifiers())) && !field.isAccessible()) {
             field.setAccessible(true);
         }
 
     }
 
     public static void makeAccessible(Method method) {
-        if((!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) && !method.isAccessible()) {
+        if ((!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers()))
+                        && !method.isAccessible()) {
             method.setAccessible(true);
         }
 
     }
 
     public static void makeAccessible(Constructor<?> ctor) {
-        if((!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(ctor.getDeclaringClass().getModifiers())) && !ctor.isAccessible()) {
+        if ((!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(ctor.getDeclaringClass().getModifiers()))
+                        && !ctor.isAccessible()) {
             ctor.setAccessible(true);
         }
 
     }
 
-    public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc) throws IllegalArgumentException {
+    public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc)
+                    throws IllegalArgumentException {
         doWithMethods(clazz, mc, null);
     }
 
-    public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc, ReflectionUtils.MethodFilter mf) throws IllegalArgumentException {
+    public static void doWithMethods(Class<?> clazz, ReflectionUtils.MethodCallback mc, ReflectionUtils.MethodFilter mf)
+                    throws IllegalArgumentException {
         Method[] methods = clazz.getDeclaredMethods();
         Method[] arr$ = methods;
         int len$ = methods.length;
 
         int i$;
-        for(i$ = 0; i$ < len$; ++i$) {
+        for (i$ = 0; i$ < len$; ++i$) {
             Method superIfc = arr$[i$];
-            if(mf == null || mf.matches(superIfc)) {
+            if (mf == null || mf.matches(superIfc)) {
                 try {
                     mc.doWith(superIfc);
                 } catch (IllegalAccessException var9) {
-                    throw new IllegalStateException("Shouldn\'t be illegal to access method \'" + superIfc.getName() + "\': " + var9);
+                    throw new IllegalStateException(
+                                    "Shouldn\'t be illegal to access method \'" + superIfc.getName() + "\': " + var9);
                 }
             }
         }
 
-        if(clazz.getSuperclass() != null) {
+        if (clazz.getSuperclass() != null) {
             doWithMethods(clazz.getSuperclass(), mc, mf);
-        } else if(clazz.isInterface()) {
+        } else if (clazz.isInterface()) {
             Class[] var10 = clazz.getInterfaces();
             len$ = var10.length;
 
-            for(i$ = 0; i$ < len$; ++i$) {
+            for (i$ = 0; i$ < len$; ++i$) {
                 Class var11 = var10[i$];
                 doWithMethods(var11, mc, mf);
             }
@@ -290,7 +294,7 @@ public abstract class ReflectionUtils {
                 methods.add(method);
             }
         });
-        return (Method[])methods.toArray(new Method[methods.size()]);
+        return (Method[]) methods.toArray(new Method[methods.size()]);
     }
 
     public static Method[] getUniqueDeclaredMethods(Class<?> leafClass) throws IllegalArgumentException {
@@ -301,10 +305,12 @@ public abstract class ReflectionUtils {
                 Method methodBeingOverriddenWithCovariantReturnType = null;
                 Iterator i$ = methods.iterator();
 
-                while(i$.hasNext()) {
-                    Method existingMethod = (Method)i$.next();
-                    if(method.getName().equals(existingMethod.getName()) && Arrays.equals(method.getParameterTypes(), existingMethod.getParameterTypes())) {
-                        if(existingMethod.getReturnType() != method.getReturnType() && existingMethod.getReturnType().isAssignableFrom(method.getReturnType())) {
+                while (i$.hasNext()) {
+                    Method existingMethod = (Method) i$.next();
+                    if (method.getName().equals(existingMethod.getName())
+                                    && Arrays.equals(method.getParameterTypes(), existingMethod.getParameterTypes())) {
+                        if (existingMethod.getReturnType() != method.getReturnType()
+                                        && existingMethod.getReturnType().isAssignableFrom(method.getReturnType())) {
                             methodBeingOverriddenWithCovariantReturnType = existingMethod;
                             break;
                         }
@@ -314,24 +320,25 @@ public abstract class ReflectionUtils {
                     }
                 }
 
-                if(methodBeingOverriddenWithCovariantReturnType != null) {
+                if (methodBeingOverriddenWithCovariantReturnType != null) {
                     methods.remove(methodBeingOverriddenWithCovariantReturnType);
                 }
 
-                if(!knownSignature && !ReflectionUtils.isCglibRenamedMethod(method)) {
+                if (!knownSignature && !ReflectionUtils.isCglibRenamedMethod(method)) {
                     methods.add(method);
                 }
 
             }
         });
-        return (Method[])methods.toArray(new Method[methods.size()]);
+        return (Method[]) methods.toArray(new Method[methods.size()]);
     }
 
     public static void doWithFields(Class<?> clazz, ReflectionUtils.FieldCallback fc) throws IllegalArgumentException {
         doWithFields(clazz, fc, null);
     }
 
-    public static void doWithFields(Class<?> clazz, ReflectionUtils.FieldCallback fc, ReflectionUtils.FieldFilter ff) throws IllegalArgumentException {
+    public static void doWithFields(Class<?> clazz, ReflectionUtils.FieldCallback fc, ReflectionUtils.FieldFilter ff)
+                    throws IllegalArgumentException {
         Class targetClass = clazz;
 
         do {
@@ -339,29 +346,31 @@ public abstract class ReflectionUtils {
             Field[] arr$ = fields;
             int len$ = fields.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Field field = arr$[i$];
-                if(ff == null || ff.matches(field)) {
+                if (ff == null || ff.matches(field)) {
                     try {
                         fc.doWith(field);
                     } catch (IllegalAccessException var10) {
-                        throw new IllegalStateException("Shouldn\'t be illegal to access field \'" + field.getName() + "\': " + var10);
+                        throw new IllegalStateException(
+                                        "Shouldn\'t be illegal to access field \'" + field.getName() + "\': " + var10);
                     }
                 }
             }
 
             targetClass = targetClass.getSuperclass();
-        } while(targetClass != null && targetClass != Object.class);
+        } while (targetClass != null && targetClass != Object.class);
 
     }
 
     public static void shallowCopyFieldState(final Object src, final Object dest) throws IllegalArgumentException {
-        if(src == null) {
+        if (src == null) {
             throw new IllegalArgumentException("Source for field copy cannot be null");
-        } else if(dest == null) {
+        } else if (dest == null) {
             throw new IllegalArgumentException("Destination for field copy cannot be null");
-        } else if(!src.getClass().isAssignableFrom(dest.getClass())) {
-            throw new IllegalArgumentException("Destination class [" + dest.getClass().getName() + "] must be same or subclass as source class [" + src.getClass().getName() + "]");
+        } else if (!src.getClass().isAssignableFrom(dest.getClass())) {
+            throw new IllegalArgumentException("Destination class [" + dest.getClass().getName()
+                            + "] must be same or subclass as source class [" + src.getClass().getName() + "]");
         } else {
             doWithFields(src.getClass(), new ReflectionUtils.FieldCallback() {
                 public void doWith(Field field) throws IllegalArgumentException, IllegalAccessException {

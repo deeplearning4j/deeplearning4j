@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class SoftSignDerivative extends BaseTransformOp {
 
-    public SoftSignDerivative() {
-    }
+    public SoftSignDerivative() {}
 
     public SoftSignDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -61,46 +60,46 @@ public class SoftSignDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-    	return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
+        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-    	return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
+        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-    	return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
+        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
     }
-    
+
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
-    	return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
+        IComplexNumber oneMinusAbs = ComplexUtil.abs(origin).rsubi(1.0);
+        return oneMinusAbs.muli(oneMinusAbs).rdivi(1.0);
     }
 
     @Override
     public float op(float origin, float other) {
-    	return (float)ssderiv(origin);
+        return (float) ssderiv(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-    	return ssderiv(origin);
+        return ssderiv(origin);
     }
 
     @Override
     public double op(double origin) {
-    	return ssderiv(origin);
+        return ssderiv(origin);
     }
 
     @Override
     public float op(float origin) {
-    	return (float)ssderiv(origin);
+        return (float) ssderiv(origin);
     }
 
     @Override
@@ -108,9 +107,12 @@ public class SoftSignDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSignDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
     @Override
@@ -118,13 +120,16 @@ public class SoftSignDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftSignDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
-    
-    private static double ssderiv(double x){
-    	double y = 1 + FastMath.abs(x);
-    	return 1.0 / (y * y);
+
+    private static double ssderiv(double x) {
+        double y = 1 + FastMath.abs(x);
+        return 1.0 / (y * y);
     }
 }

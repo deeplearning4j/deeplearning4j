@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,16 +19,16 @@
 
 package org.nd4j.linalg.factory;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.PrivilegedActionException;
-import java.util.*;
-
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.PrivilegedActionException;
+import java.util.*;
 
 /**
  * An ND4j backend.
@@ -155,7 +155,7 @@ public abstract class Nd4jBackend {
         try {
 
             Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            while(backendIterator.hasNext())
+            while (backendIterator.hasNext())
                 backends.add(backendIterator.next());
 
         } catch (ServiceConfigurationError serviceError) {
@@ -172,7 +172,7 @@ public abstract class Nd4jBackend {
             }
         });
 
-        for(Nd4jBackend backend: backends) {
+        for (Nd4jBackend backend : backends) {
             boolean available = false;
             String error = null;
             try {
@@ -180,7 +180,7 @@ public abstract class Nd4jBackend {
             } catch (Exception e) {
                 error = e.getMessage();
             }
-            if(!available) {
+            if (!available) {
                 log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
                 continue;
             }
@@ -196,9 +196,9 @@ public abstract class Nd4jBackend {
         }
 
         log.trace("Service loader failed...falling back to reflection");
-        Set<Class<? extends Nd4jBackend>> clazzes =  new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
+        Set<Class<? extends Nd4jBackend>> clazzes = new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
         List<Nd4jBackend> reflectionBackends = new ArrayList<>();
-        for(Class<? extends Nd4jBackend> backend : clazzes) {
+        for (Class<? extends Nd4jBackend> backend : clazzes) {
             try {
                 Nd4jBackend load = backend.newInstance();
                 reflectionBackends.add(load);
@@ -210,7 +210,7 @@ public abstract class Nd4jBackend {
 
         }
 
-        Collections.sort(backends, new Comparator<Nd4jBackend>() {
+        Collections.sort(reflectionBackends, new Comparator<Nd4jBackend>() {
             @Override
             public int compare(Nd4jBackend o1, Nd4jBackend o2) {
                 // high-priority first
@@ -219,7 +219,7 @@ public abstract class Nd4jBackend {
         });
 
 
-        for(Nd4jBackend backend: reflectionBackends) {
+        for (Nd4jBackend backend : reflectionBackends) {
             boolean available = false;
             String error = null;
             try {
@@ -227,7 +227,7 @@ public abstract class Nd4jBackend {
             } catch (Exception e) {
                 error = e.getMessage();
             }
-            if(!available) {
+            if (!available) {
                 log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
                 continue;
             }
@@ -248,19 +248,19 @@ public abstract class Nd4jBackend {
         //ones being dynamically discovered.
         //Note that we prioritize jvm properties first, followed by environment variables.
         String[] jarUris;
-        if(System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
+        if (System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
             jarUris = System.getProperties().getProperty(DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
-        }
-        else if(System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH) && !triedDynamicLoad) {
+        } else if (System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH) && !triedDynamicLoad) {
             jarUris = System.getenv(DYNAMIC_LOAD_CLASSPATH).split(";");
         }
 
         else
-            throw new NoAvailableBackendException("Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
+            throw new NoAvailableBackendException(
+                            "Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
 
         triedDynamicLoad = true;
         //load all the discoverable uris and try to load the backend again
-        for(String uri : jarUris) {
+        for (String uri : jarUris) {
             loadLibrary(new File(uri));
         }
 
@@ -282,17 +282,16 @@ public abstract class Nd4jBackend {
             java.net.URL url = jar.toURI().toURL();
             /*Disallow if already loaded*/
             for (java.net.URL it : java.util.Arrays.asList(loader.getURLs())) {
-                if (it.equals(url)){
+                if (it.equals(url)) {
                     return;
                 }
             }
-            java.lang.reflect.Method method = java.net.URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{java.net.URL.class});
+            java.lang.reflect.Method method =
+                            java.net.URLClassLoader.class.getDeclaredMethod("addURL", new Class[] {java.net.URL.class});
             method.setAccessible(true); /*promote the method to public access*/
-            method.invoke(loader, new Object[]{url});
-        } catch (final java.lang.NoSuchMethodException |
-                java.lang.IllegalAccessException |
-                java.net.MalformedURLException |
-                java.lang.reflect.InvocationTargetException e) {
+            method.invoke(loader, new Object[] {url});
+        } catch (final java.lang.NoSuchMethodException | java.lang.IllegalAccessException
+                        | java.net.MalformedURLException | java.lang.reflect.InvocationTargetException e) {
             throw new NoAvailableBackendException(e);
         }
     }

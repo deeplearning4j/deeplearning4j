@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.shape;
 
-import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,20 +10,16 @@ import lombok.NoArgsConstructor;
  *
  * @author Adam Gibson
  */
-public @Data
-@AllArgsConstructor
-@NoArgsConstructor
-class StridePermutation implements Comparable<StridePermutation> {
+public @Data @AllArgsConstructor @NoArgsConstructor class StridePermutation implements Comparable<StridePermutation> {
     private int permutation;
     private int stride;
 
 
     @Override
     public int compareTo(StridePermutation o) {
-        int astride = this.stride,
-                bstride = o.getStride();
+        int astride = this.stride, bstride = o.getStride();
 
-    /* Sort the absolute value of the strides */
+        /* Sort the absolute value of the strides */
         if (astride < 0) {
             astride = -astride;
         }
@@ -33,12 +28,11 @@ class StridePermutation implements Comparable<StridePermutation> {
         }
 
         if (astride == bstride) {
-        /*
-         * Make the qsort stable by next comparing the perm order.
-         * (Note that two perm entries will never be equal)
-         */
-            int aperm = permutation,
-                    bperm = o.getPermutation();
+            /*
+             * Make the qsort stable by next comparing the perm order.
+             * (Note that two perm entries will never be equal)
+             */
+            int aperm = permutation, bperm = o.getPermutation();
             return (aperm < bperm) ? -1 : 1;
         }
         if (astride > bstride) {
@@ -55,8 +49,8 @@ class StridePermutation implements Comparable<StridePermutation> {
      */
     public static StridePermutation[] create(int[] stride) {
         StridePermutation[] ret = new StridePermutation[stride.length];
-        for(int i = 0; i < stride.length; i++) {
-            ret[i] = new StridePermutation(i,stride[i]);
+        for (int i = 0; i < stride.length; i++) {
+            ret[i] = new StridePermutation(i, stride[i]);
         }
 
         return ret;

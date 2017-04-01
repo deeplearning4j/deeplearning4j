@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,9 +28,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for ifft
@@ -39,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  */
 @Ignore
 @RunWith(Parameterized.class)
-public  class IFFTTests extends BaseNd4jTest {
+public class IFFTTests extends BaseNd4jTest {
 
     public IFFTTests(Nd4jBackend backend) {
         super(backend);
@@ -50,12 +48,12 @@ public  class IFFTTests extends BaseNd4jTest {
         Nd4j.EPS_THRESHOLD = 1e-1;
         double[] ffted = {10.2, 5., -3.0, -1.};
         double[] orig = {3.5999999999999996, 2, 6.5999999999999996, 3};
-        IComplexNDArray c = Nd4j.createComplex(orig, new int[]{1,2});
-        IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{1,2});
+        IComplexNDArray c = Nd4j.createComplex(orig, new int[] {1, 2});
+        IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[] {1, 2});
 
-        assertEquals(getFailureMessage(),assertion, Nd4j.getFFt().fft(c.dup(), 2));
-        IComplexNDArray iffted =  Nd4j.getFFt().ifft(Nd4j.getFFt().fft(c.dup(), 2),2);
-        assertEquals(getFailureMessage(),iffted, c);
+        assertEquals(getFailureMessage(), assertion, Nd4j.getFFt().fft(c.dup(), 2));
+        IComplexNDArray iffted = Nd4j.getFFt().ifft(Nd4j.getFFt().fft(c.dup(), 2), 2);
+        assertEquals(getFailureMessage(), iffted, c);
 
 
     }

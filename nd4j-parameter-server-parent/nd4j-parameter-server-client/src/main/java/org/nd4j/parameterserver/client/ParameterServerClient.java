@@ -15,7 +15,6 @@ import org.nd4j.parameterserver.model.ServerTypeJson;
 import org.nd4j.parameterserver.model.SubscriberState;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,21 +64,21 @@ public class ParameterServerClient implements NDArrayCallback {
      * @return
      */
     public int arraysSentToResponder() {
-        if(objectMapper == null)
+        if (objectMapper == null)
             objectMapper = new ObjectMapper();
 
         try {
-            String type = objectMapper.readValue(Unirest.get(String.format("http://%s:%d/type",masterStatusHost,masterStatusPort))
-                    .asJson().getBody().toString(), ServerTypeJson.class).getType();
-            if(!type.equals("master"))
+            String type = objectMapper.readValue(
+                            Unirest.get(String.format("http://%s:%d/type", masterStatusHost, masterStatusPort)).asJson()
+                                            .getBody().toString(),
+                            ServerTypeJson.class).getType();
+            if (!type.equals("master"))
                 throw new IllegalStateException("Wrong type " + type);
-            Unirest.get(String.format("http://%s:%d/started",masterStatusHost,masterStatusPort)).asJson().getBody();
-            return objectMapper.readValue(Unirest.get(String.format(
-                    "http://%s:%d/started"
-                    ,masterStatusHost,masterStatusPort))
-                    .asJson()
-                    .getBody()
-                    .toString(),MasterStatus.class).getResponderN();
+            Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort)).asJson().getBody();
+            return objectMapper.readValue(
+                            Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort))
+                                            .asJson().getBody().toString(),
+                            MasterStatus.class).getResponderN();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,7 +91,7 @@ public class ParameterServerClient implements NDArrayCallback {
      *
      */
     public void blockTillReady() {
-        while(!isReadyForNext())
+        while (!isReadyForNext())
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -108,15 +107,16 @@ public class ParameterServerClient implements NDArrayCallback {
      * ready for the next array or not,false otherwise
      */
     public boolean isReadyForNext() {
-        if(objectMapper == null)
+        if (objectMapper == null)
             objectMapper = new ObjectMapper();
 
         try {
             int masterStream = Integer.parseInt(ndarraySendUrl.split(":")[2]);
-            SubscriberState subscriberState =  objectMapper.readValue(Unirest.get(String.format("http://%s:%d/state/%d",masterStatusHost,masterStatusPort,masterStream))
-                    .asJson()
-                    .getBody()
-                    .toString(),SubscriberState.class);
+            SubscriberState subscriberState =
+                            objectMapper.readValue(Unirest
+                                            .get(String.format("http://%s:%d/state/%d", masterStatusHost,
+                                                            masterStatusPort, masterStream))
+                                            .asJson().getBody().toString(), SubscriberState.class);
             return subscriberState.isReady();
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,24 +131,26 @@ public class ParameterServerClient implements NDArrayCallback {
      * @return
      */
     public boolean masterStarted() {
-        if(objectMapper == null)
+        if (objectMapper == null)
             objectMapper = new ObjectMapper();
 
         try {
-            String type = objectMapper.readValue(Unirest.get(String.format("http://%s:%d/type",masterStatusHost,masterStatusPort))
-                    .asJson().getBody().toString(), ServerTypeJson.class).getType();
-            if(!type.equals("master"))
+            String type = objectMapper.readValue(
+                            Unirest.get(String.format("http://%s:%d/type", masterStatusHost, masterStatusPort)).asJson()
+                                            .getBody().toString(),
+                            ServerTypeJson.class).getType();
+            if (!type.equals("master"))
                 throw new IllegalStateException("Wrong type " + type);
-            Unirest.get(String.format("http://%s:%d/started",masterStatusHost,masterStatusPort)).asJson().getBody();
-            return objectMapper.readValue(Unirest.get(String.format("http://%s:%d/started",masterStatusHost,masterStatusPort))
-                    .asJson().getBody().toString(),MasterStatus.class).started();
+            Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort)).asJson().getBody();
+            return objectMapper.readValue(
+                            Unirest.get(String.format("http://%s:%d/started", masterStatusHost, masterStatusPort))
+                                            .asJson().getBody().toString(),
+                            MasterStatus.class).started();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
     }
-
-
 
 
 
@@ -162,26 +164,20 @@ public class ParameterServerClient implements NDArrayCallback {
      */
     public void pushNDArrayMessage(NDArrayMessage message) {
         //start a subscriber that can send us ndarrays
-        if(subscriber == null) {
+        if (subscriber == null) {
             running = new AtomicBoolean(true);
-            subscriber = AeronNDArraySubscriber.startSubscriber(
-                    aeron,
-                    subscriberHost,
-                    subscriberPort,
-                    this,
-                    subscriberStream,running);
+            subscriber = AeronNDArraySubscriber.startSubscriber(aeron, subscriberHost, subscriberPort, this,
+                            subscriberStream, running);
             log.debug("Started parameter server client on " + subscriber.connectionUrl());
         }
 
         String[] split = ndarraySendUrl.split(":");
         int port = Integer.parseInt(split[1]);
         int streamToPublish = Integer.parseInt(split[2]);
-        String channel = AeronUtil.aeronChannel(split[0],port);
+        String channel = AeronUtil.aeronChannel(split[0], port);
         log.debug("Parameter server client publishing to " + ndarraySendUrl);
-        try(AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
-                .streamId(streamToPublish).compress(isCompressArray())
-                .aeron(aeron).channel(channel)
-                .build()) {
+        try (AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamToPublish)
+                        .compress(isCompressArray()).aeron(aeron).channel(channel).build()) {
             publisher.publish(message);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -210,10 +206,7 @@ public class ParameterServerClient implements NDArrayCallback {
      * for this client
      */
     public String connectionUrl() {
-        return AeronConnectionInformation.of(
-                subscriberHost,
-                subscriberPort,
-                subscriberStream).toString();
+        return AeronConnectionInformation.of(subscriberHost, subscriberPort, subscriberStream).toString();
     }
 
 
@@ -227,18 +220,14 @@ public class ParameterServerClient implements NDArrayCallback {
      */
     public INDArray getArray() {
         //start a subscriber that can send us ndarrays
-        if(subscriber == null) {
+        if (subscriber == null) {
             running = new AtomicBoolean(true);
-            subscriber = AeronNDArraySubscriber.startSubscriber(
-                    aeron,
-                    subscriberHost,
-                    subscriberPort,
-                    this,
-                    subscriberStream,running);
+            subscriber = AeronNDArraySubscriber.startSubscriber(aeron, subscriberHost, subscriberPort, this,
+                            subscriberStream, running);
             log.debug("Started parameter server client on " + subscriber.connectionUrl());
         }
 
-        if(arr == null)
+        if (arr == null)
             arr = new AtomicReference<>(none);
 
         log.debug("Parameter server client retrieving url from " + ndarrayRetrieveUrl);
@@ -257,16 +246,19 @@ public class ParameterServerClient implements NDArrayCallback {
         //publish the address of our subscriber
         //note here that we send the ndarray send url, because the
         //master also hosts
-        try (HostPortPublisher hostPortPublisher = HostPortPublisher
-                .builder().channel(channel).aeron(aeron)
-                //note here that we send our subscriber's listening information
-                .streamId(streamToPublish)
-                .uriToSend(AeronConnectionInformation.of(subscriberHost, subscriberPort, subscriberStream).toString())
-                .build()) {
+        try (HostPortPublisher hostPortPublisher =
+                        HostPortPublisher.builder().channel(channel).aeron(aeron)
+                                        //note here that we send our subscriber's listening information
+                                        .streamId(streamToPublish)
+                                        .uriToSend(AeronConnectionInformation
+                                                        .of(subscriberHost, subscriberPort, subscriberStream)
+                                                        .toString())
+                                        .build()) {
             hostPortPublisher.send();
 
 
-            log.debug("Sent subscriber information " + AeronConnectionInformation.of(subscriberHost, subscriberPort, subscriberStream).toString());
+            log.debug("Sent subscriber information " + AeronConnectionInformation
+                            .of(subscriberHost, subscriberPort, subscriberStream).toString());
 
             //wait for array to be available
             while (arr.get() == none) {
@@ -274,8 +266,7 @@ public class ParameterServerClient implements NDArrayCallback {
                 log.info("Waiting on array to be updated.");
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error with publishing", e);
         }
 
@@ -297,8 +288,8 @@ public class ParameterServerClient implements NDArrayCallback {
         int[] dimensions = message.getDimensions();
         boolean whole = dimensions.length == 1 && dimensions[0] == -1;
 
-        if(!whole)
-            onNDArrayPartial(arr,message.getIndex(),dimensions);
+        if (!whole)
+            onNDArrayPartial(arr, message.getIndex(), dimensions);
         else
             onNDArray(arr);
     }
@@ -313,7 +304,7 @@ public class ParameterServerClient implements NDArrayCallback {
     @Override
     public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
         INDArray get = this.arr.get();
-        get.tensorAlongDimension((int) idx,dimensions).assign(arr);
+        get.tensorAlongDimension((int) idx, dimensions).assign(arr);
 
     }
 
@@ -323,7 +314,7 @@ public class ParameterServerClient implements NDArrayCallback {
      * @param arr
      */
     @Override
-    public  void onNDArray(INDArray arr) {
+    public void onNDArray(INDArray arr) {
         log.info("Received array");
         this.arr.set(arr);
     }

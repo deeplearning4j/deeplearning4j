@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class Exp extends BaseTransformOp {
 
-    public Exp() {
-    }
+    public Exp() {}
 
     public Exp(INDArray x, INDArray z) {
         super(x, z);
@@ -113,7 +112,8 @@ public class Exp extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Exp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Exp(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Exp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -124,7 +124,8 @@ public class Exp extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Exp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new Exp(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Exp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

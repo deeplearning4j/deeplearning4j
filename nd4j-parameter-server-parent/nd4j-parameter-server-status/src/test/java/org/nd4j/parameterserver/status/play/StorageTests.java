@@ -14,28 +14,27 @@ public class StorageTests {
     @Test
     public void testMapStorage() throws Exception {
         StatusStorage mapDb = new MapDbStatusStorage();
-        assertEquals(SubscriberState.empty(),mapDb.getState(-1));
+        assertEquals(SubscriberState.empty(), mapDb.getState(-1));
 
 
-        SubscriberState noEmpty = SubscriberState.builder().isMaster(true)
-                .serverState("master").streamId(1).build();
+        SubscriberState noEmpty = SubscriberState.builder().isMaster(true).serverState("master").streamId(1).build();
         mapDb.updateState(noEmpty);
-        assertEquals(noEmpty,mapDb.getState(1));
+        assertEquals(noEmpty, mapDb.getState(1));
 
         Thread.sleep(10000);
         assertTrue(mapDb.numStates() == 0);
 
     }
+
     @Test
     public void testStorage() throws Exception {
         StatusStorage statusStorage = new InMemoryStatusStorage();
-        assertEquals(SubscriberState.empty(),statusStorage.getState(-1));
+        assertEquals(SubscriberState.empty(), statusStorage.getState(-1));
 
 
-        SubscriberState noEmpty = SubscriberState.builder().isMaster(true)
-                .serverState("master").streamId(1).build();
+        SubscriberState noEmpty = SubscriberState.builder().isMaster(true).serverState("master").streamId(1).build();
         statusStorage.updateState(noEmpty);
-        assertEquals(noEmpty,statusStorage.getState(1));
+        assertEquals(noEmpty, statusStorage.getState(1));
 
         Thread.sleep(10000);
         assertTrue(statusStorage.numStates() == 0);

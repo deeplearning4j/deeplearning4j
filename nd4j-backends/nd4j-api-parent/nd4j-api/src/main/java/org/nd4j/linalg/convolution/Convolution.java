@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -49,8 +49,7 @@ public class Convolution {
     /**
      * Default no-arg constructor.
      */
-    private Convolution() {
-    }
+    private Convolution() {}
 
     /**
      *
@@ -68,7 +67,7 @@ public class Convolution {
     /**
      * Rearrange matrix
      * columns into blocks
-
+    
      * @param col the column
      *            transposed image to convert
      * @param sy stride y
@@ -80,15 +79,18 @@ public class Convolution {
      * @return
      */
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
-        if(col.rank() != 6) throw new IllegalArgumentException("col2im input array must be rank 6");
-        Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w);
+        if (col.rank() != 6)
+            throw new IllegalArgumentException("col2im input array must be rank 6");
+        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w);
         return Nd4j.getExecutioner().exec(col2Im).z();
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w) {
-        if(col.rank() != 6) throw new IllegalArgumentException("col2im input array must be rank 6");
-        if(z.rank() != 4) throw new IllegalArgumentException("col2im output array must be rank 4");
-        Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w,false,z);
+        if (col.rank() != 6)
+            throw new IllegalArgumentException("col2im input array must be rank 6");
+        if (z.rank() != 4)
+            throw new IllegalArgumentException("col2im output array must be rank 4");
+        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, false, z);
         Nd4j.getExecutioner().exec(col2Im);
         return z;
     }
@@ -119,12 +121,13 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode);
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, INDArray out) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode,out);
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
+                    INDArray out) {
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode, out);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
@@ -142,8 +145,9 @@ public class Convolution {
      * @return the column formatted image
      *
      */
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean isSameMode) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode);
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval,
+                    boolean isSameMode) {
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
@@ -157,7 +161,7 @@ public class Convolution {
      * @param coverAll
      * @return
      */
-    public static int outSize(int size,int k,int s,int p, boolean coverAll) {
+    public static int outSize(int size, int k, int s, int p, boolean coverAll) {
         if (coverAll)
             return (size + p * 2 - k + s - 1) / s + 1;
         else

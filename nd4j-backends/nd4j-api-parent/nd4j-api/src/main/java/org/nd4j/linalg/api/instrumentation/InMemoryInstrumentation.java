@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,7 +26,6 @@ import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Collects log entries in memory
@@ -34,8 +33,9 @@ import java.util.concurrent.Executors;
  * @author Adam Gibson
  */
 public class InMemoryInstrumentation implements Instrumentation {
-    private List<LogEntry> entries  = Collections.synchronizedList(new ArrayList<LogEntry>());
-    private List<DataBufferLogEntry> dataBufferLogEntries = Collections.synchronizedList(new ArrayList<DataBufferLogEntry>());
+    private List<LogEntry> entries = Collections.synchronizedList(new ArrayList<LogEntry>());
+    private List<DataBufferLogEntry> dataBufferLogEntries =
+                    Collections.synchronizedList(new ArrayList<DataBufferLogEntry>());
     private ExecutorService executorService = ExecutorServiceProvider.getExecutorService();
     private Map<String, Collection<LogEntry>> logEntries = new ConcurrentHashMap<>();
 
@@ -46,14 +46,14 @@ public class InMemoryInstrumentation implements Instrumentation {
             public void run() {
                 LogEntry entry = new LogEntry(toLog, status);
                 entries.add(entry);
-//                Collection<LogEntry> logEntries = InMemoryInstrumentation.this.logEntries.get(toLog.id());
-//
-//                if (logEntries == null) {
-//                    logEntries = new CopyOnWriteArrayList<>();
-//                    InMemoryInstrumentation.this.logEntries.put(toLog.id(), logEntries);
-//                }
+                //                Collection<LogEntry> logEntries = InMemoryInstrumentation.this.logEntries.get(toLog.id());
+                //
+                //                if (logEntries == null) {
+                //                    logEntries = new CopyOnWriteArrayList<>();
+                //                    InMemoryInstrumentation.this.logEntries.put(toLog.id(), logEntries);
+                //                }
 
-//                logEntries.add(entry);
+                //                logEntries.add(entry);
             }
         });
 

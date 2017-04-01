@@ -28,7 +28,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
 
 
-    protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
+    protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache =
+                    new ConcurrentHashMap<>();
 
 
     private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
@@ -134,11 +135,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 long cacheDepth = cacheEntries * reqMemory;
 
                 //if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cache.put(new CudaPointer(point.getDevicePointer().address()));
-                    return;
+                cache.put(new CudaPointer(point.getDevicePointer().address()));
+                return;
                 //} else {
                 //    super.free(point);
-               // }
+                // }
             }
         }
         super.free(point);
@@ -150,7 +151,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
      * @param deviceId
      * @param shape
      */
-    protected  void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
+    protected void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
         if (!deviceCache.containsKey(deviceId)) {
             try {
                 singleLock.acquire();
@@ -182,8 +183,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
     @Override
     public synchronized void purgeCache() {
-        for (Integer device: deviceCache.keySet()) {
-            for (AllocationShape shape: deviceCache.get(device).keySet()) {
+        for (Integer device : deviceCache.keySet()) {
+            for (AllocationShape shape : deviceCache.get(device).keySet()) {
                 Pointer ptr = null;
                 while ((ptr = deviceCache.get(device).get(shape).poll()) != null) {
                     freeDevice(ptr, device);

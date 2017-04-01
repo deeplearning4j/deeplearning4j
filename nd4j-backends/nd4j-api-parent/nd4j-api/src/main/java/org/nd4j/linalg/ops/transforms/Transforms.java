@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -39,8 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class Transforms {
 
 
-    private Transforms() {
-    }
+    private Transforms() {}
 
     /**
      * Cosine similarity
@@ -51,14 +50,15 @@ public class Transforms {
      *
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult().doubleValue();
+        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult()
+                        .doubleValue();
     }
 
-    public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2){
+    public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance1(d2);
     }
 
-    public static double euclideanDistance(@NonNull INDArray d1, @NonNull INDArray d2){
+    public static double euclideanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance2(d2);
     }
 
@@ -100,7 +100,6 @@ public class Transforms {
         }
         return toScale;
     }
-
 
 
 
@@ -162,11 +161,11 @@ public class Transforms {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
 
-    public static INDArray sin(INDArray in){
+    public static INDArray sin(INDArray in) {
         return sin(in, Nd4j.copyOnOps);
     }
 
-    public static INDArray sin(INDArray in, boolean copy){
+    public static INDArray sin(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new Sin((copy ? in.dup() : in)));
     }
 
@@ -185,19 +184,19 @@ public class Transforms {
      * @param copy
      * @return
      */
-    public static INDArray cos(INDArray in, boolean copy){
+    public static INDArray cos(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new Cos((copy ? in.dup() : in)));
     }
 
 
     public static INDArray acos(INDArray arr) {
-        return acos(arr,Nd4j.copyOnOps);
+        return acos(arr, Nd4j.copyOnOps);
     }
 
 
-   public static INDArray acos(INDArray in,boolean copy) {
-       return Nd4j.getExecutioner().execAndReturn(new ACos(((copy ? in.dup() : in))));
-   }
+    public static INDArray acos(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ACos(((copy ? in.dup() : in))));
+    }
 
 
     public static INDArray asin(INDArray arr) {
@@ -205,16 +204,16 @@ public class Transforms {
     }
 
 
-    public static INDArray asin(INDArray in,boolean copy) {
+    public static INDArray asin(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new ASin(((copy ? in.dup() : in))));
     }
 
     public static INDArray atan(INDArray arr) {
-        return atan(arr,Nd4j.copyOnOps);
+        return atan(arr, Nd4j.copyOnOps);
     }
 
 
-    public static INDArray atan(INDArray in,boolean copy) {
+    public static INDArray atan(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new ATan(((copy ? in.dup() : in))));
     }
 
@@ -223,7 +222,7 @@ public class Transforms {
     }
 
 
-    public static INDArray ceil(INDArray in,boolean copy) {
+    public static INDArray ceil(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new Ceil(((copy ? in.dup() : in))));
     }
 
@@ -233,7 +232,7 @@ public class Transforms {
     }
 
 
-    public static INDArray relu(INDArray in,boolean copy) {
+    public static INDArray relu(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(((copy ? in.dup() : in))));
     }
 
@@ -244,17 +243,17 @@ public class Transforms {
     }
 
 
-    public static INDArray leakyRelu(INDArray in,boolean copy) {
+    public static INDArray leakyRelu(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(((copy ? in.dup() : in))));
     }
 
 
     public static INDArray softPlus(INDArray arr) {
-        return softPlus(arr,Nd4j.copyOnOps);
+        return softPlus(arr, Nd4j.copyOnOps);
     }
 
 
-    public static INDArray softPlus(INDArray in,boolean copy) {
+    public static INDArray softPlus(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new SoftPlus(((copy ? in.dup() : in))));
     }
 
@@ -342,6 +341,27 @@ public class Transforms {
         return tanh(ndArray, Nd4j.copyOnOps);
     }
 
+    /**
+     * Log on arbitrary base
+     *
+     * @param ndArray
+     * @param base
+     * @return
+     */
+    public static INDArray log(INDArray ndArray, double base) {
+        return log(ndArray, base, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Log on arbitrary base
+     *
+     * @param ndArray
+     * @param base
+     * @return
+     */
+    public static INDArray log(INDArray ndArray, double base, boolean duplicate) {
+        return Nd4j.getExecutioner().exec(new LogX(duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base)).z();
+    }
 
     public static INDArray log(INDArray ndArray) {
         return log(ndArray, Nd4j.copyOnOps);
@@ -464,7 +484,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
-        if (dup){
+        if (dup) {
             first = first.dup();
         }
         return exec(new Max(second, first, first, first.length()));
@@ -513,7 +533,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray first, INDArray second, boolean dup) {
-        if (dup){
+        if (dup) {
             first = first.dup();
         }
         return exec(new Min(second, first, first, first.length()));
@@ -671,6 +691,32 @@ public class Transforms {
         return exec(dup ? new Negative(ndArray, ndArray.dup()) : new Negative(ndArray));
     }
 
+    public static INDArray and(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        Nd4j.getExecutioner().exec(new And(x, y, z, 0.0));
+        return z;
+    }
+
+    public static INDArray or(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        Nd4j.getExecutioner().exec(new Or(x, y, z, 0.0));
+        return z;
+    }
+
+    public static INDArray xor(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        Nd4j.getExecutioner().exec(new Xor(x, y, z, 0.0));
+        return z;
+    }
+
+    public static INDArray not(INDArray x) {
+        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        Nd4j.getExecutioner().exec(new Not(x, z, 0.0));
+        return z;
+    }
+
+
+
     /**
      * Apply the given elementwise op
      *
@@ -678,7 +724,7 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(ScalarOp op) {
-        if(op.x().isCleanedUp())
+        if (op.x().isCleanedUp())
             throw new IllegalStateException("NDArray already freed");
         return Nd4j.getExecutioner().exec(op).z();
     }
@@ -690,7 +736,7 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(TransformOp op) {
-        if(op.x().isCleanedUp())
+        if (op.x().isCleanedUp())
             throw new IllegalStateException("NDArray already freed");
         return Nd4j.getExecutioner().execAndReturn(op);
     }

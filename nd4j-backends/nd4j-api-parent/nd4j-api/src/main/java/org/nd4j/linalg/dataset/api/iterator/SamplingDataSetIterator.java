@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -48,8 +48,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
      * @param batchSize          the batch size to sample
      * @param totalNumberSamples the sample size
      */
-    public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
-                                   int totalNumberSamples,boolean replace) {
+    public SamplingDataSetIterator(DataSet sampleFrom, int batchSize, int totalNumberSamples, boolean replace) {
         super();
         this.sampleFrom = sampleFrom;
         this.batchSize = batchSize;
@@ -63,8 +62,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
      * @param batchSize          the batch size to sample
      * @param totalNumberSamples the sample size
      */
-    public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
-                                   int totalNumberSamples) {
+    public SamplingDataSetIterator(DataSet sampleFrom, int batchSize, int totalNumberSamples) {
         super();
         this.sampleFrom = sampleFrom;
         this.batchSize = batchSize;
@@ -78,8 +76,13 @@ public class SamplingDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        DataSet ret = sampleFrom.sample(batchSize,replace);
+        DataSet ret = sampleFrom.sample(batchSize, replace);
         numTimesSampled += batchSize;
+
+        if (preProcessor != null) {
+            preProcessor.preProcess(ret);
+        }
+
         return ret;
     }
 
@@ -104,7 +107,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 

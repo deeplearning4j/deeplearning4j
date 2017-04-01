@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,7 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ELUDerivative extends BaseTransformOp {
 
-    public ELUDerivative(){
+    public ELUDerivative() {
 
     }
 
@@ -74,31 +74,31 @@ public class ELUDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1,0) :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1,0) :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1,0) :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1,0) :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()), 0);
     }
 
     @Override
     public float op(float origin, float other) {
-        return origin >= 0.0 ? 1.0f : (float)(FastMath.exp(origin));
+        return origin >= 0.0 ? 1.0f : (float) (FastMath.exp(origin));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ELUDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin) {
-        return origin >= 0.0 ? 1.0f : (float)(FastMath.exp(origin));
+        return origin >= 0.0 ? 1.0f : (float) (FastMath.exp(origin));
     }
 
     @Override
@@ -121,9 +121,11 @@ public class ELUDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ELUDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELUDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new ELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
     }
 
     @Override
@@ -131,8 +133,10 @@ public class ELUDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ELUDerivative(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELUDerivative(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new ELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELUDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
     }
 }

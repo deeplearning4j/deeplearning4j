@@ -7,7 +7,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by agibsonccc on 6/24/16.
  */
@@ -18,15 +19,13 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
 
     @Test
     public void testBalance() {
-        DataSetIterator iterator = new IrisDataSetIterator(10,150);
-        BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder()
-                .dataSetIterator(iterator).miniBatchSize(10).numLabels(3)
-                .rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave"))
-                .build();
+        DataSetIterator iterator = new IrisDataSetIterator(10, 150);
+        BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(10)
+                        .numLabels(3).rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
-        while(balanced.hasNext()) {
-           assertTrue(balanced.next().labelCounts().size() > 0);
+        while (balanced.hasNext()) {
+            assertTrue(balanced.next().labelCounts().size() > 0);
         }
 
     }

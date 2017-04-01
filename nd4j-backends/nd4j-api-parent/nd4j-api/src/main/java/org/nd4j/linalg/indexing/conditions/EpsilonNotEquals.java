@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,7 +30,7 @@ public class EpsilonNotEquals extends BaseCondition {
     /**
      * Special constructor for pairwise boolean operations.
      */
-    public EpsilonNotEquals(){
+    public EpsilonNotEquals() {
         super(0.0);
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -45,18 +45,7 @@ import java.nio.Buffer;
  */
 public interface Op {
     enum Type {
-        SCALAR,
-        TRANSFORM,
-        PAIRWISE,
-        SPECIAL,
-        BROADCAST,
-        REDUCE,
-        INDEXREDUCE,
-        VARIANCE,
-        REDUCE3,
-        GRID,
-        META,
-        AGGREGATION
+        SCALAR, TRANSFORM, PAIRWISE, SPECIAL, BROADCAST, REDUCE, INDEXREDUCE, VARIANCE, REDUCE3, GRID, META, AGGREGATION
     }
 
     /**
@@ -72,6 +61,7 @@ public interface Op {
      * @return
      */
     DataBuffer extraArgsDataBuff();
+
     /**
      * Returns a buffer of either float
      * or double
@@ -80,6 +70,7 @@ public interface Op {
      * representing the extra args for this op
      */
     Buffer extraArgsBuff();
+
     /**
      * An op number
      * @return
@@ -209,7 +200,7 @@ public interface Op {
      * @param dimension the dimension to ge the input for
      * @return the operation for that dimension
      */
-    Op opForDimension(int index, int...dimension);
+    Op opForDimension(int index, int... dimension);
 
     /**
      * Initialize the operation based on the parameters
@@ -270,7 +261,7 @@ public interface Op {
      * Exec along each dimension
      * @param dimensions the dimensions to execute on
      */
-    void exec(int...dimensions);
+    void exec(int... dimensions);
 
     /**
      * Change n

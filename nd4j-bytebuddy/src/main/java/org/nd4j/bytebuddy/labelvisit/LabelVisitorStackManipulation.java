@@ -23,13 +23,15 @@ public class LabelVisitorStackManipulation implements StackManipulation {
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
         methodVisitor.visitLabel(label);
-        return new Size(0,0);
+        return new Size(0, 0);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         LabelVisitorStackManipulation that = (LabelVisitorStackManipulation) o;
 

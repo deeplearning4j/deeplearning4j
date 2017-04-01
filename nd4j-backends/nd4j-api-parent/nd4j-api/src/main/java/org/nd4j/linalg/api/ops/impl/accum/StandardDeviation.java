@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,8 +36,7 @@ public class StandardDeviation extends Variance {
         super(x, biasCorrected);
     }
 
-    public StandardDeviation() {
-    }
+    public StandardDeviation() {}
 
     public StandardDeviation(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -66,7 +65,8 @@ public class StandardDeviation extends Variance {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new StandardDeviation(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new StandardDeviation(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             return new StandardDeviation(xAlongDimension);
 
@@ -77,19 +77,20 @@ public class StandardDeviation extends Variance {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             return new StandardDeviation(xAlongDimension);
     }
 
     @Override
-    public void exec(){
-        super.exec();   //variance = sqrt(stdev) -> sqrt is done in getAndSetFinalResult(...)
+    public void exec() {
+        super.exec(); //variance = sqrt(stdev) -> sqrt is done in getAndSetFinalResult(...)
     }
 
     @Override
     public void exec(int... dimension) {
-        if(dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
+        if (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) {
             exec();
             this.z = Nd4j.scalar(this.finalResult);
             return;
@@ -98,9 +99,9 @@ public class StandardDeviation extends Variance {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i = 0; i < nOps; i++) {
-            double d = Nd4j.getExecutioner().execAndReturn(opForDimension(i,dimension)).getFinalResult().doubleValue();
-            z.putScalar(i,d);
+        for (int i = 0; i < nOps; i++) {
+            double d = Nd4j.getExecutioner().execAndReturn(opForDimension(i, dimension)).getFinalResult().doubleValue();
+            z.putScalar(i, d);
         }
     }
 
@@ -113,25 +114,25 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
-        float f = (float)FastMath.sqrt(super.getAndSetFinalResult(accum));
+    public float getAndSetFinalResult(float accum) {
+        float f = (float) FastMath.sqrt(super.getAndSetFinalResult(accum));
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
         finalResultComplex = super.getAndSetFinalResult(accum).sqrt();
         return finalResultComplex;
     }
 
     @Override
     public double calculateFinalResult(double accum, long n) {
-        return FastMath.sqrt(super.calculateFinalResult(accum,n));
+        return FastMath.sqrt(super.calculateFinalResult(accum, n));
     }
 
     @Override
     public float calculateFinalResult(float accum, long n) {
-        return (float) FastMath.sqrt(super.calculateFinalResult(accum,n));
+        return (float) FastMath.sqrt(super.calculateFinalResult(accum, n));
     }
 }

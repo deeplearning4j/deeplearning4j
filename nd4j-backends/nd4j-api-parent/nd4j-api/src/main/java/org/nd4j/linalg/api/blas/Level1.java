@@ -33,10 +33,11 @@ public interface Level1 {
      * @param Y
      * @return
      */
-    double dot(int n,double alpha,  INDArray X,INDArray Y);
+    double dot(int n, double alpha, INDArray X, INDArray Y);
 
     /** Vector-vector dot product */
-    double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
+    double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+
     /**
      * computes a vector-vector dot product.
      * @param n
@@ -45,7 +46,7 @@ public interface Level1 {
      * @param Y
      * @return
      */
-    IComplexNumber dot(int n,IComplexNumber alpha,  IComplexNDArray X,IComplexNDArray Y);
+    IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y);
 
     /**
      * computes the Euclidean norm of a vector.
@@ -53,6 +54,7 @@ public interface Level1 {
      * @return
      */
     double nrm2(INDArray arr);
+
     /**
      * computes the Euclidean norm of a vector.
      * @param arr
@@ -95,10 +97,11 @@ public interface Level1 {
      * @param stride  the stride for the array
      * @return
      */
-     int iamax(int n,INDArray arr,int stride);
+    int iamax(int n, INDArray arr, int stride);
 
     /** Index of largest absolute value */
-    int iamax(int n,DataBuffer x, int offsetX, int incrX);
+    int iamax(int n, DataBuffer x, int offsetX, int incrX);
+
     /**
      * finds the element of a vector that has the largest absolute value.
      * @param arr
@@ -112,6 +115,7 @@ public interface Level1 {
      * @return
      */
     int iamin(INDArray arr);
+
     /**
      * finds the element of a vector that has the minimum absolute value.
      * @param arr
@@ -124,7 +128,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void swap(INDArray x,INDArray y);
+    void swap(INDArray x, INDArray y);
 
     void swap(IComplexNDArray x, IComplexNDArray y);
 
@@ -133,13 +137,13 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void copy(INDArray x,INDArray y);
+    void copy(INDArray x, INDArray y);
 
     /**copy a vector to another vector.
      * @param x
      * @param y
      */
-    void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
+    void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     void copy(IComplexNDArray x, IComplexNDArray y);
 
@@ -150,7 +154,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void axpy(int n,double alpha,INDArray x,INDArray y);
+    void axpy(int n, double alpha, INDArray x, INDArray y);
 
     /**
      * computes a vector-scalar product and adds the result to a vector.
@@ -164,7 +168,7 @@ public interface Level1 {
      * @param offsetY offset of first element of Y in buffer
      * @param incrY increment/stride between elements of Y in buffer
      */
-    void axpy(int n,double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
+    void axpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     /**
      *  computes a vector-scalar product and adds the result to a vector.
@@ -173,7 +177,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void axpy(int n,IComplexNumber alpha,IComplexNDArray x,IComplexNDArray y);
+    void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y);
 
     /**
      * computes parameters for a Givens rotation.
@@ -182,7 +186,7 @@ public interface Level1 {
      * @param c
      * @param s
      */
-    void rotg(INDArray a,INDArray b,INDArray c,INDArray s);
+    void rotg(INDArray a, INDArray b, INDArray c, INDArray s);
 
     /**
      * performs rotation of points in the plane.
@@ -192,8 +196,7 @@ public interface Level1 {
      * @param c
      * @param s
      */
-    void rot( int N, INDArray X,
-                   INDArray Y,  double c,  double s);
+    void rot(int N, INDArray X, INDArray Y, double c, double s);
 
     /**
      * performs rotation of points in the plane.
@@ -203,8 +206,7 @@ public interface Level1 {
      * @param c
      * @param s
      */
-    void rot( int N, IComplexNDArray X,
-              IComplexNDArray Y,  IComplexNumber c,  IComplexNumber s);
+    void rot(int N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s);
 
     /**
      * computes the modified parameters for a Givens rotation.
@@ -214,7 +216,8 @@ public interface Level1 {
      * @param b2
      * @param P
      */
-    void rotmg(INDArray d1, INDArray d2, INDArray b1,  double b2, INDArray P);
+    void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P);
+
     /**
      * computes the modified parameters for a Givens rotation.
      * @param d1
@@ -223,7 +226,7 @@ public interface Level1 {
      * @param b2
      * @param P
      */
-    void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1,  IComplexNumber b2, IComplexNDArray P);
+    void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2, IComplexNDArray P);
 
     /**
      *  computes a vector by a scalar product.
@@ -239,9 +242,9 @@ public interface Level1 {
      * @param alpha
      * @param X
      */
-    void scal(int N,  IComplexNumber alpha, IComplexNDArray X);
+    void scal(int N, IComplexNumber alpha, IComplexNDArray X);
 
 
     /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */
-     boolean supportsDataBufferL1Ops();
+    boolean supportsDataBufferL1Ops();
 }

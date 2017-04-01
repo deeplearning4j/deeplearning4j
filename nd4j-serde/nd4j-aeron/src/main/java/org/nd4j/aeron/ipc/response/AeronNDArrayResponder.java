@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.SigInt;
-import org.nd4j.aeron.ipc.*;
+import org.nd4j.aeron.ipc.AeronConnectionInformation;
+import org.nd4j.aeron.ipc.AeronUtil;
+import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
     private int fragmentLimitCount;
     // Create a context, needed for client connection to media driver
     // A separate media driver process need to run prior to running this application
-    private  Aeron.Context ctx;
+    private Aeron.Context ctx;
     private AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean init = new AtomicBoolean(false);
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayResponder.class);
@@ -51,12 +53,12 @@ public class AeronNDArrayResponder implements AutoCloseable {
 
     private void init() {
         ctx = ctx == null ? new Aeron.Context() : ctx;
-        channel = channel == null ?  "aeron:udp?endpoint=localhost:40123" : channel;
+        channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         fragmentLimitCount = fragmentLimitCount == 0 ? 5000 : fragmentLimitCount;
         streamId = streamId == 0 ? 10 : streamId;
         responseStreamId = responseStreamId == 0 ? -1 : responseStreamId;
         running = running == null ? new AtomicBoolean(true) : running;
-        if(ndArrayHolder == null)
+        if (ndArrayHolder == null)
             throw new IllegalStateException("NDArray callback must be specified in the builder.");
         init.set(true);
         launched = new AtomicBoolean(false);
@@ -70,10 +72,10 @@ public class AeronNDArrayResponder implements AutoCloseable {
      * @throws Exception
      */
     public void launch() throws Exception {
-        if(init.get())
+        if (init.get())
             return;
         // Register a SIGINT handler for graceful shutdown.
-        if(!init.get())
+        if (!init.get())
             init();
 
         log.info("Subscribing to " + channel + " on stream Id " + streamId);
@@ -91,29 +93,24 @@ public class AeronNDArrayResponder implements AutoCloseable {
         //The second one is when we want to send responses
         boolean started = false;
         int numTries = 0;
-        while(!started && numTries < 3) {
+        while (!started && numTries < 3) {
             try {
                 try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                     log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-                      AeronUtil.subscriberLoop(new FragmentAssembler(NDArrayResponseFragmentHandler.builder()
-                                    .aeron(aeron)
-                                    .context(ctx)
-                                    .streamId(responseStreamId)
-                                    .holder(ndArrayHolder)
-                                    .build()), fragmentLimitCount, running
-                            ,launched)
-                            .accept(subscription);
+                    AeronUtil.subscriberLoop(new FragmentAssembler(NDArrayResponseFragmentHandler.builder().aeron(aeron)
+                                    .context(ctx).streamId(responseStreamId).holder(ndArrayHolder).build()),
+                                    fragmentLimitCount, running, launched).accept(subscription);
                     started = true;
                 }
 
 
             } catch (Exception e) {
                 numTries++;
-                log.warn("Failed to connect..trying again",e);
+                log.warn("Failed to connect..trying again", e);
             }
         }
 
-        if(numTries >= 3)
+        if (numTries >= 3)
             throw new IllegalStateException("Was unable to start responder after " + numTries + "tries");
 
 
@@ -126,10 +123,10 @@ public class AeronNDArrayResponder implements AutoCloseable {
      * @return
      */
     public String connectionUrl() {
-        String[] split = channel.replace("aeron:udp?endpoint=","").split(":");
+        String[] split = channel.replace("aeron:udp?endpoint=", "").split(":");
         String host = split[0];
         int port = Integer.parseInt(split[1]);
-        return AeronConnectionInformation.of(host,port,streamId).toString();
+        return AeronConnectionInformation.of(host, port, streamId).toString();
     }
 
     /**
@@ -142,23 +139,17 @@ public class AeronNDArrayResponder implements AutoCloseable {
      * @param streamId the stream id to subscribe to
      * @return the subscriber reference
      */
-    public static AeronNDArrayResponder startSubscriber(Aeron aeron,
-                                                        String host,
-                                                        int port,
-                                                        NDArrayHolder callback,
-                                                        int streamId) {
+    public static AeronNDArrayResponder startSubscriber(Aeron aeron, String host, int port, NDArrayHolder callback,
+                    int streamId) {
 
-        if(callback == null)
+        if (callback == null)
             throw new IllegalArgumentException("NDArrayHolder must be specified");
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
 
-        AeronNDArrayResponder subscriber = AeronNDArrayResponder.builder()
-                .streamId(streamId)
-                .aeron(aeron).channel(AeronUtil.aeronChannel(host,port))
-                .running(running)
-                .ndArrayHolder(callback).build();
+        AeronNDArrayResponder subscriber = AeronNDArrayResponder.builder().streamId(streamId).aeron(aeron)
+                        .channel(AeronUtil.aeronChannel(host, port)).running(running).ndArrayHolder(callback).build();
 
 
         Thread t = new Thread(() -> {
@@ -185,23 +176,18 @@ public class AeronNDArrayResponder implements AutoCloseable {
      * @param streamId the stream id to subscribe to
      * @return the subscriber reference
      */
-    public static AeronNDArrayResponder startSubscriber(Aeron.Context context,
-                                                        String host,
-                                                        int port,
-                                                        NDArrayHolder callback,
-                                                        int streamId) {
-        if(callback == null)
+    public static AeronNDArrayResponder startSubscriber(Aeron.Context context, String host, int port,
+                    NDArrayHolder callback, int streamId) {
+        if (callback == null)
             throw new IllegalArgumentException("NDArrayHolder must be specified");
 
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
 
-        AeronNDArrayResponder subscriber = AeronNDArrayResponder.builder()
-                .streamId(streamId)
-                .ctx(context).channel(String.format("aeron:udp?endpoint=%s:%d",host,port))
-                .running(running)
-                .ndArrayHolder(callback).build();
+        AeronNDArrayResponder subscriber = AeronNDArrayResponder.builder().streamId(streamId).ctx(context)
+                        .channel(String.format("aeron:udp?endpoint=%s:%d", host, port)).running(running)
+                        .ndArrayHolder(callback).build();
 
 
         Thread t = new Thread(() -> {

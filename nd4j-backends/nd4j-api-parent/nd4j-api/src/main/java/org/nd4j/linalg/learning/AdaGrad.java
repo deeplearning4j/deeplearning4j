@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -42,13 +42,14 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 @Data
 @NoArgsConstructor
 public class AdaGrad implements Serializable, GradientUpdater {
+    public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
 
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
-    private double epsilon = 1e-6;
+    private double epsilon = DEFAULT_ADAGRAD_EPSILON;
 
     @Override
     public int stateSizeForInputSize(int inputSize) {
@@ -57,8 +58,10 @@ public class AdaGrad implements Serializable, GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(epsilon);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(epsilon);
         this.historicalGradient = viewArray;
         //Reshape to match the expected shape of the input gradient arrays
         this.historicalGradient = Shape.newShapeNoCopy(this.historicalGradient, gradientShape, gradientOrder == 'f');
@@ -72,7 +75,7 @@ public class AdaGrad implements Serializable, GradientUpdater {
      * @param learningRate
      */
     public AdaGrad(int rows, int cols, double learningRate) {
-        this.shape = new int[]{rows, cols};
+        this.shape = new int[] {rows, cols};
         this.learningRate = learningRate;
     }
 
@@ -132,7 +135,8 @@ public class AdaGrad implements Serializable, GradientUpdater {
             historicalInitialized = true;
         }
 
-        double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
+        double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column))
+                        : historicalGradient.getDouble(column);
         double learningRates = learningRate / (sqrtHistory + epsilon);
         double adjustedGradient = gradient * (learningRates);
 
@@ -150,7 +154,8 @@ public class AdaGrad implements Serializable, GradientUpdater {
         if (this.historicalGradient == null) {
             this.historicalGradient = Nd4j.zeros(shape).add(epsilon);
             historicalInitialized = true;
-        } else if (!this.historicalGradient.isVector() && this.historicalGradient.slice(slice).length() != gradient.length())
+        } else if (!this.historicalGradient.isVector()
+                        && this.historicalGradient.slice(slice).length() != gradient.length())
             throw new IllegalArgumentException("Illegal gradient");
 
         if (historicalGradient.isVector())
@@ -199,7 +204,8 @@ public class AdaGrad implements Serializable, GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         AdaGradAggregator ag = new AdaGradAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 

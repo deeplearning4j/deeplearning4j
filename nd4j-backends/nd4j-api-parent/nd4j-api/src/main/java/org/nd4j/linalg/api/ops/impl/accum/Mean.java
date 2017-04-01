@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class Mean extends Sum {
 
-    public Mean() {
-    }
+    public Mean() {}
 
     public Mean(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -89,11 +88,10 @@ public class Mean extends Sum {
     @Override
     public double getAndSetFinalResult(double accum) {
         double result;
-        if(applyFinalTransform()) {
+        if (applyFinalTransform()) {
             result = accum / n();
-            this.finalResult =result;
-        }
-        else {
+            this.finalResult = result;
+        } else {
             result = accum;
             this.finalResult = result;
         }
@@ -103,12 +101,11 @@ public class Mean extends Sum {
 
     @Override
     public float getAndSetFinalResult(float accum) {
-        if(applyFinalTransform()) {
+        if (applyFinalTransform()) {
             float f = accum / n();
             this.finalResult = f;
             return f;
-        }
-        else {
+        } else {
             this.finalResult = accum;
             return accum;
         }
@@ -117,20 +114,20 @@ public class Mean extends Sum {
 
     @Override
     public double calculateFinalResult(double accum, long n) {
-        if(applyFinalTransform())
+        if (applyFinalTransform())
             return accum / n;
         return accum;
     }
 
     @Override
     public float calculateFinalResult(float accum, long n) {
-        if(applyFinalTransform())
+        if (applyFinalTransform())
             return accum / n;
         return accum;
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
         finalResultComplex = accum.div(n());
         return finalResultComplex;
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -26,8 +26,7 @@ package org.nd4j.linalg.util;
  */
 public final class ReflectionUtil {
 
-    private ReflectionUtil() {
-    }
+    private ReflectionUtil() {}
 
     /**
      * Create a class array from the given array of objects

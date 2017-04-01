@@ -2,9 +2,6 @@ package org.nd4j.aeron.ipc.chunk;
 
 import org.nd4j.aeron.ipc.NDArrayMessage;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Accumulate {@link NDArrayMessageChunk} and reassemble them in to
  * {@link NDArrayMessage}.
@@ -29,6 +26,7 @@ public interface ChunkAccumulator {
      * @return true if all the chunks are present,false otherwise
      */
     boolean allPresent(String id);
+
     /**
      * Reassemble an ndarray message
      * from a set of chunks

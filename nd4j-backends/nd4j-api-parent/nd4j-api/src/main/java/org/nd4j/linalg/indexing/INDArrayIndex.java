@@ -73,6 +73,7 @@ public interface INDArrayIndex {
      * @param isInterval
      */
     void setInterval(boolean isInterval);
+
     /**
      * Init the index wrt
      * the dimension and the given nd array
@@ -80,21 +81,22 @@ public interface INDArrayIndex {
      * @param begin the beginning index
      * @param dimension the dimension to initialize on
      */
-    void init(INDArray arr,int begin,int dimension);
+    void init(INDArray arr, int begin, int dimension);
+
     /**
      * Init the index wrt
      * the dimension and the given nd array
      * @param arr the array to initialize on
      * @param dimension the dimension to initialize on
      */
-    void init(INDArray arr,int dimension);
+    void init(INDArray arr, int dimension);
 
     /**
      * Initiailize based on the specified begin and end
      * @param begin
      * @param end
      */
-    void init(int begin,int end);
+    void init(int begin, int end);
 
     void reset();
 }

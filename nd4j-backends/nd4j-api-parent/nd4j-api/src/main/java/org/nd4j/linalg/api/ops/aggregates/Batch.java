@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,15 +20,21 @@ public class Batch<T extends Aggregate> {
      * This batchLimit should be equal to its counterpart at helper_ptrmap.h
      *
      */
-    @Getter @Setter private DataBuffer paramsSurface;
+    @Getter
+    @Setter
+    private DataBuffer paramsSurface;
 
-    @Getter private static final int batchLimit = 512;
+    @Getter
+    private static final int batchLimit = 512;
 
     // all aggregates within this batch
-    @Getter private List<T> aggregates;
+    @Getter
+    private List<T> aggregates;
 
-    @Getter private T sample;
-    @Getter private int numAggregates;
+    @Getter
+    private T sample;
+    @Getter
+    private int numAggregates;
 
     /**
      * This constructor takes List of Aggregates, and builds Batch instance, usable with Nd4j executioner.
@@ -62,10 +67,11 @@ public class Batch<T extends Aggregate> {
      * @return
      */
     public boolean append(T aggregate) {
-       if (!isFull()) {
-           aggregates.add(aggregate);
-           return true;
-       } else return false;
+        if (!isFull()) {
+            aggregates.add(aggregate);
+            return true;
+        } else
+            return false;
     }
 
     /**
@@ -97,10 +103,10 @@ public class Batch<T extends Aggregate> {
      * @return
      */
     public static <U extends Aggregate> List<Batch<U>> getBatches(List<U> list, int partitionSize) {
-        List<List<U>> partitions =  Lists.partition(list, partitionSize);
+        List<List<U>> partitions = Lists.partition(list, partitionSize);
         List<Batch<U>> split = new ArrayList<>();
 
-        for (List<U> partition: partitions) {
+        for (List<U> partition : partitions) {
             split.add(new Batch<U>(partition));
         }
 

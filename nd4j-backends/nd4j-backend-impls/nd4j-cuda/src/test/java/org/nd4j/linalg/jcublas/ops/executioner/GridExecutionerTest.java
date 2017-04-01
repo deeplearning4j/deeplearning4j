@@ -3,7 +3,6 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -20,7 +19,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
-import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 

@@ -4,7 +4,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -53,14 +52,13 @@ public class AeronNDArraySerde {
      * @return the size of the byte buffer that was allocated
      */
     public static int byteBufferSizeFor(INDArray arr) {
-        if(!arr.isCompressed()) {
+        if (!arr.isCompressed()) {
             ByteBuffer buffer = arr.data().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
             ByteBuffer shapeBuffer = arr.shapeInfoDataBuffer().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
             //2 four byte ints at the beginning
             int twoInts = 8;
             return twoInts + buffer.limit() + shapeBuffer.limit();
-        }
-        else {
+        } else {
             CompressedDataBuffer compressedDataBuffer = (CompressedDataBuffer) arr.data();
             CompressionDescriptor descriptor = compressedDataBuffer.getCompressionDescriptor();
             ByteBuffer codecByteBuffer = descriptor.toByteBuffer();
@@ -79,16 +77,17 @@ public class AeronNDArraySerde {
      */
     public static UnsafeBuffer toBuffer(INDArray arr) {
         //subset and get rid of 1 off non 1 element wise stride cases
-        if(arr.isView()) arr = arr.dup();
-        if(!arr.isCompressed()) {
+        if (arr.isView())
+            arr = arr.dup();
+        if (!arr.isCompressed()) {
             ByteBuffer b3 = ByteBuffer.allocateDirect(byteBufferSizeFor(arr)).order(ByteOrder.nativeOrder());
-            doByteBufferPutUnCompressed(arr,b3,true);
+            doByteBufferPutUnCompressed(arr, b3, true);
             return new UnsafeBuffer(b3);
         }
         //compressed array
         else {
             ByteBuffer b3 = ByteBuffer.allocateDirect(byteBufferSizeFor(arr)).order(ByteOrder.nativeOrder());
-            doByteBufferPutCompressed(arr,b3,true);
+            doByteBufferPutCompressed(arr, b3, true);
             return new UnsafeBuffer(b3);
         }
 
@@ -107,7 +106,7 @@ public class AeronNDArraySerde {
      * @param allocated the byte buffer to setup
      * @param rewind whether to rewind the byte buffer or nt
      */
-    public static void doByteBufferPutUnCompressed(INDArray arr,ByteBuffer allocated,boolean rewind) {
+    public static void doByteBufferPutUnCompressed(INDArray arr, ByteBuffer allocated, boolean rewind) {
         ByteBuffer buffer = arr.data().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
         ByteBuffer shapeBuffer = arr.shapeInfoDataBuffer().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
         //2 four byte ints at the beginning
@@ -116,7 +115,7 @@ public class AeronNDArraySerde {
         allocated.putInt(arr.data().dataType().ordinal());
         allocated.put(shapeBuffer);
         allocated.put(buffer);
-        if(rewind)
+        if (rewind)
             allocated.rewind();
     }
 
@@ -133,7 +132,7 @@ public class AeronNDArraySerde {
      * @param allocated the byte buffer to setup
      * @param rewind whether to rewind the byte buffer or not
      */
-    public static void doByteBufferPutCompressed(INDArray arr,ByteBuffer allocated,boolean rewind) {
+    public static void doByteBufferPutCompressed(INDArray arr, ByteBuffer allocated, boolean rewind) {
         CompressedDataBuffer compressedDataBuffer = (CompressedDataBuffer) arr.data();
         CompressionDescriptor descriptor = compressedDataBuffer.getCompressionDescriptor();
         ByteBuffer codecByteBuffer = descriptor.toByteBuffer();
@@ -148,7 +147,7 @@ public class AeronNDArraySerde {
         allocated.put(codecByteBuffer);
         //finally put the data
         allocated.put(buffer);
-        if(rewind)
+        if (rewind)
             allocated.rewind();
     }
 
@@ -163,12 +162,16 @@ public class AeronNDArraySerde {
      * @param buffer the buffer to create the array from
      * @return the ndarray derived from this buffer
      */
-    public static Pair<INDArray,ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
-        ByteBuffer byteBuffer = buffer.byteBuffer() == null ? ByteBuffer.allocateDirect(buffer.byteArray().length).put(buffer.byteArray()).order(ByteOrder.nativeOrder()) : buffer.byteBuffer().order(ByteOrder.nativeOrder());
+    public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
+        ByteBuffer byteBuffer =
+                        buffer.byteBuffer() == null
+                                        ? ByteBuffer.allocateDirect(buffer.byteArray().length).put(buffer.byteArray())
+                                                        .order(ByteOrder.nativeOrder())
+                                        : buffer.byteBuffer().order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);
         int rank = byteBuffer.getInt();
-        if(rank < 0)
+        if (rank < 0)
             throw new IllegalStateException("Found negative integer. Corrupt serialization?");
         //get the shape buffer length to create the shape information buffer
         int shapeBufferLength = Shape.shapeInfoLength(rank);
@@ -177,36 +180,36 @@ public class AeronNDArraySerde {
 
         //compute the databuffer type from the index
         DataBuffer.Type type = DataBuffer.Type.values()[byteBuffer.getInt()];
-        for(int i = 0; i < shapeBufferLength; i++) {
-            shapeBuff.put(i,byteBuffer.getInt());
+        for (int i = 0; i < shapeBufferLength; i++) {
+            shapeBuff.put(i, byteBuffer.getInt());
         }
 
         //after the rank,data type, shape buffer (of length shape buffer length) * sizeof(int)
-        if(type != DataBuffer.Type.COMPRESSED) {
+        if (type != DataBuffer.Type.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
             //wrap the data buffer for the last bit
-            DataBuffer buff = Nd4j.createBuffer(slice,type,Shape.length(shapeBuff));
+            DataBuffer buff = Nd4j.createBuffer(slice, type, Shape.length(shapeBuff));
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);
             //create the final array
             //TODO: see how to avoid dup here
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(buff.dup(),shapeBuff.dup());
-            return Pair.of(arr,byteBuffer);
-        }
-        else {
+            INDArray arr = Nd4j.createArrayFromShapeBuffer(buff.dup(), shapeBuff.dup());
+            return Pair.of(arr, byteBuffer);
+        } else {
             CompressionDescriptor compressionDescriptor = CompressionDescriptor.fromByteBuffer(byteBuffer);
-            ByteBuffer slice =  byteBuffer.slice();
+            ByteBuffer slice = byteBuffer.slice();
             //ensure that we only deal with the slice of the buffer that is actually the data
             BytePointer byteBufferPointer = new BytePointer(slice);
             //create a compressed array based on the rest of the data left in the buffer
-            CompressedDataBuffer compressedDataBuffer = new CompressedDataBuffer(byteBufferPointer,compressionDescriptor);
+            CompressedDataBuffer compressedDataBuffer =
+                            new CompressedDataBuffer(byteBufferPointer, compressionDescriptor);
             //TODO: see how to avoid dup()
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer.dup(),shapeBuff.dup());
+            INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer.dup(), shapeBuff.dup());
             //advance past the data
             int compressLength = (int) compressionDescriptor.getCompressedLength();
             byteBuffer.position(byteBuffer.position() + compressLength);
-            return Pair.of(arr,byteBuffer);
+            return Pair.of(arr, byteBuffer);
         }
 
     }
@@ -218,7 +221,7 @@ public class AeronNDArraySerde {
      * @param buffer the buffer to create the array from
      * @return the ndarray derived from this buffer
      */
-    public static INDArray toArray(DirectBuffer buffer,int offset) {
+    public static INDArray toArray(DirectBuffer buffer, int offset) {
         return toArrayAndByteBuffer(buffer, offset).getLeft();
     }
 
@@ -229,7 +232,7 @@ public class AeronNDArraySerde {
      * @return the ndarray derived from this buffer
      */
     public static INDArray toArray(DirectBuffer buffer) {
-        return toArray(buffer,0);
+        return toArray(buffer, 0);
     }
 
 

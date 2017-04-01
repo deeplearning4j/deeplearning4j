@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -45,7 +45,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     public IComplexNDArray fft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC, inputC.length()));
         else {
             return rawfft(inputC, numElements, inputC.shape().length - 1);
         }
@@ -64,7 +64,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC) {
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,inputC.length()));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC, inputC.length()));
         else {
             return rawfft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }
@@ -259,19 +259,18 @@ public abstract class BaseFFTInstance implements FFTInstance {
     //underlying fftn
     @Override
     public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        return doFFt(transform,shape,axes,false);
+        return doFFt(transform, shape, axes, false);
     }
 
-    private IComplexNDArray fixShape(IComplexNDArray x,int[] shape,int axis, int n) {
-        if(shape[axis] > n) {
+    private IComplexNDArray fixShape(IComplexNDArray x, int[] shape, int axis, int n) {
+        if (shape[axis] > n) {
             int[] newShape = ArrayUtil.copy(shape);
             newShape[axis] = n;
-            x = ComplexNDArrayUtil.truncate(x,n,axis);
-        }
-        else {
+            x = ComplexNDArrayUtil.truncate(x, n, axis);
+        } else {
             int[] newShape = ArrayUtil.copy(shape);
             newShape[axis] = n;
-            x = ComplexNDArrayUtil.padWithZeros(x,newShape);
+            x = ComplexNDArrayUtil.padWithZeros(x, newShape);
             return x;
 
         }
@@ -285,36 +284,36 @@ public abstract class BaseFFTInstance implements FFTInstance {
         return rawifft(transform, transform.shape()[dimension], dimension);
     }
 
-    protected IComplexNDArray doFFt(IComplexNDArray transform,int[] shape,int[] axes,boolean inverse) {
+    protected IComplexNDArray doFFt(IComplexNDArray transform, int[] shape, int[] axes, boolean inverse) {
         IComplexNDArray result = transform.dup();
-        if(shape == null)
+        if (shape == null)
             shape = ArrayUtil.copy(result.shape());
         boolean noAxes = false;
-        if(axes == null || axes.length < 1) {
+        if (axes == null || axes.length < 1) {
             noAxes = true;
-            axes = ArrayUtil.range(0,shape.length);
+            axes = ArrayUtil.range(0, shape.length);
             axes = ArrayUtil.reverseCopy(axes);
         }
 
-        if(noAxes) {
-            for(int i : axes) {
-                if(i < 0)
+        if (noAxes) {
+            for (int i : axes) {
+                if (i < 0)
                     i = shape.length + i;
-                transform = fixShape(transform,shape,i,shape[i]);
+                transform = fixShape(transform, shape, i, shape[i]);
             }
         }
 
-        if(ArrayUtil.prod(shape) > ArrayUtil.prod(result.shape()))
-            result = ComplexNDArrayUtil.padWithZeros(result,shape);
+        if (ArrayUtil.prod(shape) > ArrayUtil.prod(result.shape()))
+            result = ComplexNDArrayUtil.padWithZeros(result, shape);
 
 
-        return doInnerFft(result,shape,axes,inverse);
+        return doInnerFft(result, shape, axes, inverse);
     }
 
     //the inner loop for an fft or ifft
-    protected IComplexNDArray doInnerFft(IComplexNDArray result,int[] shape,int[] axes,boolean inverse) {
-        for(int i = 0; i < axes.length; i++) {
-            result = inverse ? ifft(result,shape[axes[i]],axes[i]) : fft(result,shape[axes[i]],axes[i]);
+    protected IComplexNDArray doInnerFft(IComplexNDArray result, int[] shape, int[] axes, boolean inverse) {
+        for (int i = 0; i < axes.length; i++) {
+            result = inverse ? ifft(result, shape[axes[i]], axes[i]) : fft(result, shape[axes[i]], axes[i]);
         }
 
         return result;

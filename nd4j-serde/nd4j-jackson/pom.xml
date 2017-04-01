@@ -3,32 +3,28 @@
     <parent>
         <artifactId>nd4j-serde</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.7.2-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
-    <properties>
-        <jackson.version>2.5.1</jackson.version>
-    </properties>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-jackson</artifactId>
-  <version>0.7.2-SNAPSHOT</version>
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
+            <artifactId>nd4j-base64</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+            <!-- Provided scope to avoid version conflicts: we only need the API for the serializers/deserializers -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -37,6 +33,7 @@
             <groupId>org.nd4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 

@@ -23,12 +23,12 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     public ClassPathResource(String path, ClassLoader classLoader) {
         Assert.notNull(path, "Path must not be null");
         String pathToUse = StringUtils.cleanPath(path);
-        if(pathToUse.startsWith("/")) {
+        if (pathToUse.startsWith("/")) {
             pathToUse = pathToUse.substring(1);
         }
 
         this.path = pathToUse;
-        this.classLoader = classLoader != null?classLoader:ClassUtils.getDefaultClassLoader();
+        this.classLoader = classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader();
     }
 
     public ClassPathResource(String path, Class<?> clazz) {
@@ -48,7 +48,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     }
 
     public final ClassLoader getClassLoader() {
-        return this.classLoader != null ? this.classLoader:this.clazz.getClassLoader();
+        return this.classLoader != null ? this.classLoader : this.clazz.getClassLoader();
     }
 
 
@@ -64,19 +64,19 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     public File getTempFileFromArchive() throws IOException {
         InputStream is = getInputStream();
         File tmpFile;
-        if(path.contains("/") || path.contains("\\")){
-            int idx = Math.max(path.lastIndexOf("/"),path.lastIndexOf("\\"));
-            String subpath = path.substring(idx+1);
-            tmpFile = new File(subpath+"tmp");
+        if (path.contains("/") || path.contains("\\")) {
+            int idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+            String subpath = path.substring(idx + 1);
+            tmpFile = new File(subpath + "tmp");
         } else {
-            tmpFile = new File(path+"tmp");
+            tmpFile = new File(path + "tmp");
         }
         tmpFile.deleteOnExit();
 
 
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
 
-        IOUtils.copy(is,bos);
+        IOUtils.copy(is, bos);
         bos.flush();
         bos.close();
         return tmpFile;
@@ -85,7 +85,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
     public boolean exists() {
         URL url;
-        if(this.clazz != null) {
+        if (this.clazz != null) {
             url = this.clazz.getResource(this.path);
         } else {
             url = this.classLoader.getResource(this.path);
@@ -96,13 +96,13 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
     public InputStream getInputStream() throws IOException {
         InputStream is;
-        if(this.clazz != null) {
+        if (this.clazz != null) {
             is = this.clazz.getResourceAsStream(this.path);
         } else {
             is = this.classLoader.getResourceAsStream(this.path);
         }
 
-        if(is == null) {
+        if (is == null) {
             throw new FileNotFoundException(this.getDescription() + " cannot be opened because it does not exist");
         } else {
             return is;
@@ -111,14 +111,15 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
     public URL getURL() throws IOException {
         URL url;
-        if(this.clazz != null) {
+        if (this.clazz != null) {
             url = this.clazz.getResource(this.path);
         } else {
             url = this.classLoader.getResource(this.path);
         }
 
-        if(url == null) {
-            throw new FileNotFoundException(this.getDescription() + " cannot be resolved to URL because it does not exist");
+        if (url == null) {
+            throw new FileNotFoundException(
+                            this.getDescription() + " cannot be resolved to URL because it does not exist");
         } else {
             return url;
         }
@@ -136,12 +137,12 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     public String getDescription() {
         StringBuilder builder = new StringBuilder("class path resource [");
         String pathToUse = this.path;
-        if(this.clazz != null && !pathToUse.startsWith("/")) {
+        if (this.clazz != null && !pathToUse.startsWith("/")) {
             builder.append(ClassUtils.classPackageAsResourcePath(this.clazz));
             builder.append('/');
         }
 
-        if(pathToUse.startsWith("/")) {
+        if (pathToUse.startsWith("/")) {
             pathToUse = pathToUse.substring(1);
         }
 
@@ -151,13 +152,14 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     }
 
     public boolean equals(Object obj) {
-        if(obj == this) {
+        if (obj == this) {
             return true;
-        } else if(!(obj instanceof ClassPathResource)) {
+        } else if (!(obj instanceof ClassPathResource)) {
             return false;
         } else {
-            ClassPathResource otherRes = (ClassPathResource)obj;
-            return this.path.equals(otherRes.path) && ObjectUtils.nullSafeEquals(this.classLoader, otherRes.classLoader) && ObjectUtils.nullSafeEquals(this.clazz, otherRes.clazz);
+            ClassPathResource otherRes = (ClassPathResource) obj;
+            return this.path.equals(otherRes.path) && ObjectUtils.nullSafeEquals(this.classLoader, otherRes.classLoader)
+                            && ObjectUtils.nullSafeEquals(this.clazz, otherRes.clazz);
         }
     }
 

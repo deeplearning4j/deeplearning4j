@@ -16,10 +16,10 @@ public class UpdaterStorageTests {
         UpdateStorage updateStorage = new RocksDbStorage("/tmp/rocksdb");
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
         updateStorage.addUpdate(message);
-        assertEquals(1,updateStorage.numUpdates());
-        assertEquals(message,updateStorage.getUpdate(0));
+        assertEquals(1, updateStorage.numUpdates());
+        assertEquals(message, updateStorage.getUpdate(0));
         updateStorage.clear();
-        assertEquals(0,updateStorage.numUpdates());
+        assertEquals(0, updateStorage.numUpdates());
         updateStorage.close();
     }
 }

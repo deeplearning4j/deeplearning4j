@@ -4,15 +4,11 @@ package org.nd4j.linalg.io;
 import java.util.Collection;
 import java.util.Map;
 
-import java.util.Collection;
-import java.util.Map;
-
 public abstract class Assert {
-    public Assert() {
-    }
+    public Assert() {}
 
     public static void isTrue(boolean expression, String message) {
-        if(!expression) {
+        if (!expression) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -22,7 +18,7 @@ public abstract class Assert {
     }
 
     public static void isNull(Object object, String message) {
-        if(object != null) {
+        if (object != null) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -32,7 +28,7 @@ public abstract class Assert {
     }
 
     public static void notNull(Object object, String message) {
-        if(object == null) {
+        if (object == null) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -42,7 +38,7 @@ public abstract class Assert {
     }
 
     public static void hasLength(String text, String message) {
-        if(!StringUtils.hasLength(text)) {
+        if (!StringUtils.hasLength(text)) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -52,7 +48,7 @@ public abstract class Assert {
     }
 
     public static void hasText(String text, String message) {
-        if(!StringUtils.hasText(text)) {
+        if (!StringUtils.hasText(text)) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -62,17 +58,19 @@ public abstract class Assert {
     }
 
     public static void doesNotContain(String textToSearch, String substring, String message) {
-        if(StringUtils.hasLength(textToSearch) && StringUtils.hasLength(substring) && textToSearch.contains(substring)) {
+        if (StringUtils.hasLength(textToSearch) && StringUtils.hasLength(substring)
+                        && textToSearch.contains(substring)) {
             throw new IllegalArgumentException(message);
         }
     }
 
     public static void doesNotContain(String textToSearch, String substring) {
-        doesNotContain(textToSearch, substring, "[Assertion failed] - this String argument must not contain the substring [" + substring + "]");
+        doesNotContain(textToSearch, substring,
+                        "[Assertion failed] - this String argument must not contain the substring [" + substring + "]");
     }
 
     public static void notEmpty(Object[] array, String message) {
-        if(ObjectUtils.isEmpty(array)) {
+        if (ObjectUtils.isEmpty(array)) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -82,13 +80,13 @@ public abstract class Assert {
     }
 
     public static void noNullElements(Object[] array, String message) {
-        if(array != null) {
+        if (array != null) {
             Object[] arr$ = array;
             int len$ = array.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Object element = arr$[i$];
-                if(element == null) {
+                if (element == null) {
                     throw new IllegalArgumentException(message);
                 }
             }
@@ -101,17 +99,18 @@ public abstract class Assert {
     }
 
     public static void notEmpty(Collection collection, String message) {
-        if(CollectionUtils.isEmpty(collection)) {
+        if (CollectionUtils.isEmpty(collection)) {
             throw new IllegalArgumentException(message);
         }
     }
 
     public static void notEmpty(Collection collection) {
-        notEmpty(collection, "[Assertion failed] - this collection must not be empty: it must contain at least 1 element");
+        notEmpty(collection,
+                        "[Assertion failed] - this collection must not be empty: it must contain at least 1 element");
     }
 
     public static void notEmpty(Map map, String message) {
-        if(CollectionUtils.isEmpty(map)) {
+        if (CollectionUtils.isEmpty(map)) {
             throw new IllegalArgumentException(message);
         }
     }
@@ -126,8 +125,10 @@ public abstract class Assert {
 
     public static void isInstanceOf(Class<?> type, Object obj, String message) {
         notNull(type, "Type to check against must not be null");
-        if(!type.isInstance(obj)) {
-            throw new IllegalArgumentException((StringUtils.hasLength(message)?message + " ":"") + "Object of class [" + (obj != null?obj.getClass().getName():"null") + "] must be an instance of " + type);
+        if (!type.isInstance(obj)) {
+            throw new IllegalArgumentException((StringUtils.hasLength(message) ? message + " " : "")
+                            + "Object of class [" + (obj != null ? obj.getClass().getName() : "null")
+                            + "] must be an instance of " + type);
         }
     }
 
@@ -137,13 +138,13 @@ public abstract class Assert {
 
     public static void isAssignable(Class<?> superType, Class<?> subType, String message) {
         notNull(superType, "Type to check against must not be null");
-        if(subType == null || !superType.isAssignableFrom(subType)) {
+        if (subType == null || !superType.isAssignableFrom(subType)) {
             throw new IllegalArgumentException(message + subType + " is not assignable to " + superType);
         }
     }
 
     public static void state(boolean expression, String message) {
-        if(!expression) {
+        if (!expression) {
             throw new IllegalStateException(message);
         }
     }

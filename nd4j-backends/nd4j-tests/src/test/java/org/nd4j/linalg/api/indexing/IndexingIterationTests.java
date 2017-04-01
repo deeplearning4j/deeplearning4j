@@ -9,7 +9,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.*;
 
-
 import static org.junit.Assert.*;
 
 /**
@@ -26,13 +25,13 @@ public class IndexingIterationTests extends BaseNd4jTest {
     @Test
     public void testAll() {
         INDArrayIndex all = NDArrayIndex.all();
-        INDArray init = Nd4j.create(2,2);
-        all.init(init,1);
+        INDArray init = Nd4j.create(2, 2);
+        all.init(init, 1);
         assertTrue(all.hasNext());
-        assertEquals(0,all.current());
-        assertEquals(0,all.next());
-        assertEquals(2,all.length());
-        assertEquals(1,all.next());
+        assertEquals(0, all.current());
+        assertEquals(0, all.next());
+        assertEquals(2, all.length());
+        assertEquals(1, all.next());
         assertFalse(all.hasNext());
     }
 
@@ -42,33 +41,33 @@ public class IndexingIterationTests extends BaseNd4jTest {
         assertTrue(interval.hasNext());
         assertEquals(2, interval.length());
         assertEquals(0, interval.next());
-        assertEquals(1,interval.next());
+        assertEquals(1, interval.next());
         assertFalse(interval.hasNext());
 
     }
 
     @Test
     public void testIntervalInclusive() {
-        INDArrayIndex interval = NDArrayIndex.interval(0,1,2,true);
+        INDArrayIndex interval = NDArrayIndex.interval(0, 1, 2, true);
         assertTrue(interval.hasNext());
-        assertEquals(3,interval.end());
-        assertEquals(3,interval.length());
-        assertEquals(0,interval.next());
-        assertEquals(1,interval.next());
+        assertEquals(3, interval.end());
+        assertEquals(3, interval.length());
+        assertEquals(0, interval.next());
+        assertEquals(1, interval.next());
         assertTrue(interval.hasNext());
-        assertEquals(2,interval.next());
+        assertEquals(2, interval.next());
         assertFalse(interval.hasNext());
 
     }
 
     @Test
     public void testIntervalWithStride() {
-        INDArrayIndex interval = NDArrayIndex.interval(3,2,6);
+        INDArrayIndex interval = NDArrayIndex.interval(3, 2, 6);
         assertTrue(interval.hasNext());
         assertEquals(2, interval.length());
         assertEquals(3, interval.next());
         assertTrue(interval.hasNext());
-        assertEquals(5,interval.next());
+        assertEquals(5, interval.next());
         assertFalse(interval.hasNext());
 
     }
@@ -76,7 +75,7 @@ public class IndexingIterationTests extends BaseNd4jTest {
     @Test
     public void testNewAxis() {
         INDArrayIndex newAxis = NDArrayIndex.newAxis();
-        assertEquals(0,newAxis.length());
+        assertEquals(0, newAxis.length());
         assertFalse(newAxis.hasNext());
 
     }
@@ -86,7 +85,7 @@ public class IndexingIterationTests extends BaseNd4jTest {
     public void testIntervalStrideGreaterThan1() {
         INDArrayIndex interval = NDArrayIndex.interval(0, 2, 2);
         assertTrue(interval.hasNext());
-        assertEquals(1,interval.length());
+        assertEquals(1, interval.length());
         assertEquals(0, interval.next());
         assertFalse(interval.hasNext());
 
@@ -96,7 +95,7 @@ public class IndexingIterationTests extends BaseNd4jTest {
     public void testPoint() {
         INDArrayIndex point = new PointIndex(1);
         assertTrue(point.hasNext());
-        assertEquals(1,point.length());
+        assertEquals(1, point.length());
         assertEquals(1, point.next());
         assertFalse(point.hasNext());
     }
@@ -111,12 +110,12 @@ public class IndexingIterationTests extends BaseNd4jTest {
     @Test
     public void testSpecifiedIndex() {
         INDArrayIndex indArrayIndex = new SpecifiedIndex(2);
-        assertEquals(1,indArrayIndex.length());
+        assertEquals(1, indArrayIndex.length());
         assertTrue(indArrayIndex.hasNext());
-        assertEquals(2,indArrayIndex.next());
-        assertEquals(2,indArrayIndex.current());
-        assertEquals(2,indArrayIndex.end());
-        assertEquals(indArrayIndex.offset(),indArrayIndex.end());
+        assertEquals(2, indArrayIndex.next());
+        assertEquals(2, indArrayIndex.current());
+        assertEquals(2, indArrayIndex.end());
+        assertEquals(indArrayIndex.offset(), indArrayIndex.end());
     }
 
 

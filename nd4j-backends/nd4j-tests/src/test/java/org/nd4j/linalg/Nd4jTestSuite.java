@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,20 +19,13 @@
 
 package org.nd4j.linalg;
 
-import org.junit.Ignore;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.reflections.Reflections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ServiceLoader;
 
 /**
  * Test suite for nd4j.
@@ -51,11 +44,12 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
         ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
         Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
         backends = new ArrayList<>();
-        while(backendIterator.hasNext())
+        while (backendIterator.hasNext())
             backends.add(backendIterator.next());
 
 
     }
+
     /**
      * Only called reflectively. Do not use programmatically.
      *
@@ -77,12 +71,12 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     public static List<String> backendsToRun() {
         List<String> ret = new ArrayList<>();
         String val = System.getProperty(BACKENDS_TO_LOAD, "");
-        if(val.isEmpty())
+        if (val.isEmpty())
             return ret;
 
         String[] clazzes = val.split(",");
 
-        for(String s : clazzes)
+        for (String s : clazzes)
             ret.add(s);
         return ret;
 

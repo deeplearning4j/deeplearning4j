@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -48,8 +48,7 @@ public class SoftMaxDerivative extends SoftMax {
         super(x);
     }
 
-    public SoftMaxDerivative() {
-    }
+    public SoftMaxDerivative() {}
 
     @Override
     public boolean isExecSpecial() {
@@ -123,11 +122,15 @@ public class SoftMaxDerivative extends SoftMax {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
     @Override
     public void exec(int... dimensions) {
         super.exec(dimensions);

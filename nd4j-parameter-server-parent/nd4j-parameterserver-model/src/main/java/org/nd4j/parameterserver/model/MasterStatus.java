@@ -13,10 +13,12 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-@Data @Builder @NoArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class MasterStatus implements Serializable {
-    private String master,responder;
+    private String master, responder;
     private int responderN;
 
 
@@ -26,7 +28,8 @@ public class MasterStatus implements Serializable {
      * @return
      */
     public boolean started() {
-        return master.equals(ServerState.STARTED.name().toLowerCase()) && responder.equals(ServerState.STARTED.name().toLowerCase());
+        return master.equals(ServerState.STARTED.name().toLowerCase())
+                        && responder.equals(ServerState.STARTED.name().toLowerCase());
     }
 
 }

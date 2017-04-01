@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,22 +38,11 @@ import java.util.Collection;
 public interface DataBuffer extends Serializable {
 
     enum Type {
-        DOUBLE,
-        FLOAT,
-        INT,
-        HALF,
-        COMPRESSED
+        DOUBLE, FLOAT, INT, HALF, COMPRESSED
     }
 
     enum TypeEx {
-        FLOAT8,
-        INT8,
-        UINT8,
-        FLOAT16,
-        INT16,
-        UINT16,
-        FLOAT,
-        DOUBLE
+        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE
     }
 
 
@@ -68,9 +57,7 @@ public interface DataBuffer extends Serializable {
      * heap is backed by an array and can be useful depending on the api
      */
     enum AllocationMode {
-        DIRECT,
-        HEAP,
-        JAVACPP
+        DIRECT, HEAP, JAVACPP
     }
 
     /**
@@ -125,12 +112,14 @@ public interface DataBuffer extends Serializable {
      * @return a view of this as an nio int buffer
      */
     java.nio.IntBuffer asNioInt();
+
     /**
      * Returns a view of this as an
      * nio byte buffer
      * @return a view of this as an nio double buffer
      */
     java.nio.DoubleBuffer asNioDouble();
+
     /**
      * Returns a view of this as an
      * nio byte buffer
@@ -485,6 +474,7 @@ public interface DataBuffer extends Serializable {
      * @return the length of the buffer
      */
     long underlyingLength();
+
     /**
      * Returns the offset of the buffer
      *

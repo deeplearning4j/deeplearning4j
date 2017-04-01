@@ -1,13 +1,13 @@
 package org.nd4j.serde.jackson;
 
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.serde.jackson.VectorSerializer;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.serde.jackson.VectorDeSerializer;
+import org.nd4j.shade.serde.jackson.VectorSerializer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,10 +27,10 @@ public class VectorSerializeTest {
 
     @Test
     public void testSerde() throws Exception {
-        String json = objectMapper.writeValueAsString(Nd4j.create(2,2));
-        INDArray assertion = Nd4j.create(2,2);
-        INDArray test = objectMapper.readValue(json,INDArray.class);
-        assertEquals(assertion,test);
+        String json = objectMapper.writeValueAsString(Nd4j.create(2, 2));
+        INDArray assertion = Nd4j.create(2, 2);
+        INDArray test = objectMapper.readValue(json, INDArray.class);
+        assertEquals(assertion, test);
     }
 
 

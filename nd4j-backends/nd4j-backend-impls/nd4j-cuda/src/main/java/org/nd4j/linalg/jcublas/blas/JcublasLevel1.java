@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Axpy;
@@ -21,18 +22,21 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner;
-import org.nd4j.nativeblas.*;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static org.bytedeco.javacpp.cublas.*;
-import static org.bytedeco.javacpp.cuda.*;
+import static org.bytedeco.javacpp.cuda.CUstream_st;
 
 /**
  * @author Adam Gibson
  */
 public class JcublasLevel1 extends BaseLevel1 {
     private Allocator allocator = AtomicAllocator.getInstance();
-    private Nd4jBlas nd4jBlas = (Nd4jBlas)Nd4j.factory().blas();
+    private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private static Logger logger = LoggerFactory.getLogger(JcublasLevel1.class);
 
@@ -50,24 +54,24 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
-//        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
+        //        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
 
-//        CublasPointer xCPointer = new CublasPointer(X, ctx);
-//        CublasPointer yCPointer = new CublasPointer(Y, ctx);
+        //        CublasPointer xCPointer = new CublasPointer(X, ctx);
+        //        CublasPointer yCPointer = new CublasPointer(Y, ctx);
 
         Dot dot = new Dot(X, Y);
         Nd4j.getExecutioner().exec(dot);
 
         ret = dot.getFinalResult().floatValue();
-/*
+        /*
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             long result = cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
                 throw new IllegalStateException("cublasSetStream failed");
-
+        
             FloatPointer resultPointer = new FloatPointer(0.0f);
             cuBlasSdot_v2(new cublasContext(handle),
                     N,
@@ -79,7 +83,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         }
         */
 
-//        allocator.registerAction(ctx, null, X, Y);
+        //        allocator.registerAction(ctx, null, X, Y);
 
         return ret;
     }
@@ -109,12 +113,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                 throw new IllegalStateException("cublasSetStream failed");
 
             FloatPointer resultPointer = new FloatPointer(0.0f);
-            result = cublasSdot_v2(new cublasContext(handle),
-                    N,
-                    (FloatPointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (FloatPointer)yCPointer.getDevicePointer(),
-                    incY, resultPointer);
+            result = cublasSdot_v2(new cublasContext(handle), N, (FloatPointer) xCPointer.getDevicePointer(), incX,
+                            (FloatPointer) yCPointer.getDevicePointer(), incY, resultPointer);
             ret = resultPointer.get();
         }
 
@@ -124,12 +124,12 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected float hdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+    protected float hdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
-    protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+    protected float sdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -152,12 +152,8 @@ public class JcublasLevel1 extends BaseLevel1 {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
             DoublePointer resultPointer = new DoublePointer(0.0);
-            cublasDdot_v2(new cublasContext(handle),
-                    N,
-                    (DoublePointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (DoublePointer)yCPointer.getDevicePointer(),
-                    incY, resultPointer);
+            cublasDdot_v2(new cublasContext(handle), N, (DoublePointer) xCPointer.getDevicePointer(), incX,
+                            (DoublePointer) yCPointer.getDevicePointer(), incY, resultPointer);
             ret = resultPointer.get();
         }
 
@@ -167,7 +163,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected double ddot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+    protected double ddot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -213,10 +209,8 @@ public class JcublasLevel1 extends BaseLevel1 {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
             FloatPointer resultPointer = new FloatPointer(0.0f);
-            cublasSnrm2_v2(new cublasContext(handle),
-                    N,
-                    (FloatPointer)cAPointer.getDevicePointer(),
-                    incX, resultPointer);
+            cublasSnrm2_v2(new cublasContext(handle), N, (FloatPointer) cAPointer.getDevicePointer(), incX,
+                            resultPointer);
             ret = resultPointer.get();
         }
 
@@ -245,39 +239,39 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         return ret;
 
-  /*      if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        /*      if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT asum called");
-
-
+        
+        
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
-
+        
         CublasPointer xCPointer = new CublasPointer(X, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             FloatPointer resultPointer = new FloatPointer(0.0f);
             cublasSasum_v2(new cublasContext(handle),
                     N, xCPointer.getDevicePointer(),
                     incX, resultPointer);
             ret = resultPointer.get();
         }
-
+        
         allocator.registerAction(ctx, null, X);
-
+        
         return ret;
         */
     }
 
     @Override
-    protected float hasum(int N, DataBuffer X, int offsetX, int incX){
+    protected float hasum(int N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
-    protected float sasum(int N, DataBuffer X, int offsetX, int incX){
+    protected float sasum(int N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -300,10 +294,8 @@ public class JcublasLevel1 extends BaseLevel1 {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
             DoublePointer resultPointer = new DoublePointer(0.0f);
-            cublasDnrm2_v2(new cublasContext(handle),
-                    N,
-                    (DoublePointer)cAPointer.getDevicePointer(),
-                    incX, resultPointer);
+            cublasDnrm2_v2(new cublasContext(handle), N, (DoublePointer) cAPointer.getDevicePointer(), incX,
+                            resultPointer);
             ret = resultPointer.get();
         }
 
@@ -322,13 +314,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         return ret;
         /*CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         double ret;
-
+        
         CublasPointer xCPointer = new CublasPointer(X, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             DoublePointer resultPointer = new DoublePointer(0.0);
             cublasDasum_v2(new cublasContext(handle),
                     N,
@@ -337,13 +329,13 @@ public class JcublasLevel1 extends BaseLevel1 {
             ret = resultPointer.get();
         }
         allocator.registerAction(ctx, null, X);
-
+        
         return ret;
         */
     }
 
     @Override
-    protected double dasum(int N, DataBuffer X, int offsetX, int incX){
+    protected double dasum(int N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -353,13 +345,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         CudaContext ctx = CudaContext.getBlasContext();
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-
+        
         CublasPointer xCPointer = new CublasPointer(X, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             JCublas2.cublasScnrm2(
                     ContextHolder.getInstance().getHandle()
                     , N
@@ -367,7 +359,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     , incX
                     , result);
         }
-
+        
         return ret[0];
         */
         throw new UnsupportedOperationException();
@@ -379,13 +371,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         CudaContext ctx = CudaContext.getBlasContext();
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-
+        
         CublasPointer xCPointer = new CublasPointer(X, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             JCublas2.cublasScasum(
                     ctx.getHandle()
                     , N
@@ -426,20 +418,18 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            IntPointer resultPointer = new IntPointer(new int[]{0});
-            cublasIsamax_v2(new cublasContext(handle),
-                    N,
-                    (FloatPointer)xCPointer.getDevicePointer(),
-                    incX, resultPointer);
+            IntPointer resultPointer = new IntPointer(new int[] {0});
+            cublasIsamax_v2(new cublasContext(handle), N, (FloatPointer) xCPointer.getDevicePointer(), incX,
+                            resultPointer);
             ret2 = resultPointer.get();
         }
         allocator.registerAction(ctx, null, X);
 
-        return  ret2 - 1;
+        return ret2 - 1;
     }
 
     @Override
-    protected int isamax(int N, DataBuffer X, int offsetX, int incX){
+    protected int isamax(int N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -460,21 +450,19 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            IntPointer resultPointer = new IntPointer(new int[]{0});
-            cublasIdamax_v2(new cublasContext(handle),
-                    N,
-                    (DoublePointer)xCPointer.getDevicePointer(),
-                    incX, resultPointer);
+            IntPointer resultPointer = new IntPointer(new int[] {0});
+            cublasIdamax_v2(new cublasContext(handle), N, (DoublePointer) xCPointer.getDevicePointer(), incX,
+                            resultPointer);
             ret2 = resultPointer.get();
         }
 
         allocator.registerAction(ctx, null, X);
 
-        return  ret2 - 1 ;
+        return ret2 - 1;
     }
 
     @Override
-    protected int idamax(int N, DataBuffer X, int offsetX, int incX){
+    protected int idamax(int N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -506,14 +494,12 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasSswap_v2(new cublasContext(handle),
-                    N, (FloatPointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (FloatPointer)yCPointer.getDevicePointer(),
-                    incY);
+            cublasSswap_v2(new cublasContext(handle), N, (FloatPointer) xCPointer.getDevicePointer(), incX,
+                            (FloatPointer) yCPointer.getDevicePointer(), incY);
         }
 
         allocator.registerAction(ctx, Y, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -534,19 +520,16 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasScopy_v2(new cublasContext(handle),
-                    N,
-                    (FloatPointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (FloatPointer)yCPointer.getDevicePointer(),
-                    incY);
+            cublasScopy_v2(new cublasContext(handle), N, (FloatPointer) xCPointer.getDevicePointer(), incX,
+                            (FloatPointer) yCPointer.getDevicePointer(), incY);
         }
 
         allocator.registerAction(ctx, Y, X);
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
-    protected void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+    protected void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -555,19 +538,21 @@ public class JcublasLevel1 extends BaseLevel1 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT axpy called");
 
-//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+        //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
-/*
+
+        OpExecutionerUtil.checkForAny(Y);
+        /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
-
-
-
+        
+        
+        
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             PointerPointer p = new cublasContext(handle);
             cublasSaxpy_v2(p,
                     N,
@@ -577,24 +562,26 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer(),
                     incY);
         }
-*/
-//        allocator.registerAction(ctx, Y, X);
+        */
+        //        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
     protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-//        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
+        //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
-//        CublasPointer xAPointer = new CublasPointer(X, ctx);
-//        CublasPointer xBPointer = new CublasPointer(Y, ctx);
+        //        CublasPointer xAPointer = new CublasPointer(X, ctx);
+        //        CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
-//        cublasHandle_t handle = ctx.getHandle();
+        //        cublasHandle_t handle = ctx.getHandle();
 
         ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
 
-/*        synchronized (handle) {
-            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
+        OpExecutionerUtil.checkForAny(Y);
 
+        /*        synchronized (handle) {
+            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
+        
             PointerPointer p = new cublasContext(handle);
             cublasSaxpy_v2(p,
                     N,
@@ -604,17 +591,19 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer(),
                     incY);
         }
-*/
-//        allocator.registerAction(ctx, Y, X);
+        */
+        //        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
-    protected void haxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+    protected void haxpy(int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+                    int incrY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
-    protected void saxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+    protected void saxpy(int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+                    int incrY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -635,15 +624,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasDswap_v2(new cublasContext(handle),
-                    N,
-                    (DoublePointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (DoublePointer)yCPointer.getDevicePointer(),
-                    incY);
+            cublasDswap_v2(new cublasContext(handle), N, (DoublePointer) xCPointer.getDevicePointer(), incX,
+                            (DoublePointer) yCPointer.getDevicePointer(), incY);
         }
 
         allocator.registerAction(ctx, Y, X);
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
@@ -663,18 +650,17 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasDcopy_v2(new cublasContext(handle),
-                    N, (DoublePointer)xCPointer.getDevicePointer(),
-                    incX,
-                    (DoublePointer)yCPointer.getDevicePointer(),
-                    incY);
+            cublasDcopy_v2(new cublasContext(handle), N, (DoublePointer) xCPointer.getDevicePointer(), incX,
+                            (DoublePointer) yCPointer.getDevicePointer(), incY);
         }
 
         allocator.registerAction(ctx, Y, X);
+
+        OpExecutionerUtil.checkForAny(Y);
     }
 
     @Override
-    protected void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+    protected void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -686,29 +672,32 @@ public class JcublasLevel1 extends BaseLevel1 {
         //CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 
-    //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
+        //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
 
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
 
-/*
+        OpExecutionerUtil.checkForAny(Y);
+
+        /*
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
-
+        
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
-
+        
             cublasDaxpy_v2(new cublasContext(handle),
                     N, alpha, xAPointer.getDevicePointer(),
                     incX, xBPointer.getDevicePointer(),
                     incY);
         }
-*/
-//        allocator.registerAction(ctx, Y, X);
+        */
+        //        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
-    protected void daxpy( int N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+    protected void daxpy(int N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+                    int incrY) {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -811,14 +800,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasSscal_v2(new cublasContext(handle),
-                    N,
-                    new FloatPointer(alpha),
-                    (FloatPointer)xCPointer.getDevicePointer(),
-                    incX);
+            cublasSscal_v2(new cublasContext(handle), N, new FloatPointer(alpha),
+                            (FloatPointer) xCPointer.getDevicePointer(), incX);
         }
 
         allocator.registerAction(ctx, X);
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     @Override
@@ -837,14 +825,13 @@ public class JcublasLevel1 extends BaseLevel1 {
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
 
-            cublasDscal_v2(new cublasContext(handle),
-                    N,
-                    new DoublePointer(alpha),
-                    (DoublePointer)xCPointer.getDevicePointer(),
-                    incX);
+            cublasDscal_v2(new cublasContext(handle), N, new DoublePointer(alpha),
+                            (DoublePointer) xCPointer.getDevicePointer(), incX);
         }
 
         allocator.registerAction(ctx, X);
+
+        OpExecutionerUtil.checkForAny(X);
     }
 
     @Override

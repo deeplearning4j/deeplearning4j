@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ComplexUtil {
-    private ComplexUtil() {
-    }
+    private ComplexUtil() {}
+
     /**
      * Create complex number where the
      * @param realComponents the real components for the complex
@@ -39,9 +39,9 @@ public class ComplexUtil {
      */
     public static IComplexNumber[][] complexNumbersFor(float[][] realComponents) {
         IComplexNumber[][] ret = new IComplexNumber[realComponents.length][realComponents[0].length];
-        for(int i = 0; i < realComponents.length; i++)
-            for(int j = 0; j < realComponents[i].length; j++)
-                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j],0);
+        for (int i = 0; i < realComponents.length; i++)
+            for (int j = 0; j < realComponents[i].length; j++)
+                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j], 0);
         return ret;
     }
 
@@ -52,9 +52,9 @@ public class ComplexUtil {
      */
     public static IComplexNumber[][] complexNumbersFor(double[][] realComponents) {
         IComplexNumber[][] ret = new IComplexNumber[realComponents.length][realComponents[0].length];
-        for(int i = 0; i < realComponents.length; i++)
-            for(int j = 0; j < realComponents[i].length; j++)
-                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j],0);
+        for (int i = 0; i < realComponents.length; i++)
+            for (int j = 0; j < realComponents[i].length; j++)
+                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j], 0);
         return ret;
     }
 
@@ -65,8 +65,8 @@ public class ComplexUtil {
      */
     public static IComplexNumber[] complexNumbersFor(float[] realComponents) {
         IComplexNumber[] ret = new IComplexNumber[realComponents.length];
-        for(int i = 0; i < realComponents.length; i++)
-            ret[i] = Nd4j.createComplexNumber(realComponents[i],0);
+        for (int i = 0; i < realComponents.length; i++)
+            ret[i] = Nd4j.createComplexNumber(realComponents[i], 0);
         return ret;
     }
 
@@ -77,8 +77,8 @@ public class ComplexUtil {
      */
     public static IComplexNumber[] complexNumbersFor(double[] realComponents) {
         IComplexNumber[] ret = new IComplexNumber[realComponents.length];
-        for(int i = 0; i < realComponents.length; i++)
-            ret[i] = Nd4j.createComplexNumber(realComponents[i],0);
+        for (int i = 0; i < realComponents.length; i++)
+            ret[i] = Nd4j.createComplexNumber(realComponents[i], 0);
         return ret;
     }
 
@@ -133,7 +133,8 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber ceil(IComplexNumber num) {
-        Complex c = new Complex(FastMath.ceil(num.realComponent().doubleValue()), FastMath.ceil(num.imaginaryComponent().doubleValue()));
+        Complex c = new Complex(FastMath.ceil(num.realComponent().doubleValue()),
+                        FastMath.ceil(num.imaginaryComponent().doubleValue()));
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
@@ -144,7 +145,8 @@ public class ComplexUtil {
      * @return the absolute value of this complex number
      */
     public static IComplexNumber floor(IComplexNumber num) {
-        Complex c = new Complex(FastMath.floor(num.realComponent().doubleValue()), FastMath.floor(num.imaginaryComponent().doubleValue()));
+        Complex c = new Complex(FastMath.floor(num.realComponent().doubleValue()),
+                        FastMath.floor(num.imaginaryComponent().doubleValue()));
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
     }
 
@@ -198,7 +200,8 @@ public class ComplexUtil {
 
 
     public static IComplexNumber round(IComplexNumber num) {
-        return Nd4j.createDouble(Math.round(num.realComponent().doubleValue()), Math.round(num.imaginaryComponent().doubleValue()));
+        return Nd4j.createDouble(Math.round(num.realComponent().doubleValue()),
+                        Math.round(num.imaginaryComponent().doubleValue()));
     }
 
     /**
@@ -209,7 +212,8 @@ public class ComplexUtil {
      * @return the number raised to a power
      */
     public static IComplexNumber pow(IComplexNumber num, IComplexNumber power) {
-        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).pow(new Complex(power.realComponent().doubleValue(), power.imaginaryComponent().doubleValue()));
+        Complex c = new Complex(num.realComponent().doubleValue(), num.imaginaryComponent().doubleValue()).pow(
+                        new Complex(power.realComponent().doubleValue(), power.imaginaryComponent().doubleValue()));
         if (c.isNaN())
             c = new Complex(Nd4j.EPS_THRESHOLD, 0.0);
         return Nd4j.createDouble(c.getReal(), c.getImaginary());
@@ -297,7 +301,8 @@ public class ComplexUtil {
      * @return the exponential of this complex number
      */
     public static IComplexDouble exp(IComplexDouble d) {
-        return Nd4j.createDouble(FastMath.exp(d.realComponent()) * FastMath.cos(d.imaginaryComponent()), FastMath.exp(d.realComponent()) * FastMath.sin(d.imaginaryComponent()));
+        return Nd4j.createDouble(FastMath.exp(d.realComponent()) * FastMath.cos(d.imaginaryComponent()),
+                        FastMath.exp(d.realComponent()) * FastMath.sin(d.imaginaryComponent()));
     }
 
     /**
@@ -312,7 +317,8 @@ public class ComplexUtil {
      * @return the exponential of this complex number
      */
     public static IComplexFloat exp(IComplexFloat d) {
-        return Nd4j.createFloat((float) FastMath.exp(d.realComponent()) * (float) FastMath.cos(d.imaginaryComponent()), (float) FastMath.exp(d.realComponent()) * (float) FastMath.sin(d.imaginaryComponent()));
+        return Nd4j.createFloat((float) FastMath.exp(d.realComponent()) * (float) FastMath.cos(d.imaginaryComponent()),
+                        (float) FastMath.exp(d.realComponent()) * (float) FastMath.sin(d.imaginaryComponent()));
     }
 
 

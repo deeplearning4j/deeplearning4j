@@ -1,9 +1,11 @@
 package org.nd4j.jita.allocator.impl;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.BinaryTimer;
 
@@ -15,15 +17,25 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @NoArgsConstructor
 public class NestedPoint {
-    @Getter @Setter @NonNull private AllocationShape shape;
-    @Getter @Setter @NonNull private AtomicState accessState;
+    @Getter
+    @Setter
+    @NonNull
+    private AllocationShape shape;
+    @Getter
+    @Setter
+    @NonNull
+    private AtomicState accessState;
     private AtomicLong accessTime;
-    @Getter private RateTimer timerShort = new BinaryTimer(10, TimeUnit.SECONDS);
-    @Getter private RateTimer timerLong = new BinaryTimer(60, TimeUnit.SECONDS);
+    @Getter
+    private RateTimer timerShort = new BinaryTimer(10, TimeUnit.SECONDS);
+    @Getter
+    private RateTimer timerLong = new BinaryTimer(60, TimeUnit.SECONDS);
 
 
     // by default memory is UNDEFINED, and depends on parent memory chunk for now
-    @Getter @Setter private AllocationStatus nestedStatus = AllocationStatus.UNDEFINED;
+    @Getter
+    @Setter
+    private AllocationStatus nestedStatus = AllocationStatus.UNDEFINED;
 
     private AtomicLong counter = new AtomicLong(0);
 
@@ -55,8 +67,10 @@ public class NestedPoint {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         NestedPoint that = (NestedPoint) o;
 

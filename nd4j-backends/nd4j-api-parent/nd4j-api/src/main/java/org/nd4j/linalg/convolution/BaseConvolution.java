@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -40,13 +40,15 @@ public abstract class BaseConvolution implements ConvolutionInstance {
      */
     @Override
     public INDArray conv2d(INDArray input, INDArray kernel, Convolution.Type type) {
-        int[] axes = input.shape().length < 2 ? ArrayUtil.range(0, 1) : ArrayUtil.range(input.shape().length - 2, input.shape().length);
+        int[] axes = input.shape().length < 2 ? ArrayUtil.range(0, 1)
+                        : ArrayUtil.range(input.shape().length - 2, input.shape().length);
         return convn(input, kernel, type, axes);
     }
 
     @Override
     public INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type) {
-        int[] axes = input.shape().length < 2 ? ArrayUtil.range(0, 1) : ArrayUtil.range(input.shape().length - 2, input.shape().length);
+        int[] axes = input.shape().length < 2 ? ArrayUtil.range(0, 1)
+                        : ArrayUtil.range(input.shape().length - 2, input.shape().length);
         return convn(input, kernel, type, axes);
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,7 +28,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
 import java.util.Collection;
 
 /**
@@ -46,12 +45,14 @@ public class InstrumentationResource {
         Collection<LogEntry> alive = Nd4j.getInstrumentation().getStillAlive();
         return Response.ok(alive.size()).build();
     }
+
     @GET
     @Path("/numdead")
     public Response getNumDead() {
         Collection<LogEntry> alive = Nd4j.getInstrumentation().getDestroyed();
         return Response.ok(alive.size()).build();
     }
+
     @GET
     @Path("/alive")
     public Response getAlive() {

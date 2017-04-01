@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,7 +22,6 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -53,7 +52,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, 4);
     }
 
-    public CudaIntDataBuffer(long length, boolean initialize){
+    public CudaIntDataBuffer(long length, boolean initialize) {
         super(length, 4, initialize);
     }
 
@@ -124,7 +123,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
@@ -136,7 +136,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                            + length() + " where the indices are of length " + data.length);
 
         if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
@@ -165,8 +166,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         return new CudaIntDataBuffer(data);
     }
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws java.io.IOException {
+    private void writeObject(java.io.ObjectOutputStream stream) throws java.io.IOException {
         stream.defaultWriteObject();
 
         if (getHostPointer() == null) {
@@ -192,8 +192,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
 
 
-    private void readObject(java.io.ObjectInputStream stream)
-            throws java.io.IOException, ClassNotFoundException {
+    private void readObject(java.io.ObjectInputStream stream) throws java.io.IOException, ClassNotFoundException {
         stream.defaultReadObject();
 
         int n = stream.readInt();

@@ -10,7 +10,7 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
  * @author Adam Gibson
  */
 public class AssignImplmentation implements Implementation {
-    private int index,val;
+    private int index, val;
 
     /**
      *
@@ -29,17 +29,20 @@ public class AssignImplmentation implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new AssignArrayValueAppender(index,val);
+        return new AssignArrayValueAppender(index, val);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AssignImplmentation)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof AssignImplmentation))
+            return false;
 
         AssignImplmentation that = (AssignImplmentation) o;
 
-        if (index != that.index) return false;
+        if (index != that.index)
+            return false;
         return val == that.val;
 
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,7 @@ public class ConditionBuilder {
         if (soFar == null)
             soFar = new Or(conditions);
         else {
-            soFar = new Or(ArrayUtil.combine(conditions, new Condition[]{soFar}));
+            soFar = new Or(ArrayUtil.combine(conditions, new Condition[] {soFar}));
         }
         return this;
     }
@@ -44,7 +44,7 @@ public class ConditionBuilder {
         if (soFar == null)
             soFar = new And(conditions);
         else {
-            soFar = new And(ArrayUtil.combine(conditions, new Condition[]{soFar}));
+            soFar = new And(ArrayUtil.combine(conditions, new Condition[] {soFar}));
         }
         return this;
     }
@@ -53,7 +53,7 @@ public class ConditionBuilder {
         if (soFar == null)
             soFar = new ConditionEquals(conditions);
         else {
-            soFar = new ConditionEquals(ArrayUtil.combine(conditions, new Condition[]{soFar}));
+            soFar = new ConditionEquals(ArrayUtil.combine(conditions, new Condition[] {soFar}));
         }
         return this;
     }

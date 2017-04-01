@@ -4,12 +4,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +17,13 @@ import java.util.List;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer<S> implements MultiDataSetPreProcessor, Serializable {
-    @Setter private List<S> featureStats;
-    @Setter private List<S> labelStats;
+public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
+                implements MultiDataNormalization {
+    protected NormalizerStrategy<S> strategy;
+    @Setter
+    private List<S> featureStats;
+    @Setter
+    private List<S> labelStats;
     private boolean fitLabels = false;
 
     protected AbstractMultiDataSetNormalizer() {
@@ -29,7 +31,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     }
 
     protected AbstractMultiDataSetNormalizer(NormalizerStrategy<S> strategy) {
-        super(strategy);
+        this.strategy = strategy;
     }
 
     /**
@@ -75,7 +77,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     }
 
     /**
-     * Fit a MultiDataSet (only compute based on the statistics from this dataset)
+     * Fit a MultiDataSet (only compute based on the statistics from this {@link MultiDataSet})
      *
      * @param dataSet the dataset to compute on
      */
@@ -121,7 +123,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     }
 
     private void fitPartial(MultiDataSet dataSet, List<S.Builder> featureStatsBuilders,
-                            List<S.Builder> labelStatsBuilders) {
+                    List<S.Builder> labelStatsBuilders) {
         int numInputs = dataSet.numFeatureArrays();
         int numOutputs = dataSet.numLabelsArrays();
 
@@ -148,6 +150,12 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     }
 
     protected abstract S.Builder newBuilder();
+
+
+    @Override
+    public void transform(@NonNull MultiDataSet toPreProcess) {
+        preProcess(toPreProcess);
+    }
 
     /**
      * Pre process a MultiDataSet
@@ -184,6 +192,15 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      *
      * @param features Features to revert the normalization on
      */
+    public void revertFeatures(@NonNull INDArray[] features) {
+        revertFeatures(features, null);
+    }
+
+    /**
+     * Undo (revert) the normalization applied by this normalizer to the features arrays
+     *
+     * @param features Features to revert the normalization on
+     */
     public void revertFeatures(@NonNull INDArray[] features, INDArray[] maskArrays) {
         for (int i = 0; i < features.length; i++) {
             INDArray mask = (maskArrays == null ? null : maskArrays[i]);
@@ -201,6 +218,17 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      */
     public void revertFeatures(@NonNull INDArray features, INDArray mask, int input) {
         strategy.revert(features, mask, getFeatureStats(input));
+    }
+
+    /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
+     * Can also be used to undo normalization for network output arrays, in the case of regression.
+     *
+     * @param labels Labels array to revert the normalization on
+     */
+    public void revertLabels(INDArray[] labels) {
+        revertLabels(labels, null);
     }
 
     /**

@@ -1,28 +1,33 @@
 package org.nd4j.linalg.dataset.api.preprocessor.stats;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * Statistics about the lower bounds and upper bounds of values in data.
- * Can be constructed incrementally by using the Builder, which is useful for obtaining these statistics from an
+ * Can be constructed incrementally by using the Builder,
+ * which is useful for obtaining these statistics from an
  * iterator.
  *
  * @author Ede Meijer
  */
 @EqualsAndHashCode
+@Slf4j
 public class MinMaxStats implements NormalizerStats {
-    private static final Logger logger = LoggerFactory.getLogger(MinMaxStats.class);
 
-    @Getter private final INDArray lower;
-    @Getter private final INDArray upper;
+    @Getter
+    private final INDArray lower;
+    @Getter
+    private final INDArray upper;
     private INDArray range;
 
     /**
@@ -36,7 +41,7 @@ public class MinMaxStats implements NormalizerStats {
         // If any entry in `addedPadding` is not 0, then we had to add something to prevent 0 difference, Add this same
         // value to the upper bounds to actually apply the padding, and log about it
         if (addedPadding.sumNumber().doubleValue() > 0) {
-            logger.info("API_INFO: max val minus min val found to be zero. Transform will round up to epsilon to avoid nans.");
+            log.info("API_INFO: max val minus min val found to be zero. Transform will round up to epsilon to avoid nans.");
             upper.addi(addedPadding);
         }
 
@@ -44,6 +49,14 @@ public class MinMaxStats implements NormalizerStats {
         this.upper = upper;
     }
 
+    /**
+     * Get the feature wise
+     * range for the statistics.
+     * Note that this is a lazy getter.
+     * It is only computed when needed.
+     * @return the feature wise range
+     * given the min and max
+     */
     public INDArray getRange() {
         if (range == null) {
             range = upper.sub(lower);
@@ -87,9 +100,12 @@ public class MinMaxStats implements NormalizerStats {
                 return this;
             }
 
+            INDArray tad = data.javaTensorAlongDimension(0, 0);
             INDArray batchMin = data.min(0);
             INDArray batchMax = data.max(0);
-
+            if (!Arrays.equals(batchMin.shape(), batchMax.shape()))
+                throw new IllegalStateException(
+                                "Data min and max must be same shape. Likely a bug in the operation changing the input?");
             if (runningLower == null) {
                 // First batch
                 // Create copies because min and max are views to the same data set, which will cause problems with the

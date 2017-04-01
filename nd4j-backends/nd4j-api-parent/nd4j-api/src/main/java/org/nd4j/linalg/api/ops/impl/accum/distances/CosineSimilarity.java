@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -76,44 +76,43 @@ public class CosineSimilarity extends BaseAccumulation {
 
 
 
-
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum + x;
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + x * y;
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum + x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         return accum + x * y;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return accum.add(x*y);
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
+        return accum.add(x * y);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x.mul(y));
     }
 
@@ -168,7 +167,8 @@ public class CosineSimilarity extends BaseAccumulation {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         CosineSimilarity ret;
         if (y() != null)
-            ret = new CosineSimilarity(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            ret = new CosineSimilarity(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             ret = new CosineSimilarity(x.vectorAlongDimension(index, dimension));
         ret.setApplyFinalTransform(applyFinalTransform());
@@ -192,53 +192,54 @@ public class CosineSimilarity extends BaseAccumulation {
     public void exec() {
         this.constantNormalizedByNorm2X = x.norm2Number();
         this.constantNormalizedByNorm2Y = y.norm2Number();
-        this.extraArgs = new Object[]{0.0,constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
-        double dot = Nd4j.getBlasWrapper().dot(x,y);
+        this.extraArgs = new Object[] {0.0, constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
+        double dot = Nd4j.getBlasWrapper().dot(x, y);
         this.finalResult = dot / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
     }
 
     @Override
-    public void exec(int... dimension){
+    public void exec(int... dimension) {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
         int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
-        for( int i = 0; i < nOps; i++ ){
-            double d = Nd4j.getExecutioner().execAndReturn((CosineSimilarity) opForDimension(i,dimension)).getFinalResult().doubleValue();
+        for (int i = 0; i < nOps; i++) {
+            double d = Nd4j.getExecutioner().execAndReturn((CosineSimilarity) opForDimension(i, dimension))
+                            .getFinalResult().doubleValue();
             z.putScalar(i, d);
         }
     }
 
     @Override
-    public double getAndSetFinalResult(double accum){
-        if(applyFinalTransform()) {
-            double d = accum / (constantNormalizedByNorm2X.doubleValue()*constantNormalizedByNorm2Y.doubleValue());
+    public double getAndSetFinalResult(double accum) {
+        if (applyFinalTransform()) {
+            double d = accum / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
             this.finalResult = d;
             return d;
-        }
-        else {
+        } else {
             return accum;
         }
 
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
+    public float getAndSetFinalResult(float accum) {
         return (float) getAndSetFinalResult((double) accum);
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
-        finalResultComplex = Nd4j.createComplexNumber(accum.realComponent().doubleValue() / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue()), 0);
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
+        finalResultComplex = Nd4j.createComplexNumber(accum.realComponent().doubleValue()
+                        / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue()), 0);
         return finalResultComplex;
     }
 
     @Override
-    public double calculateFinalResult(double accum, long n){
+    public double calculateFinalResult(double accum, long n) {
         throw new UnsupportedOperationException("Not supported for passthrough op");
     }
 
     @Override
-    public float calculateFinalResult(float accum, long n){
+    public float calculateFinalResult(float accum, long n) {
         throw new UnsupportedOperationException("Not supported for passthrough op");
     }
 }

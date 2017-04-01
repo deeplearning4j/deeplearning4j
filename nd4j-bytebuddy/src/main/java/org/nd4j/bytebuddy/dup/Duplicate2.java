@@ -6,7 +6,6 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.Duplication;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.jar.asm.MethodVisitor;
-import net.bytebuddy.jar.asm.Opcodes;
 
 /**
  * http://cs.au.dk/~mis/dOvs/jvmspec/ref-_dup2.html
@@ -14,8 +13,9 @@ import net.bytebuddy.jar.asm.Opcodes;
  */
 public class Duplicate2 implements ByteCodeAppender {
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         StackManipulation.Size size = Duplication.DOUBLE.apply(methodVisitor, implementationContext);
-        return new Size(size.getMaximalSize(),instrumentedMethod.getStackSize());
+        return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

@@ -2,10 +2,10 @@ package org.nd4j.linalg.dataset;
 
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Read in existing mini batches created
@@ -65,7 +65,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 
@@ -122,8 +122,8 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         try {
-            DataSet ret =  read(currIdx);
-            if(dataSetPreProcessor != null)
+            DataSet ret = read(currIdx);
+            if (dataSetPreProcessor != null)
                 dataSetPreProcessor.preProcess(ret);
             currIdx++;
 
@@ -134,7 +134,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     private DataSet read(int idx) throws IOException {
-        File path = new File(rootDir,String.format(pattern,idx));
+        File path = new File(rootDir, String.format(pattern, idx));
         DataSet d = new DataSet();
         d.load(path);
         return d;

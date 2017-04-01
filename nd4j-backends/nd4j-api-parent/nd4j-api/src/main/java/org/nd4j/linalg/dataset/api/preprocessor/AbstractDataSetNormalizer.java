@@ -5,9 +5,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 
 /**
  * Abstract base class for normalizers
@@ -17,13 +17,17 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer<S> implements DataNormalization {
-    @Setter(AccessLevel.PROTECTED) private S featureStats;
-    @Setter(AccessLevel.PROTECTED) private S labelStats;
+public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
+                implements DataNormalization {
+    protected NormalizerStrategy<S> strategy;
+    @Setter(AccessLevel.PROTECTED)
+    private S featureStats;
+    @Setter(AccessLevel.PROTECTED)
+    private S labelStats;
     private boolean fitLabels = false;
 
     protected AbstractDataSetNormalizer(NormalizerStrategy<S> strategy) {
-        super(strategy);
+        this.strategy = strategy;
     }
 
     /**
@@ -134,7 +138,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     }
 
     @Override
-    public void transform(INDArray features, INDArray featuresMask){
+    public void transform(INDArray features, INDArray featuresMask) {
         strategy.preProcess(features, featuresMask, getFeatureStats());
     }
 
@@ -147,7 +151,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     }
 
     @Override
-    public void transformLabel(INDArray label, INDArray labelsMask){
+    public void transformLabel(INDArray label, INDArray labelsMask) {
         if (isFitLabel()) {
             strategy.preProcess(label, labelsMask, getLabelStats());
         }
@@ -177,7 +181,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     }
 
     @Override
-    public void revertLabels(INDArray labels, INDArray labelsMask){
+    public void revertLabels(INDArray labels, INDArray labelsMask) {
         if (isFitLabel()) {
             strategy.revert(labels, labelsMask, getLabelStats());
         }
@@ -190,7 +194,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void revert(DataSet data) {
-        revertFeatures(data.getFeatures(),  data.getFeaturesMaskArray());
+        revertFeatures(data.getFeatures(), data.getFeaturesMaskArray());
         revertLabels(data.getLabels(), data.getLabelsMaskArray());
     }
 }

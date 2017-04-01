@@ -1,7 +1,6 @@
 package org.nd4j.parameterserver.updater.storage;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.nd4j.aeron.ipc.AeronNDArraySerde;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.rocksdb.Options;
@@ -21,7 +20,7 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
     }
 
 
-    private  RocksDB db;
+    private RocksDB db;
     private int size = 0;
 
     public RocksDbStorage(String dbPath) {
@@ -46,13 +45,13 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
     public void addUpdate(NDArrayMessage array) {
         UnsafeBuffer directBuffer = (UnsafeBuffer) NDArrayMessage.toBuffer(array);
         byte[] data = directBuffer.byteArray();
-        if(data == null) {
+        if (data == null) {
             data = new byte[directBuffer.capacity()];
-            directBuffer.getBytes(0,data,0,data.length);
+            directBuffer.getBytes(0, data, 0, data.length);
         }
-        byte[] key =  ByteBuffer.allocate(4).putInt(size).array();
+        byte[] key = ByteBuffer.allocate(4).putInt(size).array();
         try {
-            db.put(key,data);
+            db.put(key, data);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -78,7 +77,7 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
     @Override
     public void clear() {
         RocksIterator iterator = db.newIterator();
-        while(iterator.isValid())
+        while (iterator.isValid())
             try {
                 db.remove(iterator.key());
             } catch (RocksDBException e) {
@@ -97,10 +96,10 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
      */
     @Override
     public NDArrayMessage doGetUpdate(int index) {
-        byte[] key =  ByteBuffer.allocate(4).putInt(index).array();
+        byte[] key = ByteBuffer.allocate(4).putInt(index).array();
         try {
             UnsafeBuffer unsafeBuffer = new UnsafeBuffer(db.get(key));
-            return NDArrayMessage.fromBuffer(unsafeBuffer,0);
+            return NDArrayMessage.fromBuffer(unsafeBuffer, 0);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }

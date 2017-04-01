@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -384,8 +384,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
         super(buffer, shape, offset);
     }
 
-    public JCublasComplexNDArray() {
-    }
+    public JCublasComplexNDArray() {}
 
     public JCublasComplexNDArray(DataBuffer data, int[] shape, int[] stride) {
         super(data, shape, stride);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class Sum extends BaseAccumulation {
 
-    public Sum() {
-    }
+    public Sum() {}
 
     public Sum(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -56,37 +55,37 @@ public class Sum extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x, double y){
+    public double update(double accum, double x, double y) {
         return accum + x;
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum + x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         return accum + x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum.add(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.add(x);
     }
 

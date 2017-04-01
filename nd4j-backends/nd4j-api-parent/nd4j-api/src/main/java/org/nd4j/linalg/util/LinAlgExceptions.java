@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,11 +37,11 @@ public class LinAlgExceptions {
      */
     public static void assertSameLength(INDArray n, INDArray n2) {
         if (n.length() != n2.length())
-            throw new IllegalStateException("Mis matched lengths: ["+n.length()+"] != ["+n2.length()+"]");
+            throw new IllegalStateException("Mis matched lengths: [" + n.length() + "] != [" + n2.length() + "]");
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
-        if( !Arrays.equals( n.shape(),n2.shape() ) )
+        if (!Arrays.equals(n.shape(), n2.shape()))
             throw new IllegalStateException("Mis matched shapes");
     }
 
@@ -51,23 +51,23 @@ public class LinAlgExceptions {
     }
 
 
-    public static void assertVector(INDArray...arr) {
-        for(INDArray a1 : arr)
+    public static void assertVector(INDArray... arr) {
+        for (INDArray a1 : arr)
             assertVector(a1);
     }
 
-    public static void assertMatrix(INDArray...arr) {
-        for(INDArray a1 : arr)
+    public static void assertMatrix(INDArray... arr) {
+        for (INDArray a1 : arr)
             assertMatrix(a1);
     }
 
     public static void assertVector(INDArray arr) {
-        if(!arr.isVector())
+        if (!arr.isVector())
             throw new IllegalArgumentException("Array must be a vector");
     }
 
     public static void assertMatrix(INDArray arr) {
-        if(arr.shape().length > 2)
+        if (arr.shape().length > 2)
             throw new IllegalArgumentException("Array must be a matrix");
     }
 
@@ -80,13 +80,14 @@ public class LinAlgExceptions {
      * @param nd2 the right ndarray
      */
     public static void assertMultiplies(INDArray nd1, INDArray nd2) {
-        if (nd1.rank() == 2 && nd2.rank() == 2 && nd1.columns() == nd2.rows()){
+        if (nd1.rank() == 2 && nd2.rank() == 2 && nd1.columns() == nd2.rows()) {
             return;
         }
-        throw new ND4JIllegalStateException("Cannot execute matrix multiplication: " + Arrays.toString(nd1.shape()) + "x" +
-                Arrays.toString(nd2.shape()) +
-                (nd1.rank() != 2 || nd2.rank() != 2 ? ": inputs are not matrices" :
-                ": Column of left array " + nd1.columns() + " != rows of right " + nd2.rows()));
+        throw new ND4JIllegalStateException("Cannot execute matrix multiplication: " + Arrays.toString(nd1.shape())
+                        + "x" + Arrays.toString(nd2.shape())
+                        + (nd1.rank() != 2 || nd2.rank() != 2 ? ": inputs are not matrices"
+                                        : ": Column of left array " + nd1.columns() + " != rows of right "
+                                                        + nd2.rows()));
     }
 
 

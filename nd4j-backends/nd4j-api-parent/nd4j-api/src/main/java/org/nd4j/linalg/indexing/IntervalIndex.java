@@ -10,11 +10,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class IntervalIndex implements INDArrayIndex {
 
-    protected int begin,end;
+    protected int begin, end;
     protected boolean inclusive;
     protected int stride = 1;
     protected int index = 0;
     protected int length = 0;
+
     /**
      *
      * @param inclusive whether to include the last number
@@ -60,7 +61,7 @@ public class IntervalIndex implements INDArrayIndex {
     public int next() {
         int ret = index;
         index += stride;
-        return  ret;
+        return ret;
     }
 
 
@@ -87,14 +88,14 @@ public class IntervalIndex implements INDArrayIndex {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
-        for(int i = begin; i < end; i+= stride) {
+        for (int i = begin; i < end; i += stride) {
             length++;
         }
     }
 
     @Override
     public void init(INDArray arr, int dimension) {
-        init(arr,0,dimension);
+        init(arr, 0, dimension);
     }
 
     @Override
@@ -102,7 +103,7 @@ public class IntervalIndex implements INDArrayIndex {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? end + 1 : end;
-        for(int i = begin; i < this.end; i+= stride) {
+        for (int i = begin; i < this.end; i += stride) {
             length++;
         }
 
@@ -115,15 +116,21 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof IntervalIndex)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof IntervalIndex))
+            return false;
 
         IntervalIndex that = (IntervalIndex) o;
 
-        if (begin != that.begin) return false;
-        if (end != that.end) return false;
-        if (inclusive != that.inclusive) return false;
-        if (stride != that.stride) return false;
+        if (begin != that.begin)
+            return false;
+        if (end != that.end)
+            return false;
+        if (inclusive != that.inclusive)
+            return false;
+        if (stride != that.stride)
+            return false;
         return index == that.index;
 
     }

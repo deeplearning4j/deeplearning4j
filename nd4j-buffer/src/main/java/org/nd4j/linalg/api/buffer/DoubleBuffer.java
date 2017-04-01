@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -48,7 +48,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
     }
 
-    public DoubleBuffer(long length, boolean initialize){
+    public DoubleBuffer(long length, boolean initialize) {
         super(length, initialize);
     }
 
@@ -93,8 +93,8 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copy, offset);
     }
 
-    public DoubleBuffer(ByteBuffer buffer,int length) {
-        super(buffer,length);
+    public DoubleBuffer(ByteBuffer buffer, int length) {
+        super(buffer, length);
     }
 
     public DoubleBuffer(ByteBuffer buffer, int length, int offset) {
@@ -125,8 +125,6 @@ public class DoubleBuffer extends BaseDataBuffer {
 
 
 
-
-
     @Override
     public float getFloat(long i) {
         return (float) getDouble(i);
@@ -134,7 +132,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public Number getNumber(long i) {
-        return  getDouble(i);
+        return getDouble(i);
     }
 
     @Override
@@ -151,6 +149,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     public DataBuffer create(int[] data) {
         return new DoubleBuffer(data);
     }
+
     @Override
     protected DataBuffer create(long length) {
         return new DoubleBuffer(length);
@@ -158,8 +157,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public void flush() {
-    }
+    public void flush() {}
 
     /**
      * Initialize the type of this buffer
@@ -169,7 +167,6 @@ public class DoubleBuffer extends BaseDataBuffer {
         elementSize = 8;
         type = Type.DOUBLE;
     }
-
 
 
 

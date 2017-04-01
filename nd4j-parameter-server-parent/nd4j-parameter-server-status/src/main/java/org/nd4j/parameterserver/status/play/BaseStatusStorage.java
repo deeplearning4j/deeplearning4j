@@ -19,15 +19,15 @@ import java.util.concurrent.TimeUnit;
  * @author Adam Gibson
  */
 @Slf4j
-public abstract  class BaseStatusStorage implements StatusStorage {
-    protected Map<Integer,SubscriberState> statusStorageMap = createMap();
+public abstract class BaseStatusStorage implements StatusStorage {
+    protected Map<Integer, SubscriberState> statusStorageMap = createMap();
     private ScheduledExecutorService executorService;
-    protected Map<Integer,Long> updated;
+    protected Map<Integer, Long> updated;
     private long heartBeatEjectionMilliSeconds = 1000;
     private long checkInterval = 1000;
 
     public BaseStatusStorage() {
-        this(1000,1000);
+        this(1000, 1000);
     }
 
     /**
@@ -58,7 +58,7 @@ public abstract  class BaseStatusStorage implements StatusStorage {
      *                                      ejecting a given subscriber as failed
      * @param checkInterval the interval to check for
      */
-    public BaseStatusStorage(long heartBeatEjectionMilliSeconds,long checkInterval) {
+    public BaseStatusStorage(long heartBeatEjectionMilliSeconds, long checkInterval) {
         this.heartBeatEjectionMilliSeconds = heartBeatEjectionMilliSeconds;
         this.checkInterval = checkInterval;
         init();
@@ -74,24 +74,24 @@ public abstract  class BaseStatusStorage implements StatusStorage {
             public void run() {
                 long curr = System.currentTimeMillis();
                 Set<Integer> remove = new HashSet<>();
-                for(Map.Entry<Integer,Long> entry : updated.entrySet()) {
+                for (Map.Entry<Integer, Long> entry : updated.entrySet()) {
                     long val = entry.getValue();
                     long diff = Math.abs(curr - val);
-                    if(diff > heartBeatEjectionMilliSeconds) {
+                    if (diff > heartBeatEjectionMilliSeconds) {
                         remove.add(entry.getKey());
                     }
                 }
 
-                if(!remove.isEmpty())
+                if (!remove.isEmpty())
                     log.info("Removing " + remove.size() + " entries");
                 //purge removed values
-                for(Integer i : remove) {
+                for (Integer i : remove) {
                     updated.remove(i);
                     statusStorageMap.remove(i);
                 }
 
             }
-        },30000,checkInterval, TimeUnit.MILLISECONDS);
+        }, 30000, checkInterval, TimeUnit.MILLISECONDS);
     }
 
 
@@ -99,12 +99,13 @@ public abstract  class BaseStatusStorage implements StatusStorage {
      * Create the storage map
      * @return
      */
-    public abstract Map<Integer,Long> createUpdatedMap();
+    public abstract Map<Integer, Long> createUpdatedMap();
+
     /**
      * Create the storage map
      * @return
      */
-    public abstract Map<Integer,SubscriberState> createMap();
+    public abstract Map<Integer, SubscriberState> createMap();
 
     /**
      * Get the state given an id.
@@ -120,7 +121,7 @@ public abstract  class BaseStatusStorage implements StatusStorage {
      */
     @Override
     public SubscriberState getState(int id) {
-        if(!statusStorageMap.containsKey(id))
+        if (!statusStorageMap.containsKey(id))
             return SubscriberState.empty();
         return statusStorageMap.get(id);
     }
@@ -132,8 +133,8 @@ public abstract  class BaseStatusStorage implements StatusStorage {
      */
     @Override
     public void updateState(SubscriberState subscriberState) {
-        updated.put(subscriberState.getStreamId(),System.currentTimeMillis());
-        statusStorageMap.put(subscriberState.getStreamId(),subscriberState);
+        updated.put(subscriberState.getStreamId(), System.currentTimeMillis());
+        statusStorageMap.put(subscriberState.getStreamId(), subscriberState);
     }
 
 }

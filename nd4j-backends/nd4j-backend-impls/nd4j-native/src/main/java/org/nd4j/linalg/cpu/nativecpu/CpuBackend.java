@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,10 +21,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.io.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.io.Resource;
 
 /**
  * Cpu backend

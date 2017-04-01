@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -247,7 +247,7 @@ public class FFT {
      * @return the ffted array
      */
     public static IComplexNDArray fftn(INDArray transform) {
-        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform),null,null);
+        return Nd4j.getFFt().rawfftn(Nd4j.createComplex(transform), null, null);
     }
 
 

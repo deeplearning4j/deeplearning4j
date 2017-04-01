@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -38,15 +38,16 @@ public class InstrumentationApplication extends Application<Nd4jInstrumentationC
 
     private String resourcePath = "org/nd4j/instrumentation/dropwizard.yml";
     private Environment env;
+
     public InstrumentationApplication(String resourcePath) {
         this.resourcePath = resourcePath;
     }
 
-    public InstrumentationApplication() {
-    }
+    public InstrumentationApplication() {}
 
     @Override
-    public void run(Nd4jInstrumentationConfiguration nd4jInstrumentationConfiguration, Environment environment) throws Exception {
+    public void run(Nd4jInstrumentationConfiguration nd4jInstrumentationConfiguration, Environment environment)
+                    throws Exception {
         environment.jersey().register(new InstrumentationResource());
         this.env = environment;
     }
@@ -56,14 +57,15 @@ public class InstrumentationApplication extends Application<Nd4jInstrumentationC
      */
     public void start() {
         try {
-            InputStream is = new ClassPathResource(resourcePath, InstrumentationApplication.class.getClassLoader()).getInputStream();
+            InputStream is = new ClassPathResource(resourcePath, InstrumentationApplication.class.getClassLoader())
+                            .getInputStream();
             File tmpConfig = new File(resourcePath);
-            if(!tmpConfig.getParentFile().exists())
+            if (!tmpConfig.getParentFile().exists())
                 tmpConfig.getParentFile().mkdirs();
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
             IOUtils.copy(is, bos);
             bos.flush();
-            run(new String[]{"server", tmpConfig.getAbsolutePath()});
+            run(new String[] {"server", tmpConfig.getAbsolutePath()});
             tmpConfig.deleteOnExit();
         } catch (Exception e) {
             throw new RuntimeException(e);

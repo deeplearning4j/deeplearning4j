@@ -1,9 +1,9 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-        import org.nd4j.linalg.api.complex.IComplexNumber;
-        import org.nd4j.linalg.api.ndarray.INDArray;
-        import org.nd4j.linalg.api.ops.BaseTransformOp;
-        import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.Op;
 
 /**
  * DropOut implementation as Op
@@ -26,13 +26,13 @@ public class LegacyDropOut extends BaseTransformOp {
     }
 
     public LegacyDropOut(INDArray x, INDArray z, double p) {
-        super(x,z);
+        super(x, z);
         this.p = p;
         init(x, null, z, x.length());
     }
 
     public LegacyDropOut(INDArray x, INDArray z, double p, long n) {
-        super(x,z,n);
+        super(x, z, n);
         this.p = p;
         init(x, null, z, n);
     }
@@ -93,9 +93,11 @@ public class LegacyDropOut extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LegacyDropOut(xAlongDimension, z.vectorAlongDimension(index, dimension), p,  xAlongDimension.length());
+            return new LegacyDropOut(xAlongDimension, z.vectorAlongDimension(index, dimension), p,
+                            xAlongDimension.length());
         else
-            return new LegacyDropOut(xAlongDimension, z.vectorAlongDimension(index, dimension), p, xAlongDimension.length());
+            return new LegacyDropOut(xAlongDimension, z.vectorAlongDimension(index, dimension), p,
+                            xAlongDimension.length());
     }
 
     @Override
@@ -103,15 +105,17 @@ public class LegacyDropOut extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LegacyDropOut(xAlongDimension, z.tensorAlongDimension(index, dimension), p, xAlongDimension.length());
+            return new LegacyDropOut(xAlongDimension, z.tensorAlongDimension(index, dimension), p,
+                            xAlongDimension.length());
         else
-            return new LegacyDropOut(xAlongDimension, z.tensorAlongDimension(index, dimension), p, xAlongDimension.length());
+            return new LegacyDropOut(xAlongDimension, z.tensorAlongDimension(index, dimension), p,
+                            xAlongDimension.length());
 
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x,y,z,n);
-        this.extraArgs = new Object[]{p, (double) n};
+        super.init(x, y, z, n);
+        this.extraArgs = new Object[] {p, (double) n};
     }
 }

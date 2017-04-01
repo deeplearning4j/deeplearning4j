@@ -14,6 +14,6 @@ public class TransformOpRunner implements OpRunner {
 
     @Override
     public void runOp() {
-        Transforms.sigmoid(arr,false);
+        Transforms.sigmoid(arr, false);
     }
 }

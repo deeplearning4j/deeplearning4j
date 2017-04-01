@@ -7,6 +7,6 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
  */
 public class GetPutScalarLinearViewBenchmarkPerformer extends BaseBenchmarkPerformer {
     public GetPutScalarLinearViewBenchmarkPerformer(int nTimes) {
-        super(new GetPutScalarLinearViewOpRunner(),nTimes);
+        super(new GetPutScalarLinearViewOpRunner(), nTimes);
     }
 }

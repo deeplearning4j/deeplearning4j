@@ -10,17 +10,16 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class NDArrayUtil {
 
-    private NDArrayUtil() {
-    }
+    private NDArrayUtil() {}
 
     public static INDArray toNDArray(int[][] nums) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;
         } else {
             float[] doubles = ArrayUtil.toFloats(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;
         }
 
@@ -29,11 +28,11 @@ public class NDArrayUtil {
     public static INDArray toNDArray(int[] nums) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;
         } else {
             float[] doubles = ArrayUtil.toFloats(nums);
-            INDArray create = Nd4j.create(doubles, new int[]{1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;
         }
     }

@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.7.2-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -37,37 +37,7 @@
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>android-arm</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>android-x86</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>macosx-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>linux-ppc64le</classifier>
+            <classifier>${dependency.platform}</classifier>
         </dependency>
 
         <dependency>

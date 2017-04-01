@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.buffer.pointer;
 
 import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.linalg.api.buffer.util.LibUtils;
@@ -10,8 +9,8 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
 /**
  * Created by agibsonccc on 2/25/16.
  */
-@Platform(include="NativeBuffer.h",link = "buffer")
-public class JavaCppIntPointer  extends IntPointer {
+@Platform(include = "NativeBuffer.h", link = "buffer")
+public class JavaCppIntPointer extends IntPointer {
 
 
     static {
@@ -32,13 +31,13 @@ public class JavaCppIntPointer  extends IntPointer {
     }
 
     public JavaCppIntPointer(int size) {
-        super((Pointer)null);
+        super((Pointer) null);
         allocateArray(size);
     }
 
 
 
-    public native void putInt(int i,int val);
+    public native void putInt(int i, int val);
 
     private native void allocate();
 

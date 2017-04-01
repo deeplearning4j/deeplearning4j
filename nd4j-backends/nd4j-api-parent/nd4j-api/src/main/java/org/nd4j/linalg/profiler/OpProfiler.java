@@ -1,18 +1,15 @@
 package org.nd4j.linalg.profiler;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
-import org.nd4j.linalg.api.ops.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,12 +25,7 @@ import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 public class OpProfiler {
 
     public enum PenaltyCause {
-        NONE,
-        NON_EWS_ACCESS,
-        STRIDED_ACCESS,
-        MIXED_ORDER,
-        TAD_NON_EWS_ACCESS,
-        TAD_STRIDED_ACCESS,
+        NONE, NON_EWS_ACCESS, STRIDED_ACCESS, MIXED_ORDER, TAD_NON_EWS_ACCESS, TAD_STRIDED_ACCESS,
     }
 
     private static AtomicLong invocationsCount = new AtomicLong(0);
@@ -143,10 +135,12 @@ public class OpProfiler {
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
                 return "TransformOp";
-            } else return "PairWiseTransformOp";
+            } else
+                return "PairWiseTransformOp";
         } else if (op instanceof IndexAccumulation) {
             return "IndexAccumulationOp";
-        } else return "Unknown Op calls";
+        } else
+            return "Unknown Op calls";
     }
 
     /**
@@ -195,7 +189,7 @@ public class OpProfiler {
         updatePairs(op.name(), opClass);
 
         PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
-        for (PenaltyCause cause: causes) {
+        for (PenaltyCause cause : causes) {
             switch (cause) {
                 case NON_EWS_ACCESS:
                     nonEwsAggregator.incrementCount();
@@ -218,7 +212,7 @@ public class OpProfiler {
         processOpCall(op);
 
         PenaltyCause[] causes = processTADOperands(tadBuffers);
-        for (PenaltyCause cause: causes) {
+        for (PenaltyCause cause : causes) {
             switch (cause) {
                 case TAD_NON_EWS_ACCESS:
                     tadNonEwsAggregator.incrementCount();
@@ -243,7 +237,7 @@ public class OpProfiler {
         return mixedOrderAggregator;
     }
 
-    public StackAggregator getScalarAggregator(){
+    public StackAggregator getScalarAggregator() {
         return scalarAggregator;
     }
 
@@ -378,7 +372,7 @@ public class OpProfiler {
      * This method builds
      * @param op
      */
-    public void processStackCall(Op op, long timeStart ) {
+    public void processStackCall(Op op, long timeStart) {
         //StackTraceElement stack[] = Thread.currentThread().getStackTrace();
 
         long timeSpent = (System.nanoTime() - timeStart) / 1000;
@@ -389,35 +383,35 @@ public class OpProfiler {
          */
 
         methodsAggregator.incrementCount(timeSpent);
-/*
+        /*
         int level = 0;
         String level1 = null;
         String level2 = null;
         for (int e = 1; e < stack.length; e++) {
             boolean isNd4j = false;
-
+        
             String cClass = stack[e].getClassName();
             if (cClass == null|| cClass.isEmpty())
                 continue;
-
+        
             String split[] = cClass.split("\\.");
-
-
+        
+        
             // TODO: add optional mode here probably, saving results for subset of stack trace only
             if (split[1].equals("nd4j"))
                 isNd4j = true;
             else
                 level++;
-
+        
             if (level == 1)
                 level1 = cClass + "#" + stack[e].getMethodName();
             else if (level == 2)
                 level2 = cClass + "#" + stack[e].getMethodName();
-
-
+        
+        
             long timeSpent = System.nanoTime() - timeStart;
            // methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
-
+        
         }
         */
     }
@@ -459,7 +453,7 @@ public class OpProfiler {
                     case NONE: {
                         blasAggregator.incrementCount();
                     }
-                    break;
+                        break;
                     case MIXED_ORDER: // we wo nothing for gemm in this case
                     default:
                         break;
@@ -523,7 +517,7 @@ public class OpProfiler {
     public PenaltyCause[] processTADOperands(DataBuffer... tadBuffers) {
 
         List<PenaltyCause> causes = new ArrayList<>();
-        for (DataBuffer tadBuffer: tadBuffers) {
+        for (DataBuffer tadBuffer : tadBuffers) {
             if (tadBuffer == null)
                 continue;
 
@@ -531,7 +525,8 @@ public class OpProfiler {
             int length = rank * 2 + 4;
             int ews = tadBuffer.getInt(length - 2);
 
-            if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1)) && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+            if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1))
+                            && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
                 causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
             else if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
                 causes.add(PenaltyCause.TAD_STRIDED_ACCESS);
@@ -559,19 +554,20 @@ public class OpProfiler {
                 return causeXZ;
             } else if (causeXZ.length == 1 && causeXZ[0] == NONE) {
                 return causeXY;
-            } else return joinDistinct(causeXY, causeXZ);
+            } else
+                return joinDistinct(causeXY, causeXZ);
         }
     }
 
     protected PenaltyCause[] joinDistinct(PenaltyCause[] a, PenaltyCause[] b) {
         List<PenaltyCause> causes = new ArrayList<>();
 
-        for (PenaltyCause cause: a) {
+        for (PenaltyCause cause : a) {
             if (cause != null && !causes.contains(cause))
                 causes.add(cause);
         }
 
-        for (PenaltyCause cause: b) {
+        for (PenaltyCause cause : b) {
             if (cause != null && !causes.contains(cause))
                 causes.add(cause);
         }
@@ -586,16 +582,16 @@ public class OpProfiler {
      */
     public PenaltyCause[] processOperands(INDArray... operands) {
         if (operands == null)
-            return new PenaltyCause[]{NONE};
+            return new PenaltyCause[] {NONE};
 
         List<PenaltyCause> causes = new ArrayList<>();
         for (int e = 0; e < operands.length - 1; e++) {
-            if (operands[e] == null && operands[e+1] == null)
+            if (operands[e] == null && operands[e + 1] == null)
                 continue;
 
-            PenaltyCause lc[] = processOperands(operands[e], operands[e+1]);
+            PenaltyCause lc[] = processOperands(operands[e], operands[e + 1]);
 
-            for (PenaltyCause cause: lc) {
+            for (PenaltyCause cause : lc) {
                 if (cause != NONE && !causes.contains(cause))
                     causes.add(cause);
             }

@@ -8,8 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;
 
-    public BaseIndexAccumulation() {
-    }
+    public BaseIndexAccumulation() {}
 
     /**
      * Initialize with the given
@@ -44,13 +43,13 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return 0.0f;
     }
 
     @Override
-    public Pair<Double,Integer> zeroPair(){
-        return new Pair<>(zeroDouble(),-1);
+    public Pair<Double, Integer> zeroPair() {
+        return new Pair<>(zeroDouble(), -1);
     }
 
     @Override
@@ -65,34 +64,34 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{zeroDouble()};
+        this.extraArgs = new Object[] {zeroDouble()};
     }
 
     @Override
-    public int combineSubResults(double first, int idxFirst, double second, int idxSecond){
-        return update(first,idxFirst,second,idxSecond);
+    public int combineSubResults(double first, int idxFirst, double second, int idxSecond) {
+        return update(first, idxFirst, second, idxSecond);
     }
 
     @Override
-    public int combineSubResults(float first, int idxFirst, float second, int idxSecond){
-        return update(first,idxFirst,second,idxSecond);
+    public int combineSubResults(float first, int idxFirst, float second, int idxSecond) {
+        return update(first, idxFirst, second, idxSecond);
     }
 
     @Override
-    public Pair<Double,Integer> combineSubResults(Pair<Double,Integer> first, Pair<Double,Integer> second){
+    public Pair<Double, Integer> combineSubResults(Pair<Double, Integer> first, Pair<Double, Integer> second) {
         int idxFirst = first.getSecond();
         int idxSecond = second.getSecond();
-        int idxOut = update(first.getFirst(),idxFirst,second.getFirst(),idxSecond);
+        int idxOut = update(first.getFirst(), idxFirst, second.getFirst(), idxSecond);
         return (idxOut == idxFirst ? first : second);
     }
 
     @Override
-    public void setFinalResult( int idx ){
+    public void setFinalResult(int idx) {
         this.finalResult = idx;
     }
 
     @Override
-    public int getFinalResult(){
+    public int getFinalResult() {
         return finalResult;
     }
 }

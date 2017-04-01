@@ -78,7 +78,7 @@ public class RRWLock implements Lock {
      */
     @Override
     public void objectReadLock(Object object) {
-   //     globalReadLock();
+        //     globalReadLock();
 
         objectLocks.get(object).readLock().lock();
     }
@@ -92,7 +92,7 @@ public class RRWLock implements Lock {
     public void objectReadUnlock(Object object) {
         objectLocks.get(object).readLock().unlock();
 
-   //     globalReadUnlock();
+        //     globalReadUnlock();
     }
 
     /**
@@ -102,7 +102,7 @@ public class RRWLock implements Lock {
      */
     @Override
     public void objectWriteLock(Object object) {
-   //     globalReadLock();
+        //     globalReadLock();
 
         objectLocks.get(object).writeLock().lock();
     }
@@ -116,7 +116,7 @@ public class RRWLock implements Lock {
     public void objectWriteUnlock(Object object) {
         objectLocks.get(object).writeLock().unlock();
 
-  //      globalReadUnlock();
+        //      globalReadUnlock();
     }
 
     /**

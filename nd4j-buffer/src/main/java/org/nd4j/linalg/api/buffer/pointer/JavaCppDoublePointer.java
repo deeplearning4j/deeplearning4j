@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
 /**
  * Created by agibsonccc on 2/25/16.
  */
-@Platform(include="NativeBuffer.h",link = "buffer")
+@Platform(include = "NativeBuffer.h", link = "buffer")
 public class JavaCppDoublePointer extends DoublePointer {
 
     static {
@@ -25,8 +25,7 @@ public class JavaCppDoublePointer extends DoublePointer {
         }
     }
 
-    public JavaCppDoublePointer() {
-    }
+    public JavaCppDoublePointer() {}
 
     public JavaCppDoublePointer(double... array) {
         super((Pointer) null);
@@ -41,7 +40,7 @@ public class JavaCppDoublePointer extends DoublePointer {
     private native void allocateArray(int size);
 
 
-    public native void putDouble(int i,double val);
+    public native void putDouble(int i, double val);
 
     public native double[] bufferRef();
 

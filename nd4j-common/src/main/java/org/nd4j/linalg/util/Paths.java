@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,10 +31,9 @@ import java.util.Iterator;
  */
 public class Paths {
 
-    public final static String PATH_ENV_VARIABLE  = "PATH";
+    public final static String PATH_ENV_VARIABLE = "PATH";
 
-    private Paths() {
-    }
+    private Paths() {}
 
     /**
      * Check if a file exists in the path
@@ -45,21 +44,21 @@ public class Paths {
     public static boolean nameExistsInPath(String name) {
         String path = System.getenv(PATH_ENV_VARIABLE);
         String[] dirs = path.split(File.pathSeparator);
-        for(String dir : dirs) {
+        for (String dir : dirs) {
             File dirFile = new File(dir);
-            if(!dirFile.exists())
+            if (!dirFile.exists())
                 continue;
 
-            if(dirFile.isFile() && dirFile.getName().equals(name))
+            if (dirFile.isFile() && dirFile.getName().equals(name))
                 return true;
             else {
-               Iterator<File> files = FileUtils.iterateFiles(dirFile,null,false);
-                while(files.hasNext()) {
+                Iterator<File> files = FileUtils.iterateFiles(dirFile, null, false);
+                while (files.hasNext()) {
                     File curr = files.next();
-                    if(curr.getName().equals(name))
+                    if (curr.getName().equals(name))
                         return true;
                 }
-                
+
             }
         }
 

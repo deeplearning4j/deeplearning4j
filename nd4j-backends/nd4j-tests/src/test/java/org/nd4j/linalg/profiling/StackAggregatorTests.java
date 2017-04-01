@@ -5,6 +5,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -70,18 +71,21 @@ public class StackAggregatorTests {
         log.info("Trace: {}", descriptor.toString());
 
         // we just want to make sure that OpProfiler methods are NOT included in trace
-        assertTrue(descriptor.getStackTrace()[descriptor.size()-1].getClassName().contains("StackAggregatorTests"));
+        assertTrue(descriptor.getStackTrace()[descriptor.size() - 1].getClassName().contains("StackAggregatorTests"));
     }
 
     @Test
     public void testTrailingFrames2() {
-        INDArray x = Nd4j.create(new int[]{10, 10}, 'f');
-        INDArray y = Nd4j.create(new int[]{10, 10}, 'c');
+        INDArray x = Nd4j.create(new int[] {10, 10}, 'f');
+        INDArray y = Nd4j.create(new int[] {10, 10}, 'c');
 
         x.assign(y);
 
 
         x.assign(y);
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         StackAggregator aggregator = OpProfiler.getInstance().getMixedOrderAggregator();
 

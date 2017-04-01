@@ -20,5 +20,5 @@ public interface OffsetMapper {
      * @param indices the indices to iterate over
      * @return the double at the specified index
      */
-    int getOffset(int baseOffset,int[] shape,int[] stride,int[] indices);
+    int getOffset(int baseOffset, int[] shape, int[] stride, int[] indices);
 }

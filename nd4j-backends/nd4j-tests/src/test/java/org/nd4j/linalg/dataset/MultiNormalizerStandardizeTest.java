@@ -13,9 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Most of the normalizer functionality is shared with {@link MultiNormalizerStandardize}
@@ -48,10 +46,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         INDArray output1 = values.mul(OUTPUT1_SCALE);
         INDArray output2 = values.mul(OUTPUT2_SCALE);
 
-        data = new MultiDataSet(
-            new INDArray[]{input1, input2},
-            new INDArray[]{output1, output2}
-        );
+        data = new MultiDataSet(new INDArray[] {input1, input2}, new INDArray[] {output1, output2});
 
         meanNaturalNums = (nSamples + 1) / 2.0;
         stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
@@ -124,19 +119,12 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
     @Test
     public void testFullyMaskedData() {
-        MultiDataSetIterator iter = new TestMultiDataSetIterator(
-            1,
-            new MultiDataSet(
-                new INDArray[]{Nd4j.create(new float[]{1}).reshape(1, 1, 1)},
-                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)}
-            ),
-            new MultiDataSet(
-                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)},
-                new INDArray[]{Nd4j.create(new float[]{4}).reshape(1, 1, 1)},
-                null,
-                new INDArray[]{Nd4j.create(new float[]{0}).reshape(1, 1)}
-            )
-        );
+        MultiDataSetIterator iter = new TestMultiDataSetIterator(1,
+                        new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {1}).reshape(1, 1, 1)},
+                                        new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)}),
+                        new MultiDataSet(new INDArray[] {Nd4j.create(new float[] {2}).reshape(1, 1, 1)},
+                                        new INDArray[] {Nd4j.create(new float[] {4}).reshape(1, 1, 1)}, null,
+                                        new INDArray[] {Nd4j.create(new float[] {0}).reshape(1, 1)}));
 
         SUT.fit(iter);
 

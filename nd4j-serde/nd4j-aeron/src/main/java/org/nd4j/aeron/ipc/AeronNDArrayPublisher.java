@@ -5,7 +5,6 @@ import io.aeron.Publication;
 import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
-
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
@@ -27,7 +26,7 @@ import java.nio.ByteBuffer;
  */
 @Data
 @Builder
-public class AeronNDArrayPublisher implements  AutoCloseable {
+public class AeronNDArrayPublisher implements AutoCloseable {
     // A unique identifier for a stream within a channel. Stream ID 0 is reserved
     // for internal use and should not be used by applications.
     private int streamId;
@@ -59,7 +58,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      * @throws Exception
      */
     public void publish(NDArrayMessage message) throws Exception {
-        if(!init)
+        if (!init)
             init();
         // Create a context, needed for client connection to media driver
         // A separate media driver process needs to be running prior to starting this application
@@ -68,32 +67,33 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         // media driver, and create a Publication.  The Aeron and Publication classes implement
         // AutoCloseable, and will automatically clean up resources when this try block is finished.
         boolean connected = false;
-        if(aeron == null) {
+        if (aeron == null) {
             try {
-                while(!connected) {
+                while (!connected) {
                     aeron = Aeron.connect(ctx);
                     connected = true;
                 }
-            }catch (Exception e) {
+            } catch (Exception e) {
                 log.warn("Reconnecting on publisher...failed to connect");
             }
         }
 
         int connectionTries = 0;
-        while(publication == null && connectionTries < NUM_RETRIES) {
+        while (publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
                 log.info("Created publication on channel " + channel + " and stream " + streamId);
-            }
-            catch (DriverTimeoutException e) {
+            } catch (DriverTimeoutException e) {
                 Thread.sleep(1000 * (connectionTries + 1));
-                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamId + "...retrying in " + connectionTries + " seconds");
+                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamId
+                                + "...retrying in " + connectionTries + " seconds");
                 connectionTries++;
             }
         }
 
-        if(!connected && connectionTries >= 3 || publication == null) {
-            throw new IllegalStateException("Publisher unable to connect to channel " + channel + " and stream " + streamId);
+        if (!connected && connectionTries >= 3 || publication == null) {
+            throw new IllegalStateException(
+                            "Publisher unable to connect to channel " + channel + " and stream " + streamId);
         }
 
 
@@ -102,23 +102,22 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         log.info("Publishing to " + channel + " on stream Id " + streamId);
         //ensure default values are set
         INDArray arr = message.getArr();
-        if(isCompress())
-            while(!message.getArr().isCompressed())
-                Nd4j.getCompressor().compressi(arr,"GZIP");
+        if (isCompress())
+            while (!message.getArr().isCompressed())
+                Nd4j.getCompressor().compressi(arr, "GZIP");
 
 
 
         //array is large, need to segment
-        if(NDArrayMessage.byteBufferSizeForMessage(message) >= publication.maxMessageLength()) {
-            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message,publication.maxMessageLength() / 128);
-            for(int i = 0; i < chunks.length; i++) {
+        if (NDArrayMessage.byteBufferSizeForMessage(message) >= publication.maxMessageLength()) {
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message, publication.maxMessageLength() / 128);
+            for (int i = 0; i < chunks.length; i++) {
                 ByteBuffer sendBuff = NDArrayMessageChunk.toBuffer(chunks[i]);
                 sendBuff.rewind();
                 DirectBuffer buffer = new UnsafeBuffer(sendBuff);
                 sendBuffer(buffer);
             }
-        }
-        else {
+        } else {
             //send whole array
             DirectBuffer buffer = NDArrayMessage.toBuffer(message);
             sendBuffer(buffer);
@@ -129,29 +128,24 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
 
 
-
-
-
-    private void  sendBuffer(DirectBuffer buffer) throws Exception {
+    private void sendBuffer(DirectBuffer buffer) throws Exception {
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
         int tries = 0;
-        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L && tries < 5) {
+        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L && tries < 5) {
             if (result == Publication.BACK_PRESSURED) {
                 log.info("Offer failed due to back pressure");
-            }
-            else if (result == Publication.NOT_CONNECTED) {
-                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream " + streamId);
-            }
-            else if (result == Publication.ADMIN_ACTION) {
-                log.info("Offer failed because of an administration action in the system and channel"  + channel + " and stream " + streamId);
-            }
-            else if (result == Publication.CLOSED) {
-                log.info("Offer failed publication is closed and channel"  + channel + " and stream " + streamId);
-            }
-            else {
-                log.info(" Offer failed due to unknown reason and channel"  + channel + " and stream " + streamId);
+            } else if (result == Publication.NOT_CONNECTED) {
+                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream "
+                                + streamId);
+            } else if (result == Publication.ADMIN_ACTION) {
+                log.info("Offer failed because of an administration action in the system and channel" + channel
+                                + " and stream " + streamId);
+            } else if (result == Publication.CLOSED) {
+                log.info("Offer failed publication is closed and channel" + channel + " and stream " + streamId);
+            } else {
+                log.info(" Offer failed due to unknown reason and channel" + channel + " and stream " + streamId);
             }
 
 
@@ -161,7 +155,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         }
 
-        if(tries >= 5 && result == 0)
+        if (tries >= 5 && result == 0)
             throw new IllegalStateException("Failed to send message");
 
     }
@@ -223,7 +217,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(publication != null) {
+        if (publication != null) {
             CloseHelper.quietClose(publication);
         }
 

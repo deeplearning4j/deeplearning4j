@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -18,12 +18,11 @@
 
 package org.nd4j.linalg.dataset.api.iterator;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by susaneraly on 5/26/16.

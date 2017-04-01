@@ -1,18 +1,11 @@
 package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
-import io.aeron.AvailableImageHandler;
-import io.aeron.Image;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.uri.AeronUri;
-import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.aeron.util.AeronStat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -31,9 +24,9 @@ public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
-    private String channel = "aeron:udp?endpoint=localhost:40132";
+    private String channel = "aeron:udp?endpoint=localhost:" + (40132 + new java.util.Random().nextInt(3000));
     private int streamId = 10;
-    private  int length = (int) 1e7;
+    private int length = (int) 1e7;
 
     @Before
     public void before() {
@@ -57,32 +50,31 @@ public class NdArrayIpcTest {
         Aeron aeron = Aeron.connect(getContext());
         int numSubscribers = 10;
         AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
-        for(int i = 0; i < numSubscribers; i++) {
-            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
-                    .streamId(streamId)
-                    .ctx(getContext()).channel(channel).aeron(aeron)
-                    .running(running)
-                    .ndArrayCallback(new NDArrayCallback() {
-                        /**
-                         * A listener for ndarray message
-                         *
-                         * @param message the message for the callback
-                         */
-                        @Override
-                        public void onNDArrayMessage(NDArrayMessage message) {
+        for (int i = 0; i < numSubscribers; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId).ctx(getContext())
+                            .channel(channel).aeron(aeron).running(running).ndArrayCallback(new NDArrayCallback() {
+                                /**
+                                 * A listener for ndarray message
+                                 *
+                                 * @param message the message for the callback
+                                 */
+                                @Override
+                                public void onNDArrayMessage(NDArrayMessage message) {
+                                    System.out.println("Callback invoked for subscriber on ndarray ipc test");
+                                    running.set(false);
+                                }
 
-                        }
+                                @Override
+                                public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
 
-                        @Override
-                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                            }
 
-                        }
-
-                        @Override
-                        public void onNDArray(INDArray arr) {
-                            running.set(false);
-                        }
-                    }).build();
+                                @Override
+                                public void onNDArray(INDArray arr) {
+                                    System.out.println("Callback invoked for subscriber on ndarray ipc test");
+                                    running.set(false);
+                                }
+                            }).build();
 
 
             Thread t = new Thread(() -> {
@@ -94,20 +86,19 @@ public class NdArrayIpcTest {
 
             });
 
+            t.setDaemon(true);
             t.start();
+
 
             subscribers[i] = subscriber;
         }
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
-                .builder()
-                .streamId(streamId)
-                .channel(channel).aeron(aeron)
-                .build();
+        AeronNDArrayPublisher publisher =
+                        AeronNDArrayPublisher.builder().streamId(streamId).channel(channel).aeron(aeron).build();
 
         Thread.sleep(10000);
 
-        for(int i = 0; i < 10 && running.get(); i++) {
+        for (int i = 0; i < 10 && running.get(); i++) {
             executorService.execute(() -> {
                 try {
                     log.info("About to send array.");
@@ -120,12 +111,13 @@ public class NdArrayIpcTest {
 
         }
 
-        Thread.sleep(100000);
 
-        for(int i = 0; i < numSubscribers; i++)
+        Thread.sleep(30000);
+
+        for (int i = 0; i < numSubscribers; i++)
             CloseHelper.close(subscribers[i]);
-        CloseHelper.close(aeron);
         CloseHelper.close(publisher);
+        CloseHelper.close(aeron);
         assertFalse(running.get());
     }
 
@@ -138,33 +130,29 @@ public class NdArrayIpcTest {
         Aeron aeron = Aeron.connect(getContext());
 
 
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
-                .streamId(streamId)
-                .aeron(aeron)
-                .channel(channel)
-                .running(running)
-                .ndArrayCallback(new NDArrayCallback() {
-                    /**
-                     * A listener for ndarray message
-                     *
-                     * @param message the message for the callback
-                     */
-                    @Override
-                    public void onNDArrayMessage(NDArrayMessage message) {
+        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(streamId).aeron(aeron)
+                        .channel(channel).running(running).ndArrayCallback(new NDArrayCallback() {
+                            /**
+                             * A listener for ndarray message
+                             *
+                             * @param message the message for the callback
+                             */
+                            @Override
+                            public void onNDArrayMessage(NDArrayMessage message) {
+                                System.out.println(arr);
+                                running.set(false);
+                            }
 
-                    }
+                            @Override
+                            public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
 
-                    @Override
-                    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                        }
 
-                    }
+                            @Override
+                            public void onNDArray(INDArray arr) {
 
-                    @Override
-                    public void onNDArray(INDArray arr) {
-                        System.out.println(arr);
-                        running.set(false);
-                    }
-                }).build();
+                        }
+                        }).build();
 
 
         Thread t = new Thread(() -> {
@@ -178,21 +166,16 @@ public class NdArrayIpcTest {
 
         t.start();
 
-        while(!subscriber.launched())
+        while (!subscriber.launched())
             Thread.sleep(1000);
 
         Thread.sleep(10000);
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
-                .streamId(streamId)
-                .aeron(aeron)
-                .channel(channel)
-                .build();
-        for(int i = 0; i < 1 && running.get(); i++) {
+        AeronNDArrayPublisher publisher =
+                        AeronNDArrayPublisher.builder().streamId(streamId).aeron(aeron).channel(channel).build();
+        for (int i = 0; i < 1 && running.get(); i++) {
             publisher.publish(arr);
         }
-
-
 
 
 
@@ -208,17 +191,12 @@ public class NdArrayIpcTest {
 
 
     private Aeron.Context getContext() {
-        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(1000)
-                .availableImageHandler(new AvailableImageHandler() {
-                    @Override
-                    public void onAvailableImage(Image image) {
-                        System.out.println(image);
-                    }
-                })
-                .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .keepAliveInterval(1000)
-                .errorHandler(e -> log.error(e.toString(), e));
+        if (ctx == null)
+            ctx = new Aeron.Context().publicationConnectionTimeout(1000)
+                            .availableImageHandler(image -> System.out.println(image))
+                            .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                            .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }
 }

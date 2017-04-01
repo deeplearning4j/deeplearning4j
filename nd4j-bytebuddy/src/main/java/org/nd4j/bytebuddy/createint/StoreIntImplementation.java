@@ -13,7 +13,7 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
  */
 public class StoreIntImplementation implements Implementation {
 
-   private int idx = -1;
+    private int idx = -1;
 
     /**
      * Specify the variable index

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -53,38 +53,32 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaGrad grad = new AdaGrad(rows, cols, 1e-3);
-        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
+        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.ones(rows, cols);
         assertEquals(1e-1, grad.getGradient(W, 0).getDouble(0), 1e-1);
     }
 
 
     @Test
-    public void testEnsureInPlace(){
+    public void testEnsureInPlace() {
         //All updaters MUST execute in-place operations on the arrays. This is important for how DL4J works
 
-        GradientUpdater[] updaters = new GradientUpdater[]{
-                new AdaDelta(0.95),
-                new AdaGrad(0.1),
-                new Adam(0.9),
-                new Nesterovs(0.9),
-                new RmsProp(0.1,0.95),
-                new Sgd(0.1),
-        };
-        int[] m = new int[]{2,1,2,1,1,1};
+        GradientUpdater[] updaters = new GradientUpdater[] {new AdaDelta(0.95), new AdaGrad(0.1), new Adam(0.9),
+                        new Nesterovs(0.9), new RmsProp(0.1, 0.95), new Sgd(0.1),};
+        int[] m = new int[] {2, 1, 2, 1, 1, 1};
 
         Nd4j.getRandom().setSeed(12345);
-        for( int i=0; i<updaters.length; i++ ){
+        for (int i = 0; i < updaters.length; i++) {
             GradientUpdater u = updaters[i];
             System.out.println(u);
-            u.setStateViewArray(Nd4j.zeros(1, m[i] * 10*10),new int[]{10,10},'c',true);
+            u.setStateViewArray(Nd4j.zeros(1, m[i] * 10 * 10), new int[] {10, 10}, 'c', true);
 
             String msg = u.getClass().toString();
 
-            INDArray input = Nd4j.rand(10,10);
-            for( int j=0; j<3; j++ ) {
+            INDArray input = Nd4j.rand(10, 10);
+            for (int j = 0; j < 3; j++) {
                 INDArray out = u.getGradient(input, j);
-                assertTrue(msg, input == out);   //Needs to be exact same object, not merely equal
+                assertTrue(msg, input == out); //Needs to be exact same object, not merely equal
             }
         }
     }
@@ -99,8 +93,8 @@ public class UpdaterTest extends BaseNd4jTest {
         INDArray[] arr = new INDArray[n];
 
         double avgLr = 0.0;
-        INDArray avgState = Nd4j.zeros(1,10);
-        for( int i=0; i<arr.length; i++ ){
+        INDArray avgState = Nd4j.zeros(1, 10);
+        for (int i = 0; i < arr.length; i++) {
             lrs[i] = r.nextDouble();
             avgLr += lrs[i];
             adaGrads[i] = new AdaGrad(lrs[i]);
@@ -112,23 +106,23 @@ public class UpdaterTest extends BaseNd4jTest {
         avgState.divi(n);
 
         GradientUpdaterAggregator ag = adaGrads[0].getAggregator(true);
-        for( int i=1; i<n; i++ ){
+        for (int i = 1; i < n; i++) {
             ag.aggregate(adaGrads[i]);
         }
 
-        AdaGrad combined = (AdaGrad)ag.getUpdater();
+        AdaGrad combined = (AdaGrad) ag.getUpdater();
 
         double lrCombined = combined.getLearningRate();
         INDArray histCombined = combined.getHistoricalGradient();
 
-        assertEquals(avgLr,lrCombined,1e-10);
-        assertEquals(avgState,histCombined);
+        assertEquals(avgLr, lrCombined, 1e-10);
+        assertEquals(avgState, histCombined);
 
         //Check merging of AdaGradAggregators:
         GradientUpdaterAggregator first = adaGrads[0].getAggregator(false);
         GradientUpdaterAggregator second = adaGrads[2].getAggregator(false);
-        for(int i=0; i<n; i++ ){
-            if(i<2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(adaGrads[i]);
             } else {
                 second.aggregate(adaGrads[i]);
@@ -137,8 +131,8 @@ public class UpdaterTest extends BaseNd4jTest {
 
         GradientUpdaterAggregator agMerged = first.combine(second);
         AdaGrad combined2 = (AdaGrad) agMerged.getUpdater();
-        assertEquals(avgLr,combined2.getLearningRate(),1e-10);
-        assertEquals(avgState,combined2.getHistoricalGradient());
+        assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
+        assertEquals(avgState, combined2.getHistoricalGradient());
     }
 
     @Test
@@ -148,7 +142,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         Nesterovs grad = new Nesterovs(0.5);
-        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
+        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -173,13 +167,13 @@ public class UpdaterTest extends BaseNd4jTest {
 
         double avgLr = 0.0;
         double avgMomentums = 0.0;
-        INDArray avgState = Nd4j.zeros(1,10);
-        for( int i = 0; i < vs.length; i++){
+        INDArray avgState = Nd4j.zeros(1, 10);
+        for (int i = 0; i < vs.length; i++) {
             lrs[i] = r.nextDouble();
             momentums[i] = r.nextDouble();
             avgLr += lrs[i];
             avgMomentums += momentums[i];
-            nesterovs[i] = new Nesterovs(momentums[i],lrs[i]);
+            nesterovs[i] = new Nesterovs(momentums[i], lrs[i]);
             vs[i] = Nd4j.rand(1, 10);
             avgState.addi(vs[i]);
             nesterovs[i].setV(vs[i].dup());
@@ -189,19 +183,20 @@ public class UpdaterTest extends BaseNd4jTest {
         avgState.divi(n);
 
         GradientUpdaterAggregator ag = nesterovs[0].getAggregator(true);
-        for( int i=1; i<n; i++) ag.aggregate(nesterovs[i]);
+        for (int i = 1; i < n; i++)
+            ag.aggregate(nesterovs[i]);
 
-        Nesterovs combined = (Nesterovs)ag.getUpdater();
+        Nesterovs combined = (Nesterovs) ag.getUpdater();
 
-        assertEquals(avgLr,combined.getLearningRate(),1e-10);
-        assertEquals(avgMomentums,combined.getMomentum(),1e-10);
-        assertEquals(avgState,combined.getV());
+        assertEquals(avgLr, combined.getLearningRate(), 1e-10);
+        assertEquals(avgMomentums, combined.getMomentum(), 1e-10);
+        assertEquals(avgState, combined.getV());
 
         //Check merging of NesterovsAggregators:
         GradientUpdaterAggregator first = nesterovs[0].getAggregator(false);
         GradientUpdaterAggregator second = nesterovs[2].getAggregator(false);
-        for(int i=0; i < n; i++ ){
-            if(i < 2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(nesterovs[i]);
             } else {
                 second.aggregate(nesterovs[i]);
@@ -210,9 +205,9 @@ public class UpdaterTest extends BaseNd4jTest {
 
         GradientUpdaterAggregator agMerged = first.combine(second);
         Nesterovs combined2 = (Nesterovs) agMerged.getUpdater();
-        assertEquals(avgLr,combined2.getLearningRate(),1e-10);
-        assertEquals(avgMomentums,combined2.getMomentum(),1e-10);
-        assertEquals(avgState,combined2.getV());
+        assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
+        assertEquals(avgMomentums, combined2.getMomentum(), 1e-10);
+        assertEquals(avgState, combined2.getV());
     }
 
 
@@ -223,7 +218,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaGrad grad = new AdaGrad(rows, cols, 0.1);
-        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
+        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -244,7 +239,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaDelta grad = new AdaDelta();
-        grad.setStateViewArray(Nd4j.zeros(1, 2*rows*cols),new int[]{rows,cols},'c',true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -268,9 +263,9 @@ public class UpdaterTest extends BaseNd4jTest {
         INDArray[] msdxs = new INDArray[n];
 
         double avgRho = 0.0;
-        INDArray avgStateMsg = Nd4j.zeros(1,10);
-        INDArray avgStateMsdxs = Nd4j.zeros(1,10);
-        for( int i=0; i<msgs.length; i++ ){
+        INDArray avgStateMsg = Nd4j.zeros(1, 10);
+        INDArray avgStateMsdxs = Nd4j.zeros(1, 10);
+        for (int i = 0; i < msgs.length; i++) {
             rhos[i] = r.nextDouble();
             avgRho += rhos[i];
             adaDeltas[i] = new AdaDelta(rhos[i]);
@@ -286,19 +281,20 @@ public class UpdaterTest extends BaseNd4jTest {
         avgStateMsdxs.divi(n);
 
         GradientUpdaterAggregator ag = adaDeltas[0].getAggregator(true);
-        for( int i=1; i<n; i++ ) ag.aggregate(adaDeltas[i]);
+        for (int i = 1; i < n; i++)
+            ag.aggregate(adaDeltas[i]);
 
-        AdaDelta combined = (AdaDelta)ag.getUpdater();
+        AdaDelta combined = (AdaDelta) ag.getUpdater();
 
-        assertEquals(avgRho,combined.getRho(),1e-10);
-        assertEquals(avgStateMsg,combined.getMsg());
-        assertEquals(avgStateMsdxs,combined.getMsdx());
+        assertEquals(avgRho, combined.getRho(), 1e-10);
+        assertEquals(avgStateMsg, combined.getMsg());
+        assertEquals(avgStateMsdxs, combined.getMsdx());
 
         //Check merging of AdaDelta:
         GradientUpdaterAggregator first = adaDeltas[0].getAggregator(false);
         GradientUpdaterAggregator second = adaDeltas[2].getAggregator(false);
-        for(int i = 0; i < n; i++ ){
-            if(i < 2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(adaDeltas[i]);
             } else {
                 second.aggregate(adaDeltas[i]);
@@ -307,9 +303,9 @@ public class UpdaterTest extends BaseNd4jTest {
 
         GradientUpdaterAggregator agMerged = first.combine(second);
         AdaDelta combined2 = (AdaDelta) agMerged.getUpdater();
-        assertEquals(avgRho,combined2.getRho(),1e-10);
-        assertEquals(avgStateMsg,combined2.getMsg());
-        assertEquals(avgStateMsdxs,combined2.getMsdx());
+        assertEquals(avgRho, combined2.getRho(), 1e-10);
+        assertEquals(avgStateMsg, combined2.getMsg());
+        assertEquals(avgStateMsdxs, combined2.getMsdx());
     }
 
     @Test
@@ -319,7 +315,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         Adam grad = new Adam();
-        grad.setStateViewArray(Nd4j.zeros(1, 2*rows*cols),new int[]{rows,cols},'c',true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -349,9 +345,9 @@ public class UpdaterTest extends BaseNd4jTest {
         double avgBeta1 = 0.0;
         double avgBeta2 = 0.0;
         double avgEps = 0.0;
-        INDArray avgStateM = Nd4j.zeros(1,10);
-        INDArray avgStateV = Nd4j.zeros(1,10);
-        for(int i = 0;  i < n; i++) {
+        INDArray avgStateM = Nd4j.zeros(1, 10);
+        INDArray avgStateV = Nd4j.zeros(1, 10);
+        for (int i = 0; i < n; i++) {
             lrs[i] = r.nextDouble();
             beta1s[i] = r.nextDouble();
             beta2s[i] = r.nextDouble();
@@ -379,22 +375,23 @@ public class UpdaterTest extends BaseNd4jTest {
         avgStateV.divi(n);
 
         GradientUpdaterAggregator ag = adams[0].getAggregator(true);
-        for( int i=1; i<n; i++) ag.aggregate(adams[i]);
+        for (int i = 1; i < n; i++)
+            ag.aggregate(adams[i]);
 
-        Adam combined = (Adam)ag.getUpdater();
+        Adam combined = (Adam) ag.getUpdater();
 
-        assertEquals(avgLr,combined.getLearningRate(),1e-10);
-        assertEquals(avgBeta1,combined.getBeta1(),1e-10);
-        assertEquals(avgBeta2,combined.getBeta2(),1e-10);
-        assertEquals(avgEps,combined.getEpsilon(),1e-10);
-        assertEquals(avgStateM,combined.getM());
-        assertEquals(avgStateV,combined.getV());
+        assertEquals(avgLr, combined.getLearningRate(), 1e-10);
+        assertEquals(avgBeta1, combined.getBeta1(), 1e-10);
+        assertEquals(avgBeta2, combined.getBeta2(), 1e-10);
+        assertEquals(avgEps, combined.getEpsilon(), 1e-10);
+        assertEquals(avgStateM, combined.getM());
+        assertEquals(avgStateV, combined.getV());
 
         //Check merging of AdamAggregators:
         GradientUpdaterAggregator first = adams[0].getAggregator(false);
         GradientUpdaterAggregator second = adams[2].getAggregator(false);
-        for(int i=0; i < n; i++ ){
-            if(i < 2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(adams[i]);
             } else {
                 second.aggregate(adams[i]);
@@ -402,12 +399,12 @@ public class UpdaterTest extends BaseNd4jTest {
         }
         GradientUpdaterAggregator agMerged = first.combine(second);
         Adam combined2 = (Adam) agMerged.getUpdater();
-        assertEquals(avgLr,combined2.getLearningRate(),1e-10);
-        assertEquals(avgBeta1,combined2.getBeta1(),1e-10);
-        assertEquals(avgBeta2,combined2.getBeta2(),1e-10);
-        assertEquals(avgEps,combined2.getEpsilon(),1e-10);
-        assertEquals(avgStateM,combined2.getM());
-        assertEquals(avgStateV,combined2.getV());
+        assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
+        assertEquals(avgBeta1, combined2.getBeta1(), 1e-10);
+        assertEquals(avgBeta2, combined2.getBeta2(), 1e-10);
+        assertEquals(avgEps, combined2.getEpsilon(), 1e-10);
+        assertEquals(avgStateM, combined2.getM());
+        assertEquals(avgStateV, combined2.getV());
     }
 
     @Test
@@ -422,13 +419,13 @@ public class UpdaterTest extends BaseNd4jTest {
 
         double avgLr = 0.0;
         double avgRmsDecay = 0.0;
-        INDArray avgLastGradient = Nd4j.zeros(1,10);
-        for( int i=0; i<lastGradients.length; i++ ){
+        INDArray avgLastGradient = Nd4j.zeros(1, 10);
+        for (int i = 0; i < lastGradients.length; i++) {
             lrs[i] = r.nextDouble();
             rmsDecays[i] = r.nextDouble();
             avgLr += lrs[i];
             avgRmsDecay += rmsDecays[i];
-            rmsProps[i] = new RmsProp(lrs[i],rmsDecays[i]);
+            rmsProps[i] = new RmsProp(lrs[i], rmsDecays[i]);
             lastGradients[i] = Nd4j.rand(1, 10);
             avgLastGradient.addi(lastGradients[i]);
             rmsProps[i].setLastGradient(lastGradients[i].dup());
@@ -438,19 +435,20 @@ public class UpdaterTest extends BaseNd4jTest {
         avgLastGradient.divi(n);
 
         GradientUpdaterAggregator ag = rmsProps[0].getAggregator(true);
-        for( int i=1; i<n; i++) ag.aggregate(rmsProps[i]);
+        for (int i = 1; i < n; i++)
+            ag.aggregate(rmsProps[i]);
 
-        RmsProp combined = (RmsProp)ag.getUpdater();
+        RmsProp combined = (RmsProp) ag.getUpdater();
 
-        assertEquals(avgLr,combined.getLearningRate(),1e-10);
-        assertEquals(avgRmsDecay,combined.getRmsDecay(),1e-10);
-        assertEquals(avgLastGradient,combined.getLastGradient());
+        assertEquals(avgLr, combined.getLearningRate(), 1e-10);
+        assertEquals(avgRmsDecay, combined.getRmsDecay(), 1e-10);
+        assertEquals(avgLastGradient, combined.getLastGradient());
 
         //Check merging of RmsPropAggregators:
         GradientUpdaterAggregator first = rmsProps[0].getAggregator(false);
         GradientUpdaterAggregator second = rmsProps[2].getAggregator(false);
-        for(int i=0; i<n; i++ ){
-            if(i<2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(rmsProps[i]);
             } else {
                 second.aggregate(rmsProps[i]);
@@ -458,9 +456,9 @@ public class UpdaterTest extends BaseNd4jTest {
         }
         GradientUpdaterAggregator agMerged = first.combine(second);
         RmsProp combined2 = (RmsProp) agMerged.getUpdater();
-        assertEquals(avgLr,combined2.getLearningRate(),1e-10);
-        assertEquals(avgRmsDecay,combined2.getRmsDecay(),1e-10);
-        assertEquals(avgLastGradient,combined2.getLastGradient());
+        assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
+        assertEquals(avgRmsDecay, combined2.getRmsDecay(), 1e-10);
+        assertEquals(avgLastGradient, combined2.getLastGradient());
     }
 
     @Test
@@ -472,7 +470,7 @@ public class UpdaterTest extends BaseNd4jTest {
         Sgd[] sgds = new Sgd[n];
 
         double avgLr = 0.0;
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             lrs[i] = r.nextDouble();
             avgLr += lrs[i];
             sgds[i] = new Sgd(lrs[i]);
@@ -480,17 +478,18 @@ public class UpdaterTest extends BaseNd4jTest {
         avgLr /= n;
 
         GradientUpdaterAggregator ag = sgds[0].getAggregator(true);
-        for( int i=1; i<n; i++) ag.aggregate(sgds[i]);
+        for (int i = 1; i < n; i++)
+            ag.aggregate(sgds[i]);
 
-        Sgd combined = (Sgd)ag.getUpdater();
+        Sgd combined = (Sgd) ag.getUpdater();
 
-        assertEquals(avgLr,combined.getLearningRate(),1e-10);
+        assertEquals(avgLr, combined.getLearningRate(), 1e-10);
 
         //Check merging of SgdAggregators:
         GradientUpdaterAggregator first = sgds[0].getAggregator(false);
         GradientUpdaterAggregator second = sgds[2].getAggregator(false);
-        for(int i=0; i<n; i++ ){
-            if(i<2){
+        for (int i = 0; i < n; i++) {
+            if (i < 2) {
                 first.aggregate(sgds[i]);
             } else {
                 second.aggregate(sgds[i]);
@@ -498,7 +497,7 @@ public class UpdaterTest extends BaseNd4jTest {
         }
         GradientUpdaterAggregator agMerged = first.combine(second);
         Sgd combined2 = (Sgd) agMerged.getUpdater();
-        assertEquals(avgLr,combined2.getLearningRate(),1e-10);
+        assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
     }
 
 

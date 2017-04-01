@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ScalarLessThan extends BaseScalarOp {
-    public ScalarLessThan() {
-    }
+    public ScalarLessThan() {}
 
     public ScalarLessThan(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -62,17 +61,20 @@ public class ScalarLessThan extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
+        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
+        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
+        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override
@@ -101,7 +103,8 @@ public class ScalarLessThan extends BaseScalarOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0) : Nd4j.createComplexNumber(0, 0);
+        return origin.absoluteValue().doubleValue() < num.doubleValue() ? Nd4j.createComplexNumber(1, 0)
+                        : Nd4j.createComplexNumber(0, 0);
     }
 
     @Override

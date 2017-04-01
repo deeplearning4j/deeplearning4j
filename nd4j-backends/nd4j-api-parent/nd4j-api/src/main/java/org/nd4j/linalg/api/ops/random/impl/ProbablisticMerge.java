@@ -15,9 +15,9 @@ public class ProbablisticMerge extends BaseRandomOp {
     }
 
     public ProbablisticMerge(@NonNull INDArray x, @NonNull INDArray y, @NonNull INDArray z, double probability) {
-        init(x, y, z, x.length());
+        init(x, y, z, x.lengthLong());
         this.probability = probability;
-        this.extraArgs = new Object[]{probability};
+        this.extraArgs = new Object[] {probability};
     }
 
     public ProbablisticMerge(@NonNull INDArray x, @NonNull INDArray y, double probability) {

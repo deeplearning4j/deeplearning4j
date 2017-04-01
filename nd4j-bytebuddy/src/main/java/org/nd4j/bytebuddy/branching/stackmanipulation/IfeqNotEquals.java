@@ -13,7 +13,7 @@ import net.bytebuddy.jar.asm.Opcodes;
  *
  * @author Adam Gibson
  */
-public class IfeqNotEquals implements StackManipulation,Opcodes {
+public class IfeqNotEquals implements StackManipulation, Opcodes {
     private Label label;
 
     public IfeqNotEquals(Label label) {
@@ -28,13 +28,15 @@ public class IfeqNotEquals implements StackManipulation,Opcodes {
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
         methodVisitor.visitJumpInsn(Opcodes.IFEQ, label);
-        return new StackManipulation.Size(-1,-1);
+        return new StackManipulation.Size(-1, -1);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         IfeqNotEquals that = (IfeqNotEquals) o;
 

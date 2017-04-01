@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @AllArgsConstructor
 @Builder
-public class Nd4jKafkaProducer  {
+public class Nd4jKafkaProducer {
 
     private KafkaConnectionInformation connectionInformation;
     private CamelContext camelContext;
@@ -23,9 +23,9 @@ public class Nd4jKafkaProducer  {
      * @param arr
      */
     public void publish(INDArray arr) {
-        if(producerTemplate == null)
+        if (producerTemplate == null)
             producerTemplate = camelContext.createProducerTemplate();
-        producerTemplate.sendBody("direct:start",arr);
+        producerTemplate.sendBody("direct:start", arr);
     }
 
 

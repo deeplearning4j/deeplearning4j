@@ -5,13 +5,7 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.pointers.PointersPair;
-import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 

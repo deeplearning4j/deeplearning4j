@@ -5,8 +5,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateAxpy;
@@ -124,8 +122,10 @@ public class AggregatesTests extends BaseNd4jTest {
         INDArray syn0row_1 = syn0.getRow(idxSyn0_1);
         INDArray syn0row_2 = syn0.getRow(idxSyn0_2);
 
-        AggregateSkipGram op1 = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_1, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr, 1L, 10);
-        AggregateSkipGram op2 = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_2, new int[]{4, 5}, new int[]{0, 1}, 0, 0, 10, lr, 1L, 10);
+        AggregateSkipGram op1 = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_1, new int[] {1, 2},
+                        new int[] {0, 1}, 0, 0, 10, lr, 1L, 10);
+        AggregateSkipGram op2 = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0_2, new int[] {4, 5},
+                        new int[] {0, 1}, 0, 0, 10, lr, 1L, 10);
 
 
         List<Aggregate> batch = new ArrayList<>();

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class IAMax extends BaseIndexAccumulation {
-    public IAMax() {
-    }
+    public IAMax() {}
 
     public IAMax(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -49,37 +48,37 @@ public class IAMax extends BaseIndexAccumulation {
 
 
     public int update(double accum, int accumIdx, double x, int xIdx) {
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : xIdx);
+        return (FastMath.abs(accum) >= FastMath.abs(x) ? accumIdx : xIdx);
     }
 
-    public int update(float accum, int accumIdx, float x, int xIdx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : xIdx);
+    public int update(float accum, int accumIdx, float x, int xIdx) {
+        return (FastMath.abs(accum) >= FastMath.abs(x) ? accumIdx : xIdx);
     }
 
-    public int update(double accum, int accumIdx, double x, double y, int idx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : idx);
+    public int update(double accum, int accumIdx, double x, double y, int idx) {
+        return (FastMath.abs(accum) >= FastMath.abs(x) ? accumIdx : idx);
     }
 
-    public int update(float accum, int accumIdx, float x, float y, int idx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : idx);
+    public int update(float accum, int accumIdx, float x, float y, int idx) {
+        return (FastMath.abs(accum) >= FastMath.abs(x) ? accumIdx : idx);
     }
 
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx){
-        return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : xIdx);
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : xIdx);
     }
 
     @Override
     public int update(IComplexNumber accum, int accumIdx, double x, int idx) {
-        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accumIdx : idx);
     }
 
     @Override
     public int update(IComplexNumber accum, int accumIdx, double x, double y, int idx) {
-        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accumIdx : idx);
     }
 
-    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx){
-        return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : idx);
+    public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accumIdx : idx);
     }
 
 
@@ -100,12 +99,12 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
+        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
+        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
     }
 
     @Override
@@ -130,22 +129,27 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return Nd4j.createComplexNumber(origin.absoluteValue(),0);
+        return Nd4j.createComplexNumber(origin.absoluteValue(), 0);
     }
 
     @Override
-    public double zeroDouble(){
+    public double zeroDouble() {
         return 0.0;
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return 0.0f;
     }
 
     @Override
-    public IComplexNumber zeroComplex(){
-        return Nd4j.createComplexNumber(0,0);
+    public float zeroHalf() {
+        return zeroFloat();
+    }
+
+    @Override
+    public IComplexNumber zeroComplex() {
+        return Nd4j.createComplexNumber(0, 0);
     }
 
     @Override

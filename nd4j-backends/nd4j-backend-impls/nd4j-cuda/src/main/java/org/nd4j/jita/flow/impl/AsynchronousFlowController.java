@@ -5,16 +5,16 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Deprecated
-public class AsynchronousFlowController implements FlowController{
+public class AsynchronousFlowController implements FlowController {
     private volatile Allocator allocator;
 
     private static final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
@@ -45,7 +45,8 @@ public class AsynchronousFlowController implements FlowController{
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-    @Getter protected EventsProvider eventsProvider = new EventsProvider();
+    @Getter
+    protected EventsProvider eventsProvider = new EventsProvider();
 
     private transient TimeProvider timeProvider = new OperativeProvider();
 
@@ -56,7 +57,7 @@ public class AsynchronousFlowController implements FlowController{
 
     private AtomicLong totalHits = new AtomicLong(0);
 
-    protected static final int MAX_EXECUTION_QUEUE =  configuration.getCommandQueueLength();
+    protected static final int MAX_EXECUTION_QUEUE = configuration.getCommandQueueLength();
 
     protected static final AtomicLong eventCounts = new AtomicLong(0);
 
@@ -72,7 +73,7 @@ public class AsynchronousFlowController implements FlowController{
             eventsBarrier.add(d, new ArrayList<Queue<cudaEvent_t>>());
             laneClocks.add(d, new ArrayList<AtomicLong>());
             deviceClocks.add(d, new AtomicLong(0));
-            for (int l = 0; l < numLanes; l++){
+            for (int l = 0; l < numLanes; l++) {
                 eventsBarrier.get(d).add(l, new ConcurrentLinkedQueue<cudaEvent_t>());
                 laneClocks.get(d).add(l, new AtomicLong(0));
             }
@@ -98,16 +99,14 @@ public class AsynchronousFlowController implements FlowController{
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
                 CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-                if (nativeOps.memcpyAsync(
-                        point.getHostPointer(),
-                        point.getDevicePointer(),
-                        AllocationUtils.getRequiredMemory(point.getShape()),
-                        CudaConstants.cudaMemcpyDeviceToHost,
-                        context.getSpecialStream()) == 0)
-                    throw new IllegalStateException("MemcpyAsync D2H failed: [" + point.getDevicePointer().address() + "] -> [" + point.getHostPointer().address() + "]");
+                if (nativeOps.memcpyAsync(point.getHostPointer(), point.getDevicePointer(),
+                                AllocationUtils.getRequiredMemory(point.getShape()),
+                                CudaConstants.cudaMemcpyDeviceToHost, context.getSpecialStream()) == 0)
+                    throw new IllegalStateException("MemcpyAsync D2H failed: [" + point.getDevicePointer().address()
+                                    + "] -> [" + point.getHostPointer().address() + "]");
 
                 commitTransfer(context.getSpecialStream());
-            }// else log.info("Not [DEVICE] memory, skipping...");
+            } // else log.info("Not [DEVICE] memory, skipping...");
 
             // updating host read timer
             point.tickHostRead();
@@ -129,8 +128,8 @@ public class AsynchronousFlowController implements FlowController{
 
         cudaEvent_t event;
         while ((event = point.getReadLane().poll()) != null) {
-                event.synchronize();
-                event.destroy();
+            event.synchronize();
+            event.destroy();
         }
     }
 
@@ -140,7 +139,7 @@ public class AsynchronousFlowController implements FlowController{
 
         if (totalHits.incrementAndGet() % 25000 == 0) {
             log.debug("AsyncHit ratio: [{}]", getAsyncHitRatio());
-/*
+            /*
             for (int lane = 0; lane < allocator.getContextPool().acquireContextPackForDevice(0).getAvailableLanes(); lane++) {
                 log.debug("Lane [{}]: {} ", lane, lanesCounter.get(lane).get());
             }
@@ -156,8 +155,9 @@ public class AsynchronousFlowController implements FlowController{
             allocator.tickDeviceWrite(result);
         }
 
-        for (INDArray operand: operands) {
-            if (operand == null) continue;
+        for (INDArray operand : operands) {
+            if (operand == null)
+                continue;
 
             setReadLane(operand, event);
         }
@@ -196,10 +196,12 @@ public class AsynchronousFlowController implements FlowController{
     }
 
     protected int hasActiveWrite(INDArray array) {
-        if (array == null) return -1;
+        if (array == null)
+            return -1;
 
         cudaEvent_t event = getWriteLane(array);
-        if (event == null || event.isDestroyed()) return -1;
+        if (event == null || event.isDestroyed())
+            return -1;
 
         return event.getLaneId();
     }
@@ -207,7 +209,8 @@ public class AsynchronousFlowController implements FlowController{
     protected int hasActiveWrite(AllocationPoint point) {
 
         cudaEvent_t event = point.getWriteLane();
-        if (event == null || event.isDestroyed()) return -1;
+        if (event == null || event.isDestroyed())
+            return -1;
 
         return event.getLaneId();
     }
@@ -215,12 +218,14 @@ public class AsynchronousFlowController implements FlowController{
     protected boolean hasActiveReads(AllocationPoint point) {
         Queue<cudaEvent_t> events = point.getReadLane();
 
-        if (events.size() == 0) return false;
+        if (events.size() == 0)
+            return false;
 
         AtomicBoolean result = new AtomicBoolean(false);
         List<cudaEvent_t> asList = new ArrayList<>(events);
-        for (cudaEvent_t event: asList) {
-            if (event == null) continue;
+        for (cudaEvent_t event : asList) {
+            if (event == null)
+                continue;
 
             // we mark this AllocationPoint is pending read, if at least one event isn't destroyed yet
             result.compareAndSet(false, !event.isDestroyed());
@@ -230,7 +235,8 @@ public class AsynchronousFlowController implements FlowController{
     }
 
     protected boolean hasActiveReads(INDArray array) {
-        if (array == null) return false;
+        if (array == null)
+            return false;
 
         AllocationPoint point = allocator.getAllocationPoint(array);
 
@@ -257,11 +263,12 @@ public class AsynchronousFlowController implements FlowController{
             event.destroy();
             cnt++;
         }
-      //  log.info("Events synchronized: [{}]", cnt);
+        //  log.info("Events synchronized: [{}]", cnt);
     }
 
     protected void synchronizeReadLanes(INDArray array) {
-        if (array == null) return;
+        if (array == null)
+            return;
 
         AllocationPoint point = allocator.getAllocationPoint(array);
         synchronizeReadLanes(point);
@@ -320,7 +327,7 @@ public class AsynchronousFlowController implements FlowController{
 
 
             // but we still have to check, if op.X and op.Y has pending writes on other lanes
-          //  log.info("Busy Z dep: [{}], hasReads: [{}]", zLane, zReads);
+            //  log.info("Busy Z dep: [{}], hasReads: [{}]", zLane, zReads);
 
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
@@ -331,8 +338,9 @@ public class AsynchronousFlowController implements FlowController{
             int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
-            for (INDArray operand: operands) {
-                if (operand == null) continue;
+            for (INDArray operand : operands) {
+                if (operand == null)
+                    continue;
 
                 int lane = hasActiveWrite(operand);
                 if (lane >= 0) {
@@ -345,7 +353,7 @@ public class AsynchronousFlowController implements FlowController{
             }
 
             if (zReads) {
-          //      log.info("Synchronizing zReads");
+                //      log.info("Synchronizing zReads");
                 synchronizeReadLanes(result);
             }
 
@@ -353,26 +361,28 @@ public class AsynchronousFlowController implements FlowController{
                 asyncMiss.incrementAndGet();
 
                 if (isMatchingLanes(zLane, pendingLanes)) {
-                 //   log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                    //   log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     if (zLane >= 0)
                         newLane = zLane;
                     else
                         newLane = pickFirstLane(pendingLanes);
                 } else {
-                 //   log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                    //   log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     // now we must sync on both pendingLanes and pass data to zLane
                     if (zLane >= 0)
                         newLane = zLane;
-                    else newLane = pickFirstLane(pendingLanes);
+                    else
+                        newLane = pickFirstLane(pendingLanes);
 
-                    for (INDArray operand: operands) {
-                        if (operand == null) continue;
+                    for (INDArray operand : operands) {
+                        if (operand == null)
+                            continue;
 
                         waitTillFinished(allocator.getAllocationPoint(operand));
                     }
                 }
             } else {
-          //      log.info("Only Z is holder: [{}]", zLane);
+                //      log.info("Only Z is holder: [{}]", zLane);
 
                 asyncHit.incrementAndGet();
 
@@ -392,8 +402,9 @@ public class AsynchronousFlowController implements FlowController{
             int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
-            for (INDArray operand: operands) {
-                if (operand == null) continue;
+            for (INDArray operand : operands) {
+                if (operand == null)
+                    continue;
 
                 int lane = hasActiveWrite(operand);
                 if (lane >= 0) {
@@ -411,7 +422,7 @@ public class AsynchronousFlowController implements FlowController{
                 if (isMatchingLanes(pendingLanes)) {
                     // if op.X and/or op.Y has pending write in same lane - just throw op to that lane, and enjoy
                     newLane = lastLane;
-               //     log.info("Paired dependencies: [{}]", newLane);
+                    //     log.info("Paired dependencies: [{}]", newLane);
                 } else {
                     // we have different lanes for op.X and op.Y with pending write. We need to synchronize somewhere to become free.
                     // basically - synchronize on one lane, and throw task to another one
@@ -430,7 +441,7 @@ public class AsynchronousFlowController implements FlowController{
 
                 newLane = pack.nextRandomLane();
 
-             //   log.info("Free pass here: [{}]", newLane);
+                //   log.info("Free pass here: [{}]", newLane);
             }
         }
 
@@ -441,8 +452,9 @@ public class AsynchronousFlowController implements FlowController{
         if (result != null)
             allocator.getAllocationPoint(result).setCurrentContext(context);
 
-        for (INDArray operand: operands) {
-            if (operand == null) continue;
+        for (INDArray operand : operands) {
+            if (operand == null)
+                continue;
 
             allocator.getAllocationPoint(operand).setCurrentContext(context);
         }
@@ -491,7 +503,8 @@ public class AsynchronousFlowController implements FlowController{
         for (int l = 0; l < configuration.getCommandLanesNumber(); l++) {
             Queue<cudaEvent_t> queue = eventsBarrier.get(deviceId).get(l);
 
-            if (queue.size() >= MAX_EXECUTION_QUEUE || laneClocks.get(deviceId).get(l).get() < lastCommandId - MAX_EXECUTION_QUEUE) {
+            if (queue.size() >= MAX_EXECUTION_QUEUE
+                            || laneClocks.get(deviceId).get(l).get() < lastCommandId - MAX_EXECUTION_QUEUE) {
                 cudaEvent_t event = queue.poll();
                 if (event != null && !event.isDestroyed()) {
                     event.synchronize();
@@ -504,7 +517,7 @@ public class AsynchronousFlowController implements FlowController{
 
         deviceClocks.get(deviceId).incrementAndGet();
 
-      //  log.info("Events sweeped: [{}]", cnt);
+        //  log.info("Events sweeped: [{}]", cnt);
     }
 
 

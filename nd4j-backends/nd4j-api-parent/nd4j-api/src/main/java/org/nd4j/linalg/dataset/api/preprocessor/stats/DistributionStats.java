@@ -4,7 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.*;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -115,10 +115,10 @@ public class DistributionStats implements NormalizerStats {
                 // Update running variance
                 INDArray deltaSquared = Transforms.pow(mean.subRowVector(runningMean), 2);
                 INDArray mB = variance.muli(count);
-                runningVariance.muli(runningCount)
-                    .addiRowVector(mB)
-                    .addiRowVector(deltaSquared.muli((float) (runningCount * count) / (runningCount + count)))
-                    .divi(runningCount + count);
+                runningVariance.muli(runningCount).addiRowVector(mB)
+                                .addiRowVector(deltaSquared
+                                                .muli((float) (runningCount * count) / (runningCount + count)))
+                                .divi(runningCount + count);
 
                 // Update running count
                 runningCount += count;

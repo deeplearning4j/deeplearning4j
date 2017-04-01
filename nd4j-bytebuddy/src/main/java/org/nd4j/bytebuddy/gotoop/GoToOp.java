@@ -25,14 +25,16 @@ public class GoToOp implements StackManipulation {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
-        methodVisitor.visitJumpInsn(Opcodes.GOTO,label);
-        return new Size(0,0);
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, label);
+        return new Size(0, 0);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         GoToOp goToOp = (GoToOp) o;
 

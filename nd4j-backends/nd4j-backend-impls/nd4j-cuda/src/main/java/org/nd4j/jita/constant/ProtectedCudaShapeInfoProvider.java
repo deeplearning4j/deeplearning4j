@@ -6,7 +6,6 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
-import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -25,8 +24,6 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
     private AtomicLong cacheMiss = new AtomicLong(1);
 
     private Semaphore lock = new Semaphore(1);
-
-    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
@@ -51,6 +48,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
+        // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -58,11 +56,11 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-//            log.info("Cache miss: {}", descriptor);
+            //            log.info("Cache miss: {}", descriptor);
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             buffer.setConstant(true);
 
-            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+            if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
                 Nd4j.getConstantHandler().moveToConstantSpace(buffer);
             }
 
@@ -72,7 +70,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             cacheMiss.incrementAndGet();
             return buffer;
         } else {
-     //       log.info("Cache hit: {}", descriptor);
+            //       log.info("Cache hit: {}", descriptor);
             cacheHit.incrementAndGet();
         }
 

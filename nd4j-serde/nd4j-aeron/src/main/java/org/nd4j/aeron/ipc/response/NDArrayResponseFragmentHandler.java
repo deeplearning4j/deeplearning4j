@@ -42,7 +42,7 @@ public class NDArrayResponseFragmentHandler implements FragmentHandler {
      */
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
-        if(buffer != null && length > 0) {
+        if (buffer != null && length > 0) {
             ByteBuffer byteBuffer = buffer.byteBuffer().order(ByteOrder.nativeOrder());
             byteBuffer.position(offset);
             byte[] b = new byte[length];
@@ -50,19 +50,17 @@ public class NDArrayResponseFragmentHandler implements FragmentHandler {
             String hostPort = new String(b);
             System.out.println("Host port " + hostPort + " offset " + offset + " length " + length);
             String[] split = hostPort.split(":");
-            if(split == null || split.length != 3) {
+            if (split == null || split.length != 3) {
                 System.err.println("no host port stream found");
                 return;
             }
 
             int port = Integer.parseInt(split[1]);
             int streamToPublish = Integer.parseInt(split[2]);
-            String channel = AeronUtil.aeronChannel(split[0],port);
+            String channel = AeronUtil.aeronChannel(split[0], port);
             INDArray arrGet = holder.get();
-            AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
-                    .streamId(streamToPublish)
-                    .aeron(aeron).channel(channel)
-                    .build();
+            AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamToPublish).aeron(aeron)
+                            .channel(channel).build();
             try {
                 publisher.publish(arrGet);
             } catch (Exception e) {

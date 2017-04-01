@@ -27,13 +27,9 @@ public class KafkaConnectionInformation implements Serializable {
      * represented by this connection information
      */
     public String kafkaUri() {
-        return String.format("kafka://%s?topic=%s&groupId=%s&zookeeperHost=%s&zookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
-                kafkaBrokerList,
-                topicName,
-                groupId,
-                zookeeperHost,
-                zookeeperPort,
-                StringEncoder.class.getName(),
-                StringEncoder.class.getName());
+        return String.format(
+                        "kafka://%s?topic=%s&groupId=%s&zookeeperHost=%s&zookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
+                        kafkaBrokerList, topicName, groupId, zookeeperHost, zookeeperPort,
+                        StringEncoder.class.getName(), StringEncoder.class.getName());
     }
 }

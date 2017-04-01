@@ -8,11 +8,11 @@ import org.nd4j.linalg.factory.Nd4j;
  * Returns a stable number based on infinity
  * or nan
  */
-public class StableNumber implements Function<Number,Number> {
+public class StableNumber implements Function<Number, Number> {
     private Type type;
 
     public enum Type {
-        DOUBLE,FLOAT
+        DOUBLE, FLOAT
     }
 
     public StableNumber(Type type) {
@@ -23,16 +23,17 @@ public class StableNumber implements Function<Number,Number> {
     public Number apply(Number number) {
         switch (type) {
             case DOUBLE:
-            if(Double.isInfinite(number.doubleValue()))
-                return  -Double.MAX_VALUE;
-                if(Double.isNaN(number.doubleValue()))
-                  return Nd4j.EPS_THRESHOLD;
-            case FLOAT:
-                if(Float.isInfinite(number.floatValue()))
-                    return -Float.MAX_VALUE;
-                if(Float.isNaN(number.floatValue()))
+                if (Double.isInfinite(number.doubleValue()))
+                    return -Double.MAX_VALUE;
+                if (Double.isNaN(number.doubleValue()))
                     return Nd4j.EPS_THRESHOLD;
-            default: throw new IllegalStateException("Illegal type");
+            case FLOAT:
+                if (Float.isInfinite(number.floatValue()))
+                    return -Float.MAX_VALUE;
+                if (Float.isNaN(number.floatValue()))
+                    return Nd4j.EPS_THRESHOLD;
+            default:
+                throw new IllegalStateException("Illegal type");
 
         }
 

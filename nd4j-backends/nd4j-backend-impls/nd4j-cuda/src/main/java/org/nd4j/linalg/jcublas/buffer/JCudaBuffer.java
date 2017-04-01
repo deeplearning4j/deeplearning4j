@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -23,7 +23,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.nio.Buffer;
-import java.nio.ByteBuffer;
 
 /**
  * A Jcuda buffer
@@ -32,13 +31,13 @@ import java.nio.ByteBuffer;
  */
 public interface JCudaBuffer extends DataBuffer {
 
-	/**
-	 * Get the underlying host bytebuffer
-	 * @return
-	 */
+    /**
+     * Get the underlying host bytebuffer
+     * @return
+     */
     @Deprecated
-	Buffer getHostBuffer();
-	
+    Buffer getHostBuffer();
+
     /**
      * THe pointer for the buffer
      *

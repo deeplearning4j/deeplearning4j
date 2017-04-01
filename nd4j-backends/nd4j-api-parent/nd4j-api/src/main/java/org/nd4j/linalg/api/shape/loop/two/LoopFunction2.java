@@ -16,5 +16,5 @@ public interface LoopFunction2 {
      * @param b the second buffer
      * @param bOffset the second buffer offset
      */
-    void perform(int i,RawArrayIterationInformation2 info,DataBuffer a,int aOffset,DataBuffer b,int bOffset);
+    void perform(int i, RawArrayIterationInformation2 info, DataBuffer a, int aOffset, DataBuffer b, int bOffset);
 }

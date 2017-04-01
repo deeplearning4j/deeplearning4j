@@ -1,6 +1,7 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -8,8 +9,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.Serializable;
-
-import lombok.NoArgsConstructor;
 
 /**
  * The Adam updater.
@@ -20,11 +19,15 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Adam implements Serializable, GradientUpdater {
+    public static final double DEFAULT_ADAM_EPSILON = 1e-8;
+    public static final double DEFAULT_ADAM_BETA1_MEAN_DECAY = 0.9;
+    public static final double DEFAULT_ADAM_BETA2_VAR_DECAY = 0.999;
+
 
     private double learningRate = 1e-3; // learning rate
-    private double beta1 = 0.9; // gradient moving avg decay rate
-    private double beta2 = 0.999; // gradient sqrd decay rate
-    private double epsilon = 1e-8;
+    private double beta1 = DEFAULT_ADAM_BETA1_MEAN_DECAY; // gradient moving avg decay rate
+    private double beta2 = DEFAULT_ADAM_BETA2_VAR_DECAY; // gradient sqrd decay rate
+    private double epsilon = DEFAULT_ADAM_EPSILON;
     private INDArray m, v; // moving avg & sqrd gradients
 
     @Override
@@ -34,8 +37,10 @@ public class Adam implements Serializable, GradientUpdater {
 
     @Override
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector()) throw new IllegalArgumentException("Invalid input: expect row vector input");
-        if (initialize) viewArray.assign(0);
+        if (!viewArray.isRowVector())
+            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        if (initialize)
+            viewArray.assign(0);
         int length = viewArray.length();
         this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length / 2));
         this.v = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length / 2, length));
@@ -43,7 +48,8 @@ public class Adam implements Serializable, GradientUpdater {
         //Reshape to match the expected shape of the input gradient arrays
         this.m = Shape.newShapeNoCopy(this.m, gradientShape, gradientOrder == 'f');
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
-        if (m == null || v == null) throw new IllegalStateException("Could not correctly reshape gradient view arrays");
+        if (m == null || v == null)
+            throw new IllegalStateException("Could not correctly reshape gradient view arrays");
     }
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
@@ -79,7 +85,8 @@ public class Adam implements Serializable, GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if (m == null || v == null) throw new IllegalStateException("Updater has not been initialized with view state");
+        if (m == null || v == null)
+            throw new IllegalStateException("Updater has not been initialized with view state");
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
         m.muli(beta1).addi(oneMinusBeta1Grad);
@@ -91,7 +98,8 @@ public class Adam implements Serializable, GradientUpdater {
         double beta2t = FastMath.pow(beta2, iteration + 1);
 
         double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
-        if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
+        if (Double.isNaN(alphat) || alphat == 0.0)
+            alphat = epsilon;
         INDArray sqrtV = Transforms.sqrt(v, true).addi(epsilon);
         INDArray ret = m.mul(alphat).divi(sqrtV);
         gradient.assign(ret);
@@ -101,7 +109,8 @@ public class Adam implements Serializable, GradientUpdater {
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis) {
         AdamAggregator ag = new AdamAggregator();
-        if (addThis) ag.aggregate(this);
+        if (addThis)
+            ag.aggregate(this);
         return ag;
     }
 

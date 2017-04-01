@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,13 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
-import java.util.*;
-
-import org.nd4j.linalg.api.blas.Blas;
-import org.nd4j.linalg.api.blas.Lapack;
-import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.blas.Level2;
-import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -37,6 +31,8 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.*;
 
 /**
  * Base NDArrayFactory class.
@@ -55,40 +51,40 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     protected Level2 level2;
     protected Level3 level3;
     protected Lapack lapack;
-    public BaseNDArrayFactory() {
-    }
+
+    public BaseNDArrayFactory() {}
 
     @Override
     public Lapack lapack() {
-        if(lapack == null)
+        if (lapack == null)
             createLapack();
         return lapack;
     }
 
     @Override
     public Blas blas() {
-        if(blas == null)
+        if (blas == null)
             createBlas();
         return blas;
     }
 
     @Override
     public Level1 level1() {
-        if(level1 == null)
+        if (level1 == null)
             createLevel1();
         return level1;
     }
 
     @Override
     public Level2 level2() {
-        if(level2 == null)
+        if (level2 == null)
             createLevel2();
         return level2;
     }
 
     @Override
     public Level3 level3() {
-        if(level3 == null)
+        if (level3 == null)
             createLevel3();
         return level3;
     }
@@ -101,7 +97,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param order the ordering in mem
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
-       // this.dtype = dtype;
+        // this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
 
@@ -113,7 +109,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param order the ordering
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, char order) {
-       // this.dtype = dtype;
+        // this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
 
@@ -122,12 +118,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     //input arrays must have same number of dimensions
     protected static void validateConcat(int dimension, INDArray... arrs) {
-        if(arrs[0].isScalar()) {
-            for(int i = 1; i < arrs.length; i++)
-                if(!arrs[i].isScalar())
+        if (arrs[0].isScalar()) {
+            for (int i = 1; i < arrs.length; i++)
+                if (!arrs[i].isScalar())
                     throw new IllegalArgumentException("All arrays must have same dimensions");
-        }
-        else {
+        } else {
             int dims = arrs[0].shape().length;
             int[] shape = ArrayUtil.removeIndex(arrs[0].shape(), dimension);
             for (int i = 1; i < arrs.length; i++) {
@@ -160,7 +155,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         Nd4j.getRandom().setSeed(rng.getSeed());
-        return rand(new int[]{rows, columns}, min, max, rng);
+        return rand(new int[] {rows, columns}, min, max, rng);
     }
 
     /**
@@ -170,8 +165,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public void setDType(DataBuffer.Type dtype) {
-        assert dtype == DataBuffer.Type.DOUBLE || dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.INT : "Invalid type passed, must be float or double";
-       // this.dtype = dtype;
+        assert dtype == DataBuffer.Type.DOUBLE || dtype == DataBuffer.Type.FLOAT
+                        || dtype == DataBuffer.Type.INT : "Invalid type passed, must be float or double";
+        // this.dtype = dtype;
     }
 
     @Override
@@ -218,11 +214,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         //edge case for scalars
         INDArray ret = Nd4j.create(data.length);
-        if(ret.isScalar())
+        if (ret.isScalar())
             return ret;
 
-        for(int i = 0; i < ret.length(); i++)
-            ret.putScalar(i,data[i]);
+        for (int i = 0; i < ret.length(); i++)
+            ret.putScalar(i, data[i]);
         return ret;
     }
 
@@ -238,7 +234,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(int rows, int columns, char ordering) {
-        return create(new int[]{rows, columns}, ordering);
+        return create(new int[] {rows, columns}, ordering);
     }
 
 
@@ -257,7 +253,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(linearIndex,linearIndex + d.length())},d);
+            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, d);
             linearIndex += d.length();
         }
 
@@ -268,8 +264,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray toFlattened(int length, Iterator<? extends INDArray>... matrices) {
         List<INDArray> arr = new ArrayList<>();
-        for(Iterator<? extends INDArray> arrs : matrices) {
-            while(arrs.hasNext())
+        for (Iterator<? extends INDArray> arrs : matrices) {
+            while (arrs.hasNext())
                 arr.add(arrs.next());
         }
         return toFlattened(arr);
@@ -312,7 +308,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(linearIndex,linearIndex + d.length())},d);
+            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, d);
             linearIndex += d.length();
         }
 
@@ -450,8 +446,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray rand(int[] shape, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return Nd4j.getDistributions().createUniform(min, max).sample(shape);
     }
@@ -468,7 +464,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
-        return rand(new int[]{rows, columns}, min, max, rng);
+        return rand(new int[] {rows, columns}, min, max, rng);
     }
 
     /**
@@ -491,7 +487,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int index = 0;
         for (INDArray vector : vectors) {
             INDArray put = toFlattened(vector, Nd4j.ones(1));
-            result.put(new INDArrayIndex[]{NDArrayIndex.interval(index, index + vector.rows() + 1), NDArrayIndex.interval(0, vectors[0].columns())}, put);
+            result.put(new INDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows() + 1),
+                            NDArrayIndex.interval(0, vectors[0].columns())}, put);
             index += vector.rows();
         }
 
@@ -536,7 +533,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        return rand(new int[]{rows, columns}, r);
+        return rand(new int[] {rows, columns}, r);
     }
 
     /**
@@ -550,7 +547,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray rand(int rows, int columns, long seed) {
         Nd4j.getRandom().setSeed(seed);
-        return rand(new int[]{rows, columns}, Nd4j.getRandom());
+        return rand(new int[] {rows, columns}, Nd4j.getRandom());
     }
 
     /**
@@ -563,7 +560,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns) {
-        return rand(new int[]{rows, columns}, System.currentTimeMillis());
+        return rand(new int[] {rows, columns}, System.currentTimeMillis());
     }
 
     /**
@@ -573,8 +570,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param columns    Number of columns of the output array
      */
     @Override
-    public INDArray rand(char order, int rows, int columns){
-        return Nd4j.getRandom().nextDouble(order, new int[]{rows,columns});
+    public INDArray rand(char order, int rows, int columns) {
+        return Nd4j.getRandom().nextDouble(order, new int[] {rows, columns});
     }
 
     /**
@@ -587,7 +584,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        return randn(new int[]{rows, columns}, r);
+        return randn(new int[] {rows, columns}, r);
     }
 
     /**
@@ -600,7 +597,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray randn(int rows, int columns) {
-        return randn(new int[]{rows, columns}, System.currentTimeMillis());
+        return randn(new int[] {rows, columns}, System.currentTimeMillis());
     }
 
     /**
@@ -611,8 +608,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public INDArray randn(char order, int rows, int columns){
-        return Nd4j.getRandom().nextGaussian(order, new int[]{rows,columns});
+    public INDArray randn(char order, int rows, int columns) {
+        return Nd4j.getRandom().nextGaussian(order, new int[] {rows, columns});
     }
 
     /**
@@ -625,7 +622,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray randn(int rows, int columns, long seed) {
         Nd4j.getRandom().setSeed(seed);
-        return randn(new int[]{rows, columns}, Nd4j.getRandom());
+        return randn(new int[] {rows, columns}, Nd4j.getRandom());
     }
 
     /**
@@ -687,7 +684,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(char order, int[] shape) {
-        return Nd4j.getRandom().nextDouble(order,shape);
+        return Nd4j.getRandom().nextDouble(order, shape);
     }
 
     /**
@@ -745,7 +742,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data) {
-        return create(data, new int[]{1, data.length});
+        return create(data, new int[] {1, data.length});
     }
 
     /**
@@ -756,7 +753,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data) {
-        return create(data, new int[]{1, data.length});
+        return create(data, new int[] {1, data.length});
     }
 
     /**
@@ -767,8 +764,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data) {
-        assert data.length % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
-        return createComplex(data, new int[]{1, data.length / 2});
+        assert data.length
+                        % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
+        return createComplex(data, new int[] {1, data.length / 2});
     }
 
     /**
@@ -779,7 +777,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int columns) {
-        return create(new int[]{1, columns});
+        return create(new int[] {1, columns});
     }
 
     /**
@@ -790,7 +788,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int columns) {
-        return createComplex(new int[]{1, columns});
+        return createComplex(new int[] {1, columns});
     }
 
     /**
@@ -802,7 +800,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray zeros(int rows, int columns) {
-        return zeros(new int[]{rows, columns});
+        return zeros(new int[] {rows, columns});
     }
 
     /**
@@ -816,10 +814,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
         int vectorLength = source.shape()[sourceDimension];
-        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order);
+        INDArray ret = Nd4j.createUninitialized(new int[] {indexes.length, vectorLength}, order);
 
         for (int cnt = 0; cnt < indexes.length; cnt++) {
-            ret.putRow(cnt, source.tensorAlongDimension((int)indexes[cnt], sourceDimension));
+            ret.putRow(cnt, source.tensorAlongDimension((int) indexes[cnt], sourceDimension));
         }
 
         return ret;
@@ -847,7 +845,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexZeros(int rows, int columns) {
-        return createComplex(new int[]{rows, columns});
+        return createComplex(new int[] {rows, columns});
     }
 
     /**
@@ -858,7 +856,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray zeros(int columns) {
-        return zeros(new int[]{1, columns});
+        return zeros(new int[] {1, columns});
     }
 
     /**
@@ -869,7 +867,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexZeros(int columns) {
-        return createComplex(new int[]{1, columns});
+        return createComplex(new int[] {1, columns});
     }
 
     /**
@@ -935,8 +933,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return createComplex(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2), shape, complexStrides, offset, ordering);
     }
@@ -959,10 +957,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(int[] shape, int[] stride, int offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
-        return create(Nd4j.createBuffer(ArrayUtil.prodLong(shape)),shape,stride,offset,ordering);
+        return create(Nd4j.createBuffer(ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
     }
 
     /**
@@ -975,7 +973,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray valueArrayOf(int rows, int columns, double value) {
-        INDArray create = createUninitialized(new int[]{rows, columns},Nd4j.order());
+        INDArray create = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         create.assign(value);
         return create;
     }
@@ -989,7 +987,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int rows, int columns) {
-        return ones(new int[]{rows, columns});
+        return ones(new int[] {rows, columns});
     }
 
     /**
@@ -1001,7 +999,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexOnes(int rows, int columns) {
-        return complexOnes(new int[]{rows, columns});
+        return complexOnes(new int[] {rows, columns});
     }
 
     /**
@@ -1012,7 +1010,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int columns) {
-        return ones(new int[]{1, columns});
+        return ones(new int[] {1, columns});
     }
 
     /**
@@ -1023,7 +1021,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexOnes(int columns) {
-        IComplexNDArray base = createComplex(new int[]{1, columns});
+        IComplexNDArray base = createComplex(new int[] {1, columns});
         base.assign(1);
         return base;
     }
@@ -1031,8 +1029,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(float[] data, int[] shape, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
@@ -1057,36 +1055,37 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].size(dimension);
             allC = allC && toConcat[i].ordering() == 'c';
-            for(int j = 0; j < toConcat[i].rank(); j++) {
-                if(j != dimension && toConcat[i].size(j) != outputShape[j] && !toConcat[i].isVector()) {
-                    throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
+            for (int j = 0; j < toConcat[i].rank(); j++) {
+                if (j != dimension && toConcat[i].size(j) != outputShape[j] && !toConcat[i].isVector()) {
+                    throw new IllegalArgumentException(
+                                    "Illegal concatneation at array " + i + " and shape element " + j);
                 }
             }
         }
 
 
 
-
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
-        INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        INDArray ret = Nd4j.create(outputShape, sortedStrides);
         allC &= (ret.ordering() == 'c');
 
-        if(toConcat[0].isScalar()) {
+        if (toConcat[0].isScalar()) {
             INDArray retLinear = ret.linearView();
-            for(int i = 0; i < retLinear.length(); i++)
-                retLinear.putScalar(i,toConcat[i].getDouble(0));
+            for (int i = 0; i < retLinear.length(); i++)
+                retLinear.putScalar(i, toConcat[i].getDouble(0));
             return ret;
         }
 
 
 
-        if(dimension == 0 && allC) {
+        if (dimension == 0 && allC) {
             int currBuffer = 0;
             int currBufferOffset = 0;
-            for(int i = 0; i < ret.length(); i++) {
-                ret.data().put(i,toConcat[currBuffer].data().getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
-                if(currBufferOffset >= toConcat[currBuffer].length()) {
+            for (int i = 0; i < ret.length(); i++) {
+                ret.data().put(i, toConcat[currBuffer].data()
+                                .getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
+                if (currBufferOffset >= toConcat[currBuffer].length()) {
                     currBuffer++;
                     currBufferOffset = 0;
                 }
@@ -1097,24 +1096,24 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         int arrOffset = 0;
         INDArray[] retAlongDimensionArrays = new INDArray[ret.tensorssAlongDimension(dimension)];
-        for(int i = 0; i < retAlongDimensionArrays.length; i++)
-            retAlongDimensionArrays[i] = ret.tensorAlongDimension(i,dimension);
+        for (int i = 0; i < retAlongDimensionArrays.length; i++)
+            retAlongDimensionArrays[i] = ret.tensorAlongDimension(i, dimension);
 
-        for(INDArray arr : toConcat) {
+        for (INDArray arr : toConcat) {
             int arrTensorLength = -1;
 
-            if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
+            if (arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
                 throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
 
 
-            for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
+            for (int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
                 INDArray retLinear = retAlongDimensionArrays[i];
                 INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
 
                 arrTensorLength = arrTensor.length();
-                for(int j = 0; j < arrTensor.length(); j++) {
+                for (int j = 0; j < arrTensor.length(); j++) {
                     int idx = j + arrOffset;
-                    retLinear.putScalar(idx,arrTensor.getDouble(j));
+                    retLinear.putScalar(idx, arrTensor.getDouble(j));
                 }
             }
 
@@ -1168,7 +1167,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray complexFlatten(IComplexNDArray[] flatten) {
         int length = 0;
-        for (IComplexNDArray m : flatten) length += m.length();
+        for (IComplexNDArray m : flatten)
+            length += m.length();
         IComplexNDArray ret = Nd4j.createComplex(length);
         int linearIndex = 0;
         for (IComplexNDArray d : flatten) {
@@ -1185,7 +1185,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray complexFlatten(List<IComplexNDArray> flatten) {
         int length = 0;
-        for (IComplexNDArray m : flatten) length += m.length();
+        for (IComplexNDArray m : flatten)
+            length += m.length();
         IComplexNDArray ret = Nd4j.createComplex(length);
         int linearIndex = 0;
         for (IComplexNDArray d : flatten) {
@@ -1207,7 +1208,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param arrs
      */
     public INDArray hstack(INDArray... arrs) {
-        return Nd4j.concat(1,arrs);
+        return Nd4j.concat(1, arrs);
     }
 
     /**
@@ -1218,7 +1219,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray vstack(final INDArray... arrs) {
-        return Nd4j.concat(0,arrs);
+        return Nd4j.concat(0, arrs);
 
     }
 
@@ -1259,8 +1260,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray ones(int[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
 
         INDArray ret = create(shape);
@@ -1296,7 +1297,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset) {
-        return createComplex(data, new int[]{rows, columns}, stride, offset);
+        return createComplex(data, new int[] {rows, columns}, stride, offset);
     }
 
 
@@ -1312,7 +1313,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data, int rows, int columns, int[] stride, int offset) {
-        return create(data, new int[]{rows, columns}, stride, offset);
+        return create(data, new int[] {rows, columns}, stride, offset);
     }
 
 
@@ -1325,12 +1326,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public  IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
+    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
-        return createComplex(Nd4j.createBuffer(data),shape,stride,offset,Nd4j.order());
+        return createComplex(Nd4j.createBuffer(data), shape, stride, offset, Nd4j.order());
     }
 
 
@@ -1368,8 +1369,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(float[] data, int[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return create(data, shape, Nd4j.getStrides(shape), 0);
     }
@@ -1384,8 +1385,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
     }
@@ -1400,8 +1401,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
     }
@@ -1418,8 +1419,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return createComplex(data, shape, stride, 0);
     }
@@ -1449,7 +1450,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset) {
-        return createComplex(data, new int[]{rows, columns}, stride, offset);
+        return createComplex(data, new int[] {rows, columns}, stride, offset);
     }
 
 
@@ -1465,7 +1466,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data, int rows, int columns, int[] stride, int offset) {
-        return create(data, new int[]{rows, columns}, stride, offset);
+        return create(data, new int[] {rows, columns}, stride, offset);
     }
 
 
@@ -1511,11 +1512,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return createComplex(new double[rows * columns * 2], new int[]{rows, columns}, stride, offset);
+            return createComplex(new double[rows * columns * 2], new int[] {rows, columns}, stride, offset);
         else if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return createComplex(new float[rows * columns * 2], new int[]{rows, columns}, stride, offset);
+            return createComplex(new float[rows * columns * 2], new int[] {rows, columns}, stride, offset);
         else if (Nd4j.dataType() == DataBuffer.Type.INT)
-            return createComplex(new int[rows * columns * 2], new int[]{rows, columns}, stride, offset);
+            return createComplex(new int[rows * columns * 2], new int[] {rows, columns}, stride, offset);
 
         throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
     }
@@ -1533,11 +1534,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(int rows, int columns, int[] stride, int offset) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return create(new double[rows * columns], new int[]{rows, columns}, stride, offset);
+            return create(new double[rows * columns], new int[] {rows, columns}, stride, offset);
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
-            return create(new float[rows * columns], new int[]{rows, columns}, stride, offset);
+            return create(new float[rows * columns], new int[] {rows, columns}, stride, offset);
         if (Nd4j.dataType() == DataBuffer.Type.INT)
-            return create(new int[rows * columns], new int[]{rows, columns}, stride, offset);
+            return create(new int[rows * columns], new int[] {rows, columns}, stride, offset);
         throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
     }
 
@@ -1571,8 +1572,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(int[] shape, int[] stride, int offset) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         DataBuffer buffer = Nd4j.createBuffer(ArrayUtil.prodLong(shape));
         return create(buffer, shape, stride, offset);
@@ -1590,7 +1591,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int rows, int columns, int[] stride) {
-        return createComplex(new int[]{rows, columns}, stride);
+        return createComplex(new int[] {rows, columns}, stride);
     }
 
 
@@ -1604,7 +1605,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int rows, int columns, int[] stride) {
-        return create(new int[]{rows, columns}, stride);
+        return create(new int[] {rows, columns}, stride);
     }
 
 
@@ -1643,7 +1644,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int rows, int columns) {
-        return createComplex(new int[]{rows, columns});
+        return createComplex(new int[] {rows, columns});
     }
 
 
@@ -1656,7 +1657,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int rows, int columns) {
-        return create(new int[]{rows, columns});
+        return create(new int[] {rows, columns});
     }
 
 
@@ -1681,8 +1682,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(int[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return create(shape, Nd4j.getStrides(shape), 0);
     }
@@ -1718,7 +1719,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public IComplexNDArray complexScalar(Number value, int offset) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar(createDouble(value.doubleValue(), 0), offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.INT || Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.INT
+                        || Nd4j.dataType() == DataBuffer.Type.HALF)
             return scalar(createFloat(value.floatValue(), 0), offset);
 
         throw new IllegalStateException("Illegal data type " + Nd4j.dataType());
@@ -1746,7 +1748,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value, int offset) {
-        return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
+        return create(new float[] {value}, new int[] {1, 1}, new int[] {1, 1}, offset);
     }
 
     /**
@@ -1758,7 +1760,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value, int offset) {
-        return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
+        return create(new double[] {value}, new int[] {1, 1}, new int[] {1, 1}, offset);
     }
 
     /**
@@ -1770,7 +1772,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(int value, int offset) {
-        return create(new int[]{value}, new int[]{1,1}, new int[]{1,1}, offset);
+        return create(new int[] {value}, new int[] {1, 1}, new int[] {1, 1}, offset);
     }
 
 
@@ -1799,8 +1801,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value) {
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF )
-            return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
+            return create(new float[] {value}, new int[] {1, 1}, new int[] {1, 1}, 0);
         else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar((double) value);
         else
@@ -1816,7 +1818,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray scalar(double value) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
-            return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
+            return create(new double[] {value}, new int[] {1, 1}, new int[] {1, 1}, 0);
         else
             return scalar((float) value);
     }
@@ -1846,7 +1848,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexFloat value) {
-        return createComplex(new float[]{value.realComponent(), value.imaginaryComponent()}, new int[]{1}, new int[]{1}, 0);
+        return createComplex(new float[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
+                        new int[] {1}, 0);
     }
 
     /**
@@ -1857,7 +1860,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexDouble value) {
-        return createComplex(new double[]{value.realComponent(), value.imaginaryComponent()}, new int[]{1}, new int[]{1}, 0);
+        return createComplex(new double[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
+                        new int[] {1}, 0);
 
     }
 
@@ -1886,7 +1890,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexFloat value, int offset) {
-        return createComplex(new float[]{value.realComponent(), value.imaginaryComponent()}, new int[]{1}, new int[]{1}, offset);
+        return createComplex(new float[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
+                        new int[] {1}, offset);
     }
 
     /**
@@ -1898,7 +1903,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexDouble value, int offset) {
-        return createComplex(new double[]{value.realComponent(), value.imaginaryComponent()}, new int[]{1}, new int[]{1}, offset);
+        return createComplex(new double[] {value.realComponent(), value.imaginaryComponent()}, new int[] {1},
+                        new int[] {1}, offset);
 
     }
 
@@ -1946,8 +1952,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, char order) {
-        int[] shape = new int[]{1,data.length};
-        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape,order), order, 0);
+        int[] shape = new int[] {1, data.length};
+        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, order), order, 0);
     }
 
     @Override
@@ -1958,7 +1964,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(double[] data, char order) {
-        return create(data, new int[]{1,data.length}, Nd4j.getStrides(new int[]{1,data.length},order), order, 0);
+        return create(data, new int[] {1, data.length}, Nd4j.getStrides(new int[] {1, data.length}, order), order, 0);
     }
 
     @Override
@@ -1970,8 +1976,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, int offset) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return create(buffer, shape, stride, offset, order);
     }
@@ -1979,8 +1985,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(int[] data, int[] shape, int[] stride, char order, int offset) {
         //ensure shapes that wind up being scalar end up with the write shape
-        if(shape.length == 1 && shape[0] == 0) {
-            shape = new int[]{1,1};
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
         }
         return create(Nd4j.createBuffer(data), shape, stride, order, offset);
     }

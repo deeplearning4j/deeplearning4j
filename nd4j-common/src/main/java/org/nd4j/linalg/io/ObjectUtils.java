@@ -13,20 +13,19 @@ public abstract class ObjectUtils {
     private static final String EMPTY_ARRAY = "{}";
     private static final String ARRAY_ELEMENT_SEPARATOR = ", ";
 
-    public ObjectUtils() {
-    }
+    public ObjectUtils() {}
 
     public static boolean isCheckedException(Throwable ex) {
         return !(ex instanceof RuntimeException) && !(ex instanceof Error);
     }
 
     public static boolean isCompatibleWithThrowsClause(Throwable ex, Class[] declaredExceptions) {
-        if(!isCheckedException(ex)) {
+        if (!isCheckedException(ex)) {
             return true;
         } else {
-            if(declaredExceptions != null) {
-                for(int i = 0; i < declaredExceptions.length; ++i) {
-                    if(declaredExceptions[i].isAssignableFrom(ex.getClass())) {
+            if (declaredExceptions != null) {
+                for (int i = 0; i < declaredExceptions.length; ++i) {
+                    if (declaredExceptions[i].isAssignableFrom(ex.getClass())) {
                         return true;
                     }
                 }
@@ -45,15 +44,15 @@ public abstract class ObjectUtils {
     }
 
     public static boolean containsElement(Object[] array, Object element) {
-        if(array == null) {
+        if (array == null) {
             return false;
         } else {
             Object[] arr$ = array;
             int len$ = array.length;
 
-            for(int i$ = 0; i$ < len$; ++i$) {
+            for (int i$ = 0; i$ < len$; ++i$) {
                 Object arrayEle = arr$[i$];
-                if(nullSafeEquals(arrayEle, element)) {
+                if (nullSafeEquals(arrayEle, element)) {
                     return true;
                 }
             }
@@ -71,17 +70,17 @@ public abstract class ObjectUtils {
         int len$ = enumValues.length;
         int i$ = 0;
 
-        while(true) {
-            if(i$ >= len$) {
+        while (true) {
+            if (i$ >= len$) {
                 return false;
             }
 
             Enum candidate = arr$[i$];
-            if(caseSensitive) {
-                if(candidate.toString().equals(constant)) {
+            if (caseSensitive) {
+                if (candidate.toString().equals(constant)) {
                     break;
                 }
-            } else if(candidate.toString().equalsIgnoreCase(constant)) {
+            } else if (candidate.toString().equalsIgnoreCase(constant)) {
                 break;
             }
 
@@ -95,27 +94,28 @@ public abstract class ObjectUtils {
         Enum[] arr$ = enumValues;
         int len$ = enumValues.length;
 
-        for(int i$ = 0; i$ < len$; ++i$) {
+        for (int i$ = 0; i$ < len$; ++i$) {
             Enum candidate = arr$[i$];
-            if(candidate.toString().equalsIgnoreCase(constant)) {
+            if (candidate.toString().equalsIgnoreCase(constant)) {
                 return (E) candidate;
             }
         }
 
-        throw new IllegalArgumentException(String.format("constant [%s] does not exist in enum type %s", new Object[]{constant, enumValues.getClass().getComponentType().getName()}));
+        throw new IllegalArgumentException(String.format("constant [%s] does not exist in enum type %s",
+                        new Object[] {constant, enumValues.getClass().getComponentType().getName()}));
     }
 
     public static <A, O extends A> A[] addObjectToArray(A[] array, O obj) {
         Class compType = Object.class;
-        if(array != null) {
+        if (array != null) {
             compType = array.getClass().getComponentType();
-        } else if(obj != null) {
+        } else if (obj != null) {
             compType = obj.getClass();
         }
 
-        int newArrLength = array != null?array.length + 1:1;
+        int newArrLength = array != null ? array.length + 1 : 1;
         Object[] newArr = (Object[]) Array.newInstance(compType, newArrLength);
-        if(array != null) {
+        if (array != null) {
             System.arraycopy(array, 0, newArr, 0, array.length);
         }
 
@@ -124,21 +124,21 @@ public abstract class ObjectUtils {
     }
 
     public static Object[] toObjectArray(Object source) {
-        if(source instanceof Object[]) {
+        if (source instanceof Object[]) {
             return (Object[]) source;
-        } else if(source == null) {
+        } else if (source == null) {
             return new Object[0];
-        } else if(!source.getClass().isArray()) {
+        } else if (!source.getClass().isArray()) {
             throw new IllegalArgumentException("Source is not an array: " + source);
         } else {
             int length = Array.getLength(source);
-            if(length == 0) {
+            if (length == 0) {
                 return new Object[0];
             } else {
                 Class wrapperType = Array.get(source, 0).getClass();
                 Object[] newArray = (Object[]) Array.newInstance(wrapperType, length);
 
-                for(int i = 0; i < length; ++i) {
+                for (int i = 0; i < length; ++i) {
                     newArray[i] = Array.get(source, i);
                 }
 
@@ -148,47 +148,47 @@ public abstract class ObjectUtils {
     }
 
     public static boolean nullSafeEquals(Object o1, Object o2) {
-        if(o1 == o2) {
+        if (o1 == o2) {
             return true;
-        } else if(o1 != null && o2 != null) {
-            if(o1.equals(o2)) {
+        } else if (o1 != null && o2 != null) {
+            if (o1.equals(o2)) {
                 return true;
             } else {
-                if(o1.getClass().isArray() && o2.getClass().isArray()) {
-                    if(o1 instanceof Object[] && o2 instanceof Object[]) {
-                        return Arrays.equals((Object[])o1, (Object[])o2);
+                if (o1.getClass().isArray() && o2.getClass().isArray()) {
+                    if (o1 instanceof Object[] && o2 instanceof Object[]) {
+                        return Arrays.equals((Object[]) o1, (Object[]) o2);
                     }
 
-                    if(o1 instanceof boolean[] && o2 instanceof boolean[]) {
-                        return Arrays.equals((boolean[])o1, (boolean[])o2);
+                    if (o1 instanceof boolean[] && o2 instanceof boolean[]) {
+                        return Arrays.equals((boolean[]) o1, (boolean[]) o2);
                     }
 
-                    if(o1 instanceof byte[] && o2 instanceof byte[]) {
-                        return Arrays.equals((byte[])o1, (byte[])o2);
+                    if (o1 instanceof byte[] && o2 instanceof byte[]) {
+                        return Arrays.equals((byte[]) o1, (byte[]) o2);
                     }
 
-                    if(o1 instanceof char[] && o2 instanceof char[]) {
-                        return Arrays.equals((char[]) o1, (char[])o2);
+                    if (o1 instanceof char[] && o2 instanceof char[]) {
+                        return Arrays.equals((char[]) o1, (char[]) o2);
                     }
 
-                    if(o1 instanceof double[] && o2 instanceof double[]) {
-                        return Arrays.equals((double[])o1, (double[]) o2);
+                    if (o1 instanceof double[] && o2 instanceof double[]) {
+                        return Arrays.equals((double[]) o1, (double[]) o2);
                     }
 
-                    if(o1 instanceof float[] && o2 instanceof float[]) {
-                        return Arrays.equals((float[])o1, (float[]) o2);
+                    if (o1 instanceof float[] && o2 instanceof float[]) {
+                        return Arrays.equals((float[]) o1, (float[]) o2);
                     }
 
-                    if(o1 instanceof int[] && o2 instanceof int[]) {
+                    if (o1 instanceof int[] && o2 instanceof int[]) {
                         return Arrays.equals((int[]) o1, (int[]) o2);
                     }
 
-                    if(o1 instanceof long[] && o2 instanceof long[]) {
-                        return Arrays.equals((long[])o1, (long[])o2);
+                    if (o1 instanceof long[] && o2 instanceof long[]) {
+                        return Arrays.equals((long[]) o1, (long[]) o2);
                     }
 
-                    if(o1 instanceof short[] && o2 instanceof short[]) {
-                        return Arrays.equals((short[])o1, (short[])o2);
+                    if (o1 instanceof short[] && o2 instanceof short[]) {
+                        return Arrays.equals((short[]) o1, (short[]) o2);
                     }
                 }
 
@@ -200,44 +200,44 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(Object obj) {
-        if(obj == null) {
+        if (obj == null) {
             return 0;
         } else {
-            if(obj.getClass().isArray()) {
-                if(obj instanceof Object[]) {
+            if (obj.getClass().isArray()) {
+                if (obj instanceof Object[]) {
                     return nullSafeHashCode((Object[]) obj);
                 }
 
-                if(obj instanceof boolean[]) {
-                    return nullSafeHashCode((boolean[])obj);
+                if (obj instanceof boolean[]) {
+                    return nullSafeHashCode((boolean[]) obj);
                 }
 
-                if(obj instanceof byte[]) {
-                    return nullSafeHashCode((byte[])obj);
+                if (obj instanceof byte[]) {
+                    return nullSafeHashCode((byte[]) obj);
                 }
 
-                if(obj instanceof char[]) {
+                if (obj instanceof char[]) {
                     return nullSafeHashCode((char[]) obj);
                 }
 
-                if(obj instanceof double[]) {
-                    return nullSafeHashCode((double[])obj);
+                if (obj instanceof double[]) {
+                    return nullSafeHashCode((double[]) obj);
                 }
 
-                if(obj instanceof float[]) {
-                    return nullSafeHashCode((float[])obj);
+                if (obj instanceof float[]) {
+                    return nullSafeHashCode((float[]) obj);
                 }
 
-                if(obj instanceof int[]) {
-                    return nullSafeHashCode((int[])obj);
+                if (obj instanceof int[]) {
+                    return nullSafeHashCode((int[]) obj);
                 }
 
-                if(obj instanceof long[]) {
-                    return nullSafeHashCode((long[])obj);
+                if (obj instanceof long[]) {
+                    return nullSafeHashCode((long[]) obj);
                 }
 
-                if(obj instanceof short[]) {
-                    return nullSafeHashCode((short[])obj);
+                if (obj instanceof short[]) {
+                    return nullSafeHashCode((short[]) obj);
                 }
             }
 
@@ -246,13 +246,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(Object[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + nullSafeHashCode(array[i]);
             }
 
@@ -261,13 +261,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(boolean[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + hashCode(array[i]);
             }
 
@@ -276,13 +276,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(byte[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + array[i];
             }
 
@@ -291,13 +291,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(char[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + array[i];
             }
 
@@ -306,13 +306,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(double[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + hashCode(array[i]);
             }
 
@@ -321,13 +321,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(float[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + hashCode(array[i]);
             }
 
@@ -336,13 +336,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(int[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + array[i];
             }
 
@@ -351,13 +351,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(long[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + hashCode(array[i]);
             }
 
@@ -366,13 +366,13 @@ public abstract class ObjectUtils {
     }
 
     public static int nullSafeHashCode(short[] array) {
-        if(array == null) {
+        if (array == null) {
             return 0;
         } else {
             int hash = 7;
             int arraySize = array.length;
 
-            for(int i = 0; i < arraySize; ++i) {
+            for (int i = 0; i < arraySize; ++i) {
                 hash = 31 * hash + array[i];
             }
 
@@ -381,7 +381,7 @@ public abstract class ObjectUtils {
     }
 
     public static int hashCode(boolean bool) {
-        return bool?1231:1237;
+        return bool ? 1231 : 1237;
     }
 
     public static int hashCode(double dbl) {
@@ -394,11 +394,11 @@ public abstract class ObjectUtils {
     }
 
     public static int hashCode(long lng) {
-        return (int)(lng ^ lng >>> 32);
+        return (int) (lng ^ lng >>> 32);
     }
 
     public static String identityToString(Object obj) {
-        return obj == null?"":obj.getClass().getName() + "@" + getIdentityHexString(obj);
+        return obj == null ? "" : obj.getClass().getName() + "@" + getIdentityHexString(obj);
     }
 
     public static String getIdentityHexString(Object obj) {
@@ -406,54 +406,54 @@ public abstract class ObjectUtils {
     }
 
     public static String getDisplayString(Object obj) {
-        return obj == null?"":nullSafeToString(obj);
+        return obj == null ? "" : nullSafeToString(obj);
     }
 
     public static String nullSafeClassName(Object obj) {
-        return obj != null?obj.getClass().getName():"null";
+        return obj != null ? obj.getClass().getName() : "null";
     }
 
     public static String nullSafeToString(Object obj) {
-        if(obj == null) {
+        if (obj == null) {
             return "null";
-        } else if(obj instanceof String) {
-            return (String)obj;
-        } else if(obj instanceof Object[]) {
-            return nullSafeToString((Object[])obj);
-        } else if(obj instanceof boolean[]) {
-            return nullSafeToString((boolean[])obj);
-        } else if(obj instanceof byte[]) {
-            return nullSafeToString((byte[])obj);
-        } else if(obj instanceof char[]) {
-            return nullSafeToString((char[])obj);
-        } else if(obj instanceof double[]) {
-            return nullSafeToString((double[])obj);
-        } else if(obj instanceof float[]) {
-            return nullSafeToString((float[])obj);
-        } else if(obj instanceof int[]) {
-            return nullSafeToString((int[])obj);
-        } else if(obj instanceof long[]) {
-            return nullSafeToString((long[])obj);
-        } else if(obj instanceof short[]) {
-            return nullSafeToString((short[])obj);
+        } else if (obj instanceof String) {
+            return (String) obj;
+        } else if (obj instanceof Object[]) {
+            return nullSafeToString((Object[]) obj);
+        } else if (obj instanceof boolean[]) {
+            return nullSafeToString((boolean[]) obj);
+        } else if (obj instanceof byte[]) {
+            return nullSafeToString((byte[]) obj);
+        } else if (obj instanceof char[]) {
+            return nullSafeToString((char[]) obj);
+        } else if (obj instanceof double[]) {
+            return nullSafeToString((double[]) obj);
+        } else if (obj instanceof float[]) {
+            return nullSafeToString((float[]) obj);
+        } else if (obj instanceof int[]) {
+            return nullSafeToString((int[]) obj);
+        } else if (obj instanceof long[]) {
+            return nullSafeToString((long[]) obj);
+        } else if (obj instanceof short[]) {
+            return nullSafeToString((short[]) obj);
         } else {
             String str = obj.toString();
-            return str != null?str:"";
+            return str != null ? str : "";
         }
     }
 
     public static String nullSafeToString(Object[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -469,17 +469,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(boolean[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -495,17 +495,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(byte[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -521,17 +521,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(char[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -547,17 +547,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(double[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -573,17 +573,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(float[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -599,17 +599,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(int[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -625,17 +625,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(long[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");
@@ -651,17 +651,17 @@ public abstract class ObjectUtils {
     }
 
     public static String nullSafeToString(short[] array) {
-        if(array == null) {
+        if (array == null) {
             return "null";
         } else {
             int length = array.length;
-            if(length == 0) {
+            if (length == 0) {
                 return "{}";
             } else {
                 StringBuilder sb = new StringBuilder();
 
-                for(int i = 0; i < length; ++i) {
-                    if(i == 0) {
+                for (int i = 0; i < length; ++i) {
+                    if (i == 0) {
                         sb.append("{");
                     } else {
                         sb.append(", ");

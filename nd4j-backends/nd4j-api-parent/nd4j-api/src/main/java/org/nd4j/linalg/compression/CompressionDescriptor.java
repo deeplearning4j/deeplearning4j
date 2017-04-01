@@ -1,7 +1,6 @@
 package org.nd4j.linalg.compression;
 
 import lombok.Data;
-import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.io.Serializable;
@@ -27,6 +26,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     private long originalElementSize;
     //40 bytes for the compression descriptor bytebuffer
     public final static int COMPRESSION_BYTE_BUFFER_LENGTH = 40;
+
     public CompressionDescriptor() {
 
     }
@@ -125,7 +125,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
     }
 
     @Override
-    public CompressionDescriptor clone()  {
+    public CompressionDescriptor clone() {
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.compressionType = this.compressionType;
         descriptor.compressionAlgorithm = this.compressionAlgorithm;

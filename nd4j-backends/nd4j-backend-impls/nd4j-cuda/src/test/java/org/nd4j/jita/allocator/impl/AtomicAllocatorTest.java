@@ -3,12 +3,10 @@ package org.nd4j.jita.allocator.impl;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.DeviceInformation;
-import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -17,10 +15,8 @@ import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
-import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.factory.BlasWrapper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,8 +106,8 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testInit() throws Exception {
-        NativeOps nativeOps = new NativeOps();
-        nativeOps.initializeDevicesAndFunctions();
+        //NativeOps nativeOps = new NativeOps();
+        //nativeOps.initializeDevicesAndFunctions();
     }
 
     @Test

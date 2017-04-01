@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -37,15 +37,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 public class ELU extends BaseTransformOp {
-    public ELU() {
-    }
+    public ELU() {}
 
     public ELU(INDArray x, INDArray z) {
-        super(x,z);
+        super(x, z);
     }
 
     public ELU(INDArray x, INDArray z, long n) {
-        super(x,z,n);
+        super(x, z, n);
     }
 
     public ELU(INDArray x, INDArray y, INDArray z, long n) {
@@ -72,25 +71,25 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? origin :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue())-1.0,0);
+        return origin.realComponent().doubleValue() >= 0.0 ? origin
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()) - 1.0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? origin :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()-1.0),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? origin
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue() - 1.0), 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.realComponent().doubleValue() >= 0.0 ? origin :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue()-1.0),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? origin
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue() - 1.0), 0);
     }
 
     @Override
     public float op(float origin, float other) {
-        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin) - 1.0);
+        return origin >= 0.0 ? origin : (float) (FastMath.exp(origin) - 1.0);
     }
 
     @Override
@@ -100,18 +99,18 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public double op(double origin) {
-        return origin >= 0.0 ? origin : FastMath.exp(origin) -1.0;
+        return origin >= 0.0 ? origin : FastMath.exp(origin) - 1.0;
     }
 
     @Override
     public float op(float origin) {
-        return origin >= 0.0 ? origin : (float)(FastMath.exp(origin) - 1.0);
+        return origin >= 0.0 ? origin : (float) (FastMath.exp(origin) - 1.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.realComponent().doubleValue() >= 0.0 ? origin :
-                Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue() -1.0),0);
+        return origin.realComponent().doubleValue() >= 0.0 ? origin
+                        : Nd4j.createComplexNumber(FastMath.exp(origin.realComponent().doubleValue() - 1.0), 0);
 
     }
 
@@ -120,7 +119,8 @@ public class ELU extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ELU(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELU(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ELU(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
@@ -130,7 +130,8 @@ public class ELU extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ELU(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ELU(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ELU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -138,6 +139,6 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new ELUDerivative(x,y,z,n);
+        return new ELUDerivative(x, y, z, n);
     }
 }

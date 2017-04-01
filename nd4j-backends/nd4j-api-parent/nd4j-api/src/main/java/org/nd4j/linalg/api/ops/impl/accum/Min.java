@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Min extends BaseAccumulation {
 
-    public Min() {
-    }
+    public Min() {}
 
     public Min(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -75,41 +74,41 @@ public class Min extends BaseAccumulation {
 
     @Override
     public double update(double accum, double x) {
-        return FastMath.min(accum,x);
+        return FastMath.min(accum, x);
     }
 
     @Override
-    public double update(double accum, double x, double y){
-        return FastMath.min(accum,x);
+    public double update(double accum, double x, double y) {
+        return FastMath.min(accum, x);
     }
 
     @Override
-    public float update(float accum, float x){
-        return FastMath.min(accum,x);
+    public float update(float accum, float x) {
+        return FastMath.min(accum, x);
     }
 
     @Override
-    public float update(float accum, float x, float y){
-        return FastMath.min(accum,x);
+    public float update(float accum, float x, float y) {
+        return FastMath.min(accum, x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return (accum.absoluteValue().doubleValue() < x ? accum : Nd4j.createComplexNumber(x, 0));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
-        return (accum.absoluteValue().doubleValue() < x ? accum : Nd4j.createComplexNumber(x,0));
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
+        return (accum.absoluteValue().doubleValue() < x ? accum : Nd4j.createComplexNumber(x, 0));
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
     }
 
@@ -124,8 +123,13 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return Float.MAX_VALUE;
+    }
+
+    @Override
+    public float zeroHalf() {
+        return 65503.0f;
     }
 
     @Override

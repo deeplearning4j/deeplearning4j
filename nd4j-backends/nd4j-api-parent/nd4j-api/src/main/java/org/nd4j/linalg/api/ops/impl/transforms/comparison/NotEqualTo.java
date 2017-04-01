@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -33,8 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class NotEqualTo extends BaseTransformOp {
 
-    public NotEqualTo() {
-    }
+    public NotEqualTo() {}
 
     public NotEqualTo(INDArray x) {
         super(x);
@@ -65,14 +64,16 @@ public class NotEqualTo extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         if (origin.isReal())
-            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0)
+                            : Nd4j.createComplexNumber(0.0, 0.0);
         return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         if (origin.isReal())
-            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0) : Nd4j.createComplexNumber(0.0, 0.0);
+            return origin.realComponent().doubleValue() != other ? Nd4j.createComplexNumber(1.0, 0.0)
+                            : Nd4j.createComplexNumber(0.0, 0.0);
         return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
@@ -112,7 +113,8 @@ public class NotEqualTo extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new NotEqualTo(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new NotEqualTo(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new NotEqualTo(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -123,7 +125,8 @@ public class NotEqualTo extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new NotEqualTo(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new NotEqualTo(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new NotEqualTo(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

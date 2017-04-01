@@ -5,9 +5,9 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.flow.FlowController;
@@ -72,7 +72,8 @@ public interface MemoryHandler {
      * @param targetStatus
      * @param point
      */
-    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape, CudaContext context);
+    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point,
+                    AllocationShape shape, CudaContext context);
 
     /**
      * Copies memory from device to host, if needed.

@@ -15,7 +15,8 @@ import java.io.IOException;
  */
 public class RowVectorSerializer extends JsonSerializer<INDArray> {
     @Override
-    public void serialize(INDArray array, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(INDArray array, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                    throws IOException {
         if (array.isView()) {
             array = array.dup();
         }

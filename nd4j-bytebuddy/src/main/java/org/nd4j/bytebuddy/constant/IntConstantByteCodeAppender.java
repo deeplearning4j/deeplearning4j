@@ -19,8 +19,9 @@ public class IntConstantByteCodeAppender implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         StackManipulation.Size size = IntegerConstant.forValue(constantVal).apply(methodVisitor, implementationContext);
-        return new Size(size.getMaximalSize(),instrumentedMethod.getStackSize());
+        return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

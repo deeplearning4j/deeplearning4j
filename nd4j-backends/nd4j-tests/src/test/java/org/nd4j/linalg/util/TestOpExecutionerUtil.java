@@ -1,7 +1,5 @@
 package org.nd4j.linalg.util;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,6 +8,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import static org.junit.Assert.*;
+
 @RunWith(Parameterized.class)
 public class TestOpExecutionerUtil extends BaseNd4jTest {
 
@@ -19,14 +20,14 @@ public class TestOpExecutionerUtil extends BaseNd4jTest {
 
     @Test
     public void testCanDoDirectly() {
-        INDArray f1_100 = Nd4j.create(new int[]{1, 100}, 'f');
-        INDArray f100_1 = Nd4j.create(new int[]{100, 1}, 'f');
-        INDArray c1_100 = Nd4j.create(new int[]{1, 100}, 'c');
-        INDArray c100_1 = Nd4j.create(new int[]{100, 1}, 'c');
-        INDArray f100_100 = Nd4j.create(new int[]{100, 100}, 'f');
-        INDArray c100_100 = Nd4j.create(new int[]{100, 100}, 'c');
-        INDArray f20_20_20 = Nd4j.create(new int[]{20, 20, 20}, 'f');
-        INDArray c20_20_20 = Nd4j.create(new int[]{20, 20, 20}, 'c');
+        INDArray f1_100 = Nd4j.create(new int[] {1, 100}, 'f');
+        INDArray f100_1 = Nd4j.create(new int[] {100, 1}, 'f');
+        INDArray c1_100 = Nd4j.create(new int[] {1, 100}, 'c');
+        INDArray c100_1 = Nd4j.create(new int[] {100, 1}, 'c');
+        INDArray f100_100 = Nd4j.create(new int[] {100, 100}, 'f');
+        INDArray c100_100 = Nd4j.create(new int[] {100, 100}, 'c');
+        INDArray f20_20_20 = Nd4j.create(new int[] {20, 20, 20}, 'f');
+        INDArray c20_20_20 = Nd4j.create(new int[] {20, 20, 20}, 'c');
 
         //Trivial cases that can obviously be done directly
         assertTrue(OpExecutionerUtil.canDoOpDirectly(f1_100));
@@ -73,15 +74,15 @@ public class TestOpExecutionerUtil extends BaseNd4jTest {
 
     @Test
     public void testChooseElementWiseTensorDimension() {
-        INDArray f1_100 = Nd4j.create(new int[]{1, 100}, 'f');
-        INDArray f3_100 = Nd4j.create(new int[]{3, 100}, 'f');
-        INDArray f100_1 = Nd4j.create(new int[]{100, 1}, 'f');
-        INDArray f100_3 = Nd4j.create(new int[]{100, 3}, 'f');
+        INDArray f1_100 = Nd4j.create(new int[] {1, 100}, 'f');
+        INDArray f3_100 = Nd4j.create(new int[] {3, 100}, 'f');
+        INDArray f100_1 = Nd4j.create(new int[] {100, 1}, 'f');
+        INDArray f100_3 = Nd4j.create(new int[] {100, 3}, 'f');
 
-        INDArray c1_100 = Nd4j.create(new int[]{1, 100}, 'c');
-        INDArray c3_100 = Nd4j.create(new int[]{3, 100}, 'c');
-        INDArray c100_1 = Nd4j.create(new int[]{100, 1}, 'c');
-        INDArray c100_3 = Nd4j.create(new int[]{100, 3}, 'c');
+        INDArray c1_100 = Nd4j.create(new int[] {1, 100}, 'c');
+        INDArray c3_100 = Nd4j.create(new int[] {3, 100}, 'c');
+        INDArray c100_1 = Nd4j.create(new int[] {100, 1}, 'c');
+        INDArray c100_3 = Nd4j.create(new int[] {100, 3}, 'c');
 
         //Test selection for row vectors and NDArrays that are nearly-row vectors
         //In such cases, it is obvious which the best dimension is

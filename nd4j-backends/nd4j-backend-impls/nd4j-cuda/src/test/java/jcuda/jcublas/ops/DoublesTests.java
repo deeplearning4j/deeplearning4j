@@ -3,18 +3,11 @@ package jcuda.jcublas.ops;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.context.CudaContext;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

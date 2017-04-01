@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.blas;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,12 +49,12 @@ public class Level3Test extends BaseNd4jTest {
 
         //System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));
 
-        assertEquals(3338050.0f, array3.data().getFloat(0),0.001f);
-        assertEquals(8298050.0f, array3.data().getFloat(1),0.001f);
-        assertEquals(3343100.0f, array3.data().getFloat(10),0.001f);
-        assertEquals(8313100.0f, array3.data().getFloat(11),0.001f);
-        assertEquals(3348150.0f, array3.data().getFloat(20),0.001f);
-        assertEquals(8328150.0f, array3.data().getFloat(21),0.001f);
+        assertEquals(3338050.0f, array3.data().getFloat(0), 0.001f);
+        assertEquals(8298050.0f, array3.data().getFloat(1), 0.001f);
+        assertEquals(3343100.0f, array3.data().getFloat(10), 0.001f);
+        assertEquals(8313100.0f, array3.data().getFloat(11), 0.001f);
+        assertEquals(3348150.0f, array3.data().getFloat(20), 0.001f);
+        assertEquals(8328150.0f, array3.data().getFloat(21), 0.001f);
     }
 
     @Test
@@ -67,12 +66,12 @@ public class Level3Test extends BaseNd4jTest {
 
         //System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));
 
-        assertEquals(338350f, array3.data().getFloat(0),0.001f);
-        assertEquals(843350f, array3.data().getFloat(1),0.001f);
-        assertEquals(843350f, array3.data().getFloat(10),0.001f);
-        assertEquals(2348350f, array3.data().getFloat(11),0.001f);
-        assertEquals(1348350f, array3.data().getFloat(20),0.001f);
-        assertEquals(3853350f, array3.data().getFloat(21),0.001f);
+        assertEquals(338350f, array3.data().getFloat(0), 0.001f);
+        assertEquals(843350f, array3.data().getFloat(1), 0.001f);
+        assertEquals(843350f, array3.data().getFloat(10), 0.001f);
+        assertEquals(2348350f, array3.data().getFloat(11), 0.001f);
+        assertEquals(1348350f, array3.data().getFloat(20), 0.001f);
+        assertEquals(3853350f, array3.data().getFloat(21), 0.001f);
     }
 
     @Test
@@ -85,8 +84,8 @@ public class Level3Test extends BaseNd4jTest {
         //System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));
 
         //assertEquals(3.29341E7f, array3.data().getFloat(0),10f);
-        assertEquals(3.29837E7f, array3.data().getFloat(1),10f);
-        assertEquals(3.3835E7f, array3.data().getFloat(99),10f);
+        assertEquals(3.29837E7f, array3.data().getFloat(1), 10f);
+        assertEquals(3.3835E7f, array3.data().getFloat(99), 10f);
     }
 
     @Test
@@ -98,12 +97,12 @@ public class Level3Test extends BaseNd4jTest {
 
         //System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));
 
-        assertEquals(3338050.0f, array3.data().getFloat(0),0.001f);
-        assertEquals(3343100f, array3.data().getFloat(1),0.001f);
-        assertEquals(8298050f, array3.data().getFloat(10),0.001f);
-        assertEquals(8313100.0f, array3.data().getFloat(11),0.001f);
-        assertEquals(1.325805E7f, array3.data().getFloat(20),5f);
-        assertEquals(1.32831E7f, array3.data().getFloat(21),5f);
+        assertEquals(3338050.0f, array3.data().getFloat(0), 0.001f);
+        assertEquals(3343100f, array3.data().getFloat(1), 0.001f);
+        assertEquals(8298050f, array3.data().getFloat(10), 0.001f);
+        assertEquals(8313100.0f, array3.data().getFloat(11), 0.001f);
+        assertEquals(1.325805E7f, array3.data().getFloat(20), 5f);
+        assertEquals(1.32831E7f, array3.data().getFloat(21), 5f);
     }
 
     @Override

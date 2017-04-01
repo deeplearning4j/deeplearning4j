@@ -1,7 +1,6 @@
 package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Constructor;
 

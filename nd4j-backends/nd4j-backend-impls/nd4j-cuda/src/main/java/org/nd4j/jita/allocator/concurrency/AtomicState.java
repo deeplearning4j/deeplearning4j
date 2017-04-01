@@ -148,16 +148,18 @@ public class AtomicState {
      */
     public void releaseToe() {
         if (getCurrentState() == AccessState.TOE) {
-            if (1>0) {
-            //if (toeThread.get() == Thread.currentThread().getId()) {
+            if (1 > 0) {
+                //if (toeThread.get() == Thread.currentThread().getId()) {
                 if (toeRequests.decrementAndGet() == 0) {
                     tickRequests.set(0);
                     tackRequests.set(0);
 
                     currentState.set(AccessState.TACK.ordinal());
                 }
-            } else throw new IllegalStateException("releaseToe() is called from different thread.");
-        } else throw new IllegalStateException("Object is NOT in Toe state!");
+            } else
+                throw new IllegalStateException("releaseToe() is called from different thread.");
+        } else
+            throw new IllegalStateException("Object is NOT in Toe state!");
     }
 
     /**
@@ -176,7 +178,8 @@ public class AtomicState {
                 tackRequests.set(0);
 
                 return AccessState.TACK;
-            } else return AccessState.TICK;
+            } else
+                return AccessState.TICK;
         }
     }
 

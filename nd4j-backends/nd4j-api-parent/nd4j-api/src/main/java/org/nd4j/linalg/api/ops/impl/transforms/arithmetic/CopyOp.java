@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,8 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class CopyOp extends BaseTransformOp {
-    public CopyOp() {
-    }
+    public CopyOp() {}
 
     public CopyOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -109,7 +108,8 @@ public class CopyOp extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CopyOp(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CopyOp(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new CopyOp(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -120,7 +120,8 @@ public class CopyOp extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new CopyOp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new CopyOp(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new CopyOp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

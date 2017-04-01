@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class ConvolutionBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public ConvolutionBenchmarkPerformer(int nTimes) {
-        super(new ConvolutionOpRunner(),nTimes);
+        super(new ConvolutionOpRunner(), nTimes);
     }
 
 

@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class DimensionWiseBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public DimensionWiseBenchmarkPerformer(int nTimes) {
-        super(new DimensionWiseOpRunner(),nTimes);
+        super(new DimensionWiseOpRunner(), nTimes);
     }
 
 

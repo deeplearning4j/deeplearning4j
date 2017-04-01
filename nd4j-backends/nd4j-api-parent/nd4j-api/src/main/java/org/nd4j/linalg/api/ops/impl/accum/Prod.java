@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Prod extends BaseAccumulation {
-    public Prod() {
-    }
+    public Prod() {}
 
     public Prod(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -67,7 +66,7 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
-    public double update(double accum, double x){
+    public double update(double accum, double x) {
         return accum * x;
     }
 
@@ -77,32 +76,32 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
-    public float update(float accum, float x){
+    public float update(float accum, float x) {
         return accum * x;
     }
 
     @Override
-    public float update(float accum, float x, float y){
+    public float update(float accum, float x, float y) {
         return accum * x;
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x){
+    public IComplexNumber update(IComplexNumber accum, double x) {
         return accum.mul(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, double x, double y){
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
         return accum.mul(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
         return accum.mul(x);
     }
 
     @Override
-    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return accum.mul(x);
     }
 
@@ -142,8 +141,13 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
         return 1.0f;
+    }
+
+    @Override
+    public float zeroHalf() {
+        return zeroFloat();
     }
 
     @Override

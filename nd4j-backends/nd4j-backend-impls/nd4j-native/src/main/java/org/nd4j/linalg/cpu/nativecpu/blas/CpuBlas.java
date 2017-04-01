@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.nativeblas.Nd4jBlas;
+
 import static org.bytedeco.javacpp.openblas.*;
 
 /**
@@ -18,9 +19,14 @@ public class CpuBlas extends Nd4jBlas {
      */
     static int convertOrder(int from) {
         switch (from) {
-            case 'c': case 'C': return CblasRowMajor;
-            case 'f': case 'F': return CblasColMajor;
-            default: return CblasColMajor;
+            case 'c':
+            case 'C':
+                return CblasRowMajor;
+            case 'f':
+            case 'F':
+                return CblasColMajor;
+            default:
+                return CblasColMajor;
         }
     }
 
@@ -32,12 +38,20 @@ public class CpuBlas extends Nd4jBlas {
      */
     static int convertTranspose(int from) {
         switch (from) {
-            case 't': case 'T': return CblasTrans;
-            case 'n': case 'N': return CblasNoTrans;
-            case 'c': case 'C': return CblasConjTrans;
-            default: return CblasNoTrans;
+            case 't':
+            case 'T':
+                return CblasTrans;
+            case 'n':
+            case 'N':
+                return CblasNoTrans;
+            case 'c':
+            case 'C':
+                return CblasConjTrans;
+            default:
+                return CblasNoTrans;
         }
     }
+
     /**
      * Upper or lower
      * U/u -> upper
@@ -46,10 +60,15 @@ public class CpuBlas extends Nd4jBlas {
      * Default is upper
      */
     static int convertUplo(int from) {
-        switch(from) {
-            case 'u': case 'U': return CblasUpper;
-            case 'l': case 'L': return CblasLower;
-            default: return CblasUpper;
+        switch (from) {
+            case 'u':
+            case 'U':
+                return CblasUpper;
+            case 'l':
+            case 'L':
+                return CblasLower;
+            default:
+                return CblasUpper;
         }
     }
 
@@ -62,10 +81,15 @@ public class CpuBlas extends Nd4jBlas {
      * Default: unit
      */
     static int convertDiag(int from) {
-        switch(from) {
-            case 'u': case 'U': return CblasUnit;
-            case 'n': case 'N': return CblasNonUnit;
-            default: return CblasUnit;
+        switch (from) {
+            case 'u':
+            case 'U':
+                return CblasUnit;
+            case 'n':
+            case 'N':
+                return CblasNonUnit;
+            default:
+                return CblasUnit;
         }
     }
 
@@ -76,22 +100,30 @@ public class CpuBlas extends Nd4jBlas {
      * default: left
      */
     static int convertSide(int from) {
-        switch(from) {
-            case 'l': case 'L': return CblasLeft;
-            case 'r': case 'R': return CblasRight;
-            default: return CblasLeft;
+        switch (from) {
+            case 'l':
+            case 'L':
+                return CblasLeft;
+            case 'r':
+            case 'R':
+                return CblasRight;
+            default:
+                return CblasLeft;
         }
     }
 
-    @Override public void setMaxThreads(int num) {
+    @Override
+    public void setMaxThreads(int num) {
         blas_set_num_threads(num);
     }
 
-    @Override public int getMaxThreads() {
+    @Override
+    public int getMaxThreads() {
         return blas_get_num_threads();
     }
 
-    @Override public int getVendor() {
+    @Override
+    public int getBlasVendorId() {
         return blas_get_vendor();
     }
 }

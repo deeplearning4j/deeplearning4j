@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,26 +36,31 @@ public class RectifedLinear extends BaseTransformOp {
     private double cutoff = 0.0;
 
     public RectifedLinear() {
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
+        init(x,y,z,n);  //Need to re-init to properly set cutoff in extra args array
     }
 
     public RectifedLinear(INDArray x, INDArray z, long n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, double cutoff) {
         super(x);
         this.cutoff = cutoff;
+        init(x,y,z,n);
     }
 
     public RectifedLinear(INDArray x, INDArray z) {
@@ -90,17 +95,17 @@ public class RectifedLinear extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff, 0) : origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff, 0) : origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff, 0) : origin;
     }
 
     @Override
@@ -110,7 +115,7 @@ public class RectifedLinear extends BaseTransformOp {
 
     @Override
     public double op(double origin, double other) {
-        return origin < cutoff ?  cutoff : origin;
+        return origin < cutoff ? cutoff : origin;
     }
 
     @Override
@@ -126,7 +131,7 @@ public class RectifedLinear extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff, 0) : origin;
 
     }
 
@@ -135,9 +140,11 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new RectifedLinear(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new RectifedLinear(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length(), cutoff);
     }
 
     @Override
@@ -145,15 +152,17 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new RectifedLinear(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new RectifedLinear(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length(), cutoff);
 
     }
 
     @Override
     public TransformOp derivative() {
-        return new Step(x,y,z,n,cutoff);
+        return new Step(x, y, z, n, cutoff);
     }
 
     @Override

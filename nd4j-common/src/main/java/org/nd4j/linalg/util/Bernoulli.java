@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,14 +20,12 @@
 package org.nd4j.linalg.util;
 
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * To change this template, choose Tools | Templates and open the template in the editor.
  */
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Bernoulli numbers.
@@ -41,7 +39,7 @@ class Bernoulli {
     static List<Rational> a = new ArrayList<Rational>();
 
     public Bernoulli() {
-        if (a.size() == 0) {
+        if (a.isEmpty()) {
             a.add(Rational.ONE);
             a.add(new Rational(1, 6));
         }
@@ -97,7 +95,7 @@ class Bernoulli {
             Rational jsum = Rational.ZERO;
             BigInteger bin = BigInteger.ONE;
             for (int j = 0; j <= k; j++) {
-                BigInteger jpown = (new BigInteger("" + j)).pow(n);
+                BigInteger jpown = BigInteger.valueOf(j).pow(n);
                 if (j % 2 == 0) {
                     jsum = jsum.add(bin.multiply(jpown));
                 } else {
@@ -105,9 +103,9 @@ class Bernoulli {
                 }
                 /* update binomial(k,j) recursively
                  */
-                bin = bin.multiply(new BigInteger("" + (k - j))).divide(new BigInteger("" + (j + 1)));
+                bin = bin.multiply(BigInteger.valueOf(k - j)).divide(BigInteger.valueOf(j + 1));
             }
-            resul = resul.add(jsum.divide(new BigInteger("" + (k + 1))));
+            resul = resul.add(jsum.divide(BigInteger.valueOf(k + 1)));
         }
         return resul;
     }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -170,6 +170,7 @@ public interface IComplexNumber {
     public IComplexNumber pow(IComplexNumber c);
 
     public IComplexNumber pow(Number v);
+
     /**
      * Divide two complex numbers
      */

@@ -55,7 +55,7 @@ public class VfsResource extends AbstractResource {
     }
 
     public Resource createRelative(String relativePath) throws IOException {
-        if(!relativePath.startsWith(".") && relativePath.contains("/")) {
+        if (!relativePath.startsWith(".") && relativePath.contains("/")) {
             try {
                 return new VfsResource(VfsUtils.getChild(this.resource, relativePath));
             } catch (IOException var3) {
@@ -75,7 +75,7 @@ public class VfsResource extends AbstractResource {
     }
 
     public boolean equals(Object obj) {
-        return obj == this || obj instanceof VfsResource && this.resource.equals(((VfsResource)obj).resource);
+        return obj == this || obj instanceof VfsResource && this.resource.equals(((VfsResource) obj).resource);
     }
 
     public int hashCode() {

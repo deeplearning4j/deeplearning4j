@@ -39,7 +39,8 @@ public class LoadDeclaredInternalReference implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         int numArgs = instrumentedMethod.getParameters().asTypeList().getStackSize();
         /**
          * Load the desired id
@@ -50,8 +51,9 @@ public class LoadDeclaredInternalReference implements ByteCodeAppender {
         //references start with zero if its an instance or zero if its static
         //think of it like an implicit self in python without actually being defined
         int start = instrumentedMethod.isStatic() ? 1 : 0;
-        StackManipulation arg0 = MethodVariableAccess.REFERENCE.loadOffset(numArgs + start + OpCodeUtil.getAloadInstructionForReference(refId));
-        StackManipulation.Size size =  arg0.apply(methodVisitor, implementationContext);
+        StackManipulation arg0 = MethodVariableAccess.REFERENCE
+                        .loadOffset(numArgs + start + OpCodeUtil.getAloadInstructionForReference(refId));
+        StackManipulation.Size size = arg0.apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }
 }

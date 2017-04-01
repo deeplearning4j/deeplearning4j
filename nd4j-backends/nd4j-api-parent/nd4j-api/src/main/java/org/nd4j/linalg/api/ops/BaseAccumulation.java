@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,8 +35,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
     protected boolean applyFinalTransform = true;
-    public BaseAccumulation() {
-    }
+
+    public BaseAccumulation() {}
 
 
     /**
@@ -52,9 +52,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        if(y != null)
-            LinAlgExceptions.assertSameLength(x,y);
-        LinAlgExceptions.assertSameLength(x,z);
+        if (y != null)
+            LinAlgExceptions.assertSameLength(x, y);
+        LinAlgExceptions.assertSameLength(x, z);
 
     }
 
@@ -68,8 +68,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation(INDArray x, INDArray y) {
         this(x, y, x, x.lengthLong());
-        if(y != null)
-            LinAlgExceptions.assertSameLength(x,y);
+        if (y != null)
+            LinAlgExceptions.assertSameLength(x, y);
     }
 
     private void init() {
@@ -145,13 +145,18 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public float zeroFloat(){
+    public float zeroFloat() {
+        return 0.0f;
+    }
+
+    @Override
+    public float zeroHalf() {
         return 0.0f;
     }
 
     @Override
     public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0,0.0);
+        return Nd4j.createComplexNumber(0.0, 0.0);
     }
 
     @Override
@@ -162,22 +167,22 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{zeroDouble()};
+        this.extraArgs = new Object[] {zeroDouble()};
     }
 
     @Override
-    public double combineSubResults(double first, double second){
+    public double combineSubResults(double first, double second) {
         return update(first, second);
     }
 
     @Override
-    public float combineSubResults(float first, float second){
-        return update(first,second);
+    public float combineSubResults(float first, float second) {
+        return update(first, second);
     }
 
     @Override
     public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
-        return update(first,second);
+        return update(first, second);
     }
 
     @Override
@@ -187,13 +192,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public float getAndSetFinalResult(float accum){
+    public float getAndSetFinalResult(float accum) {
         this.finalResult = accum;
         return accum;
     }
 
     @Override
-    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum) {
         this.finalResultComplex = accum;
         return accum;
     }
@@ -209,28 +214,28 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public Number currentResult(){
+    public Number currentResult() {
         return finalResult;
     }
 
     @Override
-    public void setFinalResult(Number number){
+    public void setFinalResult(Number number) {
         this.finalResult = number;
     }
 
     @Override
-    public void setFinalResultComplex(IComplexNumber number){
+    public void setFinalResultComplex(IComplexNumber number) {
         this.finalResultComplex = number;
     }
 
 
     @Override
-    public Number getFinalResult(){
+    public Number getFinalResult() {
         return finalResult;
     }
 
     @Override
-    public IComplexNumber getFinalResultComplex(){
+    public IComplexNumber getFinalResultComplex() {
         return finalResultComplex;
     }
 }

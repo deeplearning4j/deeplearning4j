@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -27,7 +27,6 @@ package org.nd4j.linalg.util;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Factorials.
@@ -44,7 +43,7 @@ class Factorial {
      * Initialize the vector of the factorials with 0!=1 and 1!=1.
      */
     public Factorial() {
-        if (a.size() == 0) {
+        if (a.isEmpty()) {
             a.add(BigInteger.ONE);
             a.add(BigInteger.ONE);
         }
@@ -59,7 +58,7 @@ class Factorial {
     public BigInteger at(int n) {
         while (a.size() <= n) {
             final int lastn = a.size() - 1;
-            final BigInteger nextn = new BigInteger("" + (lastn + 1));
+            final BigInteger nextn = BigInteger.valueOf(lastn + 1);
             a.add(a.get(lastn).multiply(nextn));
         }
         return a.get(n);

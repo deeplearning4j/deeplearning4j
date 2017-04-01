@@ -26,8 +26,10 @@ public class RelativeRetrieveArrayImplementation implements Implementation {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RelativeRetrieveArrayImplementation)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof RelativeRetrieveArrayImplementation))
+            return false;
 
         RelativeRetrieveArrayImplementation that = (RelativeRetrieveArrayImplementation) o;
 

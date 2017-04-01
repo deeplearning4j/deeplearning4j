@@ -64,7 +64,8 @@ public class NDArrayMessageChunk implements Serializable {
         int numChunksSize = 4;
         int chunkSizeSize = 4;
         int idLengthSize = 4;
-        return idLengthSize + messageTypeSize + indexSize + chunkSizeSize +  numChunksSize + chunk.getData().limit() + chunk.getId().getBytes().length;
+        return idLengthSize + messageTypeSize + indexSize + chunkSizeSize + numChunksSize + chunk.getData().limit()
+                        + chunk.getId().getBytes().length;
 
     }
 
@@ -100,7 +101,7 @@ public class NDArrayMessageChunk implements Serializable {
      * @param byteBuffer the byte buffer to extract the chunk from
      * @return the ndarray message chunk based on the passed in {@link ByteBuffer}
      */
-    public static NDArrayMessageChunk fromBuffer(ByteBuffer byteBuffer,NDArrayMessage.MessageType type) {
+    public static NDArrayMessageChunk fromBuffer(ByteBuffer byteBuffer, NDArrayMessage.MessageType type) {
         int numChunks = byteBuffer.getInt();
         int chunkSize = byteBuffer.getInt();
         int idLength = byteBuffer.getInt();
@@ -109,9 +110,8 @@ public class NDArrayMessageChunk implements Serializable {
         String idString = new String(id);
         int index = byteBuffer.getInt();
         ByteBuffer firstData = byteBuffer.slice();
-        NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
-                .chunkSize(chunkSize).numChunks(numChunks).data(firstData)
-                .messageType(type).id(idString).chunkIndex(index).build();
+        NDArrayMessageChunk chunk = NDArrayMessageChunk.builder().chunkSize(chunkSize).numChunks(numChunks)
+                        .data(firstData).messageType(type).id(idString).chunkIndex(index).build();
         return chunk;
 
     }

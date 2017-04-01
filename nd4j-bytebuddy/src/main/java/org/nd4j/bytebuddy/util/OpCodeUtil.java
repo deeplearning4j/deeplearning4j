@@ -7,8 +7,7 @@ package org.nd4j.bytebuddy.util;
  */
 public class OpCodeUtil {
 
-    private OpCodeUtil() {
-    }
+    private OpCodeUtil() {}
 
     /**
      * Get the a load reference code starting at 42.
@@ -28,7 +27,7 @@ public class OpCodeUtil {
      * reference on the stack
      */
     public static int getAloadInstructionForReference(int ref) {
-          return 42 + ref;
+        return 42 + ref;
     }
 
 }

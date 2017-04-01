@@ -19,9 +19,10 @@ public class SimpleCreateArrayByteCodeAppender implements ByteCodeAppender {
     }
 
     @Override
-    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
+    public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext,
+                    MethodDescription instrumentedMethod) {
         StackManipulation.Size size = IntegerConstant.forValue(length).apply(methodVisitor, implementationContext);
-        methodVisitor.visitIntInsn(Opcodes.NEWARRAY,Opcodes.T_INT);
-        return new Size(size.getMaximalSize(),size.getSizeImpact());
+        methodVisitor.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_INT);
+        return new Size(size.getMaximalSize(), size.getSizeImpact());
     }
 }

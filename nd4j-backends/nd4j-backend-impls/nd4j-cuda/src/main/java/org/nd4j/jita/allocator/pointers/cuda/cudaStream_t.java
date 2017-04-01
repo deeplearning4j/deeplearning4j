@@ -10,7 +10,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 public class cudaStream_t extends CudaPointer {
 
-    public cudaStream_t( Pointer pointer) {
+    public cudaStream_t(Pointer pointer) {
         super(pointer);
     }
 

@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.7.2-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,6 +31,7 @@
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
+        <dependency.platform></dependency.platform>
         <javacpp.platform.android-arm>android-arm</javacpp.platform.android-arm>
         <javacpp.platform.android-x86>android-x86</javacpp.platform.android-x86>
         <javacpp.platform.linux-x86_64>linux-x86_64</javacpp.platform.linux-x86_64>
@@ -50,7 +51,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.19.1</version>
                     <configuration>
-                        <argLine>-Xmx4096m</argLine>
                         <environmentVariables>
                             <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                         </environmentVariables>
@@ -104,6 +104,13 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                  <groupId>net.revelc.code.formatter</groupId>
+                  <artifactId>formatter-maven-plugin</artifactId>
+                  <configuration>
+                    <skip>true</skip>
+                  </configuration>
+                </plugin>
             </plugins>
 
 
@@ -137,6 +144,7 @@
             </activation>
             <properties>
                 <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
+                <dependency.platform>${javacpp.platform}</dependency.platform>
             </properties>
         </profile>
 
@@ -230,10 +238,25 @@
           </activation>
           <properties>
             <javacpp.platform>linux-armhf</javacpp.platform>
-            <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>   
+            <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>
             <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
           </properties>
         </profile>
     </profiles>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.19.1</version>
+            </plugin>
+            <!-- Test coverage -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.CachingDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.SamplingDataSetIterator;
@@ -15,14 +16,11 @@ import org.nd4j.linalg.dataset.api.iterator.cache.InMemoryDataSetCache;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by anton on 7/18/16.
@@ -57,26 +55,70 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
     }
 
     private void runDataSetTest(DataSetCache cache) {
-        DataSet dataSet = new DataSet(Nd4j.ones(500, 100), Nd4j.zeros(500, 2));
+        int rows = 500;
+        int inputColumns = 100;
+        int outputColumns = 2;
+        DataSet dataSet = new DataSet(Nd4j.ones(rows, inputColumns), Nd4j.zeros(rows, outputColumns));
 
-        DataSetIterator it = new SamplingDataSetIterator(dataSet, 10, 50);
+        int batchSize = 10;
+        int totalNumberOfSamples = 50;
+        int expectedNumberOfDataSets = totalNumberOfSamples / batchSize;
+        DataSetIterator it = new SamplingDataSetIterator(dataSet, batchSize, totalNumberOfSamples);
 
         String namespace = "test-namespace";
 
-        DataSetIterator cachedIt = new CachingDataSetIterator(it, cache, namespace);
+        CachingDataSetIterator cachedIt = new CachingDataSetIterator(it, cache, namespace);
+        PreProcessor preProcessor = new PreProcessor();
+        cachedIt.setPreProcessor(preProcessor);
 
+        assertDataSetCacheGetsCompleted(cache, namespace, cachedIt);
+
+        assertPreProcessingGetsCached(expectedNumberOfDataSets, it, cachedIt, preProcessor);
+
+        assertCachingDataSetIteratorHasAllTheData(rows, inputColumns, outputColumns, dataSet, it, cachedIt);
+    }
+
+    private void assertDataSetCacheGetsCompleted(DataSetCache cache, String namespace, DataSetIterator cachedIt) {
         while (cachedIt.hasNext()) {
             assertFalse(cache.isComplete(namespace));
             cachedIt.next();
         }
 
         assertTrue(cache.isComplete(namespace));
+    }
+
+    private void assertPreProcessingGetsCached(int expectedNumberOfDataSets, DataSetIterator it,
+                    CachingDataSetIterator cachedIt, PreProcessor preProcessor) {
+
+        assertSame(preProcessor, cachedIt.getPreProcessor());
+        assertSame(preProcessor, it.getPreProcessor());
 
         cachedIt.reset();
         it.reset();
 
-        dataSet.setFeatures(Nd4j.zeros(500, 100));
-        dataSet.setLabels(Nd4j.ones(500, 2));
+        while (cachedIt.hasNext()) {
+            cachedIt.next();
+        }
+
+        assertEquals(expectedNumberOfDataSets, preProcessor.getCallCount());
+
+        cachedIt.reset();
+        it.reset();
+
+        while (cachedIt.hasNext()) {
+            cachedIt.next();
+        }
+
+        assertEquals(expectedNumberOfDataSets, preProcessor.getCallCount());
+    }
+
+    private void assertCachingDataSetIteratorHasAllTheData(int rows, int inputColumns, int outputColumns,
+                    DataSet dataSet, DataSetIterator it, CachingDataSetIterator cachedIt) {
+        cachedIt.reset();
+        it.reset();
+
+        dataSet.setFeatures(Nd4j.zeros(rows, inputColumns));
+        dataSet.setLabels(Nd4j.ones(rows, outputColumns));
 
         while (it.hasNext()) {
             assertTrue(cachedIt.hasNext());
@@ -92,5 +134,19 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
 
         assertFalse(cachedIt.hasNext());
         assertFalse(it.hasNext());
+    }
+
+    private class PreProcessor implements DataSetPreProcessor {
+
+        private int callCount;
+
+        @Override
+        public void preProcess(org.nd4j.linalg.dataset.api.DataSet toPreProcess) {
+            callCount++;
+        }
+
+        public int getCallCount() {
+            return callCount;
+        }
     }
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -21,11 +21,7 @@ package org.nd4j.linalg.factory;
 
 
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.blas.Blas;
-import org.nd4j.linalg.api.blas.Lapack;
-import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.blas.Level2;
-import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -85,10 +81,12 @@ public interface NDArrayFactory {
      * Create level 1
      */
     void createLevel1();
+
     /**
      * Create level 2
      */
     void createLevel2();
+
     /**
      * Create level 3
      */
@@ -355,7 +353,7 @@ public interface NDArrayFactory {
      */
     INDArray create(double[][] data);
 
-    INDArray create(double[][] data,char ordering);
+    INDArray create(double[][] data, char ordering);
 
     /**
      * Create a complex ndarray from the passed in indarray
@@ -1455,7 +1453,7 @@ public interface NDArrayFactory {
      */
     INDArray create(float[][] floats);
 
-    INDArray create(float[][] data,char ordering);
+    INDArray create(float[][] data, char ordering);
 
     /**
      *
@@ -1753,14 +1751,14 @@ public interface NDArrayFactory {
      * @param buffer
      * @return
      */
-//    DataBuffer restoreFromHalfs(DataBuffer buffer);
+    //    DataBuffer restoreFromHalfs(DataBuffer buffer);
 
     /**
      * This method converts Single/Double precision databuffer to Half-precision databuffer
      * @param buffer
      * @return
      */
-//    DataBuffer convertToHalfs(DataBuffer buffer);
+    //    DataBuffer convertToHalfs(DataBuffer buffer);
 
 
     INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
@@ -1769,5 +1767,6 @@ public interface NDArrayFactory {
 
     void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
 
-    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
+                    long length);
 }

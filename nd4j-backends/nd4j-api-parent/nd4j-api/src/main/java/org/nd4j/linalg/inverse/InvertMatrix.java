@@ -16,7 +16,7 @@ public class InvertMatrix {
      * @param arr the array to invert
      * @return the inverted matrix
      */
-    public static INDArray invert(INDArray arr,boolean inPlace) {
+    public static INDArray invert(INDArray arr, boolean inPlace) {
         if (!arr.isSquare()) {
             throw new IllegalArgumentException("invalid array: must be square matrix");
         }
@@ -33,7 +33,8 @@ public class InvertMatrix {
         RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
         INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse);
-        if (inPlace) arr.assign(inverse);
+        if (inPlace)
+            arr.assign(inverse);
         return inverse;
 
     }

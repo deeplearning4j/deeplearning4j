@@ -16,7 +16,7 @@ public class CreateIntArrayStackManipulation implements StackManipulation {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
-        methodVisitor.visitIntInsn(Opcodes.NEWARRAY,Opcodes.T_INT);
-        return new Size(1,1);
+        methodVisitor.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_INT);
+        return new Size(1, 1);
     }
 }

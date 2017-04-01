@@ -8,7 +8,7 @@ import org.nd4j.linalg.benchmark.api.BaseBenchmarkPerformer;
 public class GemmBenchmarkPerformer extends BaseBenchmarkPerformer {
 
     public GemmBenchmarkPerformer(int nTimes) {
-        super(new GemmOpRunner(),nTimes);
+        super(new GemmOpRunner(), nTimes);
     }
 
 

@@ -9,8 +9,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class GetPutScalarLinearViewOpRunner implements OpRunner {
     INDArray arr = Nd4j.create(10000).linearView();
+
     @Override
     public void runOp() {
-        arr.putScalar(1,0);
+        arr.putScalar(1, 0);
     }
 }

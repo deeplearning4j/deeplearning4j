@@ -59,7 +59,7 @@ public interface ParameterServerUpdater {
      * updater
      * @return
      */
-    Map<String,Number> status();
+    Map<String, Number> status();
 
     /**
      * Serialize this updater as json
@@ -96,7 +96,7 @@ public interface ParameterServerUpdater {
      * @param idx the index to update
      * @param dimensions the dimensions to update
      */
-    void partialUpdate(INDArray arr,INDArray result, long idx, int...dimensions);
+    void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions);
 
     /**
      * Updates result
@@ -104,5 +104,5 @@ public interface ParameterServerUpdater {
      * @param arr the array to update
      * @param result the result ndarray to update
      */
-    void update(INDArray arr,INDArray result);
+    void update(INDArray arr, INDArray result);
 }

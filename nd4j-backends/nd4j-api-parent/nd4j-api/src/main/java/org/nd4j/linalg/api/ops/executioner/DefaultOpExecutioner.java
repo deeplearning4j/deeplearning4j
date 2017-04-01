@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -19,48 +19,45 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.math3.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
-
 import java.util.List;
 import java.util.Properties;
 
 /**
  * Basic op executioner. Knows how to iterate over
- * the buffers of each respective ndarray and apply transformations
+ * the buffers of each
+ * respective ndarray and apply transformations
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
     protected ProfilingMode profilingMode = ProfilingMode.DISABLED;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
-    public DefaultOpExecutioner() {
-    }
+    public DefaultOpExecutioner() {}
 
     protected void checkForCompression(Op op) {
         // check for INT datatype arrays
         interceptIntDataType(op);
 
-        if (op.x().isCompressed())
+        if (op.x() != null && op.x().isCompressed())
             Nd4j.getCompressor().decompressi(op.x());
 
         if (op.y() != null && op.y().isCompressed())
@@ -79,13 +76,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         // FIXME: Remove this method, after we'll add support for <int> dtype operations
 
         if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
-            throw new ND4JIllegalStateException("Op.X contains INT data. Operations on INT dataType are not supported yet");
+            throw new ND4JIllegalStateException(
+                            "Op.X contains INT data. Operations on INT dataType are not supported yet");
 
         if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
-            throw new ND4JIllegalStateException("Op.Z contains INT data. Operations on INT dataType are not supported yet");
+            throw new ND4JIllegalStateException(
+                            "Op.Z contains INT data. Operations on INT dataType are not supported yet");
 
         if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
-            throw new ND4JIllegalStateException("Op.Y contains INT data. Operations on INT dataType are not supported yet.");
+            throw new ND4JIllegalStateException(
+                            "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
     }
 
     @Override
@@ -102,11 +102,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray execAndReturn(Op op) {
         if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
-        } else if (op instanceof ScalarOp) {
+        }
+        if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
-        } else if (op instanceof Accumulation) {
+        }
+        if (op instanceof Accumulation) {
             return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
-        } else if (op instanceof IndexAccumulation) {
+        }
+        if (op instanceof IndexAccumulation) {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
         }
 
@@ -236,15 +239,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray execAndReturn(BroadcastOp op){
+    public INDArray execAndReturn(BroadcastOp op) {
         return exec(op).z();
     }
 
     @Override
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
-        if (dimension.length == op.x().rank())
+        if (dimension.length == op.x().rank()) {
             dimension = new int[]{Integer.MAX_VALUE};
+        }
 
         if (op.isPassThrough()) {
             op.exec(dimension);
@@ -253,22 +257,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
-            throw new IllegalStateException("exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
-        } else if (op instanceof ScalarOp) {
+            throw new IllegalStateException(
+                    "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+        }
+        if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
             throw new IllegalStateException("Java computation no longer supported");
-        }else if (op instanceof TransformOp) {
-            throw new UnsupportedOperationException("Executing transform ops along a dimension should be done via exec special");
-        } else {
-            throw new UnsupportedOperationException("Unknown op type");
         }
+        if (op instanceof TransformOp) {
+            throw new UnsupportedOperationException(
+                    "Executing transform ops along a dimension should be done via exec special");
+        }
+        throw new UnsupportedOperationException("Unknown op type");
     }
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
         //do op along all dimensions
         if (dimension.length == op.x().rank())
-            dimension = new int[]{Integer.MAX_VALUE};
+            dimension = new int[] {Integer.MAX_VALUE};
 
         if (op.isPassThrough()) {
             op.exec(dimension);
@@ -287,11 +294,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //ensure vector is proper shape
             if (retShape.length == 1) {
                 if (dimension[0] == 0)
-                    retShape = new int[]{1, retShape[0]};
+                    retShape = new int[] {1, retShape[0]};
                 else
-                    retShape = new int[]{retShape[0], 1};
+                    retShape = new int[] {retShape[0], 1};
             } else if (retShape.length == 0) {
-                retShape = new int[]{1, 1};
+                retShape = new int[] {1, 1};
             }
 
             IComplexNDArray ret = Nd4j.createComplex(retShape);
@@ -314,7 +321,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
         accumulation.setBiasCorrected(biasCorrected);
-        return exec(accumulation,dimension);
+        return exec(accumulation, dimension);
     }
 
     @Override
@@ -323,6 +330,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     }
 
+    @Override
     public ExecutionMode executionMode() {
         return executionMode;
     }
@@ -334,14 +342,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
 
-
     @Override
     public INDArray exec(BroadcastOp broadcast, int... dimension) {
         if (dimension.length == broadcast.x().rank()) {
-            dimension = new int[]{Integer.MAX_VALUE};
+            dimension = new int[] {Integer.MAX_VALUE};
         }
 
-        if(broadcast.isPassThrough()){
+        if (broadcast.isPassThrough()) {
             broadcast.exec(dimension);
             return broadcast.z();
         }
@@ -358,24 +365,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void exec(GridOp op) {
         throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
-    }
-
-    /**
-     * This method return set of key/value and key/key/value objects, describing current environment
-     *
-     * @return
-     */
-    @Override
-    public Properties getEnvironmentInformation() {
-        Properties environment = new Properties();
-
-
-        environment.put("cores", Runtime.getRuntime().availableProcessors());
-        environment.put("memory.available", Runtime.getRuntime().maxMemory());
-        environment.put("os", System.getProperty("os.name"));
-
-
-        return environment;
     }
 
     @Override
@@ -443,7 +432,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    public long profilingHookIn(Op op){
+    public long profilingHookIn(Op op) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processOpCall(op);
@@ -461,7 +450,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    public void profilingHookOut(Op op, long timeStart){
+    public void profilingHookOut(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -473,21 +462,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case OPERATIONS:
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
-            case NAN_PANIC: {
-                    if (op.z() != null && !(op instanceof MatchCondition)) {
-                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
-                        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-
-                        if (match > 0)
-                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
-
-                        condition = new MatchCondition(op.z(), Conditions.isInfinite());
-                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-
-                        if (match > 0)
-                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
-                    }
-                }
+            case NAN_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                break;
+            case INF_PANIC:
+                OpExecutionerUtil.checkForInf(op);
+                break;
+            case ANY_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForInf(op);
                 break;
             case DISABLED:
             default:
@@ -496,8 +479,67 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    public static void validateDataType(DataBuffer.Type expectedType, Op op) {
+        if (op.x() != null && op.x().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
+                            + "] instead of expected [" + expectedType + "]");
+
+        if (op.z() != null && op.z().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
+                            + "] instead of expected [" + expectedType + "]");
+
+        if (op.y() != null && op.y().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
+                            + "] instead of expected [" + expectedType + "]");
+
+        DataBuffer extraz = op.extraArgsDataBuff();
+        if (extraz != null && extraz.dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Extras dataType is [" + extraz.dataType()
+                            + "] instead of expected [" + expectedType + "]");
+
+    }
+
+    public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
+        if (operands == null || operands.length == 0)
+            return;
+
+        int cnt = 0;
+        for (INDArray operand : operands) {
+            if (operand == null)
+                continue;
+
+            if (operand.data().dataType() != expectedType)
+                throw new ND4JIllegalStateException("INDArray [" + cnt++ + "] dataType is [" + operand.data().dataType()
+                                + "] instead of expected [" + expectedType + "]");
+        }
+    }
+
     @Override
     public TADManager getTADManager() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties environment = new Properties();
+        environment.put(Nd4jEnvironment.CPU_CORES_KEY, Runtime.getRuntime().availableProcessors());
+        environment.put(Nd4jEnvironment.HOST_TOTAL_MEMORY_KEY, Runtime.getRuntime().maxMemory());
+        environment.put(Nd4jEnvironment.OS_KEY, System.getProperty("os.name"));
+        return environment;
+    }
+
+    @Override
+    public void printEnvironmentInformation() {
+        Properties env = getEnvironmentInformation();
+        double memory = ((Long) env.get("memory.available")) / (double) 1024 / 1024 / 1024;
+        String fm = String.format("%.1f", memory);
+        log.info("Backend used: [{}]; OS: [{}]", env.get("backend"), env.get("os"));
+        log.info("Cores: [{}]; Memory: [{}GB];", env.get("cores"), fm);
+        log.info("Blas vendor: [{}]", env.get("blas.vendor"));
     }
 }

@@ -9,7 +9,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author Adam Gibson
@@ -23,16 +23,11 @@ public class NDIndexIteratorTest extends BaseNd4jTest {
 
     @Test
     public void testIterate() {
-        Iterator<int[]> shapeIter = new NdIndexIterator(2,2);
-        int[][] possibleSolutions = new int[][]{
-                {0,0},
-                {0,1},
-                {1,0},
-                {1,1},
-        };
+        Iterator<int[]> shapeIter = new NdIndexIterator(2, 2);
+        int[][] possibleSolutions = new int[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1},};
 
-        for(int i = 0; i < 4; i++) {
-            assertArrayEquals(possibleSolutions[i],shapeIter.next());
+        for (int i = 0; i < 4; i++) {
+            assertArrayEquals(possibleSolutions[i], shapeIter.next());
         }
 
 

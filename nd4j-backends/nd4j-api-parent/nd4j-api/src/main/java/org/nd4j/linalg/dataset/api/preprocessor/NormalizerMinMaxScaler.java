@@ -2,9 +2,10 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerMinMaxScalerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -70,17 +71,10 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
      * @param statistics the statistics to load
      * @throws IOException
      */
-    @Override
     public void load(File... statistics) throws IOException {
-        setFeatureStats(new MinMaxStats(
-            Nd4j.readBinary(statistics[0]),
-            Nd4j.readBinary(statistics[1])
-        ));
+        setFeatureStats(new MinMaxStats(Nd4j.readBinary(statistics[0]), Nd4j.readBinary(statistics[1])));
         if (isFitLabel()) {
-            setLabelStats(new MinMaxStats(
-                Nd4j.readBinary(statistics[2]),
-                Nd4j.readBinary(statistics[3])
-            ));
+            setLabelStats(new MinMaxStats(Nd4j.readBinary(statistics[2]), Nd4j.readBinary(statistics[3])));
         }
     }
 
@@ -89,9 +83,8 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
      *
      * @param files the statistics to save
      * @throws IOException
-     * @deprecated use {@link NormalizerMinMaxScalerSerializer instead}
+     * @deprecated use {@link NormalizerSerializer instead}
      */
-    @Override
     public void save(File... files) throws IOException {
         Nd4j.saveBinary(getMin(), files[0]);
         Nd4j.saveBinary(getMax(), files[1]);
@@ -104,5 +97,10 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
     @Override
     protected NormalizerStats.Builder newBuilder() {
         return new MinMaxStats.Builder();
+    }
+
+    @Override
+    public NormalizerType getType() {
+        return NormalizerType.MIN_MAX;
     }
 }

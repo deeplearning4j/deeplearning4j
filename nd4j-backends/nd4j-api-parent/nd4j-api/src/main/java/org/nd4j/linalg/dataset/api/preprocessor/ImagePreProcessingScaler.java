@@ -4,11 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
 /**
  * Created by susaneraly on 6/23/16.
@@ -27,12 +23,13 @@ public class ImagePreProcessingScaler implements DataNormalization {
     private int maxBits;
 
     public ImagePreProcessingScaler() {
-        this(0,1,8);
+        this(0, 1, 8);
     }
 
     public ImagePreProcessingScaler(double a, double b) {
         this(a, b, 8);
     }
+
     /**
      * Preprocessor can take a range as minRange and maxRange
      * @param a, default = 0
@@ -43,7 +40,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
         //Image values are not always from 0 to 255 though
         //some images are 16-bit, some 32-bit, integer, or float, and those BTW already come with values in [0..1]...
         //If the max expected value is 1, maxBits should be specified as 1
-        maxPixelVal = Math.pow(2,maxBits) - 1;
+        maxPixelVal = Math.pow(2, maxBits) - 1;
         this.minRange = a;
         this.maxRange = b;
     }
@@ -105,7 +102,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
-    public void transformLabel(INDArray label){
+    public void transformLabel(INDArray label) {
         //No op
     }
 
@@ -120,12 +117,17 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
+    public NormalizerType getType() {
+        return NormalizerType.IMAGE_MIN_MAX;
+    }
+
+    @Override
     public void revertFeatures(INDArray features) {
-        if(minRange != 0){
+        if (minRange != 0) {
             features.subi(minRange);
         }
-        if(maxRange - minRange != 1.0){
-            features.divi(maxRange-minRange);
+        if (maxRange - minRange != 1.0) {
+            features.divi(maxRange - minRange);
         }
         features.muli(this.maxPixelVal);
     }
@@ -147,7 +149,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void fitLabel(boolean fitLabels) {
-        if(fitLabels){
+        if (fitLabels) {
             log.warn("Labels fitting not currently supported for ImagePreProcessingScaler. Labels will not be modified");
         }
     }
@@ -156,28 +158,4 @@ public class ImagePreProcessingScaler implements DataNormalization {
     public boolean isFitLabel() {
         return false;
     }
-
-    /**
-     * Load the statistics
-     * for the data normalizer
-     *
-     * @param statistics the files to persist
-     * @throws IOException
-     */
-    @Override
-    public void load(File... statistics) throws IOException {
-
-    }
-
-    /**
-     * Save the accumulated statistics
-     *
-     * @param statistics the statistics to save
-     * @throws IOException
-     */
-    @Override
-    public void save(File... statistics) throws IOException {
-
-    }
-
 }

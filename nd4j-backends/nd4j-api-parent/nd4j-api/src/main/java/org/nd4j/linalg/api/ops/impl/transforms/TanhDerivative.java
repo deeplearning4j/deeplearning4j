@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -32,8 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  */
 public class TanhDerivative extends BaseTransformOp {
 
-    public TanhDerivative() {
-    }
+    public TanhDerivative() {}
 
     public TanhDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -63,50 +62,50 @@ public class TanhDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	IComplexNumber tanh = ComplexUtil.tanh(origin);
-    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
+        IComplexNumber tanh = ComplexUtil.tanh(origin);
+        return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	IComplexNumber tanh = ComplexUtil.tanh(origin);
-    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
+        IComplexNumber tanh = ComplexUtil.tanh(origin);
+        return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	IComplexNumber tanh = ComplexUtil.tanh(origin);
-    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
+        IComplexNumber tanh = ComplexUtil.tanh(origin);
+        return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public float op(float origin, float other) {
-    	double tanh = FastMath.tanh(origin);
-        return (float)(1.0 - tanh*tanh);
+        double tanh = FastMath.tanh(origin);
+        return (float) (1.0 - tanh * tanh);
     }
 
     @Override
     public double op(double origin, double other) {
-    	double tanh = FastMath.tanh(origin);
-        return 1.0 - tanh*tanh;
+        double tanh = FastMath.tanh(origin);
+        return 1.0 - tanh * tanh;
     }
 
     @Override
     public double op(double origin) {
-    	double tanh = FastMath.tanh(origin);
-        return 1.0 - tanh*tanh;
+        double tanh = FastMath.tanh(origin);
+        return 1.0 - tanh * tanh;
     }
 
     @Override
     public float op(float origin) {
-    	double tanh = FastMath.tanh(origin);
-        return (float)(1.0 - tanh*tanh);
+        double tanh = FastMath.tanh(origin);
+        return (float) (1.0 - tanh * tanh);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	IComplexNumber tanh = ComplexUtil.tanh(origin);
-    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
+        IComplexNumber tanh = ComplexUtil.tanh(origin);
+        return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
@@ -114,9 +113,12 @@ public class TanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new TanhDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.vectorAlongDimension(index, dimension),
+                            y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new TanhDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -125,9 +127,12 @@ public class TanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new TanhDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.tensorAlongDimension(index, dimension),
+                            y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
-            return new TanhDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 }

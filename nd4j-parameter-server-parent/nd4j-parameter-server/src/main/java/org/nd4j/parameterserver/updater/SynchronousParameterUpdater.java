@@ -86,9 +86,9 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
      */
     @Override
     public Map<String, Number> status() {
-        Map<String,Number> ret = new HashMap<>();
-        ret.put("workers",workers);
-        ret.put("accumulatedUpdates",numUpdates());
+        Map<String, Number> ret = new HashMap<>();
+        ret.put("workers", workers);
+        ret.put("accumulatedUpdates", numUpdates());
         return ret;
     }
 
@@ -132,10 +132,10 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
         int[] dimensions = message.getDimensions();
         boolean whole = dimensions.length == 1 && dimensions[0] == -1;
 
-        if(!whole)
-            partialUpdate(arr,ndArrayHolder.get(),message.getIndex(),dimensions);
+        if (!whole)
+            partialUpdate(arr, ndArrayHolder.get(), message.getIndex(), dimensions);
         else
-            update(arr,ndArrayHolder.get());
+            update(arr, ndArrayHolder.get());
     }
 
     /**
@@ -150,7 +150,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
      */
     @Override
     public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
-        result.tensorAlongDimension((int) idx,dimensions).addi(arr);
+        result.tensorAlongDimension((int) idx, dimensions).addi(arr);
     }
 
     /**

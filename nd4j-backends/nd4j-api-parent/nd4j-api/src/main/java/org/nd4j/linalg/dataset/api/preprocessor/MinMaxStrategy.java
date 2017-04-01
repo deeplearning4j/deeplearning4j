@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -19,12 +21,13 @@ import java.io.Serializable;
  * @author Ede Meijer
  */
 @Getter
-class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
+@EqualsAndHashCode
+public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
     private double minRange;
     private double maxRange;
 
-    protected MinMaxStrategy() {
-
+    public MinMaxStrategy() {
+        this(0, 1);
     }
 
     /**
@@ -61,7 +64,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
         // Add target range minimum values
         array.addi(minRange);
 
-        if(maskArray != null){
+        if (maskArray != null) {
             DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
     }
@@ -87,8 +90,19 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getLower(), array, 1));
         }
 
-        if(maskArray != null){
+        if (maskArray != null) {
             DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
+    }
+
+    /**
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * belongs to the current NormalizerStrategy implementation
+     *
+     * @return the new builder
+     */
+    @Override
+    public NormalizerStats.Builder newStatsBuilder() {
+        return new MinMaxStats.Builder();
     }
 }

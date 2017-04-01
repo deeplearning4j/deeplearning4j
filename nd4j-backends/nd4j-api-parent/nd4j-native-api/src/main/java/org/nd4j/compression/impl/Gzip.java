@@ -3,7 +3,6 @@ package org.nd4j.compression.impl;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -13,7 +12,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -74,7 +72,7 @@ public class Gzip extends AbstractCompressor {
             dos.close();
 
             byte[] bytes = stream.toByteArray();
-//            logger.info("Bytes: {}", Arrays.toString(bytes));
+            //            logger.info("Bytes: {}", Arrays.toString(bytes));
             BytePointer pointer = new BytePointer(bytes);
             CompressionDescriptor descriptor = new CompressionDescriptor(buffer, this);
             descriptor.setCompressedLength(bytes.length);
@@ -88,7 +86,8 @@ public class Gzip extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+                    int elementSize) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

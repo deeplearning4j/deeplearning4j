@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -43,7 +43,7 @@ public class BaseNDArrayProxy implements java.io.Serializable {
     protected transient DataBuffer data;
 
     public BaseNDArrayProxy(INDArray anInstance) {
-        if(anInstance.isView()){
+        if (anInstance.isView()) {
             anInstance = anInstance.dup(anInstance.ordering());
         }
         this.arrayShape = anInstance.shape();

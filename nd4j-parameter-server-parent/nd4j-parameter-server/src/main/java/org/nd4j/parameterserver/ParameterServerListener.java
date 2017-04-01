@@ -5,9 +5,8 @@ import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
 
@@ -32,8 +31,9 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param updatesPerEpoch  the number of updates per epoch
      *                         for synchronization
      */
-    public ParameterServerListener(int[] shape,int updatesPerEpoch) {
-        updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(shape),updatesPerEpoch);
+    public ParameterServerListener(int[] shape, int updatesPerEpoch) {
+        updater = new SynchronousParameterUpdater(new NoUpdateStorage(), new InMemoryNDArrayHolder(shape),
+                        updatesPerEpoch);
     }
 
     /**
@@ -41,7 +41,7 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param shape the shape of the array
      */
     public ParameterServerListener(int[] shape) {
-        this(shape,Runtime.getRuntime().availableProcessors());
+        this(shape, Runtime.getRuntime().availableProcessors());
     }
 
 
@@ -50,7 +50,7 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param shape the shape of the array
      * @param updater the updater to use for this server
      */
-    public ParameterServerListener(int[] shape,ParameterServerUpdater updater) {
+    public ParameterServerListener(int[] shape, ParameterServerUpdater updater) {
         this.updater = updater;
         this.shape = shape;
 
@@ -74,8 +74,8 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param dimensions the dimensions to act on for the tensor along dimension
      */
     @Override
-    public synchronized  void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-        updater.partialUpdate(arr,updater.ndArrayHolder().get(),idx,dimensions);
+    public synchronized void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+        updater.partialUpdate(arr, updater.ndArrayHolder().get(), idx, dimensions);
     }
 
     /**
@@ -85,10 +85,10 @@ public class ParameterServerListener implements NDArrayCallback {
      */
     @Override
     public synchronized void onNDArray(INDArray arr) {
-        if(shape == null)
-            updater.update(arr.reshape(1,arr.length()),updater.ndArrayHolder().get());
+        if (shape == null)
+            updater.update(arr.reshape(1, arr.length()), updater.ndArrayHolder().get());
         else
-            updater.update(arr,updater.ndArrayHolder().get());
+            updater.update(arr, updater.ndArrayHolder().get());
     }
 
     /**

@@ -11,11 +11,6 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Handles conversion of
  * arguments passed to jcuda
@@ -33,7 +28,7 @@ public class CudaArgs {
      * @param op the op to get the module name for
      * @return the module name for the given op
      */
-    public static String getModuleNameFor( Op op) {
+    public static String getModuleNameFor(Op op) {
         //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.name() + "_strided" : op.name();
         String moduleName = null;
         if (op instanceof Accumulation) {
@@ -71,7 +66,7 @@ public class CudaArgs {
             }
         } else if (op instanceof ScalarOp) {
             moduleName = "scalar";
-        } else if (op instanceof  BroadcastOp) {
+        } else if (op instanceof BroadcastOp) {
             moduleName = "broadcast";
         } else if (op instanceof IndexAccumulation) {
             moduleName = "indexReduce";
@@ -197,33 +192,33 @@ public class CudaArgs {
             if (name.startsWith("add")) {
                 code = 0;
             } else if (name.startsWith("sub")) {
-                code =  1;
+                code = 1;
             } else if (name.startsWith("mul")) {
-                code =  2;
+                code = 2;
             } else if (name.startsWith("div")) {
-                code =  3;
+                code = 3;
             } else if (name.startsWith("rdiv")) {
-                code =  4;
+                code = 4;
             } else if (name.startsWith("rsub")) {
-                code =  5;
+                code = 5;
             } else if (name.startsWith("max")) {
-                code =  6;
+                code = 6;
             } else if (name.startsWith("lessthan")) {
-                code =  7;
+                code = 7;
             } else if (name.startsWith("greaterthan")) {
-                code =  8;
+                code = 8;
             } else if (name.startsWith("eq")) {
-                code =  9;
+                code = 9;
             } else if (name.startsWith("lte")) {
-                code =  10;
+                code = 10;
             } else if (name.startsWith("neq")) {
-                code =  11;
+                code = 11;
             } else if (name.startsWith("min")) {
-                code =  12;
+                code = 12;
             } else if (name.startsWith("set")) {
-                code =  13;
+                code = 13;
             }
-        } else if (op instanceof  BroadcastOp) {
+        } else if (op instanceof BroadcastOp) {
             if (name.equals("broadcastadd")) {
                 code = 0;
             } else if (name.equals("broadcastsub")) {
@@ -247,7 +242,7 @@ public class CudaArgs {
             }
         }
 
-       // System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
+        // System.out.println("CALLING ["+getModuleNameFor(op)+"] -> ["+code+"]");
 
         return code;
     }
@@ -285,10 +280,10 @@ public class CudaArgs {
      * @param kernelParams
      * @return
      */
-    public static ArgsAndReferences argsAndReference(CudaContext context,Object...kernelParams) {
-  //      Map<Object, Object> idMap = new IdentityHashMap<>();
+    public static ArgsAndReferences argsAndReference(CudaContext context, Object... kernelParams) {
+        //      Map<Object, Object> idMap = new IdentityHashMap<>();
         Object[] kernelParameters = new Object[kernelParams.length];
-//        List<CublasPointer> pointersToFree = new ArrayList<>();
+        //        List<CublasPointer> pointersToFree = new ArrayList<>();
         Multimap<INDArray, CublasPointer> arrayToPointer = ArrayListMultimap.create();
         for (int i = 0; i < kernelParams.length; i++) {
             Object arg = kernelParams[i];
@@ -296,29 +291,29 @@ public class CudaArgs {
             // If the instance is a JCudaBuffer we should assign it to the device
             if (arg instanceof JCudaBuffer) {
                 JCudaBuffer buffer = (JCudaBuffer) arg;
-//                if (!idMap.containsKey(buffer)) {
-                    CublasPointer pointerToFree = new CublasPointer(buffer, context);
-                    kernelParameters[i] = pointerToFree.getDevicePointer();
-//                    pointersToFree.add(pointerToFree);
-//                    idMap.put(buffer, pointerToFree.getPointer());
-//                } else {
-//                    Pointer pointer = (Pointer) idMap.get(buffer);
-//                    kernelParameters[i] = pointer;
-//                }
+                //                if (!idMap.containsKey(buffer)) {
+                CublasPointer pointerToFree = new CublasPointer(buffer, context);
+                kernelParameters[i] = pointerToFree.getDevicePointer();
+                //                    pointersToFree.add(pointerToFree);
+                //                    idMap.put(buffer, pointerToFree.getPointer());
+                //                } else {
+                //                    Pointer pointer = (Pointer) idMap.get(buffer);
+                //                    kernelParameters[i] = pointer;
+                //                }
 
             } else if (arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
                 //array.norm2(0);
-//                if (!idMap.containsKey(array)) {
-                    CublasPointer pointerToFree = new CublasPointer(array, context);
-                    kernelParameters[i] = pointerToFree.getDevicePointer();
-//                    pointersToFree.add(pointerToFree);
-                    arrayToPointer.put(array, pointerToFree);
-//                    idMap.put(array, pointerToFree.getPointer());
-//                } else {
-//                    Pointer pointer = (Pointer) idMap.get(array);
-//                    kernelParameters[i] = pointer;
-//                }
+                //                if (!idMap.containsKey(array)) {
+                CublasPointer pointerToFree = new CublasPointer(array, context);
+                kernelParameters[i] = pointerToFree.getDevicePointer();
+                //                    pointersToFree.add(pointerToFree);
+                arrayToPointer.put(array, pointerToFree);
+                //                    idMap.put(array, pointerToFree.getPointer());
+                //                } else {
+                //                    Pointer pointer = (Pointer) idMap.get(array);
+                //                    kernelParameters[i] = pointer;
+                //                }
 
             } else {
                 kernelParameters[i] = arg;
@@ -335,8 +330,8 @@ public class CudaArgs {
     @AllArgsConstructor
     public static class ArgsAndReferences {
         private Object[] args;
-//        private Map<Object,Object> idMap;
-//        private List<CublasPointer> pointersToFree;
+        //        private Map<Object,Object> idMap;
+        //        private List<CublasPointer> pointersToFree;
         /**
          * conversion list of arrays to their assigned cublas pointer
          */

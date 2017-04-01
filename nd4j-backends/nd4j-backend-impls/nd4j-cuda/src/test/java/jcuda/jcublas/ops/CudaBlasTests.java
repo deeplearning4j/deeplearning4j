@@ -9,8 +9,6 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * @author raver119@gmail.com
  */

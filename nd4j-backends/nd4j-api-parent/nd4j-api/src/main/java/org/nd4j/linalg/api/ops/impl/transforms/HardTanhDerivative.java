@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -31,8 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class HardTanhDerivative extends BaseTransformOp {
-    public HardTanhDerivative() {
-    }
+    public HardTanhDerivative() {}
 
     public HardTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -62,20 +61,20 @@ public class HardTanhDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	double r = origin.realComponent().doubleValue();
-    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
+        double r = origin.realComponent().doubleValue();
+        return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-    	double r = origin.realComponent().doubleValue();
-    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
+        double r = origin.realComponent().doubleValue();
+        return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-    	double r = origin.realComponent().doubleValue();
-    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
+        double r = origin.realComponent().doubleValue();
+        return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
@@ -100,17 +99,17 @@ public class HardTanhDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-    	double r = origin.realComponent().doubleValue();
-    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
+        double r = origin.realComponent().doubleValue();
+        return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
 
     private static float hardTanhDeriv(float num) {
-    	return ((num>=-1.0f && num<=1.0f) ? 1.0f : 0.0f);
+        return ((num >= -1.0f && num <= 1.0f) ? 1.0f : 0.0f);
     }
 
     private static double hardTanhDeriv(double num) {
-    	return ((num >= - 1.0 && num <= 1.0) ? 1.0 : 0.0);
+        return ((num >= -1.0 && num <= 1.0) ? 1.0 : 0.0);
     }
 
     @Override
@@ -118,9 +117,11 @@ public class HardTanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanhDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanhDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardTanhDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanhDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -129,9 +130,11 @@ public class HardTanhDerivative extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanhDerivative(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanhDerivative(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardTanhDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new HardTanhDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 

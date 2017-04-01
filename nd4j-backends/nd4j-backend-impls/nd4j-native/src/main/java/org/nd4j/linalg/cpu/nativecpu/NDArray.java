@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,9 +28,6 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 import java.util.List;
 
@@ -290,9 +287,8 @@ public class NDArray extends BaseNDArray {
 
 
 
-
     public NDArray(double[] data, int[] shape, int[] stride, int offset) {
-        super(data,shape,stride,offset);
+        super(data, shape, stride, offset);
     }
 
     public NDArray(float[][] floats) {
@@ -343,19 +339,20 @@ public class NDArray extends BaseNDArray {
     public NDArray(DataBuffer buffer, int[] shape, int[] strides) {
         super(buffer, shape, strides);
     }
+
     public NDArray(DoubleBuffer buffer, int[] shape, char ordering) {
-        super(buffer, shape, 0,ordering);
+        super(buffer, shape, 0, ordering);
     }
+
     public NDArray(DoubleBuffer buffer, int[] shape, int offset) {
         super(buffer, shape, offset);
     }
 
     public NDArray(int[] shape, DataBuffer buffer) {
-        super(shape,buffer);
+        super(shape, buffer);
     }
 
-    private Object writeReplace()
-        throws java.io.ObjectStreamException {
+    private Object writeReplace() throws java.io.ObjectStreamException {
         return new BaseNDArrayProxy(this);
     }
 
@@ -370,7 +367,8 @@ public class NDArray extends BaseNDArray {
     public synchronized INDArray unsafeDuplication() {
         INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
 
-        Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().length() * this.data().getElementSize());
+        Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(),
+                        this.data().length() * this.data().getElementSize());
 
         return ret;
     }

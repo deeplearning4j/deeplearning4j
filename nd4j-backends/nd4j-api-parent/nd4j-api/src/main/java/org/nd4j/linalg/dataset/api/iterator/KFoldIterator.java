@@ -17,14 +17,15 @@ public class KFoldIterator implements DataSetIterator {
     private int k;
     private int batch;
     private int lastBatch;
-    private int kCursor=0;
+    private int kCursor = 0;
     private DataSet test;
     private DataSet train;
     protected DataSetPreProcessor preProcessor;
 
     public KFoldIterator(DataSet singleFold) {
-        this(10,singleFold);
+        this(10, singleFold);
     }
+
     /**Create an iterator given the dataset and a value of k (optional, defaults to 10)
      * If number of samples in the dataset is not a multiple of k, the last fold will have less samples with the rest having the same number of samples.
      *
@@ -32,21 +33,20 @@ public class KFoldIterator implements DataSetIterator {
      * @param singleFold DataSet to split into k folds
      */
 
-    public KFoldIterator (int k, DataSet singleFold) {
+    public KFoldIterator(int k, DataSet singleFold) {
         this.k = k;
         this.singleFold = singleFold.copy();
-        if (k <= 1) throw new IllegalArgumentException();
-        if (singleFold.numExamples() % k !=0 ) {
-            if ( k!= 2) {
-                this.batch = singleFold.numExamples()/(k-1);
-                this.lastBatch = singleFold.numExamples() % (k-1);
-            }
-            else {
+        if (k <= 1)
+            throw new IllegalArgumentException();
+        if (singleFold.numExamples() % k != 0) {
+            if (k != 2) {
+                this.batch = singleFold.numExamples() / (k - 1);
+                this.lastBatch = singleFold.numExamples() % (k - 1);
+            } else {
                 this.lastBatch = singleFold.numExamples() / 2;
                 this.batch = this.lastBatch + 1;
             }
-        }
-        else {
+        } else {
             this.batch = singleFold.numExamples() / k;
             this.lastBatch = singleFold.numExamples() / k;
         }
@@ -175,24 +175,22 @@ public class KFoldIterator implements DataSetIterator {
         if (kCursor == k - 1) {
             left = totalExamples() - lastBatch;
             right = totalExamples();
-        }
-        else {
-            left = kCursor*batch;
-            right = left+batch;
+        } else {
+            left = kCursor * batch;
+            right = left + batch;
         }
 
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
-        if (right<totalExamples()) {
-            if(left > 0){
-                kMinusOneFoldList.add((DataSet) singleFold.getRange(0,left));
+        if (right < totalExamples()) {
+            if (left > 0) {
+                kMinusOneFoldList.add((DataSet) singleFold.getRange(0, left));
             }
-            kMinusOneFoldList.add((DataSet) singleFold.getRange(right,totalExamples()));
+            kMinusOneFoldList.add((DataSet) singleFold.getRange(right, totalExamples()));
             train = DataSet.merge(kMinusOneFoldList);
+        } else {
+            train = (DataSet) singleFold.getRange(0, left);
         }
-        else {
-            train = (DataSet) singleFold.getRange(0,left);
-        }
-        test = (DataSet) singleFold.getRange(left,right);
+        test = (DataSet) singleFold.getRange(left, right);
 
         kCursor++;
 

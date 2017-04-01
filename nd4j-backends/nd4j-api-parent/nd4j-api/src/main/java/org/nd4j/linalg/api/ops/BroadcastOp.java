@@ -17,7 +17,7 @@ public interface BroadcastOp extends Op {
     int[] getDimension();
 
     /** Set the dimension for the vector op. */
-    void setDimension(int...dimension);
+    void setDimension(int... dimension);
 
 
     /**

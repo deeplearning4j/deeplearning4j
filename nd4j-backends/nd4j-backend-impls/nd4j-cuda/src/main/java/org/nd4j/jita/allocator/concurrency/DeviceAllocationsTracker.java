@@ -42,7 +42,7 @@ public class DeviceAllocationsTracker {
     protected void ensureThreadRegistered(Long threadId, Integer deviceId) {
         globalLock.readLock().lock();
 
-      //  boolean contains = allocationTable.contains(deviceId, threadId);
+        //  boolean contains = allocationTable.contains(deviceId, threadId);
 
         globalLock.readLock().unlock();
 
@@ -51,15 +51,15 @@ public class DeviceAllocationsTracker {
 
             //contains = allocationTable.contains(deviceId, threadId);
             //if (!contains) {
-                //allocationTable.put(deviceId, threadId, new AtomicLong(0));
+            //allocationTable.put(deviceId, threadId, new AtomicLong(0));
 
-                if (!memoryTackled.containsKey(deviceId)) {
-                    memoryTackled.put(deviceId, new AtomicLong(0));
-                }
+            if (!memoryTackled.containsKey(deviceId)) {
+                memoryTackled.put(deviceId, new AtomicLong(0));
+            }
 
-                if (!reservedSpace.containsKey(deviceId)) {
-                    reservedSpace.put(deviceId, new AtomicLong(0));
-                }
+            if (!reservedSpace.containsKey(deviceId)) {
+                reservedSpace.put(deviceId, new AtomicLong(0));
+            }
             //}
             globalLock.writeLock().unlock();
         }
@@ -94,9 +94,9 @@ public class DeviceAllocationsTracker {
 
             //log.info("Memory reduction on device [{}], memory size: [{}], before: [{}], after [{}]", deviceId, memorySize, before, after);
 
-//            AtomicLong val = allocationTable.get(deviceId, threadId);
+            //            AtomicLong val = allocationTable.get(deviceId, threadId);
 
-//            val.addAndGet(memorySize * -1);
+            //            val.addAndGet(memorySize * -1);
 
             return val2.get();
         } finally {
@@ -116,7 +116,7 @@ public class DeviceAllocationsTracker {
         ensureThreadRegistered(threadId, deviceId);
         try {
             deviceLocks.get(deviceId).writeLock().lock();
-/*
+            /*
             if (getAllocatedSize(deviceId) + memorySize + getReservedSpace(deviceId)> environment.getDeviceInformation(deviceId).getTotalMemory() * configuration.getMaxDeviceMemoryUsed()) {
                 return false;
             } else {
