@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -1753,11 +1755,7 @@ public interface NDArrayFactory {
      */
     //    DataBuffer restoreFromHalfs(DataBuffer buffer);
 
-    /**
-     * This method converts Single/Double precision databuffer to Half-precision databuffer
-     * @param buffer
-     * @return
-     */
+
     //    DataBuffer convertToHalfs(DataBuffer buffer);
 
 
@@ -1769,4 +1767,21 @@ public interface NDArrayFactory {
 
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length);
+
+    /**
+     * Create from an in memory numpy pointer
+     * @param pointer the pointer to the
+     *                numpy array
+     * @return an ndarray created from the in memory
+     * numpy pointer
+     */
+    INDArray createFromNpyPointer(Pointer pointer);
+
+    /**
+     * Create from a given numpy file.
+     * @param file the file to create the ndarray from
+     * @return the created ndarray
+     */
+    INDArray createFromNpyFile(File file);
+
 }

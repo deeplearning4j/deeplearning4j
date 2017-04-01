@@ -4542,6 +4542,31 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native @Cast("Nd4jPointer") Pointer dataPointForNumpy(@Cast("Nd4jPointer") Pointer npArray);
 
+    /**
+     * Create a pointer to an NDarray struct
+     * @param path  the path to create the ndarray
+     * struct from
+     * @return  a pointer to the ndarray struct
+     */
+    public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString BytePointer path);
+    public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString String path);
+
+    /**
+     * Return the length of a shape buffer
+     * based on the pointer
+     * @param buffer  the buffer pointer to check
+     * @return
+     */
+    public native int lengthForShapeBufferPointer(@Cast("Nd4jPointer") Pointer buffer);
+
+    /**
+     * Get the element size for a numpy array
+     * @param npyArray  the numpy array's address
+     * to get the length for
+     * @return
+     */
+    public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
+
 }
 
 
