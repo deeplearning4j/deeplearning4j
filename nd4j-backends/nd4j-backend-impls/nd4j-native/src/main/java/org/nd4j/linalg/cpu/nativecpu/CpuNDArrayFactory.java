@@ -47,6 +47,9 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -983,7 +986,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         else if (typeDst.ordinal() <= 5)
             elementSize = 2;
         else if (typeDst.ordinal() == 6)
-                elementSize = 4;
+            elementSize = 4;
         else if (typeDst.ordinal() == 7)
             elementSize = 8;
         else
@@ -1037,8 +1040,24 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
+        shapeBufferPointer.capacity(4 * length);
+        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.position(0);
+
+
+
         IntPointer intPointer = new IntPointer(shapeBufferPointer);
-        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length,new IntRawIndexer(intPointer));
+        DataBuffer shapeBuffer = Nd4j.createBuffer(
+                shapeBufferPointer,
+                DataBuffer.Type.INT,
+                length,
+                new IntRawIndexer(intPointer,new long[]{length},new long[]{1}));
+
+        dataPointer.position(0);
+        dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
+        dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
+
+
         if(dataBufferElementSize == (Float.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.FLOAT,
@@ -1052,8 +1071,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     new DoubleRawIndexer(new DoublePointer(dataPointer)));
         }
 
-        INDArray ret = Nd4j.create(data,Shape.shape(shapeBuffer),
-                Shape.strideArr(shapeBuffer),Shape.offset(shapeBuffer),Shape.order(shapeBuffer));
+        INDArray ret = Nd4j.create(data,
+                Shape.shape(shapeBuffer),
+                Shape.strideArr(shapeBuffer),
+                Shape.offset(shapeBuffer),
+                Shape.order(shapeBuffer));
         return ret;
     }
 
@@ -1065,7 +1087,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray createFromNpyFile(File file) {
-        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
+        byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8" ));
+        String otherBytes = new String(pathBytes);
+        System.out.println(otherBytes);
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
+        directBuffer.put(pathBytes);
+        directBuffer.rewind();
+        directBuffer.position(0);
+        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
         return createFromNpyPointer(pointer);
     }
 }

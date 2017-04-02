@@ -4567,6 +4567,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
 
+
+
 }
 
 
