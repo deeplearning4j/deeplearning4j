@@ -105,21 +105,21 @@ See [Windows.md](windows.md)
 
 2. Setup cpu followed by gpu, run the following on the command line:
      * For standard builds:
-    
+
         ```bash
         ./buildnativeoperations.sh
         ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
         ```
-        
+
      * For Debug builds:
-     
+
         ```bash
         ./buildnativeoperations.sh blas -b debug
         ./buildnativeoperations.sh blas -c cuda -сс YOUR_DEVICE_ARCH -b debug
         ```
-        
+
      * For release builds (default):
-     
+
         ```bash
         ./buildnativeoperations.sh
         ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
@@ -134,3 +134,37 @@ export MKL_THREADING_LAYER=GNU
 export LD_PRELOAD=/usr/lib64/libgomp.so.1
 ```
 
+## Packaging
+
+If on Ubuntu (14.04 or above) or CentOS (6 or above), this repository is also
+set to create packages for your distribution. Let's assume you have built:
+
+- for the cpu, your command-line was `./buildnativeoperations.sh ...`:
+
+```bash
+cd blasbuild/cpu
+make package
+```
+
+- for the gpu, your command-line was `./buildnativeoperations.sh -c cuda ...`:
+
+```bash
+cd blasbuild/cuda
+make package
+```
+
+## Uploading package to Bintray
+
+The package upload script is in packaging. The upload command for an rpm built
+for cpu is:
+
+``` bash
+./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cpu/libnd4j-0.8.0.fc7.3.1611.x86_64.rpm https://github.com/deeplearning4j
+```
+
+
+The upload command for a deb package built for cuda is:
+
+``` bash
+./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cuda/libnd4j-0.8.0.fc7.3.1611.x86_64.deb https://github.com/deeplearning4j
+```

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -eu
 
+# cd to the directory containing this script
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $DIR
+
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -26,7 +30,7 @@ EXPERIMENTAL=
 while [[ $# > 1 ]]
 do
 key="$1"
-#Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
+#Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
 case $key in
     -o|-platform|--platform)
     OS="$2"
@@ -100,12 +104,12 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
-	linux-armhf)
-	export CMAKE_COMMAND="cmake -D CMAKE_TOOLCHAIN_FILE=$HOME/raspberrypi/pi.cmake"
-	if [ -z "$ARCH" ]; then
+        linux-armhf)
+        export CMAKE_COMMAND="cmake -D CMAKE_TOOLCHAIN_FILE=$HOME/raspberrypi/pi.cmake"
+        if [ -z "$ARCH" ]; then
         ARCH="armv7-r"
     fi
-	;;
+        ;;
     android-arm)
     if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
@@ -287,5 +291,3 @@ mkbuilddir
 pwd
 eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 eval $MAKE_COMMAND && cd ../../..
-
-
