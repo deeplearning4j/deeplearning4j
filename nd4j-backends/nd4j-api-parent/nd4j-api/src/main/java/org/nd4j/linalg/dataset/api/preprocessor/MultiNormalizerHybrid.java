@@ -304,11 +304,13 @@ public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDa
     private void preProcess(INDArray[] arrays, INDArray[] masks, NormalizerStrategy globalStrategy,
                     Map<Integer, NormalizerStrategy> perArrayStrategy, Map<Integer, NormalizerStats> stats) {
 
-        for (int i = 0; i < arrays.length; i++) {
-            NormalizerStrategy strategy = getStrategy(globalStrategy, perArrayStrategy, i);
-            if (strategy != null) {
-                //noinspection unchecked
-                strategy.preProcess(arrays[i], masks == null ? null : masks[i], stats.get(i));
+        if (arrays != null) {
+            for (int i = 0; i < arrays.length; i++) {
+                NormalizerStrategy strategy = getStrategy(globalStrategy, perArrayStrategy, i);
+                if (strategy != null) {
+                    //noinspection unchecked
+                    strategy.preProcess(arrays[i], masks == null ? null : masks[i], stats.get(i));
+                }
             }
         }
     }
