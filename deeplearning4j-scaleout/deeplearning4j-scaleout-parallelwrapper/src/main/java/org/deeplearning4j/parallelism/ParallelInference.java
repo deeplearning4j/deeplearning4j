@@ -2,12 +2,15 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -27,8 +30,13 @@ public class ParallelInference {
     private int workers;
     private int batchLimit;
     private InferenceMode inferenceMode;
+    private int queueLimit;
+
+    // this queue
+    private BlockingQueue<InferenceObservable> observables;
 
     private AtomicLong sequenceId = new AtomicLong(0);
+    private final Object locker = new Object();
 
     private InferenceWorker[] zoo;
 
@@ -40,6 +48,15 @@ public class ParallelInference {
 
     protected ParallelInference() {
         //
+    }
+
+    protected void init() {
+        observables = new LinkedBlockingQueue<>(queueLimit);
+
+        for (int i = 0; i < workers; i++) {
+            zoo[i] = new InferenceWorker(i, model, observables);
+            zoo[i].start();
+        }
     }
 
 
@@ -65,10 +82,12 @@ public class ParallelInference {
             BasicInferenceObservable observable = new BasicInferenceObservable();
 
             observable.addObserver(observer);
-            // submit query to processing
 
-            // and block until Observable returns
             try {
+                // submit query to processing
+                observables.put(observable);
+
+                // and block until Observable returns
                 observer.wait();
                 // observer.waitTillDone();
             } catch (InterruptedException e) {
@@ -89,6 +108,7 @@ public class ParallelInference {
         private int workers = Nd4j.getAffinityManager().getNumberOfDevices();
         private int batchLimit = 32;
         private InferenceMode inferenceMode = InferenceMode.SEQUENTIAL;
+        private int queueLimit = 64;
 
         public Builder(@NonNull ComputationGraph model) {
             this.model = model;
@@ -175,12 +195,37 @@ public class ParallelInference {
         }
 
         /**
+         * This method defines buffer queue size.
+         *
+         * Default value: 64
+         *
+         * @param limit
+         * @return
+         */
+        public Builder queueLimit(int limit) {
+            if (limit < 1)
+                throw new IllegalStateException("Queue limit should be positive value");
+
+            this.queueLimit = limit;
+            return this;
+        }
+
+        /**
          * This method builds new ParallelInference instance
          *
          * @return
          */
         public ParallelInference build() {
             ParallelInference inference = new ParallelInference();
+            inference.batchLimit = this.batchLimit;
+            inference.queueLimit = this.queueLimit;
+            inference.inferenceMode = this.inferenceMode;
+            inference.labels = this.labels;
+            inference.model = this.model;
+            inference.nanos = this.nanos;
+            inference.workers = this.workers;
+
+            inference.init();
 
             return inference;
         }
@@ -198,7 +243,9 @@ public class ParallelInference {
         private Model protoModel;
         private Model replicatedModel;
 
-        private InferenceWorker (int id) {
+        private InferenceWorker (int id, @NonNull Model model, @NonNull BlockingQueue inputQueue) {
+            this.inputQueue = inputQueue;
+            this.protoModel = model;
 
             this.setDaemon(true);
             this.setName("InferenceThread-"+id);
@@ -208,9 +255,30 @@ public class ParallelInference {
         public void run() {
             try {
                 // model should be replicated & initialized here
+                if (protoModel instanceof ComputationGraph) {
+                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
+                    ((ComputationGraph)this.replicatedModel).init();
+
+                    synchronized (locker) {
+                        ((ComputationGraph) this.replicatedModel).setParams(protoModel.params());
+
+                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    }
+                } else if (protoModel instanceof MultiLayerNetwork) {
+                    this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
+                    ((MultiLayerNetwork)this.replicatedModel).init();
+
+                    synchronized (locker) {
+                        ((MultiLayerNetwork) this.replicatedModel).setParams(protoModel.params());
+
+                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    }
+                }
 
                 while (shouldWork.get()) {
-                    InferenceObservable request = inputQueue.poll(100, TimeUnit.NANOSECONDS);
+                    InferenceObservable request = inputQueue.take();
 
                     if (request != null) {
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
