@@ -22,9 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
-import org.bytedeco.javacpp.indexer.FloatRawIndexer;
-import org.bytedeco.javacpp.indexer.IntRawIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -1051,7 +1049,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                 shapeBufferPointer,
                 DataBuffer.Type.INT,
                 length,
-                new IntRawIndexer(intPointer,new long[]{length},new long[]{1}));
+                IntIndexer.create(intPointer));
 
         dataPointer.position(0);
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
@@ -1062,13 +1060,13 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.FLOAT,
                     Shape.length(shapeBuffer),
-                    new FloatRawIndexer(new FloatPointer(dataPointer)));
+                    FloatIndexer.create(new FloatPointer(dataPointer)));
         }
         else if(dataBufferElementSize == (Double.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.DOUBLE,
                     Shape.length(shapeBuffer),
-                    new DoubleRawIndexer(new DoublePointer(dataPointer)));
+                    DoubleIndexer.create(new DoublePointer(dataPointer)));
         }
 
         INDArray ret = Nd4j.create(data,
