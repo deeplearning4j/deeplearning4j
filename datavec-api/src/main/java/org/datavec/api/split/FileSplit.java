@@ -74,9 +74,13 @@ public class FileSplit extends BaseInputSplit {
         Collection<File> subFiles;
 
         if (rootDir == null)
-            throw new IllegalArgumentException("File must not be null");
-
-        if (rootDir.isDirectory()) {
+            throw new IllegalArgumentException("File path must not be null");
+        else if (!rootDir.getAbsoluteFile().exists())
+            // When implementing wild card characters in the rootDir, remove this if exists,
+            // verify expanded paths exist and check for the edge case when expansion cannot be
+            // translated to existed locations
+            throw new IllegalArgumentException("No such file or directory: " + rootDir.getAbsolutePath());
+        else if (rootDir.isDirectory()) {
             subFiles = FileUtils.listFiles(rootDir, allowFormat, recursive);
             uriStrings = new CompactHeapStringList();
 

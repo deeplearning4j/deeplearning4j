@@ -21,6 +21,7 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
@@ -40,6 +41,12 @@ import static org.junit.Assert.assertNotEquals;
  * Created by Alex on 27/09/2016.
  */
 public class TestImageRecordReader {
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEmptySplit() throws IOException {
+        InputSplit data = new CollectionInputSplit(new ArrayList<URI>());
+        new ImageRecordReader().initialize(data, null);
+    }
 
     @Test
     public void testMetaData() throws IOException {
