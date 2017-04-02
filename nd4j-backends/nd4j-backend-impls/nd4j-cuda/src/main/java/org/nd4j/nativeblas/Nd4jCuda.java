@@ -75,10 +75,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 
-   /**
-    *
-    * @param num
-    */
+    /**
+     *
+     * @param num
+     */
     public native void setElementThreshold(int num);
 
     /**
@@ -878,20 +878,20 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @return
      */
     public native float execIndexReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                           int opNum,
-                                           @Cast("float16*") ShortPointer x,
-                                           IntPointer xShapeInfo,
-                                           @Cast("float16*") ShortPointer extraParams);
+                                        int opNum,
+                                        @Cast("float16*") ShortPointer x,
+                                        IntPointer xShapeInfo,
+                                        @Cast("float16*") ShortPointer extraParams);
     public native float execIndexReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                           int opNum,
-                                           @Cast("float16*") ShortBuffer x,
-                                           IntBuffer xShapeInfo,
-                                           @Cast("float16*") ShortBuffer extraParams);
+                                        int opNum,
+                                        @Cast("float16*") ShortBuffer x,
+                                        IntBuffer xShapeInfo,
+                                        @Cast("float16*") ShortBuffer extraParams);
     public native float execIndexReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                           int opNum,
-                                           @Cast("float16*") short[] x,
-                                           int[] xShapeInfo,
-                                           @Cast("float16*") short[] extraParams);
+                                        int opNum,
+                                        @Cast("float16*") short[] x,
+                                        int[] xShapeInfo,
+                                        @Cast("float16*") short[] extraParams);
 
     /**
      *
@@ -939,26 +939,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param dimensionLength
      */
     public native void execIndexReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                    @Cast("float16*") ShortPointer x,
-                                    IntPointer xShapeInfo,
-                                    @Cast("float16*") ShortPointer extraParams,
-                                    @Cast("float16*") ShortPointer result,
-                                    IntPointer resultShapeInfoBuffer,
-                                    IntPointer dimension, int dimensionLength);
+                                   @Cast("float16*") ShortPointer x,
+                                   IntPointer xShapeInfo,
+                                   @Cast("float16*") ShortPointer extraParams,
+                                   @Cast("float16*") ShortPointer result,
+                                   IntPointer resultShapeInfoBuffer,
+                                   IntPointer dimension, int dimensionLength);
     public native void execIndexReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                    @Cast("float16*") ShortBuffer x,
-                                    IntBuffer xShapeInfo,
-                                    @Cast("float16*") ShortBuffer extraParams,
-                                    @Cast("float16*") ShortBuffer result,
-                                    IntBuffer resultShapeInfoBuffer,
-                                    IntBuffer dimension, int dimensionLength);
+                                   @Cast("float16*") ShortBuffer x,
+                                   IntBuffer xShapeInfo,
+                                   @Cast("float16*") ShortBuffer extraParams,
+                                   @Cast("float16*") ShortBuffer result,
+                                   IntBuffer resultShapeInfoBuffer,
+                                   IntBuffer dimension, int dimensionLength);
     public native void execIndexReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                    @Cast("float16*") short[] x,
-                                    int[] xShapeInfo,
-                                    @Cast("float16*") short[] extraParams,
-                                    @Cast("float16*") short[] result,
-                                    int[] resultShapeInfoBuffer,
-                                    int[] dimension, int dimensionLength);
+                                   @Cast("float16*") short[] x,
+                                   int[] xShapeInfo,
+                                   @Cast("float16*") short[] extraParams,
+                                   @Cast("float16*") short[] result,
+                                   int[] resultShapeInfoBuffer,
+                                   int[] dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -1109,33 +1109,33 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
-                                          @Cast("float16*") ShortPointer dx,
-                                          int xStride,
-                                          @Cast("float16*") ShortPointer y,
-                                          int yStride,
-                                          @Cast("float16*") ShortPointer result,
-                                          int resultStride,
-                                          @Cast("float16*") ShortPointer extraParams,
+                                         @Cast("float16*") ShortPointer dx,
+                                         int xStride,
+                                         @Cast("float16*") ShortPointer y,
+                                         int yStride,
+                                         @Cast("float16*") ShortPointer result,
+                                         int resultStride,
+                                         @Cast("float16*") ShortPointer extraParams,
                                          @Cast("Nd4jIndex") long n);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
-                                          @Cast("float16*") ShortBuffer dx,
-                                          int xStride,
-                                          @Cast("float16*") ShortBuffer y,
-                                          int yStride,
-                                          @Cast("float16*") ShortBuffer result,
-                                          int resultStride,
-                                          @Cast("float16*") ShortBuffer extraParams,
+                                         @Cast("float16*") ShortBuffer dx,
+                                         int xStride,
+                                         @Cast("float16*") ShortBuffer y,
+                                         int yStride,
+                                         @Cast("float16*") ShortBuffer result,
+                                         int resultStride,
+                                         @Cast("float16*") ShortBuffer extraParams,
                                          @Cast("Nd4jIndex") long n);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
-                                          @Cast("float16*") short[] dx,
-                                          int xStride,
-                                          @Cast("float16*") short[] y,
-                                          int yStride,
-                                          @Cast("float16*") short[] result,
-                                          int resultStride,
-                                          @Cast("float16*") short[] extraParams,
+                                         @Cast("float16*") short[] dx,
+                                         int xStride,
+                                         @Cast("float16*") short[] y,
+                                         int yStride,
+                                         @Cast("float16*") short[] result,
+                                         int resultStride,
+                                         @Cast("float16*") short[] extraParams,
                                          @Cast("Nd4jIndex") long n);
 
     /**
@@ -1207,40 +1207,40 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") ShortPointer dx,
-                                        IntPointer xShapeInfo,
-                                        @Cast("float16*") ShortPointer y,
-                                        IntPointer yShapeInfo,
-                                        @Cast("float16*") ShortPointer result,
-                                        IntPointer resultShapeInfo,
-                                        @Cast("float16*") ShortPointer extraParams,
-                                        IntPointer xIndexes,
-                                        IntPointer yIndexes,
-                                        IntPointer resultIndexes);
+                                       @Cast("float16*") ShortPointer dx,
+                                       IntPointer xShapeInfo,
+                                       @Cast("float16*") ShortPointer y,
+                                       IntPointer yShapeInfo,
+                                       @Cast("float16*") ShortPointer result,
+                                       IntPointer resultShapeInfo,
+                                       @Cast("float16*") ShortPointer extraParams,
+                                       IntPointer xIndexes,
+                                       IntPointer yIndexes,
+                                       IntPointer resultIndexes);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") ShortBuffer dx,
-                                        IntBuffer xShapeInfo,
-                                        @Cast("float16*") ShortBuffer y,
-                                        IntBuffer yShapeInfo,
-                                        @Cast("float16*") ShortBuffer result,
-                                        IntBuffer resultShapeInfo,
-                                        @Cast("float16*") ShortBuffer extraParams,
-                                        IntBuffer xIndexes,
-                                        IntBuffer yIndexes,
-                                        IntBuffer resultIndexes);
+                                       @Cast("float16*") ShortBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       @Cast("float16*") ShortBuffer y,
+                                       IntBuffer yShapeInfo,
+                                       @Cast("float16*") ShortBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       @Cast("float16*") ShortBuffer extraParams,
+                                       IntBuffer xIndexes,
+                                       IntBuffer yIndexes,
+                                       IntBuffer resultIndexes);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") short[] dx,
-                                        int[] xShapeInfo,
-                                        @Cast("float16*") short[] y,
-                                        int[] yShapeInfo,
-                                        @Cast("float16*") short[] result,
-                                        int[] resultShapeInfo,
-                                        @Cast("float16*") short[] extraParams,
-                                        int[] xIndexes,
-                                        int[] yIndexes,
-                                        int[] resultIndexes);
+                                       @Cast("float16*") short[] dx,
+                                       int[] xShapeInfo,
+                                       @Cast("float16*") short[] y,
+                                       int[] yShapeInfo,
+                                       @Cast("float16*") short[] result,
+                                       int[] resultShapeInfo,
+                                       @Cast("float16*") short[] extraParams,
+                                       int[] xIndexes,
+                                       int[] yIndexes,
+                                       int[] resultIndexes);
 
     /**
      *
@@ -1296,31 +1296,31 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") ShortPointer dx,
-                                        IntPointer xShapeInfo,
-                                        @Cast("float16*") ShortPointer y,
-                                        IntPointer yShapeInfo,
-                                        @Cast("float16*") ShortPointer result,
-                                        IntPointer resultShapeInfo,
-                                        @Cast("float16*") ShortPointer extraParams);
+                                       @Cast("float16*") ShortPointer dx,
+                                       IntPointer xShapeInfo,
+                                       @Cast("float16*") ShortPointer y,
+                                       IntPointer yShapeInfo,
+                                       @Cast("float16*") ShortPointer result,
+                                       IntPointer resultShapeInfo,
+                                       @Cast("float16*") ShortPointer extraParams);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") ShortBuffer dx,
-                                        IntBuffer xShapeInfo,
-                                        @Cast("float16*") ShortBuffer y,
-                                        IntBuffer yShapeInfo,
-                                        @Cast("float16*") ShortBuffer result,
-                                        IntBuffer resultShapeInfo,
-                                        @Cast("float16*") ShortBuffer extraParams);
+                                       @Cast("float16*") ShortBuffer dx,
+                                       IntBuffer xShapeInfo,
+                                       @Cast("float16*") ShortBuffer y,
+                                       IntBuffer yShapeInfo,
+                                       @Cast("float16*") ShortBuffer result,
+                                       IntBuffer resultShapeInfo,
+                                       @Cast("float16*") ShortBuffer extraParams);
     public native void execPairwiseTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                        int opNum,
-                                        @Cast("float16*") short[] dx,
-                                        int[] xShapeInfo,
-                                        @Cast("float16*") short[] y,
-                                        int[] yShapeInfo,
-                                        @Cast("float16*") short[] result,
-                                        int[] resultShapeInfo,
-                                        @Cast("float16*") short[] extraParams);
+                                       @Cast("float16*") short[] dx,
+                                       int[] xShapeInfo,
+                                       @Cast("float16*") short[] y,
+                                       int[] yShapeInfo,
+                                       @Cast("float16*") short[] result,
+                                       int[] resultShapeInfo,
+                                       @Cast("float16*") short[] extraParams);
 
     /**
      *
@@ -1366,25 +1366,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") ShortPointer x,
-                               IntPointer xShapeInfo,
-                               @Cast("float16*") ShortPointer extraParams,
-                               @Cast("float16*") ShortPointer result,
-                               IntPointer resultShapeInfo);
+                              @Cast("float16*") ShortPointer x,
+                              IntPointer xShapeInfo,
+                              @Cast("float16*") ShortPointer extraParams,
+                              @Cast("float16*") ShortPointer result,
+                              IntPointer resultShapeInfo);
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") ShortBuffer x,
-                               IntBuffer xShapeInfo,
-                               @Cast("float16*") ShortBuffer extraParams,
-                               @Cast("float16*") ShortBuffer result,
-                               IntBuffer resultShapeInfo);
+                              @Cast("float16*") ShortBuffer x,
+                              IntBuffer xShapeInfo,
+                              @Cast("float16*") ShortBuffer extraParams,
+                              @Cast("float16*") ShortBuffer result,
+                              IntBuffer resultShapeInfo);
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") short[] x,
-                               int[] xShapeInfo,
-                               @Cast("float16*") short[] extraParams,
-                               @Cast("float16*") short[] result,
-                               int[] resultShapeInfo);
+                              @Cast("float16*") short[] x,
+                              int[] xShapeInfo,
+                              @Cast("float16*") short[] extraParams,
+                              @Cast("float16*") short[] result,
+                              int[] resultShapeInfo);
 
     /**
      *
@@ -1438,30 +1438,30 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") ShortPointer x,
-                               IntPointer xShapeInfo,
-                               @Cast("float16*") ShortPointer extraParams,
-                               @Cast("float16*") ShortPointer result,
-                               IntPointer resultShapeInfo,
-                               IntPointer dimension,
+                              @Cast("float16*") ShortPointer x,
+                              IntPointer xShapeInfo,
+                              @Cast("float16*") ShortPointer extraParams,
+                              @Cast("float16*") ShortPointer result,
+                              IntPointer resultShapeInfo,
+                              IntPointer dimension,
                               int dimensionLength);
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") ShortBuffer x,
-                               IntBuffer xShapeInfo,
-                               @Cast("float16*") ShortBuffer extraParams,
-                               @Cast("float16*") ShortBuffer result,
-                               IntBuffer resultShapeInfo,
-                               IntBuffer dimension,
+                              @Cast("float16*") ShortBuffer x,
+                              IntBuffer xShapeInfo,
+                              @Cast("float16*") ShortBuffer extraParams,
+                              @Cast("float16*") ShortBuffer result,
+                              IntBuffer resultShapeInfo,
+                              IntBuffer dimension,
                               int dimensionLength);
     public native void execReduceHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                               @Cast("float16*") short[] x,
-                               int[] xShapeInfo,
-                               @Cast("float16*") short[] extraParams,
-                               @Cast("float16*") short[] result,
-                               int[] resultShapeInfo,
-                               int[] dimension,
+                              @Cast("float16*") short[] x,
+                              int[] xShapeInfo,
+                              @Cast("float16*") short[] extraParams,
+                              @Cast("float16*") short[] result,
+                              int[] resultShapeInfo,
+                              int[] dimension,
                               int dimensionLength);
 
     /**
@@ -1500,19 +1500,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native float execReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
-                                    @Cast("float16*") ShortPointer x,
-                                    IntPointer xShapeInfo,
-                                    @Cast("float16*") ShortPointer extraParams);
+                                   @Cast("float16*") ShortPointer x,
+                                   IntPointer xShapeInfo,
+                                   @Cast("float16*") ShortPointer extraParams);
     public native float execReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
-                                    @Cast("float16*") ShortBuffer x,
-                                    IntBuffer xShapeInfo,
-                                    @Cast("float16*") ShortBuffer extraParams);
+                                   @Cast("float16*") ShortBuffer x,
+                                   IntBuffer xShapeInfo,
+                                   @Cast("float16*") ShortBuffer extraParams);
     public native float execReduceScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
-                                    @Cast("float16*") short[] x,
-                                    int[] xShapeInfo,
-                                    @Cast("float16*") short[] extraParams);
+                                   @Cast("float16*") short[] x,
+                                   int[] xShapeInfo,
+                                   @Cast("float16*") short[] extraParams);
 
     /**
      *
@@ -1563,29 +1563,29 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param resultShapeInfo
      */
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                @Cast("float16*") ShortPointer x,
-                                IntPointer xShapeInfo,
-                                @Cast("float16*") ShortPointer extraParamsVals,
-                                @Cast("float16*") ShortPointer y,
-                                IntPointer yShapeInfo,
-                                @Cast("float16*") ShortPointer result,
-                                IntPointer resultShapeInfo);
+                               @Cast("float16*") ShortPointer x,
+                               IntPointer xShapeInfo,
+                               @Cast("float16*") ShortPointer extraParamsVals,
+                               @Cast("float16*") ShortPointer y,
+                               IntPointer yShapeInfo,
+                               @Cast("float16*") ShortPointer result,
+                               IntPointer resultShapeInfo);
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                @Cast("float16*") ShortBuffer x,
-                                IntBuffer xShapeInfo,
-                                @Cast("float16*") ShortBuffer extraParamsVals,
-                                @Cast("float16*") ShortBuffer y,
-                                IntBuffer yShapeInfo,
-                                @Cast("float16*") ShortBuffer result,
-                                IntBuffer resultShapeInfo);
+                               @Cast("float16*") ShortBuffer x,
+                               IntBuffer xShapeInfo,
+                               @Cast("float16*") ShortBuffer extraParamsVals,
+                               @Cast("float16*") ShortBuffer y,
+                               IntBuffer yShapeInfo,
+                               @Cast("float16*") ShortBuffer result,
+                               IntBuffer resultShapeInfo);
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                                @Cast("float16*") short[] x,
-                                int[] xShapeInfo,
-                                @Cast("float16*") short[] extraParamsVals,
-                                @Cast("float16*") short[] y,
-                                int[] yShapeInfo,
-                                @Cast("float16*") short[] result,
-                                int[] resultShapeInfo);
+                               @Cast("float16*") short[] x,
+                               int[] xShapeInfo,
+                               @Cast("float16*") short[] extraParamsVals,
+                               @Cast("float16*") short[] y,
+                               int[] yShapeInfo,
+                               @Cast("float16*") short[] result,
+                               int[] resultShapeInfo);
 
     /**
      *
@@ -1631,25 +1631,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native float execReduce3ScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                       @Cast("float16*") ShortPointer x,
-                                       IntPointer xShapeInfo,
-                                       @Cast("float16*") ShortPointer extraParamsVals,
-                                       @Cast("float16*") ShortPointer y,
-                                       IntPointer yShapeInfo);
+                                      @Cast("float16*") ShortPointer x,
+                                      IntPointer xShapeInfo,
+                                      @Cast("float16*") ShortPointer extraParamsVals,
+                                      @Cast("float16*") ShortPointer y,
+                                      IntPointer yShapeInfo);
     public native float execReduce3ScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                       @Cast("float16*") ShortBuffer x,
-                                       IntBuffer xShapeInfo,
-                                       @Cast("float16*") ShortBuffer extraParamsVals,
-                                       @Cast("float16*") ShortBuffer y,
-                                       IntBuffer yShapeInfo);
+                                      @Cast("float16*") ShortBuffer x,
+                                      IntBuffer xShapeInfo,
+                                      @Cast("float16*") ShortBuffer extraParamsVals,
+                                      @Cast("float16*") ShortBuffer y,
+                                      IntBuffer yShapeInfo);
     public native float execReduce3ScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                       @Cast("float16*") short[] x,
-                                       int[] xShapeInfo,
-                                       @Cast("float16*") short[] extraParamsVals,
-                                       @Cast("float16*") short[] y,
-                                       int[] yShapeInfo);
+                                      @Cast("float16*") short[] x,
+                                      int[] xShapeInfo,
+                                      @Cast("float16*") short[] extraParamsVals,
+                                      @Cast("float16*") short[] y,
+                                      int[] yShapeInfo);
 
     /**
      *
@@ -1714,37 +1714,37 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                int opNum,
-                                @Cast("float16*") ShortPointer x,
-                                IntPointer xShapeInfo,
-                                @Cast("float16*") ShortPointer extraParamsVals,
-                                @Cast("float16*") ShortPointer y,
-                                IntPointer yShapeInfo,
-                                @Cast("float16*") ShortPointer result,
-                                IntPointer resultShapeInfoBuffer,
-                                IntPointer dimension,
-                                int dimensionLength);
+                               @Cast("float16*") ShortPointer x,
+                               IntPointer xShapeInfo,
+                               @Cast("float16*") ShortPointer extraParamsVals,
+                               @Cast("float16*") ShortPointer y,
+                               IntPointer yShapeInfo,
+                               @Cast("float16*") ShortPointer result,
+                               IntPointer resultShapeInfoBuffer,
+                               IntPointer dimension,
+                               int dimensionLength);
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                int opNum,
-                                @Cast("float16*") ShortBuffer x,
-                                IntBuffer xShapeInfo,
-                                @Cast("float16*") ShortBuffer extraParamsVals,
-                                @Cast("float16*") ShortBuffer y,
-                                IntBuffer yShapeInfo,
-                                @Cast("float16*") ShortBuffer result,
-                                IntBuffer resultShapeInfoBuffer,
-                                IntBuffer dimension,
-                                int dimensionLength);
+                               @Cast("float16*") ShortBuffer x,
+                               IntBuffer xShapeInfo,
+                               @Cast("float16*") ShortBuffer extraParamsVals,
+                               @Cast("float16*") ShortBuffer y,
+                               IntBuffer yShapeInfo,
+                               @Cast("float16*") ShortBuffer result,
+                               IntBuffer resultShapeInfoBuffer,
+                               IntBuffer dimension,
+                               int dimensionLength);
     public native void execReduce3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                int opNum,
-                                @Cast("float16*") short[] x,
-                                int[] xShapeInfo,
-                                @Cast("float16*") short[] extraParamsVals,
-                                @Cast("float16*") short[] y,
-                                int[] yShapeInfo,
-                                @Cast("float16*") short[] result,
-                                int[] resultShapeInfoBuffer,
-                                int[] dimension,
-                                int dimensionLength);
+                               @Cast("float16*") short[] x,
+                               int[] xShapeInfo,
+                               @Cast("float16*") short[] extraParamsVals,
+                               @Cast("float16*") short[] y,
+                               int[] yShapeInfo,
+                               @Cast("float16*") short[] result,
+                               int[] resultShapeInfoBuffer,
+                               int[] dimension,
+                               int dimensionLength);
     /**
      *
      * @param opNum
@@ -1797,32 +1797,32 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param n
      */
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                @Cast("float16*") ShortPointer x,
-                int xStride,
-                @Cast("float16*") ShortPointer result,
-                int resultStride,
-                float scalar,
-                @Cast("float16*") ShortPointer extraParams,
-                @Cast("Nd4jIndex") long n);
+                              int opNum,
+                              @Cast("float16*") ShortPointer x,
+                              int xStride,
+                              @Cast("float16*") ShortPointer result,
+                              int resultStride,
+                              float scalar,
+                              @Cast("float16*") ShortPointer extraParams,
+                              @Cast("Nd4jIndex") long n);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                @Cast("float16*") ShortBuffer x,
-                int xStride,
-                @Cast("float16*") ShortBuffer result,
-                int resultStride,
-                float scalar,
-                @Cast("float16*") ShortBuffer extraParams,
-                @Cast("Nd4jIndex") long n);
+                              int opNum,
+                              @Cast("float16*") ShortBuffer x,
+                              int xStride,
+                              @Cast("float16*") ShortBuffer result,
+                              int resultStride,
+                              float scalar,
+                              @Cast("float16*") ShortBuffer extraParams,
+                              @Cast("Nd4jIndex") long n);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                @Cast("float16*") short[] x,
-                int xStride,
-                @Cast("float16*") short[] result,
-                int resultStride,
-                float scalar,
-                @Cast("float16*") short[] extraParams,
-                @Cast("Nd4jIndex") long n);
+                              int opNum,
+                              @Cast("float16*") short[] x,
+                              int xStride,
+                              @Cast("float16*") short[] result,
+                              int resultStride,
+                              float scalar,
+                              @Cast("float16*") short[] extraParams,
+                              @Cast("Nd4jIndex") long n);
 
     /**
      *
@@ -1874,28 +1874,28 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                             int opNum,
-                             @Cast("float16*") ShortPointer x,
-                             IntPointer xShapeInfo,
-                             @Cast("float16*") ShortPointer result,
-                             IntPointer resultShapeInfo,
-                             float scalar,
-                             @Cast("float16*") ShortPointer extraParams);
+                            @Cast("float16*") ShortPointer x,
+                            IntPointer xShapeInfo,
+                            @Cast("float16*") ShortPointer result,
+                            IntPointer resultShapeInfo,
+                            float scalar,
+                            @Cast("float16*") ShortPointer extraParams);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                             int opNum,
-                             @Cast("float16*") ShortBuffer x,
-                             IntBuffer xShapeInfo,
-                             @Cast("float16*") ShortBuffer result,
-                             IntBuffer resultShapeInfo,
-                             float scalar,
-                             @Cast("float16*") ShortBuffer extraParams);
+                            @Cast("float16*") ShortBuffer x,
+                            IntBuffer xShapeInfo,
+                            @Cast("float16*") ShortBuffer result,
+                            IntBuffer resultShapeInfo,
+                            float scalar,
+                            @Cast("float16*") ShortBuffer extraParams);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                             int opNum,
-                             @Cast("float16*") short[] x,
-                             int[] xShapeInfo,
-                             @Cast("float16*") short[] result,
-                             int[] resultShapeInfo,
-                             float scalar,
-                             @Cast("float16*") short[] extraParams);
+                            @Cast("float16*") short[] x,
+                            int[] xShapeInfo,
+                            @Cast("float16*") short[] result,
+                            int[] resultShapeInfo,
+                            float scalar,
+                            @Cast("float16*") short[] extraParams);
 
     /**
      *
@@ -2000,32 +2000,32 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param dimensionLength
      */
     public native void execScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             DoublePointer x,
-                             IntPointer xShapeInfo,
-                             DoublePointer z,
-                             IntPointer zShapeInfo,
-                             DoublePointer scalars,
-                             DoublePointer extraParams,
-                             IntPointer dimension,
-                             int dimensionLength);
+                              DoublePointer x,
+                              IntPointer xShapeInfo,
+                              DoublePointer z,
+                              IntPointer zShapeInfo,
+                              DoublePointer scalars,
+                              DoublePointer extraParams,
+                              IntPointer dimension,
+                              int dimensionLength);
     public native void execScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             DoubleBuffer x,
-                             IntBuffer xShapeInfo,
-                             DoubleBuffer z,
-                             IntBuffer zShapeInfo,
-                             DoubleBuffer scalars,
-                             DoubleBuffer extraParams,
-                             IntBuffer dimension,
-                             int dimensionLength);
+                              DoubleBuffer x,
+                              IntBuffer xShapeInfo,
+                              DoubleBuffer z,
+                              IntBuffer zShapeInfo,
+                              DoubleBuffer scalars,
+                              DoubleBuffer extraParams,
+                              IntBuffer dimension,
+                              int dimensionLength);
     public native void execScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             double[] x,
-                             int[] xShapeInfo,
-                             double[] z,
-                             int[] zShapeInfo,
-                             double[] scalars,
-                             double[] extraParams,
-                             int[] dimension,
-                             int dimensionLength);
+                              double[] x,
+                              int[] xShapeInfo,
+                              double[] z,
+                              int[] zShapeInfo,
+                              double[] scalars,
+                              double[] extraParams,
+                              int[] dimension,
+                              int dimensionLength);
 
     /**
      *
@@ -2041,32 +2041,32 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param dimensionLength
      */
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             @Cast("float16*") ShortPointer x,
-                             IntPointer xShapeInfo,
-                             @Cast("float16*") ShortPointer z,
-                             IntPointer zShapeInfo,
-                             @Cast("float16*") ShortPointer scalars,
-                             @Cast("float16*") ShortPointer extraParams,
-                             IntPointer dimension,
-                             int dimensionLength);
+                            @Cast("float16*") ShortPointer x,
+                            IntPointer xShapeInfo,
+                            @Cast("float16*") ShortPointer z,
+                            IntPointer zShapeInfo,
+                            @Cast("float16*") ShortPointer scalars,
+                            @Cast("float16*") ShortPointer extraParams,
+                            IntPointer dimension,
+                            int dimensionLength);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             @Cast("float16*") ShortBuffer x,
-                             IntBuffer xShapeInfo,
-                             @Cast("float16*") ShortBuffer z,
-                             IntBuffer zShapeInfo,
-                             @Cast("float16*") ShortBuffer scalars,
-                             @Cast("float16*") ShortBuffer extraParams,
-                             IntBuffer dimension,
-                             int dimensionLength);
+                            @Cast("float16*") ShortBuffer x,
+                            IntBuffer xShapeInfo,
+                            @Cast("float16*") ShortBuffer z,
+                            IntBuffer zShapeInfo,
+                            @Cast("float16*") ShortBuffer scalars,
+                            @Cast("float16*") ShortBuffer extraParams,
+                            IntBuffer dimension,
+                            int dimensionLength);
     public native void execScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,int opNum,
-                             @Cast("float16*") short[] x,
-                             int[] xShapeInfo,
-                             @Cast("float16*") short[] z,
-                             int[] zShapeInfo,
-                             @Cast("float16*") short[] scalars,
-                             @Cast("float16*") short[] extraParams,
-                             int[] dimension,
-                             int dimensionLength);
+                            @Cast("float16*") short[] x,
+                            int[] xShapeInfo,
+                            @Cast("float16*") short[] z,
+                            int[] zShapeInfo,
+                            @Cast("float16*") short[] scalars,
+                            @Cast("float16*") short[] extraParams,
+                            int[] dimension,
+                            int dimensionLength);
 
     /**
      *
@@ -2098,20 +2098,20 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native float execSummaryStatsScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                            int opNum,
                                            @Cast("float16*") ShortPointer x,
-                                            IntPointer xShapeInfo,
-                                            @Cast("float16*") ShortPointer extraParams,
+                                           IntPointer xShapeInfo,
+                                           @Cast("float16*") ShortPointer extraParams,
                                            @Cast("bool") boolean biasCorrected);
     public native float execSummaryStatsScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                            int opNum,
                                            @Cast("float16*") ShortBuffer x,
-                                            IntBuffer xShapeInfo,
-                                            @Cast("float16*") ShortBuffer extraParams,
+                                           IntBuffer xShapeInfo,
+                                           @Cast("float16*") ShortBuffer extraParams,
                                            @Cast("bool") boolean biasCorrected);
     public native float execSummaryStatsScalarHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                            int opNum,
                                            @Cast("float16*") short[] x,
-                                            int[] xShapeInfo,
-                                            @Cast("float16*") short[] extraParams,
+                                           int[] xShapeInfo,
+                                           @Cast("float16*") short[] extraParams,
                                            @Cast("bool") boolean biasCorrected);
 
     /**
@@ -2156,25 +2156,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
-                                     @Cast("float16*") ShortPointer x,
-                                     IntPointer xShapeInfo,
-                                     @Cast("float16*") ShortPointer extraParams,
-                                     @Cast("float16*") ShortPointer result,
-                                     IntPointer resultShapeInfo,@Cast("bool") boolean biasCorrected);
+                                    @Cast("float16*") ShortPointer x,
+                                    IntPointer xShapeInfo,
+                                    @Cast("float16*") ShortPointer extraParams,
+                                    @Cast("float16*") ShortPointer result,
+                                    IntPointer resultShapeInfo,@Cast("bool") boolean biasCorrected);
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
-                                     @Cast("float16*") ShortBuffer x,
-                                     IntBuffer xShapeInfo,
-                                     @Cast("float16*") ShortBuffer extraParams,
-                                     @Cast("float16*") ShortBuffer result,
-                                     IntBuffer resultShapeInfo,@Cast("bool") boolean biasCorrected);
+                                    @Cast("float16*") ShortBuffer x,
+                                    IntBuffer xShapeInfo,
+                                    @Cast("float16*") ShortBuffer extraParams,
+                                    @Cast("float16*") ShortBuffer result,
+                                    IntBuffer resultShapeInfo,@Cast("bool") boolean biasCorrected);
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
-                                     @Cast("float16*") short[] x,
-                                     int[] xShapeInfo,
-                                     @Cast("float16*") short[] extraParams,
-                                     @Cast("float16*") short[] result,
-                                     int[] resultShapeInfo,@Cast("bool") boolean biasCorrected);
+                                    @Cast("float16*") short[] x,
+                                    int[] xShapeInfo,
+                                    @Cast("float16*") short[] extraParams,
+                                    @Cast("float16*") short[] result,
+                                    int[] resultShapeInfo,@Cast("bool") boolean biasCorrected);
 
     /**
      *
@@ -2235,31 +2235,31 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
                                     @Cast("float16*") ShortPointer x,
-                                     IntPointer xShapeInfo,
-                                     @Cast("float16*") ShortPointer extraParams,
-                                     @Cast("float16*") ShortPointer result,
-                                     IntPointer resultShapeInfoBuffer,
-                                     IntPointer dimension,
+                                    IntPointer xShapeInfo,
+                                    @Cast("float16*") ShortPointer extraParams,
+                                    @Cast("float16*") ShortPointer result,
+                                    IntPointer resultShapeInfoBuffer,
+                                    IntPointer dimension,
                                     int dimensionLength,
                                     @Cast("bool") boolean biasCorrected);
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
                                     @Cast("float16*") ShortBuffer x,
-                                     IntBuffer xShapeInfo,
-                                     @Cast("float16*") ShortBuffer extraParams,
-                                     @Cast("float16*") ShortBuffer result,
-                                     IntBuffer resultShapeInfoBuffer,
-                                     IntBuffer dimension,
+                                    IntBuffer xShapeInfo,
+                                    @Cast("float16*") ShortBuffer extraParams,
+                                    @Cast("float16*") ShortBuffer result,
+                                    IntBuffer resultShapeInfoBuffer,
+                                    IntBuffer dimension,
                                     int dimensionLength,
                                     @Cast("bool") boolean biasCorrected);
     public native void execSummaryStatsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                     int opNum,
                                     @Cast("float16*") short[] x,
-                                     int[] xShapeInfo,
-                                     @Cast("float16*") short[] extraParams,
-                                     @Cast("float16*") short[] result,
-                                     int[] resultShapeInfoBuffer,
-                                     int[] dimension,
+                                    int[] xShapeInfo,
+                                    @Cast("float16*") short[] extraParams,
+                                    @Cast("float16*") short[] result,
+                                    int[] resultShapeInfoBuffer,
+                                    int[] dimension,
                                     int dimensionLength,
                                     @Cast("bool") boolean biasCorrected);
 
@@ -2312,27 +2312,27 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortPointer dx,
-                                  int xStride,
-                                  @Cast("float16*") ShortPointer result,
-                                  int resultStride,
-                                  @Cast("float16*") ShortPointer extraParams,
+                                 @Cast("float16*") ShortPointer dx,
+                                 int xStride,
+                                 @Cast("float16*") ShortPointer result,
+                                 int resultStride,
+                                 @Cast("float16*") ShortPointer extraParams,
                                  @Cast("Nd4jIndex") long n);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortBuffer dx,
-                                  int xStride,
-                                  @Cast("float16*") ShortBuffer result,
-                                  int resultStride,
-                                  @Cast("float16*") ShortBuffer extraParams,
+                                 @Cast("float16*") ShortBuffer dx,
+                                 int xStride,
+                                 @Cast("float16*") ShortBuffer result,
+                                 int resultStride,
+                                 @Cast("float16*") ShortBuffer extraParams,
                                  @Cast("Nd4jIndex") long n);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") short[] dx,
-                                  int xStride,
-                                  @Cast("float16*") short[] result,
-                                  int resultStride,
-                                  @Cast("float16*") short[] extraParams,
+                                 @Cast("float16*") short[] dx,
+                                 int xStride,
+                                 @Cast("float16*") short[] result,
+                                 int resultStride,
+                                 @Cast("float16*") short[] extraParams,
                                  @Cast("Nd4jIndex") long n);
 
     /**
@@ -2379,25 +2379,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortPointer dx,
-                                  IntPointer xShapeInfo,
-                                  @Cast("float16*") ShortPointer result,
-                                  IntPointer resultShapeInfo,
-                                  @Cast("float16*") ShortPointer extraParams);
+                                 @Cast("float16*") ShortPointer dx,
+                                 IntPointer xShapeInfo,
+                                 @Cast("float16*") ShortPointer result,
+                                 IntPointer resultShapeInfo,
+                                 @Cast("float16*") ShortPointer extraParams);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortBuffer dx,
-                                  IntBuffer xShapeInfo,
-                                  @Cast("float16*") ShortBuffer result,
-                                  IntBuffer resultShapeInfo,
-                                  @Cast("float16*") ShortBuffer extraParams);
+                                 @Cast("float16*") ShortBuffer dx,
+                                 IntBuffer xShapeInfo,
+                                 @Cast("float16*") ShortBuffer result,
+                                 IntBuffer resultShapeInfo,
+                                 @Cast("float16*") ShortBuffer extraParams);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") short[] dx,
-                                  int[] xShapeInfo,
-                                  @Cast("float16*") short[] result,
-                                  int[] resultShapeInfo,
-                                  @Cast("float16*") short[] extraParams);
+                                 @Cast("float16*") short[] dx,
+                                 int[] xShapeInfo,
+                                 @Cast("float16*") short[] result,
+                                 int[] resultShapeInfo,
+                                 @Cast("float16*") short[] extraParams);
 
     /**
      *
@@ -2451,31 +2451,31 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortPointer dx,
-                                  IntPointer xShapeInfo,
-                                  @Cast("float16*") ShortPointer result,
-                                  IntPointer resultShapeInfo,
-                                  @Cast("float16*") ShortPointer extraParams,
-                                  IntPointer xIndexes,
-                                  IntPointer resultIndexes);
+                                 @Cast("float16*") ShortPointer dx,
+                                 IntPointer xShapeInfo,
+                                 @Cast("float16*") ShortPointer result,
+                                 IntPointer resultShapeInfo,
+                                 @Cast("float16*") ShortPointer extraParams,
+                                 IntPointer xIndexes,
+                                 IntPointer resultIndexes);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") ShortBuffer dx,
-                                  IntBuffer xShapeInfo,
-                                  @Cast("float16*") ShortBuffer result,
-                                  IntBuffer resultShapeInfo,
-                                  @Cast("float16*") ShortBuffer extraParams,
-                                  IntBuffer xIndexes,
-                                  IntBuffer resultIndexes);
+                                 @Cast("float16*") ShortBuffer dx,
+                                 IntBuffer xShapeInfo,
+                                 @Cast("float16*") ShortBuffer result,
+                                 IntBuffer resultShapeInfo,
+                                 @Cast("float16*") ShortBuffer extraParams,
+                                 IntBuffer xIndexes,
+                                 IntBuffer resultIndexes);
     public native void execTransformHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                  @Cast("float16*") short[] dx,
-                                  int[] xShapeInfo,
-                                  @Cast("float16*") short[] result,
-                                  int[] resultShapeInfo,
-                                  @Cast("float16*") short[] extraParams,
-                                  int[] xIndexes,
-                                  int[] resultIndexes);
+                                 @Cast("float16*") short[] dx,
+                                 int[] xShapeInfo,
+                                 @Cast("float16*") short[] result,
+                                 int[] resultShapeInfo,
+                                 @Cast("float16*") short[] extraParams,
+                                 int[] xIndexes,
+                                 int[] resultIndexes);
 
 
     /**
@@ -2586,10 +2586,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 double[] input,
                 int[] inputShapeInfo);
 
-   /**
-    * Concatneate multi array of the same shape together
-    * along a particular dimension
-    */
+    /**
+     * Concatneate multi array of the same shape together
+     * along a particular dimension
+     */
     public native void concatFloat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
@@ -3135,15 +3135,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     /**
      * Array averaging op
      */
-     /**
-      *
-      * @param extras
-      * @param dx
-      * @param dz
-      * @param n
-      * @param length
-      * @param propagate
-      */
+    /**
+     *
+     * @param extras
+     * @param dx
+     * @param dz
+     * @param n
+     * @param length
+     * @param propagate
+     */
     public native void averageHalf(@Cast("Nd4jPointer*") PointerPointer extras,
                          @Cast("Nd4jPointer*") PointerPointer dx,
                          @Cast("float16*") ShortPointer dz,
@@ -3223,10 +3223,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     /**
      * P2P enabler
      */
-     /**
-      *
-      * @param enable
-      */
+    /**
+     *
+     * @param enable
+     */
     public native void enableP2P(@Cast("bool") boolean enable);
 
     /**
@@ -4567,6 +4567,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native int elementSizeForNpyArray(@Cast("Nd4jPointer") Pointer npyArray);
 
+
+    /**
+   * The pointer to get the address for
+   *
+   * @param address the address to get the pointer
+   * @return the pointer for the given address
+   */
+
+    public native @Cast("Nd4jPointer") Pointer pointerForAddress(long address);
 
 
 }

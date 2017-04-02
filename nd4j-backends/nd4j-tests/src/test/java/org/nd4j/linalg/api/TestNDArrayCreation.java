@@ -1,11 +1,14 @@
 package org.nd4j.linalg.api;
 
+import org.bytedeco.javacpp.Pointer;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
 
@@ -39,6 +42,9 @@ public class TestNDArrayCreation extends BaseNd4jTest {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("rank3.npy").getFile());
         assertEquals(8,arrCreate.length());
         assertEquals(3,arrCreate.rank());
+
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().pointerForAddress(arrCreate.data().address());
+        assertEquals(arrCreate.data().address(),pointer.address());
     }
 
 

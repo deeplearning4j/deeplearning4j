@@ -1423,4 +1423,13 @@ public abstract class NativeOps extends Pointer {
      */
     public abstract int elementSizeForNpyArray(Pointer npyArray);
 
+
+    /**
+     * The pointer to get the address for
+     * @param address the address to get the pointer
+     * @return the pointer for the given address
+     */
+    public abstract Pointer pointerForAddress(long address);
+
+
 }
