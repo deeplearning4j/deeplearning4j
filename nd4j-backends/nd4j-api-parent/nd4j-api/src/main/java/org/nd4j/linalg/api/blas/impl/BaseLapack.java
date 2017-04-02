@@ -117,6 +117,9 @@ public abstract class BaseLapack implements Lapack {
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
 
+        if( R.rows() != A.columns() || R.columns() != A.columns() ) {
+            throw new Error( "geqrf: R must be N x N (n = columns in A)") ;
+        }
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dgeqrf(m, n, A, R, INFO);
         } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {

@@ -7,6 +7,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,28 +20,74 @@ public class LapackTest extends BaseNd4jTest {
         super(backend);
     }
 
-    @Test
-    public void testLU() {
-        INDArray A = Nd4j.create( new float[]  { 1,2,3,4,5,6,7,8,9 } );
-
-        Nd4j.getBlasWrapper().lapack().getrf( A ) ;
-    }
-
 
     @Test
-    public void testQR() {
-        INDArray A = Nd4j.create( new float[]  { 1,2,3,4,5,6,7,8,9 } );
+	public void testQRSquare() {
+		INDArray A = Nd4j.create( new double[]  { 1,2,3,4,5,6,7,8,9 } );		
+		A = A.reshape( 'c', 3, 3 ) ;
+		INDArray O = Nd4j.create( A.shape() ) ;
+		Nd4j.copy( A, O  ) ;
+		INDArray R = Nd4j.create( A.columns(), A.columns() ) ;
+		
+		Nd4j.getBlasWrapper().lapack().geqrf( A, R ) ;
+		
+		A.mmuli( R ) ;
+		O.subi( A ) ;
+		DataBuffer db = O.data() ;
+		for( int i=0 ; i<db.length() ; i++ ) {
+			assertEquals( 0, db.getFloat(i), 1e-5 ) ;
+		}
+	}
 
-        Nd4j.getBlasWrapper().lapack().geqrf( A, null ) ;
-    }
+	public void testQRRect() {
+		INDArray A = Nd4j.create( new double[]  { 1,2,3,4,5,6,7,8,9,10,11,12 } );		
+		A = A.reshape( 'f', 4, 3 ) ;
+		INDArray O = Nd4j.create( A.shape() ) ;
+		Nd4j.copy( A, O  ) ;
 
+		INDArray R = Nd4j.create( A.columns(), A.columns() ) ;
+		Nd4j.getBlasWrapper().lapack().geqrf( A, R ) ;
 
-    @Test
-    public void testCholesky() {
-        INDArray A = Nd4j.create( new float[]  { 1,2,3,4,5,6,7,8,9 } );
+		A.mmuli( R ) ;
+		O.subi( A ) ;
+		DataBuffer db = O.data() ;
+		for( int i=0 ; i<db.length() ; i++ ) {
+			assertEquals( 0, db.getFloat(i), 1e-5 ) ;
+		}
+	}
+	
+	public void testCholeskyL() {
+		INDArray A = Nd4j.create( new double[]  { 2,-1,1,-1,2,-1, 1,-1,2,} );
+		A = A.reshape( 'c', 3, 3 ) ;		
+		INDArray O = Nd4j.create( A.shape() ) ;
+		Nd4j.copy( A, O  ) ;
+		
+		Nd4j.getBlasWrapper().lapack().potrf( A, true ) ;
+		
+		A.mmuli( A.transpose() ) ;
+		O.subi( A ) ;
+		DataBuffer db = O.data() ;
+		for( int i=0 ; i<db.length() ; i++ ) {
+			assertEquals( 0, db.getFloat(i), 1e-5 ) ;
+		}
+	}
+	
+	public void testCholeskyU() {
+		INDArray A = Nd4j.create( new double[]  { 2,-1,2,-1,2,-1, 2,-1,2,} );
+		A = A.reshape( 'c', 3, 3 ) ;		
+		INDArray O = Nd4j.create( A.shape() ) ;
+		Nd4j.copy( A, O  ) ;
+		
+		Nd4j.getBlasWrapper().lapack().potrf( A, false ) ;
+		//printMatrix(A);
+		A.transpose().mmuli( A ) ;
+		O.subi( A ) ;
+		DataBuffer db = O.data() ;
+		for( int i=0 ; i<db.length() ; i++ ) {
+			assertEquals( 0, db.getFloat(i), 1e-5 ) ;
+		}
+	}
 
-        Nd4j.getBlasWrapper().lapack().potrf( A, true ) ;
-    }
 
     @Override
     public char ordering() {

@@ -177,7 +177,7 @@ public class JcublasLapack extends BaseLapack {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT getrf called in DOUBLE environment");
 
-        if (A.ordering() == 'c')
+        if (A.ordering() == 'c') 
             a = A.dup('f');
         if ( R!=null && R.ordering() == 'c')
             r = R.dup('f');
@@ -234,7 +234,7 @@ public class JcublasLapack extends BaseLapack {
             }
             
             allocator.registerAction(ctx, a);
-            allocator.registerAction(ctx, tau);
+            //allocator.registerAction(ctx, tau);
             allocator.registerAction(ctx, INFO);
             if (INFO.getInt(0) != 0 ) {
                 throw new IllegalStateException("cusolverDnSgeqrf failed with info: " + INFO.getInt(0));
@@ -242,10 +242,9 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                Nd4j.copy( a, r ) ;
-                for( int ro=1 ; ro<N ; ro++ ) {
-                    for( int c=0 ; c<ro ; c++ ) {
-                        r.putScalar( ro, c, 0 ) ;
+                for( int ro=0 ; ro<M ; ro++ ) {
+                    for( int c=ro ; c<N ; c++ ) {
+                        r.putScalar( ro, c, a.getFloat(ro,c) ) ;
                     }
                 }
             }
@@ -271,6 +270,7 @@ public class JcublasLapack extends BaseLapack {
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
+        //    allocator.registerAction(ctx, tau);
 
         if (a != A)
             A.assign(a);
@@ -294,7 +294,7 @@ public class JcublasLapack extends BaseLapack {
         if ( R!=null && R.ordering() == 'c')
             r = R.dup('f');
 
-        INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(N),
+        INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(N),
                 Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -353,10 +353,9 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                Nd4j.copy( a, r ) ;
-                for( int ro=1 ; ro<N ; ro++ ) {
-                    for( int c=0 ; c<ro ; c++ ) {
-                        r.putScalar( ro, c, 0 ) ;
+                for( int ro=0 ; ro<M ; ro++ ) {
+                    for( int c=ro ; c<N ; c++ ) {
+                        r.putScalar( ro, c, a.getDouble(ro,c) ) ;
                     }
                 }
             }
