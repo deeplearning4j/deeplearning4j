@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ParallelInference {
     private Model model;
     private List<String> labels;
@@ -39,6 +41,7 @@ public class ParallelInference {
     private final Object locker = new Object();
 
     private InferenceWorker[] zoo;
+    private ObservablesProvider provider;
 
 
     public enum InferenceMode {
@@ -56,6 +59,12 @@ public class ParallelInference {
         for (int i = 0; i < workers; i++) {
             zoo[i] = new InferenceWorker(i, model, observables);
             zoo[i].start();
+        }
+
+
+        if (inferenceMode == InferenceMode.BATCHED) {
+            log.info("Initializing ObservablesProvider...");
+            provider = new ObservablesProvider(observables);
         }
     }
 
@@ -76,28 +85,30 @@ public class ParallelInference {
     public INDArray[] output(INDArray... input) {
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
+        BasicInferenceObserver observer = new BasicInferenceObserver();
+        InferenceObservable observable;
+
         if (inferenceMode == InferenceMode.SEQUENTIAL) {
-
-            BasicInferenceObserver observer = new BasicInferenceObserver();
-            BasicInferenceObservable observable = new BasicInferenceObservable();
-
-            observable.addObserver(observer);
-
-            try {
-                // submit query to processing
-                observables.put(observable);
-
-                // and block until Observable returns
-                observer.wait();
-                // observer.waitTillDone();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            return observable.getOutput();
+            observable = new BasicInferenceObservable();
         } else {
-            throw new UnsupportedOperationException("Not implemented yet");
+            observable = provider.output(input);
         }
+
+        observable.addObserver(observer);
+
+        try {
+                // submit query to processing
+            observables.put(observable);
+
+            // and block until Observable returns
+            observer.wait();
+
+            // observer.waitTillDone();
+        } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+        }
+
+        return observable.getOutput();
     }
 
 
@@ -309,4 +320,17 @@ public class ParallelInference {
         }
     }
 
+
+    private class ObservablesProvider {
+        private BlockingQueue<InferenceObservable> targetQueue;
+
+        private ObservablesProvider(@NonNull BlockingQueue<InferenceObservable> queue) {
+            this.targetQueue = queue;
+        }
+
+
+        public InferenceObservable output(INDArray... input) {
+            return null;
+        }
+    }
 }

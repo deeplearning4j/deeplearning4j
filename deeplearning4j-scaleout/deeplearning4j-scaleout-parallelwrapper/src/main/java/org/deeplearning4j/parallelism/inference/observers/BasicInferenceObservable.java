@@ -21,6 +21,10 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
         this.input = inputs;
     }
 
+    @Override
+    public void setInput(INDArray... input) {
+        this.input = input;
+    }
 
     public void setOutput(INDArray... output) {
         this.output = output;
