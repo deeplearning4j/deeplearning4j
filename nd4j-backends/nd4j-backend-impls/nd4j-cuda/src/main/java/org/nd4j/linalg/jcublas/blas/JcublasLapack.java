@@ -179,9 +179,11 @@ public class JcublasLapack extends BaseLapack {
 
         if (A.ordering() == 'c')
             a = A.dup('f');
-        if (R.ordering() == 'c')
+        if ( R!=null && R.ordering() == 'c')
             r = R.dup('f');
 
+        INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(N),
+                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -201,7 +203,7 @@ public class JcublasLapack extends BaseLapack {
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
-            CublasPointer xRPointer = new CublasPointer(r, ctx);
+            CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -211,10 +213,10 @@ public class JcublasLapack extends BaseLapack {
                         (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
             );
 
+
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new IllegalStateException("cusolverDnSgeqrf_bufferSize failed with code: " + stat);
             }
-
             int worksize = worksizeBuffer.getInt(0);
             // Now allocate memory for the workspace, the permutation matrix and a return code
             Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
@@ -222,27 +224,61 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual QR decomp
             stat = cusolverDnSgeqrf(solverDn, M, N, 
                             (FloatPointer) xAPointer.getDevicePointer(), M,
-                            (FloatPointer) xRPointer.getDevicePointer(),
+                            (FloatPointer) xTauPointer.getDevicePointer(),
                             new CudaPointer(workspace).asFloatPointer(),
                             worksize,
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
-
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new IllegalStateException("cusolverDnSgeqrf failed with code: " + stat);
             }
+            
+            allocator.registerAction(ctx, a);
+            allocator.registerAction(ctx, tau);
+            allocator.registerAction(ctx, INFO);
+            if (INFO.getInt(0) != 0 ) {
+                throw new IllegalStateException("cusolverDnSgeqrf failed with info: " + INFO.getInt(0));
+            }
+
+            // Copy R ( upper part of Q ) into result
+            if( r != null ) {
+                Nd4j.copy( a, r ) ;
+                for( int ro=1 ; ro<N ; ro++ ) {
+                    for( int c=0 ; c<ro ; c++ ) {
+                        r.putScalar( ro, c, 0 ) ;
+                    }
+                }
+            }
+
+            stat = cusolverDnSorgqr_bufferSize( solverDn, M, N, N,
+                        (FloatPointer) xAPointer.getDevicePointer(), M,
+                        (FloatPointer) xTauPointer.getDevicePointer(),
+                        (IntPointer) worksizeBuffer.addressPointer() 
+            ) ;
+            worksize = worksizeBuffer.getInt(0);
+            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            stat = cusolverDnSorgqr(solverDn, M, N, N,
+                            (FloatPointer) xAPointer.getDevicePointer(), M,
+                            (FloatPointer) xTauPointer.getDevicePointer(),
+                            new CudaPointer(workspace).asFloatPointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnSorgqr failed with code: " + stat);
+            }            
         }
         allocator.registerAction(ctx, a);
-        allocator.registerAction(ctx, r);
         allocator.registerAction(ctx, INFO);
 
         if (a != A)
             A.assign(a);
-        if (r != R)
+        if ( r!=null && r != R )
             R.assign(r);
 
         logger.info("A: {}", A);
-        logger.info("R: {}", R);
+        if( R != null ) logger.info("R: {}", R);
     }
 
     @Override
@@ -251,13 +287,15 @@ public class JcublasLapack extends BaseLapack {
         INDArray r = R;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            logger.warn("DOUBLE getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
-        if (R.ordering() == 'c')
+        if ( R!=null && R.ordering() == 'c')
             r = R.dup('f');
 
+        INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(N),
+                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -271,16 +309,13 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(
-                new cusolverDnContext(handle), 
-                new CUstream_st(ctx.getOldStream())
-            );
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
                 throw new IllegalStateException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
-            CublasPointer xRPointer = new CublasPointer(r, ctx);
+            CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
             DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
@@ -291,9 +326,8 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgeqrf_bufferSize failed with code: " + stat);
+                throw new IllegalStateException("cusolverDnDgeqrf_bufferSize failed with code: " + stat);
             }
-
             int worksize = worksizeBuffer.getInt(0);
             // Now allocate memory for the workspace, the permutation matrix and a return code
             Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
@@ -301,27 +335,61 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual QR decomp
             stat = cusolverDnDgeqrf(solverDn, M, N, 
                             (DoublePointer) xAPointer.getDevicePointer(), M,
-                            (DoublePointer) xRPointer.getDevicePointer(),
+                            (DoublePointer) xTauPointer.getDevicePointer(),
                             new CudaPointer(workspace).asDoublePointer(),
                             worksize,
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
-
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new IllegalStateException("cusolverDnDgeqrf failed with code: " + stat);
             }
+            
+            allocator.registerAction(ctx, a);
+            allocator.registerAction(ctx, tau);
+            allocator.registerAction(ctx, INFO);
+            if (INFO.getInt(0) != 0 ) {
+                throw new IllegalStateException("cusolverDnDgeqrf failed with info: " + INFO.getInt(0));
+            }
+
+            // Copy R ( upper part of Q ) into result
+            if( r != null ) {
+                Nd4j.copy( a, r ) ;
+                for( int ro=1 ; ro<N ; ro++ ) {
+                    for( int c=0 ; c<ro ; c++ ) {
+                        r.putScalar( ro, c, 0 ) ;
+                    }
+                }
+            }
+
+            stat = cusolverDnDorgqr_bufferSize( solverDn, M, N, N,
+                        (DoublePointer) xAPointer.getDevicePointer(), M,
+                        (DoublePointer) xTauPointer.getDevicePointer(),
+                        (IntPointer) worksizeBuffer.addressPointer() 
+            ) ;
+            worksize = worksizeBuffer.getInt(0);
+            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+            stat = cusolverDnDorgqr(solverDn, M, N, N,
+                            (DoublePointer) xAPointer.getDevicePointer(), M,
+                            (DoublePointer) xTauPointer.getDevicePointer(),
+                            new CudaPointer(workspace).asDoublePointer(),
+                            worksize,
+                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                            );
+            if (stat != CUSOLVER_STATUS_SUCCESS) {
+                throw new IllegalStateException("cusolverDnDorgqr failed with code: " + stat);
+            }            
         }
         allocator.registerAction(ctx, a);
-        allocator.registerAction(ctx, r);
         allocator.registerAction(ctx, INFO);
 
         if (a != A)
             A.assign(a);
-        if (r != R)
+        if ( r!=null && r != R )
             R.assign(r);
 
         logger.info("A: {}", A);
-        logger.info("R: {}", R);
+        if( R != null ) logger.info("R: {}", R);
     }
 
 //=========================    
@@ -386,6 +454,21 @@ public class JcublasLapack extends BaseLapack {
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
 
+        if( uplo == 'U' ) {
+            for( int ro=1 ; ro<N ; ro++ ) {
+                for( int c=0 ; c<ro ; c++ ) {
+                    a.putScalar( c, ro, 0 ) ;
+                }
+            }
+            a = a.transpose() ;
+        } else {
+            for( int c=1 ; c<N ; c++ ) {
+                for( int ro=0 ; ro<c ; ro++ ) {
+                    a.putScalar( ro, c, 0 ) ;
+                }
+            }
+        }
+
         if (a != A)
             A.assign(a);
 
@@ -397,7 +480,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            logger.warn("FLOAT potrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -414,8 +497,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), 
-                            new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
                 throw new IllegalStateException("solverSetStream failed");
 
@@ -452,6 +534,21 @@ public class JcublasLapack extends BaseLapack {
         }
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
+
+        if( uplo == 'U' ) {
+            for( int ro=1 ; ro<N ; ro++ ) {
+                for( int c=0 ; c<ro ; c++ ) {
+                    a.putScalar( c, ro, 0 ) ;
+                }
+            }
+            a = a.transpose() ;
+        } else {
+            for( int c=1 ; c<N ; c++ ) {
+                for( int ro=0 ; ro<c ; ro++ ) {
+                    a.putScalar( ro, c, 0 ) ;
+                }
+            }
+        }
 
         if (a != A)
             A.assign(a);

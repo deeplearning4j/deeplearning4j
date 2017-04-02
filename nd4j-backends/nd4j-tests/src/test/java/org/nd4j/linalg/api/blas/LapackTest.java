@@ -31,7 +31,7 @@ public class LapackTest extends BaseNd4jTest {
     public void testQR() {
         INDArray A = Nd4j.create( new float[]  { 1,2,3,4,5,6,7,8,9 } );
 
-        Nd4j.getBlasWrapper().lapack().geqrf( A ) ;
+        Nd4j.getBlasWrapper().lapack().geqrf( A, null ) ;
     }
 
 

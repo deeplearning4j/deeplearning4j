@@ -109,7 +109,7 @@ public abstract class BaseLapack implements Lapack {
 
 
     @Override
-    public INDArray geqrf(INDArray A) {
+    public void geqrf(INDArray A, INDArray R ) {
 
         int m = A.rows();
         int n = A.columns();
@@ -117,16 +117,9 @@ public abstract class BaseLapack implements Lapack {
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
 
-        int mn = Math.min(m, n);
-        INDArray R = null ;
-
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            R = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(mn),
-                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, mn}));
             dgeqrf(m, n, A, R, INFO);
         } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            R = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(mn),
-                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, mn}));
             sgeqrf(m, n, A, R, INFO);
         } else {
             throw new UnsupportedOperationException();
@@ -135,8 +128,6 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to getrf() was not valid");
         }
-
-        return R;
     }
 
 
@@ -152,7 +143,6 @@ public abstract class BaseLapack implements Lapack {
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
     public abstract void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
-
     public abstract void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
 
 

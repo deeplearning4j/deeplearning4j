@@ -39,10 +39,10 @@ public interface Lapack {
      *         matrix Q and an upper triangular R matrix
      *
      * @param A the input matrix, it will be overwritten with the factors
-     * @returns The R array [ NB A is modified in place to hold Q]
+     * @param The R array if null R is not returned
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public INDArray geqrf(INDArray A);
+    public void geqrf(INDArray A, INDArray R );
 
 
 
