@@ -25,11 +25,13 @@ final class SparkDl4jNetwork(
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
         uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats) {
 
-    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener]) {
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
+             listeners: util.Collection[IterationListener]) {
         this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, false, Identifiable.randomUID("dl4j"))
     }
 
-    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener], collectStats: Boolean) {
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
+             listeners: util.Collection[IterationListener], collectStats: Boolean) {
         this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats, Identifiable.randomUID("dl4j"))
     }
 
