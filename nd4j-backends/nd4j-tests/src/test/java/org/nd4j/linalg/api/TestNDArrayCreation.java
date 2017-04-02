@@ -34,6 +34,13 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testCreateNpy3() throws Exception {
+        INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("rank3.npy").getFile());
+        assertEquals(8,arrCreate.length());
+        assertEquals(3,arrCreate.rank());
+    }
+
 
     @Override
     public char ordering() {
