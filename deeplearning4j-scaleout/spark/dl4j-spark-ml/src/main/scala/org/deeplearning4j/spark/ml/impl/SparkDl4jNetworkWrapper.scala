@@ -24,6 +24,7 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
  protected val multiLayerConfiguration : MultiLayerConfiguration,
  protected val numLabels: Int,
  protected val trainingMaster: ParamSerializer,
+ protected val epochs : Int,
  protected val listeners : util.Collection[IterationListener],
  protected val collectStats: Boolean = false
 ) extends Predictor[T, E, M]  {
@@ -54,7 +55,10 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
                     new DataSet(Nd4j.create(features.toArray), Nd4j.create(Array(label)))
                 }
             })
-        sparkNet.fit(lps)
+        val epochsToUse = if (epochs < 1) 1 else epochs
+        for (i <- List.range(0, epochsToUse)) {
+            sparkNet.fit(lps)
+        }
         sparkNet
     }
 }
