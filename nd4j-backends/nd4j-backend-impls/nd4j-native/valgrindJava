@@ -1,0 +1,1 @@
+valgrind --show-leak-kinds=all --leak-check=full --track-origins=yes --error-limit=no java -Djava.compiler=NONE $@
