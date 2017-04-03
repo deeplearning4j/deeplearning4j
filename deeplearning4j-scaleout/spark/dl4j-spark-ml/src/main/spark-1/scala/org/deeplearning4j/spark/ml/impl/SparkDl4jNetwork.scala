@@ -17,19 +17,22 @@ final class SparkDl4jNetwork(
                             override val multiLayerConfiguration: MultiLayerConfiguration,
                             override val numLabels: Int,
                             override val trainingMaster: ParamSerializer,
+                            override val epochs : Int,
                             override val listeners: util.Collection[IterationListener],
                             override val collectStats: Boolean = false,
                             override val uid: String = Identifiable.randomUID("dl4j"))
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
-        uid, multiLayerConfiguration, numLabels, trainingMaster, listeners, collectStats
+        uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats
     ) {
 
-    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener]) {
-        this(multiLayerConfiguration, numLabels, trainingMaster, listeners, false, Identifiable.randomUID("dl4j"))
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
+             listeners: util.Collection[IterationListener]) {
+        this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, false, Identifiable.randomUID("dl4j"))
     }
 
-    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, listeners: util.Collection[IterationListener], collectStats: Boolean) {
-        this(multiLayerConfiguration, numLabels, trainingMaster, listeners, collectStats, Identifiable.randomUID("dl4j"))
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
+             listeners: util.Collection[IterationListener], collectStats: Boolean) {
+        this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats, Identifiable.randomUID("dl4j"))
     }
 
     override val mapVectorFunc: (Row) => LabeledPoint = row => new LabeledPoint(row.getAs[Double]($(labelCol)), row.getAs[Vector]($(featuresCol)))
