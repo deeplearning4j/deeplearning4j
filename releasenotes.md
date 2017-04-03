@@ -64,7 +64,8 @@ layout: default
 - UI/CUDA/Linux issue: [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3026)
 - Dirty shutdown on JVM exit is possible for CUDA backend sometimes: [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3028)
 - Issues with RBM implementation [Link](https://github.com/deeplearning4j/deeplearning4j/issues/3049)
-
+- Keras 1D convolutional and pooling layers cannot be imported yet. Will be supported in forthcoming release.
+- Keras v2 model configurations cannot be imported yet. Will be supported in forthcoming release.
 
 # <a name="zeroseventwo">Release Notes for Version 0.7.2</a>
 - Added variational autoencoder [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/variational/VariationalAutoEncoderExample.java)
