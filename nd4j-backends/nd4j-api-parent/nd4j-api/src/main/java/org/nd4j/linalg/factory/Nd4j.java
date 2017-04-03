@@ -25,6 +25,7 @@ import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.context.Nd4jContext;
@@ -6054,5 +6055,38 @@ public class Nd4j {
 
     public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
+    }
+
+    /**
+     * This method stacks vertically examples with the same shape, increasing result dimensionality. I.e. if you provide bunch of 3D tensors, output will be 4D tensor. Alignment is always applied to axis 0.
+     *
+     * @return
+     */
+    public static INDArray pile(INDArray... arrays) {
+        // if we have vectors as input, it's just vstack use case
+        if (arrays[0].isRowVector()) {
+            System.out.println("Vector");
+            return Nd4j.vstack(arrays);
+        }
+
+
+        int[] shape = arrays[0].shape();
+        int[] newShape = ArrayUtils.add(shape, 0, 1);
+
+        List<INDArray> reshaped = new ArrayList<>();
+        for(INDArray array: arrays) {
+            reshaped.add(array.reshape(array.ordering(), newShape));
+        }
+
+        return Nd4j.vstack(reshaped);
+    }
+
+    /**
+     * This method stacks vertically examples with the same shape, increasing result dimensionality. I.e. if you provide bunch of 3D tensors, output will be 4D tensor. Alignment is always applied to axis 0.
+     *
+     * @return
+     */
+    public static INDArray pile(@NonNull Collection<INDArray> arrays) {
+        return pile(arrays.toArray(new INDArray[0]));
     }
 }

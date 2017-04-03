@@ -55,9 +55,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -953,6 +951,36 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         }
 
         DataTypeUtil.setDTypeForContext(initialType);
+    }
+
+    @Test
+    public void testPile1() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(3, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1,2).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testPile2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(4, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0),0.01);
+        }
     }
 
     @Override
