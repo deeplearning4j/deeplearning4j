@@ -1626,7 +1626,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray output(INDArray input, boolean train) {
         List<INDArray> activations = feedForward(input, train);
         //last activation is output
-        return activations.get(activations.size() - 1);
+        return activations.get(activations.size() - 1).detach();
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such

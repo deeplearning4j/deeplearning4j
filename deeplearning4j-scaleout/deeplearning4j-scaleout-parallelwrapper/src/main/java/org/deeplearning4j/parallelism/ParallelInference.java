@@ -66,6 +66,9 @@ public class ParallelInference {
         }
     }
 
+    protected long getWorkerCounter(int workerIdx) {
+        return zoo[workerIdx].getCounterValue();
+    }
 
     public INDArray output(double[] input) {
         return output(Nd4j.create(input));
@@ -255,6 +258,7 @@ public class ParallelInference {
         private AtomicBoolean isStopped = new AtomicBoolean(false);
         private Model protoModel;
         private Model replicatedModel;
+        private AtomicLong counter = new AtomicLong(0);
 
         private InferenceWorker (int id, @NonNull Model model, @NonNull BlockingQueue inputQueue) {
             this.inputQueue = inputQueue;
@@ -262,6 +266,10 @@ public class ParallelInference {
 
             this.setDaemon(true);
             this.setName("InferenceThread-"+id);
+        }
+
+        protected long getCounterValue() {
+            return counter.get();
         }
 
         @Override
@@ -294,6 +302,8 @@ public class ParallelInference {
                     InferenceObservable request = inputQueue.take();
 
                     if (request != null) {
+                        counter.incrementAndGet();
+
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
                         if (replicatedModel instanceof ComputationGraph) {
                             INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
