@@ -7,11 +7,13 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -44,11 +46,6 @@ public class ParallelInference {
     private ObservablesProvider provider;
 
 
-    public enum InferenceMode {
-        SEQUENTIAL, // input will be passed into the model as is
-        BATCHED, // input will be included into the batch
-    }
-
     protected ParallelInference() {
         //
     }
@@ -56,6 +53,7 @@ public class ParallelInference {
     protected void init() {
         observables = new LinkedBlockingQueue<>(queueLimit);
 
+        zoo = new InferenceWorker[workers];
         for (int i = 0; i < workers; i++) {
             zoo[i] = new InferenceWorker(i, model, observables);
             zoo[i].start();
@@ -82,6 +80,10 @@ public class ParallelInference {
         return output(new INDArray[]{input})[0];
     }
 
+    public INDArray output(DataSet dataSet) {
+        return output(dataSet.getFeatureMatrix());
+    }
+
     public INDArray[] output(INDArray... input) {
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
@@ -89,7 +91,7 @@ public class ParallelInference {
         InferenceObservable observable;
 
         if (inferenceMode == InferenceMode.SEQUENTIAL) {
-            observable = new BasicInferenceObservable();
+            observable = new BasicInferenceObservable(input);
         } else {
             observable = provider.output(input);
         }
@@ -101,9 +103,9 @@ public class ParallelInference {
             observables.put(observable);
 
             // and block until Observable returns
-            observer.wait();
+            //observer.wait();
 
-            // observer.waitTillDone();
+             observer.waitTillDone();
         } catch (InterruptedException e) {
                 throw new RuntimeException(e);
         }
@@ -138,7 +140,7 @@ public class ParallelInference {
          * @param inferenceMode
          * @return
          */
-        public Builder inferenceModel(@NonNull InferenceMode inferenceMode){
+        public Builder inferenceMode(@NonNull InferenceMode inferenceMode){
             this.inferenceMode = inferenceMode;
             return this;
         }

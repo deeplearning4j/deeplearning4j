@@ -1,5 +1,7 @@
 package org.deeplearning4j.parallelism.inference.observers;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -10,11 +12,12 @@ import java.util.concurrent.locks.LockSupport;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicInferenceObserver implements Observer {
-    private AtomicBoolean finished = new AtomicBoolean(false);
+    private AtomicBoolean finished;
 
     public BasicInferenceObserver() {
-        //
+        finished = new AtomicBoolean(false);
     }
 
     @Override
