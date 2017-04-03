@@ -13,6 +13,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.io.File;
 
+import static org.junit.Assert.assertFalse;
+
 /**
  * @author raver119@gmail.com
  */
@@ -41,6 +43,14 @@ public class ParallelInferenceTests {
                 .workers(2)
                 .build();
 
-        INDArray array = inf.output(iterator.next().getFeatureMatrix());
+
+        INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
+        INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+
+        assertFalse(array1.isAttached());
+        assertFalse(array2.isAttached());
+
+        INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+        assertFalse(array3.isAttached());
     }
 }

@@ -705,6 +705,8 @@ public class ComputationGraph implements Serializable, Model {
 
         if (hasMaskArrays)
             clearLayerMaskArrays();
+
+        clearLayersStates();
     }
 
     /**
@@ -791,6 +793,8 @@ public class ComputationGraph implements Serializable, Model {
                 tl.onEpochEnd(this);
             }
         }
+
+        clearLayersStates();
     }
 
     /**
@@ -864,6 +868,8 @@ public class ComputationGraph implements Serializable, Model {
                 }
             }
         }
+
+        clearLayersStates();
     }
 
     /**
@@ -926,6 +932,8 @@ public class ComputationGraph implements Serializable, Model {
                 clearLayerMaskArrays();
             }
         }
+
+        clearLayersStates();
     }
 
     /**
@@ -2734,5 +2742,12 @@ public class ComputationGraph implements Serializable, Model {
         return ret;
     }
 
-
+    /**
+     * This method just makes sure there's no state preserved within layers
+     */
+    protected void clearLayersStates() {
+        for(int f = 0; f < layers.length; f++) {
+            layers[f].setInput(null);
+        }
+    }
 }
