@@ -4536,7 +4536,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer") Pointer shapeBufferForNumpy(@Cast("Nd4jPointer") Pointer npyArray);
 
     /**
-     * Data buffer for numpy4j
+     * Data buffer for numpy
      * @param npArray
      * @return
      */

@@ -19,6 +19,9 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -517,7 +520,34 @@ public interface DataBufferFactory {
      * backed by this pointer with the given
      * type and length.
      */
-    DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
+    DataBuffer create(Pointer pointer,
+                      DataBuffer.Type type,
+                      long length,
+                      Indexer indexer);
+
+    /**
+     *
+     * @param doublePointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(DoublePointer doublePointer,long length);
+
+    /**
+     *
+     * @param intPointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(IntPointer intPointer, long length);
+
+    /**
+     *
+     * @param floatPointer
+     * @param length
+     * @return
+     */
+    DataBuffer create(FloatPointer floatPointer, long length);
 
     /**
      * Creates half-precision data buffer

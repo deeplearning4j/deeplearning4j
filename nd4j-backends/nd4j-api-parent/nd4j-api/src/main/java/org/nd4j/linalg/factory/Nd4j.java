@@ -1159,6 +1159,42 @@ public class Nd4j {
     }
 
     /**
+     * Create a double data type buffer
+     * of the specified length
+     * @param doublePointer
+     * @param length
+     * @return
+     */
+    public static DataBuffer createBuffer(DoublePointer doublePointer,long length) {
+        return DATA_BUFFER_FACTORY_INSTANCE.create(doublePointer,length);
+    }
+
+
+    /**
+     * Create a float type
+     * data buffer of the given length
+     * @param floatPointer
+     * @param length
+     * @return
+     */
+    public static DataBuffer createBuffer(FloatPointer floatPointer,long length) {
+        return DATA_BUFFER_FACTORY_INSTANCE.create(floatPointer,length);
+    }
+
+
+    /**
+     * Create an int data buffer
+     * from the given pointer
+     * and the given length
+     * @param intPointer
+     * @param length
+     * @return
+     */
+    public static DataBuffer createBuffer(IntPointer intPointer,long length) {
+        return DATA_BUFFER_FACTORY_INSTANCE.create(intPointer,length);
+    }
+
+    /**
      * Create a buffer based on the data type
      *
      * @param data the data to create the buffer with
@@ -1383,10 +1419,18 @@ public class Nd4j {
         DataTypeUtil.setDTypeForContext(dType);
     }
 
+    /**
+     *
+     * @return
+     */
     public static Nd4jBackend getBackend() {
         return backend;
     }
 
+    /**
+     *
+     * @return
+     */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
     }
@@ -2302,6 +2346,12 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shapeInfo
+     * @return
+     */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
         int offset = Shape.offset(shapeInfo);
@@ -4696,6 +4746,13 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param shape
+     * @param stride
+     * @param ordering
+     * @return
+     */
     public static INDArray zeros(int[] shape, int[] stride, char ordering) {
         return create(shape, stride, ordering);
     }
@@ -4732,6 +4789,13 @@ public class Nd4j {
         return create(new int[] {rows, columns}, ordering);
     }
 
+    /**
+     *
+     * @param rows
+     * @param columns
+     * @param ordering
+     * @return
+     */
     public static INDArray zeros(int rows, int columns, char ordering) {
         return create(new int[] {rows, columns}, ordering);
     }
@@ -5009,12 +5073,24 @@ public class Nd4j {
         return INSTANCE.complexZeros(columns);
     }
 
+    /**
+     *
+     * @param num
+     * @param value
+     * @return
+     */
     public static IComplexNDArray complexValueOf(int num, IComplexNumber value) {
         IComplexNDArray ret = INSTANCE.complexValueOf(num, value);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param shape
+     * @param value
+     * @return
+     */
     public static IComplexNDArray complexValueOf(int[] shape, IComplexNumber value) {
         checkShapeValues(shape);
 
@@ -5023,10 +5099,22 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param num
+     * @param value
+     * @return
+     */
     public static IComplexNDArray complexValueOf(int num, double value) {
         return INSTANCE.complexValueOf(num, value);
     }
 
+    /**
+     *
+     * @param shape
+     * @param value
+     * @return
+     */
     public static IComplexNDArray complexValueOf(int[] shape, double value) {
         checkShapeValues(shape);
 
