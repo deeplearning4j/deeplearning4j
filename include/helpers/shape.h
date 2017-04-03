@@ -15,6 +15,8 @@
 #include "../templatemath.h"
 #include "../helpers/logger.h"
 #include "../pointercast.h"
+#include "../cnpy/cnpy.h"
+
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
@@ -833,8 +835,13 @@ namespace shape {
     __host__ __device__
 #endif
 
-    INLINEDEF int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape,
-                                       int tensorShapeLength, int *dimension, int dimensionLength);
+    INLINEDEF int sliceOffsetForTensor(int rank,
+                                       int index,
+                                       int *shape,
+                                       int *tensorShape,
+                                       int tensorShapeLength,
+                                       int *dimension,
+                                       int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -860,7 +867,10 @@ namespace shape {
     __host__ __device__
 #endif
 
-    INLINEDEF int offset(int index, int rank, shape::ShapeInformation *info, int *dimension,
+    INLINEDEF int offset(int index,
+                         int rank,
+                         shape::ShapeInformation *info,
+                         int *dimension,
                          int dimensionLength);
 
 
@@ -873,8 +883,11 @@ namespace shape {
     __host__ __device__
 #endif
 
-    INLINEDEF int tensorsAlongDimension(int rank, volatile int length, volatile int *shape,
-                                        int *dimension, int dimensionLength);
+    INLINEDEF int tensorsAlongDimension(int rank,
+                                        volatile int length,
+                                        volatile int *shape,
+                                        int *dimension,
+                                        int dimensionLength);
 
 /**
  * Computes the number
@@ -1261,6 +1274,30 @@ namespace shape {
     void printArray(float *arr,int length);
 
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpy(cnpy::NpyArray arr);
+
+
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer);
+
+//END HEADERS
+
+
+    //BEGIN IMPLEMENTATIONS
+
     /**
      * Dimension collapse is an algorithm
      * for collapsing singular dimensions.
@@ -1481,10 +1518,10 @@ namespace shape {
             this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
             this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
             this->tadStride = shape::stride(this->tadOnlyShapeInfo);
-           /* if(tadIndex > 0) {
-                this->createOffsets();
-                this->tadOnlyShapeInfo[shape::shapeInfoLength(shape::rank(this->tadOnlyShapeInfo)) - 3] = this->tadOffsets[tadIndex];
-            }*/
+            /* if(tadIndex > 0) {
+                 this->createOffsets();
+                 this->tadOnlyShapeInfo[shape::shapeInfoLength(shape::rank(this->tadOnlyShapeInfo)) - 3] = this->tadOffsets[tadIndex];
+             }*/
         }
 
 
@@ -1848,7 +1885,6 @@ namespace shape {
         __host__ __device__
 #endif
         void createOffsets() {
-
             this->tadOffsets = new int[this->numTads];
 #pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
             for(int i = 0; i < this->numTads; i++) {
@@ -1870,7 +1906,6 @@ namespace shape {
             }
 
             int *theShape = shape::shapeOf(shapeInfo);
-            int *theStride = shape::stride(shapeInfo);
             int rank = shape::rank(shapeInfo);
 
             if(dimensionLength == 1) {
@@ -1908,9 +1943,7 @@ namespace shape {
 
 
             int *ret2 = shape::sliceOfShapeBuffer(sliceIndex,permuted);
-            int ret2SliceLength = shape::lengthPerSlice(shape::rank(ret2),shape::shapeOf(ret2),dimension,dimensionLength);
             int tensorLength = shape::prod(tensorShape,tadRank);
-            int offset = tadIndex * tensorLength / ret2SliceLength;
 
             int compLength = shape::isVector(ret2) ? shape::length(ret2)  : shape::prod(tensorShape,tadRank);
             if(dimensionLength == tadRank && compLength == shape::length(ret2)) {
@@ -1978,7 +2011,6 @@ namespace shape {
                 else {
                     //execute final part, note that this is mainly so delete[] gets called
                     //at the bottom of the method
-                    int sliceDimension = 0;
                     while(shape::length(ret2) > length) {
                         int lengthPerSlice2 = this->lengthPerSlice(ret2);
                         sliceIndex =    sliceOffsetForTensor(sliceIndex,shape::length(ret2),lengthPerSlice2);
@@ -3408,6 +3440,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
             if (arr[i] >= arrLength || arr[i] < 0)
                 return -1;
         }
+
         for (int i = 0; i < arrLength; i++) {
             for (int j = 0; j < arrLength; j++) {
                 if (i != j && arr[i] == arr[j])
@@ -3433,7 +3466,9 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         checkArrangeArray(rearrange, rank, rank);
         shape::doPermuteSwap(rank, &infoDeref->shape, rearrange);
         shape::doPermuteSwap(rank, &infoDeref->stride, rearrange);
-        char order = getOrder(rank, infoDeref->shape, infoDeref->stride,
+        char order = getOrder(rank,
+                              infoDeref->shape,
+                              infoDeref->stride,
                               infoDeref->elementWiseStride);
         infoDeref->order = order;
 
@@ -3471,7 +3506,6 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-
     INLINEDEF bool isRowVector(int *shapeInfo) {
         bool isVector = shape::isVector(shapeInfo) == 1;
         bool shapeFirstOne = shape::shapeOf(shapeInfo)[0] == 1;
@@ -4076,7 +4110,6 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #endif
 
     INLINEDEF int *ensureVectorShape(int *shape, int dimension) {
-
         traceNew(21);
 
         int *ret = new int[2];
@@ -4801,11 +4834,63 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __device__ INLINEDEF void sweepShapeInfoBuffer(int *shapeInfoBuffer, int *targetBuffer) {
     // we read first element, to find out length of our shapeInfoBuffer
     int rank = shapeInfoBuffer[0];
-    int len = rank * 2 + 4;
+    int len = shape::shapeInfoLength(rank);
     for (int i = threadIdx.x; i < len; i += blockDim.x)
         targetBuffer[i] = shapeInfoBuffer[i];
 }
 #endif
+
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpy(cnpy::NpyArray arr) {
+      return shape::shapeBufferOfNpy(arr.shape.size(),(unsigned int* )arr.shape.data(),arr.fortranOrder);
+    }
+
+
+
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpyBuffer(char *buffer) {
+        unsigned int *shape;
+        unsigned int ndims, wordSize;
+        bool fortranOrder;
+        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
+        int * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
+        delete[] shape;
+        return ret;
+    }
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferOfNpy(int rank, unsigned int *shape,bool fortranOrder) {
+        if(fortranOrder) {
+            int *shapeBufferRet = shape::shapeBufferFortran(rank,(int *) shape);
+            return shapeBufferRet;
+        }
+        else {
+            int *newShape = new int[rank];
+            for(int i = 0; i < rank; i++) {
+                newShape[i] = shape[i];
+            }
+
+            int *shapeBufferRet = shape::shapeBuffer(rank,newShape);
+            delete[] newShape;
+            return shapeBufferRet;
+
+        }
+    }
 }
+
+
+
+
 
 #endif /* SHAPE_H_ */

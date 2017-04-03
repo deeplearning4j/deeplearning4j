@@ -8,7 +8,9 @@
 #include <reduce3.h>
 #include <shape.h>
 #include <data_gen.h>
+#include <cnpy.h>
 #include <gtest/gtest.h>
+#include <NativeOps.h>
 //http://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
 std::string int_array_to_string(int int_array[], int size_of_array) {
     std::string returnstring = "[";

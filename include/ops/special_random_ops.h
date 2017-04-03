@@ -168,7 +168,6 @@ namespace randomOps {
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
-            Nd4jIndex xLength = shape::length(xShapeBuffer);
             Nd4jIndex yLength = shape::length(yShapeBuffer);
             Nd4jIndex zLength = shape::length(zShapeBuffer);
 
@@ -344,7 +343,6 @@ namespace randomOps {
 
         static inline void
         specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-            const T epsilon = std::numeric_limits<T>::min();
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
 
             Nd4jIndex zLength = shape::length(zShapeBuffer);

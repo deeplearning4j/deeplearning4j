@@ -629,7 +629,6 @@ namespace simdOps {
 			int strideY = (int)extraParams[1];
 			int padWidth = (int)extraParams[2];
 			int padHeight = (int)extraParams[3];
-			bool isSameMode = extraParams[6] > 0;
 
 
 			int exampleFrom = 0;

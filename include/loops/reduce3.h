@@ -806,11 +806,6 @@ template<typename OpType>
                                 delete[] localExtraParams;
                         }
                     } else {
-                        int shapeIter[MAX_RANK];
-                        int coord[MAX_RANK];
-                        int dim;
-                        int xStridesIter[MAX_RANK];
-                        int yStridesIter[MAX_RANK];
                         shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
                         xTad.createTadOnlyShapeInfo();
                         xTad.createOffsets();
@@ -819,8 +814,6 @@ template<typename OpType>
                         shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
                         yTad.createTadOnlyShapeInfo();
                         yTad.createOffsets();
-                        int tads = shape::tensorsAlongDimension(xShapeInfo,dimension,dimensionLength);
-                        int idx[MAX_RANK];
                         int tadsPerThread = resultLength / TAD_THRESHOLD;
                         int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                         num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
