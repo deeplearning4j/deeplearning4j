@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
+import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
@@ -201,5 +202,36 @@ public class TestMasking {
                 assertEquals(gGrad1, gGrad2);
             }
         }
+    }
+
+    @Test
+    public void testCompGraphEvalWithMask(){
+        int minibatch = 3;
+        int layerSize = 6;
+        int nIn = 5;
+        int nOut = 4;
+
+        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                .graphBuilder().addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
+                        .activation(Activation.TANH).build(), "in")
+                .addLayer("1", new OutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                        .lossFunction(LossFunctions.LossFunction.XENT)
+                        .activation(Activation.SIGMOID).build(), "0")
+                .setOutputs("1").build();
+
+        ComputationGraph graph = new ComputationGraph(conf2);
+        graph.init();
+
+        INDArray f = Nd4j.create(minibatch, nIn);
+        INDArray l = Nd4j.create(minibatch, nOut);
+        INDArray lMask = Nd4j.ones(minibatch, nOut);
+
+        DataSet ds = new DataSet(f,l,null,lMask);
+        DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(ds).iterator());
+
+        EvaluationBinary eb = new EvaluationBinary();
+        graph.doEvaluation(iter, eb);
     }
 }
