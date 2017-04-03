@@ -5,7 +5,7 @@ import java.util
 import org.apache.spark.ml.{PredictionModel, Predictor}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
-import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.Row
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
@@ -13,10 +13,12 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
+import org.deeplearning4j.spark.util.MLLibUtil
 import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
+import org.nd4j.linalg.api.ndarray.INDArray
 
 
 abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M], M <: SparkDl4jModelWrapper[T, M]]
@@ -79,6 +81,10 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
 
     protected def output(vector: Vector) : Vector = network.predict(vector)
 
+    protected def outputTensor(vector: Vector) : INDArray = getMultiLayerNetwork.output(MLLibUtil.toVector(vector))
+
+    protected def outputFlattenedTensor(vector: Vector) : Vector = Vectors.dense(flattenTensor(outputTensor(vector)))
+
     protected[SparkDl4jModelWrapper] class SparkDl4jModelWriter(instance: SparkDl4jModelWrapper[T,E]) extends MLWriter {
         override protected def saveImpl(path: String): Unit = {
             ModelSerializer.writeModel(network.getNetwork, path, true)
@@ -86,6 +92,8 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
     }
 
     override def write : MLWriter = new SparkDl4jModelWriter(this)
+
+    private def flattenTensor(indArray: INDArray) : Array[Double] = indArray.data().asDouble()
 }
 
 trait SparkDl4jModelWrap extends MLReadable[SparkDl4jModel] {

@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
+import org.nd4j.linalg.api.ndarray.INDArray
 
 
 final class SparkDl4jNetwork(
@@ -47,7 +48,12 @@ class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
     extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network) {
 
     override def copy(extra: ParamMap) : SparkDl4jModel = copyValues(new SparkDl4jModel(uid, network)).setParent(parent)
+
     override def predict(features: Vector) : Double = predictor(features)
+
+    override def outputFlattenedTensor(vector: Vector): Vector = super.outputFlattenedTensor(vector)
+
+    override def outputTensor(vector: Vector) : INDArray = super.outputTensor(vector)
 
 }
 
