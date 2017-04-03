@@ -75,14 +75,14 @@
                     <id>local-nexus</id>
                     <name>local-nexus</name>
                     <url>
-                        http://master-jenkins.eastus.cloudapp.azure.com:8088/nexus/content/repositories/snapshots
+                        http://master-jenkins.skymind.io:8088/nexus/content/repositories/snapshots
                     </url>
                 </snapshotRepository>
                 <repository>
                     <id>local-nexus</id>
                     <name>local-nexus</name>
                     <url>
-                        http://master-jenkins.eastus.cloudapp.azure.com:8088/nexus/service/local/staging/deploy/maven2
+                        http://master-jenkins.skymind.io:8088/nexus/service/local/staging/deploy/maven2
                     </url>
                 </repository>
             </distributionManagement>
@@ -111,7 +111,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>local-nexus</serverId>
-                            <nexusUrl>http://master-jenkins.eastus.cloudapp.azure.com:8088/nexus/</nexusUrl>
+                            <nexusUrl>http://master-jenkins.skymind.io:8088/nexus/</nexusUrl>
                             <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                         </configuration>
                     </plugin>
@@ -130,13 +130,13 @@
                 <snapshotRepository>
                     <id>local-jfrog</id>
                     <name>local-jfrog</name>
-                    <url>http://master-jenkins.eastus.cloudapp.azure.com:8081/artifactory/libs-snapshot-local
+                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-snapshot-local
                     </url>
                 </snapshotRepository>
                 <repository>
                     <id>local-jfrog</id>
                     <name>local-jfrog</name>
-                    <url>http://master-jenkins.eastus.cloudapp.azure.com:8081/artifactory/libs-release-local
+                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-release-local
                     </url>
                 </repository>
             </distributionManagement>
