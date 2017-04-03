@@ -44,7 +44,7 @@ public class SparkDl4jNetworkTest  {
         Collection<IterationListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
 
-        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, il)
+        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il)
                 .setFeaturesCol("features")
                 .setLabelCol("label");
 
