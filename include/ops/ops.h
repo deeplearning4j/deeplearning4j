@@ -22,6 +22,10 @@
 #include <helpers/sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #else
+// hacky fix for isnan/being being out of scope
+#define isnan std::isnan
+#define isinf std::isinf
+
 #define meta_def inline
 #define no_op_exec_special_cuda
 #endif
@@ -1048,7 +1052,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template<typename T>
 	class ATan {
 	public:
@@ -1060,7 +1064,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template<typename T>
 	class Identity {
 	public:
@@ -1072,11 +1076,11 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template<typename T>
 	class Stabilize {
 	public:
-	
+
 		no_op_exec_special
 		no_op_exec_special_cuda
 
@@ -1129,7 +1133,7 @@ namespace simdOps {
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
-		
+
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
@@ -1218,7 +1222,7 @@ namespace simdOps {
 
 
 	template<typename T>
-	class Max { 
+	class Max {
 	public:
 		op_def static T startingValue(const T *input) {
 			return input[0];
@@ -1276,7 +1280,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template<typename T>
 	class Norm1 {
 	public:
@@ -1329,7 +1333,7 @@ namespace simdOps {
 		}
 	};
 
-	
+
 	template<typename T>
 	class NormMax {
 	public:
@@ -1483,12 +1487,12 @@ namespace simdOps {
 		op_def static T * generateExtraParams() {
 			return nullptr;
 		}
-		
+
 		op_def static void finalizeExtraParams(T *extraParamsRef) {
 			//no-op
 			//delete[] * extraParamsRef;
 		}
-		
+
 		op_def static T startingValue(T *input) {
 			return (T) 0.0f;
 		}
@@ -1501,7 +1505,7 @@ namespace simdOps {
 			return d1 * d2;
 		}
 
-	
+
 #ifdef __CUDACC__
 		__device__
 		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
@@ -1606,13 +1610,13 @@ namespace simdOps {
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
 			return nd4j::math::nd4j_sqrt<T>(reduction);
 		}
-		
+
 		op_def static T op(T d1, T d2, T *extraParamsRef) {
 			T ret = d1 - d2;
 			return ret * ret;
 		}
 
-		
+
 #ifdef __CUDACC__
 			__device__
 			static  inline T opAtomic(T d1, T d2, T *extraParamsRef) {
@@ -1662,9 +1666,9 @@ namespace simdOps {
 		}
 
 		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
-			
+
 		}
-		
+
 
 #ifdef __CUDACC__
 		__device__
