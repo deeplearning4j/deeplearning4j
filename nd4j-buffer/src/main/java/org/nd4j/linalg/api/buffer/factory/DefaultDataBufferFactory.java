@@ -19,8 +19,14 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.DoubleIndexer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -372,6 +378,44 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         throw new IllegalArgumentException("Invalid type " + type);
     }
 
+    /**
+     * @param doublePointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(DoublePointer doublePointer, long length) {
+        doublePointer.capacity(length);
+        doublePointer.limit(length);
+        doublePointer.position(0);
+        return new DoubleBuffer(doublePointer, DoubleIndexer.create(doublePointer),length);
+    }
+
+    /**
+     * @param intPointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(IntPointer intPointer, long length) {
+        intPointer.capacity(length);
+        intPointer.limit(length);
+        intPointer.position(0);
+        return new IntBuffer(intPointer, IntIndexer.create(intPointer),length);
+    }
+
+    /**
+     * @param floatPointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(FloatPointer floatPointer, long length) {
+        floatPointer.capacity(length);
+        floatPointer.limit(length);
+        floatPointer.position(0);
+        return new FloatBuffer(floatPointer, FloatIndexer.create(floatPointer),length);
+    }
 
 
     @Override

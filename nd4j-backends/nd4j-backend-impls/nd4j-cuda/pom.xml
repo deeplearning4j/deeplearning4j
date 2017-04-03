@@ -94,6 +94,7 @@
                     <includePaths>
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/cnpy</includePath>
                     </includePaths>
                     <linkPaths>
                         <linkPath>${env.LIBND4J_HOME}/blasbuild/cuda-${cuda.version}/blas</linkPath>

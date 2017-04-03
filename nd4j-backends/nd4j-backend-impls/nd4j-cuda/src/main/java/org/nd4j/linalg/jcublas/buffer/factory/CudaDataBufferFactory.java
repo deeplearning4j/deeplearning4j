@@ -19,8 +19,12 @@
 
 package org.nd4j.linalg.jcublas.buffer.factory;
 
+import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
@@ -38,9 +42,9 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class CudaDataBufferFactory implements DataBufferFactory {
     protected DataBuffer.AllocationMode allocationMode;
-    private static Logger log = LoggerFactory.getLogger(CudaDataBufferFactory.class);
 
     @Override
     public void setAllocationMode(DataBuffer.AllocationMode allocationMode) {
@@ -376,7 +380,38 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case HALF:
                 return new CudaHalfDataBuffer(pointer, indexer, length);
         }
+
         throw new IllegalArgumentException("Illegal type " + type);
+    }
+
+    /**
+     * @param doublePointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(DoublePointer doublePointer, long length) {
+        return new CudaDoubleDataBuffer(doublePointer,DoubleIndexer.create(doublePointer),length);
+    }
+
+    /**
+     * @param intPointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(IntPointer intPointer, long length) {
+        return new CudaIntDataBuffer(intPointer, IntIndexer.create(intPointer),length);
+    }
+
+    /**
+     * @param floatPointer
+     * @param length
+     * @return
+     */
+    @Override
+    public DataBuffer create(FloatPointer floatPointer, long length) {
+        return new CudaFloatDataBuffer(floatPointer, FloatIndexer.create(floatPointer),length);
     }
 
 

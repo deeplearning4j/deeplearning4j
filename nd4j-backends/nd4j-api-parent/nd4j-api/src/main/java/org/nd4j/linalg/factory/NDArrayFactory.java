@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -1746,27 +1748,64 @@ public interface NDArrayFactory {
     IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering);
 
 
-    /**
-     * This method converts Half-precision databuffer to current dType buffer.
-     * @param buffer
-     * @return
-     */
     //    DataBuffer restoreFromHalfs(DataBuffer buffer);
 
-    /**
-     * This method converts Single/Double precision databuffer to Half-precision databuffer
-     * @param buffer
-     * @return
-     */
+
     //    DataBuffer convertToHalfs(DataBuffer buffer);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @return
+     */
 
     INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @return
+     */
     DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @param target
+     */
     void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
 
+    /**
+     *
+     * @param typeSrc
+     * @param source
+     * @param typeDst
+     * @param target
+     * @param length
+     */
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length);
+
+    /**
+     * Create from an in memory numpy pointer
+     * @param pointer the pointer to the
+     *                numpy array
+     * @return an ndarray created from the in memory
+     * numpy pointer
+     */
+    INDArray createFromNpyPointer(Pointer pointer);
+
+    /**
+     * Create from a given numpy file.
+     * @param file the file to create the ndarray from
+     * @return the created ndarray
+     */
+    INDArray createFromNpyFile(File file);
+
 }
