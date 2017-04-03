@@ -12,12 +12,14 @@ import org.deeplearning4j.exception.DL4JException;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 14/11/2016.
@@ -27,23 +29,21 @@ public class TestRecordReaders {
     @Test
     public void testClassIndexOutsideOfRangeRRDSI() {
 
+        //In previous implementations: this would throw an exception. Now: Skip invalid records
+        // i.e., expect only the first record to be returned
+
         Collection<Collection<Writable>> c = new ArrayList<>();
-        c.add(Arrays.<Writable>asList(new DoubleWritable(0.0), new IntWritable(0)));
-        c.add(Arrays.<Writable>asList(new DoubleWritable(0.0), new IntWritable(2)));
+        c.add(Arrays.<Writable>asList(new DoubleWritable(0.5), new IntWritable(0)));
+        c.add(Arrays.<Writable>asList(new DoubleWritable(1.0), new IntWritable(2)));
 
         CollectionRecordReader crr = new CollectionRecordReader(c);
 
         RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(crr, 2, 1, 2);
 
-        try {
-            DataSet ds = iter.next();
-            fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRange(): " + e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail();
-        }
+        DataSet ds = iter.next();
+
+        assertEquals(Nd4j.create(new double[]{0.5}), ds.getFeatures());
+        assertEquals(Nd4j.create(new double[]{1.0, 0.0}), ds.getLabels());
     }
 
     @Test

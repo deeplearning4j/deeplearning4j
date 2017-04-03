@@ -159,7 +159,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+            applyMask(delta);
         }
 
         Gradient ret = new DefaultGradient();
@@ -404,7 +404,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray ret = conf().getLayer().getActivationFn().getActivation(z, training);
 
         if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+            applyMask(ret);
         }
 
         return ret;
