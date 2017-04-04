@@ -26,8 +26,8 @@ public class AssignIndexFunction<T> implements Function2<Integer, Iterator<T>, I
     }
 
     @Override
-    public Iterator<Tuple2<Integer, T>> call(Integer partionNum, Iterator<T> v2) throws Exception {
-        int currIdx = partitionElementStartIdxs[partionNum];
+    public Iterator<Tuple2<Integer, T>> call(Integer partitionNum, Iterator<T> v2) throws Exception {
+        int currIdx = partitionElementStartIdxs[partitionNum];
         List<Tuple2<Integer, T>> list = new ArrayList<>();
         while (v2.hasNext()) {
             list.add(new Tuple2<>(currIdx++, v2.next()));
