@@ -1,8 +1,10 @@
-from org.deeplearning4j.keras.backend import *
-import nose
-import numpy as np
 import unittest
+
+import numpy as np
 from jnius import JavaException
+
+from jumpy import *
+
 
 class TestArrayCreation(unittest.TestCase):
     def test_arr_creation(self):
