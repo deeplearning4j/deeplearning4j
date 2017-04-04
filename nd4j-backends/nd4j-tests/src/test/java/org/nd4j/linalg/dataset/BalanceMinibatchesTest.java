@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
@@ -33,6 +34,7 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
 
     }
 
+    @Test
     public void testMiniBatchBalanced() {
 
         int miniBatchSize = 10;
@@ -42,9 +44,9 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
 
-        assert(iterator.resetSupported()); // this is testing the Iris dataset more than anything
+        assertTrue(iterator.resetSupported()); // this is testing the Iris dataset more than anything
         iterator.reset();
-        ArrayList<Double> totalCounts = new ArrayList<Double>(iterator.totalOutcomes());
+        List<Double> totalCounts = new ArrayList<Double>(iterator.totalOutcomes());
         while (iterator.hasNext()) {
             Map<Integer, Double> outcomes = iterator.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
@@ -54,7 +56,7 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
             }
         }
 
-        ArrayList<Integer> fullBatches = new ArrayList<Integer>(totalCounts.size());
+        List<Integer> fullBatches = new ArrayList<Integer>(totalCounts.size());
         for (int i = 0; i < totalCounts.size(); i++) {
             fullBatches.set(i, totalCounts.get(i).intValue() * iterator.totalOutcomes() / miniBatchSize);
         }
