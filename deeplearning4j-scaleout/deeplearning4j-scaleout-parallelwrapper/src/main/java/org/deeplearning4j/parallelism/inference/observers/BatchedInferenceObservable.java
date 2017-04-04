@@ -78,6 +78,19 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         notifyObservers();
     }
 
+    /**
+     * PLEASE NOTE: This method is for tests only
+     *
+     * @return
+     */
+    protected List<INDArray[]> getOutputs(){
+        return outputs;
+    }
+
+    protected void setCounter(int value) {
+        counter.set(value);
+    }
+
     @Override
     public INDArray[] getOutput() {
         // basically we should take care of splits here: each client should get its own part of output, wrt order number
