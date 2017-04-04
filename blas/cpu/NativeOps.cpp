@@ -2261,6 +2261,48 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShap
     pullRowsGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
+template<typename T>
+void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+
+    const Nd4jIndex tadLength = shape::length(tadShapeInfo);
+    int tadEWS = shape::elementWiseStride(tadShapeInfo);
+    int zEWS = shape::elementWiseStride(zShapeInfo);
+    int tadRank = shape::rank(tadShapeInfo);
+    Nd4jIndex numTads = shape::length(xShapeInfo) / tadLength;
+
+#pragma omp parallel for schedule(guided) default(shared)
+    for (Nd4jIndex i = 0; i < numTads; i++) {
+        T *z = (T *) targets[i];
+        T *s = x + tadOffsets[i];
+
+        if (zEWS == 1 && tadEWS == 1) {
+#pragma omp simd
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                z[j] = s[j];
+            }
+        } else if (zEWS > 0 && tadEWS > 0) {
+#pragma omp simd
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                z[j * zEWS] = s[j * tadEWS];
+            }
+        } else {
+            printf("Non-EWS isn't possible for tear");
+        }
+    }
+}
+
+void NativeOps::tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<double>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+void NativeOps::tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<float>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+void NativeOps::tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
 
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {

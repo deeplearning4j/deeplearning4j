@@ -2727,6 +2727,39 @@ public:
 
     Nd4jPointer pointerForAddress(long address);
 
+    /**
+     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
+     *
+     * @param x
+     * @param xShapeInfo
+     * @param targets
+     * @param zShapeInfo
+     * @return
+     */
+    void tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+
+    /**
+     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
+     *
+     * @param x
+     * @param xShapeInfo
+     * @param targets
+     * @param zShapeInfo
+     * @return
+     */
+    void tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+
+    /**
+     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
+     *
+     * @param x
+     * @param xShapeInfo
+     * @param targets
+     * @param zShapeInfo
+     * @return
+     */
+    void tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+
 
 };
 
