@@ -108,6 +108,36 @@ public class ParallelInferenceTests {
     }
 
 
+    @Test
+    public void testInferenceBatched1() throws Exception {
+        ParallelInference inf = new ParallelInference.Builder(model)
+                .inferenceMode(InferenceMode.BATCHED)
+                .workers(2)
+                .build();
+
+
+
+        log.info("Features shape: {}", Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+
+        INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
+        INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
+
+        assertFalse(array1.isAttached());
+        assertFalse(array2.isAttached());
+
+        INDArray array3 = inf.output(iterator.next().getFeatureMatrix());
+        assertFalse(array3.isAttached());
+
+        iterator.reset();
+
+        evalClassifcationMultipleThreads(inf, iterator, 10);
+
+        // both workers threads should have non-zero
+        assertTrue( inf.getWorkerCounter(0) > 100L);
+        assertTrue( inf.getWorkerCounter(1) > 100L);
+    }
+
+
     protected void evalClassifcationSingleThread(@NonNull ParallelInference inf, @NonNull DataSetIterator iterator) {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
