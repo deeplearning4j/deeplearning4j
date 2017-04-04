@@ -2268,6 +2268,11 @@ void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, i
     int tadEWS = shape::elementWiseStride(tadShapeInfo);
     int zEWS = shape::elementWiseStride(zShapeInfo);
     int tadRank = shape::rank(tadShapeInfo);
+    int zRank = shape::rank(zShapeInfo);
+    int *tadShape = shape::shapeOf(tadShapeInfo);
+    int *tadStride = shape::stride(tadShapeInfo);
+    int *zShape = shape::shapeOf(zShapeInfo);
+    int *zStride = shape::stride(zShapeInfo);
     Nd4jIndex numTads = shape::length(xShapeInfo) / tadLength;
 
 #pragma omp parallel for schedule(guided) default(shared)
@@ -2286,7 +2291,18 @@ void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, i
                 z[j * zEWS] = s[j * tadEWS];
             }
         } else {
-            printf("Non-EWS isn't possible for tear");
+            int xCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                shape::ind2sub(tadRank,tadShape, j, xCoord);
+                shape::ind2sub(zRank, zShape, j, zCoord);
+
+                Nd4jIndex xOffset = shape::getOffset(0, tadShape, tadStride, xCoord, tadRank);
+                Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+                z[zOffset] = s[xOffset];
+            }
         }
     }
 }
