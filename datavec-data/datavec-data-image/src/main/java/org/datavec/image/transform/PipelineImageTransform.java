@@ -29,7 +29,7 @@ import static org.bytedeco.javacpp.opencv_core.*;
  *
  * You have the option of passing in multiple transforms as parameters. If you
  * want to create a more complex pipeline, you can pass in a pipeline that looks
- * like List<Pair<ImageTransform, Double>>. The Double is the probability that
+ * like {@literal List<Pair<ImageTransform, Double>>}. The Double value is the probability that
  * particular element in the pipeline will be executed. This is helpful for creating
  * complex pipelines.
  *
