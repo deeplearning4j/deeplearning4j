@@ -6201,7 +6201,7 @@ public class Nd4j {
 
 
 
-        return null;
+        return factory().tear(tensor, dimensions);
     }
 
 

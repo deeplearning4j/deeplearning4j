@@ -24,7 +24,7 @@ public class BasicNDArrayCompressor {
 
     protected Map<String, NDArrayCompressor> codecs;
 
-    protected String defaultCompression = "FP16";
+    protected String defaultCompression = "FLOAT16";
 
     private BasicNDArrayCompressor() {
         loadCompressors();

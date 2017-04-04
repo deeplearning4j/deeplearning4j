@@ -983,6 +983,25 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testTear1() {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        log.info("Pile shapeInfo: {}", Arrays.toString(pile.shapeInfoDataBuffer().asInt()));
+
+        INDArray[] tears = Nd4j.tear(pile, 1,2);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
