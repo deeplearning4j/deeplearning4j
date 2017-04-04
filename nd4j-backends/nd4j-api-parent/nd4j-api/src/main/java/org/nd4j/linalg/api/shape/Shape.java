@@ -1515,6 +1515,19 @@ public class Shape {
     }
 
     /**
+     * Get array shape from the buffer, as an int[]
+     * @param buffer    Buffer to get the shape from
+     * @return          Shape array
+     */
+    public static int[] strideArr(DataBuffer buffer) {
+        int[] ret = new int[rank(buffer)];
+        DataBuffer stride = Shape.stride(buffer);
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = stride.getInt(i);
+        return ret;
+    }
+
+    /**
      * Get the stride of the specified dimension, without any input validation
      * @param buffer       The buffer to get the stride from
      * @param dimension    The dimension to get.

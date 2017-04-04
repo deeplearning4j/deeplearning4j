@@ -19,8 +19,6 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(Parameterized.class)
 public class MultiNormalizerHybridTest extends BaseNd4jTest {
-    private static final double TOLERANCE_PERC = 0.01; // 0.01% of correct value
-
     private MultiNormalizerHybrid SUT;
     private MultiDataSet data;
     private MultiDataSet dataCopy;
@@ -109,11 +107,24 @@ public class MultiNormalizerHybridTest extends BaseNd4jTest {
         assertEquals(timeSeriesCopy, timeSeries);
     }
 
-    private void assertSmallDifference(double expected, double actual) {
-        double delta = Math.abs(expected - actual);
-        double deltaPerc = (delta / expected) * 100;
-        assertTrue(String.format("Failed to assert that expected value %f is close to actual value %f", expected,
-                        actual), deltaPerc < TOLERANCE_PERC);
+    @Test
+    public void testDataSetWithoutLabels() {
+        SUT.standardizeAllInputs().standardizeAllOutputs().fit(data);
+
+        data.setLabels(null);
+        data.setLabelsMaskArray(null);
+
+        SUT.preProcess(data);
+    }
+
+    @Test
+    public void testDataSetWithoutFeatures() {
+        SUT.standardizeAllInputs().standardizeAllOutputs().fit(data);
+
+        data.setFeatures(null);
+        data.setFeaturesMaskArrays(null);
+
+        SUT.preProcess(data);
     }
 
     @Override

@@ -2,14 +2,13 @@ package org.nd4j.parameterserver.node;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.client.ParameterServerClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,9 +18,9 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 12/3/16.
  */
+@Slf4j
 public class ParameterServerNodeTest {
     private static MediaDriver mediaDriver;
-    private static Logger log = LoggerFactory.getLogger(ParameterServerNodeTest.class);
     private static Aeron aeron;
     private static ParameterServerNode parameterServerNode;
     private static int parameterLength = 4;

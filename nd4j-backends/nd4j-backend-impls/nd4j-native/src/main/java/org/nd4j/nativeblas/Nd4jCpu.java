@@ -4577,45 +4577,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native @Cast("Nd4jPointer") Pointer pointerForAddress(long address);
 
-    /**
-     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
-     *
-     * @param x
-     * @param xShapeInfo
-     * @param targets
-     * @param zShapeInfo
-     * @return
-     */
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
-
-    /**
-     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
-     *
-     * @param x
-     * @param xShapeInfo
-     * @param targets
-     * @param zShapeInfo
-     * @return
-     */
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
-
-    /**
-     * This method takes single N-dimensional tensor, and copies its TADs to target arrays
-     *
-     * @param x
-     * @param xShapeInfo
-     * @param targets
-     * @param zShapeInfo
-     * @return
-     */
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
-
 
 }
 
