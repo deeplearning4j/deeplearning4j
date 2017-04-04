@@ -447,4 +447,10 @@ var PAGES = [{
 "title": "DeepLearning4j示例一览",
 "description": "Deeplearning4j的Github代码库中有许多演示各种功能的示例。快速入门指南中介绍了设置Intellij并克隆代码库的方法。本页概述其中的部分示例。",
 "tags": ["示例", "用例", "datavec", "rl4j", "example", "deeplearning4j", "video", "视频", "模型", "保存", "加载", "自然语言", "可视化", "spark", "nd4j"]
+},
+{
+"url": "https://deeplearning4j.org/cn/maven_setup",
+"title": "使用DeepLearning4J所需的Maven配置",
+"description": "本页将介绍在使用DeepLearning4J之前如何设置Maven以及pom.xml文件。Maven依赖一个名为pom.xml的配置文件。本页将协助您配置该文件中的依赖项。",
+"tags": ["maven", "配置", "pom", "依赖", "可视化", "生成图标", "arbiter", "depended", "setup", "configuration", "超参数", "hyperparameter"]
 }];
