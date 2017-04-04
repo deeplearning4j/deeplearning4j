@@ -560,6 +560,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return ret;
     }
 
+    public INDArray[] tear(INDArray tensor, int... dimensions) {
+
+        return null;
+    }
+
     /**
      * concatenate ndarrays along a dimension
      *

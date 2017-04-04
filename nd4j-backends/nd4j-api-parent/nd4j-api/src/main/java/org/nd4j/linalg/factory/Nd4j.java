@@ -6089,4 +6089,24 @@ public class Nd4j {
     public static INDArray pile(@NonNull Collection<INDArray> arrays) {
         return pile(arrays.toArray(new INDArray[0]));
     }
+
+    /**
+     * This method does the opposite to pile/vstack/hstack - it returns independent TAD copies along given dimensions
+     *
+     * @param tensor
+     * @param dimensions
+     * @return
+     */
+    public static INDArray[] tear(INDArray tensor, int... dimensions) {
+        if (dimensions.length >= tensor.rank())
+            throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
+
+        for (int e = 0; e < dimensions.length; e++)
+            if (dimensions[e] < 1)
+                throw new ND4JIllegalStateException("Target dimensions can't have negative values");
+
+
+
+        return null;
+    }
 }

@@ -1168,4 +1168,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         return buffer;
     }
+
+    public INDArray[] tear(INDArray tensor, int... dimensions) {
+
+        return null;
+    }
 }

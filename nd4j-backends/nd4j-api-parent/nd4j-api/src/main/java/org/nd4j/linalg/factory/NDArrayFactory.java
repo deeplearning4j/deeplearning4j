@@ -1777,4 +1777,6 @@ public interface NDArrayFactory {
 
     void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length);
+
+    INDArray[] tear(INDArray tensor, int... dimensions);
 }
