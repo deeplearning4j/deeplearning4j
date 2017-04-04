@@ -33,6 +33,8 @@ Consider for the moment a standard feed-forward network (a multi-layer perceptro
 
 Conversely, data for RNNs are time series. Thus, they have 3 dimensions: one additional dimension for time. Input data thus has shape [numExamples,inputSize,timeSeriesLength], and output data has shape [numExamples,outputSize,timeSeriesLength]. This means that the data in our INDArray is laid out such that the value at position (i,j,k) is the jth value at the kth time step of the ith example in the minibatch. This data layout is shown below.
 
+When importing time series data using the class CSVSequenceRecordReader each line in the data files represents one time step with the earliest time series observation in the first row (or first row after header if present) and the most recent observation in the last row of the csv. Each feature time series is a separate column of the of the csv file. For example if you have five features in time series, each with 120 observations, and a training & test set of size 53 then there will be 106 input csv files(53 input, 53 labels). The 53 input csv files will each have five columns and 120 rows. The label csv files will have one column (the label) and one row.
+
 ![Data: Feed Forward vs. RNN](./img/rnn_data.png)
 
 #### RnnOutputLayer
