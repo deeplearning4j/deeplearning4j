@@ -169,16 +169,72 @@ public class Transforms {
     }
 
 
+    /**
+     *
+     * @param ndArray
+     * @param k
+     * @return
+     */
     public static INDArray stabilize(INDArray ndArray, double k) {
         return stabilize(ndArray, k, Nd4j.copyOnOps);
     }
 
+    /**
+     * Sin function
+     * @param in
+     * @return
+     */
     public static INDArray sin(INDArray in) {
         return sin(in, Nd4j.copyOnOps);
     }
 
+    /**
+     * Sin function
+     * @param in
+     * @param copy
+     * @return
+     */
     public static INDArray sin(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new Sin((copy ? in.dup() : in)));
+    }
+
+
+    /**
+     * Sin function
+     * @param in
+     * @return
+     */
+    public static INDArray atanh(INDArray in) {
+        return atanh(in, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Sin function
+     * @param in
+     * @param copy
+     * @return
+     */
+    public static INDArray atanh(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ATanh((copy ? in.dup() : in)));
+    }
+
+    /**
+     * Sinh function
+     * @param in
+     * @return
+     */
+    public static INDArray sinh(INDArray in) {
+        return sinh(in, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Sinh function
+     * @param in
+     * @param copy
+     * @return
+     */
+    public static INDArray sinh(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new Sinh((copy ? in.dup() : in)));
     }
 
     /**
@@ -188,6 +244,25 @@ public class Transforms {
      */
     public static INDArray cos(INDArray in) {
         return cos(in, Nd4j.copyOnOps);
+    }
+
+    /**
+     *
+     * @param in
+     * @param copy
+     * @return
+     */
+    public static INDArray cosh(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new Cosh((copy ? in.dup() : in)));
+    }
+
+    /**
+     *
+     * @param in
+     * @return
+     */
+    public static INDArray cosh(INDArray in) {
+        return cosh(in, Nd4j.copyOnOps);
     }
 
     /**
@@ -312,6 +387,20 @@ public class Transforms {
         return pow(ndArray, power, Nd4j.copyOnOps);
 
     }
+
+
+    /**
+     * Pow function
+     *
+     * @param ndArray the ndarray to raise hte power of
+     * @param power   the power to raise by
+     * @return the ndarray raised to this power
+     */
+    public static INDArray pow(INDArray ndArray, INDArray power) {
+        return exec(new Pow(ndArray,power,ndArray,ndArray.length(),0));
+
+    }
+
 
     /**
      * Rounding function

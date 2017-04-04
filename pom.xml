@@ -397,10 +397,11 @@
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
         <module>nd4j-buffer</module>
-        <module>nd4j-context</module>
+        <module>nd4d4j-context</module>
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
-    </modules>
+        <module>nd4j-autodiff</module>
+      </modules>
 
     <properties>
         <camel.version>2.18.2</camel.version>
