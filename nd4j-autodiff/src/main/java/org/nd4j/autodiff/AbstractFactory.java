@@ -57,4 +57,53 @@ public interface AbstractFactory<X extends Field<X>>
     X floor(X value);
     X ceil(X value);
     X round(X value);
+
+    X relu(X value);
+
+    X leakyRelu(X value,double alpha);
+
+    /**
+     * Leaky relu with an alpha of
+     * 0.01
+     * @param value the value to transform
+     * @return
+     */
+    X leakyRelu(X value);
+
+    X leakyReluDerivative(X value,double alpha);
+
+    /**
+     * Leaky relu with an alpha of
+     * 0.01
+     * @param value the value to transform
+     * @return
+     */
+    X leakyReluDerivative(X value);
+
+
+    X hardTanh(X value);
+
+    X hardTanhDerivative(X value);
+
+    X sigmoid(X value);
+
+    X sigmoidDerivative(X value);
+
+
+    X softmax(X value);
+
+    X elu(X value);
+
+    X eluDerivative(X value);
+
+    X step(X value);
+
+    X sign(X value);
+
+    X softsign(X value);
+
+    X softsignDeriviative(X value);
+
+    X softplus(X value);
+
 }

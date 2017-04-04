@@ -11,7 +11,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @AllArgsConstructor
 @Getter
-public class ArrayField implements RealNumber<ArrayField> {
+public class ArrayField implements Field<ArrayField> {
     private INDArray input;
     
     @Override
@@ -189,6 +189,80 @@ public class ArrayField implements RealNumber<ArrayField> {
         return new ArrayField(input.mul(input));
     }
 
+    public ArrayField relu() {
+        return new ArrayField(Transforms.relu(input));
+    }
+
+    public ArrayField hardTanh() {
+        return new ArrayField(Transforms.hardTanh(input));
+    }
+
+    public ArrayField hardTanhDerivative() {
+        return new ArrayField(Transforms.hardTanhDerivative(input));
+    }
+
+    public ArrayField leakyRelu() {
+        return new ArrayField(Transforms.leakyRelu(input));
+    }
+
+    public ArrayField elu() {
+        return new ArrayField(Transforms.elu(input));
+    }
+    public ArrayField eluDerivative() {
+        return new ArrayField(Transforms.elu(input));
+    }
 
 
+
+    public ArrayField leakyRelu(double cutoff)  {
+        return new ArrayField(Transforms.leakyRelu(input,cutoff));
+    }
+
+    public ArrayField leakyReluDerivative() {
+        return new ArrayField(Transforms.leakyRelu(input));
+    }
+
+    public ArrayField leakyReluDerivative(double cutoff)  {
+        return new ArrayField(Transforms.leakyRelu(input,cutoff));
+    }
+
+
+    public ArrayField sigmoid() {
+        return new ArrayField(Transforms.sigmoid(input));
+    }
+
+    public ArrayField sigmoidDerivative() {
+        return new ArrayField(Transforms.sigmoidDerivative(input));
+    }
+
+    public ArrayField step() {
+        return new ArrayField(Transforms.step(input));
+    }
+
+
+    public ArrayField softsign() {
+        return new ArrayField(Transforms.softsign(input));
+    }
+
+    public ArrayField softsignDerivative() {
+        return new ArrayField(Transforms.softsignDerivative(input));
+    }
+
+
+    public ArrayField softmax() {
+        return new ArrayField(Transforms.softmax(input));
+    }
+
+
+    public ArrayField softplus() {
+        return new ArrayField(Transforms.softPlus(input));
+    }
+
+
+    @Override
+    public String toString() {
+        return "ArrayField{" +
+                "input=" + input +
+                '}';
+    }
 }

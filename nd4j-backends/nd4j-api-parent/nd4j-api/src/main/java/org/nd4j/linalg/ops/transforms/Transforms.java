@@ -334,6 +334,45 @@ public class Transforms {
         return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(((copy ? in.dup() : in))));
     }
 
+    public static INDArray elu(INDArray arr) {
+        return elu(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray elu(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ELU(((copy ? in.dup() : in))));
+    }
+
+    public static INDArray eluDerivative(INDArray arr) {
+        return eluDerivative(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray eluDerivative(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new ELUDerivative(((copy ? in.dup() : in))));
+    }
+
+
+
+    public static INDArray leakyRelu(INDArray arr,double cutoff) {
+        return leakyRelu(arr,cutoff, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray leakyRelu(INDArray in, double cutoff,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new LeakyReLU((copy ? in.dup() : in),cutoff));
+    }
+
+    public static INDArray leakyReluDerivative(INDArray arr,double cutoff) {
+        return leakyReluDerivative(arr,cutoff, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray leakyReluDerivative(INDArray in, double cutoff,boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new LeakyReLUDerivative((copy ? in.dup() : in),cutoff));
+    }
+
+
 
     public static INDArray softPlus(INDArray arr) {
         return softPlus(arr, Nd4j.copyOnOps);
@@ -342,6 +381,46 @@ public class Transforms {
 
     public static INDArray softPlus(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new SoftPlus(((copy ? in.dup() : in))));
+    }
+
+    public static INDArray step(INDArray arr) {
+        return softPlus(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray step(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new Step(((copy ? in.dup() : in))));
+    }
+
+
+    public static INDArray softsign(INDArray arr) {
+        return softPlus(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray softsign(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new SoftSign(((copy ? in.dup() : in))));
+    }
+
+
+    public static INDArray softsignDerivative(INDArray arr) {
+        return softPlus(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray softsignDerivative(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new SoftSignDerivative(((copy ? in.dup() : in))));
+    }
+
+
+
+    public static INDArray softmax(INDArray arr) {
+        return softmax(arr, Nd4j.copyOnOps);
+    }
+
+
+    public static INDArray softmax(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new SoftMax(((copy ? in.dup() : in))));
     }
 
     /**
@@ -364,6 +443,35 @@ public class Transforms {
         return hardTanh(ndArray, Nd4j.copyOnOps);
 
     }
+
+    /**
+     * Hard tanh
+     *
+     * @param ndArray the input
+     * @param dup     whether to duplicate the ndarray and return it as the result
+     * @return the output
+     */
+    public static INDArray hardTanh(INDArray ndArray, boolean dup) {
+        return exec(dup ? new HardTanh(ndArray, ndArray.dup()) : new HardTanh(ndArray));
+    }
+
+
+    public static INDArray hardTanhDerivative(INDArray ndArray) {
+        return hardTanhDerivative(ndArray, Nd4j.copyOnOps);
+
+    }
+
+    /**
+     * Hard tanh
+     *
+     * @param ndArray the input
+     * @param dup     whether to duplicate the ndarray and return it as the result
+     * @return the output
+     */
+    public static INDArray hardTanhDerivative(INDArray ndArray, boolean dup) {
+        return exec(dup ? new HardTanhDerivative(ndArray, ndArray.dup()) : new HardTanhDerivative(ndArray));
+    }
+
 
 
     /**
@@ -421,6 +529,39 @@ public class Transforms {
     public static INDArray sigmoid(INDArray ndArray) {
         return sigmoid(ndArray, Nd4j.copyOnOps);
     }
+
+    /**
+     * Sigmoid function
+     *
+     * @param ndArray
+     * @param dup
+     * @return
+     */
+    public static INDArray sigmoid(INDArray ndArray, boolean dup) {
+        return exec(dup ? new Sigmoid(ndArray, ndArray.dup()) : new Sigmoid(ndArray));
+    }
+
+    /**
+     * Sigmoid function
+     *
+     * @param ndArray
+     * @return
+     */
+    public static INDArray sigmoidDerivative(INDArray ndArray) {
+        return sigmoid(ndArray, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Sigmoid function
+     *
+     * @param ndArray
+     * @param dup
+     * @return
+     */
+    public static INDArray sigmoidDerivative(INDArray ndArray, boolean dup) {
+        return exec(dup ? new SigmoidDerivative(ndArray, ndArray.dup()) : new SigmoidDerivative(ndArray));
+    }
+
 
     /**
      * Sqrt function
@@ -689,16 +830,6 @@ public class Transforms {
     }
 
 
-    /**
-     * Hard tanh
-     *
-     * @param ndArray the input
-     * @param dup     whether to duplicate the ndarray and return it as the result
-     * @return the output
-     */
-    public static INDArray hardTanh(INDArray ndArray, boolean dup) {
-        return exec(dup ? new HardTanh(ndArray, ndArray.dup()) : new HardTanh(ndArray));
-    }
 
     /**
      * Identity function
@@ -736,16 +867,6 @@ public class Transforms {
     }
 
 
-    /**
-     * Sigmoid function
-     *
-     * @param ndArray
-     * @param dup
-     * @return
-     */
-    public static INDArray sigmoid(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sigmoid(ndArray, ndArray.dup()) : new Sigmoid(ndArray));
-    }
 
     /**
      * Sqrt function

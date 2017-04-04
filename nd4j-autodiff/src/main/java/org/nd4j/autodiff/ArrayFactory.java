@@ -252,4 +252,103 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         return value.round();
     }
 
+    @Override
+    public ArrayField relu(ArrayField value) {
+        return value.relu();
+    }
+
+    @Override
+    public ArrayField leakyRelu(ArrayField value, double alpha) {
+        return value.leakyRelu();
+    }
+
+    /**
+     * Leaky relu with an alpha of
+     * 0.01
+     *
+     * @param value the value to transform
+     * @return
+     */
+    @Override
+    public ArrayField leakyRelu(ArrayField value) {
+        return value.leakyRelu();
+    }
+
+    @Override
+    public ArrayField leakyReluDerivative(ArrayField value, double alpha) {
+        return value.leakyReluDerivative(alpha);
+    }
+
+    /**
+     * Leaky relu with an alpha of
+     * 0.01
+     *
+     * @param value the value to transform
+     * @return
+     */
+    @Override
+    public ArrayField leakyReluDerivative(ArrayField value) {
+        return value.leakyReluDerivative(0.001);
+    }
+
+    @Override
+    public ArrayField hardTanh(ArrayField value) {
+        return value.hardTanh();
+    }
+
+    @Override
+    public ArrayField hardTanhDerivative(ArrayField value) {
+        return value.hardTanh();
+    }
+
+    @Override
+    public ArrayField sigmoid(ArrayField value) {
+        return value.sigmoid();
+    }
+
+    @Override
+    public ArrayField sigmoidDerivative(ArrayField value) {
+        return value.sigmoidDerivative();
+    }
+
+    @Override
+    public ArrayField softmax(ArrayField value) {
+        return value.softmax();
+    }
+
+    @Override
+    public ArrayField elu(ArrayField value) {
+        return value.elu();
+    }
+
+    @Override
+    public ArrayField eluDerivative(ArrayField value) {
+        return value.eluDerivative();
+    }
+
+    @Override
+    public ArrayField step(ArrayField value) {
+        return value.step();
+    }
+
+    @Override
+    public ArrayField sign(ArrayField value) {
+        return value.sgn();
+    }
+
+    @Override
+    public ArrayField softsign(ArrayField value) {
+        return value.softsign();
+    }
+
+    @Override
+    public ArrayField softsignDeriviative(ArrayField value) {
+        return value.softsignDerivative();
+    }
+
+    @Override
+    public ArrayField softplus(ArrayField value) {
+        return value.softplus();
+    }
+
 }

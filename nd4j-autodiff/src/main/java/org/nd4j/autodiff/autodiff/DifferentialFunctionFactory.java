@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractFactory;
-import org.nd4j.autodiff.DoubleReal;
-import org.nd4j.autodiff.DoubleRealFactory;
 import org.nd4j.autodiff.Field;
 
 public class DifferentialFunctionFactory<X extends Field<X>> {
@@ -26,7 +24,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
     public ConstantVector<X> val(X... iX) {
         int size = iX.length;
-        ArrayList<Constant<X>> list = new ArrayList<>(size);
+        List<Constant<X>> list = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             list.add(val(iX[i]));
         }
@@ -35,7 +33,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
     // ZeroVector
     public ConstantVector<X> zero(int iSize) {
-        ArrayList<Constant<X>> list = new ArrayList<>(iSize);
+        List<Constant<X>> list = new ArrayList<>(iSize);
         for (int i = 0; i < iSize; i++) {
             list.add(zero());
         }
@@ -52,7 +50,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
     public VariableVector<X> var(String iName, X... iX) {
         int size = iX.length;
-        ArrayList<Variable<X>> list = new ArrayList<>(size);
+        List<Variable<X>> list = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             list.add(var(iName + String.valueOf(i), iX[i]));
         }
@@ -60,7 +58,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
     }
 
     public VariableVector<X> var(String iName, int iSize) {
-        ArrayList<Variable<X>> list = new ArrayList<>(iSize);
+        List<Variable<X>> list = new ArrayList<>(iSize);
         for (int i = 0; i < iSize; i++) {
             list.add(var(iName + String.valueOf(i), mFactory.zero()));
         }
@@ -69,7 +67,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
     public DifferentialVectorFunction<X> function(DifferentialFunction<X>... iX) {
         int size = iX.length;
-        ArrayList<DifferentialFunction<X>> list = new ArrayList<>(size);
+        List<DifferentialFunction<X>> list = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             list.add(iX[i]);
         }
@@ -364,7 +362,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public double getReal() {
-                return DoubleRealFactory.instance().acosh(new DoubleReal(arg().getReal())).getReal();
+                throw new IllegalStateException("");
             }
 
             @Override
@@ -394,7 +392,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public double getReal() {
-                return DoubleRealFactory.instance().asinh(new DoubleReal(arg().getReal())).getReal();
+                throw new IllegalStateException();
             }
 
             @Override
@@ -424,7 +422,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public double getReal() {
-                return DoubleRealFactory.instance().atanh(new DoubleReal(arg().getReal())).getReal();
+                throw new IllegalStateException();
             }
 
             @Override
@@ -499,7 +497,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public String getFormula(List<Variable<X>> variables) {
-                return "Math.log(" + arg().getFormula(variables) + ")";
+                return "log(" + arg().getFormula(variables) + ")";
             }
         };
     }
@@ -554,8 +552,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return ((sqrt(arg()).inverse())
-                        .div(DifferentialFunctionFactory.this.val(mFactory.one().mul(2L))))
-                                .mul(arg().diff(i_v));
+                        .div(val(mFactory.one().mul(2L))))
+                        .mul(arg().diff(i_v));
             }
 
             @Override
@@ -585,7 +583,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return arg().mul(DifferentialFunctionFactory.this.val(mFactory.one().mul(2L)))
+                return arg().mul(val(mFactory.one().mul(2L)))
                         .mul(arg().diff(i_v));
             }
 
@@ -627,6 +625,450 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String getFormula(List<Variable<X>> variables) {
                 return "Math.floor(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+    public DifferentialFunction<X> relu(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.relu(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return val(mFactory.step(arg().getValue())).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "relu(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "relu(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+    public DifferentialFunction<X> softmax(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.softmax(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                DifferentialFunction<X> val = val(getValue());
+                return val.mul(one().minus(val)).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "softmax(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "softmax(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+    public DifferentialFunction<X> hardTanh(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.hardTanh(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return hardTanh(val(getValue())).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "hardtanh(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "hardtanh(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+    public DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.hardTanhDerivative(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return one().mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "hardtanhDerivative(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "hardtanhDerivative(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+
+    public DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.sigmoid(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return sigmoidDerivative(arg()).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "sigmoid(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "sigmoid(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+    public DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.sigmoidDerivative(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return one().mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "sigmoidDerivative(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "sigmoidDerivative(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+    public DifferentialFunction<X> sign(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.sign(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return zero();
+            }
+
+            @Override
+            public String toString() {
+                return "sign(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "sign(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+    public DifferentialFunction<X> softsign(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.softsign(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return softsignDerivative(arg()).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "softsign(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "softsign(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+    public DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.softsignDeriviative(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return zero();
+            }
+
+            @Override
+            public String toString() {
+                return "softsignDerivative(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "softsignDerivative(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+
+
+    public DifferentialFunction<X> softplus(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.softplus(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return sigmoid(arg()).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "softplus(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "softplus(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+    public DifferentialFunction<X> elu(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.elu(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return eluDerivative(arg()).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "elu(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "elu(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+    public DifferentialFunction<X> eluDerivative(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.eluDerivative(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return zero();
+            }
+
+            @Override
+            public String toString() {
+                return "elu(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "elu(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+
+    public DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX,double cutoff) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.leakyRelu(arg().getValue(),cutoff);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "elu(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "elu(" + arg().getFormula(variables) + ")";
+            }
+        };
+    }
+
+
+
+    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX,double cutoff) {
+        return new AbstractUnaryFunction<X>(iX) {
+
+            @Override
+            public X getValue() {
+                return mFactory.leakyReluDerivative(arg().getValue(),cutoff);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return zero();
+            }
+
+            @Override
+            public String toString() {
+                return "leakyReluDerivative(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String getFormula(List<Variable<X>> variables) {
+                return "leakyReluDerivative(" + arg().getFormula(variables) + ")";
             }
         };
     }
