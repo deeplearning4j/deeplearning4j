@@ -836,6 +836,28 @@ namespace simdOps {
 		}
 	};
 
+    template<typename T>
+    class RectifiedTanh {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return nd4j::math::nd4j_max<T>((T) 0.0f, nd4j::math::nd4j_tanh<T>(d1));
+        }
+    };
+
+    template<typename T>
+    class RectifiedTanhDerivative {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return d1 > (T) 0.0f ? nd4j::math::nd4j_tanhderivative<T>(d1) : (T) 0.0f;
+        }
+    };
+
 
 	template<typename T>
 	class TanhDerivative {
