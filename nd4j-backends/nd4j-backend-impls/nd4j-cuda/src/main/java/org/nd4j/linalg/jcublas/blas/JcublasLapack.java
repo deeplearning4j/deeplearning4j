@@ -8,6 +8,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
+import org.nd4j.linalg.api.blas.BlasException;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,7 +35,6 @@ public class JcublasLapack extends BaseLapack {
     private Allocator allocator = AtomicAllocator.getInstance();
     private static Logger logger = LoggerFactory.getLogger(JcublasLapack.class);
 
-
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         INDArray a = A;
@@ -59,7 +59,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -72,7 +72,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnSgetrf_bufferSize failed", stat);
             }
 
             int worksize = worksizeBuffer.getInt(0);
@@ -89,7 +89,7 @@ public class JcublasLapack extends BaseLapack {
             //ctx.syncOldStream();
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat);
+                throw new BlasException("cusolverDnSgetrf failed", stat);
             }
         }
         allocator.registerAction(ctx, a);
@@ -128,7 +128,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -141,7 +141,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDgetrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnDgetrf_bufferSize failed", stat);
             }
             int worksize = worksizeBuffer.getInt(0);
 
@@ -155,7 +155,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat);
+                throw new BlasException("cusolverDnSgetrf failed", stat);
             }
         }
         allocator.registerAction(ctx, a);
@@ -215,7 +215,7 @@ public class JcublasLapack extends BaseLapack {
 
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgeqrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnSgeqrf_bufferSize failed", stat);
             }
             int worksize = worksizeBuffer.getInt(0);
             // Now allocate memory for the workspace, the permutation matrix and a return code
@@ -230,14 +230,14 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgeqrf failed with code: " + stat);
+                throw new BlasException("cusolverDnSgeqrf failed", stat);
             }
             
             allocator.registerAction(ctx, a);
             //allocator.registerAction(ctx, tau);
             allocator.registerAction(ctx, INFO);
             if (INFO.getInt(0) != 0 ) {
-                throw new IllegalStateException("cusolverDnSgeqrf failed with info: " + INFO.getInt(0));
+                throw new BlasException("cusolverDnSgeqrf failed on INFO", INFO.getInt(0));
             }
 
             // Copy R ( upper part of Q ) into result
@@ -265,7 +265,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSorgqr failed with code: " + stat);
+                throw new BlasException("cusolverDnSorgqr failed", stat);
             }            
         }
         allocator.registerAction(ctx, a);
@@ -311,7 +311,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -326,7 +326,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDgeqrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnDgeqrf_bufferSize failed", stat);
             }
             int worksize = worksizeBuffer.getInt(0);
             // Now allocate memory for the workspace, the permutation matrix and a return code
@@ -341,14 +341,14 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDgeqrf failed with code: " + stat);
+                throw new BlasException("cusolverDnDgeqrf failed", stat);
             }
             
             allocator.registerAction(ctx, a);
             allocator.registerAction(ctx, tau);
             allocator.registerAction(ctx, INFO);
             if (INFO.getInt(0) != 0 ) {
-                throw new IllegalStateException("cusolverDnDgeqrf failed with info: " + INFO.getInt(0));
+                throw new BlasException("cusolverDnDgeqrf failed with info", INFO.getInt(0));
             }
 
             // Copy R ( upper part of Q ) into result
@@ -376,7 +376,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                             );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDorgqr failed with code: " + stat);
+                throw new BlasException("cusolverDnDorgqr failed", stat);
             }            
         }
         allocator.registerAction(ctx, a);
@@ -417,7 +417,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -431,7 +431,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSpotrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnSpotrf_bufferSize failed", stat);
             }
 
             int worksize = worksizeBuffer.getInt(0);
@@ -447,7 +447,7 @@ public class JcublasLapack extends BaseLapack {
                             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSpotrf failed with code: " + stat);
+                throw new BlasException("cusolverDnSpotrf failed", stat);
             }
         }
         allocator.registerAction(ctx, a);
@@ -498,7 +498,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -512,7 +512,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDpotrf_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnDpotrf_bufferSize failed", stat);
             }
 
             int worksize = worksizeBuffer.getInt(0);
@@ -528,7 +528,7 @@ public class JcublasLapack extends BaseLapack {
                             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDpotrf failed with code: " + stat);
+                throw new BlasException("cusolverDnDpotrf failed", stat);
             }
         }
         allocator.registerAction(ctx, a);
@@ -608,7 +608,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -619,7 +619,7 @@ public class JcublasLapack extends BaseLapack {
             int stat = cusolverDnSgesvd_bufferSize(solverDn, M, N, (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
             );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnSgesvd_bufferSize failed", stat);
             }
             int worksize = worksizeBuffer.getInt(0);
 
@@ -635,7 +635,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgesvd failed with code: " + stat);
+                throw new BlasException("cusolverDnSgesvd failed", stat);
             }
         }
         allocator.registerAction(ctx, INFO);
@@ -694,7 +694,7 @@ public class JcublasLapack extends BaseLapack {
         synchronized (handle) {
             int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
             if (result != 0)
-                throw new IllegalStateException("solverSetStream failed");
+                throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
             CublasPointer xAPointer = new CublasPointer(a, ctx);
@@ -706,7 +706,7 @@ public class JcublasLapack extends BaseLapack {
             );
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat);
+                throw new BlasException("cusolverDnSgesvd_bufferSize failed", stat);
             }
             int worksize = worksizeBuffer.getInt(0);
 
@@ -724,7 +724,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new IllegalStateException("cusolverDnDgesvd failed with code: " + stat);
+                throw new BlasException("cusolverDnDgesvd failed", stat);
             }
         }
         allocator.registerAction(ctx, INFO);

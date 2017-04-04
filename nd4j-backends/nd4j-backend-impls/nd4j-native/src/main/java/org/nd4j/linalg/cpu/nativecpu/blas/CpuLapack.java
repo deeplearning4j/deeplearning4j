@@ -7,10 +7,8 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-
 import static org.bytedeco.javacpp.openblas.*;
+import org.nd4j.linalg.api.blas.BlasException ;
 
 /**
  * CPU lapack implementation
@@ -27,11 +25,12 @@ public class CpuLapack extends BaseLapack {
 // L U DECOMP
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-        int status = LAPACKE_sgetrf(getColumnOrder(A), M, N, (FloatPointer)A.data().addressPointer(), 
+        int status = LAPACKE_sgetrf(getColumnOrder(A), M, N, 
+            (FloatPointer)A.data().addressPointer(), 
             getLda(A), (IntPointer)IPIV.data().addressPointer()
             );
         if( status != 0 ) {
-            throw new Error( "Failed to execute sgetrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute sgetrf", status ) ;
         }
     }
 
@@ -41,7 +40,7 @@ public class CpuLapack extends BaseLapack {
             getLda(A), (IntPointer)IPIV.data().addressPointer()
             );
         if( status != 0 ) {
-            throw new Error( "Failed to execute dgetrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute dgetrf", status ) ;
         }
     }
 
@@ -56,7 +55,7 @@ public class CpuLapack extends BaseLapack {
              (FloatPointer)tau.data().addressPointer()
              );
         if( status != 0 ) {
-            throw new Error( "Failed to execute sgeqrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute sgeqrf", status ) ;
         }
 
         // Copy R ( upper part of Q ) into result
@@ -73,12 +72,12 @@ public class CpuLapack extends BaseLapack {
              (FloatPointer)tau.data().addressPointer()
              );
         if( status != 0 ) {
-            throw new Error( "Failed to execute sorgqr, code:" + status ) ;
+            throw new BlasException( "Failed to execute sorgqr", status ) ;
         }
     }
 
     @Override
-    public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
+    public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO)  {
         INDArray tau = Nd4j.create( N ) ;
 
         int status = LAPACKE_dgeqrf(getColumnOrder(A), M, N,
@@ -86,7 +85,7 @@ public class CpuLapack extends BaseLapack {
              (DoublePointer)tau.data().addressPointer()
              );
         if( status != 0 ) {
-            throw new Error( "Failed to execute dgeqrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute dgeqrf", status ) ;
         }
 
         // Copy R ( upper part of Q ) into result
@@ -103,7 +102,7 @@ public class CpuLapack extends BaseLapack {
              (DoublePointer)tau.data().addressPointer()
              );
         if( status != 0 ) {
-            throw new Error( "Failed to execute dorgqr, code:" + status ) ;
+            throw new BlasException( "Failed to execute dorgqr", status ) ;
         }
     }
 
@@ -115,7 +114,7 @@ public class CpuLapack extends BaseLapack {
         int status = LAPACKE_spotrf(getColumnOrder(A), uplo, N, 
                         (FloatPointer)A.data().addressPointer(), getLda(A) );
         if( status != 0 ) {
-            throw new Error( "Failed to execute spotrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute spotrf", status ) ;
         }
         if( uplo == 'U' ) {
             for( int ro=1 ; ro<N ; ro++ ) {
@@ -123,7 +122,6 @@ public class CpuLapack extends BaseLapack {
                     A.putScalar( ro, c, 0 ) ;
                 }
             }
-            //A = A.transpose() ;
         } else {
             for( int c=1 ; c<N ; c++ ) {
                 for( int ro=0 ; ro<c ; ro++ ) {
@@ -138,7 +136,7 @@ public class CpuLapack extends BaseLapack {
         int status = LAPACKE_dpotrf(getColumnOrder(A), uplo, N, 
                     (DoublePointer)A.data().addressPointer(), getLda(A) );
         if( status != 0 ) {
-            throw new Error( "Failed to execute dpotrf, code:" + status ) ;
+            throw new BlasException( "Failed to execute dpotrf", status ) ;
         }
         if( uplo == 'U' ) {
             for( int ro=1 ; ro<N ; ro++ ) {
@@ -171,6 +169,9 @@ public class CpuLapack extends BaseLapack {
                         VT == null ? null : (FloatPointer)VT.data().addressPointer(), VT == null ? 1 : getLda(VT), 
                         (FloatPointer)superb.data().addressPointer() 
                         );
+        if( status != 0 ) {
+            throw new BlasException( "Failed to execute sgesvd", status ) ;
+        }
     }
 
     @Override
@@ -184,6 +185,9 @@ public class CpuLapack extends BaseLapack {
                         VT == null ? null : (DoublePointer)VT.data().addressPointer(), VT == null ? 1 : getLda(VT), 
                         (DoublePointer)superb.data().addressPointer() 
                         ) ;
+        if( status != 0 ) {
+            throw new BlasException( "Failed to execute dgesvd", status ) ;
+        }
     }
 
     /**
