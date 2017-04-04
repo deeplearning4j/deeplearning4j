@@ -993,8 +993,6 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray pile = Nd4j.pile(arrays);
 
-        log.info("Pile shapeInfo: {}", Arrays.toString(pile.shapeInfoDataBuffer().asInt()));
-
         INDArray[] tears = Nd4j.tear(pile, 1,2);
 
         for (int i = 0; i < 10; i++) {

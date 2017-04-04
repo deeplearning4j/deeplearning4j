@@ -576,8 +576,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(tensor, dimensions);
 
-        log.info("TAD shapeInfo: {}", Arrays.toString(tadBuffers.getFirst().asInt()));
-
         long tadLength = 1;
         int[] shape = new int[dimensions.length];
         for (int i = 0; i < dimensions.length; i++) {

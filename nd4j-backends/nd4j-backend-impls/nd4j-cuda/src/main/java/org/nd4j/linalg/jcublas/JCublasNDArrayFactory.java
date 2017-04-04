@@ -1226,7 +1226,72 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     public INDArray[] tear(INDArray tensor, int... dimensions) {
+        if (tensor.isCompressed())
+            Nd4j.getCompressor().decompressi(tensor);
 
-        return null;
+        Arrays.sort(dimensions);
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(tensor, dimensions);
+
+        long tadLength = 1;
+        int[] shape = new int[dimensions.length];
+        for (int i = 0; i < dimensions.length; i++) {
+            tadLength *= tensor.shape()[dimensions[i]];
+            shape[i] = tensor.shape()[dimensions[i]];
+        }
+
+
+        int numTads = (int)(tensor.lengthLong() / tadLength);
+        INDArray[] result = new INDArray[numTads];
+
+        long[] xPointers = new long[numTads];
+
+        CudaContext context = null;
+
+        for (int x = 0; x < numTads; x++) {
+            result[x] = Nd4j.createUninitialized(shape);
+
+            context = AtomicAllocator.getInstance().getFlowController().prepareAction(result[x]);
+
+            xPointers[x] = AtomicAllocator.getInstance().getPointer(result[x], context).address();
+        }
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(numTads);
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+
+        PointerPointer extraz = new PointerPointer(null, // not used
+                context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.tearDouble(extraz,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.tearFloat(extraz,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.tearHalf(extraz,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        }
+
+        return result;
     }
 }
