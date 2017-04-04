@@ -21,7 +21,7 @@ A complex feature (e.g., Datavec) may be accompanied by a longer description, br
 Code examples identified according to their real-world applications (e.g., image recognition, prediction, etc.).
 Document each example as a **subheading**, included in the main table of contents.
 
-## Setup
+## How It Works
 
 Think of this section as a recipe for deployment:
 
