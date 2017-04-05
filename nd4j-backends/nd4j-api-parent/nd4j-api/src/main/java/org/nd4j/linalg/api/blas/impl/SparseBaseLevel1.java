@@ -2,6 +2,9 @@ package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -9,10 +12,35 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author Audrey Loeffel
  */
-public class SparseBaseLevel1 extends SparseBaseLevel implements Level1{
+public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1{
 
+    /**
+     * computes a vector-vector dot product.
+     *
+     * @param n number of accessed element
+     * @param alpha
+     * @param X an INDArray
+     * @param Y an INDArray
+     * @return the vector-vector dot product of X and Y
+     */
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
+
+        // TODO should we verify if the arrays are indeed sparse ? -> need to get the pointers array
+        // What is alpha ?
+
+        switch(X.data().dataType()){
+            case DOUBLE:
+                //TODO call ddoti
+                break;
+            case FLOAT:
+                // TODO call sdoti
+                break;
+            case HALF:
+                // ??
+                break;
+            default:
+        }
         return 0;
     }
 
@@ -160,4 +188,52 @@ public class SparseBaseLevel1 extends SparseBaseLevel implements Level1{
     public boolean supportsDataBufferL1Ops() {
         return false;
     }
-}
+
+
+    /*
+    * ===========================================================================
+    * Prototypes for level 1 BLAS functions (complex are recast as routines)
+    * ===========================================================================
+    */
+
+    protected abstract double ddoti(int N, INDArray X, IntBuffer indx, INDArray Y);
+
+    protected abstract double sdoti(int N, INDArray X, IntBuffer indx, INDArray Y);
+
+
+
+
+    /*
+     * Functions having prefixes Z and C only
+     */
+    /*
+
+
+    /*
+     * Functions having prefixes S D SC DZ
+     */
+
+    /*
+     * Functions having standard 4 prefixes (S D C Z)
+     */
+
+    /*
+     * ===========================================================================
+     * Prototypes for level 1 BLAS routines
+     * ===========================================================================
+     */
+
+    /*
+     * Routines with standard 4 prefixes (s, d, c, z)
+     */
+
+
+    /*
+     * Routines with S and D prefix only
+     */
+
+    /*
+     * Routines with S D C Z CS and ZD prefixes
+     */
+
+    }
