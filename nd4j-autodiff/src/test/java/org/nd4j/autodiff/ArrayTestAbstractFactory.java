@@ -27,7 +27,7 @@ public class ArrayTestAbstractFactory
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(ArrayFactory.instance());
         Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x", new ArrayField(Nd4j.scalar(1.0)));
         Variable<ArrayField> y = arrayFieldDifferentialFunctionFactory.var("y", new ArrayField(Nd4j.scalar(1.0)));
-        DifferentialFunction<ArrayField> h = x.mul(x).mul( arrayFieldDifferentialFunctionFactory.cos( x.mul(y) ).plus(y) );
+        DifferentialFunction<ArrayField> h = x.mul(x).mul( arrayFieldDifferentialFunctionFactory.cos(x.mul(y) ).plus(y));
         System.out.println(h.diff(x));
 
     }

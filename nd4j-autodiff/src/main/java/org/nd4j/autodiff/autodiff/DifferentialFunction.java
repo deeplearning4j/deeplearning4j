@@ -45,7 +45,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        return new Sum<X>(i_v, this);
+        return new Sum<>(i_v, this);
     }
 
     @Override
@@ -59,7 +59,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        return new Product<X>(i_v, this);
+        return new Product<>(i_v, this);
     }
 
     @Override
@@ -69,22 +69,22 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        return new Inverse<X>(this);
+        return new Inverse<>(this);
     }
 
     @Override
     public DifferentialFunction<X> negate() {
-        return new Negative<X>(this);
+        return new Negative<>(this);
     }
 
     @Override
     public DifferentialFunction<X> mul(long i_n) {
-        return new PolynomialTerm<X>(i_n, this, 1);
+        return new PolynomialTerm<>(i_n, this, 1);
     }
 
     @Override
     public DifferentialFunction<X> pow(int i_n) {
-        return new PolynomialTerm<X>(1L, this, i_n);
+        return new PolynomialTerm<>(1L, this, i_n);
     }
 
 }
