@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism.inference.observers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -16,6 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BatchedInferenceObservable extends BasicInferenceObservable implements InferenceObservable {
     private List<INDArray[]> inputs = new ArrayList<>();
     private List<INDArray[]> outputs = new ArrayList<>();
@@ -26,6 +28,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
 
     private ReentrantReadWriteLock realLocker = new ReentrantReadWriteLock();
     private AtomicBoolean isLocked = new AtomicBoolean(false);
+    private AtomicBoolean isReadLocked = new AtomicBoolean(false);
 
     public BatchedInferenceObservable() {
 
@@ -37,7 +40,8 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
             inputs.add(input);
             position.set(counter.getAndIncrement());
 
-            realLocker.readLock().unlock();
+            if (isReadLocked.get())
+                realLocker.readLock().unlock();
         }
     }
 
@@ -47,45 +51,57 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         isLocked.set(true);
 
         // this method should pile individual examples into single batch
-        INDArray[] result = new INDArray[inputs.get(0).length];
-        for(int i = 0; i < result.length; i++) {
-            List<INDArray> examples = new ArrayList<>();
-            for (int e = 0; e < inputs.size(); e++) {
-                examples.add(inputs.get(e)[i]);
+        if (counter.get() > 1) {
+            INDArray[] result = new INDArray[inputs.get(0).length];
+            for (int i = 0; i < result.length; i++) {
+                List<INDArray> examples = new ArrayList<>();
+                for (int e = 0; e < inputs.size(); e++) {
+                    examples.add(inputs.get(e)[i]);
+                }
+                result[i] = Nd4j.pile(examples);
             }
-            result[i] = Nd4j.pile(examples);
+
+            realLocker.writeLock().unlock();
+            return result;
+        } else {
+            realLocker.writeLock().unlock();
+            return inputs.get(0);
         }
 
-        realLocker.writeLock().unlock();
-        return result;
+
     }
 
     @Override
     public void setOutput(INDArray... output) {
         //this method should split batched output INDArray[] into multiple separate INDArrays
         // pre-create outputs
-        for(int i = 0; i < counter.get(); i++) {
-            outputs.add(new INDArray[output.length]);
-        }
-
-        // pull back results for individual examples
-        int cnt = 0;
-        for(INDArray array: output) {
-            int[] dimensions = new int[array.rank() - 1];
-            for (int i = 1; i < array.rank(); i++) {
-                dimensions[i-1] = i;
+        if (counter.get() > 1) {
+            for (int i = 0; i < counter.get(); i++) {
+                outputs.add(new INDArray[output.length]);
             }
 
-            INDArray[] split = Nd4j.tear(array, dimensions);
-            if (split.length != counter.get())
-                throw new ND4JIllegalStateException("Number of splits doesn't match number of queries");
+            // pull back results for individual examples
+            int cnt = 0;
+            for (INDArray array : output) {
+                int[] dimensions = new int[array.rank() - 1];
+                for (int i = 1; i < array.rank(); i++) {
+                    dimensions[i - 1] = i;
+                }
 
-            for(int e = 0; e < counter.get(); e++) {
-                outputs.get(e)[cnt] = split[e];
+                INDArray[] split = Nd4j.tear(array, dimensions);
+                if (split.length != counter.get())
+                    throw new ND4JIllegalStateException("Number of splits ["+split.length+"] doesn't match number of queries ["+ counter.get()+"]");
+
+                for (int e = 0; e < counter.get(); e++) {
+                    outputs.get(e)[cnt] = split[e];
+                }
+                cnt++;
             }
-            cnt++;
+        } else {
+            outputs.add(output);
         }
 
+        this.setChanged();
         notifyObservers();
     }
 
@@ -102,12 +118,25 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         counter.set(value);
     }
 
+    public void setPosition(int pos) {
+        position.set(pos);
+    }
+
     public int getCounter() {
         return counter.get();
     }
 
+
+
     public boolean isLocked() {
-        return !realLocker.readLock().tryLock();
+        boolean lck = !realLocker.readLock().tryLock();
+
+        boolean result = lck || isLocked.get();
+
+        if (!result)
+            isReadLocked.set(true);
+
+        return result;
     }
 
 

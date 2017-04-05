@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
+import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.After;
 import org.junit.Before;
@@ -114,6 +115,7 @@ public class ParallelInferenceTests {
     public void testInferenceBatched1() throws Exception {
         ParallelInference inf = new ParallelInference.Builder(model)
                 .inferenceMode(InferenceMode.BATCHED)
+                .batchLimit(8)
                 .workers(2)
                 .build();
 
@@ -135,8 +137,8 @@ public class ParallelInferenceTests {
         evalClassifcationMultipleThreads(inf, iterator, 10);
 
         // both workers threads should have non-zero
-        assertTrue( inf.getWorkerCounter(0) > 100L);
-        assertTrue( inf.getWorkerCounter(1) > 100L);
+        assertTrue( inf.getWorkerCounter(0) > 10L);
+        assertTrue( inf.getWorkerCounter(1) > 10L);
     }
 
 
@@ -193,6 +195,47 @@ public class ParallelInferenceTests {
 
         assertTrue(observable1 == observable2);
         assertTrue(observable1 != observable3);
+
+        INDArray[] input = observable1.getInput();
+
+        assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
+        assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
+
+        input = observable3.getInput();
+        assertEquals(3.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
+    }
+
+    @Test
+    public void testProvider4() throws Exception {
+        LinkedBlockingQueue queue = new LinkedBlockingQueue();
+        BasicInferenceObserver observer = new BasicInferenceObserver();
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
+
+        BatchedInferenceObservable observable1 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(1.0));
+        BatchedInferenceObservable observable2 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        BatchedInferenceObservable observable3 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(3.0));
+
+        INDArray bigOutput = Nd4j.create(3, 10);
+        for (int i = 0; i < bigOutput.rows(); i++)
+            bigOutput.getRow(i).assign((float) i);
+
+        observable3.setOutput(bigOutput);
+        INDArray out = null;
+
+        observable3.setPosition(0);
+        out = observable3.getOutput()[0];
+        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertEquals(0.0f, out.meanNumber().floatValue(), 0.01f);
+
+        observable3.setPosition(1);
+        out = observable3.getOutput()[0];
+        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertEquals(1.0f, out.meanNumber().floatValue(), 0.01f);
+
+        observable3.setPosition(2);
+        out = observable3.getOutput()[0];
+        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertEquals(2.0f, out.meanNumber().floatValue(), 0.01f);
     }
 
 

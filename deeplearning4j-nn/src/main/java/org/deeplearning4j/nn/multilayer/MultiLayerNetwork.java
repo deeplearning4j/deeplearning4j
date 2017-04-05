@@ -740,7 +740,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.3)
+                .overallocationLimit(10.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .cyclesBeforeInitialization(layerNum)
                 .policyLearning(LearningPolicy.OVER_TIME)

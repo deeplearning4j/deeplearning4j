@@ -171,22 +171,6 @@ public class ParallelInference {
         }
 
         /**
-         * This method defines, how long model will wait to fulfill the batch before sending it out to model
-         *
-         * PLEASE NOTE: This value has no effect in SEQUENTIAL inference mode
-         *
-         * @param nanos
-         * @return
-         */
-        public Builder timeoutNanos(long nanos) {
-            if (nanos < 1)
-                throw new IllegalStateException("Timeout should be positive value");
-
-            this.nanos = nanos;
-            return this;
-        }
-
-        /**
          * This method defines, how many model copies will be used for inference.
          *
          * PLEASE NOTE: This method primarily suited for multi-GPU systems
@@ -320,6 +304,8 @@ public class ParallelInference {
                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
                            request.setOutput(output);
                         }
+
+
                     } else {
                         // just do nothing, i guess and hope for next round?
                     }
