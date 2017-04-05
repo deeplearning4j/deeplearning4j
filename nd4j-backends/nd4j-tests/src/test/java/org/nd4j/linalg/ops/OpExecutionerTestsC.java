@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.TadCollapseAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -980,6 +981,33 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(4, pile.rank());
         for (int i = 0; i < 10; i++) {
             assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testMean1() throws Exception {
+        INDArray array = Nd4j.create(32, 100, 100);
+        for (int i = 0; i < 32; i++) {
+            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+        }
+
+        for (int i = 0; i < 32; i++) {
+            INDArray tensor = array.tensorAlongDimension(i, 1, 2);
+            assertEquals((float) (100 + i) * (100 * 100), tensor.sumNumber().floatValue(), 0.001f);
+            assertEquals((float) 100 + i, tensor.meanNumber().floatValue(), 0.001f);
+        }
+    }
+
+    @Test
+    public void testMean2() throws Exception {
+        INDArray array = Nd4j.create(32, 100, 100);
+        for (int i = 0; i < 32; i++) {
+            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+        }
+
+        INDArray mean = array.mean(1, 2);
+        for (int i = 0; i < 32; i++) {
+            assertEquals((float) 100 + i, mean.getFloat(i), 0.001f);
         }
     }
 
