@@ -50,14 +50,15 @@ public class GravesLSTM extends BaseRecurrentLayer {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.useLayerNormalization = builder.useLayerNormalization;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("GravesLSTM", getLayerName(), layerIndex, getNIn(), getNOut());
         org.deeplearning4j.nn.layers.recurrent.GravesLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+                new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -119,6 +120,11 @@ public class GravesLSTM extends BaseRecurrentLayer {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
+        public Builder(Builder builder) {
+            super(builder);
+            this.forgetGateBiasInit=builder.forgetGateBiasInit;
+            this.gateActivationFn=builder.gateActivationFn;
+        }
 
         private double forgetGateBiasInit = 1.0;
         private IActivation gateActivationFn = new ActivationSigmoid();
