@@ -52,6 +52,9 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 ## Facial Datasets
 
 * [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 cropped facial regions (using; [Viola-Jones](https://en.wikipedia.org/wiki/Viola%E2%80%93Jones_object_detection_framework) that have been labeled with a name identifier. A subset of the people present have two images in the dataset — it’s quite common for people to train facial matching systems here.
+* [UMD Faces](http://www.umdfaces.io) Annotated dataset of 367,920 faces of 8,501 subjects.
+* [CASIA WebFace](http://www.cbsr.ia.ac.cn/english/CASIA-WebFace-Database.html) Facial dataset of 453,453 images over 10,575 identities after face detection. Requires some filtering for quality.
+* [MS-Celeb-1M](https://www.microsoft.com/en-us/research/project/ms-celeb-1m-challenge-recognizing-one-million-celebrities-real-world/) 1 million images of celebrities from around the world. Requires some filtering for best results on deep networks.
 * [Olivetti](http://www.cs.nyu.edu/~roweis/data.html): A few images of several different people.
 * [Multi-Pie](http://www.multipie.org/): The CMU Multi-PIE Face Database
 * [Face-in-Action](http://www.flintbox.com/public/project/5486/)
