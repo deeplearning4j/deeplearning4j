@@ -64,7 +64,7 @@ public class ParallelInference {
 
         if (inferenceMode == InferenceMode.BATCHED) {
             log.info("Initializing ObservablesProvider...");
-            provider = new ObservablesProvider(nanos, observables);
+            provider = new ObservablesProvider(nanos, batchLimit, observables);
         }
     }
 
@@ -344,23 +344,31 @@ public class ParallelInference {
     protected static class ObservablesProvider {
         private BlockingQueue<InferenceObservable> targetQueue;
         private long nanos;
+        private int batchLimit;
 
-        private volatile InferenceObservable currentObservable;
+        private volatile BatchedInferenceObservable currentObservable;
         private final Object locker = new Object();
 
-        protected ObservablesProvider(long nanos, @NonNull BlockingQueue<InferenceObservable> queue) {
+        protected ObservablesProvider(long nanos, int batchLimit, @NonNull BlockingQueue<InferenceObservable> queue) {
             this.targetQueue = queue;
             this.nanos = nanos;
+            this.batchLimit = batchLimit;
         }
 
 
         protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
             synchronized (locker) {
-                if (currentObservable == null)
+                if (currentObservable == null || currentObservable.getCounter() >= batchLimit || currentObservable.isLocked())
                     currentObservable = new BatchedInferenceObservable();
 
                 currentObservable.setInput(input);
                 currentObservable.addObserver(observer);
+
+                try {
+                    targetQueue.put(currentObservable);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
                 return currentObservable;
             }

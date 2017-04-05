@@ -145,7 +145,7 @@ public class ParallelInferenceTests {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
 
-        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, queue);
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100));
@@ -159,7 +159,7 @@ public class ParallelInferenceTests {
     public void  testProvider2() throws Exception {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
-        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, queue);
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L,100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
@@ -174,6 +174,25 @@ public class ParallelInferenceTests {
         assertArrayEquals(new int[]{2, 100}, input[0].shape());
         assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
         assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
+    }
+
+    @Test
+    public void testProvider3() throws Exception {
+        LinkedBlockingQueue queue = new LinkedBlockingQueue();
+        BasicInferenceObserver observer = new BasicInferenceObserver();
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 2, queue);
+
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+
+        InferenceObservable observable3 = provider.setInput(observer, Nd4j.create(100).assign(3.0));
+
+
+        assertNotEquals(null, observable1);
+        assertNotEquals(null, observable3);
+
+        assertTrue(observable1 == observable2);
+        assertTrue(observable1 != observable3);
     }
 
 

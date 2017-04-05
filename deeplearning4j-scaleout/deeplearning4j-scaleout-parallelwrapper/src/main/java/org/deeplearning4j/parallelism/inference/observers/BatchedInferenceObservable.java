@@ -7,7 +7,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class holds reference input, and implements second use case: BATCHED inference
@@ -22,6 +24,9 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
 
     private final Object locker = new Object();
 
+    private ReentrantReadWriteLock realLocker = new ReentrantReadWriteLock();
+    private AtomicBoolean isLocked = new AtomicBoolean(false);
+
     public BatchedInferenceObservable() {
 
     }
@@ -31,11 +36,16 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         synchronized (locker) {
             inputs.add(input);
             position.set(counter.getAndIncrement());
+
+            realLocker.readLock().unlock();
         }
     }
 
     @Override
     public INDArray[] getInput() {
+        realLocker.writeLock().lock();
+        isLocked.set(true);
+
         // this method should pile individual examples into single batch
         INDArray[] result = new INDArray[inputs.get(0).length];
         for(int i = 0; i < result.length; i++) {
@@ -46,6 +56,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
             result[i] = Nd4j.pile(examples);
         }
 
+        realLocker.writeLock().unlock();
         return result;
     }
 
@@ -90,6 +101,15 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     protected void setCounter(int value) {
         counter.set(value);
     }
+
+    public int getCounter() {
+        return counter.get();
+    }
+
+    public boolean isLocked() {
+        return !realLocker.readLock().tryLock();
+    }
+
 
     @Override
     public INDArray[] getOutput() {
