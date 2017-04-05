@@ -39,6 +39,11 @@
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl-platform</artifactId>
+            <version>2017.2-1.3.3-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>

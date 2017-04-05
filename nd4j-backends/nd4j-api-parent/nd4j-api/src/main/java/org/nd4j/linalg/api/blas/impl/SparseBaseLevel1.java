@@ -7,9 +7,10 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by audrey on 3/13/17.
+ * @author Audrey Loeffel
  */
 public class SparseBaseLevel1 extends SparseBaseLevel implements Level1{
+
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
         return 0;
