@@ -134,7 +134,7 @@ public class ParallelInferenceTests {
 
         iterator.reset();
 
-        evalClassifcationMultipleThreads(inf, iterator, 10);
+        evalClassifcationMultipleThreads(inf, iterator, 20);
 
         // both workers threads should have non-zero
         assertTrue( inf.getWorkerCounter(0) > 10L);
