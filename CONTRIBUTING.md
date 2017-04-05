@@ -34,8 +34,8 @@ main tree or given feedback for changes that would be required.
 
 - Add tests relevant to the fixed bug or new feature.  
 
-## Conduct
+## Conduct & License
 
 We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html).
 
-All code in this repository is under the Apache Software Foundation License, 2.0.
+All code in this repository is released under the Apache Software Foundation License, 2.0, and by contributing to this repository, you agree to release that contribution under that same license. 
