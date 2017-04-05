@@ -9,6 +9,7 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.{Dataset, Row}
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
@@ -26,8 +27,8 @@ final class SparkDl4jNetwork(
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
         uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats) {
 
-    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
-             listeners: util.Collection[IterationListener]) {
+    def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer,
+             epochs: Int,  listeners: util.Collection[IterationListener]) {
         this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, false, Identifiable.randomUID("dl4j"))
     }
 
@@ -40,11 +41,22 @@ final class SparkDl4jNetwork(
 
     override def train(dataset: Dataset[_]): SparkDl4jModel = {
         val spn = trainer(DatasetFacade.dataRows(dataset))
-        new SparkDl4jModel(uid, spn)
+        handleTrainedData(spn)
+    }
+
+    def batchTrain(datasets : java.util.List[Dataset[_]]) : SparkDl4jModel = {
+        val spn = batchTrainer(DatasetBatchFacade.dataRows(datasets))
+        handleTrainedData(spn)
+    }
+
+    private def handleTrainedData(spn: SparkDl4jMultiLayer) : SparkDl4jModel = {
+        val model = new SparkDl4jModel(uid, spn.getNetwork)
+        if (collectStats) model.setTrainingStats(spn.getSparkTrainingStats)
+        else model
     }
 }
 
-class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
+class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork)
     extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network) {
 
     override def copy(extra: ParamMap) : SparkDl4jModel = {
@@ -64,3 +76,4 @@ class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
 }
 
 object SparkDl4jModel extends SparkDl4jModelWrap
+

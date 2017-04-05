@@ -12,3 +12,11 @@ class DatasetFacade(val dataset: DataFrame) {
 object DatasetFacade {
     def dataRows(dataset: DataFrame) : DatasetFacade = new DatasetFacade(dataset)
 }
+
+class DatasetBatchFacade(val dataset: java.util.List[DataFrame]){
+    def get : java.util.List[DataFrame] = dataset
+}
+
+object DatasetBatchFacade {
+    def dataRows(datasets: java.util.List[DataFrame]) = new DatasetBatchFacade(datasets)
+}
