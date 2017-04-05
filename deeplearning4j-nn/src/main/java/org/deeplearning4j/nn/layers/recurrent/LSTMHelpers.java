@@ -53,6 +53,7 @@ public class LSTMHelpers {
     /**
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
+     * @param useLayerNormalization Set to true to activate layer normalization (can speed up training significantly, see https://arxiv.org/pdf/1607.06450.pdf).
      */
     static public FwdPassReturn activateHelper(final Layer layer, final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
@@ -61,7 +62,8 @@ public class LSTMHelpers {
                     final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray //Input mask: should only be used with bidirectional RNNs + variable length
+                    final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                               boolean useLayerNormalization
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -248,6 +250,15 @@ public class LSTMHelpers {
                 INDArray timeStepMaskColumn = maskArray.getColumn(time);
                 currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
                 currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
+            }
+           // boolean layerNormalization = true;
+            if (useLayerNormalization) {
+                Number stdev = currHiddenUnitActivations.stdNumber();
+                currHiddenUnitActivations = currHiddenUnitActivations.sub(Nd4j.mean(currHiddenUnitActivations));
+                if (stdev.floatValue() == stdev.floatValue()) {
+                    // don't divide by NaN. i.e., all zero activations.
+                    currHiddenUnitActivations = currHiddenUnitActivations.div(stdev);
+                }
             }
 
             if (forBackprop) {

@@ -14,6 +14,16 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         super(builder);
     }
 
+    protected boolean useLayerNormalization;
+
+    /**
+     * Returns true when this recurrent layer should use layer normalization.
+     * @return True or False.
+     */
+    public boolean getUseLayerNormalization() {
+        return useLayerNormalization;
+    }
+
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
@@ -42,10 +52,33 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
-
+    //class Builder<T extends FeedForwardLayer.Builder<T>> extends Layer.Builder<T>
 
     @AllArgsConstructor
-    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+    public static abstract class Builder<T extends BaseRecurrentLayer.Builder<T>> extends FeedForwardLayer.Builder<T> {
+        protected boolean useLayerNormalization = false;
+
+
+        public Builder(Builder<T> builder) {
+            super(builder);
+            this.useLayerNormalization=builder.useLayerNormalization;
+        }
+
+        public Builder() {
+
+        }
+
+        /**
+         * Use layer normalization, as described in https://arxiv.org/pdf/1607.06450.pdf. This can substantially speed
+         * up training (faster convergence).
+         *
+         * @param useLayerNormalization
+         * @return A Builder (for chain configuration)
+         */
+        public T setUseLayerNormalization(boolean useLayerNormalization) {
+            this.useLayerNormalization = useLayerNormalization;
+            return (T)this;
+        }
 
     }
 
