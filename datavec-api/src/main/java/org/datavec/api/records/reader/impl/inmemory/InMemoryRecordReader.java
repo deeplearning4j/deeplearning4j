@@ -121,7 +121,7 @@ public class InMemoryRecordReader implements RecordReader {
      */
     @Override
     public Record nextRecord() {
-        return new org.datavec.api.records.impl.Record(iter.next(),null);
+        return new org.datavec.api.records.impl.Record(iter.next(), null);
     }
 
     /**

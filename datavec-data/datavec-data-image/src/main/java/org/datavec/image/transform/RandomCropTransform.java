@@ -65,8 +65,11 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
             return null;
         }
         // ensure that transform is valid
-        if(image.getFrame().imageHeight < outputHeight || image.getFrame().imageWidth < outputWidth)
-            throw new UnsupportedOperationException("Output height/width cannot be more than the input image. Requested: "+outputHeight+"+x"+outputWidth+", got "+image.getFrame().imageHeight+"+x"+image.getFrame().imageWidth);
+        if (image.getFrame().imageHeight < outputHeight || image.getFrame().imageWidth < outputWidth)
+            throw new UnsupportedOperationException(
+                            "Output height/width cannot be more than the input image. Requested: " + outputHeight + "+x"
+                                            + outputWidth + ", got " + image.getFrame().imageHeight + "+x"
+                                            + image.getFrame().imageWidth);
 
         // determine boundary to place random offset
         int cropTop = image.getFrame().imageHeight - outputHeight;

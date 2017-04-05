@@ -70,7 +70,7 @@ public class TransformProcessSequenceRecordReader implements SequenceRecordReade
      */
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        return transformProcess.executeSequence(sequenceRecordReader.sequenceRecord(uri,dataInputStream));
+        return transformProcess.executeSequence(sequenceRecordReader.sequenceRecord(uri, dataInputStream));
     }
 
     /**
@@ -190,7 +190,7 @@ public class TransformProcessSequenceRecordReader implements SequenceRecordReade
      */
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        return transformProcess.execute(sequenceRecordReader.record(uri,dataInputStream));
+        return transformProcess.execute(sequenceRecordReader.record(uri, dataInputStream));
     }
 
     /**
@@ -232,7 +232,7 @@ public class TransformProcessSequenceRecordReader implements SequenceRecordReade
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> records = sequenceRecordReader.loadFromMetaData(recordMetaDatas);
-        for(Record record : records)
+        for (Record record : records)
             record.setRecord(transformProcess.execute(record.getRecord()));
         return records;
     }

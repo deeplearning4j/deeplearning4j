@@ -38,7 +38,7 @@ public class FileSplitTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testEmptySplit() {
-        new FileSplit(new File("THE_TEST_WILL_PASS_UNLESS_YOU_CAN_PREDICT_THIS_UUID: "+ UUID.randomUUID()));
+        new FileSplit(new File("THE_TEST_WILL_PASS_UNLESS_YOU_CAN_PREDICT_THIS_UUID: " + UUID.randomUUID()));
     }
 
     @Rule

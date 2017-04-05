@@ -86,7 +86,7 @@ public class InMemorySequenceRecordReader implements SequenceRecordReader {
      */
     @Override
     public SequenceRecord nextSequence() {
-        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(),null);
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), null);
     }
 
     /**

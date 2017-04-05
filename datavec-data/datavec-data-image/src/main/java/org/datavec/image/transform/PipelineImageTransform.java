@@ -54,7 +54,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         super(null); // for perf reasons we ignore java Random, create our own
 
         List<Pair<ImageTransform, Double>> pipeline = new LinkedList<>();
-        for(int i = 0; i < transforms.length; i++)
+        for (int i = 0; i < transforms.length; i++)
             pipeline.add(new Pair<>(transforms[i], 1.0));
 
         this.imageTransforms = pipeline;
@@ -79,7 +79,8 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         this(null, seed, transforms, shuffle);
     }
 
-    public PipelineImageTransform(Random random, long seed, List<Pair<ImageTransform, Double>> transforms, boolean shuffle) {
+    public PipelineImageTransform(Random random, long seed, List<Pair<ImageTransform, Double>> transforms,
+                    boolean shuffle) {
         super(null); // for perf reasons we ignore java Random, create our own
         this.imageTransforms = transforms;
         this.shuffle = shuffle;
@@ -96,11 +97,12 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
      */
     @Override
     public ImageWritable transform(ImageWritable image, Random random) {
-        if(shuffle) Collections.shuffle(imageTransforms);
+        if (shuffle)
+            Collections.shuffle(imageTransforms);
 
         // execute each item in the pipeline
-        for(Pair<ImageTransform, Double> tuple : imageTransforms) {
-            if(tuple.getSecond() == 1.0 || rng.nextDouble() < tuple.getSecond()) { // probability of execution
+        for (Pair<ImageTransform, Double> tuple : imageTransforms) {
+            if (tuple.getSecond() == 1.0 || rng.nextDouble() < tuple.getSecond()) { // probability of execution
                 image = tuple.getFirst().transform(image);
             }
         }

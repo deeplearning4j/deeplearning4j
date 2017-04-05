@@ -133,8 +133,8 @@ public class TestImageTransform {
     public void testMultiImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 3);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new PipelineImageTransform(seed, false, new CropImageTransform(10), new FlipImageTransform(),
-                        new ScaleImageTransform(10), new WarpImageTransform(10));
+        ImageTransform transform = new PipelineImageTransform(seed, false, new CropImageTransform(10),
+                        new FlipImageTransform(), new ScaleImageTransform(10), new WarpImageTransform(10));
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
@@ -229,8 +229,8 @@ public class TestImageTransform {
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
             Frame f = w.getFrame();
-            assertTrue(f.imageHeight == frame.imageHeight/2);
-            assertTrue(f.imageWidth == frame.imageWidth/2);
+            assertTrue(f.imageHeight == frame.imageHeight / 2);
+            assertTrue(f.imageWidth == frame.imageWidth / 2);
         }
         assertEquals(null, transform.transform(null));
     }
@@ -250,8 +250,8 @@ public class TestImageTransform {
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);
             Frame f = w.getFrame();
-            assertTrue(f.imageHeight == frame.imageHeight/2);
-            assertTrue(f.imageWidth == frame.imageWidth/2);
+            assertTrue(f.imageHeight == frame.imageHeight / 2);
+            assertTrue(f.imageWidth == frame.imageWidth / 2);
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));

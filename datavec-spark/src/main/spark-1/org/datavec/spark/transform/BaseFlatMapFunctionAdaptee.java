@@ -10,13 +10,14 @@ import org.datavec.spark.functions.FlatMapFunctionAdapter;
  * This class should be used instead of direct referral to FlatMapFunction
  *
  */
-public class BaseFlatMapFunctionAdaptee<K, V> implements FlatMapFunction<K,V> {
+public class BaseFlatMapFunctionAdaptee<K, V> implements FlatMapFunction<K, V> {
 
     protected final FlatMapFunctionAdapter<K, V> adapter;
 
     public BaseFlatMapFunctionAdaptee(FlatMapFunctionAdapter<K, V> adapter) {
         this.adapter = adapter;
     }
+
     @Override
     public Iterable<V> call(K k) throws Exception {
         return adapter.call(k);

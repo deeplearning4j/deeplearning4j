@@ -105,7 +105,7 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        return transformProcess.execute(recordReader.record(uri,dataInputStream));
+        return transformProcess.execute(recordReader.record(uri, dataInputStream));
     }
 
     /**
@@ -117,7 +117,7 @@ public class TransformProcessRecordReader implements RecordReader {
     @Override
     public Record nextRecord() {
         Record next = recordReader.nextRecord();
-        return new org.datavec.api.records.impl.Record(transformProcess.execute(next.getRecord()),next.getMetaData());
+        return new org.datavec.api.records.impl.Record(transformProcess.execute(next.getRecord()), next.getMetaData());
     }
 
     /**
