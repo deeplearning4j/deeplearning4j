@@ -11,12 +11,14 @@ import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
+import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.Observer;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,7 +64,7 @@ public class ParallelInference {
 
         if (inferenceMode == InferenceMode.BATCHED) {
             log.info("Initializing ObservablesProvider...");
-            provider = new ObservablesProvider(observables);
+            provider = new ObservablesProvider(nanos, observables);
         }
     }
 
@@ -95,21 +97,27 @@ public class ParallelInference {
 
         if (inferenceMode == InferenceMode.SEQUENTIAL) {
             observable = new BasicInferenceObservable(input);
+            observable.addObserver(observer);
+            try {
+                observables.put(observable);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         } else {
-            observable = provider.output(input);
+            observable = provider.setInput(observer, input);
         }
 
-        observable.addObserver(observer);
+
 
         try {
                 // submit query to processing
-            observables.put(observable);
+
 
             // and block until Observable returns
             //observer.wait();
 
              observer.waitTillDone();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
                 throw new RuntimeException(e);
         }
 
@@ -333,16 +341,29 @@ public class ParallelInference {
     }
 
 
-    private class ObservablesProvider {
+    protected static class ObservablesProvider {
         private BlockingQueue<InferenceObservable> targetQueue;
+        private long nanos;
 
-        private ObservablesProvider(@NonNull BlockingQueue<InferenceObservable> queue) {
+        private volatile InferenceObservable currentObservable;
+        private final Object locker = new Object();
+
+        protected ObservablesProvider(long nanos, @NonNull BlockingQueue<InferenceObservable> queue) {
             this.targetQueue = queue;
+            this.nanos = nanos;
         }
 
 
-        public InferenceObservable output(INDArray... input) {
-            return null;
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
+            synchronized (locker) {
+                if (currentObservable == null)
+                    currentObservable = new BatchedInferenceObservable();
+
+                currentObservable.setInput(input);
+                currentObservable.addObserver(observer);
+
+                return currentObservable;
+            }
         }
     }
 }

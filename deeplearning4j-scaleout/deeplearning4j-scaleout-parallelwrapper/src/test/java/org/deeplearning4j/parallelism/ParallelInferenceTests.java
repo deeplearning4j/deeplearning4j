@@ -8,6 +8,8 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
+import org.deeplearning4j.parallelism.inference.InferenceObservable;
+import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.After;
 import org.junit.Before;
@@ -15,6 +17,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,8 +26,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -135,6 +137,43 @@ public class ParallelInferenceTests {
         // both workers threads should have non-zero
         assertTrue( inf.getWorkerCounter(0) > 100L);
         assertTrue( inf.getWorkerCounter(1) > 100L);
+    }
+
+
+    @Test
+    public void  testProvider1() throws Exception {
+        LinkedBlockingQueue queue = new LinkedBlockingQueue();
+        BasicInferenceObserver observer = new BasicInferenceObserver();
+
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, queue);
+
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100));
+
+        assertNotEquals(null, observable1);
+
+        assertTrue(observable1 == observable2);
+    }
+
+    @Test
+    public void  testProvider2() throws Exception {
+        LinkedBlockingQueue queue = new LinkedBlockingQueue();
+        BasicInferenceObserver observer = new BasicInferenceObserver();
+        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, queue);
+
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+
+        assertNotEquals(null, observable1);
+
+        assertTrue(observable1 == observable2);
+
+        INDArray[] input = observable1.getInput();
+
+        assertEquals(1, input.length);
+        assertArrayEquals(new int[]{2, 100}, input[0].shape());
+        assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
+        assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
     }
 
 
