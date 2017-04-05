@@ -551,13 +551,30 @@
 
         </plugins>
 
-    </build>
-    <dependencies>
-        <dependency>
+        <dependencies>
+          <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-    </dependencies>
+          </dependency>
+        </dependencies>
+
+    </build>
+
+    <reporting>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>2.19.1</version>
+        </plugin>
+        <!-- Test coverage -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>cobertura-maven-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+      </plugins>
+    </reporting>
+
 </project>
