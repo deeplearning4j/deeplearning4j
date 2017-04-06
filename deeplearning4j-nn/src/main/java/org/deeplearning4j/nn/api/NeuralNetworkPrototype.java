@@ -59,5 +59,13 @@ public interface NeuralNetworkPrototype {
     */
     void rnnClearPreviousState();
 
+    Map<String, Map<String, INDArray>> rnnGetPreviousStates();
+
     void rnnTimeStep(INDArray... input);
+
+
+    /*
+        Evaluation section
+    */
+    // why exactly we have Evaluation class AND evaluation code in MLN/CG at the same time?
 }
