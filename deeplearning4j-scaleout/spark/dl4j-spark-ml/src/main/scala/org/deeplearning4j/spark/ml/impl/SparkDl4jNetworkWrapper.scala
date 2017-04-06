@@ -50,17 +50,7 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
         if (listeners != null) {
             sparkNet.setListeners(listeners)
         }
-        val lps = dataset.select(getFeaturesCol, getLabelCol).rdd
-            .map(mapVectorFunc)
-            .map(item => {
-                val features = item.features
-                val label = item.label
-                if (numLabels > 1) {
-                    new DataSet(Nd4j.create(features.toArray), FeatureUtil.toOutcomeVector(label.toInt, numLabels))
-                } else {
-                    new DataSet(Nd4j.create(features.toArray), Nd4j.create(Array(label)))
-                }
-            })
+        val lps = toLabelPoint(dataRowsFacade)
         val epochsToUse = if (epochs < 1) 1 else epochs
         for (i <- List.range(0, epochsToUse)) {
             sparkNet.fit(lps)
