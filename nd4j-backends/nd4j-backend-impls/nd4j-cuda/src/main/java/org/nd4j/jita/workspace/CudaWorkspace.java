@@ -46,9 +46,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
             isInit.set(true);
 
             log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+            Pointer ptr = memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, false);
+            if (ptr == null)
+                throw new ND4JIllegalStateException("Can't allocate memory for workspace");
 
-            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
-            workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, true)));
+            workspace.setHostPointer(new PagedPointer(ptr));
+
+
+            workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, false)));
         }
     }
 
@@ -95,7 +100,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 if (initialize) {
                     CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
+                    int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
+                    if (ret == 0)
+                        throw new ND4JIllegalStateException("memset failed.");
 
                     context.syncSpecialStream();
                 }

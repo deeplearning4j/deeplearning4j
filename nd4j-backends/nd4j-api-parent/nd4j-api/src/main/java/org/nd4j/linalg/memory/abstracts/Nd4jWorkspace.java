@@ -209,6 +209,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             else
                 currentSize.set(maxCycle.get());
 
+            if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
+                currentSize.set(workspaceConfiguration.getMinSize());
+
 //            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
   //              currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
 

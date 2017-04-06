@@ -40,6 +40,9 @@ public interface MemoryHandler {
      */
     boolean isDeviceDependant();
 
+
+    CudaContext getCudaContext();
+
     /**
      * This method causes memory synchronization on host side.
      *  Viable only for Device-dependant MemoryHandlers

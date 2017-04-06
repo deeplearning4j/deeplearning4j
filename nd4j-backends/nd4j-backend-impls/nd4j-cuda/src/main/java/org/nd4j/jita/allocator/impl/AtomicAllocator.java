@@ -392,6 +392,9 @@ public class AtomicAllocator implements Allocator {
             long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
             //log.info("Allocating {} bytes from attached memory...", reqMem);
 
+            // workaround for init order
+            getMemoryHandler().getCudaContext();
+
             CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 
             PointersPair pair = new PointersPair();

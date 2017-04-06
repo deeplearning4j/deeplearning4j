@@ -9,6 +9,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
@@ -46,10 +47,16 @@ public class CudaMemoryManager extends BasicMemoryManager {
         } else if (kind == MemoryKind.DEVICE) {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
 
+            if (ptr == null)
+                throw new RuntimeException("Memory allocation failed");
+
             if (initialize) {
                 CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-                NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                if (i == 0)
+                    throw new ND4JIllegalStateException("memset failed");
+
                 context.getSpecialStream().synchronize();
             }
 

@@ -24,6 +24,7 @@ public class WorkspaceConfiguration implements Serializable {
     protected ResetPolicy policyReset;
 
     protected long initialSize;
+    protected long minSize;
     protected long maxSize;
 
     protected int cyclesBeforeInitialization;
@@ -38,6 +39,7 @@ public class WorkspaceConfiguration implements Serializable {
         private ResetPolicy policyReset = ResetPolicy.BLOCK_LEFT;
 
         private long initialSize = 0;
+        private long minSize = 0;
         private long maxSize = 0;
 
         protected int cyclesBeforeInitialization = 0;

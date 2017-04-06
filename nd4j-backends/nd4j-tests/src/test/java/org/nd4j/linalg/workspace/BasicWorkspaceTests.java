@@ -89,6 +89,30 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testMinSize1() throws Exception {
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .minSize(10 * 1024 * 1024)
+                .overallocationLimit(0.0)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+
+        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
+            INDArray array = Nd4j.create(100);
+
+            assertEquals(0, workspace.getCurrentSize());
+        }
+
+        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
+            INDArray array = Nd4j.create(100);
+
+            assertEquals(10 * 1024 * 1024, workspace.getCurrentSize());
+        }
+    }
+
+    @Test
     public void testBreakout2() throws Exception {
 
         assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
