@@ -744,7 +744,17 @@ namespace simdOps {
 		}
 	};
 
-	
+	template<typename T>
+	class Sinh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_sinh<T>(d1);
+		}
+	};
+
 	template<typename T>
 	class Sqrt {
 	public:
@@ -857,6 +867,29 @@ namespace simdOps {
             return d1 > (T) 0.0f ? nd4j::math::nd4j_tanhderivative<T>(d1) : (T) 0.0f;
         }
     };
+
+	template<typename T>
+	class ATanh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_atanh<T>(d1);
+		}
+	};
+
+	template<typename T>
+	class Tan {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_tan<T>(d1);
+		}
+	};
+
 
 
 	template<typename T>
@@ -1073,6 +1106,17 @@ namespace simdOps {
 			return nd4j::math::nd4j_asin<T>(d1);
 		}
 	};
+
+    template<typename T>
+    class ASinh {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return nd4j::math::nd4j_asinh<T>(d1);
+        }
+    };
 
 
 	template<typename T>
