@@ -1246,7 +1246,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         long[] xPointers = new long[numTads];
 
-        CudaContext context = null;
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(null, tensor);
 
         for (int x = 0; x < numTads; x++) {
             result[x] = Nd4j.createUninitialized(shape);
@@ -1291,6 +1291,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
             );
         }
+
+        AtomicAllocator.getInstance().getFlowController().registerActionAllWrite(context, result);
+        AtomicAllocator.getInstance().getFlowController().registerAction(context,null, result);
 
         return result;
     }
