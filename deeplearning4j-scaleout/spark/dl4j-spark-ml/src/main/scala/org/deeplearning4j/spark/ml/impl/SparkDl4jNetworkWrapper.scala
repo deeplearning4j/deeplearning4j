@@ -107,9 +107,6 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
 
     protected def output(vector: Vector) : Vector = {
         val predicted = outputTensor(vector)
-        if (!predicted.isVector) {
-            log.warn("The output of the tensor is not a vector. Flattening the tensor to match Spark's api.")
-        }
         Vectors.dense(flattenTensor(predicted))
     }
 
