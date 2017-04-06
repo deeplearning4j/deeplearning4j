@@ -11,16 +11,15 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.data.BatchDataSetsFunction;
-import org.deeplearning4j.spark.data.shuffle.IntPartitioner;
 import org.deeplearning4j.spark.data.shuffle.SplitDataSetExamplesPairFlatMapFunction;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
-import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -249,25 +248,24 @@ public class SparkUtils {
 
 
     /**
-     * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately {@code numPartitions} partitions,
-     * each of which has {@code objectsPerPartition} objects.
+     * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately
+     * {@code numPartitions} partitions, each of which has {@code objectsPerPartition} objects.
      *
-     * @param rdd                 RDD to repartition
-     * @param repartition         Repartitioning setting
+     * @param rdd RDD to repartition
+     * @param repartition Repartitioning setting
      * @param objectsPerPartition Number of objects we want in each partition
-     * @param numPartitions       Number of partitions to have
-     * @param <T>                 Type of RDD
+     * @param numPartitions Number of partitions to have
+     * @param <T> Type of RDD
      * @return Repartitioned RDD, or the original RDD if no repartitioning was performed
      */
-    public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition,
-                    int objectsPerPartition, int numPartitions) {
+    public static <T> JavaRDD<T> repartitionBalanceIfRequired(
+            JavaRDD<T> rdd, Repartition repartition, int objectsPerPartition, int numPartitions) {
         int origNumPartitions = rdd.partitions().size();
         switch (repartition) {
             case Never:
                 return rdd;
             case NumPartitionsWorkersDiffers:
-                if (origNumPartitions == numPartitions)
-                    return rdd;
+                if (origNumPartitions == numPartitions) return rdd;
             case Always:
                 //Repartition: either always, or origNumPartitions != numWorkers
 
@@ -277,16 +275,14 @@ public class SparkUtils {
 
                 //Count each partition...
                 List<Tuple2<Integer, Integer>> partitionCounts =
-                                rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
                 int totalObjects = 0;
                 int initialPartitions = partitionCounts.size();
 
                 boolean allCorrectSize = true;
-                int[] countPerPartition = new int[partitionCounts.size()];
                 int x = 0;
                 for (Tuple2<Integer, Integer> t2 : partitionCounts) {
                     int partitionSize = t2._2();
-                    countPerPartition[x++] = partitionSize;
                     allCorrectSize &= (partitionSize == objectsPerPartition);
                     totalObjects += t2._2();
                 }
@@ -298,33 +294,34 @@ public class SparkUtils {
                     }
                 }
 
-
                 if (initialPartitions == numPartitions && allCorrectSize) {
                     //Don't need to do any repartitioning here - already in the format we want
                     return rdd;
                 }
 
-                //In each partition: work out the start offset (so we can work out the index of each element)
-                int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
-                for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
-                    elementStartOffsetByPartitions[i] =
-                                    elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
-                }
-
                 //Index each element for repartitioning (can only do manual repartitioning on a JavaPairRDD)
-                JavaRDD<Tuple2<Integer, T>> indexed = rdd.mapPartitionsWithIndex(
-                                new AssignIndexFunction<T>(elementStartOffsetByPartitions), true);
-                JavaPairRDD<Integer, T> pairIndexed =
-                                indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, T>(), true);
+                JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
-                pairIndexed = pairIndexed
-                                .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
+                pairIndexed =
+                        pairIndexed.partitionBy(
+                                new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
 
                 return pairIndexed.values();
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);
         }
+    }
+
+    static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
+        return rdd.zipWithIndex()
+                .mapToPair(
+                        new PairFunction<Tuple2<T, Long>, Integer, T>() {
+                            @Override
+                            public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
+                                return new Tuple2<Integer, T>(elemIdx._2().intValue(), elemIdx._1());
+                            }
+                        });
     }
 
     /**
