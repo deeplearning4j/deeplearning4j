@@ -39,11 +39,21 @@ final class SparkDl4jNetwork(
 
     override val mapVectorFunc: Row => LabeledPoint = row => new LabeledPoint(row.getAs[Double]($(labelCol)), Vectors.fromML(row.getAs[Vector]($(featuresCol))))
 
+    /**
+      * Trains the dataset with the spark multi-layer network
+      * @param dataset Dataframe
+      * @return returns a SparkDl4jModel
+      */
     override def train(dataset: Dataset[_]): SparkDl4jModel = {
         val spn = trainer(DatasetFacade.dataRows(dataset))
         handleTrainedData(spn)
     }
 
+    /**
+      * Batch Trains for specified datasets
+      * @param datasets A java list of dataframes
+      * @return returns a SparkDl4jModel
+      */
     def batchTrain(datasets : java.util.List[Dataset[_]]) : SparkDl4jModel = {
         val spn = batchTrainer(DatasetBatchFacade.dataRows(datasets))
         handleTrainedData(spn)
@@ -63,10 +73,20 @@ class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork)
         copyValues(new SparkDl4jModel(uid, network)).setParent(parent)
     }
 
+    /**
+      * Argmax prediction for classification, and continuous for regression.
+      * @param features Vector to predict
+      * @return a double of the outcome
+      */
     override def predict(features: Vector) : Double = {
         predictor(Vectors.fromML(features))
     }
 
+    /**
+      * Vector of the network output
+      * @param vector features to predict
+      * @return Vector of the network output
+      */
     def output(vector: Vector): Vector = org.apache.spark.ml.linalg.Vectors.dense(super.output(Vectors.fromML(vector)).toArray)
 
     def outputFlattenedTensor(vector: Vector) : Vector = org.apache.spark.ml.linalg.Vectors.dense(super.outputFlattenedTensor(Vectors.fromML(vector)).toArray)

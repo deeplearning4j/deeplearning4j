@@ -38,11 +38,21 @@ final class SparkDl4jNetwork(
 
     override val mapVectorFunc: (Row) => LabeledPoint = row => new LabeledPoint(row.getAs[Double]($(labelCol)), row.getAs[Vector]($(featuresCol)))
 
+    /**
+      * Trains the dataset with the spark multi-layer network
+      * @param dataset Dataframe
+      * @return returns a SparkDl4jModel
+      */
     override def train(dataset: DataFrame): SparkDl4jModel = {
         val spn = trainer(DatasetFacade.dataRows(dataset))
         handleTrainedData(spn)
     }
 
+    /**
+      * Batch Trains for specified datasets
+      * @param datasets A java list of dataframes
+      * @return returns a SparkDl4jModel
+      */
     def batchTrain(datasets : java.util.List[DataFrame]) : SparkDl4jModel = {
         val spn = batchTrainer(DatasetBatchFacade.dataRows(datasets))
         handleTrainedData(spn)
@@ -59,6 +69,12 @@ class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork)
     extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network) {
 
     override def copy(extra: ParamMap) : SparkDl4jModel = copyValues(new SparkDl4jModel(uid, network)).setParent(parent)
+
+    /**
+      * Argmax prediction for classification, and continuous for regression.
+      * @param features Vector to predict
+      * @return a double of the outcome
+      */
     override def predict(features: Vector) : Double = predictor(features)
 
 }
