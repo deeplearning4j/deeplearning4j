@@ -13,16 +13,17 @@ import org.deeplearning4j.nn.layers.recurrent.NoNormalization;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseRecurrentLayer extends FeedForwardLayer {
-
-    protected BaseRecurrentLayer(Builder builder) {
-        super(builder);
-    }
-
     protected boolean useLayerNormalization;
     /**
      * When true, compute mean and stddev across a single record. When false, compute across an entire minibatch.
      */
     protected boolean normalizePerRecord;
+
+
+    protected BaseRecurrentLayer(Builder builder) {
+        super(builder);
+    }
+
 
 
 
