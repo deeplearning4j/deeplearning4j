@@ -137,20 +137,6 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
             forgetGateBiasInit=builder.forgetGateBiasInit;
             gateActivationFn=builder.gateActivationFn;
         }
-       /* protected boolean useLayerNormalization = false;
-*/
-        /**
-         * Use layer normalization, as described in https://arxiv.org/pdf/1607.06450.pdf. This can substantially speed
-         * up training.
-         *
-         * @param useLayerNormalization
-         * @return A Builder (for chain configuration)
-         */
-/*        public BaseRecurrentLayer.Builder setUseLayerNormalization(boolean useLayerNormalization) {
-            this.useLayerNormalization = useLayerNormalization;
-            return this;
-        }
-*/
 
         /**
          * Set forget gate bias initalizations. Values in range 1-5 can potentially
