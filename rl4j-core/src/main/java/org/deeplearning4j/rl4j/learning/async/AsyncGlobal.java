@@ -45,7 +45,8 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
     private NN target;
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean running = true;
 
 
@@ -66,6 +67,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
     synchronized public NN cloneCurrent() {
         return (NN) current.clone();
     }
+
     synchronized public NN cloneTarget() {
         return (NN) target.clone();
     }
@@ -73,29 +75,31 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 
 
     public void enqueue(Gradient[] gradient, Integer nstep) {
-            queue.add(new Pair<>(gradient, nstep));
+        queue.add(new Pair<>(gradient, nstep));
     }
 
     @Override
     public void run() {
 
-                while (!isTrainingComplete() && running) {
-                    if (!queue.isEmpty()) {
-                        Pair<Gradient[], Integer> pair = queue.poll();
-                        T.addAndGet(pair.getSecond());
-                        Gradient[] gradient = pair.getFirst();
-                        synchronized (this) {
-                            current.applyGradient(gradient, pair.getSecond());
-                        }
-                        if (a3cc.getTargetDqnUpdateFreq() != -1 && T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond()) / a3cc.getTargetDqnUpdateFreq()) {
-                            log.info("TARGET UPDATE at T = " + T.get());
-                            synchronized (this) {
-                                target = (NN) current.clone();
-                            }
-                        }
+        while (!isTrainingComplete() && running) {
+            if (!queue.isEmpty()) {
+                Pair<Gradient[], Integer> pair = queue.poll();
+                T.addAndGet(pair.getSecond());
+                Gradient[] gradient = pair.getFirst();
+                synchronized (this) {
+                    current.applyGradient(gradient, pair.getSecond());
+                }
+                if (a3cc.getTargetDqnUpdateFreq() != -1
+                                && T.get() / a3cc.getTargetDqnUpdateFreq() > (T.get() - pair.getSecond())
+                                                / a3cc.getTargetDqnUpdateFreq()) {
+                    log.info("TARGET UPDATE at T = " + T.get());
+                    synchronized (this) {
+                        target = (NN) current.clone();
                     }
                 }
-
             }
+        }
 
     }
+
+}

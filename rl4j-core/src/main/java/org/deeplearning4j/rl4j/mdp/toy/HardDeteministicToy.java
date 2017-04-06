@@ -29,7 +29,7 @@ public class HardDeteministicToy implements MDP<HardToyState, Integer, DiscreteS
     @Getter
     private DiscreteSpace actionSpace = new DiscreteSpace(ACTION_SIZE);
     @Getter
-    private ObservationSpace<HardToyState> observationSpace = new ArrayObservationSpace(new int[]{ACTION_SIZE});
+    private ObservationSpace<HardToyState> observationSpace = new ArrayObservationSpace(new int[] {ACTION_SIZE});
     private HardToyState hardToyState;
 
     public static void printTest(IDQN idqn) {
@@ -70,8 +70,7 @@ public class HardDeteministicToy implements MDP<HardToyState, Integer, DiscreteS
         return hardToyStates;
     }
 
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public boolean isDone() {

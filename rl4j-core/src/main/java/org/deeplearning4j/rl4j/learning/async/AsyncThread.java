@@ -27,7 +27,8 @@ import org.slf4j.LoggerFactory;
  * sub epoch
  *
  */
-public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Thread implements StepCountable {
+public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                extends Thread implements StepCountable {
 
     final protected Logger log;
     @Getter
@@ -68,7 +69,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 if (getMdp().isDone()) {
 
                     if (getThreadNumber() == 1)
-                        getDataManager().appendStat(new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score));
+                        getDataManager().appendStat(
+                                        new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score));
 
                     initMdp = Learning.initMdp(getMdp(), historyProcessor);
                     obs = initMdp.getLastObs();

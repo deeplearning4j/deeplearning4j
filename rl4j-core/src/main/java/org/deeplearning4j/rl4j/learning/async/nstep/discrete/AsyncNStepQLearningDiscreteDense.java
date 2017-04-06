@@ -14,15 +14,19 @@ import org.deeplearning4j.rl4j.util.DataManager;
  */
 public class AsyncNStepQLearningDiscreteDense<O extends Encodable> extends AsyncNStepQLearningDiscrete<O> {
 
-    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn,
+                    AsyncNStepQLConfiguration conf, DataManager dataManager) {
         super(mdp, dqn, conf, dataManager);
     }
 
-    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory, AsyncNStepQLConfiguration conf, DataManager dataManager) {
-        this(mdp, factory.buildDQN(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf, dataManager);
+    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, DQNFactory factory,
+                    AsyncNStepQLConfiguration conf, DataManager dataManager) {
+        this(mdp, factory.buildDQN(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf,
+                        dataManager);
     }
 
-    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, DQNFactoryStdDense.Configuration netConf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp,
+                    DQNFactoryStdDense.Configuration netConf, AsyncNStepQLConfiguration conf, DataManager dataManager) {
         this(mdp, new DQNFactoryStdDense(netConf), conf, dataManager);
     }
 }

@@ -41,7 +41,8 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @Getter
     final private DataManager dataManager;
 
-    public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CConfiguration conf, DataManager dataManager) {
+    public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CConfiguration conf,
+                    DataManager dataManager) {
         super(conf);
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
@@ -76,7 +77,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         double gamma;
         double errorClamp;
 
-        public int getTargetDqnUpdateFreq(){
+        public int getTargetDqnUpdateFreq() {
             return -1;
         }
 

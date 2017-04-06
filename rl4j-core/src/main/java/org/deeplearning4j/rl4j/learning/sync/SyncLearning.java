@@ -15,7 +15,8 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * are not asynchronous.
  *
  */
-public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
+public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                extends Learning<O, A, AS, NN> {
 
     private int lastSave = -Constants.MODEL_SAVE_FREQ;
 

@@ -14,7 +14,8 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
  * -periodically evaluate the model of the global thread for monitoring purposes
  *
  */
-public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> extends Learning<O, A, AS, NN> {
+public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                extends Learning<O, A, AS, NN> {
 
 
     public AsyncLearning(AsyncConfiguration conf) {

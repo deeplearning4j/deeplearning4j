@@ -59,14 +59,11 @@ public class DataManager {
     }
 
     public static void save(String path, Learning learning) {
-        try (BufferedOutputStream os =
-             new BufferedOutputStream(new FileOutputStream(path))) {
+        try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
             save(os, learning);
-        }
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -256,7 +253,8 @@ public class DataManager {
 
         Path infoPath = Paths.get(getInfo());
 
-        Info info = new Info(iLearning.getClass().getSimpleName(), iLearning.getMdp().getClass().getSimpleName(), iLearning.getConfiguration(), iLearning.getStepCounter(), System.currentTimeMillis());
+        Info info = new Info(iLearning.getClass().getSimpleName(), iLearning.getMdp().getClass().getSimpleName(),
+                        iLearning.getConfiguration(), iLearning.getStepCounter(), System.currentTimeMillis());
         String toWrite = toJson(info);
 
         try {

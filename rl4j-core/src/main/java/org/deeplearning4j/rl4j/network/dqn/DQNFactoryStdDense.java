@@ -28,40 +28,26 @@ public class DQNFactoryStdDense implements DQNFactory {
 
         System.out.println(conf);
 
-        NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder()
-                .seed(Constants.NEURAL_NET_SEED)
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(conf.getLearningRate())
-                //.updater(Updater.NESTEROVS).momentum(0.9)
-                .updater(Updater.ADAM)
-                //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
-                .weightInit(WeightInit.XAVIER)
-                //.regularization(true)
-                //.l2(conf.getL2())
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(numInputs[0])
-                        .nOut(conf.getNumHiddenNodes())
-                        .activation("relu")
-                        .build());
+        NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
+                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(conf.getLearningRate())
+                        //.updater(Updater.NESTEROVS).momentum(0.9)
+                        .updater(Updater.ADAM)
+                        //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
+                        .weightInit(WeightInit.XAVIER)
+                        //.regularization(true)
+                        //.l2(conf.getL2())
+                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                                        .activation("relu").build());
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
-            confB
-                    .layer(i, new DenseLayer.Builder()
-                            .nIn(conf.getNumHiddenNodes())
-                            .nOut(conf.getNumHiddenNodes())
-                            .activation("relu")
-                            .build());
+            confB.layer(i, new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
+                            .activation("relu").build());
         }
 
-        confB
-                .layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("identity")
-                        .nIn(conf.getNumHiddenNodes())
-                        .nOut(numOutputs)
-                        .build());
+        confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity")
+                        .nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
 
 
         MultiLayerConfiguration mlnconf = confB.pretrain(false).backprop(true).build();

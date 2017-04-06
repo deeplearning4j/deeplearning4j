@@ -57,7 +57,7 @@ public abstract class Policy<O extends Encodable, A> {
                         hp.add(input);
                         history = hp.getHistory();
                     } else
-                        history = new INDArray[]{input};
+                        history = new INDArray[] {input};
                 }
                 INDArray hstack = Transition.concat(history);
                 if (hstack.shape().length > 2)
@@ -72,7 +72,8 @@ public abstract class Policy<O extends Encodable, A> {
             if (isHistoryProcessor)
                 hp.add(Learning.getInput(mdp, stepReply.getObservation()));
 
-            history = isHistoryProcessor ? hp.getHistory() : new INDArray[]{Learning.getInput(mdp, stepReply.getObservation())};
+            history = isHistoryProcessor ? hp.getHistory()
+                            : new INDArray[] {Learning.getInput(mdp, stepReply.getObservation())};
             step++;
         }
 

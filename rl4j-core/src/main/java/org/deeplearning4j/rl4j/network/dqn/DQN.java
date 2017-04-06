@@ -44,7 +44,7 @@ public class DQN implements IDQN {
     }
 
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[]{output(batch)};
+        return new INDArray[] {output(batch)};
     }
 
     public DQN clone() {
@@ -56,7 +56,7 @@ public class DQN implements IDQN {
         mln.setLabels(labels);
         mln.computeGradientAndScore();
         //System.out.println("SCORE: " + mln.score());
-        return new Gradient[]{mln.gradient()};
+        return new Gradient[] {mln.gradient()};
     }
 
     public Gradient[] gradient(INDArray input, INDArray[] labels) {

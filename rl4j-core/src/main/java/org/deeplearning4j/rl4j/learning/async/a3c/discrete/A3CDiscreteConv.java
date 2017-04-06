@@ -28,18 +28,22 @@ public class A3CDiscreteConv<O extends Encodable> extends A3CDiscrete<O> {
 
     final private HistoryProcessor.Configuration hpconf;
 
-    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic,
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
         super(mdp, IActorCritic, conf, dataManager);
         this.hpconf = hpconf;
         setHistoryProcessor(hpconf);
     }
 
 
-    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraph factory, HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
-        this(mdp, factory.buildActorCritic(hpconf.getShape(), mdp.getActionSpace().getSize()), hpconf, conf, dataManager);
+    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraph factory,
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+        this(mdp, factory.buildActorCritic(hpconf.getShape(), mdp.getActionSpace().getSize()), hpconf, conf,
+                        dataManager);
     }
 
-    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraphStdConv.Configuration netConf, HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+    public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraphStdConv.Configuration netConf,
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
         this(mdp, new ActorCriticFactoryCompGraphStdConv(netConf), hpconf, conf, dataManager);
     }
 

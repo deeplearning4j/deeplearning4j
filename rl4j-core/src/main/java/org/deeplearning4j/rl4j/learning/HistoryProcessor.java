@@ -28,7 +28,8 @@ public class HistoryProcessor implements IHistoryProcessor {
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private CircularFifoQueue<INDArray> history;
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
-    public static BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
+    public static BasicNDArrayCompressor compressor =
+                    BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
 
 
     public HistoryProcessor(Configuration conf) {
@@ -108,7 +109,8 @@ public class HistoryProcessor implements IHistoryProcessor {
         //   show(resized);
         //   waitKP();
         //Crop by croppingHeight, croppingHeight
-        Mat cropped = resized.apply(new Rect(conf.getOffsetX(), conf.getOffsetY(), conf.getCroppingWidth(), conf.getCroppingHeight()));
+        Mat cropped = resized.apply(new Rect(conf.getOffsetX(), conf.getOffsetY(), conf.getCroppingWidth(),
+                        conf.getCroppingHeight()));
         //System.out.println(conf.getCroppingWidth() + " " + cropped.data().asBuffer().array().length);
 
         INDArray out = null;

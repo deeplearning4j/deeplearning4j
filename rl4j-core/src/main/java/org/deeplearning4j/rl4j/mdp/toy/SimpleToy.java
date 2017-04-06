@@ -31,7 +31,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     @Getter
     private DiscreteSpace actionSpace = new DiscreteSpace(2);
     @Getter
-    private ObservationSpace<SimpleToyState> observationSpace = new ArrayObservationSpace(new int[]{1});
+    private ObservationSpace<SimpleToyState> observationSpace = new ArrayObservationSpace(new int[] {1});
     private SimpleToyState simpleToyState;
     @Setter
     private NeuralNetFetchable<IDQN> fetchable;
@@ -49,8 +49,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
         log.info(output.toString());
     }
 
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public boolean isDone() {
@@ -65,8 +64,8 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     }
 
     public StepReply<SimpleToyState> step(Integer a) {
-        double reward = (simpleToyState.getStep() %  2 == 0) ? 1 - a: a;
-        simpleToyState = new SimpleToyState(simpleToyState.getI()+1, simpleToyState.getStep() + 1);
+        double reward = (simpleToyState.getStep() % 2 == 0) ? 1 - a : a;
+        simpleToyState = new SimpleToyState(simpleToyState.getI() + 1, simpleToyState.getStep() + 1);
         return new StepReply<>(simpleToyState, reward, isDone(), new JSONObject("{}"));
     }
 

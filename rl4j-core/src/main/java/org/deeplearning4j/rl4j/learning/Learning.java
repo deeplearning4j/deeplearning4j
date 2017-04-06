@@ -26,7 +26,8 @@ import java.util.Random;
  * Big majority of training method should inherit this
  *
  */
-public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet> implements ILearning<O, A, AS>, NeuralNetFetchable<NN>{
+public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
 
 
     @Getter
@@ -62,7 +63,8 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
             return arr.reshape(shape);
     }
 
-    public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+    public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
+                    IHistoryProcessor hp) {
 
         O obs = mdp.reset();
 

@@ -37,7 +37,9 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     final protected DataManager dataManager;
 
 
-    public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal, AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber, DataManager dataManager) {
+    public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal,
+                    AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber,
+                    DataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;
@@ -47,7 +49,8 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {
-        return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonNbStep(), new Random(conf.getSeed()), conf.getMinEpsilon(), this);
+        return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonNbStep(),
+                        new Random(conf.getSeed()), conf.getMinEpsilon(), this);
     }
 
 
@@ -59,7 +62,8 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
 
         int size = rewards.size();
 
-        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape() : getHistoryProcessor().getConf().getShape();
+        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape()
+                        : getHistoryProcessor().getConf().getShape();
         int[] nshape = Learning.makeShape(size, shape);
         INDArray input = Nd4j.create(nshape);
         INDArray targets = Nd4j.create(size, mdp.getActionSpace().getSize());

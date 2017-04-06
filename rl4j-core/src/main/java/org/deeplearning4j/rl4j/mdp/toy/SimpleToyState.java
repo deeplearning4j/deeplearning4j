@@ -15,7 +15,7 @@ public class SimpleToyState implements Encodable {
     @Override
     public double[] toArray() {
         double[] ar = new double[1];
-        ar[0] = (20-i);
+        ar[0] = (20 - i);
         return ar;
     }
 

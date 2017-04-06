@@ -11,14 +11,23 @@ import org.deeplearning4j.rl4j.learning.ILearning;
 public interface AsyncConfiguration extends ILearning.LConfiguration {
 
     int getSeed();
+
     int getMaxEpochStep();
+
     int getMaxStep();
+
     int getNumThread();
+
     int getNstep();
+
     int getTargetDqnUpdateFreq();
+
     int getUpdateStart();
+
     double getRewardFactor();
+
     double getGamma();
+
     double getErrorClamp();
 
 }

@@ -18,15 +18,20 @@ import org.deeplearning4j.rl4j.util.DataManager;
  */
 public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
 
-    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, A3CConfiguration conf, DataManager dataManager) {
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, A3CConfiguration conf,
+                    DataManager dataManager) {
         super(mdp, IActorCritic, conf, dataManager);
     }
 
-    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactorySeparate factory, A3CConfiguration conf, DataManager dataManager) {
-        this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf, dataManager);
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactorySeparate factory,
+                    A3CConfiguration conf, DataManager dataManager) {
+        this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf,
+                        dataManager);
     }
 
-    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactorySeparateStdDense.Configuration netConf, A3CConfiguration conf, DataManager dataManager) {
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp,
+                    ActorCriticFactorySeparateStdDense.Configuration netConf, A3CConfiguration conf,
+                    DataManager dataManager) {
         this(mdp, new ActorCriticFactorySeparateStdDense(netConf), conf, dataManager);
     }
 

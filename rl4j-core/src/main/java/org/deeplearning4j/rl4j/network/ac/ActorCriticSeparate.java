@@ -13,7 +13,7 @@ import java.io.OutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
  */
-public class ActorCriticSeparate implements IActorCritic{
+public class ActorCriticSeparate implements IActorCritic {
 
     final protected MultiLayerNetwork valueNet;
     final protected MultiLayerNetwork policyNet;
@@ -33,7 +33,7 @@ public class ActorCriticSeparate implements IActorCritic{
 
 
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[]{valueNet.output(batch), policyNet.output(batch)};
+        return new INDArray[] {valueNet.output(batch), policyNet.output(batch)};
     }
 
     public ActorCriticSeparate clone() {
@@ -47,7 +47,7 @@ public class ActorCriticSeparate implements IActorCritic{
         policyNet.setInput(input);
         policyNet.setLabels(labels[1]);
         policyNet.computeGradientAndScore();
-        return new Gradient[]{valueNet.gradient(), policyNet.gradient()};
+        return new Gradient[] {valueNet.gradient(), policyNet.gradient()};
     }
 
 

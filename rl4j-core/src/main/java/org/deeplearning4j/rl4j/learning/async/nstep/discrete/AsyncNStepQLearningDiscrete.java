@@ -21,7 +21,8 @@ import org.deeplearning4j.rl4j.util.DataManager;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  */
-public abstract class AsyncNStepQLearningDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IDQN> {
+public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
+                extends AsyncLearning<O, Integer, DiscreteSpace, IDQN> {
 
     @Getter
     final public AsyncNStepQLConfiguration configuration;
@@ -33,7 +34,8 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable> extends A
     final private AsyncGlobal<IDQN> asyncGlobal;
 
 
-    public AsyncNStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf, DataManager dataManager) {
+    public AsyncNStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf,
+                    DataManager dataManager) {
         super(conf);
         this.mdp = mdp;
         this.dataManager = dataManager;

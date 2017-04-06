@@ -19,9 +19,10 @@ import java.util.Stack;
  * Async Learning specialized for the Discrete Domain
  *
  */
-public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet> extends AsyncThread<O, Integer, DiscreteSpace, NN> {
+public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet>
+                extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
-    public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal, int threadNumber){
+    public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
         super(asyncGlobal, threadNumber);
     }
 
@@ -51,7 +52,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         double reward = 0;
         double accuReward = 0;
         int i = 0;
-        while (!getMdp().isDone() && i < nstep*skipFrame) {
+        while (!getMdp().isDone() && i < nstep * skipFrame) {
 
             INDArray input = Learning.getInput(getMdp(), obs);
 
@@ -64,7 +65,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                         getHistoryProcessor().add(input);
                         history = getHistoryProcessor().getHistory();
                     } else
-                        history = new INDArray[]{input};
+                        history = new INDArray[] {input};
                 }
                 //concat the history into a single INDArray input
                 INDArray hstack = Transition.concat(history);
@@ -96,7 +97,8 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                 if (isHistoryProcessor)
                     getHistoryProcessor().add(Learning.getInput(getMdp(), stepReply.getObservation()));
 
-                history = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[]{Learning.getInput(getMdp(), stepReply.getObservation())};
+                history = isHistoryProcessor ? getHistoryProcessor().getHistory()
+                                : new INDArray[] {Learning.getInput(getMdp(), stepReply.getObservation())};
                 accuReward = 0;
             }
             i++;

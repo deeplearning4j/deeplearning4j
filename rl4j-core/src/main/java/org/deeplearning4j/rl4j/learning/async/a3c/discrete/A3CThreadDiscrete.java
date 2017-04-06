@@ -39,7 +39,8 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     final protected DataManager dataManager;
 
 
-    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal, A3CDiscrete.A3CConfiguration a3cc, int threadNumber, DataManager dataManager) {
+    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
+                    A3CDiscrete.A3CConfiguration a3cc, int threadNumber, DataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;
@@ -62,7 +63,8 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
         int size = rewards.size();
 
-        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape() : getHistoryProcessor().getConf().getShape();
+        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape()
+                        : getHistoryProcessor().getConf().getShape();
         int[] nshape = Learning.makeShape(size, shape);
 
         INDArray input = Nd4j.create(nshape);
@@ -83,12 +85,12 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
             //the actor
             INDArray row = minTrans.getOutput()[1];
             double prevV = row.getDouble(minTrans.getAction());
-            double expectedV =  minTrans.getOutput()[0].getDouble(0);
+            double expectedV = minTrans.getOutput()[0].getDouble(0);
             double advantage = r - expectedV;
             row = row.putScalar(minTrans.getAction(), prevV + advantage);
             logSoftmax.putRow(i, row);
         }
 
-        return iac.gradient(input, new INDArray[]{targets, logSoftmax});
+        return iac.gradient(input, new INDArray[] {targets, logSoftmax});
     }
 }

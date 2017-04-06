@@ -31,47 +31,30 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
         if (shapeInputs.length == 1)
             throw new AssertionError("Impossible to apply convolutional layer on a shape == 1");
 
-        ComputationGraphConfiguration.GraphBuilder confB = new NeuralNetConfiguration.Builder()
-                .seed(Constants.NEURAL_NET_SEED)
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(conf.getLearningRate())
-                //.updater(Updater.NESTEROVS).momentum(0.9)
-                //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
-                .updater(Updater.ADAM)
-                .weightInit(WeightInit.XAVIER)
-                .regularization(true)
-                .l2(conf.getL2())
-                .graphBuilder()
-                .setInputTypes(InputType.convolutional(shapeInputs[1], shapeInputs[2], shapeInputs[0]))
-                .addInputs("input")
-                .addLayer("0", new ConvolutionLayer.Builder(8, 8)
-                        .nIn(shapeInputs[0])
-                        .nOut(16)
-                        .stride(4, 4)
-                        .activation("relu")
-                        .build(), "input");
+        ComputationGraphConfiguration.GraphBuilder confB =
+                        new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED).iterations(1)
+                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                        .learningRate(conf.getLearningRate())
+                                        //.updater(Updater.NESTEROVS).momentum(0.9)
+                                        //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                                        .updater(Updater.ADAM).weightInit(WeightInit.XAVIER).regularization(true)
+                                        .l2(conf.getL2()).graphBuilder()
+                                        .setInputTypes(InputType.convolutional(shapeInputs[1], shapeInputs[2],
+                                                        shapeInputs[0]))
+                                        .addInputs("input").addLayer("0",
+                                                        new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16)
+                                                                        .stride(4, 4).activation("relu").build(),
+                                                        "input");
 
-        confB
-                .addLayer("1", new ConvolutionLayer.Builder(4, 4)
-                        .nOut(32)
-                        .stride(2, 2)
-                        .activation("relu")
-                        .build(), "0");
+        confB.addLayer("1", new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation("relu").build(), "0");
 
-        confB
-                .addLayer("2", new DenseLayer.Builder().nOut(256)
-                        .activation("relu")
-                        .build(), "1");
+        confB.addLayer("2", new DenseLayer.Builder().nOut(256).activation("relu").build(), "1");
 
-        confB
-                .addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("identity")
-                        .nOut(1).build(), "2");
+        confB.addLayer("value",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nOut(1).build(),
+                        "2");
 
-        confB
-                .addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax") //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax") //fixthat
                         .nOut(numOutputs).build(), "2");
 
         confB.setOutputs("value", "softmax");

@@ -27,7 +27,7 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
         return Learning.getMaxAction(output);
     }
 
-    public void save(String filename){
+    public void save(String filename) {
         dqn.save(filename);
     }
 

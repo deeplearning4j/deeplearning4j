@@ -23,7 +23,8 @@ import java.util.List;
  * Mother class for QLearning in the Discrete domain and
  * hopefully one day for the  Continuous domain.
  */
-public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>> extends SyncLearning<O, A, AS, IDQN> {
+public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
+                extends SyncLearning<O, A, AS, IDQN> {
 
     @Getter
     final private IExpReplay<A> expReplay;
@@ -82,7 +83,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         List<Double> scores = new ArrayList<>();
         while (step < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
 
-            if (getStepCounter()% getConfiguration().getTargetDqnUpdateFreq() == 0) {
+            if (getStepCounter() % getConfiguration().getTargetDqnUpdateFreq() == 0) {
                 updateTargetNetwork();
             }
 
@@ -107,7 +108,8 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         meanQ /= (numQ + 0.001); //avoid div zero
 
 
-        StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, step, scores, getEgPolicy().getEpsilon(), startQ, meanQ);
+        StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, step, scores,
+                        getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
 

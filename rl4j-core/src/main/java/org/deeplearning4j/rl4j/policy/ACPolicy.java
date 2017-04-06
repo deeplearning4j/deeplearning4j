@@ -30,8 +30,7 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
             //System.out.println(i + " " + rVal + " " + output.getFloat(i));
             if (rVal < output.getFloat(i)) {
                 return i;
-            }
-            else
+            } else
                 rVal -= output.getFloat(i);
         }
 

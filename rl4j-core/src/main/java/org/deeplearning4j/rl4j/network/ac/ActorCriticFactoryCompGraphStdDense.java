@@ -26,45 +26,31 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
 
     public ActorCriticCompGraph buildActorCritic(int[] numInputs, int numOutputs) {
 
-        ComputationGraphConfiguration.GraphBuilder confB = new NeuralNetConfiguration.Builder()
-                .seed(Constants.NEURAL_NET_SEED)
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(conf.getLearningRate())
-                //.updater(Updater.NESTEROVS).momentum(0.9)
-                //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
-                .updater(Updater.ADAM)
-                .weightInit(WeightInit.XAVIER)
-                .regularization(true)
-                .l2(conf.getL2())
-                .graphBuilder()
-                .setInputTypes(InputType.feedForward(numInputs[0]))
-                .addInputs("input")
-                .addLayer("0", new DenseLayer.Builder()
-                        .nIn(numInputs[0])
-                        .nOut(conf.getNumHiddenNodes())
-                        .activation("relu")
-                        .build(), "input");
+        ComputationGraphConfiguration.GraphBuilder confB =
+                        new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED).iterations(1)
+                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                        .learningRate(conf.getLearningRate())
+                                        //.updater(Updater.NESTEROVS).momentum(0.9)
+                                        //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                                        .updater(Updater.ADAM).weightInit(WeightInit.XAVIER).regularization(true)
+                                        .l2(conf.getL2()).graphBuilder()
+                                        .setInputTypes(InputType.feedForward(numInputs[0])).addInputs("input")
+                                        .addLayer("0", new DenseLayer.Builder().nIn(numInputs[0])
+                                                        .nOut(conf.getNumHiddenNodes()).activation("relu").build(),
+                                                        "input");
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
-            confB
-                    .addLayer(i + "", new DenseLayer.Builder()
-                            .nIn(conf.getNumHiddenNodes())
-                            .nOut(conf.getNumHiddenNodes())
-                            .activation("relu")
-                            .build(), (i - 1) + "");
+            confB.addLayer(i + "", new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
+                            .activation("relu").build(), (i - 1) + "");
         }
 
 
-        confB
-                .addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("identity")
-                        .nOut(1).build(), (getConf().getNumLayer() - 1) + "");
+        confB.addLayer("value",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nOut(1).build(),
+                        (getConf().getNumLayer() - 1) + "");
 
-        confB
-                .addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax") //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax") //fixthat
                         .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
 
         confB.setOutputs("value", "softmax");

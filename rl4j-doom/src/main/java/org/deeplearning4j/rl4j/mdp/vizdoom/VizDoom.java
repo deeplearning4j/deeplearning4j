@@ -44,7 +44,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
 
     final public static String DOOM_ROOT = "vizdoom";
-    
+
     protected DoomGame game;
     final protected Logger log = LoggerFactory.getLogger("Vizdoom");
     final protected GlobalMemory memory = new SystemInfo().getHardware().getMemory();
@@ -66,7 +66,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
         game = new DoomGame();
         setupGame();
         discreteSpace = new DiscreteSpace(getConfiguration().getButtons().size() + 1);
-        observationSpace = new ArrayObservationSpace<>(new int[]{game.getScreenHeight(), game.getScreenWidth(), 3});
+        observationSpace = new ArrayObservationSpace<>(new int[] {game.getScreenHeight(), game.getScreenWidth(), 3});
     }
 
 
@@ -90,30 +90,13 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
         game.setRenderParticles(false);
 
 
-        GameVariable[] gameVar = new GameVariable[]{
-                GameVariable.KILLCOUNT,
-                GameVariable.ITEMCOUNT,
-                GameVariable.SECRETCOUNT,
-                GameVariable.FRAGCOUNT,
-                GameVariable.HEALTH,
-                GameVariable.ARMOR,
-                GameVariable.DEAD,
-                GameVariable.ON_GROUND,
-                GameVariable.ATTACK_READY,
-                GameVariable.ALTATTACK_READY,
-                GameVariable.SELECTED_WEAPON,
-                GameVariable.SELECTED_WEAPON_AMMO,
-                GameVariable.AMMO1,
-                GameVariable.AMMO2,
-                GameVariable.AMMO3,
-                GameVariable.AMMO4,
-                GameVariable.AMMO5,
-                GameVariable.AMMO6,
-                GameVariable.AMMO7,
-                GameVariable.AMMO8,
-                GameVariable.AMMO9,
-                GameVariable.AMMO0
-        };
+        GameVariable[] gameVar = new GameVariable[] {GameVariable.KILLCOUNT, GameVariable.ITEMCOUNT,
+                        GameVariable.SECRETCOUNT, GameVariable.FRAGCOUNT, GameVariable.HEALTH, GameVariable.ARMOR,
+                        GameVariable.DEAD, GameVariable.ON_GROUND, GameVariable.ATTACK_READY,
+                        GameVariable.ALTATTACK_READY, GameVariable.SELECTED_WEAPON, GameVariable.SELECTED_WEAPON_AMMO,
+                        GameVariable.AMMO1, GameVariable.AMMO2, GameVariable.AMMO3, GameVariable.AMMO4,
+                        GameVariable.AMMO5, GameVariable.AMMO6, GameVariable.AMMO7, GameVariable.AMMO8,
+                        GameVariable.AMMO9, GameVariable.AMMO0};
         // Adds game variables that will be included in state.
 
         for (int i = 0; i < gameVar.length; i++) {
@@ -158,7 +141,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
     public GameScreen reset() {
         log.info("free Memory: " + FormatUtil.formatBytes(memory.getAvailable()) + "/"
-                + FormatUtil.formatBytes(memory.getTotal()));
+                        + FormatUtil.formatBytes(memory.getTotal()));
 
         game.newEpisode();
         game.getGameScreen();

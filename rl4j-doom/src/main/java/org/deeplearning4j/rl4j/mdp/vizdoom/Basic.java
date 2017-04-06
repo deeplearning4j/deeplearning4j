@@ -16,20 +16,9 @@ public class Basic extends VizDoom {
 
     public Configuration getConfiguration() {
 
-        List<Button> buttons = Arrays.asList(
-                Button.ATTACK,
-                Button.MOVE_LEFT,
-                Button.MOVE_RIGHT);
+        List<Button> buttons = Arrays.asList(Button.ATTACK, Button.MOVE_LEFT, Button.MOVE_RIGHT);
 
-        return new Configuration(
-                "basic",
-                -0.01,
-                1,
-                0,
-                700,
-                0,
-                buttons
-        );
+        return new Configuration("basic", -0.01, 1, 0, 700, 0, buttons);
     }
 
     public Basic newInstance() {

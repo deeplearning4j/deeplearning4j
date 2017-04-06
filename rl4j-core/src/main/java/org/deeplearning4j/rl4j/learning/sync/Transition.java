@@ -25,10 +25,10 @@ public class Transition<A> {
      * @param history the history to concat
      * @return the multi-channel INDArray
      */
-    public static INDArray concat(INDArray[] history){
+    public static INDArray concat(INDArray[] history) {
         INDArray arr = Nd4j.concat(0, history);
         if (arr.shape().length > 2)
-            arr.muli(1/256f);
+            arr.muli(1 / 256f);
         return arr;
     }
 
@@ -36,7 +36,7 @@ public class Transition<A> {
      * Duplicate this transition
      * @return this transition duplicated
      */
-    public Transition<A> dup(){
+    public Transition<A> dup() {
         INDArray[] dupObservation = dup(observation);
         INDArray nextObs = nextObservation.dup();
 
@@ -48,7 +48,7 @@ public class Transition<A> {
      * @param history the history to duplicate
      * @return a duplicate of the history
      */
-    public static INDArray[] dup(INDArray[] history){
+    public static INDArray[] dup(INDArray[] history) {
         INDArray[] dupHistory = new INDArray[history.length];
         for (int i = 0; i < history.length; i++) {
             dupHistory[i] = history[i].dup();
@@ -62,11 +62,11 @@ public class Transition<A> {
      * @param append the pixel frame to append
      * @return the appended history
      */
-    public static INDArray[] append(INDArray[] history, INDArray append){
+    public static INDArray[] append(INDArray[] history, INDArray append) {
         INDArray[] appended = new INDArray[history.length];
         appended[0] = append;
-        for (int i = 0; i < history.length-1; i++) {
-            appended[i+1] = history[i];
+        for (int i = 0; i < history.length - 1; i++) {
+            appended[i + 1] = history[i];
         }
         return appended;
     }

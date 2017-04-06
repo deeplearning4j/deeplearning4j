@@ -31,40 +31,26 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
     public ActorCriticSeparate buildActorCritic(int[] numInputs, int numOutputs) {
 
 
-        NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder()
-                .seed(Constants.NEURAL_NET_SEED)
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(conf.getLearningRate())
-                //.updater(Updater.NESTEROVS).momentum(0.9)
-                .updater(Updater.ADAM)
-                //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
-                .weightInit(WeightInit.XAVIER)
-                //.regularization(true)
-                //.l2(conf.getL2())
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(numInputs[0])
-                        .nOut(conf.getNumHiddenNodes())
-                        .activation("relu")
-                        .build());
+        NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
+                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(conf.getLearningRate())
+                        //.updater(Updater.NESTEROVS).momentum(0.9)
+                        .updater(Updater.ADAM)
+                        //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
+                        .weightInit(WeightInit.XAVIER)
+                        //.regularization(true)
+                        //.l2(conf.getL2())
+                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                                        .activation("relu").build());
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
-            confB
-                    .layer(i, new DenseLayer.Builder()
-                            .nIn(conf.getNumHiddenNodes())
-                            .nOut(conf.getNumHiddenNodes())
-                            .activation("relu")
-                            .build());
+            confB.layer(i, new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
+                            .activation("relu").build());
         }
 
-        confB
-                .layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("identity")
-                        .nIn(conf.getNumHiddenNodes())
-                        .nOut(1)
-                        .build());
+        confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity")
+                        .nIn(conf.getNumHiddenNodes()).nOut(1).build());
 
 
         MultiLayerConfiguration mlnconf2 = confB.pretrain(false).backprop(true).build();
@@ -72,40 +58,26 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         model.init();
         model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
 
-        NeuralNetConfiguration.ListBuilder confB2 = new NeuralNetConfiguration.Builder()
-                .seed(Constants.NEURAL_NET_SEED)
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(conf.getLearningRate())
-                //.updater(Updater.NESTEROVS).momentum(0.9)
-                .updater(Updater.ADAM)
-                //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
-                .weightInit(WeightInit.XAVIER)
-                //.regularization(true)
-                //.l2(conf.getL2())
-                .list()
-                .layer(0, new DenseLayer.Builder()
-                        .nIn(numInputs[0])
-                        .nOut(conf.getNumHiddenNodes())
-                        .activation("relu")
-                        .build());
+        NeuralNetConfiguration.ListBuilder confB2 = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
+                        .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(conf.getLearningRate())
+                        //.updater(Updater.NESTEROVS).momentum(0.9)
+                        .updater(Updater.ADAM)
+                        //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
+                        .weightInit(WeightInit.XAVIER)
+                        //.regularization(true)
+                        //.l2(conf.getL2())
+                        .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
+                                        .activation("relu").build());
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
-            confB2
-                    .layer(i, new DenseLayer.Builder()
-                            .nIn(conf.getNumHiddenNodes())
-                            .nOut(conf.getNumHiddenNodes())
-                            .activation("relu")
-                            .build());
+            confB2.layer(i, new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
+                            .activation("relu").build());
         }
 
-        confB2
-                .layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax")
-                        .nIn(conf.getNumHiddenNodes())
-                        .nOut(numOutputs)
-                        .build());
+        confB2.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax").nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
 
 
         MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();

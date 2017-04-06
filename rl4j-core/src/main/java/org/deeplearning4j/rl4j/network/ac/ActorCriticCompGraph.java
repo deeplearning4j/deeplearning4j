@@ -23,7 +23,7 @@ public class ActorCriticCompGraph implements IActorCritic {
     }
 
     public void fit(INDArray input, INDArray[] labels) {
-        cg.fit(new INDArray[]{input}, labels);
+        cg.fit(new INDArray[] {input}, labels);
     }
 
 
@@ -39,7 +39,7 @@ public class ActorCriticCompGraph implements IActorCritic {
         cg.setInput(0, input);
         cg.setLabels(labels);
         cg.computeGradientAndScore();
-        return new Gradient[]{cg.gradient()};
+        return new Gradient[] {cg.gradient()};
     }
 
 

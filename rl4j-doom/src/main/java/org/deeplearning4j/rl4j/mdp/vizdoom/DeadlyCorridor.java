@@ -16,25 +16,12 @@ public class DeadlyCorridor extends VizDoom {
 
     public Configuration getConfiguration() {
         setScaleFactor(1.0);
-        List<Button> buttons = Arrays.asList(
-                Button.ATTACK,
-                Button.MOVE_LEFT,
-                Button.MOVE_RIGHT,
-                Button.MOVE_FORWARD,
-                Button.TURN_LEFT,
-                Button.TURN_RIGHT);
+        List<Button> buttons = Arrays.asList(Button.ATTACK, Button.MOVE_LEFT, Button.MOVE_RIGHT, Button.MOVE_FORWARD,
+                        Button.TURN_LEFT, Button.TURN_RIGHT);
 
 
 
-        return new Configuration(
-                "deadly_corridor",
-                0.0,
-                5,
-                100,
-                2100,
-                0,
-                buttons
-        );
+        return new Configuration("deadly_corridor", 0.0, 5, 100, 2100, 0, buttons);
     }
 
     public DeadlyCorridor newInstance() {
