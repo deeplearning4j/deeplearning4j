@@ -16,13 +16,13 @@ import org.nd4j.linalg.api.ndarray.INDArray
 
 
 final class SparkDl4jNetwork(
-                                override val multiLayerConfiguration: MultiLayerConfiguration,
-                                override val numLabels: Int,
-                                override val trainingMaster: ParamSerializer,
-                                override val epochs: Int,
-                                override val listeners: util.Collection[IterationListener],
-                                override val collectStats: Boolean = false,
-                                override val uid: String = Identifiable.randomUID("dl4j"))
+                            override val multiLayerConfiguration: MultiLayerConfiguration,
+                            override val numLabels: Int,
+                            override val trainingMaster: ParamSerializer,
+                            override val epochs: Int,
+                            override val listeners: util.Collection[IterationListener],
+                            override val collectStats: Boolean = false,
+                            override val uid: String = Identifiable.randomUID("dl4j"))
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
         uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats) {
 
