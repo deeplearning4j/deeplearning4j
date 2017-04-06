@@ -1011,6 +1011,13 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testTadEws() throws Exception {
+        INDArray array = Nd4j.create(32, 5, 10);
+        assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());
+    }
+
+
 
     @Test
     public void testTear1() {
