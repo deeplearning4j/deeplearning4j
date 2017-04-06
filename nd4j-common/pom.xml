@@ -53,10 +53,6 @@
             <artifactId>reflections</artifactId>
             <version>0.9.10</version>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>
