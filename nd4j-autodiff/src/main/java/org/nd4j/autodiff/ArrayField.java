@@ -305,7 +305,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private ArrayField addTransformOp(String name) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
                         .id(UUID.randomUUID().toString())
                         .shape(input.getShape()).build());
@@ -326,7 +326,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private ArrayField addScalarTransformOp(String name,Number scalarValue) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),
                 NDArrayInformation.builder()
                         .id(UUID.randomUUID().toString())
                         .shape(input.getShape()).build());
@@ -349,7 +349,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
                         .id(UUID.randomUUID().toString())
                         .shape(input.getShape()).build());

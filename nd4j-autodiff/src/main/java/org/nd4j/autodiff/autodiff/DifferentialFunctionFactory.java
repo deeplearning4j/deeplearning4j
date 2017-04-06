@@ -707,7 +707,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return hardTanh(val(getValue())).mul(arg().diff(i_v));
+                return hardTanhDerivative(val(getValue())).mul(arg().diff(i_v));
             }
 
             @Override
