@@ -177,13 +177,14 @@ public class GravesBidirectionalLSTMTest {
         lstm.setInput(input);
 
 
+        LayerNormalization layerNormalization=useLayerNormalization?new LayerNormalizationWholeMinibatch() : new NoNormalization();
         final INDArray fwdPassFalse = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null,useLayerNormalization).fwdPassOutput;
+                        null,layerNormalization).fwdPassOutput;
 
         final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
@@ -191,7 +192,7 @@ public class GravesBidirectionalLSTMTest {
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null,useLayerNormalization).fwdPassOutputAsArrays;
+                        null,layerNormalization).fwdPassOutputAsArrays;
 
         //I have no idea what the heck this does --Ben
         for (int i = 0; i < timeSeriesLength; i++) {
