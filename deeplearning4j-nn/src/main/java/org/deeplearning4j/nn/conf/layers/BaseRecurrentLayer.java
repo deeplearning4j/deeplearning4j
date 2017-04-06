@@ -14,8 +14,6 @@ import org.deeplearning4j.nn.layers.recurrent.NoNormalization;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
-    private LayerNormalization layerNormalization;
-
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
     }
@@ -26,13 +24,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
      */
     protected boolean normalizePerRecord;
 
-    /**
-     * Returns true when this recurrent layer should use layer normalization.
-     * @return True or False.
-     */
-    public boolean getUseLayerNormalization() {
-        return useLayerNormalization;
-    }
+
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
@@ -63,21 +55,16 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
 
-    public LayerNormalization getLayerNormalization() {
-        return layerNormalization;
-    }
-    //class Builder<T extends FeedForwardLayer.Builder<T>> extends Layer.Builder<T>
 
     @AllArgsConstructor
     public static abstract class Builder<T extends BaseRecurrentLayer.Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected boolean useLayerNormalization = false;
         protected boolean normalizePerRecord = false;
-        private LayerNormalization layerNormalization=new NoNormalization();;
-
 
         public Builder(Builder<T> builder) {
             super(builder);
-            this.useLayerNormalization=builder.useLayerNormalization;
+            this.useLayerNormalization = builder.useLayerNormalization;
+            this.normalizePerRecord = builder.normalizePerRecord;
         }
 
         public Builder() {
@@ -87,25 +74,42 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         /**
          * Use layer normalization, as described in https://arxiv.org/pdf/1607.06450.pdf. This can substantially speed
          * up training (faster convergence).
+         * @param useLayerNormalization Turn on layer normalization when this parameter is true.
+         * @return A Builder (for chain configuration)
+         */
+        public T setUseLayerNormalization(boolean useLayerNormalization) {
+            this.useLayerNormalization = useLayerNormalization;
+            this.normalizePerRecord = false;
+            return (T) this;
+        }
+        /**
+         * Use layer normalization, but normalizing per record (as suggested in the pull request). Does not seem to work (possibly would need changes to
+         * gradient calculation), so not recommended, only for demonstration purposes.
          *
-         * @param useLayerNormalization
+         * @param useLayerNormalization Turn on layer normalization when this parameter is true.
+         * @param normalizePerRecord When true, uses LayerNormalizationPerRecord, otherwise, uses LayerNormalizationWholeMinibatch
          * @return A Builder (for chain configuration)
          */
         public T setUseLayerNormalization(boolean useLayerNormalization, boolean normalizePerRecord) {
             this.useLayerNormalization = useLayerNormalization;
-            this.normalizePerRecord=normalizePerRecord;
-            if (useLayerNormalization) {
-                if (normalizePerRecord) {
-                    layerNormalization=new LayerNormalizationPerRecord();
-                }else {
-                    layerNormalization=new LayerNormalizationWholeMinibatch();
-                }
-            }else {
-                layerNormalization=new NoNormalization();
-            }
-            return (T)this;
+            this.normalizePerRecord = normalizePerRecord;
+            return (T) this;
         }
 
+    }
+
+    public LayerNormalization getLayerNormalization() {
+        LayerNormalization layerNormalization = null;
+        if (useLayerNormalization) {
+            if (normalizePerRecord) {
+                layerNormalization = new LayerNormalizationPerRecord();
+            } else {
+                layerNormalization = new LayerNormalizationWholeMinibatch();
+            }
+        } else {
+            layerNormalization = new NoNormalization();
+        }
+        return layerNormalization;
     }
 
 }
