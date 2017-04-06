@@ -48,16 +48,6 @@ final class SparkDl4jNetwork(
         handleTrainedData(spn)
     }
 
-    /**
-      * Batch Trains for specified datasets
-      * @param datasets A java list of dataframes
-      * @return returns a SparkDl4jModel
-      */
-    def batchTrain(datasets : java.util.List[DataFrame]) : SparkDl4jModel = {
-        val spn = batchTrainer(DatasetBatchFacade.dataRows(datasets))
-        handleTrainedData(spn)
-    }
-
     private def handleTrainedData(spn: SparkDl4jMultiLayer) : SparkDl4jModel = {
         val model = new SparkDl4jModel(uid, spn.getNetwork)
         if (collectStats) model.setTrainingStats(spn.getSparkTrainingStats)

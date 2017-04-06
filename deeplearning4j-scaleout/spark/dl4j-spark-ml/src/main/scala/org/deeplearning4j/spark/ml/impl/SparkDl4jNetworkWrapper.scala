@@ -14,15 +14,13 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
-import org.deeplearning4j.spark.ml.utils.{DatasetBatchFacade, DatasetFacade, ParamSerializer}
+import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
 import org.deeplearning4j.spark.util.MLLibUtil
 import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
 import org.nd4j.linalg.api.ndarray.INDArray
-
-import scala.collection.JavaConverters._
 
 
 abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M], M <: SparkDl4jModelWrapper[T, M]]
@@ -54,21 +52,6 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
         val epochsToUse = if (epochs < 1) 1 else epochs
         for (i <- List.range(0, epochsToUse)) {
             sparkNet.fit(lps)
-        }
-        sparkNet
-    }
-
-    protected def batchTrainer(dataRowsFacade: DatasetBatchFacade) : SparkDl4jMultiLayer = {
-        val dataset = dataRowsFacade.get.asScala.toList
-        val sparkNet = new SparkDl4jMultiLayer(dataset.head.sqlContext.sparkContext, multiLayerConfiguration, trainingMaster())
-        sparkNet.setCollectTrainingStats(collectStats)
-        if (listeners != null) {
-            sparkNet.setListeners(listeners)
-        }
-        val epochsToUse = if (epochs < 1) 1 else epochs
-        val lps = dataset.map(ds => toLabelPoint(DatasetFacade.dataRows(ds)))
-        for (i <- List.range(0, epochsToUse)) {
-            lps.map(item => sparkNet.fit(item))
         }
         sparkNet
     }
