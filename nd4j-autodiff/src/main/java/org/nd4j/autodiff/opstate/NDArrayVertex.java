@@ -2,6 +2,7 @@ package org.nd4j.autodiff.opstate;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.nd4j.autodiff.graph.api.Vertex;
 
 /**
@@ -9,6 +10,7 @@ import org.nd4j.autodiff.graph.api.Vertex;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 public class NDArrayVertex extends Vertex<NDArrayInformation> {
 
     public NDArrayVertex(int idx,int[] shape) {
@@ -18,4 +20,6 @@ public class NDArrayVertex extends Vertex<NDArrayInformation> {
     public NDArrayVertex(int idx, NDArrayInformation value) {
         super(idx, value);
     }
+
+
 }

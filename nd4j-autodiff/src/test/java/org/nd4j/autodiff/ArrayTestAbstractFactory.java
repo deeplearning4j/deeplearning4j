@@ -46,7 +46,7 @@ public class ArrayTestAbstractFactory
         Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x",new ArrayField(xVertex, graph));
         Variable<ArrayField> y = arrayFieldDifferentialFunctionFactory.var("y", new ArrayField(arrayVertex, graph));
         DifferentialFunction<ArrayField> h = x.mul(x).mul( arrayFieldDifferentialFunctionFactory.cos(x.mul(y) ).plus(y));
-        System.out.println(h.diff(x).getValue().getOps().numVertices());
+        System.out.println(h.diff(x).getValue().getOps());
 
     }
 

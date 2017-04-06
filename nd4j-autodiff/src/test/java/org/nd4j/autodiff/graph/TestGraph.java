@@ -30,7 +30,7 @@ public class TestGraph {
         for (int i = 0; i < 10; i++) {
             //Add some undirected edges
             String str = i + "--" + (i + 1) % 10;
-            graph.getVertices().add(new Vertex<>(i,str));
+            graph.addVertex(new Vertex<>(i,str));
             Edge<String> edge = new Edge<>(i, (i + 1) % 10, str, false);
             graph.addEdge(edge);
         }
@@ -76,7 +76,7 @@ public class TestGraph {
         for (int i = 0; i < 10; i++) {
             //Add some undirected edges
             String str = i + "--" + (i + 1) % 10;
-            graph.getVertices().add(new Vertex<>(i,str));
+            graph.addVertex(new Vertex<>(i,str));
             Edge<String> edge = new Edge<>(i, (i + 1) % 10, str, false);
             graph.addEdge(edge);
         }

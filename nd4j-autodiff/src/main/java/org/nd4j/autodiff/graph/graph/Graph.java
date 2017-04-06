@@ -28,7 +28,7 @@ import java.util.*;
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges;
     private List<List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
-    private List<Vertex<V>> vertices;
+    private Map<Integer,Vertex<V>> vertices;
     public Graph() {
         this(false);
     }
@@ -36,14 +36,22 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     @SuppressWarnings("unchecked")
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
-
-        vertices = new ArrayList<>();
+        vertices = new TreeMap<>();
         edges = new ArrayList<>();
+    }
+
+    public void addVertex(Vertex<V> vVertex) {
+        if(!this.vertices.containsKey(vVertex.getIdx())) {
+            this.vertices.put(vVertex.getIdx(),vVertex);
+        }
     }
 
     @SuppressWarnings("unchecked")
     public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges) {
-        this.vertices = new ArrayList<>(vertices);
+
+        this.vertices = new TreeMap<>();
+        for(Vertex<V> v : vertices)
+            this.vertices.put(v.getIdx(),v);
         this.allowMultipleEdges = allowMultipleEdges;
         edges = new ArrayList<>();
     }
@@ -108,7 +116,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             toList = new ArrayList<>();
             edges.set(edge.getTo(),toList);
         }
-        
+
         addEdgeHelper(edge, toList);
     }
 
@@ -133,7 +141,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             throw new IllegalArgumentException("Invalid vertex index: " + vertex);
         if (edges.get(vertex) == null || edges.get(vertex).isEmpty())
             throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex
-                            + " has no outgoing/undirected edges");
+                    + " has no outgoing/undirected edges");
         int connectedVertexNum = rng.nextInt(edges.get(vertex).size());
         Edge<E> edge = edges.get(vertex).get(connectedVertexNum);
         if (edge.getFrom() == vertex)
@@ -183,7 +191,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             } else {
                 for (Edge<E> e : list) {
                     if ((e.getFrom() == edge.getFrom() && e.getTo() == edge.getTo())
-                                    || (e.getTo() == edge.getFrom() && e.getFrom() == edge.getTo())) {
+                            || (e.getTo() == edge.getFrom() && e.getFrom() == edge.getTo())) {
                         duplicate = true;
                         break;
                     }
@@ -199,7 +207,29 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
     }
 
-
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Graph {");
+        sb.append("\nVertices {");
+        for (Vertex<V> v : vertices.values()) {
+            sb.append("\n\t").append(v);
+        }
+        sb.append("\n}");
+        sb.append("\nEdges {");
+        for (int i = 0; i < edges.size(); i++) {
+            sb.append("\n\t");
+            if (edges.get(i) == null)
+                continue;
+            sb.append(i).append(":");
+            for (Edge<E> e : edges.get(i)) {
+                sb.append(" ").append(e);
+            }
+        }
+        sb.append("\n}");
+        sb.append("\n}");
+        return sb.toString();
+    }
 
 
 

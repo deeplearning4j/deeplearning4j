@@ -42,7 +42,7 @@ public class ArrayField implements Field<ArrayField> {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
         this.ops = ops;
-        ops.getVertices().add(vertex);
+        ops.addVertex(vertex);
     }
 
     public ArrayField(INDArray arr) {
@@ -51,8 +51,7 @@ public class ArrayField implements Field<ArrayField> {
                 .build();
         this.ops = new Graph<>();
         this.vertex = new NDArrayVertex(0,input);
-        this.ops.getVertices().add(vertex);
-
+        this.ops.addVertex(vertex);
     }
 
     @Override
@@ -312,10 +311,10 @@ public class ArrayField implements Field<ArrayField> {
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
-        this.getOps().getVertices().add(newVertex);
+        this.getOps().addVertex(newVertex);
 
         //map x -> z
-        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+        this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
@@ -333,10 +332,10 @@ public class ArrayField implements Field<ArrayField> {
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
-        this.getOps().getVertices().add(newVertex);
+        this.getOps().addVertex(newVertex);
 
         //map x -> z
-        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+        this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),
                 OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
@@ -356,16 +355,16 @@ public class ArrayField implements Field<ArrayField> {
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
-        this.getOps().getVertices().add(newVertex);
+        this.getOps().addVertex(newVertex);
 
         //map x -> z
-        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+        this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
                         .opType(OpState.OpType.TRANSFORM).build(),true);
         //map y -> z
-        this.ops.addEdge(this.ops.getVertices().indexOf(i_v.getVertex()),
+        this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
