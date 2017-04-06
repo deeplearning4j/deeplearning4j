@@ -394,6 +394,7 @@ public class AtomicAllocator implements Allocator {
 
             // workaround for init order
             getMemoryHandler().getCudaContext();
+            point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 
@@ -406,7 +407,7 @@ public class AtomicAllocator implements Allocator {
             pair.setHostPointer(ptrHost);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
-            point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
 
             if (!ptrDev.isLeaked())
                 point.setAttached(true);

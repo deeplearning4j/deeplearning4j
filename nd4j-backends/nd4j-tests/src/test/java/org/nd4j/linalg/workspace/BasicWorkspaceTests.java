@@ -200,7 +200,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testLeverageTo1() throws Exception {
         try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
-            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            INDArray array1 = Nd4j.create(5);
 
             try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
                 INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});

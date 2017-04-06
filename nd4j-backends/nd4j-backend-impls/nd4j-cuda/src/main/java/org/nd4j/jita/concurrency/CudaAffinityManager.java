@@ -86,6 +86,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
             affiliated.set(new AtomicBoolean(false));
 
             if (threadId == Thread.currentThread().getId()) {
+
+                AtomicAllocator.getInstance();
+
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
                 //logger.error("setDevice({}) called for thread {}", deviceId, Thread.currentThread().getName());
                 affiliated.get().set(true);
@@ -100,7 +103,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
                 if (!affiliated.get().get()) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(aff));
-                  //  logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
+                    //logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
                     affiliated.get().set(true);
                     return aff;
                 }

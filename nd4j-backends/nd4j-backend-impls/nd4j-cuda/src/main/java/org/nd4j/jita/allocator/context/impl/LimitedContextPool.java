@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.context.impl;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
@@ -27,6 +28,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class LimitedContextPool extends BasicContextPool {
 
     // pool of free contexts
@@ -82,6 +84,7 @@ public class LimitedContextPool extends BasicContextPool {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
         for (Integer device : devices) {
+            log.info("Filling pool for device [{}]", device);
             nativeOps.setDevice(new CudaPointer(device));
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
 
@@ -113,8 +116,8 @@ public class LimitedContextPool extends BasicContextPool {
             return context;
         }
 
+        //log.info("Setting device to {}", deviceId);
         nativeOps.setDevice(new CudaPointer(deviceId));
-
         context = pool.get(deviceId).poll();
         if (context != null) {
             int col = RandomUtils.nextInt(0, collectors.size());
@@ -154,7 +157,7 @@ public class LimitedContextPool extends BasicContextPool {
                             // there's possible race condition, but we don't really care
                             currentPoolSize.addAndGet(16);
                         } else {
-                            logger.warn("Can't allocate new context, sleeping...");
+                            log.warn("Can't allocate new context, sleeping...");
 
                             Nd4j.getMemoryManager().invokeGc();
                             try {

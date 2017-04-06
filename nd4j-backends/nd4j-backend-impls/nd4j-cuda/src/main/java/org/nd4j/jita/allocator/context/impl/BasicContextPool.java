@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.context.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
@@ -12,8 +13,7 @@ import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +33,7 @@ import static org.bytedeco.javacpp.cusolver.cusolverDnCreate;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicContextPool implements ContextPool {
     // TODO: number of max threads should be device-dependant
     protected static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
@@ -47,8 +48,6 @@ public class BasicContextPool implements ContextPool {
     protected volatile Map<Integer, Map<Integer, CudaContext>> contextsForDevices = new ConcurrentHashMap<>();
 
     protected Semaphore lock = new Semaphore(1);
-
-    protected static Logger logger = LoggerFactory.getLogger(BasicContextPool.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -95,14 +94,14 @@ public class BasicContextPool implements ContextPool {
 
                 // if we hadn't hit MAX_STREAMS_PER_DEVICE limit - we add new stream. Otherwise we use random one.
                 if (contextsForDevices.get(deviceId).size() < MAX_STREAMS_PER_DEVICE) {
-                    logger.debug("Creating new context...");
+                    log.debug("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
                     getDeviceBuffers(context, deviceId);
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
+                        log.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -112,7 +111,7 @@ public class BasicContextPool implements ContextPool {
 
                         cublasPool.put(deviceId, handle);
 
-                        logger.debug("Creating new cuSolver handle for device [{}]...", deviceId);
+                        log.debug("Creating new cuSolver handle for device [{}]...", deviceId);
 
                         cudaStream_t solverStream = createNewStream(deviceId).getOldStream();
 
@@ -124,11 +123,11 @@ public class BasicContextPool implements ContextPool {
 
                     } else {
                         // just pick handle out there
-                        logger.debug("Reusing blas here...");
+                        log.debug("Reusing blas here...");
                         cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
-                        logger.debug("Reusing solver here...");
+                        log.debug("Reusing solver here...");
                         cusolverDnHandle_t solverHandle = solverPool.get(deviceId);
                         context.setSolverHandle(solverHandle);
 
@@ -147,7 +146,7 @@ public class BasicContextPool implements ContextPool {
                     return context;
                 } else {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
-                    logger.debug("Reusing context: " + rand);
+                    log.debug("Reusing context: " + rand);
 
                     nativeOps.setDevice(new CudaPointer(deviceId));
 
@@ -168,7 +167,7 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected CudaContext createNewStream(Integer deviceId) {
-        logger.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
+        log.debug("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);
         nativeOps.setDevice(new CudaPointer(deviceId));
 
@@ -218,7 +217,7 @@ public class BasicContextPool implements ContextPool {
 
     protected CUcontext createNewContext(Integer deviceId) {
         /*
-        logger.debug("Creating new CUcontext...");
+        log.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
         
@@ -248,7 +247,7 @@ public class BasicContextPool implements ContextPool {
     public synchronized void resetPool(int deviceId) {
         /*
         for (CUcontext cuContext: cuPool.values()) {
-            logger.debug("Destroying context: " + cuContext);
+            log.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
         }
         

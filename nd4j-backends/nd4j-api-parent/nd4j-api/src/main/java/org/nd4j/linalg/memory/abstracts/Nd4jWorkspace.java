@@ -59,6 +59,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicBoolean resetPlanned = new AtomicBoolean(false);
     protected AtomicBoolean isOpen = new AtomicBoolean(false);
     protected AtomicBoolean isInit = new AtomicBoolean(false);
+    protected AtomicBoolean isOver = new AtomicBoolean(false);
     protected AtomicBoolean isBorrowed = new AtomicBoolean(false);
 
     protected AtomicInteger tagScope = new AtomicInteger(0);
@@ -114,8 +115,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         //  we want params validation here
 
         if (currentSize.get() > 0) {
-            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
-                currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+            if (!isOver.get()) {
+                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0) {
+                    currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+                    isOver.set(true);
+                }
+            }
 
             if (workspaceConfiguration.getMaxSize() > 0 && currentSize.get() > workspaceConfiguration.getMaxSize())
                 currentSize.set(workspaceConfiguration.getMaxSize());
@@ -209,8 +214,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             else
                 currentSize.set(maxCycle.get());
 
-            if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0)
-                currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+            if (!isOver.get()) {
+                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
+                    currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+                    isOver.set(true);
+                }
+            }
 
             if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
                 currentSize.set(workspaceConfiguration.getMinSize());

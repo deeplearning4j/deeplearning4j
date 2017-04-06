@@ -98,6 +98,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
                 if (initialize) {
+                    //CudaContext context = AtomicAllocator.getInstance().getMemoryHandler().getCudaContext();
+
                     CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
                     int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
