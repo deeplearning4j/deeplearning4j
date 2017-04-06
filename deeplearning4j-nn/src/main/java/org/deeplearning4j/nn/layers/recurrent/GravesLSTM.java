@@ -142,7 +142,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
                         forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null,
-                this.layerConf().getUseLayerNormalization());
+                this.layerConf().getLayerNormalization());
     }
 
     @Override
