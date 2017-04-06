@@ -3,6 +3,10 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.layers.recurrent.LayerNormalization;
+import org.deeplearning4j.nn.layers.recurrent.LayerNormalizationPerRecord;
+import org.deeplearning4j.nn.layers.recurrent.LayerNormalizationWholeMinibatch;
+import org.deeplearning4j.nn.layers.recurrent.NoNormalization;
 
 @Data
 @NoArgsConstructor
@@ -10,11 +14,17 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
+    private LayerNormalization layerNormalization;
+
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
     }
 
     protected boolean useLayerNormalization;
+    /**
+     * When true, compute mean and stddev across a single record. When false, compute across an entire minibatch.
+     */
+    protected boolean normalizePerRecord;
 
     /**
      * Returns true when this recurrent layer should use layer normalization.
@@ -52,11 +62,17 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
+
+    public LayerNormalization getLayerNormalization() {
+        return layerNormalization;
+    }
     //class Builder<T extends FeedForwardLayer.Builder<T>> extends Layer.Builder<T>
 
     @AllArgsConstructor
     public static abstract class Builder<T extends BaseRecurrentLayer.Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected boolean useLayerNormalization = false;
+        protected boolean normalizePerRecord = false;
+        private LayerNormalization layerNormalization=new NoNormalization();;
 
 
         public Builder(Builder<T> builder) {
@@ -75,8 +91,18 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param useLayerNormalization
          * @return A Builder (for chain configuration)
          */
-        public T setUseLayerNormalization(boolean useLayerNormalization) {
+        public T setUseLayerNormalization(boolean useLayerNormalization, boolean normalizePerRecord) {
             this.useLayerNormalization = useLayerNormalization;
+            this.normalizePerRecord=normalizePerRecord;
+            if (useLayerNormalization) {
+                if (normalizePerRecord) {
+                    layerNormalization=new LayerNormalizationPerRecord();
+                }else {
+                    layerNormalization=new LayerNormalizationWholeMinibatch();
+                }
+            }else {
+                layerNormalization=new NoNormalization();
+            }
             return (T)this;
         }
 
