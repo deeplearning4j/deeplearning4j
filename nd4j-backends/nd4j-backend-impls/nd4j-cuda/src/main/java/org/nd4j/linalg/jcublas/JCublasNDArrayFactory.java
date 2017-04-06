@@ -70,7 +70,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private static Logger log = LoggerFactory.getLogger(JCublasNDArrayFactory.class);
 
-    public JCublasNDArrayFactory() {}
+    public JCublasNDArrayFactory() { }
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
@@ -78,6 +78,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+        AtomicAllocator.getInstance();
     }
 
     @Override

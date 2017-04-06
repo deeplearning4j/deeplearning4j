@@ -92,8 +92,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     public void testMinSize1() throws Exception {
         WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
                 .minSize(10 * 1024 * 1024)
-                .overallocationLimit(0.0)
-                .policyAllocation(AllocationPolicy.STRICT)
+                .overallocationLimit(1.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL)
                 .policySpill(SpillPolicy.EXTERNAL)

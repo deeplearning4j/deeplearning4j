@@ -84,7 +84,6 @@ public class LimitedContextPool extends BasicContextPool {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
         for (Integer device : devices) {
-            log.info("Filling pool for device [{}]", device);
             nativeOps.setDevice(new CudaPointer(device));
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
 
