@@ -1,0 +1,206 @@
+package org.nd4j.autodiff.graph.graph;
+
+import lombok.Data;
+import org.nd4j.autodiff.graph.api.BaseGraph;
+import org.nd4j.autodiff.graph.api.Edge;
+import org.nd4j.autodiff.graph.api.IGraph;
+import org.nd4j.autodiff.graph.api.Vertex;
+import org.nd4j.autodiff.graph.exception.NoEdgesException;
+import org.nd4j.autodiff.graph.vertexfactory.VertexFactory;
+
+import java.lang.reflect.Array;
+import java.util.*;
+
+/** Graph, where all edges and vertices are stored in-memory.<br>
+ * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
+ * are added, these edges are duplicated internally to allow for fast lookup.<br>
+ * Depending on the value of {@code allowMultipleEdges}, this graph implementation may or may not allow
+ * multiple edges between any two adjacent nodes. If multiple edges are required (such that two or more distinct edges
+ * between vertices X and Y exist simultaneously) then {@code allowMultipleEdges} should be set to {@code true}.<br>
+ * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
+ * Vertices are initialized either directly via list, or via a {@link VertexFactory}. Edges are added using one of the
+ * addEdge methods.
+ * @param <V> Type parameter for vertices (type of objects attached to each vertex)
+ * @param <E> Type parameter for edges (type of objects attached to each edge)
+ * @author Alex Black
+ */
+@Data
+public class Graph<V, E> extends BaseGraph<V, E> {
+    private boolean allowMultipleEdges;
+    private List<List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
+    private List<Vertex<V>> vertices;
+    public Graph() {
+        this(false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Graph(boolean allowMultipleEdges) {
+        this.allowMultipleEdges = allowMultipleEdges;
+
+        vertices = new ArrayList<>();
+        edges = new ArrayList<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges) {
+        this.vertices = new ArrayList<>(vertices);
+        this.allowMultipleEdges = allowMultipleEdges;
+        edges = new ArrayList<>();
+    }
+
+    public Graph(List<Vertex<V>> vertices) {
+        this(vertices, false);
+    }
+
+    @Override
+    public int numVertices() {
+        return vertices.size();
+    }
+
+    @Override
+    public Vertex<V> getVertex(int idx) {
+        if (idx < 0 || idx >= vertices.size())
+            throw new IllegalArgumentException("Invalid index: " + idx);
+        return vertices.get(idx);
+    }
+
+    @Override
+    public List<Vertex<V>> getVertices(int[] indexes) {
+        List<Vertex<V>> out = new ArrayList<>(indexes.length);
+        for (int i : indexes)
+            out.add(getVertex(i));
+        return out;
+    }
+
+    @Override
+    public List<Vertex<V>> getVertices(int from, int to) {
+        if (to < from || from < 0 || to >= vertices.size())
+            throw new IllegalArgumentException("Invalid range: from=" + from + ", to=" + to);
+        List<Vertex<V>> out = new ArrayList<>(to - from + 1);
+        for (int i = from; i <= to; i++)
+            out.add(getVertex(i));
+        return out;
+    }
+
+    @Override
+    public void addEdge(Edge<E> edge) {
+        if (edge.getFrom() < 0)
+            throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
+        if(edge.getFrom() >= edges.size()) {
+            for(int i = edges.size(); i < edge.getTo() + 1; i++)
+                edges.add(new ArrayList<>());
+        }
+
+        List<Edge<E>> fromList = edges.get(edge.getFrom());
+        addEdgeHelper(edge, fromList);
+
+        if (edge.isDirected())
+            return;
+
+        if(edge.getTo() >= edges.size()) {
+            for(int i = edges.size(); i < edge.getTo() + 1; i++)
+                edges.add(new ArrayList<>());
+        }
+
+        //Add other way too (to allow easy lookup for undirected edges)
+        List<Edge<E>> toList = edges.get(edge.getTo());
+        if (toList == null) {
+            toList = new ArrayList<>();
+            edges.set(edge.getTo(),toList);
+        }
+        
+        addEdgeHelper(edge, toList);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Edge<E>> getEdgesOut(int vertex) {
+        if (edges.get(vertex) == null)
+            return Collections.emptyList();
+        return new ArrayList<>(edges.get(vertex));
+    }
+
+    @Override
+    public int getVertexDegree(int vertex) {
+        if (edges.get(vertex) == null)
+            return 0;
+        return edges.get(vertex).size();
+    }
+
+    @Override
+    public Vertex<V> getRandomConnectedVertex(int vertex, Random rng) throws NoEdgesException {
+        if (vertex < 0 || vertex >= vertices.size())
+            throw new IllegalArgumentException("Invalid vertex index: " + vertex);
+        if (edges.get(vertex) == null || edges.get(vertex).isEmpty())
+            throw new NoEdgesException("Cannot generate random connected vertex: vertex " + vertex
+                            + " has no outgoing/undirected edges");
+        int connectedVertexNum = rng.nextInt(edges.get(vertex).size());
+        Edge<E> edge = edges.get(vertex).get(connectedVertexNum);
+        if (edge.getFrom() == vertex)
+            return vertices.get(edge.getTo()); //directed or undirected, vertex -> x
+        else
+            return vertices.get(edge.getFrom()); //Undirected edge, x -> vertex
+    }
+
+    @Override
+    public List<Vertex<V>> getConnectedVertices(int vertex) {
+        if (vertex < 0 || vertex >= vertices.size())
+            throw new IllegalArgumentException("Invalid vertex index: " + vertex);
+
+        if (edges.get(vertex) == null)
+            return Collections.emptyList();
+        List<Vertex<V>> list = new ArrayList<>(edges.get(vertex).size());
+        for (Edge<E> edge : edges.get(vertex)) {
+            list.add(vertices.get(edge.getTo()));
+        }
+        return list;
+    }
+
+    @Override
+    public int[] getConnectedVertexIndices(int vertex) {
+        int[] out = new int[(edges.get(vertex) == null ? 0 : edges.get(vertex).size())];
+        if (out.length == 0)
+            return out;
+        for (int i = 0; i < out.length; i++) {
+            Edge<E> e = edges.get(vertex).get(i);
+            out[i] = (e.getFrom() == vertex ? e.getTo() : e.getFrom());
+        }
+        return out;
+    }
+
+    private void addEdgeHelper(Edge<E> edge, List<Edge<E>> list) {
+        if (!allowMultipleEdges) {
+            //Check to avoid multiple edges
+            boolean duplicate = false;
+
+            if (edge.isDirected()) {
+                for (Edge<E> e : list) {
+                    if (e.getTo() == edge.getTo()) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+            } else {
+                for (Edge<E> e : list) {
+                    if ((e.getFrom() == edge.getFrom() && e.getTo() == edge.getTo())
+                                    || (e.getTo() == edge.getFrom() && e.getFrom() == edge.getTo())) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!duplicate) {
+                list.add(edge);
+            }
+        } else {
+            //allow multiple/duplicate edges
+            list.add(edge);
+        }
+    }
+
+
+
+
+
+}

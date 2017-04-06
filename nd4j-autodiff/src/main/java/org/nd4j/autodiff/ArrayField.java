@@ -3,6 +3,11 @@ package org.nd4j.autodiff;
 import com.google.common.base.Function;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.graph.vertexfactory.NDArrayVertexFactory;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
@@ -16,6 +21,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by agibsonccc on 4/4/17.
@@ -23,58 +33,69 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @AllArgsConstructor
 @Getter
 public class ArrayField implements Field<ArrayField> {
-    private INDArray input;
-    private Function<INDArray,INDArray> result;
-    private Op op;
+    private Graph<NDArrayInformation,OpState> ops;
+    private NDArrayInformation input;
+    private NDArrayVertex vertex;
 
-    public ArrayField(Op op) {
-        this.op = op;
+    public ArrayField(NDArrayVertex ndArrayVertex,
+                      Graph<NDArrayInformation,OpState> ops) {
+        this.input = ndArrayVertex.getValue();
+        this.vertex = ndArrayVertex;
+        this.ops = ops;
+        ops.getVertices().add(vertex);
     }
 
     public ArrayField(INDArray arr) {
-        this.input = arr;
-        this.op = new Identity(input);
+        this.input = NDArrayInformation.builder().shape(arr.shape())
+                .id(UUID.randomUUID().toString())
+                .build();
+        this.ops = new Graph<>();
+        this.vertex = new NDArrayVertex(0,input);
+        this.ops.getVertices().add(vertex);
+
     }
 
     @Override
     public ArrayField negate() {
-        return new ArrayField(new Negative(input));
+        return addTransformOp(new Negative().name());
     }
 
     @Override
     public ArrayField plus(ArrayField i_v) {
-        return new ArrayField(new AddOp(input,i_v.getInput()));
+        return addPairTransformOp(new AddOp().name(),i_v);
     }
+
+
 
     @Override
     public ArrayField minus(ArrayField i_v) {
-        return new ArrayField(new SubOp(input,i_v.getInput()));
+        return addPairTransformOp(new SubOp().name(),i_v);
     }
 
     @Override
     public ArrayField mul(long i_n) {
-        return new ArrayField(new ScalarMultiplication(input,i_n));
+        return addScalarTransformOp(new ScalarMultiplication().name(),i_n);
     }
 
     @Override
     public ArrayField mul(ArrayField i_v) {
-        return new ArrayField(new MulOp(input,i_v.getInput()));
+        return addPairTransformOp(new MulOp().name(),i_v);
     }
 
     @Override
     public ArrayField pow(int i_n) {
-        return new ArrayField(new Pow(input,i_n));
+        return addScalarTransformOp(new Pow().name(),i_n);
     }
 
     @Override
     public ArrayField inverse() {
-     //   return new ArrayField(InvertMatrix.invert(input,false));
+        //   return new ArrayField(InvertMatrix.invert(input,false)),ops);
         throw new UnsupportedOperationException();
     }
 
     @Override
     public ArrayField div(ArrayField i_v) {
-        return new ArrayField(new DivOp(input,i_v.getInput()));
+        return addPairTransformOp(new DivOp().name(),i_v);
     }
 
     @Override
@@ -83,202 +104,274 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField pow(ArrayField a) {
-        return new ArrayField(new Pow(input,a.getInput(),input,input.length(),1));
+        return addPairTransformOp(new Pow().name(),a);
     }
 
     public ArrayField floor() {
-        return new ArrayField(new Floor(input));
+        return addTransformOp(new Floor().name());
     }
 
     public ArrayField ceil() {
-        return new ArrayField(new Ceil(input));
+        return addTransformOp(new Ceil().name());
     }
 
     public ArrayField round() {
-        return new ArrayField(new Round(input));
+        return addTransformOp(new Round().name());
     }
 
     public ArrayField abs() {
-        return new ArrayField(new Abs(input));
+        return addTransformOp(new Abs().name());
     }
 
     public ArrayField sqrt() {
-        return new ArrayField(new Sqrt(input));
+        return addTransformOp(new Sqrt().name());
     }
     // Operators for double
 
     public ArrayField plus(double v) {
-        return new ArrayField(new ScalarAdd(input,v));
+        return addScalarTransformOp(new ScalarAdd().name(),v);
     }
 
     public ArrayField minus(double v) {
-        return new ArrayField(new ScalarSubtraction(input,v));
+        return addScalarTransformOp(new ScalarSubtraction().name(),v);
     }
 
     public ArrayField prod(double v) {
-        return new ArrayField(new ScalarMultiplication(input,v));
+        return addScalarTransformOp(new ScalarMultiplication().name(),v);
     }
 
     public ArrayField div(double v) {
-        return new ArrayField(new ScalarDivision(input,v));
+        return addScalarTransformOp(new ScalarDivision().name(),v);
     }
 
     public ArrayField pow(double v) {
-        return new ArrayField(new Pow(input,v));
+        return addScalarTransformOp(new Pow().name(),v);
     }
 
     public ArrayField cos() {
-        return new ArrayField(new Cos(input));
+        return addTransformOp(new Cos().name());
     }
 
     public ArrayField acos() {
-        return new ArrayField(new ACos(input));
+        return addTransformOp(new ACos().name());
     }
 
     public ArrayField cosh() {
-        return new ArrayField(new Cosh(input));
+        return addTransformOp(new Cosh().name());
     }
 
     public ArrayField acosh() {
-      //  return new ArrayField(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) - 1) + x));
+        //  return new ArrayField(OpState.fromOp(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) - 1) + x)),ops);
         throw new UnsupportedOperationException();
 
     }
 
     public ArrayField sin() {
-        return new ArrayField(new Sin(input));
+        return addTransformOp(new Sin().name());
     }
 
     public ArrayField asin() {
-        return new ArrayField(new ASin(input));
+        return addTransformOp(new ASin().name());
     }
 
     public ArrayField sinh() {
-        return new ArrayField(new Sinh(input));
+        return addTransformOp(new Sinh().name());
     }
 
     public ArrayField asinh() {
-      //  return new ArrayField(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x));
+        //  return new ArrayField(OpState.fromOp(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)),ops);
         throw new UnsupportedOperationException();
 
     }
 
     public ArrayField tan() {
-        return new ArrayField(new Tan(input));
+        return addTransformOp(new Tan().name());
     }
 
     public ArrayField atan() {
-        return new ArrayField(new ATan(input));
+        return addTransformOp(new ATan().name());
     }
 
     public ArrayField tanh() {
-        return new ArrayField(new Tanh(input));
+        return addTransformOp(new Tanh().name());
     }
 
     public ArrayField atanh() {
-        return new ArrayField(new ATanh(input));
+        return addTransformOp(new ATanh().name());
     }
 
     public ArrayField exp() {
-        return new ArrayField(new Exp(input));
+        return addTransformOp(new Exp().name());
     }
 
     public ArrayField log() {
-        return new ArrayField(new Log(input));
+        return addTransformOp(new Log().name());
     }
 
     public ArrayField log10() {
-        //return new ArrayField(new INDArray(Math.log10(x));
+        //return new ArrayField(OpState.fromOp(new INDArray(Math.log10(x)),ops);
         throw new UnsupportedOperationException();
 
     }
 
     public ArrayField sgn() {
-        return new ArrayField(new Sign(input));
+        return addTransformOp(new Sign().name());
     }
 
     public ArrayField pwr(ArrayField y) {
-        //return new ArrayField(new INDArray(Math.pow(Math.abs(x), y.doubleValue()));
+        //return new ArrayField(OpState.fromOp(new INDArray(Math.pow(Math.abs(x)), y.doubleValue())),ops);
         throw new UnsupportedOperationException();
     }
 
     public ArrayField pwrs(ArrayField y) {
-       // return new ArrayField(new INDArray(Math.pow(Math.abs(x), y.doubleValue()) * Math.signum(x));
+        // return new ArrayField(OpState.fromOp(new INDArray(Math.pow(Math.abs(x)), y.doubleValue()) * Math.signum(x)),ops);
         throw new UnsupportedOperationException();
 
     }
 
     public ArrayField square() {
-        return new ArrayField(new MulOp(input,input));
+        return mul(this);
     }
 
     public ArrayField relu() {
-        return new ArrayField(new RectifedLinear(input));
+        return addTransformOp(new RectifedLinear().name());
     }
 
     public ArrayField hardTanh() {
-        return new ArrayField(new HardTanh(input));
+        return addTransformOp(new HardTanh().name());
     }
 
     public ArrayField hardTanhDerivative() {
-        return new ArrayField(new HardTanhDerivative(input));
+        return addTransformOp(new HardTanhDerivative().name());
     }
 
     public ArrayField leakyRelu() {
-        return new ArrayField(new LeakyReLU(input));
+        return addTransformOp(new LeakyReLU().name());
     }
 
     public ArrayField elu() {
-        return new ArrayField(new ELU(input));
+        return addTransformOp(new ELU().name());
     }
+
     public ArrayField eluDerivative() {
-        return new ArrayField(new ELUDerivative(input));
+        return addTransformOp(new ELUDerivative().name());
     }
 
 
 
     public ArrayField leakyRelu(double cutoff)  {
-        return new ArrayField(new LeakyReLU(input,cutoff));
+        return addTransformOp(new LeakyReLU().name());
     }
 
     public ArrayField leakyReluDerivative() {
-        return new ArrayField(new LeakyReLU(input));
+        return addTransformOp(new LeakyReLUDerivative().name());
     }
 
     public ArrayField leakyReluDerivative(double cutoff)  {
-        return new ArrayField(new LeakyReLUDerivative(input,cutoff));
+        return addTransformOp(new LeakyReLUDerivative().name());
     }
 
 
     public ArrayField sigmoid() {
-        return new ArrayField(new Sigmoid(input));
+        return addTransformOp(new Sigmoid().name());
     }
 
     public ArrayField sigmoidDerivative() {
-        return new ArrayField(new SigmoidDerivative(input));
+        return addTransformOp(new SigmoidDerivative().name());
     }
 
     public ArrayField step() {
-        return new ArrayField(new Step(input));
+        return addTransformOp(new Step().name());
     }
 
 
     public ArrayField softsign() {
-        return new ArrayField(new SoftSign(input));
+        return addTransformOp(new SoftSign().name());
     }
 
     public ArrayField softsignDerivative() {
-        return new ArrayField(new SoftSignDerivative(input));
+        return addTransformOp(new LeakyReLUDerivative().name());
     }
 
 
     public ArrayField softmax() {
-        return new ArrayField(new SoftMax(input));
+        return addTransformOp(new SoftMax().name());
     }
 
 
     public ArrayField softplus() {
-        return new ArrayField(new SoftPlus(input));
+        return addTransformOp(new SoftPlus().name());
+    }
+
+
+    private ArrayField addTransformOp(String name) {
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+                NDArrayInformation.builder()
+                        .id(UUID.randomUUID().toString())
+                        .shape(input.getShape()).build());
+
+        //add the result vertex to the graph
+        this.getOps().getVertices().add(newVertex);
+
+        //map x -> z
+        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+                newVertex.vertexID(),OpState.builder()
+                        .n(ArrayUtil.prod(input.getShape()))
+                        .opName(name)
+                        .opType(OpState.OpType.TRANSFORM).build(),true);
+
+        return new ArrayField(newVertex,ops);
+    }
+
+
+    private ArrayField addScalarTransformOp(String name,Number scalarValue) {
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+                NDArrayInformation.builder()
+                        .id(UUID.randomUUID().toString())
+                        .shape(input.getShape()).build());
+
+        //add the result vertex to the graph
+        this.getOps().getVertices().add(newVertex);
+
+        //map x -> z
+        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+                newVertex.vertexID(),
+                OpState.builder()
+                        .n(ArrayUtil.prod(input.getShape()))
+                        .opName(name)
+                        .scalarValue(scalarValue)
+                        .opType(OpState.OpType.SCALAR_TRANSFORM)
+                        .build(),true);
+
+        return new ArrayField(newVertex,ops);
+    }
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() + 1,
+                NDArrayInformation.builder()
+                        .id(UUID.randomUUID().toString())
+                        .shape(input.getShape()).build());
+
+        //add the result vertex to the graph
+        this.getOps().getVertices().add(newVertex);
+
+        //map x -> z
+        this.ops.addEdge(this.ops.getVertices().indexOf(vertex),
+                newVertex.vertexID(),OpState.builder()
+                        .n(ArrayUtil.prod(input.getShape()))
+                        .opName(name)
+                        .opType(OpState.OpType.TRANSFORM).build(),true);
+        //map y -> z
+        this.ops.addEdge(this.ops.getVertices().indexOf(i_v.getVertex()),
+                newVertex.vertexID(),OpState.builder()
+                        .n(ArrayUtil.prod(input.getShape()))
+                        .opName(name)
+                        .opType(OpState.OpType.TRANSFORM).build(),true);
+
+        return new ArrayField(newVertex,ops);
     }
 
 

@@ -156,17 +156,17 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField rand(ArrayField x) {
-        return new ArrayField(Nd4j.rand(x.getInput().shape()));
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public ArrayField random(ArrayField x) {
-        return new ArrayField(Nd4j.rand(x.getInput().shape()));
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public ArrayField gauss(ArrayField x) {
-        return new ArrayField(Nd4j.randn(x.getInput().shape()));
+        throw new UnsupportedOperationException();
     }
 
     @Override
