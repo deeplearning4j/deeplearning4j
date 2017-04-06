@@ -45,6 +45,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1651,7 +1652,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input) {
-        return output(input, TrainingMode.TEST).detach();
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .minSize(8 * 1024L * 1024L)
+                .overallocationLimit(1.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, workspaceExternal)) {
+            return output(input, TrainingMode.TEST).detach();
+        }
     }
 
     /**

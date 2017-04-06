@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class ParallelInferenceTests {
+public class ParallelInferenceTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;
 

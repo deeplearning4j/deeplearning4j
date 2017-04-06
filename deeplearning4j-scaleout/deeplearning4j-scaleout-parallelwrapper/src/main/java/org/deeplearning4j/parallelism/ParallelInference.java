@@ -344,14 +344,18 @@ public class ParallelInference {
 
         protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
             synchronized (locker) {
-                if (currentObservable == null || currentObservable.getCounter() >= batchLimit || currentObservable.isLocked())
+                boolean isNew = false;
+                if (currentObservable == null || currentObservable.getCounter() >= batchLimit || currentObservable.isLocked()) {
+                    isNew = true;
                     currentObservable = new BatchedInferenceObservable();
+                }
 
                 currentObservable.setInput(input);
                 currentObservable.addObserver(observer);
 
                 try {
-                    targetQueue.put(currentObservable);
+                    if (isNew)
+                        targetQueue.put(currentObservable);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
