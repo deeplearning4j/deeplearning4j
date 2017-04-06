@@ -55,6 +55,7 @@ public class Hdf5Archive {
     }
 
     private hdf5.H5File file;
+    private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
 
     public Hdf5Archive(String archiveFilename) {
         this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
@@ -158,7 +159,7 @@ public class Hdf5Archive {
             case 4: /* 2D Convolution weights */
                 dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
                 data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3]);
                 j = 0;
@@ -171,7 +172,7 @@ public class Hdf5Archive {
             case 3:
                 dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2])];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
                 data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2]);
                 j = 0;
@@ -183,7 +184,7 @@ public class Hdf5Archive {
             case 2: /* Dense and Recurrent weights */
                 dataBuffer = new float[(int) (dims[0] * dims[1])];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
                 data = Nd4j.create((int) dims[0], (int) dims[1]);
                 j = 0;
@@ -194,7 +195,7 @@ public class Hdf5Archive {
             case 1: /* Bias */
                 dataBuffer = new float[(int) dims[0]];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
                 data = Nd4j.create((int) dims[0]);
                 j = 0;
