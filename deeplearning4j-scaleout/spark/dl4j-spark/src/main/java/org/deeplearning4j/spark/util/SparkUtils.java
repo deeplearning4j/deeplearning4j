@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.spark.HashPartitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -441,7 +442,7 @@ public class SparkUtils {
                         rdd.flatMapToPair(new SplitDataSetExamplesPairFlatMapFunction(numPartitions));
 
         //Step 2: repartition according to the random keys
-        singleExampleDataSets = singleExampleDataSets.partitionBy(new IntPartitioner(numPartitions));
+        singleExampleDataSets = singleExampleDataSets.partitionBy(new HashPartitioner(numPartitions));
 
         //Step 3: Recombine
         return singleExampleDataSets.values().mapPartitions(new BatchDataSetsFunction(newBatchSize));
