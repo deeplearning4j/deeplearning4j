@@ -738,11 +738,11 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(100 * 1024L * 1024L)
+                //.initialSize(100 * 1024L * 1024L)
                 .overallocationLimit(0.3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
-                //.cyclesBeforeInitialization(3)
-                //.policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(3)
+                .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
