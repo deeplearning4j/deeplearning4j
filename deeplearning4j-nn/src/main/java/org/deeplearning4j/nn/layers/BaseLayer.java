@@ -497,9 +497,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void clear() {
         if (input != null) {
-            input.data().destroy();
+            // NONONO
+            //input.data().destroy();
             input = null;
         }
+
     }
 
     protected void applyDropOutIfNecessary(boolean training) {

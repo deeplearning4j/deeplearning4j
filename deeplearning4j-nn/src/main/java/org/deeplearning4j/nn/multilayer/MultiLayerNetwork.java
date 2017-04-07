@@ -2689,6 +2689,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void clearLayersStates() {
         for(int f = 0; f < layers.length; f++) {
             layers[f].setInput(null);
+            layers[f].setMaskArray(null);
+            layers[f].clear();
         }
     }
 

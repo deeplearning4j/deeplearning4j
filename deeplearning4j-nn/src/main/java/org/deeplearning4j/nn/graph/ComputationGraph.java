@@ -2749,5 +2749,9 @@ public class ComputationGraph implements Serializable, Model {
         for(int f = 0; f < layers.length; f++) {
             layers[f].setInput(null);
         }
+
+        for (int f = 0; f < vertices.length; f++) {
+            vertices[f].clearVertex();
+        }
     }
 }
