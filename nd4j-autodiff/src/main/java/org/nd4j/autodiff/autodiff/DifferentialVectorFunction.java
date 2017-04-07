@@ -9,6 +9,9 @@ import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.BasicDenseVector;
 import org.nd4j.autodiff.CommutativeGroup;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpState;
 
 
 public class DifferentialVectorFunction<X extends Field<X>>
@@ -20,16 +23,19 @@ public class DifferentialVectorFunction<X extends Field<X>>
 
     protected AbstractIdentityFactory<X> m_factory;
     protected BasicDenseVector<DifferentialFunction<X>> m_v;
+    protected Graph<NDArrayInformation,OpState> graph;
 
-    public DifferentialVectorFunction(AbstractIdentityFactory<X> i_factory,
+    public DifferentialVectorFunction(Graph<NDArrayInformation,OpState> graph,AbstractIdentityFactory<X> i_factory,
             DifferentialFunction<X>... i_v) {
         m_factory = i_factory;
+        this.graph = graph;
         m_v = new BasicDenseVector<>(i_v);
     }
 
-    public DifferentialVectorFunction(AbstractIdentityFactory<X> i_factory,
+    public DifferentialVectorFunction(Graph<NDArrayInformation,OpState> graph,AbstractIdentityFactory<X> i_factory,
             Collection<? extends DifferentialFunction<X>> i_v) {
         m_factory = i_factory;
+        this.graph = graph;
         m_v = new BasicDenseVector<>(i_v);
     }
 
@@ -55,7 +61,7 @@ public class DifferentialVectorFunction<X extends Field<X>>
         for (int i = 0; i < size; i++) {
             v.add(this.get(i).diff(i_v));
         }
-        return new DifferentialVectorFunction<>(m_factory, v);
+        return new DifferentialVectorFunction<>(graph,m_factory, v);
     }
 
     public DifferentialFunction<X> dot(DifferentialVectorFunction<X> i_v) {
@@ -64,7 +70,7 @@ public class DifferentialVectorFunction<X extends Field<X>>
             // throw Error
             return null;
         }
-        DifferentialFunction<X> norm = new Zero<X>(m_factory);
+        DifferentialFunction<X> norm = new Zero<>(graph, m_factory);
         for (int i = 0; i < size; i++) {
             norm = norm.plus(this.get(i).mul(i_v.get(i)));
         }

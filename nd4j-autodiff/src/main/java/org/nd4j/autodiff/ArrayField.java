@@ -1,15 +1,12 @@
 package org.nd4j.autodiff;
 
-import com.google.common.base.Function;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.nd4j.autodiff.graph.graph.Graph;
-import org.nd4j.autodiff.graph.vertexfactory.NDArrayVertexFactory;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
@@ -19,12 +16,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
-import org.nd4j.linalg.inverse.InvertMatrix;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -317,7 +310,8 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).id(UUID.randomUUID().toString())
+                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 
         return new ArrayField(newVertex,ops);
@@ -340,8 +334,9 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
-                        .scalarValue(scalarValue)
+                        .scalarValue(scalarValue).id(UUID.randomUUID().toString())
                         .opType(OpState.OpType.SCALAR_TRANSFORM)
+                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .build(),true);
 
         return new ArrayField(newVertex,ops);
@@ -361,13 +356,15 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).id(UUID.randomUUID().toString())
+                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
         //map y -> z
         this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).id(UUID.randomUUID().toString())
+                        .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 
         return new ArrayField(newVertex,ops);

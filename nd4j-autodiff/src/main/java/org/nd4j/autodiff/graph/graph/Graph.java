@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.graph.graph;
 
 import lombok.Data;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
@@ -26,25 +27,29 @@ import java.util.*;
  */
 @Data
 public class Graph<V, E> extends BaseGraph<V, E> {
-    private boolean allowMultipleEdges;
-    private List<List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
+    private boolean allowMultipleEdges = true;
+    private ListOrderedSet<List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
     private Map<Integer,Vertex<V>> vertices;
+    private boolean frozen = false;
     public Graph() {
-        this(false);
+        this(true);
     }
 
     @SuppressWarnings("unchecked")
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
-        edges = new ArrayList<>();
+        edges = new ListOrderedSet<>();
     }
 
     public void addVertex(Vertex<V> vVertex) {
-        if(!this.vertices.containsKey(vVertex.getIdx())) {
-            this.vertices.put(vVertex.getIdx(),vVertex);
-        }
+        if(frozen)
+            return;
+        this.vertices.put(vVertex.getIdx(),vVertex);
+
     }
+
+
 
     @SuppressWarnings("unchecked")
     public Graph(List<Vertex<V>> vertices, boolean allowMultipleEdges) {
@@ -53,12 +58,28 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         for(Vertex<V> v : vertices)
             this.vertices.put(v.getIdx(),v);
         this.allowMultipleEdges = allowMultipleEdges;
-        edges = new ArrayList<>();
+        edges = new ListOrderedSet<>();
     }
 
     public Graph(List<Vertex<V>> vertices) {
         this(vertices, false);
     }
+
+
+    /**
+     * Prevent items from being added to the graph
+     */
+    public void freeze() {
+        frozen = true;
+    }
+
+    /**
+     * Allow items to be added again
+     */
+    public void unfreeze() {
+        frozen = false;
+    }
+
 
     @Override
     public int numVertices() {
@@ -92,16 +113,17 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     @Override
     public void addEdge(Edge<E> edge) {
+        if(frozen)
+            return;
+
         if (edge.getFrom() < 0)
             throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
-        if(edge.getFrom() >= edges.size()) {
-            for(int i = edges.size(); i < edge.getTo() + 1; i++)
-                edges.add(new ArrayList<>());
-        }
+        boolean outOfBounds = edge.getFrom() >= edges.size();
 
-        List<Edge<E>> fromList = edges.get(edge.getFrom());
+        List<Edge<E>> fromList = !outOfBounds ? edges.get(edge.getFrom()) : new ArrayList<>();
         addEdgeHelper(edge, fromList);
-
+        if(outOfBounds)
+            edges.add(fromList);
         if (edge.isDirected())
             return;
 
@@ -114,7 +136,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         List<Edge<E>> toList = edges.get(edge.getTo());
         if (toList == null) {
             toList = new ArrayList<>();
-            edges.set(edge.getTo(),toList);
+            edges.add(edge.getTo(),toList);
         }
 
         addEdgeHelper(edge, toList);

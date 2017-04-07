@@ -2,14 +2,20 @@ package org.nd4j.autodiff.autodiff;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpState;
 
 
+@AllArgsConstructor
 public abstract class DifferentialFunction<X extends Field<X>>
-        implements Field<DifferentialFunction<X>>, Differential<X, DifferentialFunction<X>> {
+        implements Field<DifferentialFunction<X>>,
+        Differential<X, DifferentialFunction<X>> {
 
-    protected DifferentialFunction() {
-    }
+    protected Graph<NDArrayInformation,OpState> graph;
+
 
 
     public abstract X getValue();
@@ -45,7 +51,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        return new Sum<>(i_v, this);
+        return new Sum<>(graph,i_v, this);
     }
 
     @Override
@@ -59,7 +65,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        return new Product<>(i_v, this);
+        return new Product<>(graph,i_v, this);
     }
 
     @Override
@@ -69,22 +75,22 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        return new Inverse<>(this);
+        return new Inverse<>(graph,this);
     }
 
     @Override
     public DifferentialFunction<X> negate() {
-        return new Negative<>(this);
+        return new Negative<>(graph,this);
     }
 
     @Override
     public DifferentialFunction<X> mul(long i_n) {
-        return new PolynomialTerm<>(i_n, this, 1);
+        return new PolynomialTerm<>(graph,i_n, this, 1);
     }
 
     @Override
     public DifferentialFunction<X> pow(int i_n) {
-        return new PolynomialTerm<>(1L, this, i_n);
+        return new PolynomialTerm<>(graph,1L, this, i_n);
     }
 
 }

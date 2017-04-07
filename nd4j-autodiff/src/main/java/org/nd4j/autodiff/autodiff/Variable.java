@@ -4,6 +4,9 @@ import java.util.List;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpState;
 
 
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
@@ -14,12 +17,14 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     private PreEvaluator<X> preEvaluator;
 
-    protected Variable(String i_name, X i_v, AbstractIdentityFactory<X> i_factory) {
-        this(i_name, i_v, i_factory, null);
+    protected Variable(Graph<NDArrayInformation,OpState> graph,String i_name, X i_v, AbstractIdentityFactory<X> i_factory) {
+        this(graph,i_name, i_v, i_factory, null);
     }
 
-    protected Variable(String i_name, X i_v, AbstractIdentityFactory<X> i_factory,
-            PreEvaluator<X> preEvaluator) {
+    protected Variable(Graph<NDArrayInformation,OpState> graph, String i_name, X i_v,
+                       AbstractIdentityFactory<X> i_factory,
+                       PreEvaluator<X> preEvaluator) {
+       super(graph);
         this.preEvaluator = preEvaluator;
         setName(i_name);
         if (i_v != null && i_factory != null) {
@@ -77,7 +82,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> diff(Variable<X> i_v) {
-        return (this == i_v) ? new One<X>(m_factory) : new Zero<X>(m_factory);
+        return (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
     }
 
     @Override
@@ -93,7 +98,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<X>(m_factory) : super.mul(i_v.inverse());
+        return (i_v == this) ? new One<X>(graph,m_factory) : super.mul(i_v.inverse());
     }
 
 }

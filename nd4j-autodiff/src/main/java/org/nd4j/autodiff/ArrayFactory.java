@@ -1,22 +1,29 @@
 package org.nd4j.autodiff;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Random;
 
+@AllArgsConstructor
+@Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private static final ArrayFactory m_INSTANCE = new ArrayFactory();
-    private Random randomGenerator = new Random();
-
-    private ArrayFactory() {
+    private Graph<NDArrayInformation,OpState> graph;
+    public ArrayFactory() {
+        this(new Graph<>());
     }
 
 
-    public static ArrayFactory instance() {
-        return m_INSTANCE;
+    @Override
+    public Graph<NDArrayInformation, OpState> graph() {
+        return graph;
     }
-
 
     @Override
     public ArrayField val(double v) {
@@ -43,17 +50,15 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         throw new UnsupportedOperationException();
     }
 
-    private static final ArrayField m_ZERO = new ArrayField(Nd4j.scalar(0.0));
-    private static final ArrayField m_UNIT = new ArrayField(Nd4j.scalar(1.0));
 
     @Override
     public ArrayField zero() {
-        return m_ZERO;
+        return new ArrayField(new NDArrayVertex(graph.numVertices(),new int[]{1,1}),graph);
     }
 
     @Override
     public ArrayField one() {
-        return m_UNIT;
+        return new ArrayField(new NDArrayVertex(graph.numVertices(),new int[]{1,1}),graph);
     }
 
     @Override

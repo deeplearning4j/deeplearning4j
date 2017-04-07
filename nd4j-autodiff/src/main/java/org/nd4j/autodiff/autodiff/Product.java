@@ -3,13 +3,19 @@ package org.nd4j.autodiff.autodiff;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpState;
 
 
 public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
-    public Product(DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
-        super(i_v1, i_v2);
+    public Product(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
+        super(graph,i_v1, i_v2);
     }
+
+
+
 
     @Override
     public X getValue() {
@@ -23,13 +29,13 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
     @Override
     public DifferentialFunction<X> diff(Variable<X> i_v1) {
-        return (larg() == rarg()) ? larg().diff(i_v1).mul(rarg()).mul(2L) // Field
-                                                                          // is
-                                                                          // commutative
-                                                                          // with
-                                                                          // respect
-                                                                          // to
-                                                                          // multiplication.
+        return (larg().equals(rarg())) ? larg().diff(i_v1).mul(rarg()).mul(2L) // Field
+                // is
+                // commutative
+                // with
+                // respect
+                // to
+                // multiplication.
                 : (larg().diff(i_v1).mul(rarg())).plus(larg().mul(rarg().diff(i_v1)));
     }
 

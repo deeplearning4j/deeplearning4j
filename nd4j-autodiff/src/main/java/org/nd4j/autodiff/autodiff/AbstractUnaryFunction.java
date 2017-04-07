@@ -1,6 +1,9 @@
 package org.nd4j.autodiff.autodiff;
 
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpState;
 
 
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
@@ -8,8 +11,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     private DifferentialFunction<X> m_x;
 
 
-    public AbstractUnaryFunction(DifferentialFunction<X> i_v) {
-
+    public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v) {
+        super(graph);
         if (i_v != null) {
             m_x = i_v;
         } else {
