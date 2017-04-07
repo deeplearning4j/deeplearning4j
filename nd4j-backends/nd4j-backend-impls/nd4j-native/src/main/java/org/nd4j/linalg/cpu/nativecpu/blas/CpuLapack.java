@@ -3,6 +3,8 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -60,11 +62,14 @@ public class CpuLapack extends BaseLapack {
 
         // Copy R ( upper part of Q ) into result
         if( R != null ) {
-            for( int ro=0 ; ro<M ; ro++ ) {
-                for( int c=ro ; c<N ; c++ ) {
-                    R.putScalar( ro, c, A.getDouble(ro,c) ) ;
-                }
-            }
+            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ).dup() ) ; 
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				R.put(ix, 0) ;
+			}
         }
 
         status = LAPACKE_sorgqr( getColumnOrder(A), M, N, N, 
@@ -87,14 +92,17 @@ public class CpuLapack extends BaseLapack {
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dgeqrf", status ) ;
         }
-
+        
         // Copy R ( upper part of Q ) into result
         if( R != null ) {
-            for( int ro=0 ; ro<M ; ro++ ) {
-                for( int c=ro ; c<N ; c++ ) {
-                    R.putScalar( ro, c, A.getDouble(ro,c) ) ;
-                }
-            }
+            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ).dup() ) ; 
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+			
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				R.put(ix, 0) ;
+			}
         }
 
         status = LAPACKE_dorgqr( getColumnOrder(A), M, N, N, 
@@ -116,18 +124,20 @@ public class CpuLapack extends BaseLapack {
         if( status != 0 ) {
             throw new BlasException( "Failed to execute spotrf", status ) ;
         }
-        if( uplo == 'U' ) {
-            for( int ro=1 ; ro<N ; ro++ ) {
-                for( int c=0 ; c<ro ; c++ ) {
-                    A.putScalar( ro, c, 0 ) ;
-                }
-            }
+        if( uplo == 'U' ) {			
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				A.put(ix, 0) ;
+			}            
         } else {
-            for( int c=1 ; c<N ; c++ ) {
-                for( int ro=0 ; ro<c ; ro++ ) {
-                    A.putScalar( ro, c, 0 ) ;
-                }
-            }
+            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+            for( int i=0 ; i<Math.min( A.rows(), A.columns()-1 ) ; i++ ) {
+                ix[0] = NDArrayIndex.point( i ) ;
+                ix[1] = NDArrayIndex.interval( i+1, A.columns() ) ;
+                A.put(ix, 0) ;
+            }        
         }
     }
 
@@ -138,19 +148,20 @@ public class CpuLapack extends BaseLapack {
         if( status != 0 ) {
             throw new BlasException( "Failed to execute dpotrf", status ) ;
         }
-        if( uplo == 'U' ) {
-            for( int ro=1 ; ro<N ; ro++ ) {
-                for( int c=0 ; c<ro ; c++ ) {
-                    A.putScalar( ro, c, 0 ) ;
-                }
-            }
-            //A = A.transpose() ;
+        if( uplo == 'U' ) {			
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				A.put(ix, 0) ;
+			}            
         } else {
-            for( int c=1 ; c<N ; c++ ) {
-                for( int ro=0 ; ro<c ; ro++ ) {
-                    A.putScalar( ro, c, 0 ) ;
-                }
-            }
+            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+            for( int i=0 ; i<Math.min( A.rows(), A.columns()-1 ) ; i++ ) {
+                ix[0] = NDArrayIndex.point( i ) ;
+                ix[1] = NDArrayIndex.interval( i+1, A.columns() ) ;
+                A.put(ix, 0) ;
+            }        
         }
     }
 

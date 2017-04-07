@@ -14,6 +14,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
@@ -34,6 +36,7 @@ public class JcublasLapack extends BaseLapack {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private Allocator allocator = AtomicAllocator.getInstance();
     private static Logger logger = LoggerFactory.getLogger(JcublasLapack.class);
+
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
@@ -242,10 +245,13 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                for( int ro=0 ; ro<M ; ro++ ) {
-                    for( int c=ro ; c<N ; c++ ) {
-                        r.putScalar( ro, c, a.getFloat(ro,c) ) ;
-                    }
+                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ).dup() ) ; 
+	            
+                INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+                for( int i=1 ; i<Math.min( a.rows(), a.columns() ) ; i++ ) {
+                    ix[0] = NDArrayIndex.point( i ) ;
+                    ix[1] = NDArrayIndex.interval( 0, i ) ;				
+                    r.put(ix, 0) ;
                 }
             }
 
@@ -353,10 +359,13 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                for( int ro=0 ; ro<M ; ro++ ) {
-                    for( int c=ro ; c<N ; c++ ) {
-                        r.putScalar( ro, c, a.getDouble(ro,c) ) ;
-                    }
+                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ).dup() ) ; 
+	            
+                INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+                for( int i=1 ; i<Math.min( a.rows(), a.columns() ) ; i++ ) {
+                    ix[0] = NDArrayIndex.point( i ) ;
+                    ix[1] = NDArrayIndex.interval( 0, i ) ;				
+                    r.put(ix, 0) ;
                 }
             }
 
@@ -453,23 +462,25 @@ public class JcublasLapack extends BaseLapack {
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
 
-        if( uplo == 'U' ) {
-            for( int ro=1 ; ro<N ; ro++ ) {
-                for( int c=0 ; c<ro ; c++ ) {
-                    a.putScalar( c, ro, 0 ) ;
-                }
-            }
-            a = a.transpose() ;
-        } else {
-            for( int c=1 ; c<N ; c++ ) {
-                for( int ro=0 ; ro<c ; ro++ ) {
-                    a.putScalar( ro, c, 0 ) ;
-                }
-            }
-        }
-
         if (a != A)
             A.assign(a);
+
+        if( uplo == 'U' ) {		
+            A.assign( A.transpose() ) ;	
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				A.put(ix, 0) ;
+			}            
+        } else {
+            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+            for( int i=0 ; i<Math.min( A.rows(), A.columns()-1 ) ; i++ ) {
+                ix[0] = NDArrayIndex.point( i ) ;
+                ix[1] = NDArrayIndex.interval( i+1, A.columns() ) ;
+                A.put(ix, 0) ;
+            }        
+        }
 
         logger.info("A: {}", A);
     }
@@ -534,23 +545,25 @@ public class JcublasLapack extends BaseLapack {
         allocator.registerAction(ctx, a);
         allocator.registerAction(ctx, INFO);
 
-        if( uplo == 'U' ) {
-            for( int ro=1 ; ro<N ; ro++ ) {
-                for( int c=0 ; c<ro ; c++ ) {
-                    a.putScalar( c, ro, 0 ) ;
-                }
-            }
-            a = a.transpose() ;
-        } else {
-            for( int c=1 ; c<N ; c++ ) {
-                for( int ro=0 ; ro<c ; ro++ ) {
-                    a.putScalar( ro, c, 0 ) ;
-                }
-            }
-        }
-
         if (a != A)
             A.assign(a);
+
+        if( uplo == 'U' ) {		
+            A.assign( A.transpose() ) ;	
+			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
+				ix[0] = NDArrayIndex.point( i ) ;
+				ix[1] = NDArrayIndex.interval( 0, i ) ;				
+				A.put(ix, 0) ;
+			}            
+        } else {
+            INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
+            for( int i=0 ; i<Math.min( A.rows(), A.columns()-1 ) ; i++ ) {
+                ix[0] = NDArrayIndex.point( i ) ;
+                ix[1] = NDArrayIndex.interval( i+1, A.columns() ) ;
+                A.put(ix, 0) ;
+            }        
+        }
 
         logger.info("A: {}", A);
     }
@@ -724,7 +737,7 @@ public class JcublasLapack extends BaseLapack {
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
             if (stat != CUSOLVER_STATUS_SUCCESS) {
-                throw new BlasException("cusolverDnDgesvd failed", stat);
+                throw new BlasException("cusolverDnDgesvd failed" + stat);
             }
         }
         allocator.registerAction(ctx, INFO);
