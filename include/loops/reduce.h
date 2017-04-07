@@ -82,9 +82,31 @@ namespace functions {
 
 					sPartials[threadIdx.x] = OpType::startingValue(rX);
 
-					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(rX[i * tadEWS], extraParams), extraParams);
+                    if (tadEWS >= 1) {
+					    for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(rX[i * tadEWS], extraParams), extraParams);
+					    }
+					} else {
+                        __shared__ int tadRank;
+				        __shared__ int *tadShape;
+				        __shared__ int *tadStride;
+				        int xCoord[MAX_RANK];
+				        if (threadIdx.x == 0) {
+                            tadRank = shape::rank(tadOnlyShapeInfo);
+                            tadShape = shape::shapeOf(tadOnlyShapeInfo);
+                            tadStride = shape::stride(tadOnlyShapeInfo);
+				        }
+    				    __syncthreads();
+
+                        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						    shape::ind2subC(tadRank, tadShape, i, xCoord);
+						    int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+
+						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
+					    }
 					}
+
+					/*
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
@@ -95,6 +117,7 @@ namespace functions {
 					if (threadIdx.x == 0) {
 						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 					}
+					*/
 				}
 			}
 
