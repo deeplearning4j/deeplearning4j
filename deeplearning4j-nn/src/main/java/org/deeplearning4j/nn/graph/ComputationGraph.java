@@ -1178,10 +1178,13 @@ public class ComputationGraph implements Serializable, Model {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-
-                        try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                            // FIXME: we don't really want detach here
-                            vertices[vIdx].setInput(vIdxInputNum, input.detach());
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
+                            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                // FIXME: we don't really want detach here
+                                vertices[vIdx].setInput(vIdxInputNum, input.detach());
+                            }
+                        } else {
+                            vertices[vIdx].setInput(vIdxInputNum, input);
                         }
                     }
 
@@ -1207,9 +1210,13 @@ public class ComputationGraph implements Serializable, Model {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                                // FIXME: we don't really want detach here.
-                                vertices[vIdx].setInput(inputNum, out.detach());
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
+                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                    // FIXME: we don't really want detach here.
+                                    vertices[vIdx].setInput(inputNum, out.detach());
+                                }
+                            } else {
+                                vertices[vIdx].setInput(inputNum, out);
                             }
                         }
                     }
