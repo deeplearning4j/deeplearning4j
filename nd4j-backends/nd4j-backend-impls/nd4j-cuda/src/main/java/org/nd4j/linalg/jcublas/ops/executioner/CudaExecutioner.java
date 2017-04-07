@@ -218,7 +218,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
-
+/*
+        if (op.opNum() == 3) {
+            log.info("Max shape: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()));
+            log.info("Max TAD: {}", Arrays.toString(tadBuffers.getFirst().asInt()));
+            context.syncOldStream();
+        }
+*/
         Pointer hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
         Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 

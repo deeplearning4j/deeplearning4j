@@ -1,6 +1,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -136,6 +137,26 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
                         log.info("{} iterations passed...", counter.get());
                         System.gc();
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void endlessTest4() throws Exception {
+        Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
+        while (true) {
+            try (MemoryWorkspace workspace1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS_1")){
+                for (int i = 0; i < 1000; i++) {
+                    INDArray array = Nd4j.createUninitialized(RandomUtils.nextInt(1, 50), RandomUtils.nextInt(1, 50));
+
+                    INDArray mean = array.max(1);
+                }
+
+                for (int i = 0; i < 1000; i++) {
+                    INDArray array = Nd4j.createUninitialized(RandomUtils.nextInt(1, 100));
+
+                    array.maxNumber().doubleValue();
                 }
             }
         }
