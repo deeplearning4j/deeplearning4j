@@ -522,8 +522,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null)
                         continue;
-                    if (map.containsKey(s))
-                        summaryStatsCount++;
+                    summaryStatsCount++;
                 }
             }
             //Each summary stat value: StatsType (uint8), SummaryType (uint8), value (double) -> 1+1+8 = 10 bytes
@@ -735,8 +734,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null || map.size() == 0)
                         continue;
-                    if (map.containsKey(s))
-                        summaryStatsCount++;
+                    summaryStatsCount++;
                 }
             }
 
