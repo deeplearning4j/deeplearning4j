@@ -1382,7 +1382,13 @@ public class ComputationGraph implements Serializable, Model {
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
-                            gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            if (configuration.getWorkspaceMode() == WorkspaceMode.NONE) {
+                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            } else {
+                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
+                                }
+                            }
                         } else {
                             gv.setEpsilon(epsilons[j++]);
                         }
