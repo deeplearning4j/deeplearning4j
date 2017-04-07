@@ -250,61 +250,70 @@ public class SparkUtils {
         }
     }
 
-    public static<T> JavaRDD<T> repartitionApproximateBalance(JavaRDD<T> rdd, Repartition repartition, int numPartitions){
+    public static <T> JavaRDD<T> repartitionApproximateBalance(JavaRDD<T> rdd, Repartition repartition,
+                    int numPartitions) {
         int origNumPartitions = rdd.partitions().size();
         switch (repartition) {
             case Never:
                 return rdd;
             case NumPartitionsWorkersDiffers:
-                if (origNumPartitions == numPartitions) return rdd;
+                if (origNumPartitions == numPartitions)
+                    return rdd;
             case Always:
                 // Count each partition...
                 List<Integer> partitionCounts =
-                        rdd.mapPartitionsWithIndex(new Function2<Integer, Iterator<T>, Iterator<Integer>>() {
-                            @Override
-                            public Iterator<Integer> call(Integer integer, Iterator<T> tIterator) throws Exception {
-                                int count = 0;
-                                while (tIterator.hasNext()) {
-                                    tIterator.next();
-                                    count++;
-                                }
-                                return Collections.singletonList(count).iterator();
-                            }
-                        }, true).collect();
+                                rdd.mapPartitionsWithIndex(new Function2<Integer, Iterator<T>, Iterator<Integer>>() {
+                                    @Override
+                                    public Iterator<Integer> call(Integer integer, Iterator<T> tIterator)
+                                                    throws Exception {
+                                        int count = 0;
+                                        while (tIterator.hasNext()) {
+                                            tIterator.next();
+                                            count++;
+                                        }
+                                        return Collections.singletonList(count).iterator();
+                                    }
+                                }, true).collect();
 
                 Integer totalCount = 0;
-                for (Integer i : partitionCounts) totalCount += i;
+                for (Integer i : partitionCounts)
+                    totalCount += i;
                 List<Double> partitionWeights = new ArrayList<>(Math.max(numPartitions, origNumPartitions));
-                Double ideal = (double)totalCount / numPartitions;
+                Double ideal = (double) totalCount / numPartitions;
                 // partitions in the initial set and not in the final one get -1 => elements always jump
                 // partitions in the final set not in the initial one get 0 => aim to receive the average amount
-                for(int i = 0; i < Math.min(origNumPartitions, numPartitions); i++){
-                    partitionWeights.add((double)partitionCounts.get(i) / ideal);
+                for (int i = 0; i < Math.min(origNumPartitions, numPartitions); i++) {
+                    partitionWeights.add((double) partitionCounts.get(i) / ideal);
                 }
-                for (int i = Math.min(origNumPartitions, numPartitions); i < Math.max(origNumPartitions, numPartitions); i++){
+                for (int i = Math.min(origNumPartitions, numPartitions); i < Math.max(origNumPartitions,
+                                numPartitions); i++) {
                     // we shrink the # of partitions
-                    if (i >= numPartitions) partitionWeights.add(-1D);
-                        // we enlarge the # of partitions
-                    else  partitionWeights.add(0D);
+                    if (i >= numPartitions)
+                        partitionWeights.add(-1D);
+                    // we enlarge the # of partitions
+                    else
+                        partitionWeights.add(0D);
                 }
 
                 // this method won't trigger a spark job, which is different from {@link org.apache.spark.rdd.RDD#zipWithIndex}
 
-                JavaPairRDD<Tuple2<Long, Integer>, T> indexedRDD = rdd.zipWithUniqueId().mapToPair(
-                        new PairFunction<Tuple2<T, Long>, Tuple2<Long, Integer>, T>() {
-                            @Override
-                            public Tuple2<Tuple2<Long, Integer>, T> call(Tuple2<T, Long> tLongTuple2) {
-                                return new Tuple2<Tuple2<Long, Integer>, T>(
-                                        new Tuple2<Long, Integer>(tLongTuple2._2(), 0), tLongTuple2._1());
-                            }
-                        });
+                JavaPairRDD<Tuple2<Long, Integer>, T> indexedRDD = rdd.zipWithUniqueId()
+                                .mapToPair(new PairFunction<Tuple2<T, Long>, Tuple2<Long, Integer>, T>() {
+                                    @Override
+                                    public Tuple2<Tuple2<Long, Integer>, T> call(Tuple2<T, Long> tLongTuple2) {
+                                        return new Tuple2<Tuple2<Long, Integer>, T>(
+                                                        new Tuple2<Long, Integer>(tLongTuple2._2(), 0),
+                                                        tLongTuple2._1());
+                                    }
+                                });
 
-                HashingBalancedPartitioner hbp = new HashingBalancedPartitioner(Collections.singletonList(partitionWeights));
+                HashingBalancedPartitioner hbp =
+                                new HashingBalancedPartitioner(Collections.singletonList(partitionWeights));
                 JavaPairRDD<Tuple2<Long, Integer>, T> partitionedRDD = indexedRDD.partitionBy(hbp);
 
-                return partitionedRDD.map(new Function<Tuple2<Tuple2<Long,Integer>,T>, T>() {
+                return partitionedRDD.map(new Function<Tuple2<Tuple2<Long, Integer>, T>, T>() {
                     @Override
-                    public T call(Tuple2<Tuple2<Long, Integer>, T> indexNPayload){
+                    public T call(Tuple2<Tuple2<Long, Integer>, T> indexNPayload) {
                         return indexNPayload._2();
                     }
                 });
@@ -324,14 +333,15 @@ public class SparkUtils {
      * @param <T> Type of RDD
      * @return Repartitioned RDD, or the original RDD if no repartitioning was performed
      */
-    public static <T> JavaRDD<T> repartitionBalanceIfRequired(
-            JavaRDD<T> rdd, Repartition repartition, int objectsPerPartition, int numPartitions) {
+    public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition,
+                    int objectsPerPartition, int numPartitions) {
         int origNumPartitions = rdd.partitions().size();
         switch (repartition) {
             case Never:
                 return rdd;
             case NumPartitionsWorkersDiffers:
-                if (origNumPartitions == numPartitions) return rdd;
+                if (origNumPartitions == numPartitions)
+                    return rdd;
             case Always:
                 //Repartition: either always, or origNumPartitions != numWorkers
 
@@ -341,7 +351,7 @@ public class SparkUtils {
 
                 //Count each partition...
                 List<Tuple2<Integer, Integer>> partitionCounts =
-                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
+                                rdd.mapPartitionsWithIndex(new CountPartitionsFunction<T>(), true).collect();
                 int totalObjects = 0;
                 int initialPartitions = partitionCounts.size();
 
@@ -369,9 +379,8 @@ public class SparkUtils {
                 JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
-                pairIndexed =
-                        pairIndexed.partitionBy(
-                                new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
+                pairIndexed = pairIndexed
+                                .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
 
                 return pairIndexed.values();
             default:
@@ -380,14 +389,12 @@ public class SparkUtils {
     }
 
     static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
-        return rdd.zipWithIndex()
-                .mapToPair(
-                        new PairFunction<Tuple2<T, Long>, Integer, T>() {
-                            @Override
-                            public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
-                                return new Tuple2<Integer, T>(elemIdx._2().intValue(), elemIdx._1());
-                            }
-                        });
+        return rdd.zipWithIndex().mapToPair(new PairFunction<Tuple2<T, Long>, Integer, T>() {
+            @Override
+            public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
+                return new Tuple2<Integer, T>(elemIdx._2().intValue(), elemIdx._1());
+            }
+        });
     }
 
     /**

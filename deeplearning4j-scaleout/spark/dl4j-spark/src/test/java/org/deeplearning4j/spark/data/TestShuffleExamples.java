@@ -52,31 +52,26 @@ public class TestShuffleExamples extends BaseSparkTest {
         assertEquals(100, totalExampleCount);
     }
 
-  @Test
-  public void testIntPartitioner() {
-    int nTest = 10000;
-    int nPartitions = 42;
+    @Test
+    public void testIntPartitioner() {
+        int nTest = 10000;
+        int nPartitions = 42;
 
-    Partitioner intPartitioner = new IntPartitioner(nPartitions);
-    Partitioner hashPartitioner = new HashPartitioner(nPartitions);
+        Partitioner intPartitioner = new IntPartitioner(nPartitions);
+        Partitioner hashPartitioner = new HashPartitioner(nPartitions);
 
-    Random r = new Random();
+        Random r = new Random();
 
-    List<Integer> samples = new ArrayList();
-    for (int i = 0; i < nTest; i++) {
-      samples.add(Math.abs(r.nextInt()));
-    }
+        List<Integer> samples = new ArrayList();
+        for (int i = 0; i < nTest; i++) {
+            samples.add(Math.abs(r.nextInt()));
+        }
 
-    for (int i : samples) {
-      assertTrue(
-          "Found intPartitioner "
-              + intPartitioner.getPartition(i)
-              + " for value "
-              + i
-              + " with hashPartitioner "
-              + hashPartitioner.getPartition(i),
-          intPartitioner.getPartition(i) == hashPartitioner.getPartition(i));
-    }
+        for (int i : samples) {
+            assertTrue("Found intPartitioner " + intPartitioner.getPartition(i) + " for value " + i
+                            + " with hashPartitioner " + hashPartitioner.getPartition(i),
+                            intPartitioner.getPartition(i) == hashPartitioner.getPartition(i));
+        }
 
     }
 }

@@ -26,51 +26,49 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestRepartitioning extends BaseSparkTest {
 
-  public void testAssignIdx() {
-    List<String> list = new ArrayList<>();
-    for (int i = 0; i < 1000; i++) {
-      list.add(String.valueOf(i));
+    public void testAssignIdx() {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            list.add(String.valueOf(i));
+        }
+
+        JavaRDD<String> rdd = sc.parallelize(list, 10);
+
+        int numPartitions = rdd.getNumPartitions();
+        int objectsPerPartition = 100;
+
+        List<Tuple2<Integer, Integer>> partitionCounts =
+                        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<String>(), true).collect();
+        int totalObjects = 0;
+        int initialPartitions = partitionCounts.size();
+
+        int[] countPerPartition = new int[partitionCounts.size()];
+        int x = 0;
+        for (Tuple2<Integer, Integer> t2 : partitionCounts) {
+            int partitionSize = t2._2();
+            countPerPartition[x++] = partitionSize;
+        }
+
+        int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
+        for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
+            elementStartOffsetByPartitions[i] = elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
+        }
+
+        JavaRDD<Tuple2<Integer, String>> indexed = rdd
+                        .mapPartitionsWithIndex(new AssignIndexFunction<String>(elementStartOffsetByPartitions), true);
+        JavaPairRDD<Integer, String> pairIndexed =
+                        indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, String>(), true);
+
+        JavaPairRDD<Integer, String> withIndexes = indexedRDD(rdd);
+
+        List<Integer> pairKeys = pairIndexed.keys().collect();
+        List<Integer> indexedKeys = withIndexes.keys().collect();
+
+        assertTrue(indexedKeys.size() == pairKeys.size());
+        for (int i = 0; i < pairKeys.size(); i++) {
+            assertTrue(pairKeys.get(i) == indexedKeys.get(i));
+        }
     }
-
-    JavaRDD<String> rdd = sc.parallelize(list, 10);
-
-    int numPartitions = rdd.getNumPartitions();
-    int objectsPerPartition = 100;
-
-    List<Tuple2<Integer, Integer>> partitionCounts =
-        rdd.mapPartitionsWithIndex(new CountPartitionsFunction<String>(), true).collect();
-    int totalObjects = 0;
-    int initialPartitions = partitionCounts.size();
-
-    int[] countPerPartition = new int[partitionCounts.size()];
-    int x = 0;
-    for (Tuple2<Integer, Integer> t2 : partitionCounts) {
-      int partitionSize = t2._2();
-      countPerPartition[x++] = partitionSize;
-    }
-
-    int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
-    for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
-      elementStartOffsetByPartitions[i] =
-          elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
-    }
-
-    JavaRDD<Tuple2<Integer, String>> indexed =
-        rdd.mapPartitionsWithIndex(
-            new AssignIndexFunction<String>(elementStartOffsetByPartitions), true);
-    JavaPairRDD<Integer, String> pairIndexed =
-        indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, String>(), true);
-
-    JavaPairRDD<Integer, String> withIndexes = indexedRDD(rdd);
-
-    List<Integer> pairKeys = pairIndexed.keys().collect();
-    List<Integer> indexedKeys = withIndexes.keys().collect();
-
-    assertTrue(indexedKeys.size() == pairKeys.size());
-    for (int i = 0; i < pairKeys.size(); i++) {
-      assertTrue(pairKeys.get(i) == indexedKeys.get(i));
-    }
-  }
 
     @Test
     public void testRepartitioning() {

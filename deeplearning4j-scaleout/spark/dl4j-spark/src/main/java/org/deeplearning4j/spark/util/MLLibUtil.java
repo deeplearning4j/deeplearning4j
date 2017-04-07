@@ -209,15 +209,14 @@ public class MLLibUtil {
     public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,
                     int batchSize) {
 
-        JavaRDD<DataSet> mappedData = data.map(
-                new Function<LabeledPoint, DataSet>() {
-                    @Override
-                    public DataSet call(LabeledPoint lp) {
-                        return fromLabeledPoint(lp, numPossibleLabels);
-                    }
-                });
+        JavaRDD<DataSet> mappedData = data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return fromLabeledPoint(lp, numPossibleLabels);
+            }
+        });
 
-        return mappedData.repartition((int) (mappedData.count()/ batchSize));
+        return mappedData.repartition((int) (mappedData.count() / batchSize));
     }
 
     /**
@@ -231,13 +230,12 @@ public class MLLibUtil {
     @Deprecated
     public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data,
                     final int numPossibleLabels) {
-        return data.map(
-                new Function<LabeledPoint, DataSet>() {
-                    @Override
-                    public DataSet call(LabeledPoint lp) {
-                        return fromLabeledPoint(lp, numPossibleLabels);
-                    }
-                });
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return fromLabeledPoint(lp, numPossibleLabels);
+            }
+        });
     }
 
     /**
