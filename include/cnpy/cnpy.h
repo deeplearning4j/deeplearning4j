@@ -17,7 +17,6 @@
 #include <map>
 #include <assert.h>
 #include <iostream>
-#include <zlib.h>
 #include <sstream>
 #include<complex>
 #include <cstring>
@@ -344,112 +343,6 @@ namespace cnpy {
         fclose(fp);
     }
 
-    /**
-     * Save a numpy archive
-     * @tparam T the
-     * @param zipname the file zip name
-     * @param fname the file name
-     * @param data the data for the array
-     * @param shape the shape for the ndarray
-     * @param ndims the number of dimensions for the array
-     * @param mode the mode for writing
-     */
-    template<typename T>
-    void npzSave(std::string zipname,
-                 std::string fname,
-                 const T *data,
-                 const unsigned int *shape,
-                 const unsigned int ndims,
-                 std::string mode = "w") {
-        //first, append a .npy to the fname
-        fname += ".npy";
-
-        //now, on with the show
-        FILE* fp = NULL;
-        unsigned short nrecs = 0;
-        unsigned int global_header_offset = 0;
-        std::vector<char> global_header;
-
-        if(mode == "a") fp = fopen(zipname.c_str(),"r+b");
-
-        if(fp) {
-            //zip file exists. we need to add a new npy file to it.
-            //first read the footer. this gives us the offset and size of the global header
-            //then read and store the global header. 
-            //below, we will write the the new data at the start of the global header then append the global header and footer below it
-            unsigned int global_header_size;
-            parseZipFooter(fp, nrecs, global_header_size, global_header_offset);
-            fseek(fp,global_header_offset,SEEK_SET);
-            global_header.resize(global_header_size);
-            size_t res = fread(&global_header[0],sizeof(char),global_header_size,fp);
-            if(res != global_header_size){
-                throw std::runtime_error("npz_save: header read error while adding to existing zip");
-            }
-
-            fseek(fp,global_header_offset,SEEK_SET);
-        }
-        else {
-            fp = fopen(zipname.c_str(),"wb");
-        }
-
-        std::vector<char> npy_header = createNpyHeader(data,shape,ndims);
-
-        unsigned long nels = 1;
-        for (int m = 0; m<ndims; m++ ) nels *= shape[m];
-        int nbytes = nels*sizeof(T) + npy_header.size();
-
-        //get the CRC of the data to be added
-        unsigned int crc = crc32(0L,(unsigned char*)&npy_header[0],npy_header.size());
-        crc = crc32(crc,(unsigned char*)data,nels*sizeof(T));
-
-        //build the local header
-        std::vector<char> local_header;
-        local_header += "PK"; //first part of sig
-        local_header += (unsigned short) 0x0403; //second part of sig
-        local_header += (unsigned short) 20; //min version to extract
-        local_header += (unsigned short) 0; //general purpose bit flag
-        local_header += (unsigned short) 0; //compression method
-        local_header += (unsigned short) 0; //file last mod time
-        local_header += (unsigned short) 0;     //file last mod date
-        local_header += (unsigned int) crc; //crc
-        local_header += (unsigned int) nbytes; //compressed size
-        local_header += (unsigned int) nbytes; //uncompressed size
-        local_header += (unsigned short) fname.size(); //fname length
-        local_header += (unsigned short) 0; //extra field length
-        local_header += fname;
-
-        //build global header
-        global_header += "PK"; //first part of sig
-        global_header += (unsigned short) 0x0201; //second part of sig
-        global_header += (unsigned short) 20; //version made by
-        global_header.insert(global_header.end(),local_header.begin()+4,local_header.begin()+30);
-        global_header += (unsigned short) 0; //file comment length
-        global_header += (unsigned short) 0; //disk number where file starts
-        global_header += (unsigned short) 0; //internal file attributes
-        global_header += (unsigned int) 0; //external file attributes
-        global_header += (unsigned int) global_header_offset; //relative offset of local file header, since it begins where the global header used to begin
-        global_header += fname;
-
-        //build footer
-        std::vector<char> footer;
-        footer += "PK"; //first part of sig
-        footer += (unsigned short) 0x0605; //second part of sig
-        footer += (unsigned short) 0; //number of this disk
-        footer += (unsigned short) 0; //disk where footer starts
-        footer += (unsigned short) (nrecs + 1); //number of records on this disk
-        footer += (unsigned short) (nrecs + 1); //total number of records
-        footer += (unsigned int) global_header.size(); //nbytes of global headers
-        footer += (unsigned int) (global_header_offset + nbytes + local_header.size()); //offset of start of global headers, since global header now starts after newly written array
-        footer += (unsigned short) 0; //zip file comment length
-
-        //write everything      
-        fwrite(&local_header[0],sizeof(char),local_header.size(),fp);
-        fwrite(&npy_header[0],sizeof(char),npy_header.size(),fp);
-        fwrite(data,sizeof(T),nels,fp);
-        fwrite(&global_header[0],sizeof(char),global_header.size(),fp);
-        fwrite(&footer[0],sizeof(char),footer.size(),fp);
-        fclose(fp);
-    }
 
     /**
      *
