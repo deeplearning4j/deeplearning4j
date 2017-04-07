@@ -142,6 +142,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
      */
     @Override
     public boolean checkIfWorkspaceExists(@NonNull String id) {
+        ensureThreadExistense();
         return backingMap.get().containsKey(id);
     }
 }
