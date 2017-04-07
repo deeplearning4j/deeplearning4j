@@ -1,5 +1,7 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import org.apache.spark.Partitioner;
 import scala.Tuple2;
 
@@ -51,12 +53,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
         for (int j=0; j < numClasses; j++){
             Double totalImbalance = 0D; // i_j = sum(max(1 - p_(j, i), 0) , i = 1..numPartitions)
             for (int i=0; i < numPartitions; i++){
-                totalImbalance += Math.max( 1 - partitionWeightsByClass.get(j).get(i), 0);
+                totalImbalance +=
+                        partitionWeightsByClass.get(j).get(i) >= 0 ? Math.max(1 - partitionWeightsByClass.get(j).get(i), 0) : 0;
             }
             Double sumProb = 0D;
             List<Double> cumulProbsThisClass = new ArrayList<Double>();
             for (int i = 0; i < numPartitions; i++){
-                if (totalImbalance > 0 || sumProb >= 1) {
+                if (partitionWeightsByClass.get(j).get(i) >= 0 && (totalImbalance > 0 || sumProb >= 1)) {
                     Double thisPartitionRelProb = Math.max(1 - partitionWeightsByClass.get(j).get(i), 0) / totalImbalance;
                     if (thisPartitionRelProb > 0) {
                         sumProb += thisPartitionRelProb;
@@ -77,7 +80,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
     @Override
     public int numPartitions() {
-        return numPartitions;
+        return Collections2.filter(partitionWeightsByClass.get(0), new Predicate<Double>() {
+            @Override
+            public boolean apply(Double aDouble) {
+                return aDouble >= 0;
+            }
+        }).size();
     }
 
     @Override

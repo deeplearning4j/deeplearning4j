@@ -149,4 +149,44 @@ public class TestRepartitioning extends BaseSparkTest {
             assertEquals(expNumPartitionsWithMore, actNumPartitionsWithMore);
         }
     }
+
+    @Test
+    public void testRepartitioningApprox() {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            list.add(String.valueOf(i));
+        }
+
+        JavaRDD<String> rdd = sc.parallelize(list);
+        rdd = rdd.repartition(200);
+
+        JavaRDD<String> rdd2 = SparkUtils.repartitionApproximateBalance(rdd, Repartition.Always, 10);
+        assertFalse(rdd == rdd2); //Should be different objects due to repartitioning
+
+        assertEquals(10, rdd2.partitions().size());
+
+        for (int i = 0; i < 10; i++) {
+            List<String> partition = rdd2.collectPartitions(new int[] {i})[0];
+            System.out.println("Partition " + i + " size: " + partition.size());
+            assertTrue(partition.size() >= 90 && partition.size() <= 110);
+        }
+    }
+
+    @Test
+    public void testRepartitioningApproxReverse() {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            list.add(String.valueOf(i));
+        }
+
+        // initial # of partitions = cores, probably < 100
+        JavaRDD<String> rdd = sc.parallelize(list);
+
+        JavaRDD<String> rdd2 = SparkUtils.repartitionApproximateBalance(rdd, Repartition.Always, 100);
+        assertFalse(rdd == rdd2); //Should be different objects due to repartitioning
+
+        assertEquals(100, rdd2.partitions().size());
+    }
+
+
 }
