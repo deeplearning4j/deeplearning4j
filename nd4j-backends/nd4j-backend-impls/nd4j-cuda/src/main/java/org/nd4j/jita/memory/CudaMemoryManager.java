@@ -40,6 +40,9 @@ public class CudaMemoryManager extends BasicMemoryManager {
         if (kind == MemoryKind.HOST) {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 
+            if (ptr == null)
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from HOST memory");
+
             if (initialize)
                 Pointer.memset(ptr, 0, bytes);
 
@@ -48,7 +51,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
 
             if (ptr == null)
-                throw new RuntimeException("Memory allocation failed");
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE memory");
 
             if (initialize) {
                 CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
