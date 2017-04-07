@@ -120,7 +120,7 @@ template<typename OpType>
 				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				if (elementWiseStride >= 1) {
-					for (Nd4jIndex i = tid; i < n; i += (blockDim.x * gridDim.x)) {
+					for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[i * elementWiseStride], extraParams), extraParams);
 					}
 				}
@@ -154,7 +154,6 @@ template<typename OpType>
 				if (gridDim.x > 1) {
 					unsigned int *tc = (unsigned int *)reductionBuffer;
 					__shared__ bool amLast;
-					int rank = shape::rank(xShapeInfo);
 					tid = threadIdx.x;
 					if (threadIdx.x == 0) {
 						reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
@@ -181,7 +180,7 @@ template<typename OpType>
 
 
 
-						aggregatePartials<OpType>(sPartials, threadIdx.x, gridDim.x, extraParams);
+						aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
 
 						__syncthreads();
 						if (threadIdx.x == 0) {
