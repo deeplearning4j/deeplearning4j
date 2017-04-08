@@ -61,6 +61,12 @@ The usual approach to selecting an appropriate learning rate is to use [DL4J's v
 
 For training neural networks in a distributed manner, you may need a different (frequently higher) learning rate compared to training the same network on a single machine.
 
+### Policies and Scheduling
+
+You can optionally define a learning rate policy for your neural network. A policy will change the learning rate over time, achieving better results since the learning rate can "slow down" to find closer local minima for convergence. A common policy used is scheduling. See the [LeNet example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java) for a learning rate schedule used in practice.
+
+Note that if you're using multiple GPUs, this will affect your scheduling. For example, if you have 2x GPUs, then you will need to divide the iterations in your schedule by 2, since the throughput of your training process will be double, and the learning rate schedule is only applicable to the local GPU.
+
 ## <a name="activation">Activation Function</a>
 
 There are two aspects to be aware of, with regard to the choice of activation function.
