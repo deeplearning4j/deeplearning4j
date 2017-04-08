@@ -16,10 +16,43 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     protected Graph<NDArrayInformation,OpState> graph;
 
+    /**
+     * Get the value of this function
+     * @return
+     */
+    protected abstract X doGetValue();
 
 
-    public abstract X getValue();
+    /**
+     * Equivalent to calling getValue(true)
+     * which will by default freeze the graph
+     * @return
+     */
+    public  X getValue() {
+        return getValue(true);
+    }
 
+    /**
+     * Get the value specifying
+     * whether to freeze the graph or not
+     * @param freeze whether to freeze the graph or not,
+     *               this means whether to add nodes to the internal
+     *               computation graph or not
+     * @return the value of this function
+     */
+    public  X getValue(boolean freeze) {
+        if(freeze) {
+            graph.freeze();
+        }
+
+        X val = doGetValue();
+
+        if(freeze) {
+            graph.unfreeze();
+        }
+
+        return val;
+    }
     @Override
     public abstract double getReal();
 

@@ -65,7 +65,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public X getValue() {
+    public X doGetValue() {
         if (preEvaluator != null) {
             preEvaluator.update(this);
         }
@@ -98,7 +98,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<X>(graph,m_factory) : super.mul(i_v.inverse());
+        return (i_v == this) ? new One<>(graph, m_factory) : super.mul(i_v.inverse());
     }
 
 }

@@ -48,12 +48,12 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        return new PolynomialTerm<X>(graph,m_scale, arg(), -m_exponent);
+        return new PolynomialTerm<>(graph, m_scale, arg(), -m_exponent);
     }
 
     @Override
     public DifferentialFunction<X> negate() {
-        return new PolynomialTerm<X>(graph,-m_scale, arg(), m_exponent);
+        return new PolynomialTerm<>(graph, -m_scale, arg(), m_exponent);
     }
 
 }
