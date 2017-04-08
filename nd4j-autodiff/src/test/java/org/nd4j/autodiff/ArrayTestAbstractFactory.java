@@ -1,6 +1,7 @@
 package org.nd4j.autodiff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.autodiff.Differential;
 import org.nd4j.autodiff.autodiff.DifferentialFunction;
 import org.nd4j.autodiff.autodiff.DifferentialFunctionFactory;
 import org.nd4j.autodiff.autodiff.Variable;
@@ -79,10 +80,17 @@ public class ArrayTestAbstractFactory
         assertEquals(2,graph.getEdges().get(0).size());
         System.out.println("Pre graph " + graph);
         //the polynomial doesn't create edges (power,one,..)
-        System.out.println(h.diff(x));
+        DifferentialFunction<ArrayField> dif = h.diff(x);
         assertEquals(4,graph.getEdges().get(0).size());
         //This accumulates the edges from both x * x and 2 * (x,1) ^ 1 (the derivative)
         System.out.println(graph);
+        dif.getValue();
+        //getValue shouldn't change graph
+        assertEquals(4,graph.getEdges().get(0).size());
+        dif.getFormula(new ArrayList<>());
+        //getFormula shouldn't change graph
+        assertEquals(4,graph.getEdges().get(0).size());
+
     }
 
 

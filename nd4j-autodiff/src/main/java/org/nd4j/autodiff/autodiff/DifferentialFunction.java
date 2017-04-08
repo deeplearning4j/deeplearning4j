@@ -41,13 +41,15 @@ public abstract class DifferentialFunction<X extends Field<X>>
      * @return the value of this function
      */
     public  X getValue(boolean freeze) {
-        if(freeze) {
+        boolean graphAlreadyFrozen = graph.isFrozen();
+       //if graph is already frozen leave it frozen
+        if(freeze && !graphAlreadyFrozen) {
             graph.freeze();
         }
 
         X val = doGetValue();
 
-        if(freeze) {
+        if(freeze && !graphAlreadyFrozen) {
             graph.unfreeze();
         }
 
