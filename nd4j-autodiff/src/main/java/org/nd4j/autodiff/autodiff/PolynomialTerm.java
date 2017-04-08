@@ -20,7 +20,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     }
 
     @Override
-    public X getValue() {
+    public X doGetValue() {
         return (arg().getValue().pow(m_exponent)).mul(m_scale);
     }
 
@@ -41,8 +41,8 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
-        return "( " + m_scale + " * Math.pow(" + arg().getFormula(variables) + "," + m_exponent
+    public String doGetFormula(List<Variable<X>> variables) {
+        return "( " + m_scale + " * Math.pow(" + arg().doGetFormula(variables) + "," + m_exponent
                 + ")";
     }
 

@@ -16,7 +16,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public X getValue() {
+    public X doGetValue() {
         return arg().getValue().negate();
     }
 
@@ -36,8 +36,8 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
-        return "-" + arg().getFormula(variables);
+    public String doGetFormula(List<Variable<X>> variables) {
+        return "-" + arg().doGetFormula(variables);
     }
 
     @Override

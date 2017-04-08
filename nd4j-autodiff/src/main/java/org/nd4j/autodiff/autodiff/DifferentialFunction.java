@@ -23,7 +23,16 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Override
     public abstract double getReal();
 
-    public abstract String getFormula(List<Variable<X>> variables);
+
+    public  String getFormula(List<Variable<X>> variables) {
+        graph.freeze();
+        String ret = doGetFormula(variables);
+        graph.unfreeze();
+        return ret;
+    }
+
+    public abstract String doGetFormula(List<Variable<X>> variables);
+
 
     @Override
     public abstract String toString();

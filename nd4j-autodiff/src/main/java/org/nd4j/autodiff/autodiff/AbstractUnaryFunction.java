@@ -20,6 +20,15 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         }
     }
 
+    @Override
+    public X getValue() {
+        graph.freeze();
+        X ret = doGetValue();
+        graph.unfreeze();
+        return ret;
+    }
+
+    public abstract X doGetValue();
 
     public DifferentialFunction<X> arg() {
         return m_x;

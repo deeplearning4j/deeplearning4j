@@ -18,7 +18,7 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
 
     @Override
-    public X getValue() {
+    public X doGetValue() {
         return larg().getValue().mul(rarg().getValue());
     }
 
@@ -45,7 +45,7 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
-        return "(" + larg().getFormula(variables) + "*" + rarg().getFormula(variables) + ")";
+    public String doGetFormula(List<Variable<X>> variables) {
+        return "(" + larg().doGetFormula(variables) + "*" + rarg().doGetFormula(variables) + ")";
     }
 }

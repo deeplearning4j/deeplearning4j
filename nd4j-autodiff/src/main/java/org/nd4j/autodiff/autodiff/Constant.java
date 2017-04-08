@@ -54,7 +54,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable<X>> variables) {
         return getValue().toString();
     }
 

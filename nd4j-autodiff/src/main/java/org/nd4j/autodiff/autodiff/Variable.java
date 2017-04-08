@@ -91,7 +91,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable<X>> variables) {
         variables.add(this);
         return getName();
     }

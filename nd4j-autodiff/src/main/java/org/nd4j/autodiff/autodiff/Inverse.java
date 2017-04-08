@@ -16,7 +16,7 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public X getValue() {
+    public X doGetValue() {
         return arg().getValue().inverse();
     }
 
@@ -36,8 +36,8 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public String getFormula(List<Variable<X>> variables) {
-        return "( 1d / " + arg().getFormula(variables) + ")";
+    public String doGetFormula(List<Variable<X>> variables) {
+        return "( 1d / " + arg().doGetFormula(variables) + ")";
     }
 
     @Override

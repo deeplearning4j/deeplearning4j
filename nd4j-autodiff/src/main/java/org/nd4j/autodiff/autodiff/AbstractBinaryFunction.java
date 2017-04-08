@@ -31,6 +31,15 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
         }
     }
 
+    @Override
+    public X getValue() {
+        graph.freeze();
+        X  ret = doGetValue();
+        graph.unfreeze();
+        return ret;
+    }
+
+    public  abstract X doGetValue();
 
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
         if(i_v1.getValue() instanceof ArrayField) {
@@ -61,6 +70,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
 
         }
     }
+
 
 
     public DifferentialFunction<X> larg() {
