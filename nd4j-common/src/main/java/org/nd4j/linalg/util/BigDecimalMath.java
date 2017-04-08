@@ -39,7 +39,7 @@ public class BigDecimalMath {
      * the string’s length, taking into account the decimal dot.
      * static int E_PRECISION = E.length()-1 ;
      */
-    static BigDecimal E =
+    public static final  BigDecimal E =
                     new BigDecimal("2.71828182845904523536028747135266249775724709369995957496696762772407663035354"
                                     + "759457138217852516642742746639193200305992181741359662904357290033429526059563"
                                     + "073813232862794349076323382988075319525101901157383418793070215408914993488416"
@@ -62,7 +62,7 @@ public class BigDecimalMath {
      * Euler’s constant Pi.
      * \protect\vrule width0pt\protect\href{http://www.cs.arizona.edu/icon/oddsends/pi.htm}{http://www.cs.arizona.edu/icon/oddsends/pi.htm}
      */
-    static BigDecimal PI =
+    public static final BigDecimal PI =
                     new BigDecimal("3.14159265358979323846264338327950288419716939937510582097494459230781640628620"
                                     + "899862803482534211706798214808651328230664709384460955058223172535940812848111"
                                     + "745028410270193852110555964462294895493038196442881097566593344612847564823378"
@@ -89,7 +89,7 @@ public class BigDecimalMath {
      * 13
      * \protect\vrule width0pt\protect\href{http://www.worldwideschool.org/library/books/sci/math/MiscellaneousMathematicalConstants/chap35.html}{http:/
      */
-    static BigDecimal GAMMA = new BigDecimal("0.577215664901532860606512090082402431"
+    public static final BigDecimal GAMMA = new BigDecimal("0.577215664901532860606512090082402431"
                     + "0421593359399235988057672348848677267776646709369470632917467495146314472498070"
                     + "8248096050401448654283622417399764492353625350033374293733773767394279259525824"
                     + "7094916008735203948165670853233151776611528621199501507984793745085705740029921"
@@ -113,7 +113,7 @@ public class BigDecimalMath {
      * Natural logarithm of 2.
      * \protect\vrule width0pt\protect\href{http://www.worldwideschool.org/library/books/sci/math/MiscellaneousMathematicalConstants/chap58.html}{http:/
      */
-    static BigDecimal LOG2 = new BigDecimal("0.693147180559945309417232121458176568075"
+    public static final BigDecimal LOG2 = new BigDecimal("0.693147180559945309417232121458176568075"
                     + "50013436025525412068000949339362196969471560586332699641868754200148102057068573"
                     + "368552023575813055703267075163507596193072757082837143519030703862389167347112335"
                     + "011536449795523912047517268157493206515552473413952588295045300709532636664265410"
