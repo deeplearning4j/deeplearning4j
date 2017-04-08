@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.autodiff;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
@@ -86,9 +85,10 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) m_x;
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id(UUID.randomUUID().toString())
+                            .id("constant(" + arrayField.getVertex().vertexID() + ")a")
                             .shape(arrayField.getInput().getShape()).build());
             graph.addVertex(newVertex);
+
         }
     }
 
@@ -97,14 +97,14 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) m_x;
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id(UUID.randomUUID().toString())
+                            .id(opName + "(" + arrayField.getVertex().vertexID() + ")")
                             .shape(arrayField.getInput().getShape()).build());
             graph.addVertex(newVertex);
             graph.addEdge(arrayField.getVertex().getIdx(),
                     newVertex.vertexID(),OpState.builder()
                             .n(ArrayUtil.prod(arrayField.getInput().getShape()))
                             .opName(opName)
-                            .id(UUID.randomUUID().toString())
+                            .id(arrayField.getVertex().vertexID() +  "->  " + functionName() + " " +  newVertex.vertexID())
                             .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                             .opType(OpState.OpType.TRANSFORM).build(),true);
 

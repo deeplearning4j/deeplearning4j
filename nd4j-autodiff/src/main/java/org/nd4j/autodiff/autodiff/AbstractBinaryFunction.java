@@ -6,7 +6,6 @@ import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.UUID;
@@ -46,20 +45,22 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id(UUID.randomUUID().toString())
+                            .id(opName +"(" + v1.getVertex().vertexID() + "," + v2.getVertex().vertexID() + ")")
                             .shape(v1.getInput().getShape()).build());
             graph.addVertex(newVertex);
             graph.addEdge(v1.getVertex().getIdx(),newVertex.vertexID(),
                     OpState.builder()
                             .opType(OpState.OpType.TRANSFORM)
-                            .opName(opName).id(UUID.randomUUID().toString())
+                            .opName(opName)
+                            .id(opName + "(" + v1.getVertex().vertexID() + " -> " + newVertex.vertexID() + ")")
                             .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                             .n(ArrayUtil.prod(v1.getInput().getShape()))
                             .build(),true);
             graph.addEdge(v2.getVertex().getIdx(),newVertex.vertexID(),
                     OpState.builder()
                             .opType(OpState.OpType.TRANSFORM)
-                            .opName(opName).id(UUID.randomUUID().toString())
+                            .opName(opName)
+                            .id(opName + "(" + v1.getVertex().vertexID() + " -> " + newVertex.vertexID() + ")")
                             .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                             .n(ArrayUtil.prod(v1.getInput().getShape()))
                             .build(),true);

@@ -6,7 +6,6 @@ import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
@@ -17,8 +16,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.UUID;
 
 /**
  * Created by agibsonccc on 4/4/17.
@@ -38,14 +35,6 @@ public class ArrayField implements Field<ArrayField> {
         ops.addVertex(vertex);
     }
 
-    public ArrayField(INDArray arr) {
-        this.input = NDArrayInformation.builder().shape(arr.shape())
-                .id(UUID.randomUUID().toString())
-                .build();
-        this.ops = new Graph<>();
-        this.vertex = new NDArrayVertex(0,input);
-        this.ops.addVertex(vertex);
-    }
 
     @Override
     public ArrayField negate() {
@@ -300,7 +289,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
-                        .id(UUID.randomUUID().toString())
+                        .id(name + "(" + input.getId() + ")")
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
@@ -310,7 +299,8 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).id(UUID.randomUUID().toString())
+                        .opName(name)
+                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 
@@ -322,7 +312,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),
                 NDArrayInformation.builder()
-                        .id(UUID.randomUUID().toString())
+                        .id(name + "(" + input.getId() + ")")
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
@@ -334,7 +324,8 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
-                        .scalarValue(scalarValue).id(UUID.randomUUID().toString())
+                        .scalarValue(scalarValue)
+                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
                         .opType(OpState.OpType.SCALAR_TRANSFORM)
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .build(),true);
@@ -346,7 +337,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
-                        .id(UUID.randomUUID().toString())
+                        .id(name + "(" + i_v.getVertex().vertexID() + ")")
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
@@ -356,14 +347,16 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).id(UUID.randomUUID().toString())
+                        .opName(name)
+                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
         //map y -> z
         this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).id(UUID.randomUUID().toString())
+                        .opName(name)
+                        .id(i_v.getVertex().vertexID() + "-> " + name + " " + newVertex.vertexID())
                         .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 

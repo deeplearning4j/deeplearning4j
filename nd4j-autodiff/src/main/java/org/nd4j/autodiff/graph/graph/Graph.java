@@ -28,7 +28,7 @@ import java.util.*;
 @Data
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
-    private ListOrderedSet<List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
+    private Map<Integer,List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
     private Map<Integer,Vertex<V>> vertices;
     private boolean frozen = false;
     public Graph() {
@@ -39,7 +39,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
-        edges = new ListOrderedSet<>();
+        edges = new HashMap<>();
     }
 
     public void addVertex(Vertex<V> vVertex) {
@@ -58,7 +58,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         for(Vertex<V> v : vertices)
             this.vertices.put(v.getIdx(),v);
         this.allowMultipleEdges = allowMultipleEdges;
-        edges = new ListOrderedSet<>();
+        edges = new HashMap<>();
     }
 
     public Graph(List<Vertex<V>> vertices) {
@@ -118,25 +118,23 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         if (edge.getFrom() < 0)
             throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
-        boolean outOfBounds = edge.getFrom() >= edges.size();
 
-        List<Edge<E>> fromList = !outOfBounds ? edges.get(edge.getFrom()) : new ArrayList<>();
+        List<Edge<E>> fromList =  edges.get(edge.getFrom());
+        if(fromList == null) {
+            fromList = new ArrayList<>();
+            edges.put(edge.getFrom(),fromList);
+        }
+
         addEdgeHelper(edge, fromList);
-        if(outOfBounds)
-            edges.add(fromList);
         if (edge.isDirected())
             return;
 
-        if(edge.getTo() >= edges.size()) {
-            for(int i = edges.size(); i < edge.getTo() + 1; i++)
-                edges.add(new ArrayList<>());
-        }
 
         //Add other way too (to allow easy lookup for undirected edges)
         List<Edge<E>> toList = edges.get(edge.getTo());
-        if (toList == null) {
+        if(toList == null) {
             toList = new ArrayList<>();
-            edges.add(edge.getTo(),toList);
+            edges.put(edge.getTo(),toList);
         }
 
         addEdgeHelper(edge, toList);
@@ -245,7 +243,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
                 continue;
             sb.append(i).append(":");
             for (Edge<E> e : edges.get(i)) {
-                sb.append(" ").append(e);
+                sb.append(" ").append(e).append("\n");
+
             }
         }
         sb.append("\n}");

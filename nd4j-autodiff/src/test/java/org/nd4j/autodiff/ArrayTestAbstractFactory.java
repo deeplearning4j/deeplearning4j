@@ -70,6 +70,7 @@ public class ArrayTestAbstractFactory
         //2 * x
         Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x",new ArrayField(xVertex, graph));
         DifferentialFunction<ArrayField> h = x.mul(x);
+        System.out.println(h.getFormula(new ArrayList<>()));
         //x and result are the vertices
         assertEquals(2,graph.numVertices());
         //x * x - edges for only 1 vertex
@@ -77,9 +78,10 @@ public class ArrayTestAbstractFactory
         //2 edges
         assertEquals(2,graph.getEdges().get(0).size());
         System.out.println("Pre graph " + graph);
-        // for(int i = 0; i < 8; i++)
+        //the polynomial doesn't create edges (power,one,..)
         System.out.println(h.diff(x));
-
+        assertEquals(4,graph.getEdges().get(0).size());
+        //This accumulates the edges from both x * x and 2 * (x,1) ^ 1 (the derivative)
         System.out.println(graph);
     }
 
