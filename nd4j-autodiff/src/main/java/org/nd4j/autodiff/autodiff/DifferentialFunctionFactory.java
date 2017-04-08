@@ -8,6 +8,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 
 public class DifferentialFunctionFactory<X extends Field<X>> {
 
@@ -113,6 +114,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "cos(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Cos().name();
+            }
         };
     }
 
@@ -142,6 +148,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sin(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Sin().name();
             }
         };
     }
@@ -173,6 +184,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "tan(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Tan().name();
+            }
         };
     }
 
@@ -202,6 +218,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "acos(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new ACos().name();
             }
         };
     }
@@ -233,6 +254,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "asin(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new ASin().name();
+            }
         };
     }
 
@@ -262,6 +288,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "atan(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new ATan().name();
             }
         };
     }
@@ -293,6 +324,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "cosh(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Cosh().name();
+            }
         };
     }
 
@@ -322,6 +358,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sinh(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Sinh().name();
             }
         };
     }
@@ -353,6 +394,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "tanh(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Tanh().name();
+            }
         };
     }
 
@@ -382,6 +428,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "acosh(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new ACosh().name();
             }
         };
     }
@@ -413,6 +464,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "asinh(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new ASinh().name();
+            }
         };
     }
 
@@ -442,6 +498,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "atanh(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new ATanh().name();
             }
         };
     }
@@ -473,6 +534,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "exp(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Exp().name();
+            }
         };
     }
 
@@ -502,6 +568,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "log(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Log().name();
             }
         };
     }
@@ -537,6 +608,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
                 return "pow(" + larg().doGetFormula(variables) + ","
                         + rarg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Pow().name();
+            }
         };
     }
 
@@ -569,6 +645,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sqrt(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Sqrt().name();
+            }
         };
     }
 
@@ -600,6 +681,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "pow(" + arg().doGetFormula(variables) + ", 2d )";
             }
+
+            @Override
+            public String functionName() {
+                return new Pow().name();
+            }
         };
     }
 
@@ -630,6 +716,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "floor(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Floor().name();
+            }
         };
     }
 
@@ -659,6 +750,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "relu(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new RectifedLinear().name();
             }
         };
     }
@@ -693,6 +789,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "softmax(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new SoftMax().name();
+            }
         };
     }
 
@@ -722,6 +823,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "hardtanh(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new HardTanh().name();
             }
         };
     }
@@ -754,6 +860,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "hardtanhDerivative(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new HardTanhDerivative().name();
             }
         };
     }
@@ -788,6 +899,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sigmoid(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new Sigmoid().name();
+            }
         };
     }
 
@@ -820,6 +936,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sigmoidDerivative(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new SigmoidDerivative().name();
+            }
         };
     }
 
@@ -850,6 +971,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "sign(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Sign().name();
             }
         };
     }
@@ -882,6 +1008,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "softsign(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new SoftSign().name();
+            }
         };
     }
 
@@ -911,6 +1042,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "softsignDerivative(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new SoftSignDerivative().name();
             }
         };
     }
@@ -946,6 +1082,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "softplus(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new SoftPlus().name();
+            }
         };
     }
 
@@ -977,6 +1118,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             public String doGetFormula(List<Variable<X>> variables) {
                 return "elu(" + arg().doGetFormula(variables) + ")";
             }
+
+            @Override
+            public String functionName() {
+                return new ELU().name();
+            }
         };
     }
 
@@ -1007,7 +1153,12 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
-                return "elu(" + arg().doGetFormula(variables) + ")";
+                return "eluderivative(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new ELUDerivative().name();
             }
         };
     }
@@ -1035,12 +1186,17 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
             @Override
             public String toString() {
-                return "elu(" + arg().toString() + ")";
+                return "leakurelu(" + arg().toString() + ")";
             }
 
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
-                return "elu(" + arg().doGetFormula(variables) + ")";
+                return "leakyrelu(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new LeakyReLU().name();
             }
         };
     }
@@ -1073,6 +1229,11 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
                 return "leakyReluDerivative(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new LeakyReLUDerivative().name();
             }
         };
     }

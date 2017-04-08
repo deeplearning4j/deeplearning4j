@@ -65,6 +65,11 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
+    public String functionName() {
+        return "constant";
+    }
+
+    @Override
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
         return i_v.isConstant() ? new Constant<>(graph, i_v.getValue(false).plus(this.m_x), m_factory)
                 : super.plused(i_v);

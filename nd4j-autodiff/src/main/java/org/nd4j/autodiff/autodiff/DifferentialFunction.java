@@ -66,6 +66,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     public abstract String doGetFormula(List<Variable<X>> variables);
 
+    public abstract String functionName();
 
     @Override
     public abstract String toString();

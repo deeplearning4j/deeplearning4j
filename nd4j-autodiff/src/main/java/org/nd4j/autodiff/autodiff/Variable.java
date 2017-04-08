@@ -21,7 +21,8 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         this(graph,i_name, i_v, i_factory, null);
     }
 
-    protected Variable(Graph<NDArrayInformation,OpState> graph, String i_name, X i_v,
+    protected Variable(Graph<NDArrayInformation,OpState> graph,
+                       String i_name, X i_v,
                        AbstractIdentityFactory<X> i_factory,
                        PreEvaluator<X> preEvaluator) {
        super(graph);
@@ -94,6 +95,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     public String doGetFormula(List<Variable<X>> variables) {
         variables.add(this);
         return getName();
+    }
+
+    @Override
+    public String functionName() {
+        return m_name;
     }
 
     @Override

@@ -41,6 +41,11 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
+    public String functionName() {
+        return "inverse";
+    }
+
+    @Override
     public DifferentialFunction<X> inverse() {
         return arg();
     }

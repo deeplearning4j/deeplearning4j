@@ -41,6 +41,11 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
+    public String functionName() {
+        return new  org.nd4j.linalg.api.ops.impl.transforms.Negative().name();
+    }
+
+    @Override
     public DifferentialFunction<X> negate() {
         return arg();
     }

@@ -17,6 +17,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
         super(graph,i_v);
         m_scale = i_scale;
         m_exponent = i_exponent;
+        addEdges(graph,i_v,functionName());
     }
 
     @Override
@@ -44,6 +45,11 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     public String doGetFormula(List<Variable<X>> variables) {
         return "( " + m_scale + " * Math.pow(" + arg().doGetFormula(variables) + "," + m_exponent
                 + ")";
+    }
+
+    @Override
+    public String functionName() {
+        return "polynomial";
     }
 
     @Override

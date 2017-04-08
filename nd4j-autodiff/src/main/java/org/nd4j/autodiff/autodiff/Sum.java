@@ -6,6 +6,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
 
 public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
@@ -41,5 +42,10 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
     @Override
     public String doGetFormula(List<Variable<X>> variables) {
         return "(" + larg().doGetFormula(variables) + "+" + rarg().doGetFormula(variables) + ")";
+    }
+
+    @Override
+    public String functionName() {
+        return new AddOp().name();
     }
 }
