@@ -1,5 +1,6 @@
 package org.nd4j.autodiff;
 
+import com.sun.org.apache.xml.internal.resolver.readers.ExtendedXMLCatalogReader;
 import org.junit.Test;
 import org.nd4j.autodiff.autodiff.Differential;
 import org.nd4j.autodiff.autodiff.DifferentialFunction;
@@ -10,6 +11,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
@@ -56,7 +58,7 @@ public class ArrayTestAbstractFactory
 
 
     @Test
-    public void testAutoDiffSimple() {
+    public void testAutoDiffSimple() throws Exception {
         Graph<NDArrayInformation,OpState> graph = new Graph<>();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
@@ -92,6 +94,7 @@ public class ArrayTestAbstractFactory
         assertEquals(5,graph.getEdges().get(0).size());
         //should have polynomial edges from 2 to 4 and 2 to 5
         assertEquals(1,graph.getEdges().get(2).size());
+        graph.print(new File(System.getProperty("java.io.tmpdir"),"graph.png"));
 
     }
 

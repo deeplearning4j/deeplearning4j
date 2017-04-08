@@ -1,5 +1,7 @@
 package org.nd4j.autodiff.graph.graph;
 
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
 import lombok.Data;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.nd4j.autodiff.graph.api.BaseGraph;
@@ -9,8 +11,14 @@ import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
 import org.nd4j.autodiff.graph.vertexfactory.VertexFactory;
 
+import java.io.File;
+import java.io.IOError;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
+
+import static guru.nidi.graphviz.model.Factory.graph;
+import static guru.nidi.graphviz.model.Factory.node;
 
 /** Graph, where all edges and vertices are stored in-memory.<br>
  * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
@@ -48,6 +56,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         this.vertices.put(vVertex.getIdx(),vVertex);
 
     }
+
 
 
 
@@ -251,5 +260,26 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
 
+    /**
+     * Save the graph to a file with graphviz
+     * @param path
+     * @throws IOException
+     */
+    public void print(File path) throws IOException {
+        guru.nidi.graphviz.model.Graph g = graph("example5").directed();
+        for(List<Edge<E>> edgeList : getEdges().values())
+            for(Edge<E> edge : edgeList)
+                g = g.with(node(String.valueOf(edge.getFrom()))
+                        .link(node(String.valueOf(edge.getTo()))));
+        Graphviz viz = Graphviz.fromGraph(g);
+        viz.width(200).height(200)
+                .render(Format.PNG).toFile(path);
+
+    }
+
 
 }
+
+
+
+
