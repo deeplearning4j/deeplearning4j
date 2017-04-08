@@ -62,7 +62,7 @@ public class CpuLapack extends BaseLapack {
 
         // Copy R ( upper part of Q ) into result
         if( R != null ) {
-            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ).dup() ) ; 
+            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ) ) ; 
 			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
 
 			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {
@@ -95,7 +95,7 @@ public class CpuLapack extends BaseLapack {
         
         // Copy R ( upper part of Q ) into result
         if( R != null ) {
-            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ).dup() ) ; 
+            R.assign( A.get( NDArrayIndex.interval( 0, A.columns() ), NDArrayIndex.all() ) ) ; 
 			INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
 			
 			for( int i=1 ; i<Math.min( A.rows(), A.columns() ) ; i++ ) {

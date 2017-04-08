@@ -39,6 +39,7 @@ public class LapackTest extends BaseNd4jTest {
 		}
 	}
 
+    @Test
 	public void testQRRect() {
 		INDArray A = Nd4j.create( new double[]  { 1,2,3,4,5,6,7,8,9,10,11,12 } );		
 		A = A.reshape( 'f', 4, 3 ) ;
@@ -56,6 +57,7 @@ public class LapackTest extends BaseNd4jTest {
 		}
 	}
 	
+    @Test
 	public void testCholeskyL() {
 		INDArray A = Nd4j.create( new double[]  { 2,-1,1,-1,2,-1, 1,-1,2,} );
 		A = A.reshape( 'c', 3, 3 ) ;		
@@ -72,15 +74,15 @@ public class LapackTest extends BaseNd4jTest {
 		}
 	}
 	
+    @Test
 	public void testCholeskyU() {
 		INDArray A = Nd4j.create( new double[]  { 2,-1,2,-1,2,-1, 2,-1,2,} );
-		A = A.reshape( 'c', 3, 3 ) ;		
+		A = A.reshape( 'f', 3, 3 ) ;		
 		INDArray O = Nd4j.create( A.shape() ) ;
 		Nd4j.copy( A, O  ) ;
 		
 		Nd4j.getBlasWrapper().lapack().potrf( A, false ) ;
-		//printMatrix(A);
-		A.transpose().mmuli( A ) ;
+		A = A.transpose().mmul( A ) ;
 		O.subi( A ) ;
 		DataBuffer db = O.data() ;
 		for( int i=0 ; i<db.length() ; i++ ) {

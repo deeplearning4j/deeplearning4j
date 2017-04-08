@@ -245,7 +245,7 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ).dup() ) ; 
+                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ) ) ; 
 	            
                 INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
                 for( int i=1 ; i<Math.min( a.rows(), a.columns() ) ; i++ ) {
@@ -359,7 +359,7 @@ public class JcublasLapack extends BaseLapack {
 
             // Copy R ( upper part of Q ) into result
             if( r != null ) {
-                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ).dup() ) ; 
+                r.assign( a.get( NDArrayIndex.interval( 0, a.columns() ), NDArrayIndex.all() ) ) ; 
 	            
                 INDArrayIndex ix[] = new INDArrayIndex[ 2 ] ;
                 for( int i=1 ; i<Math.min( a.rows(), a.columns() ) ; i++ ) {
