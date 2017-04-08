@@ -3,10 +3,13 @@ package org.nd4j.autodiff.autodiff;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
@@ -83,7 +86,32 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> diff(Variable<X> i_v) {
-        return (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
+        Constant<X> ret =  (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
+        if(m_x instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) ret.getM_x();
+            addEdge("diff",arrayField.getVertex());
+
+        }
+
+        return ret;
+    }
+
+
+
+    protected void addEdge(String opName,NDArrayVertex newVertex) {
+        if(m_x instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) m_x;
+            graph.addVertex(newVertex);
+            graph.addEdge(arrayField.getVertex().getIdx(),
+                    newVertex.vertexID(),OpState.builder()
+                            .n(ArrayUtil.prod(arrayField.getInput().getShape()))
+                            .opName(opName)
+                            .id(arrayField.getVertex().vertexID() +  "->  " + functionName() + " " +  newVertex.vertexID())
+                            .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
+                                    String.valueOf(newVertex.vertexID())})
+                            .opType(OpState.OpType.TRANSFORM).build(),true);
+
+        }
     }
 
     @Override

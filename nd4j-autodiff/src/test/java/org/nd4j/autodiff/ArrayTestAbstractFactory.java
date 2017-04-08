@@ -81,15 +81,17 @@ public class ArrayTestAbstractFactory
         System.out.println("Pre graph " + graph);
         //the polynomial doesn't create edges (power,one,..)
         DifferentialFunction<ArrayField> dif = h.diff(x);
-        assertEquals(4,graph.getEdges().get(0).size());
+        assertEquals(5,graph.getEdges().get(0).size());
         //This accumulates the edges from both x * x and 2 * (x,1) ^ 1 (the derivative)
-        System.out.println(graph);
+        System.out.println(graph.toString());
         dif.getValue();
         //getValue shouldn't change graph
-        assertEquals(4,graph.getEdges().get(0).size());
+        assertEquals(5,graph.getEdges().get(0).size());
         dif.getFormula(new ArrayList<>());
         //getFormula shouldn't change graph
-        assertEquals(4,graph.getEdges().get(0).size());
+        assertEquals(5,graph.getEdges().get(0).size());
+        //should have polynomial edges from 2 to 4 and 2 to 5
+        assertEquals(1,graph.getEdges().get(2).size());
 
     }
 

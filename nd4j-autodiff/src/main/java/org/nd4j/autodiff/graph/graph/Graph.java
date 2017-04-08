@@ -237,10 +237,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
         sb.append("\n}");
         sb.append("\nEdges {");
-        for (int i = 0; i < edges.size(); i++) {
+        for (Integer i : edges.keySet()) {
             sb.append("\n\t");
-            if (edges.get(i) == null)
-                continue;
             sb.append(i).append(":");
             for (Edge<E> e : edges.get(i)) {
                 sb.append(" ").append(e).append("\n");

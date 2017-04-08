@@ -2,6 +2,7 @@ package org.nd4j.autodiff.autodiff;
 
 import java.util.List;
 
+import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -11,7 +12,7 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+@Data
 public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected X m_x;
@@ -22,7 +23,6 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         if (i_v != null && i_factory != null) {
             m_x = i_v;
             m_factory = i_factory;
-            addNode(graph);
 
         } else {
             throw new IllegalArgumentException("Input not null value.");
@@ -105,7 +105,8 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
                             .n(ArrayUtil.prod(arrayField.getInput().getShape()))
                             .opName(opName)
                             .id(arrayField.getVertex().vertexID() +  "->  " + functionName() + " " +  newVertex.vertexID())
-                            .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                            .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
+                                    String.valueOf(newVertex.vertexID())})
                             .opType(OpState.OpType.TRANSFORM).build(),true);
 
         }
