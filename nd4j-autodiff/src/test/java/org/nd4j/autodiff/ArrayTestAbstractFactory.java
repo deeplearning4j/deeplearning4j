@@ -76,7 +76,7 @@ public class ArrayTestAbstractFactory
         assertEquals(2,graph.getEdges().get(0).size());
         System.out.println("Pre graph " + graph);
         // for(int i = 0; i < 8; i++)
-        System.out.println(h.diff(x));
+        System.out.println(h.diff(x).getValue());
         System.out.println(graph);
     }
 
