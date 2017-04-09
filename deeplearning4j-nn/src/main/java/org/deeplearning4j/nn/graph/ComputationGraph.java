@@ -97,9 +97,9 @@ public class ComputationGraph implements Serializable, Model {
     @Setter
     private boolean initDone = false;
 
-    protected final static String workspaceExternal = "LOOP_EXTERNAL";
-    protected final static String workspaceFeedForward = "LOOP_FF";
-    protected final static String workspaceBackProp = "LOOP_BP";
+    public final static String workspaceExternal = "LOOP_EXTERNAL";
+    public final static String workspaceFeedForward = "LOOP_FF";
+    public final static String workspaceBackProp = "LOOP_BP";
 
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
@@ -1181,7 +1181,7 @@ public class ComputationGraph implements Serializable, Model {
                         if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
                             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
                                 // FIXME: we don't really want detach here
-                                vertices[vIdx].setInput(vIdxInputNum, input.detach());
+                                vertices[vIdx].setInput(vIdxInputNum, input);
                             }
                         } else {
                             vertices[vIdx].setInput(vIdxInputNum, input);
@@ -1216,7 +1216,7 @@ public class ComputationGraph implements Serializable, Model {
                                     vertices[vIdx].setInput(inputNum, out.detach());
                                 }
                             } else {
-                                vertices[vIdx].setInput(inputNum, out);
+                                vertices[vIdx].setInput(inputNum, out.detach());
                             }
                         }
                     }
@@ -1320,7 +1320,6 @@ public class ComputationGraph implements Serializable, Model {
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
             try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                log.info("InitGradients: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
                 initGradientsView();
             }
         }
@@ -1393,6 +1392,7 @@ public class ComputationGraph implements Serializable, Model {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                     gv.setEpsilon(currentEps.add(epsilons[j++]));
                                 }
                             }
