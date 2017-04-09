@@ -21,4 +21,36 @@ public class TensorGradVariable {
     private TensorGrad tensorGrad;
 
 
+    public TensorGradVariable add(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " + " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(tensorGradVariable.getArrayField().plus(arrayField))
+                .build();
+    }
+
+    public TensorGradVariable sub(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " - " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(tensorGradVariable.getArrayField().minus(arrayField))
+                .build();
+    }
+
+    public TensorGradVariable div(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " / " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(tensorGradVariable.getArrayField().div(arrayField))
+                .build();
+    }
+
+    public TensorGradVariable mul(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " * " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(tensorGradVariable.getArrayField().mul(arrayField))
+                .build();
+    }
+
 }

@@ -93,6 +93,8 @@ public class ArrayTestAbstractFactory
         TensorGrad tensorGrad = TensorGrad.create();
         TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
         TensorGradVariable grad = tensorGrad.grad(var,null);
+        TensorGradVariable plus = grad.add(var);
+        
     }
 
     @Test
