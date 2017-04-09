@@ -106,7 +106,7 @@ namespace functions {
 					    }
 					}
 
-					/*
+
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
@@ -117,7 +117,6 @@ namespace functions {
 					if (threadIdx.x == 0) {
 						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 					}
-					*/
 				}
 			}
 
