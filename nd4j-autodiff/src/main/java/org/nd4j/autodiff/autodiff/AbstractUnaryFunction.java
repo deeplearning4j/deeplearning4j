@@ -30,14 +30,14 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id(opName + "(" + v1.getVertex().vertexID() + " -> " + v1.getVertex().vertexID() + ")")
+                            .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                             .shape(v1.getInput().getShape()).build());
             graph.addVertex(newVertex);
             graph.addEdge(v1.getVertex().getIdx(),newVertex.vertexID(),
                     OpState.builder()
                             .opType(OpState.OpType.TRANSFORM)
                             .opName(opName)
-                            .id(opName + "(" + v1.getVertex().vertexID() + " -> " + newVertex.vertexID() + ")")
+                            .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                             .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                             .n(ArrayUtil.prod(v1.getInput().getShape()))
                             .build(),true);

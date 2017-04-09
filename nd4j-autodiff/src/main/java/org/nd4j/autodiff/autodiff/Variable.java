@@ -106,7 +106,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
                     newVertex.vertexID(),OpState.builder()
                             .n(ArrayUtil.prod(arrayField.getInput().getShape()))
                             .opName(opName)
-                            .id(arrayField.getVertex().vertexID() +  "->  " + functionName() + " " +  newVertex.vertexID())
+                            .id(arrayField.getVertex().getValue().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
                             .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
                                     String.valueOf(newVertex.vertexID())})
                             .opType(OpState.OpType.TRANSFORM).build(),true);

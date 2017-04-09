@@ -61,7 +61,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                         OpState.builder()
                                 .opType(OpState.OpType.TRANSFORM)
                                 .opName(opName)
-                                .id(opName + "(" + dupVertex.vertexID() + " -> " + newVertex.vertexID() + ")")
+                                .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                                 .vertexIds(new String[]{String.valueOf(dupVertex.vertexID()),String.valueOf(newVertex.vertexID())})
                                 .n(ArrayUtil.prod(v1.getInput().getShape()))
                                 .build(),true);
@@ -71,7 +71,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                         OpState.builder()
                                 .opType(OpState.OpType.TRANSFORM)
                                 .opName(opName)
-                                .id(opName + "(" + v1.getVertex().vertexID() + " -> " + newVertex.vertexID() + ")")
+                                .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                                 .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                                 .n(ArrayUtil.prod(v1.getInput().getShape()))
                                 .build(),true);
@@ -82,7 +82,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                     OpState.builder()
                             .opType(OpState.OpType.TRANSFORM)
                             .opName(opName)
-                            .id(opName + "(" + v1.getVertex().vertexID() + " -> " + newVertex.vertexID() + ")")
+                            .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                             .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                             .n(ArrayUtil.prod(v1.getInput().getShape()))
                             .build(),true);

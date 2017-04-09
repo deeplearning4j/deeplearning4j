@@ -300,7 +300,7 @@ public class ArrayField implements Field<ArrayField> {
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
-                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
+                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 
@@ -325,7 +325,7 @@ public class ArrayField implements Field<ArrayField> {
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
                         .scalarValue(scalarValue)
-                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
+                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .opType(OpState.OpType.SCALAR_TRANSFORM)
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .build(),true);
@@ -337,7 +337,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
-                        .id(name + "(" + i_v.getVertex().vertexID() + ")")
+                        .id(name + "(" + i_v.getVertex().getValue().getId() + ")")
                         .shape(input.getShape()).build());
 
         //add the result vertex to the graph
@@ -348,7 +348,7 @@ public class ArrayField implements Field<ArrayField> {
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
-                        .id(vertex.getIdx() + "-> " + name + " " + newVertex.vertexID())
+                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
         //map y -> z
@@ -356,7 +356,7 @@ public class ArrayField implements Field<ArrayField> {
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name)
-                        .id(i_v.getVertex().vertexID() + "-> " + name + " " + newVertex.vertexID())
+                        .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 

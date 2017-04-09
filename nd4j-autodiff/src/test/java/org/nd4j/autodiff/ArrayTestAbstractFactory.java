@@ -107,24 +107,24 @@ public class ArrayTestAbstractFactory
         DifferentialFunction<ArrayField> h = x.mul(x);
         System.out.println(h.getFormula(new ArrayList<>()));
         //x and result are the vertices
-        assertEquals(2,graph.numVertices());
+        assertEquals(3,graph.numVertices());
         //x * x - edges for only 1 vertex
-        assertEquals(1,graph.getEdges().size());
+        assertEquals(2,graph.getEdges().size());
         //2 edges
-        assertEquals(2,graph.getEdges().get(0).size());
+        assertEquals(1,graph.getEdges().get(0).size());
         System.out.println("Pre graph " + graph);
         //the polynomial doesn't create edges (power,one,..)
         DifferentialFunction<ArrayField> dif = h.diff(x);
         System.out.println("Formula  " + dif.getFormula(new ArrayList<>()));
-        assertEquals(5,graph.getEdges().get(0).size());
+        assertEquals(4,graph.getEdges().get(0).size());
         //This accumulates the edges from both x * x and 2 * (x,1) ^ 1 (the derivative)
         System.out.println(graph.toString());
         dif.getValue();
         //getValue shouldn't change graph
-        assertEquals(5,graph.getEdges().get(0).size());
+        assertEquals(4,graph.getEdges().get(0).size());
         dif.getFormula(new ArrayList<>());
         //getFormula shouldn't change graph
-        assertEquals(5,graph.getEdges().get(0).size());
+        assertEquals(4,graph.getEdges().get(0).size());
         //should have polynomial edges from 2 to 4 and 2 to 5
         assertEquals(1,graph.getEdges().get(2).size());
         graph.print(new File(System.getProperty("java.io.tmpdir"),"graph.png"));

@@ -85,7 +85,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) m_x;
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id("constant(" + arrayField.getVertex().vertexID() + ")a")
+                            .id("constant(" + arrayField.getInput().getId() + ")")
                             .shape(arrayField.getInput().getShape()).build());
             graph.addVertex(newVertex);
 
@@ -97,14 +97,14 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) m_x;
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
                     NDArrayInformation.builder()
-                            .id(opName + "(" + arrayField.getVertex().vertexID() + ")")
+                            .id(opName + "(" + arrayField.getInput().getId() + ")")
                             .shape(arrayField.getInput().getShape()).build());
             graph.addVertex(newVertex);
             graph.addEdge(arrayField.getVertex().getIdx(),
                     newVertex.vertexID(),OpState.builder()
                             .n(ArrayUtil.prod(arrayField.getInput().getShape()))
                             .opName(opName)
-                            .id(arrayField.getVertex().vertexID() +  "->  " + functionName() + " " +  newVertex.vertexID())
+                            .id(arrayField.getInput().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
                             .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
                                     String.valueOf(newVertex.vertexID())})
                             .opType(OpState.OpType.TRANSFORM).build(),true);

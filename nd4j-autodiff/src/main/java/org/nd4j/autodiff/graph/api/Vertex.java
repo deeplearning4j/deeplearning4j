@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.graph.api;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 
 /** Vertex in a graph
@@ -10,7 +9,7 @@ import lombok.Data;
  */
 @AllArgsConstructor
 @Data
-@Builder
+
 public class Vertex<T> {
 
     protected final int idx;
