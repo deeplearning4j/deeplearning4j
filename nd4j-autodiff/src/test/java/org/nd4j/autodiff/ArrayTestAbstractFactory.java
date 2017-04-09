@@ -9,6 +9,9 @@ import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGrad;
+import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -84,6 +87,13 @@ public class ArrayTestAbstractFactory
 
     }
 
+
+    @Test
+    public void testGrad() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
+        TensorGradVariable grad = tensorGrad.grad(var,null);
+    }
 
     @Test
     public void testSingleTransformOp() throws Exception {
