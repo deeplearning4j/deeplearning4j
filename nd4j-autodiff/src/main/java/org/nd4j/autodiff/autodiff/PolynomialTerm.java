@@ -19,8 +19,8 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
         super(graph,i_v);
         m_scale = i_scale;
         m_exponent = i_exponent;
+        //add nodes to the graph from value
         getValue(false);
-       // addEdges(graph,i_v,functionName());
     }
 
     @Override

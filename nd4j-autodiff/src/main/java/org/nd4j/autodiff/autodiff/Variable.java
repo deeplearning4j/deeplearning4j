@@ -39,9 +39,6 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         }
     }
 
-    protected AbstractIdentityFactory<X> factory() {
-        return m_factory;
-    }
 
     private void setName(String i_name) {
         if (i_name != null) {

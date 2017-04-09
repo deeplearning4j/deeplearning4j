@@ -10,7 +10,11 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 
-public class DifferentialFunctionFactory<X extends Field<X>> {
+/**
+ *
+ * @param <X>
+ */
+public class DifferentialFunctionFactory<X extends Field<X>> implements FunctionFactory<X> {
 
     protected AbstractFactory<X> mFactory;
     protected Graph<NDArrayInformation,OpState> graph;
@@ -23,10 +27,12 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         }
     }
 
+    @Override
     public Constant<X> val(X iX) {
         return new Constant<>(mFactory.graph(),iX, mFactory);
     }
 
+    @Override
     public ConstantVector<X> val(X... iX) {
         int size = iX.length;
         List<Constant<X>> list = new ArrayList<>(size);
@@ -37,6 +43,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
     }
 
     // ZeroVector
+    @Override
     public ConstantVector<X> zero(int iSize) {
         List<Constant<X>> list = new ArrayList<>(iSize);
         for (int i = 0; i < iSize; i++) {
@@ -45,14 +52,17 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         return new ConstantVector<>(graph,mFactory, list);
     }
 
+    @Override
     public Variable<X> var(String iName, X iX, PreEvaluator<X> preEvaluator) {
         return new Variable<>(mFactory.graph(),iName, iX, mFactory, preEvaluator);
     }
 
+    @Override
     public Variable<X> var(String iName, X iX) {
         return new Variable<>(mFactory.graph(),iName, iX, mFactory);
     }
 
+    @Override
     public VariableVector<X> var(String iName, X... iX) {
         int size = iX.length;
         List<Variable<X>> list = new ArrayList<>(size);
@@ -62,6 +72,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         return new VariableVector<>(graph,mFactory, list);
     }
 
+    @Override
     public VariableVector<X> var(String iName, int iSize) {
         List<Variable<X>> list = new ArrayList<>(iSize);
         for (int i = 0; i < iSize; i++) {
@@ -70,6 +81,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         return new VariableVector<>(graph,mFactory, list);
     }
 
+    @Override
     public DifferentialVectorFunction<X> function(DifferentialFunction<X>... iX) {
         int size = iX.length;
         List<DifferentialFunction<X>> list = new ArrayList<>(size);
@@ -79,14 +91,17 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         return new DifferentialVectorFunction<>(graph,mFactory, list);
     }
 
+    @Override
     public Zero<X> zero() {
         return new Zero<>(graph,mFactory);
     }
 
+    @Override
     public One<X> one() {
         return new One<>(graph,mFactory);
     }
 
+    @Override
     public DifferentialFunction<X> cos(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -122,6 +137,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> sin(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -157,6 +173,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> tan(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -192,6 +209,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> acos(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -227,6 +245,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> asin(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -262,6 +281,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> atan(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -297,6 +317,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> cosh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -332,6 +353,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> sinh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -367,6 +389,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> tanh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -402,6 +425,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> acosh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -437,6 +461,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> asinh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -472,6 +497,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> atanh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -507,6 +533,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> exp(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -542,6 +569,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> log(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -577,6 +605,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> pow(DifferentialFunction<X> iX, Constant<X> i_y) {
         return new AbstractBinaryFunction<X>(mFactory.graph(),iX, i_y) {
 
@@ -616,6 +645,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> sqrt(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -653,6 +683,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> square(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -689,6 +720,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> floor(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -724,6 +756,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> relu(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -761,6 +794,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> softmax(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -797,6 +831,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> hardTanh(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -834,6 +869,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -872,6 +908,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -909,6 +946,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -945,6 +983,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
     }
 
 
+    @Override
     public DifferentialFunction<X> sign(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -981,6 +1020,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
     }
 
 
+    @Override
     public DifferentialFunction<X> softsign(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -1016,6 +1056,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
         };
     }
 
+    @Override
     public DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -1055,6 +1096,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> softplus(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -1091,6 +1133,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
     }
 
 
+    @Override
     public DifferentialFunction<X> elu(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -1128,6 +1171,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
+    @Override
     public DifferentialFunction<X> eluDerivative(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
@@ -1166,7 +1210,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
-    public DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX,double cutoff) {
+    @Override
+    public DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
             @Override
@@ -1203,7 +1248,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> {
 
 
 
-    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX,double cutoff) {
+    @Override
+    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
 
             @Override
