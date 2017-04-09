@@ -11,7 +11,7 @@ import org.nd4j.autodiff.graph.api.Vertex;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class NDArrayVertex extends Vertex<NDArrayInformation> {
+public class NDArrayVertex extends Vertex<NDArrayInformation>  {
 
     public NDArrayVertex(int idx,int[] shape) {
         this(idx,
@@ -23,6 +23,5 @@ public class NDArrayVertex extends Vertex<NDArrayInformation> {
     public NDArrayVertex(int idx, NDArrayInformation value) {
         super(idx, value);
     }
-
 
 }

@@ -1,7 +1,10 @@
 package org.nd4j.autodiff.graph.graph;
 
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.Label;
 import lombok.Data;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.nd4j.autodiff.graph.api.BaseGraph;
@@ -10,6 +13,9 @@ import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
 import org.nd4j.autodiff.graph.vertexfactory.VertexFactory;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpState;
 
 import java.io.File;
 import java.io.IOError;
@@ -19,6 +25,7 @@ import java.util.*;
 
 import static guru.nidi.graphviz.model.Factory.graph;
 import static guru.nidi.graphviz.model.Factory.node;
+import static guru.nidi.graphviz.model.Link.to;
 
 /** Graph, where all edges and vertices are stored in-memory.<br>
  * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
@@ -268,11 +275,29 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     public void print(File path) throws IOException {
         guru.nidi.graphviz.model.Graph g = graph("example5").directed();
         for(List<Edge<E>> edgeList : getEdges().values())
-            for(Edge<E> edge : edgeList)
-                g = g.with(node(String.valueOf(edge.getFrom()))
-                        .link(node(String.valueOf(edge.getTo()))));
+            for(Edge<E> edge : edgeList) {
+                if(getVertex(edge.getFrom()) instanceof NDArrayVertex) {
+                    NDArrayVertex vertex = (NDArrayVertex) getVertex(edge.getFrom());
+                    NDArrayVertex v2 = (NDArrayVertex) getVertex(edge.getTo());
+                    OpState opState = (OpState) edge.getValue();
+                    g = g.with(node(String.valueOf(vertex.vertexID()))
+                            .with(Label.of(String.valueOf(vertex.getValue().getId())))
+                            .link(to(node(String.valueOf(v2.vertexID()))
+                                    .with(Label.of(v2.getValue().getId())))
+                                    .with(Label.of(opState.getOpName()))));
+                }
+
+            }
+
+        for(Vertex<V> vertex : getVertices().values()) {
+            if(!edges.containsKey(vertex.getIdx())) {
+                NDArrayInformation vertex1 = (NDArrayInformation) vertex.getValue();
+                g = g.with(node(String.valueOf(vertex.vertexID())).with(Label.of(vertex1.getId())));
+            }
+        }
+
         Graphviz viz = Graphviz.fromGraph(g);
-        viz.width(200).height(200)
+        viz.width(1000)
                 .render(Format.PNG).toFile(path);
 
     }
