@@ -45,8 +45,8 @@ public class JcublasLapack extends BaseLapack {
         try {
             cusolverDnSorgqr_bufferSize = c.getMethod("cusolverDnSorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
             cusolverDnSorgqr = c.getMethod("cusolverDnSorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
-            cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
-            cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
+            cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, IntPointer.class);
+            cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, DoublePointer.class, int.class, IntPointer.class);
         } catch (NoSuchMethodException | SecurityException ex) {
             log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
         }
