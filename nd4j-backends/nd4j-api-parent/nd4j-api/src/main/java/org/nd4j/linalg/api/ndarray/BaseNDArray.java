@@ -5010,7 +5010,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          2) we're out of any workspace
         */
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -5020,7 +5020,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
 
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
             //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
@@ -5064,7 +5064,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             INDArray copy = null;
             if (!this.isView()) {
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
                 copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -5103,13 +5103,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (current == target)
             return this;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
         INDArray copy = null;
         if (!this.isView()) {
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong());
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
