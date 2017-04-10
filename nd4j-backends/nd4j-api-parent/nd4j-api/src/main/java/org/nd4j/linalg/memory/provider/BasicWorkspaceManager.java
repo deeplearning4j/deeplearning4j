@@ -196,7 +196,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         public void run() {
             while (true) {
                 try {
-                    Nd4jWorkspace.GarbageWorkspaceReference reference = (Nd4jWorkspace.GarbageWorkspaceReference) queue.poll();
+                    Nd4jWorkspace.GarbageWorkspaceReference reference = (Nd4jWorkspace.GarbageWorkspaceReference) queue.remove();
                     if (reference != null) {
                         //log.info("Releasing reference for Workspace [{}]", reference.getId());
                         PagedPointer ptrDevice = reference.getPointerDevice();
