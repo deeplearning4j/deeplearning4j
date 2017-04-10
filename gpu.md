@@ -93,6 +93,11 @@ This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WI
 
 Since the cache in Nd4j works has a «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
 
+## Setting Environment Variables BACKEND_PRIORITY_CPU and BACKEND_PRIORITY_GPU
+
+If set the Environment Variables BACKEND_PRIORITY_CPU BACKEND_PRIORITY_GPU can determine wether GPU or CPU backend is used. To use set BACKEND_PRIORITY_CPU and BACKEND_PRIORITY_GPU to integers. The highest value determines what backend is used. 
+
+
 ## How it works after all?
 
 CUDA backend has few design differences if compared to native backend, caused by GPU vs x86 differences. 
