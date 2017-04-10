@@ -92,7 +92,7 @@ public class PCA {
         INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+        Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
 
         // for comparison k & nDims are the equivalent values in both methods implementing PCA
 
@@ -160,7 +160,7 @@ public class PCA {
         INDArray VT = Nd4j.create(n, n, 'f');
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd(A, s, null, VT);
+        Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
 
         // Now convert the eigs of X into the eigs of the covariance matrix
         for (int i = 0; i < s.length(); i++) {

@@ -1,20 +1,18 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base lapack define float and double versions.
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseLapack implements Lapack {
-
-    private static Logger logger = LoggerFactory.getLogger(BaseLapack.class);
 
     @Override
     public INDArray getrf(INDArray A) {
@@ -39,7 +37,7 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to getrf() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            logger.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row "
+            log.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row "
                             + INFO.getInt(0));
         }
 
@@ -48,8 +46,9 @@ public abstract class BaseLapack implements Lapack {
 
 
 
+
     /**
-    * Float version of LU decomp.
+    * Float/Double versions of LU decomp.
     * This is the official LAPACK interface (in case you want to call this directly)
     * See getrf for full details on LU Decomp
     *
@@ -60,13 +59,96 @@ public abstract class BaseLapack implements Lapack {
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
     public abstract void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO);
-
     public abstract void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO);
 
 
 
     @Override
-    public void sgesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
+    public void potrf(INDArray A, boolean lower ) {
+
+        byte uplo = (byte)(lower?'L':'U') ; // upper or lower part of the factor desired ?
+        int n = A.columns();
+
+        INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            dpotrf( uplo, n, A, INFO);
+        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+            spotrf( uplo, n, A, INFO);
+        else
+            throw new UnsupportedOperationException();
+
+        if (INFO.getInt(0) < 0) {
+            throw new Error("Parameter #" + INFO.getInt(0) + " to potrf() was not valid");
+        } else if (INFO.getInt(0) > 0) {
+            throw new Error("The matrix is not positive definite! (potrf fails @ order " + INFO.getInt(0) + ")" ) ;
+        }
+
+        return ;
+    }
+
+
+
+    /**
+    * Float/Double versions of cholesky decomp for positive definite matrices    
+    * 
+    *   A = LL*
+    *
+    * @param uplo which factor to return L or U 
+    * @param M  the number of rows & cols in the matrix A
+    * @param A  the matrix to factorize - data must be in column order ( create with 'f' ordering )
+    * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
+    */
+    public abstract void spotrf( byte uplo, int N, INDArray A, INDArray INFO)  ;
+    public abstract void dpotrf( byte uplo, int N, INDArray A, INDArray INFO ) ;
+
+
+
+
+    @Override
+    public void geqrf(INDArray A, INDArray R ) {
+
+        int m = A.rows();
+        int n = A.columns();
+
+        INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+        if( R.rows() != A.columns() || R.columns() != A.columns() ) {
+            throw new Error( "geqrf: R must be N x N (n = columns in A)") ;
+        }
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            dgeqrf(m, n, A, R, INFO);
+        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+            sgeqrf(m, n, A, R, INFO);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+        if (INFO.getInt(0) < 0) {
+            throw new Error("Parameter #" + INFO.getInt(0) + " to getrf() was not valid");
+        }
+    }
+
+
+    /**
+    * Float/Double versions of QR decomp.
+    * This is the official LAPACK interface (in case you want to call this directly)
+    * See geqrf for full details on LU Decomp
+    *
+    * @param M  the number of rows in the matrix A
+    * @param N  the number of cols in the matrix A
+    * @param A  the matrix to factorize - data must be in column order ( create with 'f' ordering )
+    * @param R  an output array for other part of factorization
+    * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
+    */
+    public abstract void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
+    public abstract void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
+
+
+    @Override
+    public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
         int m = A.rows();
         int n = A.columns();
 
@@ -86,7 +168,7 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to gesvd() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            logger.warn("The matrix contains singular elements. Check S matrix at row " + INFO.getInt(0));
+            log.warn("The matrix contains singular elements. Check S matrix at row " + INFO.getInt(0));
         }
     }
 
