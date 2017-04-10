@@ -270,7 +270,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
-                Nd4j.getMemoryManager().setCurrentWorkspace(this);
+//                Nd4j.getMemoryManager().setCurrentWorkspace(getParentWorkspace());
             }
             return;
         }

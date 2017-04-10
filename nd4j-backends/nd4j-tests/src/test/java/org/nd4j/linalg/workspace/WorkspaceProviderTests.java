@@ -98,6 +98,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
         // maximum allocation amount is 100 elements during learning, and additional coefficient is 4.0. result is workspace of 500 elements
         assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -127,6 +129,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
         // confirming reset
         assertEquals(0, ws1.getHostOffset());
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -159,6 +162,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertFalse(workspaces.get(x) == workspaces.get(y));
             }
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -197,6 +202,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -225,6 +232,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 }
             }
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -246,6 +255,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             reqMem = 300 * Nd4j.sizeOfDataType();
             assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -285,6 +296,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         assertEquals(0 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
         assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
         assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -326,6 +339,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -352,6 +367,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             assertEquals(100 * Nd4j.sizeOfDataType(), ((Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")).getCurrentSize());
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
@@ -374,6 +391,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
             }
         }
+
+        assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Test
