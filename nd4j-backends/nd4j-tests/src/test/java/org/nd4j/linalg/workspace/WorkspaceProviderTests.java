@@ -129,6 +129,9 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
         // confirming reset
         assertEquals(0, ws1.getHostOffset());
+
+        ws1.notifyScopeLeft();
+
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 

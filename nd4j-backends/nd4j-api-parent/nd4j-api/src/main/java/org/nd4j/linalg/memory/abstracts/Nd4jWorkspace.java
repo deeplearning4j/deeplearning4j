@@ -315,12 +315,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // we should block stuff since we're going to invalidate spilled allocations
         // TODO: block on spilled allocations probably?
 
-        previousWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-        if (previousWorkspace == this && isOpen.get()) {
+        if (prev == this && isOpen.get()) {
             tagScope.incrementAndGet();
             return this;
         }
+
+        previousWorkspace = prev;
 
         if (externalAllocations.size() > 0) {
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
