@@ -1,20 +1,18 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base lapack define float and double versions.
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseLapack implements Lapack {
-
-    private static Logger logger = LoggerFactory.getLogger(BaseLapack.class);
 
     @Override
     public INDArray getrf(INDArray A) {
@@ -39,7 +37,7 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to getrf() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            logger.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row "
+            log.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row "
                             + INFO.getInt(0));
         }
 
@@ -170,7 +168,7 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to gesvd() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            logger.warn("The matrix contains singular elements. Check S matrix at row " + INFO.getInt(0));
+            log.warn("The matrix contains singular elements. Check S matrix at row " + INFO.getInt(0));
         }
     }
 

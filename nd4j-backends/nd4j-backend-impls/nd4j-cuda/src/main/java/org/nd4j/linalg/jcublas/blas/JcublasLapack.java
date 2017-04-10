@@ -2,7 +2,7 @@ package org.nd4j.linalg.jcublas.blas;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -23,8 +23,6 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cusolver.*;
@@ -34,11 +32,11 @@ import static org.bytedeco.javacpp.cusolver.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class JcublasLapack extends BaseLapack {
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private Allocator allocator = AtomicAllocator.getInstance();
-    private static Logger logger = LoggerFactory.getLogger(JcublasLapack.class);
 
     private Method cusolverDnSorgqr, cusolverDnSorgqr_bufferSize, cusolverDnDorgqr, cusolverDnDorgqr_bufferSize;
 
@@ -50,7 +48,7 @@ public class JcublasLapack extends BaseLapack {
             cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
             cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
         } catch (NoSuchMethodException | SecurityException ex) {
-            logger.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
+            log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
         }
     }
 
@@ -58,7 +56,7 @@ public class JcublasLapack extends BaseLapack {
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         INDArray a = A;
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -118,7 +116,7 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
 
@@ -128,7 +126,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT getrf called in FLOAT environment");
+            log.warn("FLOAT getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -194,7 +192,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray r = R;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c') 
             a = A.dup('f');
@@ -303,8 +301,8 @@ public class JcublasLapack extends BaseLapack {
         if ( r!=null && r != R )
             R.assign(r);
 
-        logger.info("A: {}", A);
-        if( R != null ) logger.info("R: {}", R);
+        log.info("A: {}", A);
+        if( R != null ) log.info("R: {}", R);
     }
 
     @Override
@@ -313,7 +311,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray r = R;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("DOUBLE getrf called in FLOAT environment");
+            log.warn("DOUBLE getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -419,8 +417,8 @@ public class JcublasLapack extends BaseLapack {
         if ( r!=null && r != R )
             R.assign(r);
 
-        logger.info("A: {}", A);
-        if( R != null ) logger.info("R: {}", R);
+        log.info("A: {}", A);
+        if( R != null ) log.info("R: {}", R);
     }
 
 //=========================    
@@ -430,7 +428,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("DOUBLE potrf called in FLOAT environment");
+            log.warn("DOUBLE potrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -505,7 +503,7 @@ public class JcublasLapack extends BaseLapack {
             }        
         }
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
     @Override
@@ -513,7 +511,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT potrf called in DOUBLE environment");
+            log.warn("FLOAT potrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -588,7 +586,7 @@ public class JcublasLapack extends BaseLapack {
             }        
         }
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
 
@@ -617,7 +615,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray vt = VT;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT gesvd called in DOUBLE environment");
+            log.warn("FLOAT gesvd called in DOUBLE environment");
 
         // cuda requires column ordering - we'll register a warning in case
         if (A.ordering() == 'c')
@@ -703,7 +701,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray vt = VT;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("DOUBLE gesvd called in FLOAT environment");
+            log.warn("DOUBLE gesvd called in FLOAT environment");
 
         // cuda requires column ordering - we'll register a warning in case
         if (A.ordering() == 'c')
