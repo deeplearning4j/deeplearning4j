@@ -10,6 +10,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
@@ -30,8 +31,18 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
 
 
     @Override
+    public double getReal() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString() {
         return functionName() + "(" + m_x.getFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
+    }
+
+    @Override
+    public String doGetFormula(List<Variable<X>> variables) {
+        return functionName() + "(" + m_x.doGetFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
     }
 
     /**

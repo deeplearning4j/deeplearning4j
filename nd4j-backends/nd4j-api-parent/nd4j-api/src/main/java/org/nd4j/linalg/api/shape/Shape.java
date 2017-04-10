@@ -50,6 +50,23 @@ public class Shape {
     private Shape() {}
 
     /**
+     * Returns true if the dimension is null
+     * or the dimension length is 1 and the first entry
+     * is {@link Integer#MAX_VALUE}
+     * @param shape the shape of the input array
+     * @param dimension the dimensions specified
+     *
+     * @return true if the dimension length is equal to the shape length
+     * the dimension is null or the dimension length is 1 and the first entry is
+     * {@link Integer#MAX_VALUE}
+     */
+    public static boolean isWholeArray(int[] shape,int...dimension) {
+       return   dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == shape.length;
+    }
+
+
+
+    /**
      * Create a copy of the matrix
      * where the new offset is zero
      *

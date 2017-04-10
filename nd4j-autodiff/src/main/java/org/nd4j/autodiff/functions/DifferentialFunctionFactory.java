@@ -3,12 +3,15 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractFactory;
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  *
@@ -55,21 +58,66 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> sum(DifferentialFunction<X> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+    public DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
             @Override
-            protected X doGetValue() {
-                return null;
+            public X doGetValue() {
+                return mFactory.tile(arg().getValue(),repeat);
             }
 
             @Override
             public double getReal() {
-                return 0;
+                throw new UnsupportedOperationException();
             }
 
             @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                throw new UnsupportedOperationException();
+            }
+
+
+            @Override
+            public String functionName() {
+                return "tile";
+            }
+        };
+    }
+
+
+    @Override
+    public DifferentialFunction<X> valueArrayOf(DifferentialFunction<X> iX, int[] shape) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.valueArrayOf(arg().getValue(),shape);
+            }
+
+            @Override
+            public double getReal() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                throw new UnsupportedOperationException();
+            }
+
+
+            @Override
+            public String functionName() {
+                return "full";
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> sum(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.sum(arg().doGetValue(),dimensions);
             }
 
             @Override
@@ -81,7 +129,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doRepeat(this,i_v1,dimensions);
             }
         };
     }
@@ -91,18 +139,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.prod(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -113,7 +152,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doRepeat(this,i_v1,dimensions).div(one().mul(getInputLength(i_v1)));
             }
         };
     }
@@ -123,18 +162,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.mean(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -145,7 +175,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doRepeat(this,i_v1,dimensions).div(one().mul(getInputLength(i_v1)));
             }
         };
     }
@@ -155,17 +185,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
-            }
-
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
+                return mFactory.std(arg().doGetValue(),dimensions);
             }
 
             @Override
@@ -187,18 +207,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.variance(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -218,18 +229,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.max(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -249,17 +251,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
-            }
-
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
+                return mFactory.min(arg().doGetValue(),dimensions);
             }
 
             @Override
@@ -281,18 +273,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.norm1(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -313,18 +296,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
+                return mFactory.norm2(arg().doGetValue(),dimensions);
             }
 
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
-            }
 
             @Override
             public String functionName() {
@@ -345,17 +319,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return null;
-            }
-
-            @Override
-            public double getReal() {
-                return 0;
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return null;
+                return mFactory.normmax(arg().doGetValue(),dimensions);
             }
 
             @Override
@@ -363,7 +327,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return new NormMax().name();
             }
 
-          
+
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
@@ -392,15 +356,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return arg().div(abs(arg()));
             }
 
-            @Override
-            public String toString() {
-                return "abs(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "abs(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -428,15 +383,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return (sin(arg()).mul(arg().diff(i_v))).negate();
             }
 
-            @Override
-            public String toString() {
-                return "cos(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "cos(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -464,15 +410,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return cos(arg()).mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "sin(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sin(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -500,15 +437,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return (new PolynomialTerm<>(mFactory.graph(),1, cos(arg()), -2)).mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "tan(" + arg().toString() + ")";
-            }
 
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "tan(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -536,15 +465,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().div(sqrt(one().minus(arg().pow(2)))).negate();
             }
 
-            @Override
-            public String toString() {
-                return "acos(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "acos(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -572,15 +492,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().div(sqrt(one().minus(arg().pow(2))));
             }
 
-            @Override
-            public String toString() {
-                return "asin(" + arg().toString() + ")";
-            }
 
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "asin(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -606,16 +518,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return one().div(one().plus(arg().pow(2)));
-            }
-
-            @Override
-            public String toString() {
-                return "atan(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "atan(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -645,16 +547,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "cosh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "cosh(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new Cosh().name();
             }
@@ -680,15 +572,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return cosh(arg());
             }
 
-            @Override
-            public String toString() {
-                return "sinh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sinh(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -714,16 +597,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return one().div(cosh(arg())).pow(2);
-            }
-
-            @Override
-            public String toString() {
-                return "tanh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "tanh(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -753,16 +626,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "acosh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "acosh(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new ACosh().name();
             }
@@ -788,15 +651,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().div(sqrt(arg().pow(2).plus(one())));
             }
 
-            @Override
-            public String toString() {
-                return "asinh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "asinh(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -824,15 +678,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().div(one().minus(arg().pow(2)));
             }
 
-            @Override
-            public String toString() {
-                return "atanh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "atanh(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -860,15 +705,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return exp(arg()).mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "exp(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "exp(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -894,16 +730,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return new Inverse<>(graph,arg()).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "log(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "log(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -974,15 +800,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                         .mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "sqrt(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sqrt(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1011,15 +828,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                         .mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "square(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "pow(" + arg().doGetFormula(variables) + ", 2d )";
-            }
 
             @Override
             public String functionName() {
@@ -1048,16 +856,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "floor(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "floor(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new Floor().name();
             }
@@ -1081,16 +879,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return val(mFactory.step(arg().getValue())).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "relu(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "relu(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -1123,16 +911,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "softmax(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "softmax(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new SoftMax().name();
             }
@@ -1156,16 +934,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return hardTanhDerivative(val(getValue())).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "hardtanh(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "hardtanh(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -1196,15 +964,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "hardtanhDerivative(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "hardtanhDerivative(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1236,16 +995,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "sigmoid(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sigmoid(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new Sigmoid().name();
             }
@@ -1273,15 +1022,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return one().mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "sigmoidDerivative(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sigmoidDerivative(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1311,16 +1051,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "sign(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "sign(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new Sign().name();
             }
@@ -1328,6 +1058,87 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
 
+    @Override
+    public DifferentialFunction<X> broadcast(DifferentialFunction<X> iX, int... shape) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.broadcast(arg().getValue(),shape);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public String functionName() {
+                return "broadcast";
+            }
+        };
+    }
+
+    private int getInputLength(Variable<X> func) {
+        if(func.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) func.getValue();
+            int[] inputShape = arrayField.getInput().getShape();
+            return ArrayUtil.prod(inputShape);
+        }
+
+        throw new IllegalStateException("Only able to compute on array field");
+    }
+
+    private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,Variable<X> input,int...axes) {
+        if(input.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) input.getValue();
+            int[] inputShape = arrayField.getInput().getShape();
+            if(Shape.isWholeArray(inputShape,axes)) {
+                return valueArrayOf(input,inputShape);
+            }
+
+            for(int i = 0; i < inputShape.length; i++) {
+                inputShape[axes[i]] = 1;
+            }
+
+            return broadcast(func,inputShape);
+
+        }
+
+        throw new UnsupportedOperationException("Must be an ArrayField argument");
+
+    }
+
+    @Override
+    public DifferentialFunction<X> repeat(DifferentialFunction<X> iX, int axis) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.repeat(arg().getValue(),axis);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public String functionName() {
+                return "repeat";
+            }
+        };
+    }
     @Override
     public DifferentialFunction<X> softsign(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
@@ -1345,16 +1156,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return softsignDerivative(arg()).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "softsign(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "softsign(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -1383,15 +1184,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return zero();
             }
 
-            @Override
-            public String toString() {
-                return "softsignDerivative(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "softsignDerivative(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1424,16 +1216,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
 
             @Override
-            public String toString() {
-                return "softplus(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "softplus(" + arg().doGetFormula(variables) + ")";
-            }
-
-            @Override
             public String functionName() {
                 return new SoftPlus().name();
             }
@@ -1460,15 +1242,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return eluDerivative(arg()).mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "elu(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "elu(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1496,16 +1269,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return zero();
-            }
-
-            @Override
-            public String toString() {
-                return "elu(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "eluderivative(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override
@@ -1537,15 +1300,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
             }
 
-            @Override
-            public String toString() {
-                return "leakurelu(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "leakyrelu(" + arg().doGetFormula(variables) + ")";
-            }
 
             @Override
             public String functionName() {
@@ -1573,16 +1327,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 return zero();
-            }
-
-            @Override
-            public String toString() {
-                return "leakyReluDerivative(" + arg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<X>> variables) {
-                return "leakyReluDerivative(" + arg().doGetFormula(variables) + ")";
             }
 
             @Override

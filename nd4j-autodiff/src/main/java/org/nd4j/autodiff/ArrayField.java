@@ -57,7 +57,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField mul(long i_n) {
+    public ArrayField mul(double i_n) {
         return addScalarTransformOp(new ScalarMultiplication().name(),i_n);
     }
 
@@ -296,24 +296,44 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField sum(int[] dimensions) {
-        return addArrayOp(new Sum().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Sum().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField prod(int[] dimensions) {
-        return addArrayOp(new Prod().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Prod().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField mean(int[] dimensions) {
-        return addArrayOp(new Mean().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Mean().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
 
     public ArrayField std(int[] dimensions,boolean biasCorrected) {
-        return addArrayOp(new StandardDeviation().name(),dimensions,new Object[]{biasCorrected}, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new StandardDeviation().name()
+                ,dimensions,
+                new Object[]{biasCorrected},
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField variance(int[] dimensions,boolean biasCorrected) {
-        return addArrayOp(new Variance().name(),dimensions,new Object[]{biasCorrected}, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Variance().name(),
+                dimensions,
+                new Object[]{biasCorrected},
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField std(int[] dimensions) {
@@ -325,23 +345,64 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField max(int[] dimensions) {
-        return addArrayOp(new Max().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Max().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField min(int[] dimensions) {
-        return addArrayOp(new Min().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Min().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField norm1(int[] dimensions) {
-        return addArrayOp(new Norm1().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Norm1().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField norm2(int[] dimensions) {
-        return addArrayOp(new Norm2().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new Norm2().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
     }
 
     public ArrayField normmax(int[] dimensions) {
-        return addArrayOp(new NormMax().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+        return addArrayOp(
+                new NormMax().name(),
+                dimensions,
+                null,
+                OpState.OpType.ACCUMULATION);
+    }
+
+
+    public ArrayField valueArrayOf(int[] shape) {
+        return addArrayOp(
+                "full",
+                null,
+                shape,
+                null,
+                OpState.OpType.BROADCAST);
+    }
+
+
+
+    public ArrayField tile(int[] repeat) {
+        return addArrayOp(
+                "tile",
+                null,
+                null,
+                new Object[]{repeat},
+                OpState.OpType.BROADCAST);
     }
 
     private ArrayField addTransformOp(String name,Object[] extraArgs) {
@@ -349,17 +410,42 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     private ArrayField addTransformOp(String name,int[] axes,Object[] extraArgs) {
-        return addArrayOp(name,axes,extraArgs, OpState.OpType.TRANSFORM);
+        return addArrayOp(name,
+                axes,extraArgs,
+                OpState.OpType.TRANSFORM);
     }
 
 
-    private ArrayField addArrayOp(String name, int[] axes, Object[] extraArgs, OpState.OpType opType) {
+
+
+    private NDArrayVertex getVertex(String name,int[] shape) {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
                         .id(name + "(" + input.getId() + ")")
-                        .shape(input.getShape()).build());
+                        .shape(shape).build());
+        return newVertex;
 
+    }
+
+    private ArrayField addArrayOp(String name,
+                                  int[] axes,
+                                  Object[] extraArgs,
+                                  OpState.OpType opType) {
+        return addArrayOp(name,
+                axes,
+                input.getShape(),
+                extraArgs,
+                opType);
+    }
+
+    private ArrayField addArrayOp(String name,
+                                  int[] axes,
+                                  int[] shape,
+                                  Object[] extraArgs,
+                                  OpState.OpType opType) {
+        //result
+        NDArrayVertex newVertex = getVertex(name,shape);
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
 
@@ -373,6 +459,19 @@ public class ArrayField implements Field<ArrayField> {
                         .opType(opType).build(),true);
 
         return new ArrayField(newVertex,ops);
+    }
+
+
+    public ArrayField repeat(int axis) {
+        return addArrayOp("repeat",
+                new int[]{axis},
+                input.getShape(),
+                null,
+                OpState.OpType.BROADCAST);
+    }
+
+    public ArrayField broadcast(int[] shape) {
+        return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
     }
 
 

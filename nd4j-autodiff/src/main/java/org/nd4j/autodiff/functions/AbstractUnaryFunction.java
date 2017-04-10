@@ -8,6 +8,8 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.List;
+
 
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
@@ -23,6 +25,19 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
             throw new IllegalArgumentException("Input not null variable.");
         }
     }
+
+
+    @Override
+    public String doGetFormula(List<Variable<X>> variables) {
+        return functionName() + "(" + arg().doGetFormula(variables) + ")";
+    }
+
+    @Override
+    public String toString() {
+        return functionName() + "(" + arg().toString() + ")";
+    }
+
+
 
 
     /**

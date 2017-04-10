@@ -29,9 +29,6 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         }
     }
 
-    protected AbstractIdentityFactory<X> factory() {
-        return m_factory;
-    }
 
     @Override
     public boolean isConstant() {

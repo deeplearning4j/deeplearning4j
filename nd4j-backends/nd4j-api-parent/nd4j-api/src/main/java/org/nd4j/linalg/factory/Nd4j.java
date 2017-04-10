@@ -5125,7 +5125,8 @@ public class Nd4j {
 
     /**
      * Creates an ndarray with the specified value
-     * as the  only value in the ndarray
+     * as the  only value in the ndarray.
+     * Some people may know this as np.full
      *
      * @param shape the shape of the ndarray
      * @param value the value to assign
@@ -5143,6 +5144,8 @@ public class Nd4j {
      * Creates a row vector ndarray with the specified value
      * as the  only value in the ndarray
      *
+     * Some people may know this as np.full
+     *
      * @param num   number of columns
      * @param value the value to assign
      * @return the created ndarray
@@ -5155,6 +5158,8 @@ public class Nd4j {
 
     /**
      * Creates a row vector with the specified number of columns
+     *
+     * Some people may know this as np.full
      *
      * @param rows    the number of rows in the matrix
      * @param columns the columns of the ndarray

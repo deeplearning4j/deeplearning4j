@@ -24,6 +24,41 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
+    public ArrayField add(ArrayField i_x, Number value) {
+        return i_x.plus(value.doubleValue());
+    }
+
+    @Override
+    public ArrayField sub(ArrayField i_x, Number value) {
+        return i_x.minus(value.doubleValue());
+    }
+
+    @Override
+    public ArrayField mul(ArrayField i_x, Number value) {
+        return i_x.mul((long) value.doubleValue());
+    }
+
+    @Override
+    public ArrayField div(ArrayField i_x, Number value) {
+        return i_x.div(value.doubleValue());
+    }
+
+    @Override
+    public ArrayField broadcast(ArrayField i_x, int... shape) {
+        return i_x.broadcast(shape);
+    }
+
+    @Override
+    public ArrayField repeat(ArrayField i_x, int axis) {
+        return i_x.repeat(axis);
+    }
+
+    @Override
+    public ArrayField tile(ArrayField i_x, int... repeat) {
+        return i_x.tile(repeat);
+    }
+
+    @Override
     public ArrayField sum(ArrayField i_x, int... dimensions) {
         return i_x.sum(dimensions);
     }
@@ -81,6 +116,11 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField reshape(ArrayField i_x, int[] shape) {
         return i_x.reshape(shape);
+    }
+
+    @Override
+    public ArrayField valueArrayOf(ArrayField i_x, int[] shape) {
+        return i_x.valueArrayOf(shape);
     }
 
     @Override

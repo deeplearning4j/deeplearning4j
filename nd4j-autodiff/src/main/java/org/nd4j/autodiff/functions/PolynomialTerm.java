@@ -9,11 +9,11 @@ import org.nd4j.autodiff.opstate.OpState;
 
 public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
-    protected long m_scale;
+    protected double m_scale;
     protected int m_exponent;
 
     public PolynomialTerm(Graph<NDArrayInformation,OpState> graph,
-                          long i_scale, DifferentialFunction<X> i_v,
+                          double i_scale, DifferentialFunction<X> i_v,
                           int i_exponent) {
         // scale v^{exponent}
         super(graph,i_v);

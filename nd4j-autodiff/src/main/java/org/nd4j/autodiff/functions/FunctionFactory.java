@@ -20,7 +20,11 @@ public interface FunctionFactory<X extends Field<X>> {
     One<X> one();
 
 
-    DifferentialFunction<X> sum(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat);
+
+    DifferentialFunction<X> valueArrayOf(DifferentialFunction<X> iX, int[] shape);
+
+    DifferentialFunction<X> sum(DifferentialFunction<X> i_x, int...dimensions);
 
     DifferentialFunction<X> prod(DifferentialFunction<X> i_x,int...dimensions);
 
@@ -93,6 +97,10 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> sign(DifferentialFunction<X> iX);
+
+    DifferentialFunction<X> broadcast(DifferentialFunction<X> iX, int... shape);
+
+    DifferentialFunction<X> repeat(DifferentialFunction<X> iX, int axis);
 
     DifferentialFunction<X> softsign(DifferentialFunction<X> iX);
 

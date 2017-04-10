@@ -129,8 +129,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> mul(long i_n) {
-        return new PolynomialTerm<>(graph,i_n, this, 1);
+    public DifferentialFunction<X> mul(double i_n) {
+        return new PolynomialTerm<X>(graph,i_n, this, 1);
     }
 
     @Override

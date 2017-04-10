@@ -13,5 +13,5 @@ public interface Group<X> {
     X minus(X i_v);
 
 
-    X mul(long i_n);
+    X mul(double i_n);
 }

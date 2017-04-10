@@ -72,7 +72,7 @@ public class BasicDenseVector<X extends Field<X>> implements CommutativeGroup<Ba
         return new BasicDenseVector<X>(v);
     }
 
-    public BasicDenseVector<X> mul(long i_n) {
+    public BasicDenseVector<X> mul(double i_n) {
         int size = this.size();
         ArrayList<X> v = new ArrayList<X>(size);
         for (int i = 0; i < size; i++) {
