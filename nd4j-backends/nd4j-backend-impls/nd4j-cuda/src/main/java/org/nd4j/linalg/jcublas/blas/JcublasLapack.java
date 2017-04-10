@@ -1,5 +1,8 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.logging.Level;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -37,6 +40,19 @@ public class JcublasLapack extends BaseLapack {
     private Allocator allocator = AtomicAllocator.getInstance();
     private static Logger logger = LoggerFactory.getLogger(JcublasLapack.class);
 
+    private Method cusolverDnSorgqr, cusolverDnSorgqr_bufferSize, cusolverDnDorgqr, cusolverDnDorgqr_bufferSize;
+
+    public JcublasLapack() {
+        Class c = org.bytedeco.javacpp.cusolver.class;
+        try {
+            cusolverDnSorgqr_bufferSize = c.getMethod("cusolverDnSorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
+            cusolverDnSorgqr = c.getMethod("cusolverDnSorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
+            cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
+            cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
+        } catch (NoSuchMethodException | SecurityException ex) {
+            logger.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
+        }
+    }
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
@@ -255,21 +271,25 @@ public class JcublasLapack extends BaseLapack {
                 }
             }
 
-            stat = cusolverDnSorgqr_bufferSize( solverDn, M, N, N,
+            try {
+                stat = (Integer) cusolverDnSorgqr_bufferSize.invoke(null, solverDn, M, N, N,
                         (FloatPointer) xAPointer.getDevicePointer(), M,
                         (FloatPointer) xTauPointer.getDevicePointer(),
-                        (IntPointer) worksizeBuffer.addressPointer() 
-            ) ;
-            worksize = worksizeBuffer.getInt(0);
-            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+                        (IntPointer) worksizeBuffer.addressPointer()
+                );
+                worksize = worksizeBuffer.getInt(0);
+                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
-            stat = cusolverDnSorgqr(solverDn, M, N, N,
-                            (FloatPointer) xAPointer.getDevicePointer(), M,
-                            (FloatPointer) xTauPointer.getDevicePointer(),
-                            new CudaPointer(workspace).asFloatPointer(),
-                            worksize,
-                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
-                            );
+                stat = (Integer) cusolverDnSorgqr.invoke(null, solverDn, M, N, N,
+                        (FloatPointer) xAPointer.getDevicePointer(), M,
+                        (FloatPointer) xTauPointer.getDevicePointer(),
+                        new CudaPointer(workspace).asFloatPointer(),
+                        worksize,
+                        new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                );
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
+                throw new RuntimeException("cusolverDnSorgqr() is not available", e);
+            }
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSorgqr failed", stat);
             }            
@@ -368,22 +388,25 @@ public class JcublasLapack extends BaseLapack {
                     r.put(ix, 0) ;
                 }
             }
-
-            stat = cusolverDnDorgqr_bufferSize( solverDn, M, N, N,
-                        (DoublePointer) xAPointer.getDevicePointer(), M,
-                        (DoublePointer) xTauPointer.getDevicePointer(),
-                        (IntPointer) worksizeBuffer.addressPointer() 
-            ) ;
-            worksize = worksizeBuffer.getInt(0);
-            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
-
-            stat = cusolverDnDorgqr(solverDn, M, N, N,
+            try {
+                stat = (Integer) cusolverDnDorgqr_bufferSize.invoke(null, solverDn, M, N, N,
                             (DoublePointer) xAPointer.getDevicePointer(), M,
                             (DoublePointer) xTauPointer.getDevicePointer(),
-                            new CudaPointer(workspace).asDoublePointer(),
-                            worksize,
-                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
-                            );
+                            (IntPointer) worksizeBuffer.addressPointer()
+                );
+                worksize = worksizeBuffer.getInt(0);
+                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+                stat = (Integer) cusolverDnDorgqr.invoke(null, solverDn, M, N, N,
+                                (DoublePointer) xAPointer.getDevicePointer(), M,
+                                (DoublePointer) xTauPointer.getDevicePointer(),
+                                new CudaPointer(workspace).asDoublePointer(),
+                                worksize,
+                                new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                                );
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
+                throw new RuntimeException("cusolverDnDorgqr() is not available", e);
+            }
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDorgqr failed", stat);
             }            
