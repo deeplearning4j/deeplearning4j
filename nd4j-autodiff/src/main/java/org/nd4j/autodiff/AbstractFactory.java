@@ -11,6 +11,24 @@ public interface AbstractFactory<X extends Field<X>>
 
     Graph<NDArrayInformation,OpState> graph();
 
+
+
+    X sum(X i_x,int...dimensions);
+    X prod(X i_x,int...dimensions);
+    X mean(X i_x,int...dimensions);
+    X std(X i_x,int...dimensions);
+    X variance(X i_x,int...dimensions);
+    X max(X i_x,int...dimensions);
+    X min(X i_x,int...dimensions);
+    X norm1(X i_x,int...dimensions);
+    X norm2(X i_x,int...dimensions);
+    X normmax(X i_x,int...dimensions);
+
+
+    X transpose(X i_x);
+
+    X reshape(X i_x, int[] shape);
+
     X val(double i_v);
 
     X abs(X i_x);

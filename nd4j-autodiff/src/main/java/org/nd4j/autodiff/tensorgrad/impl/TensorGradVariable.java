@@ -3,8 +3,8 @@ package org.nd4j.autodiff.tensorgrad.impl;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.autodiff.DifferentialFunction;
-import org.nd4j.autodiff.autodiff.Variable;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -19,6 +19,8 @@ public class TensorGradVariable {
     private DifferentialFunction<ArrayField> differentialFunction;
     private String varName;
     private TensorGrad tensorGrad;
+
+
 
 
     public TensorGradVariable add(TensorGradVariable tensorGradVariable) {

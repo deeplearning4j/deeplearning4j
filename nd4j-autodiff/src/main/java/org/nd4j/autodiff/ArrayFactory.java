@@ -6,15 +6,13 @@ import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Random;
 
 @AllArgsConstructor
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     private Graph<NDArrayInformation,OpState> graph;
+
     public ArrayFactory() {
         this(new Graph<>());
     }
@@ -23,6 +21,66 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public Graph<NDArrayInformation, OpState> graph() {
         return graph;
+    }
+
+    @Override
+    public ArrayField sum(ArrayField i_x, int... dimensions) {
+        return i_x.sum(dimensions);
+    }
+
+    @Override
+    public ArrayField prod(ArrayField i_x, int... dimensions) {
+        return i_x.prod(dimensions);
+    }
+
+    @Override
+    public ArrayField mean(ArrayField i_x, int... dimensions) {
+        return i_x.mean(dimensions);
+    }
+
+    @Override
+    public ArrayField std(ArrayField i_x, int... dimensions) {
+        return i_x.std(dimensions);
+    }
+
+    @Override
+    public ArrayField variance(ArrayField i_x, int... dimensions) {
+        return i_x.variance(dimensions);
+    }
+
+    @Override
+    public ArrayField max(ArrayField i_x, int... dimensions) {
+        return i_x.max(dimensions);
+    }
+
+    @Override
+    public ArrayField min(ArrayField i_x, int... dimensions) {
+        return i_x.min(dimensions);
+    }
+
+    @Override
+    public ArrayField norm1(ArrayField i_x, int... dimensions) {
+        return i_x.norm1(dimensions);
+    }
+
+    @Override
+    public ArrayField norm2(ArrayField i_x, int... dimensions) {
+        return i_x.norm2(dimensions);
+    }
+
+    @Override
+    public ArrayField normmax(ArrayField i_x, int... dimensions) {
+        return i_x.normmax(dimensions);
+    }
+
+    @Override
+    public ArrayField transpose(ArrayField i_x) {
+        return i_x.transpose();
+    }
+
+    @Override
+    public ArrayField reshape(ArrayField i_x, int[] shape) {
+        return i_x.reshape(shape);
     }
 
     @Override

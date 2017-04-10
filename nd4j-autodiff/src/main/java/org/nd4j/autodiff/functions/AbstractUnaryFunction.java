@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.autodiff;
+package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -11,7 +11,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
-    private DifferentialFunction<X> m_x;
+    protected DifferentialFunction<X> m_x;
 
 
     public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v) {
@@ -24,6 +24,13 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         }
     }
 
+
+    /**
+     * Add nodes to the graph
+     * @param graph
+     * @param i_v1
+     * @param opName
+     */
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue();

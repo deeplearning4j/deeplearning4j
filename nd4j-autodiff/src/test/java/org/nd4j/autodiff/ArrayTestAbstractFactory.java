@@ -1,9 +1,9 @@
 package org.nd4j.autodiff;
 
 import org.junit.Test;
-import org.nd4j.autodiff.autodiff.DifferentialFunction;
-import org.nd4j.autodiff.autodiff.DifferentialFunctionFactory;
-import org.nd4j.autodiff.autodiff.Variable;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;

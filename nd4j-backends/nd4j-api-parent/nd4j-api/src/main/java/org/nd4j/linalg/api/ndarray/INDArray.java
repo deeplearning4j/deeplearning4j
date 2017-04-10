@@ -735,6 +735,12 @@ public interface INDArray extends Serializable {
     INDArray divi(Number n, INDArray result);
 
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     INDArray mul(Number n, INDArray result);
 
 
@@ -748,6 +754,14 @@ public interface INDArray extends Serializable {
     INDArray muli(Number n, INDArray result);
 
 
+    /**
+     * Sub the given number from this array
+     * putting it in the specified
+     * result array
+     * @param n
+     * @param result
+     * @return
+     */
     INDArray sub(Number n, INDArray result);
 
     /**
@@ -759,6 +773,12 @@ public interface INDArray extends Serializable {
      */
     INDArray subi(Number n, INDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     INDArray add(Number n, INDArray result);
 
     /**
@@ -1572,6 +1592,10 @@ public interface INDArray extends Serializable {
      */
     INDArray mean(int... dimension);
 
+    /**
+     *
+     * @return
+     */
     Number meanNumber();
 
     IComplexNumber meanComplex();

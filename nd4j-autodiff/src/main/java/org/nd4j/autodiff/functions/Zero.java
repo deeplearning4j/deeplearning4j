@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.autodiff;
+package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.Field;

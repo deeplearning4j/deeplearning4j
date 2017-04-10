@@ -9,7 +9,8 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import java.io.Serializable;
 
 /**
- * Created by agibsonccc on 4/6/17.
+ * Describes the type of operation that needs to happen
+ * @author Adam Gibson
  */
 @Data
 @Builder
@@ -21,6 +22,8 @@ public class OpState implements Serializable {
     private Number scalarValue;
     private String[] vertexIds;
     private String id;
+    private int[] axes;
+    private Object[] extraArgs;
 
     public  enum OpType {
         SCALAR_TRANSFORM,

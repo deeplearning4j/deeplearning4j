@@ -1,15 +1,11 @@
-package org.nd4j.autodiff.autodiff;
+package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
-import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-
-import java.util.UUID;
 
 
 public class One<X extends Field<X>> extends Constant<X> {

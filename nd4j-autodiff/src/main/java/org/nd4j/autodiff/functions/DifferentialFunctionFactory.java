@@ -1,6 +1,5 @@
-package org.nd4j.autodiff.autodiff;
+package org.nd4j.autodiff.functions;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractFactory;
@@ -8,6 +7,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 
 /**
@@ -18,6 +18,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     protected AbstractFactory<X> mFactory;
     protected Graph<NDArrayInformation,OpState> graph;
+
     public DifferentialFunctionFactory(Graph<NDArrayInformation,OpState> graph,AbstractFactory<X> mFactory) {
         if (mFactory != null) {
             this.mFactory = mFactory;
@@ -32,25 +33,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         return new Constant<>(mFactory.graph(),iX, mFactory);
     }
 
-    @Override
-    public ConstantVector<X> val(X... iX) {
-        int size = iX.length;
-        List<Constant<X>> list = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            list.add(val(iX[i]));
-        }
-        return new ConstantVector<>(graph,mFactory, list);
-    }
-
-    // ZeroVector
-    @Override
-    public ConstantVector<X> zero(int iSize) {
-        List<Constant<X>> list = new ArrayList<>(iSize);
-        for (int i = 0; i < iSize; i++) {
-            list.add(zero());
-        }
-        return new ConstantVector<>(graph,mFactory, list);
-    }
 
     @Override
     public Variable<X> var(String iName, X iX, PreEvaluator<X> preEvaluator) {
@@ -63,35 +45,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public VariableVector<X> var(String iName, X... iX) {
-        int size = iX.length;
-        List<Variable<X>> list = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            list.add(var(iName + String.valueOf(i), iX[i]));
-        }
-        return new VariableVector<>(graph,mFactory, list);
-    }
-
-    @Override
-    public VariableVector<X> var(String iName, int iSize) {
-        List<Variable<X>> list = new ArrayList<>(iSize);
-        for (int i = 0; i < iSize; i++) {
-            list.add(var(iName + String.valueOf(i), mFactory.zero()));
-        }
-        return new VariableVector<>(graph,mFactory, list);
-    }
-
-    @Override
-    public DifferentialVectorFunction<X> function(DifferentialFunction<X>... iX) {
-        int size = iX.length;
-        List<DifferentialFunction<X>> list = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) {
-            list.add(iX[i]);
-        }
-        return new DifferentialVectorFunction<>(graph,mFactory, list);
-    }
-
-    @Override
     public Zero<X> zero() {
         return new Zero<>(graph,mFactory);
     }
@@ -99,6 +52,361 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     @Override
     public One<X> one() {
         return new One<>(graph,mFactory);
+    }
+
+    @Override
+    public DifferentialFunction<X> sum(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new org.nd4j.linalg.api.ops.impl.accum.Sum().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> prod(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new org.nd4j.linalg.api.ops.impl.accum.Prod().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> mean(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Mean().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> std(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new StandardDeviation().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> variance(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Variance().name();
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> max(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Max().name();
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> min(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Min().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> norm1(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Norm1().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> norm2(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new Norm2().name();
+            }
+
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> normmax(DifferentialFunction<X> i_x, int... dimensions) {
+        return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return null;
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return new NormMax().name();
+            }
+
+          
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+
+    @Override
+    public DifferentialFunction<X> abs(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.abs(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.abs(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return arg().div(abs(arg()));
+            }
+
+            @Override
+            public String toString() {
+                return "abs(" + arg().toString() + ")";
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return "abs(" + arg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Abs().name();
+            }
+        };
     }
 
     @Override
@@ -290,7 +598,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
                 return mFactory.atan(arg().getValue());
             }
 
-                @Override
+            @Override
             public double getReal() {
                 return Math.atan(arg().getReal());
             }

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
@@ -243,7 +244,7 @@ public class ArrayField implements Field<ArrayField> {
 
 
     public ArrayField leakyRelu(double cutoff)  {
-        return addTransformOp(new LeakyReLU().name());
+        return addTransformOp(new LeakyReLU().name(),new Object[]{cutoff});
     }
 
     public ArrayField leakyReluDerivative() {
@@ -251,7 +252,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField leakyReluDerivative(double cutoff)  {
-        return addTransformOp(new LeakyReLUDerivative().name());
+        return addTransformOp(new LeakyReLUDerivative().name(),new Object[]{cutoff});
     }
 
 
@@ -286,8 +287,73 @@ public class ArrayField implements Field<ArrayField> {
         return addTransformOp(new SoftPlus().name());
     }
 
+    public ArrayField reshape(int[] shape) {
+        return addTransformOp("reshape",new Object[]{shape});
+    }
 
-    private ArrayField addTransformOp(String name) {
+    public ArrayField transpose() {
+        return addTransformOp("transpose");
+    }
+
+    public ArrayField sum(int[] dimensions) {
+        return addArrayOp(new Sum().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField prod(int[] dimensions) {
+        return addArrayOp(new Prod().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField mean(int[] dimensions) {
+        return addArrayOp(new Mean().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+
+    public ArrayField std(int[] dimensions,boolean biasCorrected) {
+        return addArrayOp(new StandardDeviation().name(),dimensions,new Object[]{biasCorrected}, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField variance(int[] dimensions,boolean biasCorrected) {
+        return addArrayOp(new Variance().name(),dimensions,new Object[]{biasCorrected}, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField std(int[] dimensions) {
+        return std(dimensions,false);
+    }
+
+    public ArrayField variance(int[] dimensions) {
+        return variance(dimensions,false);
+    }
+
+    public ArrayField max(int[] dimensions) {
+        return addArrayOp(new Max().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField min(int[] dimensions) {
+        return addArrayOp(new Min().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField norm1(int[] dimensions) {
+        return addArrayOp(new Norm1().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField norm2(int[] dimensions) {
+        return addArrayOp(new Norm2().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    public ArrayField normmax(int[] dimensions) {
+        return addArrayOp(new NormMax().name(),dimensions,null, OpState.OpType.ACCUMULATION);
+    }
+
+    private ArrayField addTransformOp(String name,Object[] extraArgs) {
+        return addTransformOp(name,null,extraArgs);
+    }
+
+    private ArrayField addTransformOp(String name,int[] axes,Object[] extraArgs) {
+        return addArrayOp(name,axes,extraArgs, OpState.OpType.TRANSFORM);
+    }
+
+
+    private ArrayField addArrayOp(String name, int[] axes, Object[] extraArgs, OpState.OpType opType) {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
@@ -301,12 +367,17 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).extraArgs(extraArgs).axes(axes)
                         .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .opType(OpState.OpType.TRANSFORM).build(),true);
+                        .opType(opType).build(),true);
 
         return new ArrayField(newVertex,ops);
+    }
+
+
+    private ArrayField addTransformOp(String name) {
+        return addTransformOp(name,null,null);
     }
 
 
@@ -325,7 +396,7 @@ public class ArrayField implements Field<ArrayField> {
                 newVertex.vertexID(),
                 OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).extraArgs(new Object[]{scalarValue})
                         .scalarValue(scalarValue)
                         .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .opType(OpState.OpType.SCALAR_TRANSFORM)
@@ -335,7 +406,7 @@ public class ArrayField implements Field<ArrayField> {
         return new ArrayField(newVertex,ops);
     }
 
-    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
+    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
                 NDArrayInformation.builder()
@@ -349,7 +420,7 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).extraArgs(extraArgs)
                         .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
@@ -357,12 +428,16 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name)
+                        .opName(name).extraArgs(extraArgs)
                         .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(OpState.OpType.TRANSFORM).build(),true);
 
         return new ArrayField(newVertex,ops);
+    }
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
+        return addPairTransformOp(name,i_v,null);
     }
 
 
@@ -372,4 +447,7 @@ public class ArrayField implements Field<ArrayField> {
                 "input=" + input +
                 '}';
     }
+
+
+
 }

@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.autodiff;
+package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.Field;
 
@@ -8,24 +8,41 @@ import org.nd4j.autodiff.Field;
 public interface FunctionFactory<X extends Field<X>> {
     Constant<X> val(X iX);
 
-    ConstantVector<X> val(X... iX);
-
-    // ZeroVector
-    ConstantVector<X> zero(int iSize);
 
     Variable<X> var(String iName, X iX, PreEvaluator<X> preEvaluator);
 
     Variable<X> var(String iName, X iX);
 
-    VariableVector<X> var(String iName, X... iX);
 
-    VariableVector<X> var(String iName, int iSize);
-
-    DifferentialVectorFunction<X> function(DifferentialFunction<X>... iX);
 
     Zero<X> zero();
 
     One<X> one();
+
+
+    DifferentialFunction<X> sum(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> prod(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> mean(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> std(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> variance(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> max(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> min(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> norm1(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> norm2(DifferentialFunction<X> i_x,int...dimensions);
+
+    DifferentialFunction<X> normmax(DifferentialFunction<X> i_x,int...dimensions);
+
+
+
+    DifferentialFunction<X> abs(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> cos(DifferentialFunction<X> iX);
 
