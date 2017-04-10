@@ -1615,7 +1615,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.lengthLong(), n));
-        return this;
+        return result;
     }
 
 

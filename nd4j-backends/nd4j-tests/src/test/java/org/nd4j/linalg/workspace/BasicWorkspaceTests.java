@@ -199,8 +199,6 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLeverageTo1() throws Exception {
-        Nd4j.getBlasWrapper().dot(null, null);
-
         try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
             INDArray array1 = Nd4j.create(5);
 
