@@ -1606,7 +1606,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, TrainingMode train) {
-        return output(input, train == TrainingMode.TRAIN);
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            return output(input, train == TrainingMode.TRAIN);
+        }
     }
 
     /**
@@ -1625,9 +1636,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        List<INDArray> activations = feedForward(input, train);
-        //last activation is output
-        return activations.get(activations.size() - 1).detach();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            List<INDArray> activations = feedForward(input, train);
+            //last activation is output
+            return activations.get(activations.size() - 1).detach();
+        }
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -1652,17 +1674,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input) {
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .minSize(8 * 1024L * 1024L)
-                .overallocationLimit(1.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .build();
-
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, workspaceExternal)) {
-            return output(input, TrainingMode.TEST).detach();
-        }
+        return output(input, TrainingMode.TEST);
     }
 
     /**

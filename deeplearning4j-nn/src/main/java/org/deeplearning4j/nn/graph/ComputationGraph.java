@@ -1213,10 +1213,10 @@ public class ComputationGraph implements Serializable, Model {
                             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
                                     // FIXME: we don't really want detach here.
-                                    vertices[vIdx].setInput(inputNum, out.detach());
+                                    vertices[vIdx].setInput(inputNum, out);
                                 }
                             } else {
-                                vertices[vIdx].setInput(inputNum, out.detach());
+                                vertices[vIdx].setInput(inputNum, out);
                             }
                         }
                     }
@@ -1262,15 +1262,25 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        setInputs(input);
-        Map<String, INDArray> activations = feedForward(train);
-        INDArray[] outputs = new INDArray[numOutputArrays];
-        int i = 0;
-        for (String s : configuration.getNetworkOutputs()) {
-            log.info("ATT: {} -> {}", s, activations.get(s).isAttached());
-            outputs[i++] = activations.get(s).detach();
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            setInputs(input);
+            Map<String, INDArray> activations = feedForward(train);
+            INDArray[] outputs = new INDArray[numOutputArrays];
+            int i = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                outputs[i++] = activations.get(s).detach();
+            }
+            return outputs;
         }
-        return outputs;
     }
 
     /**
