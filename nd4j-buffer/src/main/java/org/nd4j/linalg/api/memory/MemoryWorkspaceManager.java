@@ -121,4 +121,13 @@ public interface MemoryWorkspaceManager {
      * @return
      */
     boolean checkIfWorkspaceExists(String id);
+
+    /**
+     * This method temporary opens block out of any workspace scope.
+     *
+     * PLEASE NOTE: Do not forget to close this block.
+     *
+     * @return
+     */
+    MemoryWorkspace scopeOutOfWorkspaces();
 }

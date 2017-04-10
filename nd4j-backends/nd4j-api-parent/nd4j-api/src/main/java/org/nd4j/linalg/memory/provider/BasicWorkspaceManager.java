@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.util.HashMap;
@@ -20,6 +22,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
+    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
 
     public BasicWorkspaceManager() {
         this(WorkspaceConfiguration.builder().initialSize(0).maxSize(0).overallocationLimit(0.3).policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build());
@@ -144,5 +147,24 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public boolean checkIfWorkspaceExists(@NonNull String id) {
         ensureThreadExistense();
         return backingMap.get().containsKey(id);
+    }
+
+
+    /**
+     * This method temporary opens block out of any workspace scope.
+     * <p>
+     * PLEASE NOTE: Do not forget to close this block.
+     *
+     * @return
+     */
+    @Override
+    public MemoryWorkspace scopeOutOfWorkspaces() {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if (workspace == null)
+            return dummyWorkspace;
+        else {
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            return workspace.tagOutOfScopeUse();
+        }
     }
 }
