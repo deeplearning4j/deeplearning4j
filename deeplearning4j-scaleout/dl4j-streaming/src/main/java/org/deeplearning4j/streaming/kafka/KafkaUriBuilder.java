@@ -1,6 +1,5 @@
 package org.deeplearning4j.streaming.kafka;
 
-import kafka.serializer.StringEncoder;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,13 +18,6 @@ public class KafkaUriBuilder {
     private int zooKeeperPort;
 
     public String uri() {
-        return String.format("kafka://%s?topic=%s&groupId=%s&zookeeperHost=%s&zookeeperPort=%d&serializerClass=%s&keySerializerClass=%s",
-                kafkaBroker,
-                consumingTopic
-                ,groupId
-                ,zooKeeperHost
-                ,zooKeeperPort,
-                StringEncoder.class.getName(),
-                StringEncoder.class.getName());
+        return String.format("kafka://%s?topic=%s&groupId=%s", kafkaBroker, consumingTopic, groupId);
     }
 }

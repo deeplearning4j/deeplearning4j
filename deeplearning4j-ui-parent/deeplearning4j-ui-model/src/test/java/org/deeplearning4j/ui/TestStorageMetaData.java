@@ -16,12 +16,12 @@ import static org.junit.Assert.assertTrue;
 public class TestStorageMetaData {
 
     @Test
-    public void testStorageMetaData(){
+    public void testStorageMetaData() {
 
         Serializable extraMeta = "ExtraMetaData";
         long timeStamp = 123456;
-        StorageMetaData m = new SbeStorageMetaData( timeStamp,
-                "sessionID", "typeID", "workerID", "org.some.class.InitType", "org.some.class.UpdateType", extraMeta);
+        StorageMetaData m = new SbeStorageMetaData(timeStamp, "sessionID", "typeID", "workerID",
+                        "org.some.class.InitType", "org.some.class.UpdateType", extraMeta);
 
         byte[] bytes = m.encode();
         StorageMetaData m2 = new SbeStorageMetaData();
@@ -31,7 +31,7 @@ public class TestStorageMetaData {
         assertArrayEquals(bytes, m2.encode());
 
         //Sanity check: null values
-        m = new SbeStorageMetaData(0, null,null,null,null,(String)null);
+        m = new SbeStorageMetaData(0, null, null, null, null, (String) null);
         bytes = m.encode();
         m2 = new SbeStorageMetaData();
         m2.decode(bytes);

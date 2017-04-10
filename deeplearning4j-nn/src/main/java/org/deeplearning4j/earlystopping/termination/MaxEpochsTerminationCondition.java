@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,12 +18,19 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
-/** Terminate training if the number of epochs exceeds the maximum number of epochs */
-public class MaxEpochsTerminationCondition implements EpochTerminationCondition {
-    private int maxEpochs;
+import lombok.NoArgsConstructor;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+/** Terminate training if the number of epochs exceeds the maximum number of epochs */
+@NoArgsConstructor
+public class MaxEpochsTerminationCondition implements EpochTerminationCondition {
+    @JsonProperty
+    private int maxEpochs;
+    @JsonCreator
     public MaxEpochsTerminationCondition(int maxEpochs) {
-        if(maxEpochs <= 0) throw new IllegalArgumentException("Max number of epochs must be >= 1");
+        if (maxEpochs <= 0)
+            throw new IllegalArgumentException("Max number of epochs must be >= 1");
         this.maxEpochs = maxEpochs;
     }
 
@@ -34,11 +41,11 @@ public class MaxEpochsTerminationCondition implements EpochTerminationCondition 
 
     @Override
     public boolean terminate(int epochNum, double score) {
-        return epochNum+1 >= maxEpochs; //epochNum starts at 0
+        return epochNum + 1 >= maxEpochs; //epochNum starts at 0
     }
 
     @Override
-    public String toString(){
-        return "MaxEpochsTerminationCondition("+maxEpochs+")";
+    public String toString() {
+        return "MaxEpochsTerminationCondition(" + maxEpochs + ")";
     }
 }

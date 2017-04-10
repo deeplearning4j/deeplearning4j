@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,7 +36,8 @@ import java.util.Map;
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
@@ -45,15 +46,16 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     private IActivation gateActivationFn = new ActivationSigmoid();
 
     private GravesBidirectionalLSTM(Builder builder) {
-    	super(builder);
+        super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM ret
-                = new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM ret =
+                        new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -70,7 +72,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        switch(paramName){
+        switch (paramName) {
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
@@ -78,7 +80,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
                 return l1;
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -86,7 +88,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     @Override
     public double getL2ByParam(String paramName) {
-        switch(paramName){
+        switch (paramName) {
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
@@ -94,7 +96,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
                 return l2;
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
@@ -102,7 +104,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch(paramName){
+        switch (paramName) {
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS:
@@ -110,7 +112,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
                 return learningRate;
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS:
             case GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {
@@ -121,7 +123,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         }
     }
 
-    @AllArgsConstructor @NoArgsConstructor
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
         private double forgetGateBiasInit = 1.0;
@@ -130,7 +133,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         /** Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
-        public Builder forgetGateBiasInit(double biasInit){
+        public Builder forgetGateBiasInit(double biasInit) {
             this.forgetGateBiasInit = biasInit;
             return this;
         }
@@ -141,7 +144,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
-        public Builder gateActivationFunction(String gateActivationFn){
+        public Builder gateActivationFunction(String gateActivationFn) {
             return gateActivationFunction(Activation.fromString(gateActivationFn));
         }
 
@@ -151,7 +154,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
-        public Builder gateActivationFunction(Activation gateActivationFn){
+        public Builder gateActivationFunction(Activation gateActivationFn) {
             return gateActivationFunction(gateActivationFn.getActivationFunction());
         }
 
@@ -161,7 +164,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
-        public Builder gateActivationFunction(IActivation gateActivationFn){
+        public Builder gateActivationFunction(IActivation gateActivationFn) {
             this.gateActivationFn = gateActivationFn;
             return this;
         }

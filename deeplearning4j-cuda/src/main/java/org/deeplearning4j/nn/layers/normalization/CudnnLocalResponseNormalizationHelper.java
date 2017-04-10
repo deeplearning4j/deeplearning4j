@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -34,8 +34,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cuda.cudaSuccess;
+import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**
@@ -47,31 +46,37 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
     static void checkCuda(int error) {
         if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error);
+            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
         }
     }
 
     static void checkCudnn(int status) {
         if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status);
+            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
         }
     }
 
     static class CudnnContext extends cudnnContext {
 
         static class Deallocator extends CudnnContext implements Pointer.Deallocator {
-            Deallocator(CudnnContext c) { super(c); }
-            @Override public void deallocate() { destroyHandles(); }
+            Deallocator(CudnnContext c) {
+                super(c);
+            }
+
+            @Override
+            public void deallocate() {
+                destroyHandles();
+            }
         }
 
-        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(),
-                          dstTensorDesc = new cudnnTensorStruct(),
-                          deltaTensorDesc = new cudnnTensorStruct();
+        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
+                        deltaTensorDesc = new cudnnTensorStruct();
         cudnnLRNStruct lrnDesc = new cudnnLRNStruct();
 
         CudnnContext() {
             // insure that cuDNN initializes on the same device as ND4J for this thread
             Nd4j.create(1);
+            AtomicAllocator.getInstance();
             createHandles();
             deallocator(new Deallocator(this));
         }
@@ -102,18 +107,33 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
     }
 
     CudnnContext cudnnContext = new CudnnContext();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     int tensorFormat = CUDNN_TENSOR_NCHW;
     Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(1.0f)});
-    Pointer beta  = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                  : new ShortPointer(new short[] {(short)HalfIndexer.fromFloat(0.0f)});;
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
+                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
+    Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
+                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
     INDArray activations = null;
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha, double beta) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
+                    double beta) {
+        if (n < CUDNN_LRN_MIN_N) {
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+        }
+        if (n > CUDNN_LRN_MAX_N) {
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+        }
+        if (k < CUDNN_LRN_MIN_K) {
+            throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
+        }
+        if (beta < CUDNN_LRN_MIN_BETA) {
+            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+        }
+
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -130,21 +150,22 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
         int[] deltaStride = epsilon.stride();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, depth, inH, inW,
-                srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, inH, inW,
-                deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int)n, alpha, beta, k));
+                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
+        checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int) n, alpha, beta, k));
 
-        INDArray nextEpsilon = Nd4j.createUninitialized(new int[]{miniBatch,depth,inH,inW},'c');
+        INDArray nextEpsilon = Nd4j.createUninitialized(new int[] {miniBatch, depth, inH, inW}, 'c');
         int[] dstStride = nextEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
-                dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
 
         Allocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = allocator.getFlowController().prepareActionAllWrite(input, epsilon, activations, nextEpsilon);
+        CudaContext context =
+                        allocator.getFlowController().prepareActionAllWrite(input, epsilon, activations, nextEpsilon);
         Pointer srcData = allocator.getPointer(input, context);
         Pointer epsData = allocator.getPointer(epsilon, context);
         Pointer zData = allocator.getPointer(activations, context);
@@ -152,17 +173,30 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnLRNCrossChannelBackward(cudnnContext, cudnnContext.lrnDesc, CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                this.alpha, cudnnContext.deltaTensorDesc, zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData,
-                this.beta, cudnnContext.dstTensorDesc, dstData));
+                        this.alpha, cudnnContext.deltaTensorDesc, zData, cudnnContext.deltaTensorDesc, epsData,
+                        cudnnContext.srcTensorDesc, srcData, this.beta, cudnnContext.dstTensorDesc, dstData));
 
         allocator.getFlowController().registerActionAllWrite(context, input, epsilon, activations, nextEpsilon);
 
-        return new Pair<>(retGradient,nextEpsilon);
+        return new Pair<>(retGradient, nextEpsilon);
     }
 
 
     @Override
     public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta) {
+        if (n < CUDNN_LRN_MIN_N) {
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+        }
+        if (n > CUDNN_LRN_MAX_N) {
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+        }
+        if (k < CUDNN_LRN_MIN_K) {
+            throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
+        }
+        if (beta < CUDNN_LRN_MIN_BETA) {
+            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+        }
+
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -170,13 +204,13 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
         int[] srcStride = input.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        activations = Nd4j.createUninitialized(new int[]{miniBatch,inDepth,inH,inW},'c');
+        activations = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, inH, inW}, 'c');
         int[] dstStride = activations.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-        checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int)n, alpha, beta, k));
+                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+        checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int) n, alpha, beta, k));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(input, activations);
@@ -184,11 +218,12 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
         Pointer dstData = allocator.getPointer(activations, context);
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnLRNCrossChannelForward(cudnnContext, cudnnContext.lrnDesc, CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                this.alpha, cudnnContext.srcTensorDesc, srcData, this.beta, cudnnContext.dstTensorDesc, dstData));
+                        this.alpha, cudnnContext.srcTensorDesc, srcData, this.beta, cudnnContext.dstTensorDesc,
+                        dstData));
 
         allocator.getFlowController().registerActionAllWrite(context, input, activations);
 

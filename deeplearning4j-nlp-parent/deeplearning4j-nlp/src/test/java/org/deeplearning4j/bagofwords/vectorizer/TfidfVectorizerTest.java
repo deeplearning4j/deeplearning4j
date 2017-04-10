@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,6 +20,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -52,25 +53,23 @@ public class TfidfVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
-        TfidfVectorizer vectorizer = new TfidfVectorizer.Builder()
-                .setMinWordFrequency(1)
-                .setStopWords(new ArrayList<String>())
-                .setTokenizerFactory(tokenizerFactory)
-                .setIterator(iter)
-//                .labels(labels)
-//                .cleanup(true)
-                .build();
+        TfidfVectorizer vectorizer = new TfidfVectorizer.Builder().setMinWordFrequency(1)
+                        .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
+                        .allowParallelTokenization(false)
+                        //                .labels(labels)
+                        //                .cleanup(true)
+                        .build();
 
         vectorizer.fit();
-        VocabWord word =vectorizer.getVocabCache().wordFor("file.");
+        VocabWord word = vectorizer.getVocabCache().wordFor("file.");
         assumeNotNull(word);
-        assertEquals(word,vectorizer.getVocabCache().tokenFor("file."));
-        assertEquals(3,vectorizer.getVocabCache().totalNumberOfDocs());
+        assertEquals(word, vectorizer.getVocabCache().tokenFor("file."));
+        assertEquals(3, vectorizer.getVocabCache().totalNumberOfDocs());
 
         assertEquals(3, word.getSequencesCount());
         assertEquals(3, word.getElementFrequency(), 0.1);
 
-        VocabWord word1 =vectorizer.getVocabCache().wordFor("1");
+        VocabWord word1 = vectorizer.getVocabCache().wordFor("1");
 
         assertEquals(1, word1.getSequencesCount());
         assertEquals(1, word1.getElementFrequency(), 0.1);
@@ -85,13 +84,13 @@ public class TfidfVectorizerTest {
         INDArray vector = vectorizer.transform("This is 3 file.");
         log.info("TF-IDF vector: " + Arrays.toString(vector.data().asDouble()));
 
-        assertEquals(0, vector.getDouble(0), 0.001);
-        assertEquals(.04402, vector.getDouble(1), 0.001);
-        assertEquals(.04402, vector.getDouble(2), 0.001);
-        assertEquals(0, vector.getDouble(3), 0.001);
-        assertEquals(0.119, vector.getDouble(4), 0.001);
-        assertEquals(0, vector.getDouble(5), 0.001);
-        assertEquals(0, vector.getDouble(6), 0.001);
+        VocabCache<VocabWord> vocabCache = vectorizer.getVocabCache();
+
+        assertEquals(.04402, vector.getDouble(vocabCache.tokenFor("This").getIndex()), 0.001);
+        assertEquals(.04402, vector.getDouble(vocabCache.tokenFor("is").getIndex()), 0.001);
+        assertEquals(0.119, vector.getDouble(vocabCache.tokenFor("3").getIndex()), 0.001);
+        assertEquals(0, vector.getDouble(vocabCache.tokenFor("file.").getIndex()), 0.001);
+
 
 
         DataSet dataSet = vectorizer.vectorize("This is 3 file.", "label3");
@@ -107,7 +106,7 @@ public class TfidfVectorizerTest {
         assertEquals(1, cnt);
 
 
-        File tempFile = File.createTempFile("somefile","Dsdas");
+        File tempFile = File.createTempFile("somefile", "Dsdas");
         tempFile.deleteOnExit();
 
         SerializationUtils.saveObject(vectorizer, tempFile);

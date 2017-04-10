@@ -23,7 +23,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>
@@ -75,36 +75,8 @@
 
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
+            <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>macosx-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>windows-x86_64</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp-presets.version}</version>
-            <classifier>linux-ppc64le</classifier>
         </dependency>
 
         <dependency>
@@ -133,4 +105,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
+
 </project>

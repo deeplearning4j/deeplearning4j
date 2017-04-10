@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -19,12 +19,14 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.Setter;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
@@ -33,12 +35,15 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -46,8 +51,8 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -61,8 +66,6 @@ import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.dataset.api.DataSet;
-
 
 import java.io.Serializable;
 import java.util.*;
@@ -79,8 +82,8 @@ public class ComputationGraph implements Serializable, Model {
 
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
-    protected transient Solver solver;    //Used to call optimizers during backprop
-    protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
+    protected transient Solver solver; //Used to call optimizers during backprop
+    protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
@@ -167,7 +170,7 @@ public class ComputationGraph implements Serializable, Model {
      * Get a given layer by name.
      */
     public Layer getLayer(String name) {
-        return verticesMap.get(name).getLayer();    //TODO checks
+        return verticesMap.get(name).getLayer(); //TODO checks
     }
 
     /**
@@ -210,7 +213,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setInputs(INDArray... inputs) {
         if (inputs != null && inputs.length != this.numInputArrays) {
-            throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays + " inputs, but array is of length " + inputs.length);
+            throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays
+                            + " inputs, but array is of length " + inputs.length);
         }
         this.inputs = inputs;
     }
@@ -219,7 +223,8 @@ public class ComputationGraph implements Serializable, Model {
      * Get the previously set input for the ComputationGraph
      */
     public INDArray getInput(int inputNum) {
-        if (inputs == null) return null;
+        if (inputs == null)
+            return null;
         return inputs[inputNum];
     }
 
@@ -256,7 +261,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setLabels(INDArray... labels) {
         if (labels != null && labels.length != this.numOutputArrays) {
-            throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays + " outputs, but array is of length " + labels.length);
+            throw new IllegalArgumentException("Invalid output array: network has " + numOutputArrays
+                            + " outputs, but array is of length " + labels.length);
         }
         this.labels = labels;
     }
@@ -277,7 +283,8 @@ public class ComputationGraph implements Serializable, Model {
      * @param cloneParametersArray Whether the parameter array (if any) should be cloned, or used directly
      */
     public void init(INDArray parameters, boolean cloneParametersArray) {
-        if (initCalled) return;
+        if (initCalled)
+            return;
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
@@ -298,7 +305,7 @@ public class ComputationGraph implements Serializable, Model {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            GraphVertex gv = new InputVertex(this, name, vertexNumber, null);  //Output vertices: set later
+            GraphVertex gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
@@ -308,7 +315,7 @@ public class ComputationGraph implements Serializable, Model {
         int[] numParamsForVertex = new int[topologicalOrder.length];
         int i = 0;
         for (; i < configuration.getNetworkInputs().size(); i++) {
-            numParamsForVertex[i] = 0;  //No parameters for input vertices
+            numParamsForVertex[i] = 0; //No parameters for input vertices
         }
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
@@ -322,10 +329,13 @@ public class ComputationGraph implements Serializable, Model {
             if (!parameters.isRowVector())
                 throw new IllegalArgumentException("Invalid parameters: should be a row vector");
             if (parameters.length() != numParams)
-                throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length " + parameters.length());
+                throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length "
+                                + parameters.length());
 
-            if (cloneParametersArray) flattenedParams = parameters.dup();
-            else flattenedParams = parameters;
+            if (cloneParametersArray)
+                flattenedParams = parameters.dup();
+            else
+                flattenedParams = parameters;
 
             initializeParams = false;
         } else {
@@ -342,7 +352,8 @@ public class ComputationGraph implements Serializable, Model {
         for (int vertexIdx : topologicalOrder) {
             int nParamsThisVertex = numParamsForVertex[vertexIdx];
             if (nParamsThisVertex != 0) {
-                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
             }
             i++;
             paramOffsetSoFar += nParamsThisVertex;
@@ -356,15 +367,16 @@ public class ComputationGraph implements Serializable, Model {
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber], initializeParams);
+            GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
+                            initializeParams);
 
             if (gv.hasLayer()) {
                 numLayers++;
                 Layer l = gv.getLayer();
                 tempLayerList.add(l);
                 List<String> layerVariables = l.conf().variables();
-                if(layerVariables != null){
-                    for(String s : layerVariables ){
+                if (layerVariables != null) {
+                    for (String s : layerVariables) {
                         variables.add(gv.getVertexName() + "_" + s);
                     }
                 }
@@ -385,13 +397,14 @@ public class ComputationGraph implements Serializable, Model {
         //Now: do another pass to set the input and output indices, for each vertex
         // These indices are used during forward and backward passes
         //To get output indices: need to essentially build the graph in reverse...
-        Map<String, List<String>> verticesOutputTo = new HashMap<>();    //Key: vertex. Values: vertices that this node is an input for
+        Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
         for (GraphVertex gv : vertices) {
             String vertexName = gv.getVertexName();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
-            if (vertexInputNames == null) continue;
+            if (vertexInputNames == null)
+                continue;
 
             //Build reverse network structure:
             for (String s : vertexInputNames) {
@@ -400,7 +413,7 @@ public class ComputationGraph implements Serializable, Model {
                     list = new ArrayList<>();
                     verticesOutputTo.put(s, list);
                 }
-                list.add(vertexName);   //Edge: s -> vertexName
+                list.add(vertexName); //Edge: s -> vertexName
             }
         }
 
@@ -411,7 +424,8 @@ public class ComputationGraph implements Serializable, Model {
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
-            if (vertexInputNames == null) continue;
+            if (vertexInputNames == null)
+                continue;
 
             VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.size()];
             for (int j = 0; j < vertexInputNames.size(); j++) {
@@ -428,7 +442,7 @@ public class ComputationGraph implements Serializable, Model {
 
                 if (outputNumberOfInput == -1)
                     throw new IllegalStateException("Could not find vertex " + vertexIndex + " in the list of outputs "
-                            + "for vertex " + inputVertex + "; error in graph structure?");
+                                    + "for vertex " + inputVertex + "; error in graph structure?");
                 //Overall here: the 'outputNumberOfInput'th output of vertex 'inputVertexIndex' is the jth input to the current vertex
 
                 inputIndices[j] = new VertexIndices(inputVertexIndex, outputNumberOfInput);
@@ -443,7 +457,8 @@ public class ComputationGraph implements Serializable, Model {
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
-            if (thisVertexOutputsTo == null || thisVertexOutputsTo.isEmpty()) continue;   //Output vertex
+            if (thisVertexOutputsTo == null || thisVertexOutputsTo.isEmpty())
+                continue; //Output vertex
             VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j = 0;
             for (String s : thisVertexOutputsTo) {
@@ -468,14 +483,15 @@ public class ComputationGraph implements Serializable, Model {
      * or fit(MultiDataSet) methods
      */
     public void initGradientsView() {
-        if (!initCalled) init();
+        if (!initCalled)
+            init();
 
         //Go through layers, and work out total number of parameters. Then allocate full parameters array
         int numParams = 0;
         int[] numParamsForVertex = new int[topologicalOrder.length];
         int i = 0;
         for (; i < configuration.getNetworkInputs().size(); i++) {
-            numParamsForVertex[i] = 0;  //No parameters for input vertices
+            numParamsForVertex[i] = 0; //No parameters for input vertices
         }
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
@@ -492,7 +508,8 @@ public class ComputationGraph implements Serializable, Model {
         for (int vertexIdx : topologicalOrder) {
             int nParamsThisVertex = numParamsForVertex[vertexIdx];
             if (nParamsThisVertex != 0) {
-                INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
                 vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
             }
             i++;
@@ -508,8 +525,9 @@ public class ComputationGraph implements Serializable, Model {
      * For networks with more than one input use {@link #pretrain(MultiDataSetIterator)}
      */
     public void pretrain(DataSetIterator iter) {
-        if (numInputArrays != 1 ) {
-            throw new UnsupportedOperationException("Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
+        if (numInputArrays != 1) {
+            throw new UnsupportedOperationException(
+                            "Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
         }
 
         pretrain(ComputationGraphUtil.toMultiDataSetIterator(iter));
@@ -519,14 +537,19 @@ public class ComputationGraph implements Serializable, Model {
      * Pretrain network with multiple inputs and/or outputs
      */
     public void pretrain(MultiDataSetIterator iter) {
-        if (!configuration.isPretrain()) return;
-        if (flattenedGradients == null) initGradientsView();
+        if (!configuration.isPretrain())
+            return;
+        if (flattenedGradients == null)
+            initGradientsView();
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[i].hasLayer()) continue;
-            if (vertices[i].getLayer() instanceof IOutputLayer) continue;       //Don't pretrain output layer
-            if (!vertices[i].getLayer().isPretrainLayer() ) continue;           //Skip layers that aren't pretrainable
+            if (!vertices[i].hasLayer())
+                continue;
+            if (vertices[i].getLayer() instanceof IOutputLayer)
+                continue; //Don't pretrain output layer
+            if (!vertices[i].getLayer().isPretrainLayer())
+                continue; //Skip layers that aren't pretrainable
 
             pretrainLayer(vertices[i].getVertexName(), iter);
         }
@@ -538,9 +561,10 @@ public class ComputationGraph implements Serializable, Model {
      * @param layerName       Layer name
      * @param dataSetIterator Data
      */
-    public void pretrainLayer(String layerName, DataSetIterator dataSetIterator){
-        if (numInputArrays != 1 ) {
-            throw new UnsupportedOperationException("Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
+    public void pretrainLayer(String layerName, DataSetIterator dataSetIterator) {
+        if (numInputArrays != 1) {
+            throw new UnsupportedOperationException(
+                            "Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
         }
 
         pretrainLayer(layerName, ComputationGraphUtil.toMultiDataSetIterator(dataSetIterator));
@@ -553,13 +577,15 @@ public class ComputationGraph implements Serializable, Model {
      * @param iter Training data
      */
     public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
-        if (!configuration.isPretrain()) return;
-        if (flattenedGradients == null) initGradientsView();
+        if (!configuration.isPretrain())
+            return;
+        if (flattenedGradients == null)
+            initGradientsView();
 
-        if(!verticesMap.containsKey(layerName)){
+        if (!verticesMap.containsKey(layerName)) {
             throw new IllegalStateException("Invalid vertex name: " + layerName);
         }
-        if(!verticesMap.get(layerName).hasLayer()){
+        if (!verticesMap.get(layerName).hasLayer()) {
             //No op
             return;
         }
@@ -593,12 +619,13 @@ public class ComputationGraph implements Serializable, Model {
 
         int[] fwdPassOrder = new int[partialTopoSort.size()];
         int k = 0;
-        for (Integer g : partialTopoSort) fwdPassOrder[k++] = g;
+        for (Integer g : partialTopoSort)
+            fwdPassOrder[k++] = g;
 
         GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
         Layer layer = gv.getLayer();
 
-        if(!iter.hasNext() && iter.resetSupported()){
+        if (!iter.hasNext() && iter.resetSupported()) {
             iter.reset();
         }
 
@@ -617,7 +644,7 @@ public class ComputationGraph implements Serializable, Model {
                         int vIdx = v.getVertexIndex();
                         int vIdxInputNum = v.getVertexEdgeNumber();
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                        vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
                     }
 
                 } else {
@@ -650,18 +677,21 @@ public class ComputationGraph implements Serializable, Model {
     public void fit(DataSet dataSet) {
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
-                    + " multiple inputs or outputs using a DataSet");
+                            + " multiple inputs or outputs using a DataSet");
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {
-            INDArray[] fMask = (dataSet.getFeaturesMaskArray() != null ? new INDArray[]{dataSet.getFeaturesMaskArray()} : null);
-            INDArray[] lMask = (dataSet.getLabelsMaskArray() != null ? new INDArray[]{dataSet.getLabelsMaskArray()} : null);
-            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()}, fMask, lMask);
+            INDArray[] fMask = (dataSet.getFeaturesMaskArray() != null ? new INDArray[] {dataSet.getFeaturesMaskArray()}
+                            : null);
+            INDArray[] lMask = (dataSet.getLabelsMaskArray() != null ? new INDArray[] {dataSet.getLabelsMaskArray()}
+                            : null);
+            fit(new INDArray[] {dataSet.getFeatures()}, new INDArray[] {dataSet.getLabels()}, fMask, lMask);
         } else {
-            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
+            fit(new INDArray[] {dataSet.getFeatures()}, new INDArray[] {dataSet.getLabels()});
         }
 
-        if (hasMaskArrays) clearLayerMaskArrays();
+        if (hasMaskArrays)
+            clearLayerMaskArrays();
     }
 
     /**
@@ -669,19 +699,21 @@ public class ComputationGraph implements Serializable, Model {
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
     public void fit(DataSetIterator iterator) {
-        if (flattenedGradients == null) initGradientsView();
+        if (flattenedGradients == null)
+            initGradientsView();
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
-                    + " multiple inputs or outputs using a DataSetIterator");
+                            + " multiple inputs or outputs using a DataSetIterator");
 
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator, 2);
-        } else dataSetIterator = iterator;
+        } else
+            dataSetIterator = iterator;
 
         if (trainingListeners.size() > 0) {
-            for(TrainingListener tl : trainingListeners){
+            for (TrainingListener tl : trainingListeners) {
                 tl.onEpochStart(this);
             }
         }
@@ -699,24 +731,23 @@ public class ComputationGraph implements Serializable, Model {
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if (hasMaskArrays) {
-                    INDArray[] fMask = (next.getFeaturesMaskArray() != null ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()} : null);
+                    INDArray[] fMask = (next.getFeaturesMaskArray() != null
+                                    ? new INDArray[] {next.getFeaturesMaskArray()} : null);
+                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[] {next.getLabelsMaskArray()}
+                                    : null);
                     setLayerMaskArrays(fMask, lMask);
                 }
 
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(new INDArray[]{next.getFeatures()},
-                            new INDArray[]{next.getLabels()},
-                            (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
-                            (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                    doTruncatedBPTT(new INDArray[] {next.getFeatures()}, new INDArray[] {next.getLabels()},
+                                    (hasMaskArrays ? new INDArray[] {next.getFeaturesMaskArray()} : null),
+                                    (hasMaskArrays ? new INDArray[] {next.getLabelsMaskArray()} : null));
                 } else {
                     setInput(0, next.getFeatures());
                     setLabel(0, next.getLabels());
                     if (solver == null) {
-                        solver = new Solver.Builder()
-                                .configure(defaultConfiguration)    //TODO; don't like this
-                                .listeners(listeners)
-                                .model(this).build();
+                        solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
+                                        .listeners(listeners).model(this).build();
                     }
                     solver.optimize();
                 }
@@ -724,11 +755,13 @@ public class ComputationGraph implements Serializable, Model {
                 if (hasMaskArrays) {
                     clearLayerMaskArrays();
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         }
 
         if (trainingListeners.size() > 0) {
-            for(TrainingListener tl : trainingListeners){
+            for (TrainingListener tl : trainingListeners) {
                 tl.onEpochEnd(this);
             }
         }
@@ -738,20 +771,24 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSet
      */
     public void fit(MultiDataSet multiDataSet) {
-        fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
-        if (multiDataSet.hasMaskArrays()) clearLayerMaskArrays();
+        fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(),
+                        multiDataSet.getLabelsMaskArrays());
+        if (multiDataSet.hasMaskArrays())
+            clearLayerMaskArrays();
     }
 
     /**
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
     public void fit(MultiDataSetIterator multi) {
-        if (flattenedGradients == null) initGradientsView();
+        if (flattenedGradients == null)
+            initGradientsView();
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
             multiDataSetIterator = new AsyncMultiDataSetIterator(multi, 2);
-        } else multiDataSetIterator = multi;
+        } else
+            multiDataSetIterator = multi;
 
         if (configuration.isPretrain()) {
             pretrain(multiDataSetIterator);
@@ -764,7 +801,8 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
+                                    next.getLabelsMaskArrays());
                 } else {
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -774,10 +812,8 @@ public class ComputationGraph implements Serializable, Model {
                     setInputs(next.getFeatures());
                     setLabels(next.getLabels());
                     if (solver == null) {
-                        solver = new Solver.Builder()
-                                .configure(defaultConfiguration)
-                                .listeners(listeners)
-                                .model(this).build();
+                        solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
+                                        .build();
                     }
                     solver.optimize();
 
@@ -785,6 +821,8 @@ public class ComputationGraph implements Serializable, Model {
                         clearLayerMaskArrays();
                     }
                 }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
         }
     }
@@ -808,7 +846,8 @@ public class ComputationGraph implements Serializable, Model {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        if (flattenedGradients == null) initGradientsView();
+        if (flattenedGradients == null)
+            initGradientsView();
 
         setInputs(inputs);
         setLabels(labels);
@@ -816,7 +855,9 @@ public class ComputationGraph implements Serializable, Model {
         update(TaskUtils.buildTask(inputs, labels));
 
         if (configuration.isPretrain()) {
-            MultiDataSetIterator iter = new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels, featureMaskArrays, labelMaskArrays));
+            MultiDataSetIterator iter =
+                            new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels,
+                                            featureMaskArrays, labelMaskArrays));
             pretrain(iter);
         }
 
@@ -825,17 +866,14 @@ public class ComputationGraph implements Serializable, Model {
                 doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
             } else {
                 if (solver == null) {
-                    solver = new Solver.Builder()
-                            .configure(conf())
-                            .listeners(getListeners())
-                            .model(this).build();
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                 }
 
                 solver.optimize();
             }
         }
 
-        if(featureMaskArrays != null || labelMaskArrays != null){
+        if (featureMaskArrays != null || labelMaskArrays != null) {
             clearLayerMaskArrays();
         }
     }
@@ -848,7 +886,8 @@ public class ComputationGraph implements Serializable, Model {
      * (c) order to flatten parameters (and gradients)
      */
     public int[] topologicalSortOrder() {
-        if (topologicalOrder != null) return topologicalOrder;
+        if (topologicalOrder != null)
+            return topologicalOrder;
 
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
@@ -874,8 +913,8 @@ public class ComputationGraph implements Serializable, Model {
             i++;
         }
 
-        Map<Integer, Set<Integer>> inputEdges = new HashMap<>();     //key: vertex. Values: vertices that the key vertex receives input from
-        Map<Integer, Set<Integer>> outputEdges = new HashMap<>();    //key: vertex. Values: vertices that the key vertex outputs to
+        Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
+        Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
 
         for (String s : configuration.getNetworkInputs()) {
             int idx = vertexNamesMap2.get(s);
@@ -904,7 +943,7 @@ public class ComputationGraph implements Serializable, Model {
                     outputSetForInputIdx = new HashSet<>();
                     outputEdges.put(inputIdx, outputSetForInputIdx);
                 }
-                outputSetForInputIdx.add(idx);  //input vertex outputs to the current vertex
+                outputSetForInputIdx.add(idx); //input vertex outputs to the current vertex
             }
             inputEdges.put(idx, inputSet);
         }
@@ -921,7 +960,7 @@ public class ComputationGraph implements Serializable, Model {
 
         while (!noIncomingEdges.isEmpty()) {
             int next = noIncomingEdges.removeFirst();
-            out[outCounter++] = next;   //Add to sorted list
+            out[outCounter++] = next; //Add to sorted list
 
             Set<Integer> vertexOutputsTo = outputEdges.get(next);
 
@@ -940,10 +979,13 @@ public class ComputationGraph implements Serializable, Model {
         //If any edges remain in the graph: graph has cycles:
         for (Map.Entry<Integer, Set<Integer>> entry : inputEdges.entrySet()) {
             Set<Integer> set = entry.getValue();
-            if (set == null) continue;
+            if (set == null)
+                continue;
             if (!set.isEmpty())
-                throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
-                        + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey()) + "\")");
+                throw new IllegalStateException(
+                                "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+                                                + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey())
+                                                + "\")");
         }
 
         return out;
@@ -953,7 +995,7 @@ public class ComputationGraph implements Serializable, Model {
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            Map<String,INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+            Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -961,7 +1003,7 @@ public class ComputationGraph implements Serializable, Model {
             }
             calcBackpropGradients(true);
         } else {
-            Map<String,INDArray> activations = feedForward(true, true);
+            Map<String, INDArray> activations = feedForward(true, true);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -1003,7 +1045,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Map<String, INDArray> feedForward(INDArray input, boolean train) {
         if (numInputArrays != 1)
-            throw new UnsupportedOperationException("Cannot feedForward with single input for graph network with " + numInputArrays + " expected inputs");
+            throw new UnsupportedOperationException("Cannot feedForward with single input for graph network with "
+                            + numInputArrays + " expected inputs");
         setInput(0, input);
         return feedForward(train);
     }
@@ -1017,8 +1060,10 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train) {
         if (numInputArrays != input.length)
-            throw new UnsupportedOperationException("Cannot feedForward with " + input.length + " inputs for graph network with " + numInputArrays + " expected inputs");
-        for (int i = 0; i < input.length; i++) setInput(i, input[i]);
+            throw new UnsupportedOperationException("Cannot feedForward with " + input.length
+                            + " inputs for graph network with " + numInputArrays + " expected inputs");
+        for (int i = 0; i < input.length; i++)
+            setInput(i, input[i]);
         return feedForward(train);
     }
 
@@ -1062,7 +1107,8 @@ public class ComputationGraph implements Serializable, Model {
 
             } else {
                 //Do forward pass:
-                if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer() && current.getLayer() instanceof IOutputLayer) {
+                if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer()
+                                && current.getLayer() instanceof IOutputLayer) {
                     //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
                     // we only need to ensure the input to the output layers is set properly
                     continue;
@@ -1140,9 +1186,11 @@ public class ComputationGraph implements Serializable, Model {
      * @param input Inputs to the network
      * @return Output activations array
      */
-    public INDArray outputSingle(boolean train, INDArray... input){
-        if(numOutputArrays != 1){
-            throw new IllegalStateException("Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: " + numOutputArrays);
+    public INDArray outputSingle(boolean train, INDArray... input) {
+        if (numOutputArrays != 1) {
+            throw new IllegalStateException(
+                            "Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: "
+                                            + numOutputArrays);
         }
         return output(train, input)[0];
     }
@@ -1157,7 +1205,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Gradient backpropGradient(INDArray... epsilons) {
         if (epsilons == null || epsilons.length != numOutputArrays)
-            throw new IllegalArgumentException("Invalid input: must have epsilons length equal to number of output arrays");
+            throw new IllegalArgumentException(
+                            "Invalid input: must have epsilons length equal to number of output arrays");
 
 
         calcBackpropGradients(configuration.getBackpropType() == BackpropType.TruncatedBPTT, epsilons);
@@ -1173,16 +1222,21 @@ public class ComputationGraph implements Serializable, Model {
      *                         learning situations.
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
-        if (flattenedGradients == null) initGradientsView();
+        if (flattenedGradients == null)
+            initGradientsView();
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
-        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length];   //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
+        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
             GraphVertex current = vertices[topologicalOrder[i]];
 
-            if (current.isInputVertex()) continue;   //No op
+            if (current.isInputVertex())
+                continue; //No op
+            //FIXME: make the frozen vertex feature extraction more flexible
+            if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
+                break;
 
             if (current.isOutputVertex()) {
                 //Two reasons for a vertex to be an output vertex:
@@ -1212,10 +1266,10 @@ public class ComputationGraph implements Serializable, Model {
                 int j = 0;
                 for (VertexIndices v : inputVertices) {
                     GraphVertex gv = vertices[v.getVertexIndex()];
-                    if(setVertexEpsilon[gv.getVertexIndex()]){
+                    if (setVertexEpsilon[gv.getVertexIndex()]) {
                         //This vertex: must output to multiple vertices... we want to add the epsilons here
                         INDArray currentEps = gv.getEpsilon();
-                        gv.setEpsilon(currentEps.add(epsilons[j++]));       //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                        gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                     } else {
                         gv.setEpsilon(epsilons[j++]);
                     }
@@ -1233,7 +1287,8 @@ public class ComputationGraph implements Serializable, Model {
                     String newName = current.getVertexName() + "_" + origName;
                     tempList.addFirst(new Triple<>(newName, entry.getValue(), g.flatteningOrderForVariable(origName)));
                 }
-                for (Triple<String, INDArray, Character> t : tempList) gradients.addFirst(t);
+                for (Triple<String, INDArray, Character> t : tempList)
+                    gradients.addFirst(t);
             }
         }
 
@@ -1250,7 +1305,7 @@ public class ComputationGraph implements Serializable, Model {
     public ComputationGraph clone() {
         ComputationGraph cg = new ComputationGraph(configuration.clone());
         cg.init(params().dup(), false);
-        if(solver != null) {
+        if (solver != null) {
             //If  solver is null: updater hasn't been initialized -> getUpdater call will force initialization, however
             ComputationGraphUpdater u = this.getUpdater();
             INDArray updaterState = u.getStateViewArray();
@@ -1259,6 +1314,14 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
         cg.listeners = this.listeners;
+        for (int i = 0; i < topologicalOrder.length; i++) {
+            if (!vertices[topologicalOrder[i]].hasLayer())
+                continue;
+            String layerName = vertices[topologicalOrder[i]].getVertexName();
+            if (getLayer(layerName) instanceof FrozenLayer) {
+                cg.getVertex(layerName).setLayerAsFrozen();
+            }
+        }
         return cg;
     }
 
@@ -1291,7 +1354,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = listeners;
-        if (layers == null) init();
+        if (layers == null)
+            init();
 
         for (Layer l : layers) {
             l.setListeners(listeners);
@@ -1302,9 +1366,9 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         this.trainingListeners.clear();
-        if(listeners != null) {
-            for (IterationListener il : listeners){
-                if(il instanceof TrainingListener){
+        if (listeners != null) {
+            for (IterationListener il : listeners) {
+                if (il instanceof TrainingListener) {
                     this.trainingListeners.add((TrainingListener) il);
                 }
             }
@@ -1319,8 +1383,9 @@ public class ComputationGraph implements Serializable, Model {
         //Check: user might have done setListeners(null) thinking this would clear the current listeners.
         //This results in an IterationListener[1] with a single null value -> results in a NPE later
         if (listeners != null && listeners.length > 0) {
-            for(IterationListener i : listeners){
-                if(i != null) list.add(i);
+            for (IterationListener i : listeners) {
+                if (i != null)
+                    list.add(i);
             }
         }
         setListeners(list);
@@ -1338,10 +1403,7 @@ public class ComputationGraph implements Serializable, Model {
      */
     public ComputationGraphUpdater getUpdater() {
         if (solver == null) {
-            solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
         }
         return solver.getOptimizer().getComputationGraphUpdater();
@@ -1352,10 +1414,7 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void setUpdater(ComputationGraphUpdater updater) {
         if (solver == null) {
-            solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
         }
         solver.getOptimizer().setUpdaterComputationGraph(updater);
     }
@@ -1365,8 +1424,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Layer getOutputLayer(int outputLayerIdx) {
         if (outputLayerIdx >= numOutputArrays)
-            throw new IllegalArgumentException("Invalid index: cannot get output layer "
-                    + outputLayerIdx + ", total number of network outputs = " + numOutputArrays);
+            throw new IllegalArgumentException("Invalid index: cannot get output layer " + outputLayerIdx
+                            + ", total number of network outputs = " + numOutputArrays);
         return getLayer(configuration.getNetworkOutputs().get(outputLayerIdx));
     }
 
@@ -1376,15 +1435,18 @@ public class ComputationGraph implements Serializable, Model {
      * @param backwardOnly If true: backprop parameters only (i.e., no visible layer biases used in layerwise pretraining layers)
      */
     public INDArray params(boolean backwardOnly) {
-        if (backwardOnly) return flattenedParams;
+        if (backwardOnly)
+            return flattenedParams;
 
         List<INDArray> list = new ArrayList<>(layers.length);
         for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+            if (!vertices[topologicalOrder[i]].hasLayer())
+                continue;
 
             Layer l = vertices[topologicalOrder[i]].getLayer();
             INDArray layerParams = l.params();
-            if (layerParams != null) list.add(layerParams);    //may be null: subsampling etc layers
+            if (layerParams != null)
+                list.add(layerParams); //may be null: subsampling etc layers
         }
 
         return Nd4j.toFlattened('f', list);
@@ -1417,7 +1479,7 @@ public class ComputationGraph implements Serializable, Model {
     public double score(DataSet dataSet, boolean training) {
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot score ComputationGraph network with "
-                    + " DataSet: network does not have 1 input and 1 output arrays");
+                            + " DataSet: network does not have 1 input and 1 output arrays");
         return score(ComputationGraphUtil.toMultiDataSet(dataSet), training);
     }
 
@@ -1468,7 +1530,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
 
-        if (hasMaskArrays) clearLayerMaskArrays();
+        if (hasMaskArrays)
+            clearLayerMaskArrays();
 
         return score;
     }
@@ -1486,7 +1549,7 @@ public class ComputationGraph implements Serializable, Model {
     public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot score ComputationGraph network with "
-                    + " DataSet: network does not have 1 input and 1 output arrays");
+                            + " DataSet: network does not have 1 input and 1 output arrays");
         return scoreExamples(ComputationGraphUtil.toMultiDataSet(data), addRegularizationTerms);
     }
 
@@ -1502,7 +1565,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public INDArray scoreExamples(MultiDataSet data, boolean addRegularizationTerms) {
         boolean hasMaskArray = data.hasMaskArrays();
-        if (hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
+        if (hasMaskArray)
+            setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
         feedForward(data.getFeatures(), false);
         setLabels(data.getLabels());
 
@@ -1514,22 +1578,26 @@ public class ComputationGraph implements Serializable, Model {
         for (String s : configuration.getNetworkOutputs()) {
             Layer outLayer = verticesMap.get(s).getLayer();
             if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
-                throw new UnsupportedOperationException("Cannot calculate score: vertex \"" + s + "\" is not an output layer");
+                throw new UnsupportedOperationException(
+                                "Cannot calculate score: vertex \"" + s + "\" is not an output layer");
             }
 
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
             INDArray scoreCurrLayer = ol.computeScoreForExamples(l1, l2);
-            if (out == null) out = scoreCurrLayer;
-            else out.addi(scoreCurrLayer);
+            if (out == null)
+                out = scoreCurrLayer;
+            else
+                out.addi(scoreCurrLayer);
 
             //Only want to add l1/l2 once...
             l1 = 0.0;
             l2 = 0.0;
         }
 
-        if (hasMaskArray) clearLayerMaskArrays();
+        if (hasMaskArray)
+            clearLayerMaskArrays();
         return out;
     }
 
@@ -1555,7 +1623,8 @@ public class ComputationGraph implements Serializable, Model {
             String key = entry.getKey();
             INDArray val = entry.getValue();
             int idx = key.indexOf('_');
-            if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+            if (idx == -1)
+                throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             String layerName = key.substring(0, idx);
             String paramType = key.split("_")[1];
             // Update graph gradient
@@ -1612,7 +1681,8 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParams(INDArray params) {
-        if (params == flattenedParams) return;   //No op
+        if (params == flattenedParams)
+            return; //No op
 
         if (this.flattenedParams != null && this.flattenedParams.length() == params.length()) {
             this.flattenedParams.assign(params);
@@ -1621,11 +1691,13 @@ public class ComputationGraph implements Serializable, Model {
 
         int idx = 0;
         for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+            if (!vertices[topologicalOrder[i]].hasLayer())
+                continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
             int range = layer.numParams();
-            if (range <= 0) continue;    //Some layers: no parameters (subsampling etc)
+            if (range <= 0)
+                continue; //Some layers: no parameters (subsampling etc)
             INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
@@ -1641,12 +1713,15 @@ public class ComputationGraph implements Serializable, Model {
     public void setBackpropGradientsViewArray(INDArray gradient) {
         int paramsSoFar = 0;
         for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[topologicalOrder[i]].hasLayer()) continue;
+            if (!vertices[topologicalOrder[i]].hasLayer())
+                continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
             int range = layer.numParams();
-            if (range <= 0) continue;    //Some layers: no parameters (subsampling etc)
-            layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar + range)));
+            if (range <= 0)
+                continue; //Some layers: no parameters (subsampling etc)
+            layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + range)));
             paramsSoFar += range;
         }
     }
@@ -1693,9 +1768,11 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public INDArray input() {
-        if (numInputArrays == 1) return (inputs != null ? inputs[0] : null);
+        if (numInputArrays == 1)
+            return (inputs != null ? inputs[0] : null);
         else
-            throw new UnsupportedOperationException("Cannot return single input: ComputationGraph  has multiple inputs");
+            throw new UnsupportedOperationException(
+                            "Cannot return single input: ComputationGraph  has multiple inputs");
     }
 
     @Override
@@ -1710,11 +1787,12 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public INDArray getParam(String paramName) {
-//        throw new UnsupportedOperationException("Not implemented");
+        //        throw new UnsupportedOperationException("Not implemented");
         int idx = paramName.indexOf('_');
-        if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+paramName+"\"");
+        if (idx == -1)
+            throw new IllegalStateException("Invalid param key: not have layer separator: \"" + paramName + "\"");
         String layerName = paramName.substring(0, idx);
-        String paramType = paramName.substring(idx+1);
+        String paramType = paramName.substring(idx + 1);
         return getLayer(layerName).getParam(paramType);
 
     }
@@ -1729,7 +1807,7 @@ public class ComputationGraph implements Serializable, Model {
         return paramTable(false);
     }
 
-    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
+    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
         //Get all parameters from all layers
         Map<String, INDArray> allParams = new LinkedHashMap<>();
         for (Layer layer : layers) {
@@ -1749,12 +1827,13 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParam(String key, INDArray val) {
-//        throw new UnsupportedOperationException("Not implemented");
+        //        throw new UnsupportedOperationException("Not implemented");
         int idx = key.indexOf('_');
-        if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+        if (idx == -1)
+            throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
         String layerName = key.substring(0, idx);
-        String paramType = key.substring(idx+1);
-        getLayer(layerName).setParam(paramType,val);
+        String paramType = key.substring(idx + 1);
+        getLayer(layerName).setParam(paramType, val);
     }
 
     @Override
@@ -1810,7 +1889,7 @@ public class ComputationGraph implements Serializable, Model {
                     int vIdx = v.getVertexIndex();
                     int vIdxInputNum = v.getVertexEdgeNumber();
                     //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
                 }
 
             } else {
@@ -1883,7 +1962,8 @@ public class ComputationGraph implements Serializable, Model {
      */
     public Map<String, INDArray> rnnGetPreviousState(String layerName) {
         Layer l = verticesMap.get(layerName).getLayer();
-        if (l == null || !(l instanceof RecurrentLayer)) return null;
+        if (l == null || !(l instanceof RecurrentLayer))
+            return null;
         return ((RecurrentLayer) l).rnnGetPreviousState();
     }
 
@@ -1923,7 +2003,8 @@ public class ComputationGraph implements Serializable, Model {
     public void rnnSetPreviousState(String layerName, Map<String, INDArray> state) {
         Layer l = verticesMap.get(layerName).getLayer();
         if (l == null || !(l instanceof RecurrentLayer)) {
-            throw new UnsupportedOperationException("Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
+            throw new UnsupportedOperationException(
+                            "Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
         }
         ((RecurrentLayer) l).rnnSetPreviousState(state);
     }
@@ -1944,9 +2025,11 @@ public class ComputationGraph implements Serializable, Model {
      * Clear the previous state of the RNN layers (if any), used in {@link #rnnTimeStep(INDArray...)}
      */
     public void rnnClearPreviousState() {
-        if (layers == null) return;
+        if (layers == null)
+            return;
         for (Layer layer : layers) {
-            if (layer instanceof RecurrentLayer) ((RecurrentLayer) layer).rnnClearPreviousState();
+            if (layer instanceof RecurrentLayer)
+                ((RecurrentLayer) layer).rnnClearPreviousState();
             else if (layer instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork) layer).rnnClearPreviousState();
             }
@@ -1956,23 +2039,29 @@ public class ComputationGraph implements Serializable, Model {
     /**
      * Fit the network using truncated BPTT
      */
-    protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks, INDArray[] labelMasks) {
-        if (flattenedGradients == null) initGradientsView();
+    protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks,
+                    INDArray[] labelMasks) {
+        if (flattenedGradients == null)
+            initGradientsView();
 
         //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
 
         int timeSeriesLength = -1;
         for (INDArray in : inputs) {
-            if (in.rank() != 3) continue;
-            if (timeSeriesLength == -1) timeSeriesLength = in.size(2);
+            if (in.rank() != 3)
+                continue;
+            if (timeSeriesLength == -1)
+                timeSeriesLength = in.size(2);
             else if (timeSeriesLength != in.size(2)) {
                 log.warn("Cannot do TBPTT with time series of different lengths");
                 return;
             }
         }
         for (INDArray out : labels) {
-            if (out.rank() != 3) continue;
-            if (timeSeriesLength == -1) timeSeriesLength = out.size(2);
+            if (out.rank() != 3)
+                continue;
+            if (timeSeriesLength == -1)
+                timeSeriesLength = out.size(2);
             else if (timeSeriesLength != out.size(2)) {
                 log.warn("Cannot do TBPTT with time series of different lengths");
                 return;
@@ -1981,7 +2070,8 @@ public class ComputationGraph implements Serializable, Model {
 
         int fwdLen = configuration.getTbpttFwdLength();
         int nSubsets = timeSeriesLength / fwdLen;
-        if(timeSeriesLength % fwdLen != 0) nSubsets++;
+        if (timeSeriesLength % fwdLen != 0)
+            nSubsets++;
 
         rnnClearPreviousState();
 
@@ -1993,30 +2083,39 @@ public class ComputationGraph implements Serializable, Model {
         for (int i = 0; i < nSubsets; i++) {
             int startTimeIdx = i * fwdLen;
             int endTimeIdx = startTimeIdx + fwdLen;
-            if(endTimeIdx > timeSeriesLength) endTimeIdx = timeSeriesLength;
+            if (endTimeIdx > timeSeriesLength)
+                endTimeIdx = timeSeriesLength;
 
             for (int j = 0; j < inputs.length; j++) {
-                if (inputs[j].rank() != 3) newInputs[j] = inputs[j];
+                if (inputs[j].rank() != 3)
+                    newInputs[j] = inputs[j];
                 else {
-                    newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                 }
             }
             for (int j = 0; j < labels.length; j++) {
-                if (labels[j].rank() != 3) newLabels[j] = labels[j];
+                if (labels[j].rank() != 3)
+                    newLabels[j] = labels[j];
                 else {
-                    newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                 }
             }
             if (featureMasks != null) {
                 for (int j = 0; j < featureMasks.length; j++) {
-                    if (featureMasks[j] == null) continue;
-                    newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    if (featureMasks[j] == null)
+                        continue;
+                    newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                 }
             }
             if (labelMasks != null) {
                 for (int j = 0; j < labelMasks.length; j++) {
-                    if (labelMasks[j] == null) continue;
-                    newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    if (labelMasks[j] == null)
+                        continue;
+                    newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                 }
             }
 
@@ -2025,10 +2124,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(newFeatureMasks, newLabelMasks);
 
             if (solver == null) {
-                solver = new Solver.Builder()
-                        .configure(conf())
-                        .listeners(getListeners())
-                        .model(this).build();
+                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             }
             solver.optimize();
 
@@ -2038,7 +2134,7 @@ public class ComputationGraph implements Serializable, Model {
 
         rnnClearPreviousState();
 
-        if(featureMasks != null || labelMasks != null){
+        if (featureMasks != null || labelMasks != null) {
             clearLayerMaskArrays();
         }
     }
@@ -2055,7 +2151,8 @@ public class ComputationGraph implements Serializable, Model {
      * @param storeLastForTBPTT set to true if used as part of truncated BPTT training
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
-    public Map<String, INDArray> rnnActivateUsingStoredState(INDArray[] inputs, boolean training, boolean storeLastForTBPTT) {
+    public Map<String, INDArray> rnnActivateUsingStoredState(INDArray[] inputs, boolean training,
+                    boolean storeLastForTBPTT) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         //Do forward pass according to the topological ordering of the network
@@ -2071,7 +2168,7 @@ public class ComputationGraph implements Serializable, Model {
                     int vIdx = v.getVertexIndex();
                     int vIdxInputNum = v.getVertexEdgeNumber();
                     //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
                 }
 
             } else {
@@ -2079,9 +2176,11 @@ public class ComputationGraph implements Serializable, Model {
                 if (current.hasLayer()) {
                     Layer l = current.getLayer();
                     if (l instanceof RecurrentLayer) {
-                        out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], training, storeLastForTBPTT);
+                        out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], training,
+                                        storeLastForTBPTT);
                     } else if (l instanceof MultiLayerNetwork) {
-                        List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(current.getInputs()[0], training, storeLastForTBPTT);
+                        List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
+                                        current.getInputs()[0], training, storeLastForTBPTT);
                         out = temp.get(temp.size() - 1);
                     } else {
                         //non-recurrent layer
@@ -2134,41 +2233,42 @@ public class ComputationGraph implements Serializable, Model {
             }
 
             int minibatchSize = -1;
-            for(INDArray i : featureMaskArrays){
-                if(i != null){
+            for (INDArray i : featureMaskArrays) {
+                if (i != null) {
                     minibatchSize = i.size(0);
                 }
             }
 
             //Here: need to do forward pass through the network according to the topological ordering of the network
 
-            Map<Integer,Pair<INDArray,MaskState>> map = new HashMap<>();
-            for( int i=0; i<topologicalOrder.length; i++ ){
+            Map<Integer, Pair<INDArray, MaskState>> map = new HashMap<>();
+            for (int i = 0; i < topologicalOrder.length; i++) {
                 GraphVertex current = vertices[topologicalOrder[i]];
 
-                if(current.isInputVertex()){
+                if (current.isInputVertex()) {
                     INDArray fMask = featureMaskArrays[current.getVertexIndex()];
                     map.put(current.getVertexIndex(), new Pair<>(fMask, MaskState.Active));
                 } else {
                     VertexIndices[] inputVertices = current.getInputVertices();
 
                     //Now: work out the mask arrays to feed forward...
-                    INDArray[] inputMasks = null;   //new INDArray[inputVertices.length];
+                    INDArray[] inputMasks = null; //new INDArray[inputVertices.length];
                     MaskState maskState = null;
-                    for(int j=0; j<inputVertices.length; j++ ){
-                        Pair<INDArray,MaskState> p = map.get(inputVertices[j].getVertexIndex());
-                        if(p != null){
-                            if(inputMasks == null){
+                    for (int j = 0; j < inputVertices.length; j++) {
+                        Pair<INDArray, MaskState> p = map.get(inputVertices[j].getVertexIndex());
+                        if (p != null) {
+                            if (inputMasks == null) {
                                 inputMasks = new INDArray[inputVertices.length];
                             }
                             inputMasks[j] = p.getFirst();
-                            if(maskState == null || maskState == MaskState.Passthrough){
+                            if (maskState == null || maskState == MaskState.Passthrough) {
                                 maskState = p.getSecond();
                             }
                         }
                     }
 
-                    Pair<INDArray,MaskState> outPair = current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
+                    Pair<INDArray, MaskState> outPair =
+                                    current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
                     map.put(topologicalOrder[i], outPair);
                 }
             }
@@ -2218,7 +2318,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Evaluate the network (classification performance)
+     * Evaluate the network (classification performance - single output ComputationGraphs only)
      *
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
@@ -2228,12 +2328,34 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+     * Evaluate the network (classification performance - single output ComputationGraphs only)
+     *
+     * @param iterator Iterator to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator) {
+        return evaluate(iterator, null);
+    }
+
+    /**
+     * Evaluate the network on the provided data set (single output ComputationGraphs only). Used for evaluating
+     * the performance of classifiers
      *
      * @param iterator Data to undertake evaluation on
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList) {
+        return evaluate(iterator, labelsList, 1);
+    }
+
+    /**
+     * Evaluate the network on the provided data set (single output ComputationGraphs only). Used for evaluating
+     * the performance of classifiers
+     *
+     * @param iterator Data to undertake evaluation on
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList) {
         return evaluate(iterator, labelsList, 1);
     }
 
@@ -2247,29 +2369,260 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList, int topN) {
-        if(layers == null || !(getOutputLayer(0) instanceof IOutputLayer)){
+        if (labelsList == null)
+            labelsList = iterator.getLabels();
+        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+    }
+
+    /**
+     * Evaluate the network (for classification) on the provided data set, with top N accuracy in addition to standard accuracy.
+     * For 'standard' accuracy evaluation only, use topN = 1
+     *
+     * @param iterator   Iterator (data) to evaluate on
+     * @param labelsList List of labels. May be null.
+     * @param topN       N value for top N accuracy evaluation
+     * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
+     */
+    public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
+        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
+        return evaluateRegression(iterator, null);
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator) {
+        return evaluateRegression(iterator, null);
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+    }
+
+    /**
+     * Evaluate the (single output layer only) network for regression performance
+     * @param iterator Data to evaluate on
+     * @return Regression evaluation
+     */
+    public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+    }
+
+    /**
+     * Perform evaluation on the given data (DataSetIterator) with the given {@link IEvaluation} instance
+     *
+     * @param iterator   Test data to evaluate on
+     * @param evaluation IEvaluation insntance
+     * @param <T>        Type of the IEvaluation instance
+     * @return           The input IEvaluation instance, after performing evaluation on the test data
+     */
+    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation){
+        if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
-        if (labelsList == null)
-            labelsList = iterator.getLabels();
+        if( getNumOutputArrays() != 1){
+            throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
+        }
 
-        Evaluation e = new Evaluation(labelsList, topN);
-        while(iterator.hasNext()){
-            org.nd4j.linalg.dataset.DataSet next = iterator.next();
+        if (!iterator.hasNext())
+            iterator.reset();
 
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+
+        while (iterator.hasNext()) {
+            DataSet next = iterator.next();
+
+            if (next.getFeatures() == null || next.getLabels() == null)
                 break;
 
+            //Assuming single output here
             INDArray features = next.getFeatures();
+            INDArray featuresMask = next.getFeaturesMaskArray();
             INDArray labels = next.getLabels();
+            INDArray labelMask = next.getLabelsMaskArray();
 
-            INDArray[] out;
-            out = output(false, features);
-            if(labels.rank() == 3 ) e.evalTimeSeries(labels,out[0]);
-            else e.eval(labels,out[0]);
+            setLayerMaskArrays(
+                    featuresMask == null ? null : new INDArray[]{featuresMask},
+                    labelMask == null ? null : new INDArray[]{labelMask});
+            INDArray[] out = output(false, features);
+            evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
         }
-        return e;
+
+        return evaluation;
+    }
+
+    /**
+     * Perform evaluation on the given data (MultiDataSetIterator) with the given {@link IEvaluation} instance
+     *
+     * @param iterator   Test data to evaluate on
+     * @param evaluation IEvaluation insntance
+     * @param <T>        Type of the IEvaluation instance
+     * @return           The input IEvaluation instance, after performing evaluation on the test data
+     */
+    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation){
+        if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
+            throw new IllegalStateException("Cannot evaluate network with no output layer");
+        }
+
+        if( getNumOutputArrays() != 1){
+            throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
+        }
+
+        if (!iterator.hasNext())
+            iterator.reset();
+
+
+        while (iterator.hasNext()) {
+            MultiDataSet next = iterator.next();
+
+            if (next.getFeatures() == null || next.getLabels() == null)
+                break;
+
+            //Assuming single output here
+            INDArray[] features = next.getFeatures();
+            INDArray[] featuresMasks = next.getFeaturesMaskArrays();
+            INDArray labels = next.getLabels(0);
+            INDArray[] labelMasks = next.getLabelsMaskArrays();
+            INDArray labelMask = next.getLabelsMaskArray(0);
+
+            setLayerMaskArrays(featuresMasks, labelMasks);
+            INDArray[] out = output(false, features);
+            evaluation.eval(labels, out[0], labelMask);
+
+            clearLayerMaskArrays();
+        }
+
+        return evaluation;
+    }
+
+    /**
+     * String detailing the architecture of the computation graph.
+     * Vertices are printed in a topological sort order.
+     * Columns are Vertex Names with layer/vertex type, nIn, nOut, Total number of parameters and the Shapes of the parameters
+     * And the inputs to the vertex
+     * Will also give information about frozen layers/vertices, if any.
+     * @return Summary as a string
+     */
+    public String summary() {
+        String ret = "\n";
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        ret += String.format("%-40s%-15s%-15s%-30s %s\n", "VertexName (VertexType)", "nIn,nOut", "TotalParams",
+                        "ParamsShape", "Vertex Inputs");
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+        int frozenParams = 0;
+        for (int currVertexIdx : topologicalOrder) {
+            GraphVertex current = vertices[currVertexIdx];
+
+            String name = current.getVertexName();
+            String[] classNameArr = current.getClass().toString().split("\\.");
+            String className = classNameArr[classNameArr.length - 1];
+
+            String connections = "-";
+            if (!current.isInputVertex()) {
+                connections = configuration.getVertexInputs().get(name).toString();
+            }
+            String paramCount = "-";
+            String in = "-";
+            String out = "-";
+            String paramShape = "-";
+            if (current.hasLayer()) {
+                Layer currentLayer = ((LayerVertex) current).getLayer();
+                classNameArr = currentLayer.getClass().getName().split("\\.");
+                className = classNameArr[classNameArr.length - 1];
+                paramCount = String.valueOf(currentLayer.numParams());
+                if (currentLayer.numParams() > 0) {
+                    paramShape = "";
+                    in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                    out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                    Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                    for (String aP : paraNames) {
+                        String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
+                        paramShape += aP + ":" + paramS + ", ";
+                    }
+                    paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
+                }
+                if (currentLayer instanceof FrozenLayer) {
+                    frozenParams += currentLayer.numParams();
+                    classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
+                    className = "Frozen " + classNameArr[classNameArr.length - 1];
+                }
+            }
+            ret += String.format("%-40s%-15s%-15s%-30s %s", name + " (" + className + ")", in + "," + out, paramCount,
+                            paramShape, connections);
+            ret += "\n";
+        }
+        ret += StringUtils.repeat("-", 140);
+        ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
+        ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
+        ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
+        ret += "\n";
+        ret += StringUtils.repeat("=", 140);
+        ret += "\n";
+
+        return ret;
     }
 
 

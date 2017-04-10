@@ -19,6 +19,8 @@ import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
  */
 public class NDArrayHDF5Reader {
 
+    private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
+
     /**
      * Reads an HDF5 file into an NDArray.
      *
@@ -43,7 +45,7 @@ public class NDArrayHDF5Reader {
     private DataBuffer readFromDataSet(hdf5.DataSet dataSet, int total) {
         float[] dataBuffer = new float[total];
         FloatPointer fp = new FloatPointer(dataBuffer);
-        dataSet.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+        dataSet.read(fp, dataType);
         fp.get(dataBuffer);
         return Nd4j.createBuffer(dataBuffer);
     }

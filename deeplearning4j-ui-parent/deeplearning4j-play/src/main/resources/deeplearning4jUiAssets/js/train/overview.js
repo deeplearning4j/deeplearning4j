@@ -71,6 +71,10 @@ function renderScoreVsIterChart(data) {
     var scoresIter = data["scoresIter"];
 
     var maxScore = Math.max.apply(Math, scoresArr);
+    var chartMin = Math.min.apply(Math, scoresArr);
+    if(chartMin > 0){
+        chartMin = 0.0;
+    }
 
     var scoreChart = $("#scoreiterchart");
     scoreChart.unbind(); // prevent over-subscribing
@@ -108,7 +112,7 @@ function renderScoreVsIterChart(data) {
                 tickColor: "#dddddd",
                 borderWidth: 0
             },
-            yaxis: {min: 0, max: maxScore},
+            yaxis: {min: chartMin, max: maxScore},
             colors: ["#FA5833","rgba(65,182,240,0.3)","#000000"],
             selection: {
                 mode: "x"
@@ -159,6 +163,8 @@ function renderScoreVsIterChart(data) {
 
         var previousPoint = null;
         scoreChart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#x").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#y").text(pos.y.toFixed(5));
@@ -289,6 +295,8 @@ function renderUpdatesRatio(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#xRatio").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogRatio").text(pos.y.toFixed(5));
@@ -391,6 +399,8 @@ function renderStdevChart(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
+            if (typeof pos.x == 'undefined') return;
+
             var xPos = pos.x.toFixed(0);
             $("#xStdev").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogStdev").text(pos.y.toFixed(5));

@@ -33,9 +33,9 @@ public class VocabularyHolder implements Serializable {
     private VocabCache vocabCache;
 
     // this variable defines how often scavenger will be activated
-    private int scavengerThreshold  = 2000000;
+    private int scavengerThreshold = 2000000;
 
-    private  long totalWordOccurencies = 0;
+    private long totalWordOccurencies = 0;
 
     // for scavenger mechanics we need to know the actual number of words being added
     private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
@@ -65,7 +65,7 @@ public class VocabularyHolder implements Serializable {
      */
     protected VocabularyHolder(@NonNull VocabCache<? extends SequenceElement> cache, boolean markAsSpecial) {
         this.vocabCache = cache;
-        for (SequenceElement word: cache.tokens()) {
+        for (SequenceElement word : cache.tokens()) {
             VocabularyWord vw = new VocabularyWord(word.getLabel());
             vw.setCount((int) word.getElementFrequency());
 
@@ -74,18 +74,19 @@ public class VocabularyHolder implements Serializable {
 
             // please note: we don't transfer huffman data, since proper way is  to recalculate it after new words being added
             if (word.getPoints() != null && !word.getPoints().isEmpty()) {
-                vw.setHuffmanNode(buildNode(word.getCodes(),word.getPoints(), word.getCodeLength(), word.getIndex() ));
+                vw.setHuffmanNode(buildNode(word.getCodes(), word.getPoints(), word.getCodeLength(), word.getIndex()));
             }
 
             vocabulary.put(vw.getWord(), vw);
         }
 
         // there's no sense building huffman tree just for UNK word
-        if (numWords() > 1) updateHuffmanCodes();
+        if (numWords() > 1)
+            updateHuffmanCodes();
         logger.info("Init from VocabCache is complete. " + numWords() + " word(s) were transferred.");
     }
 
-    public static HuffmanNode buildNode(List<Integer> codes, List<Integer> points, int codeLen, int index) {
+    public static HuffmanNode buildNode(List<Byte> codes, List<Integer> points, int codeLen, int index) {
         return new HuffmanNode(listToArray(codes), listToArray(points, MAX_CODE_LENGTH), index, (byte) codeLen);
     }
 
@@ -105,13 +106,15 @@ public class VocabularyHolder implements Serializable {
      * @param cache
      */
     public void transferBackToVocabCache(VocabCache cache, boolean emptyHolder) {
-        if (!(cache instanceof InMemoryLookupCache)) throw new IllegalStateException("Sorry, only InMemoryLookupCache use implemented.");
+        if (!(cache instanceof InMemoryLookupCache))
+            throw new IllegalStateException("Sorry, only InMemoryLookupCache use implemented.");
 
         // make sure that huffman codes are updated before transfer
         List<VocabularyWord> words = words(); //updateHuffmanCodes();
 
-        for (VocabularyWord word: words) {
-            if (word.getWord().isEmpty()) continue;
+        for (VocabularyWord word : words) {
+            if (word.getWord().isEmpty())
+                continue;
             VocabWord vocabWord = new VocabWord(1, word.getWord());
 
             // if we're transferring full model, it CAN contain HistoricalGradient for AdaptiveGradient feature
@@ -138,7 +141,8 @@ public class VocabularyHolder implements Serializable {
 
             //update vocabWord counter. substract 1, since its the base value for any token
             // >1 hack is required since VocabCache impl imples 1 as base word count, not 0
-            if (word.getCount() > 1) cache.incrementWordCount(word.getWord(), word.getCount() - 1);
+            if (word.getCount() > 1)
+                cache.incrementWordCount(word.getWord(), word.getCount() - 1);
         }
 
         // at this moment its pretty safe to nullify all vocabs.
@@ -165,18 +169,18 @@ public class VocabularyHolder implements Serializable {
      * @param codeLen
      * @return
      */
-    public static List<Integer> arrayToList(byte[] array, int codeLen) {
-        List<Integer> result = new ArrayList<>();
+    public static List<Byte> arrayToList(byte[] array, int codeLen) {
+        List<Byte> result = new ArrayList<>();
         for (int x = 0; x < codeLen; x++) {
-            result.add((int) array[x]);
+            result.add(array[x]);
         }
         return result;
     }
 
-    public static byte[] listToArray(List<Integer> code) {
+    public static byte[] listToArray(List<Byte> code) {
         byte[] array = new byte[MAX_CODE_LENGTH];
         for (int x = 0; x < code.size(); x++) {
-            array[x]  = code.get(x).byteValue();
+            array[x] = code.get(x);
         }
         return array;
     }
@@ -184,7 +188,7 @@ public class VocabularyHolder implements Serializable {
     public static int[] listToArray(List<Integer> points, int codeLen) {
         int[] array = new int[points.size()];
         for (int x = 0; x < points.size(); x++) {
-            array[x]  = points.get(x).intValue();
+            array[x] = points.get(x).intValue();
         }
         return array;
     }
@@ -250,19 +254,22 @@ public class VocabularyHolder implements Serializable {
 
             /*
                 TODO: this should be done in different way, since this implementation causes minWordFrequency ultimate ignoral if markAsSpecial set to TRUE
-
+            
                 Probably the best way to solve it, is remove markAsSpecial option here, and let this issue be regulated with minWordFrequency
               */
             // vw.setSpecial(markAsSpecial);
 
             // initialize frequencyShift only if hugeModelExpected. It's useless otherwise :)
-            if (hugeModelExpected) vw.setFrequencyShift(new byte[retentionDelay]);
+            if (hugeModelExpected)
+                vw.setFrequencyShift(new byte[retentionDelay]);
 
             vocabulary.put(word, vw);
 
 
 
-            if (hugeModelExpected && minWordFrequency > 1 && hiddenWordsCounter.incrementAndGet() % scavengerThreshold == 0) activateScavenger();
+            if (hugeModelExpected && minWordFrequency > 1
+                            && hiddenWordsCounter.incrementAndGet() % scavengerThreshold == 0)
+                activateScavenger();
 
             return;
         }
@@ -273,7 +280,7 @@ public class VocabularyHolder implements Serializable {
     }
 
     public void consumeVocabulary(VocabularyHolder holder) {
-        for (VocabularyWord word: holder.getVocabulary()) {
+        for (VocabularyWord word : holder.getVocabulary()) {
             if (!this.containsWord(word.getWord())) {
                 this.addWord(word);
             } else {
@@ -287,9 +294,9 @@ public class VocabularyHolder implements Serializable {
      * I.e. if word has appeared only once, and it's retained the same frequency over consequence activations, we can assume it can be removed freely
      */
     protected synchronized void activateScavenger() {
-        int initialSize =  vocabulary.size();
+        int initialSize = vocabulary.size();
         List<VocabularyWord> words = new ArrayList<>(vocabulary.values());
-        for (VocabularyWord word: words) {
+        for (VocabularyWord word : words) {
             // scavenging could be applied only to non-special tokens that are below minWordFrequency
             if (word.isSpecial() || word.getCount() >= minWordFrequency || word.getFrequencyShift() == null) {
                 word.setFrequencyShift(null);
@@ -302,37 +309,40 @@ public class VocabularyHolder implements Serializable {
             /*
                     we suppose that we're hunting only low-freq words that already passed few activations
                     so, we assume word personal threshold as 20% of minWordFrequency, but not less then 1.
-
+            
                     so, if after few scavenging cycles wordCount is still <= activation - just remove word.
                     otherwise nullify word.frequencyShift to avoid further checks
               */
             int activation = Math.max(minWordFrequency / 5, 2);
-            logger.debug("Current state> Activation: ["  + activation + "], retention info: " + Arrays.toString(word.getFrequencyShift()));
-            if (word.getCount() <= activation  && word.getFrequencyShift()[this.retentionDelay-1] > 0) {
+            logger.debug("Current state> Activation: [" + activation + "], retention info: "
+                            + Arrays.toString(word.getFrequencyShift()));
+            if (word.getCount() <= activation && word.getFrequencyShift()[this.retentionDelay - 1] > 0) {
 
                 // if final word count at latest retention point is the same as at the beginning - just remove word
-                if (word.getFrequencyShift()[this.retentionDelay-1] <= activation && word.getFrequencyShift()[this.retentionDelay-1] == word.getFrequencyShift()[0]) {
+                if (word.getFrequencyShift()[this.retentionDelay - 1] <= activation
+                                && word.getFrequencyShift()[this.retentionDelay - 1] == word.getFrequencyShift()[0]) {
                     vocabulary.remove(word.getWord());
                 }
             }
 
             // shift retention history to the left
-            if (word.getRetentionStep() < retentionDelay-1) {
+            if (word.getRetentionStep() < retentionDelay - 1) {
                 word.incrementRetentionStep();
             } else {
                 for (int x = 1; x < retentionDelay; x++) {
-                    word.getFrequencyShift()[x-1]  = word.getFrequencyShift()[x];
+                    word.getFrequencyShift()[x - 1] = word.getFrequencyShift()[x];
                 }
             }
         }
-        logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" +vocabulary.size() +"]");
+        logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" + vocabulary.size()
+                        + "]");
     }
 
     /**
      * This methods reset counters for all words in vocabulary
      */
     public void resetWordCounters() {
-        for (VocabularyWord word: getVocabulary()) {
+        for (VocabularyWord word : getVocabulary()) {
             word.setHuffmanNode(null);
             word.setFrequencyShift(null);
             word.setCount(0);
@@ -360,15 +370,16 @@ public class VocabularyHolder implements Serializable {
      * @param threshold exclusive threshold for removal
      */
     public void truncateVocabulary(int threshold) {
-        logger.debug("Truncating vocabulary to minWordFrequency: [" + threshold+ "]");
+        logger.debug("Truncating vocabulary to minWordFrequency: [" + threshold + "]");
         Set<String> keyset = vocabulary.keySet();
-        for (String word: keyset) {
+        for (String word : keyset) {
             VocabularyWord vw = vocabulary.get(word);
 
             // please note: we're not applying threshold to SPECIAL words
-            if (!vw.isSpecial()&& vw.getCount() < threshold) {
+            if (!vw.isSpecial() && vw.getCount() < threshold) {
                 vocabulary.remove(word);
-                if (vw.getHuffmanNode() != null) idxMap.remove(vw.getHuffmanNode().getIdx());
+                if (vw.getHuffmanNode() != null)
+                    idxMap.remove(vw.getHuffmanNode().getIdx());
             }
         }
     }
@@ -390,11 +401,13 @@ public class VocabularyHolder implements Serializable {
         byte binary[] = new byte[vocab.size() * 2 + 1];
 
         // at this point vocab is sorted, with descending order
-        for (int a = 0; a < vocab.size(); a++) count[a] = vocab.get(a).getCount();
-        for (int a = vocab.size(); a < vocab.size() * 2; a++) count[a] = Integer.MAX_VALUE;
+        for (int a = 0; a < vocab.size(); a++)
+            count[a] = vocab.get(a).getCount();
+        for (int a = vocab.size(); a < vocab.size() * 2; a++)
+            count[a] = Integer.MAX_VALUE;
         int pos1 = vocab.size() - 1;
         int pos2 = vocab.size();
-        for (int a = 0; a< vocab.size(); a++) {
+        for (int a = 0; a < vocab.size(); a++) {
             // First, find two smallest nodes 'min1, min2'
             if (pos1 >= 0) {
                 if (count[pos1] < count[pos2]) {
@@ -440,7 +453,8 @@ public class VocabularyHolder implements Serializable {
                 point[i] = b;
                 i++;
                 b = parent_node[b];
-                if (b == vocab.size() * 2 - 2) break;
+                if (b == vocab.size() * 2 - 2)
+                    break;
             }
 
             lpoint[0] = vocab.size() - 2;
@@ -449,11 +463,11 @@ public class VocabularyHolder implements Serializable {
                 lpoint[i - b] = point[b] - vocab.size();
             }
 
-            vocab.get(a).setHuffmanNode(new HuffmanNode(lcode, lpoint,a,  (byte) i));
+            vocab.get(a).setHuffmanNode(new HuffmanNode(lcode, lpoint, a, (byte) i));
         }
 
         idxMap.clear();
-        for (VocabularyWord word: vocab) {
+        for (VocabularyWord word : vocab) {
             idxMap.put(word.getHuffmanNode().getIdx(), word);
         }
 
@@ -469,7 +483,8 @@ public class VocabularyHolder implements Serializable {
     public int indexOf(String word) {
         if (vocabulary.containsKey(word)) {
             return vocabulary.get(word).getHuffmanNode().getIdx();
-        } else return -1;
+        } else
+            return -1;
     }
 
 
@@ -493,18 +508,19 @@ public class VocabularyHolder implements Serializable {
 
     public long totalWordsBeyondLimit() {
         if (totalWordOccurencies == 0) {
-            for (VocabularyWord word: vocabulary.values()) {
+            for (VocabularyWord word : vocabulary.values()) {
                 totalWordOccurencies += word.getCount();
             }
             return totalWordOccurencies;
-        } else return totalWordOccurencies;
+        } else
+            return totalWordOccurencies;
     }
 
     public static class Builder {
         private VocabCache cache = null;
         private int minWordFrequency = 0;
         private boolean hugeModelExpected = false;
-        private int scavengerThreshold  = 2000000;
+        private int scavengerThreshold = 2000000;
         private int retentionDelay = 3;
 
         public Builder() {
@@ -559,7 +575,8 @@ public class VocabularyHolder implements Serializable {
          * @return
          */
         public Builder scavengerRetentionDelay(int delay) {
-            if (delay < 2) throw new IllegalStateException("Delay < 2 doesn't really makes sense");
+            if (delay < 2)
+                throw new IllegalStateException("Delay < 2 doesn't really makes sense");
             this.retentionDelay = delay;
             return this;
         }

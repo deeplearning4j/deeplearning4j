@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,14 +22,13 @@ import java.io.*;
 
 public class DeepLearningIOUtil {
 
-	private DeepLearningIOUtil() {
-	}
+    private DeepLearningIOUtil() {}
 
-	public static InputStream inputStreamFromPath(String path)  {
-		try {
-			return new BufferedInputStream(new FileInputStream(new File(path)));
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    public static InputStream inputStreamFromPath(String path) {
+        try {
+            return new BufferedInputStream(new FileInputStream(new File(path)));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

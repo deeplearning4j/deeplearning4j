@@ -6,8 +6,6 @@ function renderModelGraph(){
             console.log("Error getting data: " + error);
         },
         success: function (data) {
-            console.log("Keys: " + Object.keys(data));
-
             createGraph(data);
         }
     });
@@ -17,6 +15,7 @@ function createGraph(data){
 
     //Generate the elements data
     var vertexNames = data["vertexNames"];    //List<String>
+    if (typeof vertexNames == 'undefined') return;  //No data
     var vertexTypes = data["vertexTypes"];    //List<String>
     var vertexInputs = data["vertexInputs"];  //int[][]
     var vertexInfos = data["vertexInfo"];     //List<Map<String,String>>

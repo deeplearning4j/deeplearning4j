@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -49,7 +49,8 @@ import java.util.Map;
  * @author Justin Long (@crockpotveggies)
  * @author Alex Black (@AlexDBlack)
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class CenterLossOutputLayer extends BaseOutputLayer {
@@ -65,11 +66,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("CenterLossOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Layer ret
-                = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
+        Layer ret = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -87,7 +88,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     @Override
     public Updater getUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
-        switch(paramName) {
+        switch (paramName) {
             case CenterLossParamInitializer.CENTER_KEY:
                 return Updater.NONE;
             default:
@@ -97,11 +98,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case CenterLossParamInitializer.WEIGHT_KEY:
                 return learningRate;
             case CenterLossParamInitializer.BIAS_KEY:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {
@@ -116,10 +117,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case CenterLossParamInitializer.WEIGHT_KEY:
                 return l1;
             case CenterLossParamInitializer.BIAS_KEY:
+                return l1Bias;
             case CenterLossParamInitializer.CENTER_KEY:
                 return 0.0;
             default:
@@ -129,10 +131,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public double getL2ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case CenterLossParamInitializer.WEIGHT_KEY:
                 return l2;
             case CenterLossParamInitializer.BIAS_KEY:
+                return l2Bias;
             case CenterLossParamInitializer.CENTER_KEY:
                 return 0.0;
             default:
@@ -140,11 +143,17 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         }
     }
 
-    public double getAlpha() { return alpha; }
+    public double getAlpha() {
+        return alpha;
+    }
 
-    public double getLambda() { return lambda; }
+    public double getLambda() {
+        return lambda;
+    }
 
-    public boolean getGradientCheck() { return gradientCheck; }
+    public boolean getGradientCheck() {
+        return gradientCheck;
+    }
 
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
@@ -156,15 +165,24 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
             super.lossFunction(lossFunction);
         }
 
-        public Builder(ILossFunction lossFunction){
+        public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
         }
 
-        public Builder alpha(double alpha) { this.alpha = alpha; return this; }
+        public Builder alpha(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }
 
-        public Builder lambda(double lambda) { this.lambda = lambda; return this; }
+        public Builder lambda(double lambda) {
+            this.lambda = lambda;
+            return this;
+        }
 
-        public Builder gradientCheck(boolean isGradientCheck) { this.gradientCheck = isGradientCheck; return this; }
+        public Builder gradientCheck(boolean isGradientCheck) {
+            this.gradientCheck = isGradientCheck;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

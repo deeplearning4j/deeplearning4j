@@ -1,14 +1,18 @@
 package org.deeplearning4j.parallelism;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Limited Queue implementation, suited for multi-gpu prefetch.
@@ -18,21 +22,36 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class MagicQueue implements Queue<DataSet> {
+@Slf4j
+public class MagicQueue implements BlockingQueue<DataSet> {
+    public enum Mode {
+        THREADED, SEQUENTIAL,
+    }
+
     protected final List<LinkedBlockingQueue<DataSet>> backingQueues;
     protected final AtomicInteger nextBucket = new AtomicInteger(0);
     protected final int numberOfBuckets;
     protected final List<QueueHandler> handlers;
+    protected int capacity = 10;
+    protected Mode mode = Mode.THREADED;
+    protected AtomicInteger interleavedCounter = new AtomicInteger(0);
+    protected AtomicInteger interleavedPutter = new AtomicInteger(0);
 
-    protected MagicQueue(int numberOfFlows) {
+    protected AtomicLong cntPut = new AtomicLong(0);
+    protected AtomicLong cntGet = new AtomicLong(0);
+
+
+
+    protected MagicQueue(int numberOfFlows, int capacity) {
         backingQueues = new ArrayList<>();
+        this.capacity = capacity;
         handlers = new ArrayList<>();
         if (numberOfFlows > 1) {
             for (int i = 0; i < numberOfFlows; i++) {
-                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(capacity);
                 backingQueues.add(queue);
 
-                QueueHandler handler = new QueueHandler(queue);
+                QueueHandler handler = new QueueHandler(queue, capacity);
 
                 Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
 
@@ -53,14 +72,19 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public int size() {
-        if (numberOfBuckets > 1) {
-            long cnt = 0;
-            for (int i = 0; i < numberOfBuckets; i++) {
-                cnt += backingQueues.get(i).size();
-            }
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                long cnt = 0;
+                for (int i = 0; i < numberOfBuckets; i++) {
+                    cnt += backingQueues.get(i).size();
+                }
 
-            return (int) Math.floor(cnt / numberOfBuckets);
-        } else return backingQueues.get(0).size();
+                return (int) Math.floor(cnt / numberOfBuckets);
+            } else
+                return backingQueues.get(0).size();
+        } else {
+            return (int) (cntPut.get() - cntGet.get());
+        }
     }
 
     protected int size(int deviceId) {
@@ -82,6 +106,16 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public boolean contains(Object o) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int drainTo(Collection<? super DataSet> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int drainTo(Collection<? super DataSet> c, int maxElements) {
         throw new UnsupportedOperationException();
     }
 
@@ -116,12 +150,12 @@ public class MagicQueue implements Queue<DataSet> {
 
     @Override
     public boolean add(DataSet dataSet) {
+        cntPut.incrementAndGet();
         if (numberOfBuckets > 1) {
             synchronized (this) {
                 if (nextBucket.get() >= backingQueues.size())
                     nextBucket.set(0);
             }
-
             handlers.get(nextBucket.getAndIncrement()).put(dataSet);
 
             return true;
@@ -153,7 +187,14 @@ public class MagicQueue implements Queue<DataSet> {
 
     @Override
     public boolean addAll(Collection<? extends DataSet> c) {
-        return false;
+        for (DataSet ds : c) {
+            boolean result = add(ds);
+
+            if (!result)
+                return result;
+        }
+
+        return true;
     }
 
     /**
@@ -178,14 +219,92 @@ public class MagicQueue implements Queue<DataSet> {
 
     @Override
     public void clear() {
-        for(Queue<DataSet> queue: backingQueues) {
+        for (Queue<DataSet> queue : backingQueues) {
             queue.clear();
         }
+
+        cntPut.set(0);
+        cntGet.set(0);
     }
 
     @Override
     public boolean offer(DataSet dataSet) {
-        return false;
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            boolean res = backingQueues.get(deviceId).offer(dataSet);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        } else {
+            boolean result = backingQueues.get(0).offer(dataSet);
+
+            if (result)
+                cntPut.incrementAndGet();
+
+            return result;
+        }
+    }
+
+    @Override
+    public void put(DataSet dataSet) throws InterruptedException {
+
+        if (numberOfBuckets > 1) {
+            synchronized (this) {
+                if (nextBucket.get() >= backingQueues.size())
+                    nextBucket.set(0);
+            }
+
+            handlers.get(nextBucket.getAndIncrement()).put(dataSet);
+        } else {
+            backingQueues.get(0).add(dataSet);
+        }
+        cntPut.incrementAndGet();
+    }
+
+    @Override
+    public boolean offer(DataSet dataSet, long timeout, TimeUnit unit) throws InterruptedException {
+        if (numberOfBuckets > 1) {
+            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+            boolean res = backingQueues.get(deviceId).offer(dataSet, timeout, unit);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        } else {
+            boolean res = backingQueues.get(0).offer(dataSet, timeout, unit);
+
+            if (res)
+                cntPut.incrementAndGet();
+
+            return res;
+        }
+    }
+
+    @Override
+    public DataSet take() throws InterruptedException {
+        try {
+            if (mode == Mode.THREADED) {
+                if (numberOfBuckets > 1) {
+                    int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    return backingQueues.get(deviceId).take();
+                } else
+                    return backingQueues.get(0).take();
+            } else {
+                DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).take();
+                if (interleavedCounter.get() >= backingQueues.size())
+                    interleavedCounter.set(0);
+
+                return ds;
+            }
+        } catch (InterruptedException e) {
+            throw e;
+        } finally {
+            cntGet.incrementAndGet();
+        }
     }
 
     @Override
@@ -205,10 +324,41 @@ public class MagicQueue implements Queue<DataSet> {
      * @return
      */
     public DataSet poll(long time, TimeUnit timeUnit) throws InterruptedException {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).poll(time, timeUnit);
-        } else return backingQueues.get(0).poll(time, timeUnit);
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                DataSet ds = backingQueues.get(deviceId).poll(time, timeUnit);
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            } else {
+                DataSet ds = backingQueues.get(0).poll(time, timeUnit);
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            }
+        } else {
+            //log.info("Trying queue_{}; queue_0: {}; queue_1: {}", interleavedCounter.get(), backingQueues.get(0).size(), backingQueues.get(1).size());
+
+            DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll(time, timeUnit);
+
+            if (interleavedCounter.get() >= backingQueues.size())
+                interleavedCounter.set(0);
+
+            if (ds != null)
+                cntGet.incrementAndGet();
+
+            return ds;
+        }
+    }
+
+    @Override
+    public int remainingCapacity() {
+        return 0;
     }
 
     /**
@@ -221,10 +371,32 @@ public class MagicQueue implements Queue<DataSet> {
      */
     @Override
     public DataSet poll() {
-        if (numberOfBuckets > 1) {
-            int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            return backingQueues.get(deviceId).poll();
-        } else return backingQueues.get(0).poll();
+        if (mode == Mode.THREADED) {
+            if (numberOfBuckets > 1) {
+                int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                DataSet ds = backingQueues.get(deviceId).poll();
+                if (ds != null)
+                    cntGet.incrementAndGet();
+                return ds;
+            } else {
+                DataSet ds = backingQueues.get(0).poll();
+
+                if (ds != null)
+                    cntGet.incrementAndGet();
+
+                return ds;
+            }
+        } else {
+            DataSet ds = backingQueues.get(interleavedCounter.getAndIncrement()).poll();
+
+            if (interleavedCounter.get() >= backingQueues.size())
+                interleavedCounter.set(0);
+
+            if (ds != null)
+                cntGet.incrementAndGet();
+
+            return ds;
+        }
     }
 
     @Override
@@ -238,15 +410,46 @@ public class MagicQueue implements Queue<DataSet> {
     }
 
     public static class Builder {
-        private int numberOfBuckets = -1;
+        private int numberOfBuckets = Nd4j.getAffinityManager().getNumberOfDevices();
+        private int capacity = 16;
+        private Mode mode = Mode.THREADED;
 
         public Builder() {
 
         }
 
+        /**
+         *
+         * @param number
+         * @return
+         */
         public Builder setNumberOfBuckets(int number) {
             this.numberOfBuckets = number;
 
+            return this;
+        }
+
+        /**
+         *
+         * @param mode
+         * @return
+         */
+        public Builder setMode(@NonNull Mode mode) {
+            this.mode = mode;
+            return this;
+        }
+
+        /**
+         * This method defines, how
+         *
+         * @param capacityPerFlow
+         * @return
+         */
+        public Builder setCapacityPerFlow(int capacityPerFlow) {
+            if (capacityPerFlow <= 0)
+                throw new ND4JIllegalStateException("Capacity per flow value should be positive value");
+
+            this.capacity = capacityPerFlow;
             return this;
         }
 
@@ -254,7 +457,8 @@ public class MagicQueue implements Queue<DataSet> {
             if (numberOfBuckets < 1)
                 numberOfBuckets = Nd4j.getAffinityManager().getNumberOfDevices();
 
-            MagicQueue queue = new MagicQueue(numberOfBuckets);
+            MagicQueue queue = new MagicQueue(numberOfBuckets, capacity);
+            queue.mode = this.mode;
 
 
             return queue;
@@ -262,19 +466,23 @@ public class MagicQueue implements Queue<DataSet> {
     }
 
     private static class QueueHandler extends Thread implements Runnable {
-        private final Queue<DataSet> targetQueue;
+        private final BlockingQueue<DataSet> targetQueue;
         private final LinkedBlockingQueue<DataSet> bufferQueue;
 
-        public QueueHandler(Queue<DataSet> queue) {
+        public QueueHandler(BlockingQueue<DataSet> queue, int capacity) {
             this.targetQueue = queue;
-            this.bufferQueue = new LinkedBlockingQueue<DataSet>();
+            this.bufferQueue = new LinkedBlockingQueue<DataSet>(capacity);
 
             this.setDaemon(true);
         }
 
 
         public void put(DataSet dataSet) {
-            bufferQueue.add(dataSet);
+            try {
+                bufferQueue.put(dataSet);
+            } catch (InterruptedException e) {
+                //
+            }
         }
 
         @Override
@@ -293,10 +501,13 @@ public class MagicQueue implements Queue<DataSet> {
                         Nd4j.getAffinityManager().touch(ds.getFeatures());
                         Nd4j.getAffinityManager().touch(ds.getLabels());
 
-                        targetQueue.add(ds);
+                        //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
+
+                        targetQueue.put(ds);
                     }
-                } catch (Exception e) {
-                    //
+                } catch (InterruptedException e) {
+                    log.warn("Got InterruptedException...");
+                    break;
                 }
             }
         }

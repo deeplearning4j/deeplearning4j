@@ -80,12 +80,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+        if (!conf.isUseRegularization()) return 0.0;
 
         double l2Sum = 0.0;
-        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
-            if(l2 > 0) {
+            if (l2 > 0) {
                 double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
                 l2Sum += 0.5 * l2 * norm2 * norm2;
             }
@@ -96,12 +96,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
+        if (!conf.isUseRegularization()) return 0.0;
 
         double l1Sum = 0.0;
-        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
-            if(l1 > 0) {
+            if (l1 > 0) {
                 double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
                 l1Sum += l1 * norm1;
             }
@@ -153,7 +153,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray delta;
         IActivation afn = conf.getLayer().getActivationFn();
 
-        delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
+        delta = conf().getLayer().getActivationFn().backprop(preOutput4d(true), epsilon).getFirst();  //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
@@ -210,6 +210,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
         return new Pair<>(retGradient,epsNext);
+    }
+
+    /**
+     * preOutput4d: Used so that ConvolutionLayer subclasses (such as Convolution1DLayer) can maintain their standard
+     * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
+     * the public API
+     */
+    protected INDArray preOutput4d(boolean training){
+        return preOutput(training);
     }
 
     public INDArray preOutput(boolean training) {

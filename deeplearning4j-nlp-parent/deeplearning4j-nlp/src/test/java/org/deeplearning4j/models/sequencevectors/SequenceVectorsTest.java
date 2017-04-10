@@ -83,17 +83,15 @@ public class SequenceVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
 
         /*
             And we pack that transformer into AbstractSequenceIterator
          */
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
 
         /*
@@ -101,9 +99,7 @@ public class SequenceVectorsTest {
             We can skip this phase, and just set SequenceVectors.resetModel(TRUE), and vocabulary will be mastered internally
         */
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 5)
-                .setTargetVocabCache(vocabCache)
-                .build();
+                        .addSource(sequenceIterator, 5).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -119,16 +115,12 @@ public class SequenceVectorsTest {
             Time to build WeightLookupTable instance for our new model
         */
 
-        WeightLookupTable<VocabWord> lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
-                .lr(0.025)
-                .vectorLength(150)
-                .useAdaGrad(false)
-                .cache(vocabCache)
-                .build();
+        WeightLookupTable<VocabWord> lookupTable = new InMemoryLookupTable.Builder<VocabWord>().lr(0.025)
+                        .vectorLength(150).useAdaGrad(false).cache(vocabCache).build();
 
-         /*
-             reset model is viable only if you're setting SequenceVectors.resetModel() to false
-             if set to True - it will be called internally
+        /*
+            reset model is viable only if you're setting SequenceVectors.resetModel() to false
+            if set to True - it will be called internally
         */
         lookupTable.resetWeights(true);
 
@@ -136,44 +128,43 @@ public class SequenceVectorsTest {
             Now we can build SequenceVectors model, that suits our needs
          */
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
-                // minimum number of occurencies for each element in training corpus. All elements below this value will be ignored
-                // Please note: this value has effect only if resetModel() set to TRUE, for internal model building. Otherwise it'll be ignored, and actual vocabulary content will be used
-                .minWordFrequency(5)
+                        // minimum number of occurencies for each element in training corpus. All elements below this value will be ignored
+                        // Please note: this value has effect only if resetModel() set to TRUE, for internal model building. Otherwise it'll be ignored, and actual vocabulary content will be used
+                        .minWordFrequency(5)
 
-                // WeightLookupTable
-                .lookupTable(lookupTable)
+                        // WeightLookupTable
+                        .lookupTable(lookupTable)
 
-                // abstract iterator that covers training corpus
-                .iterate(sequenceIterator)
+                        // abstract iterator that covers training corpus
+                        .iterate(sequenceIterator)
 
-                // vocabulary built prior to modelling
-                .vocabCache(vocabCache)
+                        // vocabulary built prior to modelling
+                        .vocabCache(vocabCache)
 
-                // we might want to set layer size here. otherwise it'll be derived from lookupTable
-                //.layerSize(150)
+                        // we might want to set layer size here. otherwise it'll be derived from lookupTable
+                        //.layerSize(150)
 
-                // batchSize is the number of sequences being processed by 1 thread at once
-                // this value actually matters if you have iterations > 1
-                .batchSize(250)
+                        // batchSize is the number of sequences being processed by 1 thread at once
+                        // this value actually matters if you have iterations > 1
+                        .batchSize(250)
 
-                // number of iterations over batch
-                .iterations(1)
+                        // number of iterations over batch
+                        .iterations(1)
 
-                // number of iterations over whole training corpus
-                .epochs(1)
+                        // number of iterations over whole training corpus
+                        .epochs(1)
 
-                // if set to true, vocabulary will be built from scratches internally
-                // otherwise externally provided vocab will be used
-                .resetModel(false)
+                        // if set to true, vocabulary will be built from scratches internally
+                        // otherwise externally provided vocab will be used
+                        .resetModel(false)
 
 
-                /*
-                    These two methods define our training goals. At least one goal should be set to TRUE.
-                 */
-                .trainElementsRepresentation(true)
-                .trainSequencesRepresentation(false)
+                        /*
+                            These two methods define our training goals. At least one goal should be set to TRUE.
+                         */
+                        .trainElementsRepresentation(true).trainSequencesRepresentation(false)
 
-                .build();
+                        .build();
 
         /*
             Now, after all options are set, we just call fit()
@@ -207,23 +198,15 @@ public class SequenceVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
-                .minWordFrequency(5)
-                .iterate(sequenceIterator)
-                .batchSize(250)
-                .iterations(1)
-                .epochs(1)
-                .resetModel(false)
-                .trainElementsRepresentation(true)
-                .build();
+                        .minWordFrequency(5).iterate(sequenceIterator).batchSize(250).iterations(1).epochs(1)
+                        .resetModel(false).trainElementsRepresentation(true).build();
 
 
         logger.info("Fitting model...");
@@ -243,27 +226,20 @@ public class SequenceVectorsTest {
     @Test
     public void testElementsLearningAlgo1() throws Exception {
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
-                .minWordFrequency(5)
-                .batchSize(250)
-                .iterations(1)
-                .elementsLearningAlgorithm("org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram")
-                .epochs(1)
-                .resetModel(false)
-                .trainElementsRepresentation(true)
-                .build();
+                        .minWordFrequency(5).batchSize(250).iterations(1)
+                        .elementsLearningAlgorithm(
+                                        "org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram")
+                        .epochs(1).resetModel(false).trainElementsRepresentation(true).build();
     }
 
     @Test
     public void testSequenceLearningAlgo1() throws Exception {
-        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration())
-                .minWordFrequency(5)
-                .batchSize(250)
-                .iterations(1)
-                .sequenceLearningAlgorithm("org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW")
-                .epochs(1)
-                .resetModel(false)
-                .trainElementsRepresentation(false)
-                .build();
+        SequenceVectors<VocabWord> vectors =
+                        new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration()).minWordFrequency(5)
+                                        .batchSize(250).iterations(1)
+                                        .sequenceLearningAlgorithm(
+                                                        "org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW")
+                                        .epochs(1).resetModel(false).trainElementsRepresentation(false).build();
     }
 
     @Ignore
@@ -278,13 +254,11 @@ public class SequenceVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VectorsConfiguration configuration = new VectorsConfiguration();
         configuration.setWindow(5);
@@ -293,20 +267,10 @@ public class SequenceVectorsTest {
 
 
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(configuration)
-                .iterate(sequenceIterator)
-                .iterations(1)
-                .epochs(45)
-                .elementsLearningAlgorithm(new GloVe.Builder<VocabWord>()
-                        .shuffle(true)
-                        .symmetric(true)
-                        .learningRate(0.05)
-                        .alpha(0.75)
-                        .xMax(100.0)
-                        .build())
-                .resetModel(true)
-                .trainElementsRepresentation(true)
-                .trainSequencesRepresentation(false)
-                .build();
+                        .iterate(sequenceIterator).iterations(1).epochs(45)
+                        .elementsLearningAlgorithm(new GloVe.Builder<VocabWord>().shuffle(true).symmetric(true)
+                                        .learningRate(0.05).alpha(0.75).xMax(100.0).build())
+                        .resetModel(true).trainElementsRepresentation(true).trainSequencesRepresentation(false).build();
 
         vectors.fit();
 
@@ -344,33 +308,26 @@ public class SequenceVectorsTest {
 
         AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
 
-        Graph<Blogger, Double> graph =buildGraph();
+        Graph<Blogger, Double> graph = buildGraph();
 
 
         GraphWalker<Blogger> walker = new PopularityWalker.Builder<>(graph)
-                .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
-                .setWalkLength(40)
-                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                .setRestartProbability(0.05)
-                .setPopularitySpread(10)
-                .setPopularityMode(PopularityMode.MAXIMUM)
-                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
-                .build();
+                        .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED).setWalkLength(40)
+                        .setWalkDirection(WalkDirection.FORWARD_UNIQUE).setRestartProbability(0.05)
+                        .setPopularitySpread(10).setPopularityMode(PopularityMode.MAXIMUM)
+                        .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL).build();
 
-/*
+        /*
         GraphWalker<Blogger> walker = new RandomWalker.Builder<Blogger>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
                 .setWalkLength(40)
                 .setWalkDirection(WalkDirection.RANDOM)
                 .setRestartProbability(0.05)
                 .build();
-*/
+        */
 
-        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<>(graph)
-                .setGraphWalker(walker)
-                .shuffleOnReset(true)
-                .setVocabCache(vocabCache)
-                .build();
+        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<>(graph).setGraphWalker(walker)
+                        .shuffleOnReset(true).setVocabCache(vocabCache).build();
 
         Blogger blogger = graph.getVertex(0).getValue();
         assertEquals(119, blogger.getElementFrequency(), 0.001);
@@ -378,77 +335,71 @@ public class SequenceVectorsTest {
         logger.info("Blogger: " + blogger);
 
 
-        AbstractSequenceIterator<Blogger> sequenceIterator = new AbstractSequenceIterator.Builder<>(graphTransformer)
-                .build();
+        AbstractSequenceIterator<Blogger> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(graphTransformer).build();
 
-        WeightLookupTable<Blogger> lookupTable = new InMemoryLookupTable.Builder<Blogger>()
-                .lr(0.025)
-                .vectorLength(150)
-                .useAdaGrad(false)
-                .cache(vocabCache)
-                .seed(42)
-                .build();
+        WeightLookupTable<Blogger> lookupTable = new InMemoryLookupTable.Builder<Blogger>().lr(0.025).vectorLength(150)
+                        .useAdaGrad(false).cache(vocabCache).seed(42).build();
 
 
         lookupTable.resetWeights(true);
 
         SequenceVectors<Blogger> vectors = new SequenceVectors.Builder<Blogger>(new VectorsConfiguration())
-                // WeightLookupTable
-                .lookupTable(lookupTable)
+                        // WeightLookupTable
+                        .lookupTable(lookupTable)
 
-                // abstract iterator that covers training corpus
-                .iterate(sequenceIterator)
+                        // abstract iterator that covers training corpus
+                        .iterate(sequenceIterator)
 
-                // vocabulary built prior to modelling
-                .vocabCache(vocabCache)
+                        // vocabulary built prior to modelling
+                        .vocabCache(vocabCache)
 
-                // batchSize is the number of sequences being processed by 1 thread at once
-                // this value actually matters if you have iterations > 1
-                .batchSize(1000)
+                        // batchSize is the number of sequences being processed by 1 thread at once
+                        // this value actually matters if you have iterations > 1
+                        .batchSize(1000)
 
-                // number of iterations over batch
-                .iterations(1)
+                        // number of iterations over batch
+                        .iterations(1)
 
-                // number of iterations over whole training corpus
-                .epochs(10)
+                        // number of iterations over whole training corpus
+                        .epochs(10)
 
-                // if set to true, vocabulary will be built from scratches internally
-                // otherwise externally provided vocab will be used
-                .resetModel(false)
+                        // if set to true, vocabulary will be built from scratches internally
+                        // otherwise externally provided vocab will be used
+                        .resetModel(false)
 
-                /*
-                    These two methods define our training goals. At least one goal should be set to TRUE.
-                 */
-                .trainElementsRepresentation(true)
-                .trainSequencesRepresentation(false)
+                        /*
+                            These two methods define our training goals. At least one goal should be set to TRUE.
+                         */
+                        .trainElementsRepresentation(true).trainSequencesRepresentation(false)
 
-                /*
-                    Specifies elements learning algorithms. SkipGram, for example.
-                 */
-                .elementsLearningAlgorithm(new SkipGram<Blogger>())
+                        /*
+                            Specifies elements learning algorithms. SkipGram, for example.
+                         */
+                        .elementsLearningAlgorithm(new SkipGram<Blogger>())
 
 
-                .learningRate(0.025)
+                        .learningRate(0.025)
 
-                .layerSize(150)
+                        .layerSize(150)
 
-                .sampling(0)
+                        .sampling(0)
 
-                .negativeSample(0)
+                        .negativeSample(0)
 
-                .windowSize(4)
+                        .windowSize(4)
 
-                .workers(6)
+                        .workers(6)
 
-                .seed(42)
+                        .seed(42)
 
-                .build();
+                        .build();
 
         vectors.fit();
 
         vectors.setModelUtils(new FlatModelUtils());
 
-   //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
+        //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
 
         double sim = vectors.similarity("12", "72");
         Collection<String> list = vectors.wordsNearest("12", 20);
@@ -463,8 +414,8 @@ public class SequenceVectorsTest {
     private List<Blogger> getBloggersFromGraph(Graph<Blogger, Double> graph) {
         List<Blogger> result = new ArrayList<>();
 
-        List<Vertex<Blogger>> bloggers = graph.getVertices(0, graph.numVertices()-1);
-        for (Vertex<Blogger> vertex: bloggers) {
+        List<Vertex<Blogger>> bloggers = graph.getVertices(0, graph.numVertices() - 1);
+        for (Vertex<Blogger> vertex : bloggers) {
             result.add(vertex.getValue());
         }
 
@@ -474,7 +425,7 @@ public class SequenceVectorsTest {
     private static Graph<Blogger, Double> buildGraph() throws IOException, InterruptedException {
         File nodes = new File("/ext/Temp/BlogCatalog/nodes.csv");
 
-        CSVRecordReader reader = new CSVRecordReader(0,",");
+        CSVRecordReader reader = new CSVRecordReader(0, ",");
         reader.initialize(new FileSplit(nodes));
 
         List<Blogger> bloggers = new ArrayList<>();
@@ -493,7 +444,7 @@ public class SequenceVectorsTest {
         // load edges
         File edges = new File("/ext/Temp/BlogCatalog/edges.csv");
 
-        reader = new CSVRecordReader(0,",");
+        reader = new CSVRecordReader(0, ",");
         reader.initialize(new FileSplit(edges));
 
         while (reader.hasNext()) {
@@ -501,12 +452,12 @@ public class SequenceVectorsTest {
             int from = lines.get(0).toInt();
             int to = lines.get(1).toInt();
 
-            graph.addEdge(from-1, to-1, 1.0, false);
+            graph.addEdge(from - 1, to - 1, 1.0, false);
         }
 
-        logger.info("Connected on 0: ["+graph.getConnectedVertices(0).size()+"]");
-        logger.info("Connected on 1: ["+graph.getConnectedVertices(1).size()+"]");
-        logger.info("Connected on 3: ["+graph.getConnectedVertices(3).size()+"]");
+        logger.info("Connected on 0: [" + graph.getConnectedVertices(0).size() + "]");
+        logger.info("Connected on 1: [" + graph.getConnectedVertices(1).size() + "]");
+        logger.info("Connected on 3: [" + graph.getConnectedVertices(3).size() + "]");
         assertEquals(119, graph.getConnectedVertices(0).size());
         assertEquals(9, graph.getConnectedVertices(1).size());
         assertEquals(6, graph.getConnectedVertices(3).size());
@@ -516,7 +467,9 @@ public class SequenceVectorsTest {
 
     @Data
     private static class Blogger extends SequenceElement {
-        @Getter @Setter private int id;
+        @Getter
+        @Setter
+        private int id;
 
         public Blogger() {
             super();
@@ -547,23 +500,17 @@ public class SequenceVectorsTest {
 
         @Override
         public String toString() {
-            return "VocabWord{" +
-                    "wordFrequency=" + this.elementFrequency +
-                    ", index=" + index +
-                    ", codes=" + codes +
-                    ", word='" + String.valueOf(id) + '\'' +
-                    ", historicalGradient=" + historicalGradient +
-                    ", points=" + points +
-                    ", codeLength=" + codeLength +
-                    '}';
+            return "VocabWord{" + "wordFrequency=" + this.elementFrequency + ", index=" + index + ", codes=" + codes
+                            + ", word='" + String.valueOf(id) + '\'' + ", points=" + points + ", codeLength="
+                            + codeLength + '}';
         }
     }
 
     private static void printWords(String target, Collection<String> list, SequenceVectors vec) {
-        System.out.println("Words close to ["+target+"]: ");
-        for (String word: list) {
+        System.out.println("Words close to [" + target + "]: ");
+        for (String word : list) {
             double sim = vec.similarity(target, word);
-            System.out.print("'"+ word+"': ["+ sim+"], ");
+            System.out.print("'" + word + "': [" + sim + "], ");
         }
         System.out.print("\n");
     }

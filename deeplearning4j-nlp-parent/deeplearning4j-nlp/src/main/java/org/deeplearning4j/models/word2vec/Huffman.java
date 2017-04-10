@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -66,8 +66,8 @@ public class Huffman {
     public void build() {
         buildTrigger = true;
         long[] count = new long[words.size() * 2 + 1];
-        int[] binary = new int[words.size() * 2 + 1];
-        int[] code = new int[MAX_CODE_LENGTH];
+        byte[] binary = new byte[words.size() * 2 + 1];
+        byte[] code = new byte[MAX_CODE_LENGTH];
         int[] point = new int[MAX_CODE_LENGTH];
         int[] parentNode = new int[words.size() * 2 + 1];
         int a = 0;
@@ -79,7 +79,7 @@ public class Huffman {
 
         a = words.size();
 
-        while(a < words.size() * 2) {
+        while (a < words.size() * 2) {
             count[a] = Integer.MAX_VALUE;
             a++;
         }
@@ -125,7 +125,7 @@ public class Huffman {
             binary[min2i] = 1;
         }
         // Now assign binary code to each vocabulary word
-        int i ;
+        int i;
         int b;
         // Now assign binary code to each vocabulary word
         for (a = 0; a < words.size(); a++) {
@@ -137,10 +137,10 @@ public class Huffman {
                 i++;
                 b = parentNode[b];
 
-            } while(b != words.size() * 2 - 2 && i < 39);
+            } while (b != words.size() * 2 - 2 && i < 39);
 
 
-            words.get(a).setCodeLength(i);
+            words.get(a).setCodeLength((short) i);
             words.get(a).getPoints().add(words.size() - 2);
 
             for (b = 0; b < i; b++) {
@@ -148,7 +148,8 @@ public class Huffman {
                     words.get(a).getCodes().set(i - b - 1, code[b]);
                     words.get(a).getPoints().set(i - b, point[b] - words.size());
                 } catch (Exception e) {
-                    logger.info("Words size: ["+ words.size()+"], a: ["+ a+"], b: ["+ b +"], i: ["+ i +"], points size: [" + words.get(a).getPoints().size()+"]");
+                    logger.info("Words size: [" + words.size() + "], a: [" + a + "], b: [" + b + "], i: [" + i
+                                    + "], points size: [" + words.get(a).getPoints().size() + "]");
                     throw new RuntimeException(e);
                 }
             }
@@ -165,10 +166,16 @@ public class Huffman {
      * @param cache VocabCache to be updated.
      */
     public void applyIndexes(VocabCache<? extends SequenceElement> cache) {
-        if (!buildTrigger) build();
+        if (!buildTrigger)
+            build();
 
         for (int a = 0; a < words.size(); a++) {
-            cache.addWordToIndex(a, words.get(a).getLabel());
+            if (words.get(a).getLabel() != null) {
+                cache.addWordToIndex(a, words.get(a).getLabel());
+            } else {
+                cache.addWordToIndex(a, words.get(a).getStorageId());
+            }
+
             words.get(a).setIndex(a);
         }
     }

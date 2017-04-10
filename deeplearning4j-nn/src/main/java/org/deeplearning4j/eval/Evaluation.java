@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
@@ -47,7 +48,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     protected final int topN;
     protected int topNCorrectCount = 0;
-    protected int topNTotalCount = 0;      //Could use topNCountCorrect / (double)getNumRowCounter() - except for eval(int,int), hence separate counters
+    protected int topNTotalCount = 0; //Could use topNCountCorrect / (double)getNumRowCounter() - except for eval(int,int), hence separate counters
     protected Counter<Integer> truePositives = new Counter<>();
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
@@ -60,7 +61,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
-    protected Map<Pair<Integer,Integer>,List<Object>> confusionMatrixMetaData;      //Pair: (Actual,Predicted)
+    protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
 
     // Empty constructor
     public Evaluation() {
@@ -116,21 +117,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         this.topN = topN;
     }
 
-    private static List<String> createLabels(int numClasses){
-        if(numClasses == 1) numClasses = 2; //Binary (single output variable) case...
+    private static List<String> createLabels(int numClasses) {
+        if (numClasses == 1)
+            numClasses = 2; //Binary (single output variable) case...
         List<String> list = new ArrayList<>(numClasses);
-        for (int i = 0; i < numClasses; i++){
+        for (int i = 0; i < numClasses; i++) {
             list.add(String.valueOf(i));
         }
         return list;
     }
 
-    private static List<String> createLabelsFromMap(Map<Integer,String> labels ){
+    private static List<String> createLabelsFromMap(Map<Integer, String> labels) {
         int size = labels.size();
         List<String> labelsList = new ArrayList<>(size);
-        for( int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             String str = labels.get(i);
-            if(str == null) throw new IllegalArgumentException("Invalid labels map: missing key for class " + i + " (expect integers 0 to " + (size-1) + ")");
+            if (str == null)
+                throw new IllegalArgumentException("Invalid labels map: missing key for class " + i
+                                + " (expect integers 0 to " + (size - 1) + ")");
             labelsList.add(str);
         }
         return labelsList;
@@ -157,8 +161,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *              for evaluation
      * @param network the network to use for output
      */
-    public void eval(INDArray trueLabels,INDArray input,ComputationGraph network) {
-        eval(trueLabels,network.output(false,input)[0]);
+    public void eval(INDArray trueLabels, INDArray input, ComputationGraph network) {
+        eval(trueLabels, network.output(false, input)[0]);
     }
 
 
@@ -174,7 +178,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param network the network to use for output
      */
     public void eval(INDArray trueLabels, INDArray input, MultiLayerNetwork network) {
-        eval(trueLabels,network.output(input, Layer.TrainingMode.TEST));
+        eval(trueLabels, network.output(input, Layer.TrainingMode.TEST));
     }
 
 
@@ -189,7 +193,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param guesses      the guesses/prediction (usually a probability vector)
      */
     public void eval(INDArray realOutcomes, INDArray guesses) {
-        eval(realOutcomes, guesses, (List<Serializable>)null);
+        eval(realOutcomes, guesses, (List<Serializable>) null);
     }
 
     /**
@@ -201,16 +205,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      */
     @Override
-    public void eval(INDArray realOutcomes, INDArray guesses, List<? extends Serializable> recordMetaData ) {
+    public void eval(INDArray realOutcomes, INDArray guesses, List<? extends Serializable> recordMetaData) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
             int nClasses = realOutcomes.columns();
-            if(nClasses == 1) nClasses = 2;     //Binary (single output variable) case
+            if (nClasses == 1)
+                nClasses = 2; //Binary (single output variable) case
             labelsList = new ArrayList<>(nClasses);
-            for( int i = 0; i<nClasses; i++ ) labelsList.add(String.valueOf(i));
+            for (int i = 0; i < nClasses; i++)
+                labelsList.add(String.valueOf(i));
             createConfusion(nClasses);
         }
 
@@ -226,9 +232,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
         if (nCols == 1) {
             INDArray binaryGuesses = guesses.gt(0.5);
+            INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
+            INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
+            //tp: predicted = 1, actual = 1
             int tp = binaryGuesses.mul(realOutcomes).sumNumber().intValue();
-            int fp = binaryGuesses.mul(-1.0).addi(1.0).muli(realOutcomes).sumNumber().intValue();
-            int fn = binaryGuesses.mul(realOutcomes.mul(-1.0).addi(1.0)).sumNumber().intValue();
+            //fp: predicted = 1, actual = 0
+            int fp = binaryGuesses.mul(notLabel).sumNumber().intValue();
+            //fn: predicted = 0, actual = 1
+            int fn = notGuess.mul(realOutcomes).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
             confusion.add(1, 1, tp);
@@ -238,17 +249,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
             truePositives.incrementCount(1, tp);
             falsePositives.incrementCount(1, fp);
-            falseNegatives.incrementCount(1, fp);
-            trueNegatives.incrementCount(1, tp);
+            falseNegatives.incrementCount(1, fn);
+            trueNegatives.incrementCount(1, tn);
 
             truePositives.incrementCount(0, tn);
             falsePositives.incrementCount(0, fn);
-            falseNegatives.incrementCount(0, fn);
-            trueNegatives.incrementCount(0, tn);
+            falseNegatives.incrementCount(0, fp);
+            trueNegatives.incrementCount(0, tp);
 
-            if(recordMetaData != null ){
-                for( int i=0; i<binaryGuesses.size(0); i++ ){
-                    if(i >= recordMetaData.size()) break;
+            if (recordMetaData != null) {
+                for (int i = 0; i < binaryGuesses.size(0); i++) {
+                    if (i >= recordMetaData.size())
+                        break;
                     int actual = realOutcomes.getDouble(0) == 0.0 ? 0 : 1;
                     int predicted = binaryGuesses.getDouble(0) == 0.0 ? 0 : 1;
                     addToMetaConfusionMatrix(actual, predicted, recordMetaData.get(i));
@@ -260,14 +272,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
 
             int nExamples = guessIndex.length();
-            for( int i=0; i<nExamples; i++ ){
-                int actual = (int)realOutcomeIndex.getDouble(i);
-                int predicted = (int)guessIndex.getDouble(i);
-                confusion.add(actual,predicted);
+            for (int i = 0; i < nExamples; i++) {
+                int actual = (int) realOutcomeIndex.getDouble(i);
+                int predicted = (int) guessIndex.getDouble(i);
+                confusion.add(actual, predicted);
 
-                if(recordMetaData != null && recordMetaData.size() > i){
+                if (recordMetaData != null && recordMetaData.size() > i) {
                     Object m = recordMetaData.get(i);
-                    addToMetaConfusionMatrix(actual,predicted,m);
+                    addToMetaConfusionMatrix(actual, predicted, m);
                 }
             }
 
@@ -296,7 +308,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 int labelIdx = (int) realOutcomeIndex.getDouble(i);
                 double prob = guesses.getDouble(i, labelIdx);
                 INDArray row = guesses.getRow(i);
-                int countGreaterThan = (int) Nd4j.getExecutioner().exec(new MatchCondition(row, Conditions.greaterThan(prob)), Integer.MAX_VALUE).getDouble(0);
+                int countGreaterThan = (int) Nd4j.getExecutioner()
+                                .exec(new MatchCondition(row, Conditions.greaterThan(prob)), Integer.MAX_VALUE)
+                                .getDouble(0);
                 if (countGreaterThan < topN) {
                     //For example, for top 3 accuracy: can have at most 2 other probabilities larger
                     topNCorrectCount++;
@@ -318,7 +332,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
         // If confusion is null, then Evaluation is instantiated without providing the classes
         if (confusion == null) {
-            throw new UnsupportedOperationException("Cannot evaluate single example without initializing confusion matrix first");
+            throw new UnsupportedOperationException(
+                            "Cannot evaluate single example without initializing confusion matrix first");
         }
 
         addToConfusion(actualIdx, predictedIdx);
@@ -371,17 +386,22 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 int count = confusion.getCount(clazz, clazz2);
                 if (count != 0) {
                     expected = resolveLabelForClass(clazz2);
-                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual, expected, count));
+                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual,
+                                    expected, count));
                 }
             }
 
             //Output possible warnings regarding precision/recall calculation
             if (!suppressWarnings && truePositives.getCount(clazz) == 0) {
                 if (falsePositives.getCount(clazz) == 0) {
-                    warnings.append(String.format("Warning: class %s was never predicted by the model. This class was excluded from the average precision%n", actual));
+                    warnings.append(String.format(
+                                    "Warning: class %s was never predicted by the model. This class was excluded from the average precision%n",
+                                    actual));
                 }
                 if (falseNegatives.getCount(clazz) == 0) {
-                    warnings.append(String.format("Warning: class %s has never appeared as a true label. This class was excluded from the average recall%n", actual));
+                    warnings.append(String.format(
+                                    "Warning: class %s has never appeared as a true label. This class was excluded from the average recall%n",
+                                    actual));
                 }
             }
         }
@@ -394,25 +414,27 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         double rec = recall();
         double f1 = f1();
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:        ").append(format(df,acc));
-        if(topN > 1){
+        builder.append("\n Accuracy:        ").append(format(df, acc));
+        if (topN > 1) {
             double topNAcc = topNAccuracy();
-            builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df,topNAcc));
+            builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df, topNAcc));
         }
-        builder.append("\n Precision:       ").append(format(df,prec));
-        builder.append("\n Recall:          ").append(format(df,rec));
-        builder.append("\n F1 Score:        ").append(format(df,f1));
+        builder.append("\n Precision:       ").append(format(df, prec));
+        builder.append("\n Recall:          ").append(format(df, rec));
+        builder.append("\n F1 Score:        ").append(format(df, f1));
         builder.append("\n========================================================================");
         return builder.toString();
     }
 
-    private static String format(DecimalFormat f, double num){
-        if(Double.isNaN(num) || Double.isInfinite(num)) return String.valueOf(num);
+    private static String format(DecimalFormat f, double num) {
+        if (Double.isNaN(num) || Double.isInfinite(num))
+            return String.valueOf(num);
         return f.format(num);
     }
 
     private String resolveLabelForClass(Integer clazz) {
-        if(labelsList != null && labelsList.size() > clazz ) return labelsList.get(clazz);
+        if (labelsList != null && labelsList.size() > clazz)
+            return labelsList.get(clazz);
         return clazz.toString();
     }
 
@@ -664,7 +686,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             countCorrect += confusion.getCount(i, i);
         }
 
-        return countCorrect / (double)getNumRowCounter();
+        return countCorrect / (double) getNumRowCounter();
     }
 
     /**
@@ -672,9 +694,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Top N accuracy
      */
     public double topNAccuracy() {
-        if(topN <= 1) return accuracy();
-        if(topNTotalCount == 0) return 0.0;
-        return topNCorrectCount / (double)topNTotalCount;
+        if (topN <= 1)
+            return accuracy();
+        if (topNTotalCount == 0)
+            return 0.0;
+        return topNCorrectCount / (double) topNTotalCount;
     }
 
 
@@ -749,8 +773,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         for (Integer i : keys) {
             Integer f = first.get(i);
             Integer s = second.get(i);
-            if (f == null) f = 0;
-            if (s == null) s = 0;
+            if (f == null)
+                f = 0;
+            if (s == null)
+                s = 0;
 
             out.put(i, f + s);
         }
@@ -810,8 +836,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * the number of correct predictions
      * @return Number of correct top N predictions
      */
-    public int getTopNCorrectCount(){
-        if(topN <= 1){
+    public int getTopNCorrectCount() {
+        if (topN <= 1) {
             int nClasses = confusion.getClasses().size();
             int countCorrect = 0;
             for (int i = 0; i < nClasses; i++) {
@@ -828,8 +854,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * (i.e., requires the full probability distribution, not just predicted/actual indices)
      * @return Total number of top N predictions
      */
-    public int getTopNTotalCount(){
-        if( topN <= 1){
+    public int getTopNTotalCount() {
+        if (topN <= 1) {
             return getNumRowCounter();
         }
         return topNTotalCount;
@@ -856,7 +882,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     @Override
     public void merge(Evaluation other) {
-        if (other == null) return;
+        if (other == null)
+            return;
 
         truePositives.incrementAll(other.truePositives);
         falsePositives.incrementAll(other.falsePositives);
@@ -864,15 +891,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         falseNegatives.incrementAll(other.falseNegatives);
 
         if (confusion == null) {
-            if (other.confusion != null) confusion = new ConfusionMatrix<>(other.confusion);
+            if (other.confusion != null)
+                confusion = new ConfusionMatrix<>(other.confusion);
         } else {
-            if (other.confusion != null) confusion.add(other.confusion);
+            if (other.confusion != null)
+                confusion.add(other.confusion);
         }
         numRowCounter += other.numRowCounter;
-        if (labelsList.isEmpty()) labelsList.addAll(other.labelsList);
+        if (labelsList.isEmpty())
+            labelsList.addAll(other.labelsList);
 
-        if(topN != other.topN){
-            log.warn("Different topN values ({} vs {}) detected during Evaluation merging. Top N accuracy may not be accurate.",topN,other.topN);
+        if (topN != other.topN) {
+            log.warn("Different topN values ({} vs {}) detected during Evaluation merging. Top N accuracy may not be accurate.",
+                            topN, other.topN);
         }
         this.topNCorrectCount += other.topNCorrectCount;
         this.topNTotalCount += other.topNTotalCount;
@@ -912,7 +943,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         //First: header row
         Object[] headerArgs = new Object[nClasses + 1];
         headerArgs[0] = "Predicted:";
-        for (int i = 0; i < nClasses; i++) headerArgs[i + 1] = i;
+        for (int i = 0; i < nClasses; i++)
+            headerArgs[i + 1] = i;
         out.append(String.format(headerFormat.toString(), headerArgs)).append("\n");
 
         //Second: divider rows
@@ -935,16 +967,16 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
 
-    private void addToMetaConfusionMatrix(int actual, int predicted, Object metaData){
-        if(confusionMatrixMetaData == null){
+    private void addToMetaConfusionMatrix(int actual, int predicted, Object metaData) {
+        if (confusionMatrixMetaData == null) {
             confusionMatrixMetaData = new HashMap<>();
         }
 
-        Pair<Integer,Integer> p = new Pair<>(actual,predicted);
+        Pair<Integer, Integer> p = new Pair<>(actual, predicted);
         List<Object> list = confusionMatrixMetaData.get(p);
-        if(list == null){
+        if (list == null) {
             list = new ArrayList<>();
-            confusionMatrixMetaData.put(p,list);
+            confusionMatrixMetaData.put(p, list);
         }
 
         list.add(metaData);
@@ -961,18 +993,22 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return A list of prediction errors, or null if no metadata has been recorded
      */
     public List<Prediction> getPredictionErrors() {
-        if (this.confusionMatrixMetaData == null) return null;
+        if (this.confusionMatrixMetaData == null)
+            return null;
 
         List<Prediction> list = new ArrayList<>();
 
-        List<Map.Entry<Pair<Integer, Integer>, List<Object>>> sorted = new ArrayList<>(confusionMatrixMetaData.entrySet());
+        List<Map.Entry<Pair<Integer, Integer>, List<Object>>> sorted =
+                        new ArrayList<>(confusionMatrixMetaData.entrySet());
         Collections.sort(sorted, new Comparator<Map.Entry<Pair<Integer, Integer>, List<Object>>>() {
             @Override
-            public int compare(Map.Entry<Pair<Integer, Integer>, List<Object>> o1, Map.Entry<Pair<Integer, Integer>, List<Object>> o2) {
+            public int compare(Map.Entry<Pair<Integer, Integer>, List<Object>> o1,
+                            Map.Entry<Pair<Integer, Integer>, List<Object>> o2) {
                 Pair<Integer, Integer> p1 = o1.getKey();
                 Pair<Integer, Integer> p2 = o2.getKey();
                 int order = Integer.compare(p1.getFirst(), p2.getFirst());
-                if (order != 0) return order;
+                if (order != 0)
+                    return order;
                 order = Integer.compare(p1.getSecond(), p2.getSecond());
                 return order;
             }
@@ -1005,10 +1041,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return List of predictions, or null if the "evaluate with metadata" method was not used
      */
     public List<Prediction> getPredictionsByActualClass(int actualClass) {
-        if (confusionMatrixMetaData == null) return null;
+        if (confusionMatrixMetaData == null)
+            return null;
 
         List<Prediction> out = new ArrayList<>();
-        for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : confusionMatrixMetaData.entrySet()) {  //Entry Pair: (Actual,Predicted)
+        for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : confusionMatrixMetaData.entrySet()) { //Entry Pair: (Actual,Predicted)
             if (entry.getKey().getFirst() == actualClass) {
                 int actual = entry.getKey().getFirst();
                 int predicted = entry.getKey().getSecond();
@@ -1033,7 +1070,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return List of predictions, or null if the "evaluate with metadata" method was not used
      */
     public List<Prediction> getPredictionByPredictedClass(int predictedClass) {
-        if (confusionMatrixMetaData == null) return null;
+        if (confusionMatrixMetaData == null)
+            return null;
 
         List<Prediction> out = new ArrayList<>();
         for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : confusionMatrixMetaData.entrySet()) { //Entry Pair: (Actual,Predicted)
@@ -1056,11 +1094,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return List of predictions that match the specified actual/predicted classes, or null if the "evaluate with metadata" method was not used
      */
     public List<Prediction> getPredictions(int actualClass, int predictedClass) {
-        if (confusionMatrixMetaData == null) return null;
+        if (confusionMatrixMetaData == null)
+            return null;
 
         List<Prediction> out = new ArrayList<>();
         List<Object> list = confusionMatrixMetaData.get(new Pair<>(actualClass, predictedClass));
-        if (list == null) return out;
+        if (list == null)
+            return out;
 
         for (Object meta : list) {
             out.add(new Prediction(actualClass, predictedClass, meta));

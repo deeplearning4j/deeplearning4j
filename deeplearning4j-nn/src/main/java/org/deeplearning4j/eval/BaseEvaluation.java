@@ -32,4 +32,21 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     public void eval(INDArray labels, INDArray networkPredictions, List<? extends Serializable> recordMetaData) {
         eval(labels, networkPredictions);
     }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray){
+        if(maskArray == null){
+            eval(labels, networkPredictions);
+            return;
+        }
+        if(labels.rank() == 3 && maskArray.rank() == 2){
+            //Per-output masking
+            evalTimeSeries(labels, networkPredictions, maskArray);
+            return;
+        }
+
+        throw new UnsupportedOperationException(this.getClass().getSimpleName() + " does not support per-output masking");
+    }
+
+
 }

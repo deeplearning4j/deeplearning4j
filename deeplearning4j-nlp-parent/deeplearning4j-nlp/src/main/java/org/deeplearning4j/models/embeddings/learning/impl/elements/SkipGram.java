@@ -40,7 +40,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected int[] variableWindows;
     protected int vectorLength;
 
-    @Getter @Setter protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
+    @Getter
+    @Setter
+    protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
@@ -73,7 +75,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      * @param configuration
      */
     @Override
-    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable, @NonNull VectorsConfiguration configuration) {
+    public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
+                    @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -92,7 +95,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
-
 
 
 
@@ -121,12 +123,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         // subsampling implementation, if subsampling threshold met, just continue to next element
         if (sampling > 0) {
             result.setSequenceId(sequence.getSequenceId());
-            if (sequence.getSequenceLabels() != null) result.setSequenceLabels(sequence.getSequenceLabels());
-            if (sequence.getSequenceLabel() != null) result.setSequenceLabel(sequence.getSequenceLabel());
+            if (sequence.getSequenceLabels() != null)
+                result.setSequenceLabels(sequence.getSequenceLabels());
+            if (sequence.getSequenceLabel() != null)
+                result.setSequenceLabel(sequence.getSequenceLabel());
 
-                for (T element : sequence.getElements()) {
+            for (T element : sequence.getElements()) {
                 double numWords = vocabCache.totalWordOccurrences();
-                double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1) * (sampling * numWords) / element.getElementFrequency();
+                double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
+                                * (sampling * numWords) / element.getElementFrequency();
 
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
@@ -136,7 +141,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 result.addElement(element);
             }
             return result;
-        } else return sequence;
+        } else
+            return sequence;
     }
 
     /**
@@ -149,7 +155,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     @Override
     public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
-        if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
+        if (sampling > 0)
+            tempSequence = applySubsampling(sequence, nextRandom);
 
         double score = 0.0;
 
@@ -159,12 +166,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
         }
 
-        for(int i = 0; i < tempSequence.getElements().size(); i++) {
+        for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
+            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
+                            learningRate, currentWindow);
         }
 
-        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()){
+        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
@@ -174,7 +182,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     @Override
     public void finish() {
-        if (batches != null && batches.get() != null && batches.get().size() > 0){
+        if (batches != null && batches.get() != null && batches.get().size() > 0) {
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
@@ -192,19 +200,19 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         final T word = sentence.get(i);
-        if(word == null || sentence.isEmpty())
+        if (word == null || sentence.isEmpty())
             return 0.0;
 
         double score = 0.0;
         int cnt = 0;
 
-        int end =  currentWindow * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != currentWindow) {
+        int end = currentWindow * 2 + 1 - b;
+        for (int a = b; a < end; a++) {
+            if (a != currentWindow) {
                 int c = i - currentWindow + a;
-                if(c >= 0 && c < sentence.size()) {
+                if (c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
-                    score = iterateSample(word,lastWord,nextRandom,alpha, false, null);
+                    score = iterateSample(word, lastWord, nextRandom, alpha, false, null);
 
                 }
             }
@@ -213,15 +221,20 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return score;
     }
 
-    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference, INDArray inferenceVector) {
-        if(w1 == null || lastWord == null || lastWord.getIndex() < 0 || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP") || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || lastWord.getLabel().equals("UNK"))
+    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference,
+                    INDArray inferenceVector) {
+        if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
+                        || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
+                        || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
+                        || lastWord.getLabel().equals("UNK")) {
             return 0.0;
+        }
 
 
         double score = 0.0;
 
-        int [] idxSyn1 = null;
-        int [] codes = null;
+        int[] idxSyn1 = null;
+        int[] codes = null;
         if (configuration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[w1.getCodeLength()];
             codes = new int[w1.getCodeLength()];
@@ -242,7 +255,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         int target = w1.getIndex();
         //negative sampling
-        if(negative > 0) {
+        if (negative > 0) {
             if (syn1Neg == null) {
                 ((InMemoryLookupTable<T>) lookupTable).initNegative();
                 syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
@@ -255,7 +268,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         //log.info("VocabWords: {}; lastWordIndex: {}; syn1neg: {}", vocabCache.numWords(), lastWord.getIndex(), syn1Neg.get().rows());
 
-        AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords(), inferenceVector);
+        AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
+                        lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha,
+                        nextRandom.get(), vocabCache.numWords(), inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
         if (!isInference)

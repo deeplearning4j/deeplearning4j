@@ -19,11 +19,9 @@ import static org.junit.Assert.fail;
 public class TestInvalidConfigurations {
 
     public static MultiLayerNetwork getDensePlusOutput(int nIn, int nOut) {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
-                .layer(1, new OutputLayer.Builder().nIn(10).nOut(nOut).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
+                        .layer(1, new OutputLayer.Builder().nIn(10).nOut(nOut).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -32,11 +30,9 @@ public class TestInvalidConfigurations {
     }
 
     public static MultiLayerNetwork getLSTMPlusRnnOutput(int nIn, int nOut) {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(10).build())
-                .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(nOut).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(10).build())
+                        .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(nOut).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -45,12 +41,10 @@ public class TestInvalidConfigurations {
     }
 
     public static MultiLayerNetwork getCnnPlusOutputLayer(int depthIn, int inH, int inW, int nOut) {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nOut(nOut).build())
-                .setInputType(InputType.convolutional(inH, inW, depthIn))
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(5).build())
+                        .layer(1, new OutputLayer.Builder().nOut(nOut).build())
+                        .setInputType(InputType.convolutional(inH, inW, depthIn)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -74,11 +68,9 @@ public class TestInvalidConfigurations {
     @Test
     public void testDenseNout0() {
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, new DenseLayer.Builder().nIn(10).nOut(0).build())
-                    .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build())
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                            .layer(0, new DenseLayer.Builder().nIn(10).nOut(0).build())
+                            .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -133,11 +125,9 @@ public class TestInvalidConfigurations {
     @Test
     public void testLSTMNOut0() {
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, new GravesLSTM.Builder().nIn(10).nOut(0).build())
-                    .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(10).build())
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                            .layer(0, new GravesLSTM.Builder().nIn(10).nOut(0).build())
+                            .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(10).build()).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -166,12 +156,10 @@ public class TestInvalidConfigurations {
     @Test
     public void testConvolutionalNOut0() {
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, new ConvolutionLayer.Builder().nIn(5).nOut(0).build())
-                    .layer(1, new OutputLayer.Builder().nOut(10).build())
-                    .setInputType(InputType.convolutional(10, 10, 5))
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                            .layer(0, new ConvolutionLayer.Builder().nIn(5).nOut(0).build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(10, 10, 5)).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -197,13 +185,12 @@ public class TestInvalidConfigurations {
         //(10-3+2*0)/2+1 = 7/2 + 1
 
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .convolutionMode(ConvolutionMode.Strict)
-                    .list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(3,2).stride(2,2).padding(0,0).nOut(5).build())
-                    .layer(1, new OutputLayer.Builder().nOut(10).build())
-                    .setInputType(InputType.convolutional(hIn, wIn, depthIn))
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .list()
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 2).stride(2, 2).padding(0, 0).nOut(5)
+                                            .build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -225,12 +212,11 @@ public class TestInvalidConfigurations {
         int hIn = 10;
         int wIn = 10;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().kernelSize(7,7).stride(1,1).padding(0,0).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nOut(10).build())
-                .setInputType(InputType.convolutional(hIn, wIn, depthIn))
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new ConvolutionLayer.Builder().kernelSize(7, 7).stride(1, 1).padding(0, 0).nOut(5)
+                                        .build())
+                        .layer(1, new OutputLayer.Builder().nOut(10).build())
+                        .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -257,13 +243,12 @@ public class TestInvalidConfigurations {
 
         //Invalid: (10-3+0)/2+1 = 4.5
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .convolutionMode(ConvolutionMode.Strict)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().kernelSize(3,3).stride(2,2).padding(0,0).nIn(depthIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nIn(5*4*4).nOut(10).build())
-                .inputPreProcessor(1, new CnnToFeedForwardPreProcessor())
-                .build();
+        MultiLayerConfiguration conf =
+                        new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict).list()
+                                        .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(2, 2)
+                                                        .padding(0, 0).nIn(depthIn).nOut(5).build())
+                                        .layer(1, new OutputLayer.Builder().nIn(5 * 4 * 4).nOut(10).build())
+                                        .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -291,25 +276,23 @@ public class TestInvalidConfigurations {
         //Using kernel size of 3, stride of 2:
         //(10-3+2*0)/2+1 = 7/2 + 1
 
-        try{
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).nOut(5).build())
-                    .layer(1, new OutputLayer.Builder().nOut(10).build())
-                    .setInputType(InputType.convolutional(hIn, wIn, depthIn))
-                    .build();
-        }catch (Exception e){
+        try {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
+                                            .build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
+        } catch (Exception e) {
             fail("Did not expect exception with default (truncate)");
         }
 
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .convolutionMode(ConvolutionMode.Strict)
-                    .list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).nOut(5).build())
-                    .layer(1, new OutputLayer.Builder().nOut(10).build())
-                    .setInputType(InputType.convolutional(hIn, wIn, depthIn))
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .list()
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
+                                            .build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -333,13 +316,12 @@ public class TestInvalidConfigurations {
         //(10-3+2*0)/2+1 = 7/2 + 1
 
         try {
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .convolutionMode(ConvolutionMode.Strict)
-                    .list()
-                    .layer(0, new SubsamplingLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).build())
-                    .layer(1, new OutputLayer.Builder().nOut(10).build())
-                    .setInputType(InputType.convolutional(hIn, wIn, depthIn))
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .list()
+                            .layer(0, new SubsamplingLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0)
+                                            .build())
+                            .layer(1, new OutputLayer.Builder().nOut(10).build())
+                            .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -351,4 +333,65 @@ public class TestInvalidConfigurations {
             fail();
         }
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidKernel() {
+        new ConvolutionLayer.Builder().kernelSize(3, 0).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidKernel2() {
+        new ConvolutionLayer.Builder().kernelSize(2, 2, 2).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidStride() {
+        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidStride2() {
+        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidPadding() {
+        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidPadding2() {
+        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0, 0, 0).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSubsamplingInvalidKernel() {
+        new SubsamplingLayer.Builder().kernelSize(3, 0).build();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testSubsamplingInvalidKernel2() {
+        new SubsamplingLayer.Builder().kernelSize(2).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSubsamplingInvalidStride() {
+        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testSubsamplingInvalidStride2() {
+        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1, 1).build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSubsamplingInvalidPadding() {
+        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testSubsamplingInvalidPadding2() {
+        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0).build();
+    }
+
 }

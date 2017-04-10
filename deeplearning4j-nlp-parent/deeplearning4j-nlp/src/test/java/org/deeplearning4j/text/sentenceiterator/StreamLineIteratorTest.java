@@ -24,9 +24,7 @@ public class StreamLineIteratorTest {
         ClassPathResource reuters5250 = new ClassPathResource("/reuters/5250");
         File f = reuters5250.getFile();
 
-        StreamLineIterator iterator = new StreamLineIterator.Builder(new FileInputStream(f))
-                .setFetchSize(100)
-                .build();
+        StreamLineIterator iterator = new StreamLineIterator.Builder(new FileInputStream(f)).setFetchSize(100).build();
 
         int cnt = 0;
         while (iterator.hasNext()) {

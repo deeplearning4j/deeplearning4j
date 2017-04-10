@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class BagOfWordsVectorizer extends  BaseTextVectorizer {
+public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
     protected BagOfWordsVectorizer() {
 
@@ -69,15 +69,19 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
     public INDArray transform(String text) {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
+        return transform(tokens);
+    }
+
+    @Override
+    public INDArray transform(List<String> tokens) {
         INDArray input = Nd4j.create(1, vocabCache.numWords());
-        for (String token: tokens) {
+        for (String token : tokens) {
             int idx = vocabCache.indexOf(token);
             if (vocabCache.indexOf(token) >= 0)
                 input.putScalar(idx, vocabCache.wordFrequency(token));
         }
         return input;
     }
-
 
     /**
      * @param input the text to vectorize
@@ -112,8 +116,14 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         protected VocabCache<VocabWord> vocabCache;
         protected LabelsSource labelsSource = new LabelsSource();
         protected Collection<String> stopWords = new ArrayList<>();
+        protected boolean isParallel = true;
 
-        public Builder() {
+        public Builder() {}
+
+
+        public Builder allowParallelTokenization(boolean reallyAllow) {
+            this.isParallel = reallyAllow;
+            return this;
         }
 
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -147,7 +157,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         }
 
         public Builder setStopWords(Collection<String> stopWords) {
-        	this.stopWords = stopWords;
+            this.stopWords = stopWords;
             return this;
         }
 
@@ -159,6 +169,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
             vectorizer.minWordFrequency = this.minWordFrequency;
             vectorizer.labelsSource = this.labelsSource;
             vectorizer.stopWords = this.stopWords;
+            vectorizer.isParallel = this.isParallel;
 
             if (this.vocabCache == null) {
                 this.vocabCache = new AbstractCache.Builder<VocabWord>().build();

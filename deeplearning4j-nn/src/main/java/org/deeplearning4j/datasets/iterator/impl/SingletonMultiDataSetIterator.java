@@ -19,7 +19,7 @@ public class SingletonMultiDataSetIterator implements MultiDataSetIterator {
     private boolean preprocessed = false;
     private MultiDataSetPreProcessor preProcessor;
 
-    public SingletonMultiDataSetIterator(MultiDataSet multiDataSet){
+    public SingletonMultiDataSetIterator(MultiDataSet multiDataSet) {
         this.multiDataSet = multiDataSet;
     }
 
@@ -55,11 +55,11 @@ public class SingletonMultiDataSetIterator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next() {
-        if(!hasNext){
+        if (!hasNext) {
             throw new NoSuchElementException("No elements remaining");
         }
         hasNext = false;
-        if(preProcessor != null && !preprocessed){
+        if (preProcessor != null && !preprocessed) {
             preProcessor.preProcess(multiDataSet);
             preprocessed = true;
         }

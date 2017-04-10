@@ -25,7 +25,7 @@ public class VocabularyHolderTest {
         holder.transferBackToVocabCache(cache);
 
         // checking word frequency transfer
-        assertEquals(3,cache.numWords());
+        assertEquals(3, cache.numWords());
         assertEquals(1, cache.wordFrequency("test"));
         assertEquals(2, cache.wordFrequency("testz"));
         assertEquals(3, cache.wordFrequency("tests"));
@@ -52,9 +52,7 @@ public class VocabularyHolderTest {
      */
     @Test
     public void testSpecial1() throws Exception {
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .minWordFrequency(1)
-                .build();
+        VocabularyHolder holder = new VocabularyHolder.Builder().minWordFrequency(1).build();
 
         holder.addWord("test");
         holder.addWord("tests");
@@ -66,11 +64,9 @@ public class VocabularyHolderTest {
         VocabCache cache = new InMemoryLookupCache();
         holder.transferBackToVocabCache(cache);
 
-        VocabularyHolder holder2 = new VocabularyHolder.Builder()
-                .externalCache(cache)
-                .minWordFrequency(10)
-//                .markAsSpecial(true)
-                .build();
+        VocabularyHolder holder2 = new VocabularyHolder.Builder().externalCache(cache).minWordFrequency(10)
+                        //                .markAsSpecial(true)
+                        .build();
 
         holder2.addWord("testz");
         assertEquals(3, holder2.numWords());
@@ -81,12 +77,9 @@ public class VocabularyHolderTest {
 
     @Test
     public void testScavenger1() throws Exception {
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .minWordFrequency(5)
-                .hugeModelExpected(true)
-                .scavengerActivationThreshold(1000000)  // this value doesn't really matters, since we'll call for scavenger manually
-                .scavengerRetentionDelay(3)
-                .build();
+        VocabularyHolder holder = new VocabularyHolder.Builder().minWordFrequency(5).hugeModelExpected(true)
+                        .scavengerActivationThreshold(1000000) // this value doesn't really matters, since we'll call for scavenger manually
+                        .scavengerRetentionDelay(3).build();
 
         holder.addWord("test");
         holder.addWord("tests");
@@ -110,12 +103,9 @@ public class VocabularyHolderTest {
 
     @Test
     public void testScavenger2() throws Exception {
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .minWordFrequency(5)
-                .hugeModelExpected(true)
-                .scavengerActivationThreshold(1000000)  // this value doesn't really matters, since we'll call for scavenger manually
-                .scavengerRetentionDelay(3)
-                .build();
+        VocabularyHolder holder = new VocabularyHolder.Builder().minWordFrequency(5).hugeModelExpected(true)
+                        .scavengerActivationThreshold(1000000) // this value doesn't really matters, since we'll call for scavenger manually
+                        .scavengerRetentionDelay(3).build();
 
         holder.addWord("test");
         holder.incrementWordCounter("test");
@@ -141,12 +131,9 @@ public class VocabularyHolderTest {
 
     @Test
     public void testScavenger3() throws Exception {
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .minWordFrequency(5)
-                .hugeModelExpected(true)
-                .scavengerActivationThreshold(1000000)  // this value doesn't really matters, since we'll call for scavenger manually
-                .scavengerRetentionDelay(3)
-                .build();
+        VocabularyHolder holder = new VocabularyHolder.Builder().minWordFrequency(5).hugeModelExpected(true)
+                        .scavengerActivationThreshold(1000000) // this value doesn't really matters, since we'll call for scavenger manually
+                        .scavengerRetentionDelay(3).build();
 
         holder.addWord("test");
 
@@ -178,12 +165,9 @@ public class VocabularyHolderTest {
 
     @Test
     public void testScavenger4() throws Exception {
-        VocabularyHolder holder = new VocabularyHolder.Builder()
-                .minWordFrequency(5)
-                .hugeModelExpected(true)
-                .scavengerActivationThreshold(1000000)  // this value doesn't really matters, since we'll call for scavenger manually
-                .scavengerRetentionDelay(3)
-                .build();
+        VocabularyHolder holder = new VocabularyHolder.Builder().minWordFrequency(5).hugeModelExpected(true)
+                        .scavengerActivationThreshold(1000000) // this value doesn't really matters, since we'll call for scavenger manually
+                        .scavengerRetentionDelay(3).build();
 
         holder.addWord("test");
 

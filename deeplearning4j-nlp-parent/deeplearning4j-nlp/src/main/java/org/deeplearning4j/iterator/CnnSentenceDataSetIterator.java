@@ -22,10 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A DataSetIterator that provides data for training a CNN sentence classification models (though can of course
@@ -41,12 +38,18 @@ import java.util.Map;
  *
  * Sentences and labels are provided by a {@link LabeledSentenceProvider} - different implementations of this provide different
  * ways of loading sentences/documents with labels - for example, from files, etc.
+ * <p>
+ * <b>Note</b>: With regard to labels to class index assignment, they are sorted alphabetically. To get the assigment/mapping,
+ * use {@link #getLabels()} or {@link #getLabelClassMap()}
  *
  * @author Alex Black
  */
 @AllArgsConstructor
 public class CnnSentenceDataSetIterator implements DataSetIterator {
-    public enum UnknownWordHandling {RemoveWord, UseUnknownVector}
+    public enum UnknownWordHandling {
+        RemoveWord, UseUnknownVector
+    }
+
     private static final String UNKNOWN_WORD_SENTINEL = "UNKNOWN_WORD_SENTINEL";
 
     private LabeledSentenceProvider sentenceProvider = null;
@@ -81,11 +84,15 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         this.numClasses = this.sentenceProvider.numLabelClasses();
         this.labelClassMap = new HashMap<>();
         int count = 0;
-        for (String s : this.sentenceProvider.allLabels()) {
+        //First: sort the labels to ensure the same label assignment order (say train vs. test)
+        List<String> sortedLabels = new ArrayList<>(this.sentenceProvider.allLabels());
+        Collections.sort(sortedLabels);
+
+        for (String s : sortedLabels) {
             this.labelClassMap.put(s, count++);
         }
-        if(unknownWordHandling == UnknownWordHandling.UseUnknownVector){
-            if(useNormalizedWordVectors){
+        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector) {
+            if (useNormalizedWordVectors) {
                 wordVectors.getWordVectorMatrixNormalized(wordVectors.getUNK());
             } else {
                 wordVectors.getWordVectorMatrix(wordVectors.getUNK());
@@ -98,10 +105,10 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     /**
      * Generally used post training time to load a single sentence for predictions
      */
-    public INDArray loadSingleSentence(String sentence){
+    public INDArray loadSingleSentence(String sentence) {
         List<String> tokens = tokenizeSentence(sentence);
 
-        int[] featuresShape = new int[]{1,1,0,0};
+        int[] featuresShape = new int[] {1, 1, 0, 0};
         if (sentencesAlongHeight) {
             featuresShape[2] = Math.min(maxSentenceLength, tokens.size());
             featuresShape[3] = wordVectorSize;
@@ -112,13 +119,13 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
 
         INDArray features = Nd4j.create(featuresShape);
         int length = (sentencesAlongHeight ? featuresShape[2] : featuresShape[3]);
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             INDArray vector = getVector(tokens.get(i));
 
             INDArrayIndex[] indices = new INDArrayIndex[4];
             indices[0] = NDArrayIndex.point(0);
             indices[1] = NDArrayIndex.point(0);
-            if(sentencesAlongHeight){
+            if (sentencesAlongHeight) {
                 indices[2] = NDArrayIndex.point(i);
                 indices[3] = NDArrayIndex.all();
             } else {
@@ -132,9 +139,9 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         return features;
     }
 
-    private INDArray getVector(String word){
+    private INDArray getVector(String word) {
         INDArray vector;
-        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL) {    //Yes, this *should* be using == for the sentinal String here
+        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL) { //Yes, this *should* be using == for the sentinel String here
             vector = unknown;
         } else {
             if (useNormalizedWordVectors) {
@@ -146,7 +153,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         return vector;
     }
 
-    private List<String> tokenizeSentence(String sentence){
+    private List<String> tokenizeSentence(String sentence) {
         Tokenizer t = tokenizerFactory.create(sentence);
 
         List<String> tokens = new ArrayList<>();
@@ -163,6 +170,21 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             tokens.add(token);
         }
         return tokens;
+    }
+
+    public Map<String, Integer> getLabelClassMap() {
+        return new HashMap<>(labelClassMap);
+    }
+
+    @Override
+    public List<String> getLabels() {
+        //We don't want to just return the list from the LabelledSentenceProvider, as we sorted them earlier to do the
+        // String -> Integer mapping
+        String[] str = new String[labelClassMap.size()];
+        for (Map.Entry<String, Integer> e : labelClassMap.entrySet()) {
+            str[e.getValue()] = e.getKey();
+        }
+        return Arrays.asList(str);
     }
 
     @Override
@@ -205,7 +227,8 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         for (int i = 0; i < tokenizedSentences.size(); i++) {
             String labelStr = tokenizedSentences.get(i).getSecond();
             if (!labelClassMap.containsKey(labelStr)) {
-                throw new IllegalStateException("Got label \"" + labelStr + "\" that is not present in list of LabeledSentenceProvider labels");
+                throw new IllegalStateException("Got label \"" + labelStr
+                                + "\" that is not present in list of LabeledSentenceProvider labels");
             }
 
             int labelIdx = labelClassMap.get(labelStr);
@@ -228,14 +251,14 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         for (int i = 0; i < currMinibatchSize; i++) {
             List<String> currSentence = tokenizedSentences.get(i).getFirst();
 
-            for (int j = 0; j < currSentence.size() && j <maxSentenceLength; j++) {
+            for (int j = 0; j < currSentence.size() && j < maxSentenceLength; j++) {
                 INDArray vector = getVector(currSentence.get(j));
 
                 INDArrayIndex[] indices = new INDArrayIndex[4];
                 //TODO REUSE
                 indices[0] = NDArrayIndex.point(i);
                 indices[1] = NDArrayIndex.point(0);
-                if(sentencesAlongHeight){
+                if (sentencesAlongHeight) {
                     indices[2] = NDArrayIndex.point(j);
                     indices[3] = NDArrayIndex.all();
                 } else {
@@ -251,12 +274,12 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (minLength != maxLength) {
             featuresMask = Nd4j.create(currMinibatchSize, maxLength);
 
-            for(int i=0; i<currMinibatchSize; i++ ){
+            for (int i = 0; i < currMinibatchSize; i++) {
                 int sentenceLength = tokenizedSentences.get(i).getFirst().size();
-                if(sentenceLength >= maxLength){
+                if (sentenceLength >= maxLength) {
                     featuresMask.getRow(i).assign(1.0);
                 } else {
-                    featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.interval(0,sentenceLength)).assign(1.0);
+                    featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.interval(0, sentenceLength)).assign(1.0);
                 }
             }
         }
@@ -325,11 +348,6 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     @Override
     public DataSetPreProcessor getPreProcessor() {
         return dataSetPreProcessor;
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return sentenceProvider.allLabels();
     }
 
     @Override
@@ -418,7 +436,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         /**
          * Whether normalized word vectors should be used. Default: true
          */
-        public Builder useNormalizedWordVectors(boolean useNormalizedWordVectors){
+        public Builder useNormalizedWordVectors(boolean useNormalizedWordVectors) {
             this.useNormalizedWordVectors = useNormalizedWordVectors;
             return this;
         }
@@ -450,8 +468,9 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         }
 
         public CnnSentenceDataSetIterator build() {
-            if(wordVectors == null){
-                throw new IllegalStateException("Cannot build CnnSentenceDataSetIterator without a WordVectors instance");
+            if (wordVectors == null) {
+                throw new IllegalStateException(
+                                "Cannot build CnnSentenceDataSetIterator without a WordVectors instance");
             }
 
             return new CnnSentenceDataSetIterator(this);

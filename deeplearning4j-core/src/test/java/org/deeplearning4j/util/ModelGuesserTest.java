@@ -34,12 +34,14 @@ public class ModelGuesserTest {
 
     @Test
     public void testModelGuess() throws Exception {
-        ClassPathResource sequenceResource = new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_model.h5");
+        ClassPathResource sequenceResource =
+                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_model.h5");
         assertTrue(sequenceResource.exists());
         File f = getTempFile(sequenceResource);
         Model guess1 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
         assumeNotNull(guess1);
-        ClassPathResource sequenceResource2 = new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_model.h5");
+        ClassPathResource sequenceResource2 =
+                        new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_model.h5");
         assertTrue(sequenceResource2.exists());
         File f2 = getTempFile(sequenceResource);
         Model guess2 = ModelGuesser.loadModelGuess(f2.getAbsolutePath());
@@ -54,15 +56,12 @@ public class ModelGuesserTest {
         int nIn = 5;
         int nOut = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .regularization(true).l1(0.01).l2(0.01)
-                .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
-                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
-                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
+                        .l2(0.01).learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -83,7 +82,7 @@ public class ModelGuesserTest {
     @Test
     public void testModelGuessConfig() throws Exception {
         ClassPathResource resource = new ClassPathResource("modelimport/keras/configs/cnn_tf_config.json",
-                ModelGuesserTest.class.getClassLoader());
+                        ModelGuesserTest.class.getClassLoader());
         File f = getTempFile(resource);
         String configFilename = f.getAbsolutePath();
         Object conf = ModelGuesser.loadConfigGuess(configFilename);
@@ -110,7 +109,7 @@ public class ModelGuesserTest {
         File f = new File(UUID.randomUUID().toString());
         f.deleteOnExit();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
-        IOUtils.copy(is,bos);
+        IOUtils.copy(is, bos);
         bos.flush();
         bos.close();
         return f;

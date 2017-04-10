@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -55,6 +55,7 @@ public class Hdf5Archive {
     }
 
     private hdf5.H5File file;
+    private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
 
     public Hdf5Archive(String archiveFilename) {
         this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
@@ -83,13 +84,30 @@ public class Hdf5Archive {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    public String readAttributeAsJson(String attributeName, String... groups) throws UnsupportedKerasConfigurationException {
+    public String readAttributeAsJson(String attributeName, String... groups)
+                    throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
         hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
         for (int i = 1; i < groups.length; i++)
             group = group.asCommonFG().openGroup(groups[i]);
         return readAttributeAsJson(group.openAttribute(attributeName));
+    }
+
+    /**
+     * Check whether group path contains string attribute.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return                  Boolean indicating whether attribute exists in group path.
+     */
+    public boolean hasAttribute(String attributeName, String... groups) {
+        if (groups.length == 0)
+            return this.file.attrExists(attributeName);
+        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++)
+            group = group.asCommonFG().openGroup(groups[i]);
+        return group.attrExists(attributeName);
     }
 
     /**
@@ -126,7 +144,8 @@ public class Hdf5Archive {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName) throws UnsupportedKerasConfigurationException {
+    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName)
+                    throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
         int nbDims = space.getSimpleExtentNdims();
@@ -138,11 +157,11 @@ public class Hdf5Archive {
         INDArray data = null;
         switch (nbDims) {
             case 4: /* 2D Convolution weights */
-                dataBuffer = new float[(int)(dims[0]*dims[1]*dims[2]*dims[3])];
+                dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0], (int)dims[1], (int)dims[2], (int)dims[3]);
+                data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     for (int i2 = 0; i2 < dims[1]; i2++)
@@ -150,23 +169,35 @@ public class Hdf5Archive {
                             for (int i4 = 0; i4 < dims[3]; i4++)
                                 data.putScalar(i1, i2, i3, i4, dataBuffer[j++]);
                 break;
-            case 2: /* Dense and Recurrent weights */
-                dataBuffer = new float[(int)(dims[0]*dims[1])];
+            case 3:
+                dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2])];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0], (int)dims[1]);
+                data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2]);
+                j = 0;
+                for (int i1 = 0; i1 < dims[0]; i1++)
+                    for (int i2 = 0; i2 < dims[1]; i2++)
+                        for (int i3 = 0; i3 < dims[2]; i3++)
+                            data.putScalar(i1, i2, i3, dataBuffer[j++]);
+                break;
+            case 2: /* Dense and Recurrent weights */
+                dataBuffer = new float[(int) (dims[0] * dims[1])];
+                fp = new FloatPointer(dataBuffer);
+                dataset.read(fp, dataType);
+                fp.get(dataBuffer);
+                data = Nd4j.create((int) dims[0], (int) dims[1]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     for (int i2 = 0; i2 < dims[1]; i2++)
                         data.putScalar(i1, i2, dataBuffer[j++]);
                 break;
             case 1: /* Bias */
-                dataBuffer = new float[(int)dims[0]];
+                dataBuffer = new float[(int) dims[0]];
                 fp = new FloatPointer(dataBuffer);
-                dataset.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+                dataset.read(fp, dataType);
                 fp.get(dataBuffer);
-                data = Nd4j.create((int)dims[0]);
+                data = Nd4j.create((int) dims[0]);
                 j = 0;
                 for (int i1 = 0; i1 < dims[0]; i1++)
                     data.putScalar(i1, dataBuffer[j++]);
@@ -224,7 +255,8 @@ public class Hdf5Archive {
             try {
                 mapper.readTree(s);
                 break;
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
             bufferSizeMult++;
             if (bufferSizeMult > 100) {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");

@@ -35,8 +35,8 @@ public class KerasConvolution extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasConvolution(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -48,23 +48,18 @@ public class KerasConvolution extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder()
-            .name(this.layerName)
-            .nOut(getNOutFromConfig(layerConfig))
-            .dropOut(this.dropout)
-            .activation(getActivationFromConfig(layerConfig))
-            .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig))
-            .biasInit(0.0)
-            .l1(this.weightL1Regularization)
-            .l2(this.weightL2Regularization)
-            .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-            .kernelSize(getKernelSizeFromConfig(layerConfig))
-            .stride(getStrideFromConfig(layerConfig));
-        int[] padding = getPaddingFromConfig(layerConfig);
+        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
+                        .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
+                        .activation(getActivationFromConfig(layerConfig))
+                        .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
+                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                        .convolutionMode(getConvolutionModeFromConfig(layerConfig))
+                        .kernelSize(getKernelSizeFromConfig(layerConfig)).stride(getStrideFromConfig(layerConfig));
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
@@ -76,7 +71,7 @@ public class KerasConvolution extends KerasLayer {
      * @return  ConvolutionLayer
      */
     public ConvolutionLayer getConvolutionLayer() {
-        return (ConvolutionLayer)this.layer;
+        return (ConvolutionLayer) this.layer;
     }
 
     /**
@@ -89,7 +84,8 @@ public class KerasConvolution extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Convolution layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
         return this.getConvolutionLayer().getOutputType(-1, inputType[0]);
     }
 
@@ -99,7 +95,9 @@ public class KerasConvolution extends KerasLayer {
      * @return          number of trainable parameters (2)
      */
     @Override
-    public int getNumParams() { return NUM_TRAINABLE_PARAMS; }
+    public int getNumParams() {
+        return NUM_TRAINABLE_PARAMS;
+    }
 
     /**
      * Set weights for layer.
@@ -108,7 +106,7 @@ public class KerasConvolution extends KerasLayer {
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String,INDArray>();
+        this.weights = new HashMap<String, INDArray>();
         if (weights.containsKey(KERAS_PARAM_NAME_W)) {
             /* Theano and TensorFlow backends store convolutional weights
              * with a different dimensional ordering than DL4J so we need
@@ -128,14 +126,14 @@ public class KerasConvolution extends KerasLayer {
                      * Theano's default behavior is to rotate filters by 180 degree before application.
                      */
                     paramValue = kerasParamValue.dup();
-                    for (int i = 0; i < paramValue.tensorssAlongDimension(2,3); i++) {
+                    for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
                         //dup required since we only want data from the view not the whole array
-                        INDArray copyFilter = paramValue.tensorAlongDimension(i,2,3).dup();
-                        double [] flattenedFilter = copyFilter.ravel().data().asDouble();
+                        INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
+                        double[] flattenedFilter = copyFilter.ravel().data().asDouble();
                         ArrayUtils.reverse(flattenedFilter);
-                        INDArray newFilter = Nd4j.create(flattenedFilter,copyFilter.shape());
+                        INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
                         //manipulating weights in place to save memory
-                        INDArray inPlaceFilter = paramValue.tensorAlongDimension(i,2,3);
+                        INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
                         inPlaceFilter.muli(0).addi(newFilter);
                     }
                     break;
@@ -144,17 +142,20 @@ public class KerasConvolution extends KerasLayer {
             }
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
         } else
-            throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
+            throw new InvalidKerasConfigurationException(
+                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
         if (weights.containsKey(KERAS_PARAM_NAME_B))
             this.weights.put(ConvolutionParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
         else
-            throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
+            throw new InvalidKerasConfigurationException(
+                            "Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(KERAS_PARAM_NAME_W);
             paramNames.remove(KERAS_PARAM_NAME_B);
             String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: " + unknownParamNames.substring(1, unknownParamNames.length()-1));
+            log.warn("Attemping to set weights for unknown parameters: "
+                            + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
 }

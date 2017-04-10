@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -46,13 +46,18 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
+    private static final long serialVersionUID = 78249242142L;
 
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
-    @Getter protected int minWordFrequency = 5;
-    @Getter protected WeightLookupTable<T> lookupTable;
-    @Getter protected VocabCache<T> vocab;
+    @Getter
+    protected int minWordFrequency = 5;
+    @Getter
+    protected WeightLookupTable<T> lookupTable;
+    @Getter
+    protected VocabCache<T> vocab;
     protected int layerSize = 100;
-    @Getter protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
+    @Getter
+    protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
     private boolean initDone = false;
 
     protected int numIterations = 1;
@@ -61,7 +66,8 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected double sampling = 0;
     protected AtomicDouble learningRate = new AtomicDouble(0.025);
     protected double minLearningRate = 0.01;
-    @Getter protected int window = 5;
+    @Getter
+    protected int window = 5;
     protected int batchSize;
     protected int learningRateDecayWords;
     protected boolean resetModel;
@@ -82,13 +88,18 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public int getLayerSize() {
         if (lookupTable != null && lookupTable.getWeights() != null) {
             return lookupTable.getWeights().columns();
-        } else return layerSize;
+        } else
+            return layerSize;
     }
 
     public final static String DEFAULT_UNK = "UNK";
-    @Getter @Setter private String UNK = DEFAULT_UNK;
+    @Getter
+    @Setter
+    private String UNK = DEFAULT_UNK;
 
-    @Getter protected Collection<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+    @Getter
+    protected Collection<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
+
     /**
      * Returns true if the model has this word in the vocab
      * @param word the word to test for
@@ -97,6 +108,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public boolean hasWord(String word) {
         return vocab().indexOf(word) >= 0;
     }
+
     /**
      * Words nearest based on positive and negative words
      * @param positive the positive words
@@ -104,7 +116,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top) {
+    public Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top) {
         return modelUtils.wordsNearestSum(positive, negative, top);
     }
 
@@ -114,7 +126,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @return the words nearest the mean of the words
      */
     @Override
-    public Collection<String> wordsNearestSum(INDArray words,int top) {
+    public Collection<String> wordsNearestSum(INDArray words, int top) {
         return modelUtils.wordsNearestSum(words, top);
     }
 
@@ -134,7 +146,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param n the n to get
      * @return the top n words
      */
-    public Collection<String> wordsNearestSum(String word,int n) {
+    public Collection<String> wordsNearestSum(String word, int n) {
         return modelUtils.wordsNearestSum(word, n);
     }
 
@@ -146,7 +158,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     * @param questions the questions to ask
     * @return the accuracy based on these questions
     */
-    public Map<String,Double> accuracy(List<String> questions) {
+    public Map<String, Double> accuracy(List<String> questions) {
         return modelUtils.accuracy(questions);
     }
 
@@ -163,7 +175,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param accuracy the accuracy: 0 to 1
      * @return the list of words that are similar in the vocab
      */
-    public List<String> similarWordsInVocabTo(String word,double accuracy) {
+    public List<String> similarWordsInVocabTo(String word, double accuracy) {
         return this.modelUtils.similarWordsInVocabTo(word, accuracy);
     }
 
@@ -185,7 +197,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @return the looked up matrix
      */
     public INDArray getWordVectorMatrixNormalized(String word) {
-        INDArray r =  getWordVectorMatrix(word);
+        INDArray r = getWordVectorMatrix(word);
         if (r == null)
             return null;
 
@@ -221,14 +233,15 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public INDArray getWordVectors(@NonNull Collection<String> labels) {
         int indexes[] = new int[labels.size()];
         int cnt = 0;
-        for (String label: labels) {
+        for (String label : labels) {
             if (vocab.containsWord(label)) {
                 indexes[cnt] = vocab.indexOf(label);
-            } else indexes[cnt] = -1;
+            } else
+                indexes[cnt] = -1;
             cnt++;
         }
 
-        while(ArrayUtils.contains(indexes, -1)) {
+        while (ArrayUtils.contains(indexes, -1)) {
             indexes = ArrayUtils.removeElement(indexes, -1);
         }
 
@@ -254,8 +267,8 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param n the n to get
      * @return the top n words
      */
-    public Collection<String> wordsNearest(String word,int n) {
-       return modelUtils.wordsNearest(word, n);
+    public Collection<String> wordsNearest(String word, int n) {
+        return modelUtils.wordsNearest(word, n);
     }
 
 
@@ -266,7 +279,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      * @param word2 the second word
      * @return a normalized similarity (cosine similarity)
      */
-    public double similarity(String word,String word2) {
+    public double similarity(String word, String word2) {
         return modelUtils.similarity(word, word2);
     }
 
@@ -286,12 +299,14 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         if (lookupTable != null) {
             modelUtils.init(lookupTable);
             this.modelUtils = modelUtils;
+            //0.25, -0.03, -0.47, 0.10, -0.25, 0.28, 0.37,
         }
     }
 
     public void setLookupTable(@NonNull WeightLookupTable lookupTable) {
         this.lookupTable = lookupTable;
-        if (modelUtils == null) this.modelUtils = new BasicModelUtils<>();
+        if (modelUtils == null)
+            this.modelUtils = new BasicModelUtils<>();
 
         this.modelUtils.init(lookupTable);
     }
@@ -311,7 +326,8 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             Heartbeat heartbeat = Heartbeat.getInstance();
             Task task = new Task();
             task.setNumFeatures(layerSize);
-            if (vocab != null) task.setNumSamples(vocab.numWords());
+            if (vocab != null)
+                task.setNumSamples(vocab.numWords());
             task.setNetworkType(Task.NetworkType.DenseNetwork);
             task.setArchitectureType(Task.ArchitectureType.WORDVECTORS);
 

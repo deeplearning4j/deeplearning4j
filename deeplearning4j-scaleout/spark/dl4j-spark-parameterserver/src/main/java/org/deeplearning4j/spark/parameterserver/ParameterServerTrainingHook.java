@@ -20,7 +20,7 @@ public class ParameterServerTrainingHook implements TrainingHook {
      */
     @Override
     public void preUpdate(DataSet minibatch, Model model) {
-          //pull
+        //pull
     }
 
     /**
@@ -44,7 +44,7 @@ public class ParameterServerTrainingHook implements TrainingHook {
      */
     @Override
     public void preUpdate(MultiDataSet minibatch, Model model) {
-          //pull
+        //pull
     }
 
     /**
@@ -56,6 +56,6 @@ public class ParameterServerTrainingHook implements TrainingHook {
      */
     @Override
     public void postUpdate(MultiDataSet minibatch, Model model) {
-       //push
+        //push
     }
 }

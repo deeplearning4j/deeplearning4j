@@ -25,8 +25,8 @@ public class KerasPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasPooling(Map<String,Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasPooling(Map<String, Object> layerConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -38,16 +38,14 @@ public class KerasPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasPooling(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(mapPoolingType(this.className))
-            .name(this.layerName)
-            .dropOut(this.dropout)
-            .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-            .kernelSize(getKernelSizeFromConfig(layerConfig))
-            .stride(getStrideFromConfig(layerConfig));
-        int[] padding = getPaddingFromConfig(layerConfig);
+                        .name(this.layerName).dropOut(this.dropout)
+                        .convolutionMode(getConvolutionModeFromConfig(layerConfig))
+                        .kernelSize(getKernelSizeFromConfig(layerConfig)).stride(getStrideFromConfig(layerConfig));
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
@@ -60,7 +58,7 @@ public class KerasPooling extends KerasLayer {
      * @return  SubsamplingLayer
      */
     public SubsamplingLayer getSubsamplingLayer() {
-        return (SubsamplingLayer)this.layer;
+        return (SubsamplingLayer) this.layer;
     }
 
     /**
@@ -73,7 +71,8 @@ public class KerasPooling extends KerasLayer {
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException("Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
+            throw new InvalidKerasConfigurationException(
+                            "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
         return this.getSubsamplingLayer().getOutputType(-1, inputType[0]);
     }
 }

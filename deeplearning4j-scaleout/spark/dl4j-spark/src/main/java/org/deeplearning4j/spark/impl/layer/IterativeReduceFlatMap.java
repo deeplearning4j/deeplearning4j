@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -41,12 +41,13 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class IterativeReduceFlatMap extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>,INDArray> {
+public class IterativeReduceFlatMap extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, INDArray> {
 
     public IterativeReduceFlatMap(String json, Broadcast<INDArray> params) {
         super(new IterativeReduceFlatMapAdapter(json, params));
     }
 }
+
 
 /**
  * Iterative reduce with
@@ -54,7 +55,7 @@ public class IterativeReduceFlatMap extends BaseFlatMapFunctionAdaptee<Iterator<
  *
  * @author Adam Gibson
  */
-class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>,INDArray> {
+class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, INDArray> {
 
     private String json;
     private Broadcast<INDArray> params;
@@ -74,31 +75,31 @@ class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<D
 
     @Override
     public Iterable<INDArray> call(Iterator<DataSet> dataSetIterator) throws Exception {
-        if(!dataSetIterator.hasNext()) {
+        if (!dataSetIterator.hasNext()) {
             return Collections.singletonList(Nd4j.zeros(params.value().shape()));
         }
 
         List<DataSet> collect = new ArrayList<>();
-        while(dataSetIterator.hasNext()) {
+        while (dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect,false);
+        DataSet data = DataSet.merge(collect, false);
         log.debug("Training on " + data.labelCounts());
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray thisParams = Nd4j.create(1, numParams);
         Layer network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
-        network.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
+        network.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         INDArray val = params.value().unsafeDuplication();
-        if(val.length() != network.numParams())
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+        if (val.length() != network.numParams())
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
-       if(network instanceof OutputLayer) {
-           OutputLayer o = (OutputLayer) network;
-           o.fit(data);
-       }
-        else
+        if (network instanceof OutputLayer) {
+            OutputLayer o = (OutputLayer) network;
+            o.fit(data);
+        } else
             network.fit(data.getFeatureMatrix());
 
         return Collections.singletonList(network.params());

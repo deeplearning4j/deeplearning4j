@@ -6,8 +6,7 @@ package org.deeplearning4j.exception;
  * @author Alex Black
  */
 public class DL4JInvalidConfigException extends DL4JException {
-    public DL4JInvalidConfigException() {
-    }
+    public DL4JInvalidConfigException() {}
 
     public DL4JInvalidConfigException(String message) {
         super(message);

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -35,17 +35,19 @@ import java.util.*;
 
 /**
  * Function to feed-forward examples, and get the network output (for example, class probabilities).
- * A key value is used to keey track of which output corresponds to which input.
+ * A key value is used to keep track of which output corresponds to which input.
  *
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-public class FeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray>>, K, INDArray> {
+public class FeedForwardWithKeyFunction<K>
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray>>, K, INDArray> {
 
     public FeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         super(new FeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
     }
 }
+
 
 /**
  * Function to feed-forward examples, and get the network output (for example, class probabilities).
@@ -54,7 +56,8 @@ public class FeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionAdapte
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, INDArray>> {
+class FeedForwardWithKeyFunctionAdapter<K>
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, INDArray>> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 
@@ -84,7 +87,8 @@ class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Ite
         network.init();
         INDArray val = params.value().unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
 
         //Issue: for 2d data (MLPs etc) we can just stack the examples.
@@ -98,12 +102,12 @@ class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Ite
         int[] firstShape = null;
         boolean sizesDiffer = false;
         int tupleCount = 0;
-        while(iterator.hasNext()){
-            Tuple2<K,INDArray> t2 = iterator.next();
-            if(firstShape == null){
+        while (iterator.hasNext()) {
+            Tuple2<K, INDArray> t2 = iterator.next();
+            if (firstShape == null) {
                 firstShape = t2._2().shape();
-            } else if(!sizesDiffer){
-                for( int i=1; i<firstShape.length; i++ ) {
+            } else if (!sizesDiffer) {
+                for (int i = 1; i < firstShape.length; i++) {
                     if (firstShape[i] != featuresList.get(tupleCount - 1).size(i)) {
                         sizesDiffer = true;
                         break;
@@ -116,32 +120,32 @@ class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Ite
             tupleCount++;
         }
 
-        if(tupleCount == 0){
+        if (tupleCount == 0) {
             return Collections.emptyList();
         }
 
-        List<Tuple2<K,INDArray>> output = new ArrayList<>(tupleCount);
+        List<Tuple2<K, INDArray>> output = new ArrayList<>(tupleCount);
         int currentArrayIndex = 0;
 
-        while(currentArrayIndex < featuresList.size()) {
+        while (currentArrayIndex < featuresList.size()) {
             int firstIdx = currentArrayIndex;
             int nextIdx = currentArrayIndex;
             int examplesInBatch = 0;
             List<INDArray> toMerge = new ArrayList<>();
             firstShape = null;
             while (nextIdx < featuresList.size() && examplesInBatch < batchSize) {
-                if(firstShape == null){
+                if (firstShape == null) {
                     firstShape = featuresList.get(nextIdx).shape();
-                } else if(sizesDiffer){
+                } else if (sizesDiffer) {
                     boolean breakWhile = false;
-                    for( int i=1; i<firstShape.length; i++ ){
-                        if(firstShape[i] != featuresList.get(nextIdx).size(i)){
+                    for (int i = 1; i < firstShape.length; i++) {
+                        if (firstShape[i] != featuresList.get(nextIdx).size(i)) {
                             //Next example has a different size. So: don't add it to the current batch, just process what we have
                             breakWhile = true;
                             break;
                         }
                     }
-                    if(breakWhile){
+                    if (breakWhile) {
                         break;
                     }
                 }
@@ -155,9 +159,9 @@ class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Ite
             INDArray out = network.output(batchFeatures, false);
 
             examplesInBatch = 0;
-            for(int i=firstIdx; i<nextIdx; i++ ){
+            for (int i = firstIdx; i < nextIdx; i++) {
                 int numExamples = origSizeList.get(i);
-                INDArray outputSubset = getSubset(examplesInBatch, examplesInBatch+numExamples, out);
+                INDArray outputSubset = getSubset(examplesInBatch, examplesInBatch + numExamples, out);
                 examplesInBatch += numExamples;
 
                 output.add(new Tuple2<>(keyList.get(i), outputSubset));
@@ -172,14 +176,16 @@ class FeedForwardWithKeyFunctionAdapter<K> implements FlatMapFunctionAdapter<Ite
         return output;
     }
 
-    private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from){
-        switch(from.rank()){
+    private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from) {
+        switch (from.rank()) {
             case 2:
                 return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all());
             case 3:
-                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             case 4:
-                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all());
             default:
                 throw new RuntimeException("Invalid rank: " + from.rank());
         }

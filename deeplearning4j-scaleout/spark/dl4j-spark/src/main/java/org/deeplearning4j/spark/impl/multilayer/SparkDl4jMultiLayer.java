@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
@@ -29,19 +28,16 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
-import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.*;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
@@ -62,8 +58,7 @@ import scala.Tuple2;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Serializable;
-import java.util.*;
+import java.util.List;
 
 /**
  * Master class for spark
@@ -71,16 +66,13 @@ import java.util.*;
  * @author Adam Gibson, Alex Black
  */
 @Slf4j
-public class SparkDl4jMultiLayer implements Serializable {
+public class SparkDl4jMultiLayer extends SparkListenable {
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
     private transient JavaSparkContext sc;
-    private TrainingMaster trainingMaster;
     private MultiLayerConfiguration conf;
     private MultiLayerNetwork network;
     private double lastScore;
-
-    private List<IterationListener> listeners = new ArrayList<>();
 
     /**
      * Instantiate a multi layer spark instance
@@ -90,7 +82,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sparkContext the spark context to use
      * @param network      the network to use
      */
-    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network, TrainingMaster<?,?> trainingMaster) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network,
+                    TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
@@ -100,7 +93,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sparkContext the spark context to use
      * @param conf         the configuration of the network
      */
-    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf, TrainingMaster<?,?> trainingMaster) {
+    public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf,
+                    TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), initNetwork(conf), trainingMaster);
     }
 
@@ -110,15 +104,17 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param sc   the spark context to use
      * @param conf the configuration of the network
      */
-    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster<?,?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster<?, ?> trainingMaster) {
         this(sc.sc(), conf, trainingMaster);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network, TrainingMaster<?,?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network,
+                    TrainingMaster<?, ?> trainingMaster) {
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
-        if (!network.isInitCalled()) network.init();
+        if (!network.isInitCalled())
+            network.init();
         this.trainingMaster = trainingMaster;
 
         //Check if kryo configuration is correct:
@@ -145,7 +141,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     /**
      * @return The TrainingMaster for this network
      */
-    public TrainingMaster getTrainingMaster(){
+    public TrainingMaster getTrainingMaster() {
         return trainingMaster;
     }
 
@@ -215,7 +211,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(JavaRDD<DataSet> trainingData) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTraining(this, trainingData);
         return network;
@@ -231,13 +227,13 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fit(String path) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         JavaRDD<String> paths;
-        try{
+        try {
             paths = SparkUtils.listPaths(sc, path);
-        }catch(IOException e){
-            throw new RuntimeException("Error listing paths in directory",e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error listing paths in directory", e);
         }
 
         return fitPaths(paths);
@@ -257,7 +253,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param paths    List of paths
      * @return trained network
      */
-    public MultiLayerNetwork fitPaths(JavaRDD<String> paths){
+    public MultiLayerNetwork fitPaths(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPaths(this, paths);
         return network;
     }
@@ -286,77 +282,6 @@ public class SparkDl4jMultiLayer implements Serializable {
     public MultiLayerNetwork fitContinuousLabeledPoint(JavaRDD<LabeledPoint> rdd) {
         return fit(MLLibUtil.fromContinuousLabeledPoint(sc, rdd));
     }
-
-    /**
-     * This method allows you to specify IterationListeners for this model.
-     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
-     * using {@link #setListeners(StatsStorageRouter, Collection)}
-     *
-     * @param listeners    Listeners to set
-     */
-    public void setListeners(@NonNull Collection<IterationListener> listeners) {
-        setListeners(null, listeners);
-    }
-
-    /**
-     * This method allows you to specify IterationListeners for this model.
-     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
-     * using {@link #setListeners(StatsStorageRouter, Collection)}
-     *
-     * @param listeners    Listeners to set
-     */
-    public void setListeners(@NonNull IterationListener... listeners){
-        setListeners(Arrays.asList(listeners));
-    }
-
-    /**
-     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
-     * that implement the {@link RoutingIterationListener} interface)
-     *
-     * @param statsStorage Stats storage router to place the results into
-     * @param listeners    Listeners to set
-     */
-    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
-        setListeners(statsStorage, Arrays.asList(listeners));
-    }
-
-    /**
-     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
-     * that implement the {@link RoutingIterationListener} interface)
-     *
-     * @param statsStorage Stats storage router to place the results into
-     * @param listeners    Listeners to set
-     */
-    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
-        //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
-        StatsStorageRouterProvider routerProvider = null;
-        if(listeners != null) {
-            for(IterationListener l : listeners) {
-                if(l instanceof RoutingIterationListener) {
-                    RoutingIterationListener rl = (RoutingIterationListener)l;
-                    if(rl.getStorageRouter() == null){
-                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
-                    } else if(!(rl.getStorageRouter() instanceof Serializable)) {
-                        //Spark would throw a (probably cryptic) serialization exception later anyway...
-                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
-                    }
-
-                    //Need to give workers a router provider...
-                    if(routerProvider == null){
-                        routerProvider = new VanillaStatsStorageRouterProvider();
-                    }
-                }
-            }
-        }
-
-        this.listeners.clear();
-        if(listeners != null) {
-            this.listeners.addAll(listeners);
-            if (trainingMaster != null) trainingMaster.setListeners(statsStorage, this.listeners);
-        }
-    }
-
-
 
     /**
      * Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
@@ -401,7 +326,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      *                      in one go)
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
-        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(
+                        new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
 
         //Reduce to a single tuple, with example count + sum of scores
         Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
@@ -435,7 +361,8 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * {@code RDD<DataSet>} overload of {@link #scoreExamples(JavaRDD, boolean, int)}
+     * {@code RDD<DataSet>}
+     * overload of {@link #scoreExamples(JavaRDD, boolean, int)}
      */
     public JavaDoubleRDD scoreExamples(RDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return scoreExamples(data.toJavaRDD(), includeRegularizationTerms, batchSize);
@@ -454,8 +381,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
-                includeRegularizationTerms, batchSize));
+        return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -488,9 +415,10 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return A {@code JavaPairRDD<K,Double>} containing the scores of each example
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
-    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms, int batchSize) {
-        return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
-                includeRegularizationTerms, batchSize));
+    public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms,
+                    int batchSize) {
+        return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -501,8 +429,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param <K>          Type of data for key - may be anything
      * @return             Network output given the input, by key
      */
-    public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K,INDArray> featuresData, int batchSize){
-        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()), batchSize));
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
+        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
+                        sc.broadcast(conf.toJson()), batchSize));
     }
 
     /**
@@ -546,8 +475,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param minibatchSize Minibatch size to use when doing performing evaluation
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
-    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize){
-        int nOut = ((FeedForwardLayer)network.getOutputLayer().conf().getLayer()).getNOut();
+    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
+        int nOut = ((FeedForwardLayer) network.getOutputLayer().conf().getLayer()).getNOut();
         return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 
@@ -570,7 +499,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param data                    Test set data (to evaluate on)
      * @return ROC for the entire data set
      */
-    public ROC evaluateROC(JavaRDD<DataSet> data){
+    public ROC evaluateROC(JavaRDD<DataSet> data) {
         return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
@@ -582,7 +511,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
      * @return ROC for the entire data set
      */
-    public ROC evaluateROC(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+    public ROC evaluateROC(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize) {
         return doEvaluation(data, new ROC(thresholdSteps), evaluationMinibatchSize);
     }
 
@@ -592,7 +521,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param data                    Test set data (to evaluate on)
      * @return ROC for the entire data set
      */
-    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data){
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data) {
         return evaluateROCMultiClass(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
@@ -604,7 +533,7 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
      * @return ROCMultiClass for the entire data set
      */
-    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize) {
         return doEvaluation(data, new ROCMultiClass(thresholdSteps), evaluationMinibatchSize);
     }
 
@@ -628,7 +557,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize) {
         Evaluation e = new Evaluation();
         e = doEvaluation(data, e, evalBatchSize);
-        if(labelsList != null){
+        if (labelsList != null) {
             e.setLabelsList(labelsList);
         }
         return e;
@@ -644,12 +573,9 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param <T>             Type of evaluation instance to return
      * @return                IEvaluation instance
      */
-    public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize){
-        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(
-                sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()),
-                evalBatchSize,
-                emptyEvaluation);
+    public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
+        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(sc.broadcast(conf.toJson()),
+                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
         JavaRDD<T> evaluations = data.mapPartitions(evalFn);
         return evaluations.reduce(new IEvaluationReduceFunction<T>());
     }

@@ -31,8 +31,7 @@ public class InMemoryLookupTableTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
 
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
@@ -40,36 +39,28 @@ public class InMemoryLookupTableTest {
         BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheSource)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
         assertEquals(244, cacheSource.numWords());
 
-        InMemoryLookupTable<VocabWord> mem1 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                .vectorLength(100)
-                .cache(cacheSource)
-                .seed(17)
-                .build();
+        InMemoryLookupTable<VocabWord> mem1 =
+                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                        .cache(cacheSource).seed(17).build();
 
         mem1.resetWeights(true);
 
-        InMemoryLookupTable<VocabWord> mem2 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                .vectorLength(100)
-                .cache(cacheSource)
-                .seed(15)
-                .build();
+        InMemoryLookupTable<VocabWord> mem2 =
+                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                        .cache(cacheSource).seed(15).build();
 
         mem2.resetWeights(true);
 
@@ -78,6 +69,7 @@ public class InMemoryLookupTableTest {
         mem2.consume(mem1);
 
         assertEquals(mem1.vector("day"), mem2.vector("day"));
+
     }
 
 
@@ -86,8 +78,7 @@ public class InMemoryLookupTableTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
 
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
@@ -95,53 +86,40 @@ public class InMemoryLookupTableTest {
         BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
 
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder()
-                .iterator(underlyingIterator)
-                .tokenizerFactory(t)
-                .build();
+        SentenceTransformer transformer =
+                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
 
-        AbstractSequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                        new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheSource)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
         assertEquals(244, cacheSource.numWords());
 
-        InMemoryLookupTable<VocabWord> mem1 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                .vectorLength(100)
-                .cache(cacheSource)
-                .build();
+        InMemoryLookupTable<VocabWord> mem1 =
+                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                        .cache(cacheSource).build();
 
         mem1.resetWeights(true);
 
 
 
-        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>()
-                .build();
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile())
-                .build();
+                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
 
-        transformer = new SentenceTransformer.Builder()
-                .iterator(labelAwareIterator)
-                .tokenizerFactory(t)
-                .build();
+        transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
 
-        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer)
-                .build();
+        sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
-                .addSource(sequenceIterator, 1)
-                .setTargetVocabCache(cacheTarget)
-                .build();
+                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
 
         vocabTransfer.buildMergedVocabulary(cacheSource, true);
 
@@ -149,11 +127,9 @@ public class InMemoryLookupTableTest {
         assertEquals(cacheSource.numWords() + 3, cacheTarget.numWords());
 
 
-        InMemoryLookupTable<VocabWord> mem2 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                .vectorLength(100)
-                .cache(cacheTarget)
-                .seed(18)
-                .build();
+        InMemoryLookupTable<VocabWord> mem2 =
+                        (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().vectorLength(100)
+                                        .cache(cacheTarget).seed(18).build();
 
         mem2.resetWeights(true);
 

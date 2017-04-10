@@ -1,6 +1,5 @@
 package org.deeplearning4j.streaming.kafka;
 
-import kafka.serializer.StringEncoder;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.deeplearning4j.streaming.embedded.EmbeddedKafkaCluster;
@@ -27,21 +26,17 @@ public class NDArrayPublisherTests {
         embeddedKafkaCluster.startup();
         embeddedKafkaCluster.createTopics(topicName);
         CamelContext camelContext = new DefaultCamelContext();
-        INDArray arr = Nd4j.linspace(1,4,4);
-        String kafkaUri = KafkaUriBuilder.builder()
-                .kafkaBroker(embeddedKafkaCluster.getBrokerList())
-                .consumingTopic(topicName).groupId("dl4jgroup")
-                .zooKeeperHost("localhost").zooKeeperPort(embeddedZookeeper.getPort())
-                .build().uri();
-        NDArrayPublisher publisher = NDArrayPublisher.builder()
-                .camelContext(camelContext).kafkaUri(kafkaUri).topicName(topicName)
-                .build();
+        INDArray arr = Nd4j.linspace(1, 4, 4);
+        String kafkaUri = KafkaUriBuilder.builder().kafkaBroker(embeddedKafkaCluster.getBrokerList())
+                        .consumingTopic(topicName).groupId("dl4jgroup").zooKeeperHost("localhost")
+                        .zooKeeperPort(embeddedZookeeper.getPort()).build().uri();
+        NDArrayPublisher publisher = NDArrayPublisher.builder().camelContext(camelContext).kafkaUri(kafkaUri)
+                        .topicName(topicName).build();
         camelContext.start();
         publisher.start();
 
-        NDArrayConsumer consumer = NDArrayConsumer.builder()
-                .kafkaUri(kafkaUri).topicName(topicName)
-                .camelContext(camelContext).build();
+        NDArrayConsumer consumer = NDArrayConsumer.builder().kafkaUri(kafkaUri).topicName(topicName)
+                        .camelContext(camelContext).build();
         consumer.start();
 
 
@@ -50,7 +45,7 @@ public class NDArrayPublisherTests {
         Thread.sleep(5000);
 
         INDArray get = consumer.getINDArray();
-        assertEquals(arr,get);
+        assertEquals(arr, get);
 
 
         embeddedKafkaCluster.shutdown();

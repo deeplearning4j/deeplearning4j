@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -36,22 +36,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
-    private InputType outputType;
-
-    public PreprocessorVertex(InputPreProcessor preProcessor) {
-        this(preProcessor, null);
-    }
 
     /**
      * @param preProcessor The input preprocessor
-     * @param outputType Override for the type of output used in {@link #getOutputType(InputType...)}. This may be necessary
-     *                   for the automatic addition of other processors in the network, given a custom/non-standard InputPreProcessor
-     * @deprecated This constructor (and the "InputType override" functionality previously used is no longer necessary.
      */
-    @Deprecated
-    public PreprocessorVertex(InputPreProcessor preProcessor, InputType outputType) {
+    public PreprocessorVertex(InputPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
-        this.outputType = outputType;
     }
 
     @Override
@@ -61,7 +51,8 @@ public class PreprocessorVertex extends GraphVertex {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof PreprocessorVertex)) return false;
+        if (!(o instanceof PreprocessorVertex))
+            return false;
         return ((PreprocessorVertex) o).preProcessor.equals(preProcessor);
     }
 
@@ -71,21 +62,20 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop){
+    public int numParams(boolean backprop) {
         return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.PreprocessorVertex(graph, name, idx, preProcessor);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if (vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects "
-                + "exactly one input");
-        if (outputType != null) return outputType;   //Allows user to override for custom preprocessors
+        if (vertexInputs.length != 1)
+            throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects " + "exactly one input");
 
         return preProcessor.getOutputType(vertexInputs[0]);
     }

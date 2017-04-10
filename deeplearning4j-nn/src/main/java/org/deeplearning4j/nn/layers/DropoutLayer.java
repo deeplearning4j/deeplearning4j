@@ -13,7 +13,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.DropoutLayer> {
 
-    public DropoutLayer(NeuralNetConfiguration conf) { super(conf); }
+    public DropoutLayer(NeuralNetConfiguration conf) {
+        super(conf);
+    }
 
     public DropoutLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
@@ -41,30 +43,30 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray delta = epsilon.dup();
 
-        if(maskArray != null){
+        if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
         Gradient ret = new DefaultGradient();
-        return new Pair<>(ret,delta);
+        return new Pair<>(ret, delta);
     }
 
     @Override
     public INDArray preOutput(boolean training) {
-        if(input == null)
+        if (input == null)
             throw new IllegalArgumentException("No null input allowed");
         INDArray dummy = input;
         applyDropOutIfNecessary(training);
 
         INDArray ret;
-        if(training) {
+        if (training) {
             //dup required: need to keep original input for backprop
             ret = input.dup();
         } else {
             ret = input;
         }
 
-        if(maskArray != null){
+        if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }
 
@@ -78,7 +80,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public Layer transpose(){
+    public Layer transpose() {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -99,7 +101,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public INDArray params(){
+    public INDArray params() {
         return null;
     }
 }

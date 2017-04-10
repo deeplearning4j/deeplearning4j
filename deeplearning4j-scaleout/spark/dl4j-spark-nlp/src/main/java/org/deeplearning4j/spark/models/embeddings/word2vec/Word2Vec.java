@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -58,13 +58,15 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable  {
+public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable {
 
     private INDArray trainedSyn1;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
     private int MAX_EXP = 6;
-    @Getter private double[] expTable;
-    @Getter protected VectorsConfiguration configuration;
+    @Getter
+    private double[] expTable;
+    @Getter
+    protected VectorsConfiguration configuration;
 
     // Input by user only via setters
     private int nGrams = 1;
@@ -94,31 +96,35 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
     }
 
     public Map<String, Object> getTokenizerVarMap() {
-        return new HashMap<String, Object>() {{
-            put("numWords", minWordFrequency);
-            put("nGrams", nGrams);
-            put("tokenizer", tokenizer);
-            put("tokenPreprocessor", tokenPreprocessor);
-            put("removeStop", removeStop);
-            put("stopWords", stopWords);
-            put("useUnk", useUnknown);
-            put("vectorsConfiguration", configuration);
-        }};
+        return new HashMap<String, Object>() {
+            {
+                put("numWords", minWordFrequency);
+                put("nGrams", nGrams);
+                put("tokenizer", tokenizer);
+                put("tokenPreprocessor", tokenPreprocessor);
+                put("removeStop", removeStop);
+                put("stopWords", stopWords);
+                put("useUnk", useUnknown);
+                put("vectorsConfiguration", configuration);
+            }
+        };
     }
 
     public Map<String, Object> getWord2vecVarMap() {
-        return new HashMap<String, Object>() {{
-            put("vectorLength", layerSize);
-            put("useAdaGrad", useAdeGrad);
-            put("negative", negative);
-            put("window", window);
-            put("alpha", learningRate.get());
-            put("minAlpha", minLearningRate);
-            put("iterations", numIterations);
-            put("seed", seed);
-            put("maxExp", MAX_EXP);
-            put("batchSize", batchSize);
-        }};
+        return new HashMap<String, Object>() {
+            {
+                put("vectorLength", layerSize);
+                put("useAdaGrad", useAdeGrad);
+                put("negative", negative);
+                put("window", window);
+                put("alpha", learningRate.get());
+                put("minAlpha", minLearningRate);
+                put("iterations", numIterations);
+                put("seed", seed);
+                put("maxExp", MAX_EXP);
+                put("batchSize", batchSize);
+            }
+        };
     }
 
     /**
@@ -173,21 +179,21 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         //////////////////////////////////////
         log.info("Building Huffman Tree ...");
         // Building Huffman Tree would update the code and point in each of the vocabWord in vocabCache
-/*
+        /*
         We don't need to build tree here, since it was built earlier, at TextPipeline.buildVocabCache() call.
-
+        
         Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
         huffman.applyIndexes(vocabCache);
-*/
+        */
         //////////////////////////////////////
         log.info("Calculating cumulative sum of sentence counts ...");
-        sentenceCumSumCountRDD =  new CountCumSum(sentenceWordsCountRDD).buildCumSum();
+        sentenceCumSumCountRDD = new CountCumSum(sentenceWordsCountRDD).buildCumSum();
 
         //////////////////////////////////////
         log.info("Mapping to RDD(vocabWordList, cumulative sentence count) ...");
-        vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCumSumCountRDD)
-                .setName("vocabWordListSentenceCumSumRDD").cache();
+        vocabWordListSentenceCumSumRDD =
+                        vocabWordListRDD.zip(sentenceCumSumCountRDD).setName("vocabWordListSentenceCumSumRDD");
 
         /////////////////////////////////////
         log.info("Broadcasting word2vec variables to workers ...");
@@ -198,10 +204,11 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
-        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
+        FlatMapFunction firstIterFunc =
+                        new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
         @SuppressWarnings("unchecked")
-        JavaRDD< Pair<VocabWord, INDArray> > indexSyn0UpdateEntryRDD =
-                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
+        JavaRDD<Pair<VocabWord, INDArray>> indexSyn0UpdateEntryRDD =
+                        vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
 
         // Get all the syn0 updates into a list in driver
         List<Pair<VocabWord, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
@@ -219,7 +226,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             // for proper averaging we need to divide resulting sums later, by the number of additions
             if (updates.containsKey(syn0UpdateEntry.getFirst())) {
                 updates.get(syn0UpdateEntry.getFirst()).incrementAndGet();
-            } else updates.put(syn0UpdateEntry.getFirst(), new AtomicInteger(1));
+            } else
+                updates.put(syn0UpdateEntry.getFirst(), new AtomicInteger(1));
 
             if (!updaters.containsKey(syn0UpdateEntry.getFirst().getVocabId())) {
                 updaters.put(syn0UpdateEntry.getFirst().getVocabId(), syn0UpdateEntry.getFirst().getAffinityId());
@@ -227,9 +235,10 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         }
 
         // Updating syn0 second pass: average obtained vectors
-        for (Map.Entry<VocabWord, AtomicInteger> entry: updates.entrySet()) {
+        for (Map.Entry<VocabWord, AtomicInteger> entry : updates.entrySet()) {
             if (entry.getValue().get() > 1) {
-                if (entry.getValue().get() > maxRep) maxRep = entry.getValue().get();
+                if (entry.getValue().get() > maxRep)
+                    maxRep = entry.getValue().get();
                 syn0.getRow(entry.getKey().getIndex()).divi(entry.getValue().get());
             }
         }
@@ -298,7 +307,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.negative = configuration.getNegative();
             this.minWordFrequency = configuration.getMinWordFrequency();
             this.seed = configuration.getSeed();
-//            this.stopWords = configuration.get
+            //            this.stopWords = configuration.get
 
             //  TODO: investigate this
             //this.hugeModelExpected = configuration.isHugeModelExpected();
@@ -306,11 +315,12 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.batchSize = configuration.getBatchSize();
             this.layerSize = configuration.getLayersSize();
 
-          //  this.learningRateDecayWords = configuration.getLearningRateDecayWords();
+            //  this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.windowSize = configuration.getWindow();
 
-            if (configuration.getStopList() != null) this.stopWords.addAll(configuration.getStopList());
+            if (configuration.getStopList() != null)
+                this.stopWords.addAll(configuration.getStopList());
         }
 
         /**
@@ -512,8 +522,9 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder stopWords(@NonNull List<String> stopWords) {
-            for (String word: stopWords) {
-                if (!this.stopWords.contains(word)) this.stopWords.add(word);
+            for (String word : stopWords) {
+                if (!this.stopWords.contains(word))
+                    this.stopWords.add(word);
             }
             return this;
         }

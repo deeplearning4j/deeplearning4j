@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <artifactId>deeplearning4j-scaleout</artifactId>
     <packaging>pom</packaging>
@@ -36,5 +36,14 @@
         <module>deeplearning4j-scaleout-parallelwrapper</module>
         <module>deeplearning4j-scaleout-parallelwrapper-parameter-server</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
 
 </project>

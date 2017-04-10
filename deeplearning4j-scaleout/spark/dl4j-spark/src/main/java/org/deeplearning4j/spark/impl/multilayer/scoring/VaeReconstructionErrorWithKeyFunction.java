@@ -22,12 +22,15 @@ import java.util.Iterator;
  * @author Alex Black
  * @see VaeReconstructionProbWithKeyFunction
  */
-public class VaeReconstructionErrorWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray>>, K, Double> {
+public class VaeReconstructionErrorWithKeyFunction<K>
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray>>, K, Double> {
 
-    public VaeReconstructionErrorWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public VaeReconstructionErrorWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    int batchSize) {
         super(new VaeReconstructionErrorWithKeyFunctionAdapter(params, jsonConfig, batchSize));
     }
 }
+
 
 /**
  * Function to calculate the reconstruction error for a variational autoencoder, that is the first layer in a
@@ -45,25 +48,29 @@ class VaeReconstructionErrorWithKeyFunctionAdapter<K> extends BaseVaeScoreWithKe
      * @param jsonConfig        MultiLayerConfiguration, as json
      * @param batchSize         Batch size to use when scoring
      */
-    public VaeReconstructionErrorWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public VaeReconstructionErrorWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+                    int batchSize) {
         super(params, jsonConfig, batchSize);
     }
 
     @Override
     public VariationalAutoencoder getVaeLayer() {
-        MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson((String)jsonConfig.getValue()));
+        MultiLayerNetwork network =
+                        new MultiLayerNetwork(MultiLayerConfiguration.fromJson((String) jsonConfig.getValue()));
         network.init();
-        INDArray val = ((INDArray)params.value()).unsafeDuplication();
+        INDArray val = ((INDArray) params.value()).unsafeDuplication();
         if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+            throw new IllegalStateException(
+                            "Network did not have same number of parameters as the broadcast set parameters");
         network.setParameters(val);
 
         Layer l = network.getLayer(0);
         if (!(l instanceof VariationalAutoencoder)) {
-            throw new RuntimeException("Cannot use VaeReconstructionErrorWithKeyFunction on network that doesn't have a VAE "
-                    + "layer as layer 0. Layer type: " + l.getClass());
+            throw new RuntimeException(
+                            "Cannot use VaeReconstructionErrorWithKeyFunction on network that doesn't have a VAE "
+                                            + "layer as layer 0. Layer type: " + l.getClass());
         }
-        return (VariationalAutoencoder)l;
+        return (VariationalAutoencoder) l;
     }
 
     @Override

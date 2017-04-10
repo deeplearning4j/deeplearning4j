@@ -16,7 +16,9 @@ public interface IEvaluation<T extends IEvaluation> extends Serializable {
 
     void eval(INDArray labels, INDArray networkPredictions);
 
-    void eval(INDArray labels, INDArray networkPredictions, List<? extends Serializable> recordMetaData );
+    void eval(INDArray labels, INDArray networkPredictions, List<? extends Serializable> recordMetaData);
+
+    void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray);
 
     void evalTimeSeries(INDArray labels, INDArray predicted);
 

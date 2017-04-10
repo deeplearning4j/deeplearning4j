@@ -13,8 +13,12 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Data
-@ToString(exclude="referencedContent")
+@ToString(exclude = "referencedContent")
 public class LabelledDocument {
+
+    // optional field
+    private String id;
+
     // initial text representation of current document
     private String content;
 

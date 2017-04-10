@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,7 @@ import java.net.URL;
 public class CurvesDataFetcher extends BaseDataFetcher {
 
     public final static String CURVES_URL = "https://s3.amazonaws.com/dl4j-distribution/curves.ser";
-    public final static String LOCAL_DIR_NAME =  "curves";
+    public final static String LOCAL_DIR_NAME = "curves";
     public final static String CURVES_FILE_NAME = "curves.ser";
     private DataSet data;
 
@@ -54,20 +54,19 @@ public class CurvesDataFetcher extends BaseDataFetcher {
         File tmpDir = new File(System.getProperty("user.home"));
 
         File baseDir = new File(tmpDir, LOCAL_DIR_NAME);
-        if(!(baseDir.isDirectory() || baseDir.mkdir())) {
+        if (!(baseDir.isDirectory() || baseDir.mkdir())) {
             throw new IOException("Could not mkdir " + baseDir);
         }
 
-        File dataFile = new File(baseDir,CURVES_FILE_NAME);
+        File dataFile = new File(baseDir, CURVES_FILE_NAME);
 
-        if(!dataFile.exists() || !dataFile.isFile()) {
+        if (!dataFile.exists() || !dataFile.isFile()) {
             log.info("Downloading curves dataset...");
             FileUtils.copyURLToFile(new URL(CURVES_URL), dataFile);
         }
 
 
         data = SerializationUtils.readObject(dataFile);
-
 
 
 
@@ -88,17 +87,17 @@ public class CurvesDataFetcher extends BaseDataFetcher {
      */
     @Override
     public void fetch(int numExamples) {
-        if(cursor >= data.numExamples()) {
+        if (cursor >= data.numExamples()) {
             cursor = data.numExamples();
         }
 
         curr = data.get(ArrayUtil.range(cursor, cursor + numExamples));
         log.info("Fetched " + curr.numExamples());
-        if(cursor + numExamples < data.numExamples())
+        if (cursor + numExamples < data.numExamples())
             cursor += numExamples;
         //always stay at the end
-        else if(cursor + numExamples > data.numExamples())
-            cursor = data.numExamples()  -1;
+        else if (cursor + numExamples > data.numExamples())
+            cursor = data.numExamples() - 1;
 
     }
 }

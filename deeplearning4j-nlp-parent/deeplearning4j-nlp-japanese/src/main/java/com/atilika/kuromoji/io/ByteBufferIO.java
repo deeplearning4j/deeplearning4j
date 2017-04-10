@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -25,9 +25,7 @@ import java.nio.channels.WritableByteChannel;
 public class ByteBufferIO {
 
     public static ByteBuffer read(InputStream input) throws IOException {
-        DataInputStream dataInput = new DataInputStream(
-            new BufferedInputStream(input)
-        );
+        DataInputStream dataInput = new DataInputStream(new BufferedInputStream(input));
 
         int size = dataInput.readInt();
         ByteBuffer buffer = ByteBuffer.allocate(size);
@@ -40,9 +38,7 @@ public class ByteBufferIO {
     }
 
     public static void write(OutputStream output, ByteBuffer buffer) throws IOException {
-        DataOutputStream dataOutput = new DataOutputStream(
-            new BufferedOutputStream(output)
-        );
+        DataOutputStream dataOutput = new DataOutputStream(new BufferedOutputStream(output));
 
         dataOutput.writeInt(buffer.position());
         buffer.flip();

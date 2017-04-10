@@ -17,25 +17,25 @@ import java.net.URI;
  *
  * @author Alex Black
  */
-public class PathToMultiDataSetFunction implements Function<String,MultiDataSet> {
-    public static final int BUFFER_SIZE = 4194304;  //4 MB
+public class PathToMultiDataSetFunction implements Function<String, MultiDataSet> {
+    public static final int BUFFER_SIZE = 4194304; //4 MB
 
     private FileSystem fileSystem;
 
     @Override
     public MultiDataSet call(String path) throws Exception {
-        if(fileSystem == null){
-            try{
+        if (fileSystem == null) {
+            try {
                 fileSystem = FileSystem.get(new URI(path), new Configuration());
-            }catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
-        try(FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)){
+        try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
             ds.load(inputStream);
-        }catch(IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 

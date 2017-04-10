@@ -30,8 +30,10 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.CNNFlat)) {
-            throw new IllegalStateException("Invalid input type (layer index = " + layerIndex + ", layer name=\"" + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
+        if (inputType == null || (inputType.getType() != InputType.Type.FF
+                        && inputType.getType() != InputType.Type.CNNFlat)) {
+            throw new IllegalStateException("Invalid input type (layer index = " + layerIndex + ", layer name=\""
+                            + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
         return InputType.feedForward(nOut);
@@ -39,12 +41,14 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.CNNFlat)) {
-            throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
+        if (inputType == null || (inputType.getType() != InputType.Type.FF
+                        && inputType.getType() != InputType.Type.CNNFlat)) {
+            throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
+                            + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
-            if(inputType.getType() == InputType.Type.FF){
+            if (inputType.getType() == InputType.Type.FF) {
                 InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
                 this.nIn = f.getSize();
             } else {
@@ -57,7 +61,8 @@ public abstract class FeedForwardLayer extends Layer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
-            throw new IllegalStateException("Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+            throw new IllegalStateException(
+                            "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
         }
 
         switch (inputType.getType()) {
@@ -70,8 +75,8 @@ public abstract class FeedForwardLayer extends Layer {
                 return new RnnToFeedForwardPreProcessor();
             case CNN:
                 //CNN -> FF
-                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
-                return new CnnToFeedForwardPreProcessor(c.getHeight(),c.getWidth(),c.getDepth());
+                InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getDepth());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }
@@ -79,11 +84,11 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case DefaultParamInitializer.WEIGHT_KEY:
                 return l1;
             case DefaultParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l1Bias;
             default:
                 throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
@@ -91,11 +96,11 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public double getL2ByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case DefaultParamInitializer.WEIGHT_KEY:
                 return l2;
             case DefaultParamInitializer.BIAS_KEY:
-                return 0.0;
+                return l2Bias;
             default:
                 throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
@@ -103,11 +108,11 @@ public abstract class FeedForwardLayer extends Layer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        switch (paramName){
+        switch (paramName) {
             case DefaultParamInitializer.WEIGHT_KEY:
                 return learningRate;
             case DefaultParamInitializer.BIAS_KEY:
-                if(!Double.isNaN(biasLearningRate)){
+                if (!Double.isNaN(biasLearningRate)) {
                     //Bias learning rate has been explicitly set
                     return biasLearningRate;
                 } else {

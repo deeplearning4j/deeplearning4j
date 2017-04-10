@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * This class is used to build vocabulary and sequences out of graph, via GraphWalkers
  *
- * WORK IS IN PROGRESS, DO NOT USE
  * @author raver119@gmail.com
  */
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
@@ -31,8 +30,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
     protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
 
-    protected GraphTransformer() {
-    }
+    protected GraphTransformer() {}
 
     /**
      * This method handles required initialization for GraphTransformer
@@ -42,22 +40,23 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         int nVertices = sourceGraph.numVertices();
         //int[] degrees = new int[nVertices];
         //for( int i=0; i<nVertices; i++ )
-           // degrees[i] = sourceGraph.getVertexDegree(i);
-/*
+        // degrees[i] = sourceGraph.getVertexDegree(i);
+        /*
         for (int y = 0; y < nVertices; y+= 20) {
             int[] copy = Arrays.copyOfRange(degrees, y, y+20);
             System.out.println("D: " + Arrays.toString(copy));
         }
-*/
-//        GraphHuffman huffman = new GraphHuffman(nVertices);
-//        huffman.buildTree(degrees);
+        */
+        //        GraphHuffman huffman = new GraphHuffman(nVertices);
+        //        huffman.buildTree(degrees);
 
         log.info("Transferring Huffman tree info to nodes...");
         for (int i = 0; i < nVertices; i++) {
             T element = sourceGraph.getVertex(i).getValue();
             element.setElementFrequency(sourceGraph.getConnectedVertices(i).size());
 
-            if (vocabCache != null) vocabCache.addToken(element);
+            if (vocabCache != null)
+                vocabCache.addToken(element);
         }
 
         if (vocabCache != null) {
@@ -90,10 +89,13 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
                 Sequence<T> sequence = walker.next();
                 sequence.setSequenceId(counter.getAndIncrement());
 
-                if (labelsProvider != null) {
-                    // TODO: sequence labels to be implemented for graph walks
-                    sequence.setSequenceLabel(labelsProvider.getLabel(sequence.getSequenceId()));
-                }
+                // we might already have labels defined from walker
+                if (walker.isLabelEnabled() && sequence.getSequenceLabels() == null)
+                    if (labelsProvider != null) {
+                        // TODO: sequence labels to be implemented for graph walks
+                        sequence.setSequenceLabel(labelsProvider.getLabel(sequence.getSequenceId()));
+                    }
+
                 return sequence;
             }
         };
@@ -106,7 +108,15 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         protected boolean shuffle = true;
         protected VocabCache<T> vocabCache;
 
-        public Builder(IGraph<T, ?> sourceGraph) {
+        public Builder() {
+            //
+        }
+
+        public Builder(@NonNull GraphWalker<T> walker) {
+            this.walker = walker;
+        }
+
+        public Builder(@NonNull IGraph<T, ?> sourceGraph) {
             this.sourceGraph = sourceGraph;
         }
 
@@ -132,16 +142,20 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         }
 
         public GraphTransformer<T> build() {
+            if (this.walker == null)
+                throw new IllegalStateException("Please provide GraphWalker instance.");
+
             GraphTransformer<T> transformer = new GraphTransformer<>();
+            if (this.sourceGraph == null)
+                this.sourceGraph = walker.getSourceGraph();
+
             transformer.sourceGraph = this.sourceGraph;
             transformer.labelsProvider = this.labelsProvider;
             transformer.shuffle = this.shuffle;
             transformer.vocabCache = this.vocabCache;
+            transformer.walker = this.walker;
 
-            if (this.walker == null)
-                throw new IllegalStateException("Please provide GraphWalker instance.");
-            else transformer.walker = this.walker;
-
+            // FIXME: get rid of this
             transformer.initialize();
 
             return transformer;

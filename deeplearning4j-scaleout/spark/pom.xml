@@ -20,11 +20,11 @@
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark_2.11</artifactId>
-    <version>0.7.3_spark_1-SNAPSHOT</version>
+    <version>0.8.1_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -32,12 +32,21 @@
         <module>dl4j-spark</module>
         <module>dl4j-spark-nlp</module>
         <module>dl4j-spark-parameterserver</module>
+        <module>dl4j-spark-nlp-java8</module>
+        <module>dl4j-spark-ml</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-       </properties>
+        <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom. Otherwise,
+         the properties will be resolved to their defaults (and not the values present during the build). Whereas when
+         defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
+          (in different pom files) instead of a single global property -->
+        <spark.version>1.6.2</spark.version>
+        <spark.major.version>1</spark.major.version>
+        <datavec.spark.version>0.8.1_spark_1-SNAPSHOT</datavec.spark.version>
+    </properties>
 
 
     <build>
@@ -46,7 +55,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
+                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -61,8 +70,8 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
                 <version>${maven-scala-plugin.version}</version>
                 <executions>
                     <execution>
@@ -142,6 +151,13 @@
                 <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
                 <spark.version>1.2.0-cdh5.3.0</spark.version>
             </properties>
+        </profile>
+
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
         </profile>
     </profiles>
 </project>

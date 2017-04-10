@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -14,6 +15,8 @@ import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -41,23 +44,21 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Slf4j
 public class GradientCheckUtil {
 
-    private static Logger log = LoggerFactory.getLogger(GradientCheckUtil.class);
+    private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
+                    Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
+                                    Activation.ELU.getActivationFunction().getClass(),
+                                    Activation.IDENTITY.getActivationFunction().getClass(),
+                                    Activation.RATIONALTANH.getActivationFunction().getClass(),
+                                    Activation.SIGMOID.getActivationFunction().getClass(),
+                                    Activation.SOFTMAX.getActivationFunction().getClass(),
+                                    Activation.SOFTPLUS.getActivationFunction().getClass(),
+                                    Activation.SOFTSIGN.getActivationFunction().getClass(),
+                                    Activation.TANH.getActivationFunction().getClass());
 
-    private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS = Arrays.asList(
-            Activation.CUBE.getActivationFunction().getClass(),
-            Activation.ELU.getActivationFunction().getClass(),
-            Activation.IDENTITY.getActivationFunction().getClass(),
-            Activation.RATIONALTANH.getActivationFunction().getClass(),
-            Activation.SIGMOID.getActivationFunction().getClass(),
-            Activation.SOFTMAX.getActivationFunction().getClass(),
-            Activation.SOFTPLUS.getActivationFunction().getClass(),
-            Activation.SOFTSIGN.getActivationFunction().getClass(),
-            Activation.TANH.getActivationFunction().getClass());
-
-    private GradientCheckUtil() {
-    }
+    private GradientCheckUtil() {}
 
     /**
      * Check backprop gradients for a MultiLayerNetwork.
@@ -73,42 +74,54 @@ public class GradientCheckUtil {
      * @param labels Labels/targets to use to calculate backprop gradient. May be mini-batch data.
      * @return true if gradients are passed, false otherwise.
      */
-    public static boolean checkGradients( MultiLayerNetwork mln, double epsilon, double maxRelError, double minAbsoluteError,
-                                          boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
         //Basic sanity checks on input:
-        if(epsilon <= 0.0 || epsilon > 0.1)
+        if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if(maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
-        if( !(mln.getOutputLayer() instanceof IOutputLayer))
+        if (maxRelError <= 0.0 || maxRelError > 0.25)
+            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
+        if (!(mln.getOutputLayer() instanceof IOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
+
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
 
         //Check network configuration:
 
         int layerCount = 0;
-        for(NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()){
+        for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
             org.deeplearning4j.nn.conf.Updater u = n.getLayer().getUpdater();
-            if(u == org.deeplearning4j.nn.conf.Updater.SGD){
+            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
                 //Must have LR of 1.0
                 double lr = n.getLayer().getLearningRate();
-                if(lr != 1.0){
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer " + layerCount + "; got " + u + " with lr=" + lr);
+                if (lr != 1.0) {
+                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
+                                    + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                    + n.getLayer().getLayerName() + "\"");
                 }
-            } else if( u != org.deeplearning4j.nn.conf.Updater.NONE ){
-                throw new IllegalStateException("Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
+                throw new IllegalStateException(
+                                "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
             }
 
             double dropout = n.getLayer().getDropOut();
-            if( n.isUseRegularization() && dropout != 0.0 ){
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = " + dropout + " for layer " + layerCount);
+            if (n.isUseRegularization() && dropout != 0.0) {
+                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
+                                + dropout + " for layer " + layerCount);
             }
 
             IActivation activation = n.getLayer().getActivationFn();
-            if(activation != null){
-                if(!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())){
-                    log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: " + activation.getClass() +
-                            ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not " +
-                            "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+            if (activation != null) {
+                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                    log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
+                                    + activation.getClass()
+                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
                 }
             }
         }
@@ -116,22 +129,22 @@ public class GradientCheckUtil {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
-        Pair<Gradient,Double> gradAndScore = mln.gradientAndScore();
+        Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
         updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
-        INDArray originalParams = mln.params().dup();   //need dup: params are a *view* of full parameters
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
 
-        Map<String,INDArray> paramTable = mln.paramTable();
+        Map<String, INDArray> paramTable = mln.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         int[] paramEnds = new int[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
-        for( int i=1; i<paramEnds.length; i++ ){
-            paramEnds[i] = paramEnds[i-1] + paramTable.get(paramNames.get(i)).length();
+        for (int i = 1; i < paramEnds.length; i++) {
+            paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
         }
 
 
@@ -140,10 +153,10 @@ public class GradientCheckUtil {
         DataSet ds = new DataSet(input, labels);
         int currParamNameIdx = 0;
 
-        INDArray params = mln.params();     //Assumption here: params is a view that we can modify in-place
-        for(int i = 0; i < nParams; i++) {
+        INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
+        for (int i = 0; i < nParams; i++) {
             //Get param name
-            if(i >= paramEnds[currParamNameIdx]){
+            if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
@@ -164,45 +177,48 @@ public class GradientCheckUtil {
             double scoreDelta = scorePlus - scoreMinus;
 
             double numericalGradient = scoreDelta / (2 * epsilon);
-            if(Double.isNaN(numericalGradient))
+            if (Double.isNaN(numericalGradient))
                 throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
 
             double backpropGradient = gradientToCheck.getDouble(i);
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
-            double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
-            if( backpropGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
+            double relError = Math.abs(backpropGradient - numericalGradient)
+                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+            if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
-            if(relError > maxError) maxError = relError;
-            if(relError > maxRelError || Double.isNaN(relError)) {
+            if (relError > maxError)
+                maxError = relError;
+            if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
-                if(absError < minAbsoluteError){
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                            + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
+                if (absError < minAbsoluteError) {
+                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
                 } else {
                     if (print)
-                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                                + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
-            }
-            else if(print) {
-                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                        + ", relError= " + relError );
+            } else if (print) {
+                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
+                                + numericalGradient + ", relError= " + relError);
             }
         }
 
-        if(print) {
+        if (print) {
             int nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, " + totalNFailures + " failed. Largest relative error = " + maxError );
+            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+                            + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
         return totalNFailures == 0;
     }
-
-
 
 
 
@@ -219,80 +235,98 @@ public class GradientCheckUtil {
      * @param labels Labels/targets (output) arrays to use to calculate backprop gradient. May be mini-batch data.
      * @return true if gradients are passed, false otherwise.
      */
-    public static boolean checkGradients( ComputationGraph graph, double epsilon, double maxRelError, double minAbsoluteError,
-                                          boolean print, boolean exitOnFirstError, INDArray[] inputs, INDArray[] labels) {
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                    INDArray[] labels) {
         //Basic sanity checks on input:
-        if(epsilon <= 0.0 || epsilon > 0.1)
+        if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if(maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
+        if (maxRelError <= 0.0 || maxRelError > 0.25)
+            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        if(graph.getNumInputArrays() != inputs.length) throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
-        if(graph.getNumOutputArrays() != labels.length) throw new IllegalArgumentException("Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
+        if (graph.getNumInputArrays() != inputs.length)
+            throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
+        if (graph.getNumOutputArrays() != labels.length)
+            throw new IllegalArgumentException(
+                            "Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
+
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
 
         //Check configuration
         int layerCount = 0;
-        for(String vertexName : graph.getConfiguration().getVertices().keySet()){
+        for (String vertexName : graph.getConfiguration().getVertices().keySet()) {
             GraphVertex gv = graph.getConfiguration().getVertices().get(vertexName);
-            if(!(gv instanceof LayerVertex)) continue;
-            LayerVertex lv = (LayerVertex)gv;
+            if (!(gv instanceof LayerVertex))
+                continue;
+            LayerVertex lv = (LayerVertex) gv;
 
             org.deeplearning4j.nn.conf.Updater u = lv.getLayerConf().getLayer().getUpdater();
-            if(u == org.deeplearning4j.nn.conf.Updater.SGD){
+            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
                 //Must have LR of 1.0
                 double lr = lv.getLayerConf().getLayer().getLearningRate();
-                if(lr != 1.0){
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer \"" + vertexName + "\"; got " + u);
+                if (lr != 1.0) {
+                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer \""
+                                    + vertexName + "\"; got " + u);
                 }
-            } else if( u != org.deeplearning4j.nn.conf.Updater.NONE ){
-                throw new IllegalStateException("Must have Updater.NONE (or SGD + lr=1.0) for layer \"" + vertexName + "\"; got " + u);
+            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
+                throw new IllegalStateException(
+                                "Must have Updater.NONE (or SGD + lr=1.0) for layer \"" + vertexName + "\"; got " + u);
             }
 
             double dropout = lv.getLayerConf().getLayer().getDropOut();
-            if( lv.getLayerConf().isUseRegularization() && dropout != 0.0 ){
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = " + dropout + " for layer " + layerCount);
+            if (lv.getLayerConf().isUseRegularization() && dropout != 0.0) {
+                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
+                                + dropout + " for layer " + layerCount);
             }
 
             IActivation activation = lv.getLayerConf().getLayer().getActivationFn();
-            if(activation != null){
-                if(!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())){
-                    log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: " + activation.getClass() +
-                            ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not " +
-                            "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+            if (activation != null) {
+                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                    log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
+                                    + activation.getClass()
+                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
                 }
             }
         }
 
-        for( int i=0; i<inputs.length; i++ ) graph.setInput(i,inputs[i]);
-        for( int i=0; i<labels.length; i++ ) graph.setLabel(i,labels[i]);
+        for (int i = 0; i < inputs.length; i++)
+            graph.setInput(i, inputs[i]);
+        for (int i = 0; i < labels.length; i++)
+            graph.setLabel(i, labels[i]);
 
         graph.computeGradientAndScore();
-        Pair<Gradient,Double> gradAndScore = graph.gradientAndScore();
+        Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
         updater.update(graph, gradAndScore.getFirst(), 0, graph.batchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
-        INDArray originalParams = graph.params().dup();   //need dup: params are a *view* of full parameters
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
 
-        Map<String,INDArray> paramTable = graph.paramTable();
+        Map<String, INDArray> paramTable = graph.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         int[] paramEnds = new int[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
-        for( int i=1; i<paramEnds.length; i++ ){
-            paramEnds[i] = paramEnds[i-1] + paramTable.get(paramNames.get(i)).length();
+        for (int i = 1; i < paramEnds.length; i++) {
+            paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
         }
 
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
         MultiDataSet mds = new MultiDataSet(inputs, labels);
-        INDArray params = graph.params();     //Assumption here: params is a view that we can modify in-place
-        for(int i = 0; i < nParams; i++) {
+        INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
+        for (int i = 0; i < nParams; i++) {
             //Get param name
-            if(i >= paramEnds[currParamNameIdx]){
+            if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
@@ -301,7 +335,7 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + epsilon);
-            double scorePlus = graph.score(mds, true);  //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
+            double scorePlus = graph.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
@@ -314,39 +348,44 @@ public class GradientCheckUtil {
             double scoreDelta = scorePlus - scoreMinus;
 
             double numericalGradient = scoreDelta / (2 * epsilon);
-            if(Double.isNaN(numericalGradient))
+            if (Double.isNaN(numericalGradient))
                 throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
 
             double backpropGradient = gradientToCheck.getDouble(i);
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
-            double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
-            if( backpropGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
+            double relError = Math.abs(backpropGradient - numericalGradient)
+                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+            if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
-            if(relError > maxError) maxError = relError;
-            if(relError > maxRelError || Double.isNaN(relError)) {
+            if (relError > maxError)
+                maxError = relError;
+            if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
-                if(absError < minAbsoluteError){
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                            + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
+                if (absError < minAbsoluteError) {
+                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
                 } else {
                     if (print)
-                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                                + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
-            }
-            else if(print) {
-                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                        + ", relError= " + relError );
+            } else if (print) {
+                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
+                                + numericalGradient + ", relError= " + relError);
             }
         }
 
-        if(print) {
+        if (print) {
             int nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, " + totalNFailures + " failed. Largest relative error = " + maxError );
+            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+                            + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
         return totalNFailures == 0;
@@ -359,37 +398,41 @@ public class GradientCheckUtil {
      *
      * NOTE: gradient checking pretrain layers can be difficult...
      */
-    public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError, double minAbsoluteError,
-                                                      boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+    public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
+                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
         //Basic sanity checks on input:
-        if(epsilon <= 0.0 || epsilon > 0.1)
+        if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if(maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
+        if (maxRelError <= 0.0 || maxRelError > 0.25)
+            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
+
+        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
+        if( dataType != DataBuffer.Type.DOUBLE ){
+            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+        }
 
         //Check network configuration:
-
-        int layerCount = 0;
-
         layer.setInput(input);
         Nd4j.getRandom().setSeed(rngSeed);
         layer.computeGradientAndScore();
-        Pair<Gradient,Double> gradAndScore = layer.gradientAndScore();
+        Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
         updater.update(layer, gradAndScore.getFirst(), 0, layer.batchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
-        INDArray originalParams = layer.params().dup();   //need dup: params are a *view* of full parameters
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
 
-        Map<String,INDArray> paramTable = layer.paramTable();
+        Map<String, INDArray> paramTable = layer.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         int[] paramEnds = new int[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
-        for( int i=1; i<paramEnds.length; i++ ){
-            paramEnds[i] = paramEnds[i-1] + paramTable.get(paramNames.get(i)).length();
+        for (int i = 1; i < paramEnds.length; i++) {
+            paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
         }
 
 
@@ -397,10 +440,10 @@ public class GradientCheckUtil {
         double maxError = 0.0;
         int currParamNameIdx = 0;
 
-        INDArray params = layer.params();     //Assumption here: params is a view that we can modify in-place
-        for(int i = 0; i < nParams; i++) {
+        INDArray params = layer.params(); //Assumption here: params is a view that we can modify in-place
+        for (int i = 0; i < nParams; i++) {
             //Get param name
-            if(i >= paramEnds[currParamNameIdx]){
+            if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
@@ -427,42 +470,46 @@ public class GradientCheckUtil {
             double scoreDelta = scorePlus - scoreMinus;
 
             double numericalGradient = scoreDelta / (2 * epsilon);
-            if(Double.isNaN(numericalGradient))
+            if (Double.isNaN(numericalGradient))
                 throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
 
             double backpropGradient = gradientToCheck.getDouble(i);
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
-            double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
-            if( backpropGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
+            double relError = Math.abs(backpropGradient - numericalGradient)
+                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+            if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
-            if(relError > maxError) maxError = relError;
-            if(relError > maxRelError || Double.isNaN(relError)) {
+            if (relError > maxError)
+                maxError = relError;
+            if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
-                if(absError < minAbsoluteError){
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                            + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
+                if (absError < minAbsoluteError) {
+                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
                 } else {
                     if (print)
-                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                                + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
-            }
-            else if(print) {
-                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
-                        + ", relError= " + relError );
+            } else if (print) {
+                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
+                                + numericalGradient + ", relError= " + relError);
             }
         }
 
-        if(print) {
+        if (print) {
             int nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, " + totalNFailures + " failed. Largest relative error = " + maxError );
+            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+                            + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
         return totalNFailures == 0;
     }
-
 }

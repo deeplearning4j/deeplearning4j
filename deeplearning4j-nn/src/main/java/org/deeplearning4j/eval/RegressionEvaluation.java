@@ -30,9 +30,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private List<String> columnNames;
     private int precision;
     private long exampleCount = 0;
-    private INDArray labelsSumPerColumn;    //sum(actual) per column -> used to calculate mean
-    private INDArray sumSquaredErrorsPerColumn;     //(predicted - actual)^2
-    private INDArray sumAbsErrorsPerColumn;         //abs(predicted-actial)
+    private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
+    private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
+    private INDArray sumAbsErrorsPerColumn; //abs(predicted-actial)
     private INDArray currentMean;
     private INDArray currentPredictionMean;
 
@@ -74,8 +74,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(List<String> columnNames, int precision) {
-        if(columnNames == null || columnNames.size() == 0){
-            throw new IllegalArgumentException("Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
+        if (columnNames == null || columnNames.size() == 0) {
+            throw new IllegalArgumentException(
+                    "Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
         }
         this.columnNames = columnNames;
         this.precision = precision;
@@ -94,7 +95,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     private static List<String> createDefaultColumnNames(int nColumns) {
         List<String> list = new ArrayList<>(nColumns);
-        for (int i = 0; i < nColumns; i++) list.add("col_" + i);
+        for (int i = 0; i < nColumns; i++)
+            list.add("col_" + i);
         return list;
     }
 
@@ -105,6 +107,11 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         //https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#For_a_sample
         //Doing online calculation of means, sum of squares, etc.
 
+        if (columnNames.size() != labels.size(1) || columnNames.size() != predictions.size(1)) {
+            throw new IllegalArgumentException(
+                    "Number of the columns of labels and predictions must match specification (" + columnNames.size() +
+                            "). Got " + labels.size(1) + " and " + predictions.size(1));
+        }
         labelsSumPerColumn.addi(labels.sum(0));
 
         INDArray error = predictions.sub(labels);
@@ -130,11 +137,11 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     @Override
     public void merge(RegressionEvaluation other) {
 
-        if(other.labelsSumPerColumn == null){
+        if (other.labelsSumPerColumn == null) {
             //Other RegressionEvaluation is empty -> no op
             return;
 
-        } else if(labelsSumPerColumn == null){
+        } else if (labelsSumPerColumn == null) {
             //This RegressionEvaluation is empty -> just copy over from the other one...
             this.columnNames = other.columnNames;
             this.precision = other.precision;
@@ -154,8 +161,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
         this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
         this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
-        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
-        this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
+        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount))
+                .divi(exampleCount + other.exampleCount);
+        this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount))
+                .divi(exampleCount + other.exampleCount);
         this.sumOfProducts.addi(other.sumOfProducts);
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
         this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
@@ -166,30 +175,25 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     public String stats() {
 
         int maxLabelLength = 0;
-        for (String s : columnNames) maxLabelLength = Math.max(maxLabelLength, s.length());
+        for (String s : columnNames)
+            maxLabelLength = Math.max(maxLabelLength, s.length());
 
         int labelWidth = maxLabelLength + 5;
         int columnWidth = precision + 10;
 
-        String format = "%-" + labelWidth + "s"
-                + "%-" + columnWidth + "." + precision + "e"    //MSE
-                + "%-" + columnWidth + "." + precision + "e"    //MAE
-                + "%-" + columnWidth + "." + precision + "e"    //RMSE
-                + "%-" + columnWidth + "." + precision + "e"    //RSE
-                + "%-" + columnWidth + "." + precision + "e";   //R2 (correlation coefficient)
-
+        String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
+                + "%-" + columnWidth + "." + precision + "e" //MAE
+                + "%-" + columnWidth + "." + precision + "e" //RMSE
+                + "%-" + columnWidth + "." + precision + "e" //RSE
+                + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
 
 
 
         //Print header:
         StringBuilder sb = new StringBuilder();
-        String headerFormat = "%-" + labelWidth + "s"
-                + "%-"+columnWidth+"s"
-                + "%-"+columnWidth+"s"
-                + "%-"+columnWidth+"s"
-                + "%-"+columnWidth+"s"
-                + "%-"+columnWidth+"s";
-        sb.append(String.format(headerFormat,"Column","MSE","MAE","RMSE","RSE","R^2"));
+        String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
+                + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
+        sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
         sb.append("\n");
 
         //Print results for each column:
@@ -200,7 +204,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             double rse = relativeSquaredError(i);
             double corr = correlationR2(i);
 
-            sb.append(String.format(format,columnNames.get(i),mse,mae,rmse,rse,corr));
+            sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
             sb.append("\n");
         }
 
@@ -224,7 +228,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public double rootMeanSquaredError(int column) {
         //rmse per column: sqrt(1/n * sum((predicted-actual)^2)
-        return Math.sqrt(sumSquaredErrorsPerColumn.getDouble(column)/exampleCount);
+        return Math.sqrt(sumSquaredErrorsPerColumn.getDouble(column) / exampleCount);
     }
 
     public double correlationR2(int column) {
@@ -238,16 +242,19 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         double sumSquaredPredicted = this.sumSquaredPredicted.getDouble(column);
 
         double r2 = sumxiyi - exampleCount * predictionMean * labelMean;
-        r2 /= Math.sqrt(sumSquaredLabels - exampleCount*labelMean*labelMean) * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean*predictionMean);
+        r2 /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
+                * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
 
         return r2;
     }
 
-    public double relativeSquaredError(int column){
+    public double relativeSquaredError(int column) {
         // RSE: sum(predicted-actual)^2 / sum(actual-labelsMean)^2
         // (sum(predicted^2) - 2 * sum(predicted * actual) + sum(actual ^ 2)) / (sum(actual ^ 2) - n * actualMean)
-        double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column) + sumSquaredLabels.getDouble(column);
-        double denominator = sumSquaredLabels.getDouble(column) - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
+        double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column)
+                + sumSquaredLabels.getDouble(column);
+        double denominator = sumSquaredLabels.getDouble(column)
+                - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
 
         if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
             return numerator / denominator;

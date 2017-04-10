@@ -1,5 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import lombok.NonNull;
+import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -30,14 +32,15 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
     //used in comparison when building the huffman tree
     protected int index = -1;
-    protected List<Integer> codes = new ArrayList<>();
+    protected List<Byte> codes = new ArrayList<>();
 
-    protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
-    protected int codeLength = 0;
+    protected short codeLength = 0;
 
     // this var defines, if this token can't be truncated with minWordFrequency threshold
-    @Getter @Setter protected boolean special;
+    @Getter
+    @Setter
+    protected boolean special;
 
     // this var defines that we have label here
     protected boolean isLabel;
@@ -45,15 +48,17 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     // this var defines how many documents/sequences contain this word
     protected AtomicLong sequencesCount = new AtomicLong(0);
 
-    protected AdaGrad adaGrad;
 
     // this var is used as state for preciseWeightInit routine, to avoid multiple initializations for the same data
-    @Getter @Setter protected boolean init;
+    @Getter
+    @Setter
+    protected boolean init;
 
     /*
             Reserved for Joint/Distributed vocabs mechanics
     */
-    @Getter @Setter protected Long storageId;
+    @Setter
+    protected Long storageId;
 
     /**
      * This method should return string representation of this SequenceElement, so it can be used for
@@ -153,13 +158,16 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @param object
      * @return
      */
-     public boolean equals(Object object) {
-         if (this == object) return true;
-         if (object == null) return false;
-         if (!(object instanceof SequenceElement)) return false;
+    public boolean equals(Object object) {
+        if (this == object)
+            return true;
+        if (object == null)
+            return false;
+        if (!(object instanceof SequenceElement))
+            return false;
 
-         return this.getLabel().equals(((SequenceElement) object).getLabel());
-     }
+        return this.getLabel().equals(((SequenceElement) object).getLabel());
+    }
 
     /**
      *  Returns index in Huffman tree
@@ -183,7 +191,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * Returns Huffman tree codes
      * @return
      */
-    public List<Integer> getCodes() {
+    public List<Byte> getCodes() {
         return codes;
     }
 
@@ -191,7 +199,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * Sets Huffman tree codes
      * @param codes
      */
-    public void setCodes(List<Integer> codes) {
+    public void setCodes(List<Byte> codes) {
         this.codes = codes;
     }
 
@@ -242,19 +250,23 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      *
      * @param codeLength
      */
-    public void setCodeLength(int codeLength) {
+    public void setCodeLength(short codeLength) {
         this.codeLength = codeLength;
-        if(codes.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                codes.add(0);
+        if (codes.size() < codeLength) {
+            for (int i = 0; i < codeLength; i++)
+                codes.add((byte) 0);
         }
 
-        if(points.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
+        if (points.size() < codeLength) {
+            for (int i = 0; i < codeLength; i++)
                 points.add(0);
         }
     }
 
+
+    public static final long getLongHash(@NonNull String string) {
+        return HashUtil.getLongHash(string);
+    }
 
     /**
      * Returns gradient for this specific element, at specific position
@@ -263,24 +275,35 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @param lr
      * @return
      */
+    @Deprecated
     public double getGradient(int index, double g, double lr) {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), lr);
-
+        
         return adaGrad.getGradient(g, index, new int[]{1, getCodeLength()});
+        */
+        return 0.0;
     }
 
+    @Deprecated
     public void setHistoricalGradient(INDArray gradient) {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
-
+        
         adaGrad.setHistoricalGradient(gradient);
+        */
     }
 
+    @Deprecated
     public INDArray getHistoricalGradient() {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
         return adaGrad.getHistoricalGradient();
+        */
+        return null;
     }
 
     /**
@@ -289,7 +312,8 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return hashCode for this SequenceElement
      */
     public int hashCode() {
-        if (this.getLabel() == null) throw new IllegalStateException("Label should not be null");
+        if (this.getLabel() == null)
+            throw new IllegalStateException("Label should not be null");
         return this.getLabel().hashCode();
     }
 
@@ -300,11 +324,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
     @Override
     public String toString() {
-        return "SequenceElement: {label: '"+ this.getLabel() +"'," +
-                                                                  " freq: '"+ elementFrequency.get()+"'," +
-                                                                   " codes: " + codes.toString() +
-                                                                    " points: " + points.toString() +
-                                                                    " index: '"+this.index+"'}";
+        return "SequenceElement: {label: '" + this.getLabel() + "'," + " freq: '" + elementFrequency.get() + "',"
+                        + " codes: " + codes.toString() + " points: " + points.toString() + " index: '" + this.index
+                        + "'}";
     }
 
     /**
@@ -312,6 +334,12 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return
      */
     public abstract String toJSON();
+
+    public Long getStorageId() {
+        if (storageId == null)
+            storageId = SequenceElement.getLongHash(this.getLabel());
+        return storageId;
+    }
 
     public static ObjectMapper mapper() {
         /*

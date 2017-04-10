@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -36,17 +36,22 @@ import java.util.Map;
  */
 public interface Model {
 
+    /**
+     * Init the model
+     */
+    void init();
+
 
     /**
      * Set the IterationListeners for the ComputationGraph (and all layers in the network)
      */
-     void setListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<IterationListener> listeners);
 
 
     /**
      * Set the IterationListeners for the ComputationGraph (and all layers in the network)
      */
-    void setListeners(IterationListener...listeners);
+    void setListeners(IterationListener... listeners);
 
 
     /**
@@ -161,7 +166,7 @@ public interface Model {
      * Get the gradient and score
      * @return the gradient and score
      */
-    Pair<Gradient,Double> gradientAndScore();
+    Pair<Gradient, Double> gradientAndScore();
 
     /**
      * The current inputs batch size
@@ -191,7 +196,9 @@ public interface Model {
 
     /**
      * Validate the input
+     * @deprecated As of 0.7.3 - Feb 2017. No longer used, most implementations are unsupported or no-op.
      */
+    @Deprecated
     void validateInput();
 
     /**
@@ -209,14 +216,17 @@ public interface Model {
 
     /**
      * Initialize the parameters
+     * @deprecated As of 0.7.3 - Feb 2017. Not used; neural network params are initialized by the parameter initializaters.
+     *  Furthermore, most implementations are unsupported or no-op.
      */
+    @Deprecated
     void initParams();
 
     /**
      * The param table
      * @return
      */
-    Map<String,INDArray> paramTable();
+    Map<String, INDArray> paramTable();
 
     /**
      * Table of parameters by key, for backprop
@@ -224,7 +234,7 @@ public interface Model {
      * @param backpropParamsOnly If true, return backprop params only. If false: return all params (equivalent to
      *                           paramsTable())
      */
-    Map<String,INDArray> paramTable(boolean backpropParamsOnly);
+    Map<String, INDArray> paramTable(boolean backpropParamsOnly);
 
     /**
      * Setter for the param table

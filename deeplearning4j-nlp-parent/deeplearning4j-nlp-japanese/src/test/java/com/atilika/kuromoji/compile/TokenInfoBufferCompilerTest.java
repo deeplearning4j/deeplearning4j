@@ -1,4 +1,4 @@
-/**
+/*-*
  * Copyright © 2010-2015 Atilika Inc. and contributors (see CONTRIBUTORS.md)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -98,16 +98,11 @@ public class TokenInfoBufferCompilerTest {
         File file = File.createTempFile("kuromoji-tokeinfo-buffer-", ".bin");
         file.deleteOnExit();
 
-        TokenInfoBufferCompiler compiler = new TokenInfoBufferCompiler(
-            new FileOutputStream(file),
-            bufferEntries
-        );
+        TokenInfoBufferCompiler compiler = new TokenInfoBufferCompiler(new FileOutputStream(file), bufferEntries);
 
         compiler.compile();
 
-        TokenInfoBuffer tokenInfoBuffer2 = new TokenInfoBuffer(
-            new FileInputStream(file)
-        );
+        TokenInfoBuffer tokenInfoBuffer2 = new TokenInfoBuffer(new FileInputStream(file));
 
         assertEquals(99, tokenInfoBuffer2.lookupFeature(0, 1));
         assertEquals(73, tokenInfoBuffer2.lookupFeature(0, 0));
@@ -141,16 +136,11 @@ public class TokenInfoBufferCompilerTest {
         File file = File.createTempFile("kuromoji-tokeinfo-buffer-", ".bin");
         file.deleteOnExit();
 
-        TokenInfoBufferCompiler compiler = new TokenInfoBufferCompiler(
-            new FileOutputStream(file),
-            bufferEntries
-        );
+        TokenInfoBufferCompiler compiler = new TokenInfoBufferCompiler(new FileOutputStream(file), bufferEntries);
 
         compiler.compile();
 
-        TokenInfoBuffer tokenInfoBuffer2 = new TokenInfoBuffer(
-            new FileInputStream(file)
-        );
+        TokenInfoBuffer tokenInfoBuffer2 = new TokenInfoBuffer(new FileInputStream(file));
 
         BufferEntry result = tokenInfoBuffer2.lookupEntry(0);
 

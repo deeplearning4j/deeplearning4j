@@ -1,5 +1,8 @@
 package org.deeplearning4j.earlystopping.termination;
 
+import lombok.Data;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
 /**
  * Created by Sadat Anwar on 3/26/16.
  *
@@ -7,15 +10,19 @@ package org.deeplearning4j.earlystopping.termination;
  * the initialized score. If you want to stop the training once the score increases the defined score set the
  * lesserBetter flag to false (feel free to give the flag a better name)
  */
-public class BestScoreEpochTerminationCondition  implements EpochTerminationCondition{
+@Data
+public class BestScoreEpochTerminationCondition implements EpochTerminationCondition {
+    @JsonProperty
     private final double bestExpectedScore;
+
+    @JsonProperty
     private boolean lesserBetter = true;
 
-    public BestScoreEpochTerminationCondition(double bestExpectedScore){
+    public BestScoreEpochTerminationCondition(double bestExpectedScore) {
         this.bestExpectedScore = bestExpectedScore;
     }
 
-    public BestScoreEpochTerminationCondition(double bestExpectedScore, boolean lesserBetter){
+    public BestScoreEpochTerminationCondition(double bestExpectedScore, boolean lesserBetter) {
         this(bestExpectedScore);
         this.lesserBetter = lesserBetter;
     }
@@ -29,13 +36,13 @@ public class BestScoreEpochTerminationCondition  implements EpochTerminationCond
     public boolean terminate(int epochNum, double score) {
         if (lesserBetter) {
             return score < bestExpectedScore;
-        } else{
+        } else {
             return bestExpectedScore < score;
         }
     }
 
     @Override
-    public String toString(){
-        return "BestScoreEpochTerminationCondition("+bestExpectedScore+")";
+    public String toString() {
+        return "BestScoreEpochTerminationCondition(" + bestExpectedScore + ")";
     }
 }

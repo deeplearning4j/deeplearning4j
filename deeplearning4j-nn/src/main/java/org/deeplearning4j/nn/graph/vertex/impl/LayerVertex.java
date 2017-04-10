@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -30,8 +30,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -43,7 +43,7 @@ import java.util.Arrays;
 @Data
 public class LayerVertex extends BaseGraphVertex {
 
-    private final Layer layer;
+    private Layer layer;
     private final InputPreProcessor layerPreProcessor;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
@@ -53,12 +53,14 @@ public class LayerVertex extends BaseGraphVertex {
     /**
      * Create a network input vertex:
      */
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer, InputPreProcessor layerPreProcessor, boolean outputVertex) {
+    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer,
+                    InputPreProcessor layerPreProcessor, boolean outputVertex) {
         this(graph, name, vertexIndex, null, null, layer, layerPreProcessor, outputVertex);
     }
 
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
-                       Layer layer, InputPreProcessor layerPreProcessor, boolean outputVertex) {
+    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                    VertexIndices[] outputVertices, Layer layer, InputPreProcessor layerPreProcessor,
+                    boolean outputVertex) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.graph = graph;
         this.vertexName = name;
@@ -77,6 +79,12 @@ public class LayerVertex extends BaseGraphVertex {
         return true;
     }
 
+    public void setLayerAsFrozen() {
+        if (this.layer instanceof FrozenLayer)
+            return;
+        this.layer = new FrozenLayer<>(this.layer);
+    }
+
     @Override
     public boolean isOutputVertex() {
         return outputVertex || layer instanceof BaseOutputLayer;
@@ -89,7 +97,8 @@ public class LayerVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if (!canDoForward()) throw new IllegalStateException("Cannot do forward pass: all inputs not set");
+        if (!canDoForward())
+            throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
         return layer.activate(training);
     }
@@ -97,17 +106,19 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if (!canDoBackward()) {
-            throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer "+vertexName+" (idx "+vertexIndex+") numInputs "+
-                getNumInputArrays()+"; numOutputs "+getNumOutputConnections());
+            throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
+                            + " (idx " + vertexIndex + ") numInputs " + getNumInputArrays() + "; numOutputs "
+                            + getNumOutputConnections());
         }
 
         Pair<Gradient, INDArray> pair;
         if (tbptt && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
-            pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon, graph.getConfiguration().getTbpttBackLength());
+            pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon,
+                            graph.getConfiguration().getTbpttBackLength());
         } else {
             //Normal backprop
-            pair = layer.backpropGradient(epsilon);    //epsTotal may be null for OutputLayers
+            pair = layer.backpropGradient(epsilon); //epsTotal may be null for OutputLayers
         }
 
         if (layerPreProcessor != null) {
@@ -117,13 +128,15 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop
-        return new Pair<>(pair.getFirst(), new INDArray[]{pair.getSecond()});
+        return new Pair<>(pair.getFirst(), new INDArray[] {pair.getSecond()});
     }
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
         if (inputNumber > 0)
-            throw new IllegalArgumentException("Invalid input number: LayerVertex instances have only 1 input (got inputNumber = " + inputNumber + ")");
+            throw new IllegalArgumentException(
+                            "Invalid input number: LayerVertex instances have only 1 input (got inputNumber = "
+                                            + inputNumber + ")");
         inputs[inputNumber] = input;
 
         INDArray currInput = inputs[0];
@@ -139,14 +152,16 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        if(maskArrays == null || maskArrays.length == 0){
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
+        if (maskArrays == null || maskArrays.length == 0) {
             return new Pair<>(null, currentMaskState);
         }
 
-        if(layerPreProcessor != null ){
-            Pair<INDArray,MaskState> pair = layerPreProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
-            if(pair == null){
+        if (layerPreProcessor != null) {
+            Pair<INDArray, MaskState> pair =
+                            layerPreProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+            if (pair == null) {
                 maskArrays[0] = null;
                 currentMaskState = null;
             } else {
@@ -162,15 +177,22 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("LayerVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName)
-                .append("\",inputs=").append(Arrays.toString(inputVertices)).append(",outputs=").append(Arrays.toString(outputVertices))
-                .append(")");
+        sb.append("LayerVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName).append("\",inputs=")
+                        .append(Arrays.toString(inputVertices)).append(",outputs=")
+                        .append(Arrays.toString(outputVertices)).append(")");
         return sb.toString();
     }
 
     @Override
     public boolean canDoBackward() {
-        if (!isOutputVertex()) return super.canDoBackward();
+        if (!isOutputVertex()) {
+            //inputs to frozen layer go unchecked, so could be null
+            if (getLayer() instanceof FrozenLayer) {
+                return true;
+            } else {
+                return super.canDoBackward();
+            }
+        }
 
         for (INDArray input : inputs) {
             if (input == null) {

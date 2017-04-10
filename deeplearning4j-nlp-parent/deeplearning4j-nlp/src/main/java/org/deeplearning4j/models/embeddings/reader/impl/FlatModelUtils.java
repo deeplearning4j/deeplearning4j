@@ -32,7 +32,8 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
     @Override
     public Collection<String> wordsNearest(String label, int n) {
         Collection<String> collection = wordsNearest(lookupTable.vector(label), n);
-        if (collection.contains(label)) collection.remove(label);
+        if (collection.contains(label))
+            collection.remove(label);
         return collection;
     }
 
@@ -47,7 +48,7 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
     public Collection<String> wordsNearest(INDArray words, int top) {
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocabCache.words()) {
+        for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(words.dup(), otherVec.dup());
             distances.incrementCount(s, sim);

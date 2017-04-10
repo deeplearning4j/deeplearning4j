@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -22,43 +22,43 @@ import java.io.Serializable;
 
 public class PointClassification implements Serializable {
 
-	private Cluster	cluster;
-	private double	distanceFromCenter;
-	private boolean	newLocation;
+    private Cluster cluster;
+    private double distanceFromCenter;
+    private boolean newLocation;
 
-	protected PointClassification() {
-		// no-op for serialization only
-	}
+    protected PointClassification() {
+        // no-op for serialization only
+    }
 
-	public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
-		super();
-		this.cluster = cluster;
-		this.distanceFromCenter = distanceFromCenter;
-		this.newLocation = newLocation;
-	}
+    public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
+        super();
+        this.cluster = cluster;
+        this.distanceFromCenter = distanceFromCenter;
+        this.newLocation = newLocation;
+    }
 
-	public Cluster getCluster() {
-		return cluster;
-	}
+    public Cluster getCluster() {
+        return cluster;
+    }
 
-	public void setCluster(Cluster cluster) {
-		this.cluster = cluster;
-	}
+    public void setCluster(Cluster cluster) {
+        this.cluster = cluster;
+    }
 
-	public double getDistanceFromCenter() {
-		return distanceFromCenter;
-	}
+    public double getDistanceFromCenter() {
+        return distanceFromCenter;
+    }
 
-	public void setDistanceFromCenter(double distanceFromCenter) {
-		this.distanceFromCenter = distanceFromCenter;
-	}
+    public void setDistanceFromCenter(double distanceFromCenter) {
+        this.distanceFromCenter = distanceFromCenter;
+    }
 
-	public boolean isNewLocation() {
-		return newLocation;
-	}
+    public boolean isNewLocation() {
+        return newLocation;
+    }
 
-	public void setNewLocation(boolean newLocation) {
-		this.newLocation = newLocation;
-	}
+    public void setNewLocation(boolean newLocation) {
+        this.newLocation = newLocation;
+    }
 
 }

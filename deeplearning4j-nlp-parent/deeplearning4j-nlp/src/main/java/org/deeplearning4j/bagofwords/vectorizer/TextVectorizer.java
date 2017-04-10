@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -27,6 +27,7 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * Vectorizes text
@@ -61,7 +62,7 @@ public interface TextVectorizer extends Vectorizer {
      * @param label the label to assign
      * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(InputStream is,String label);
+    DataSet vectorize(InputStream is, String label);
 
     /**
      * Vectorizes the passed in text treating it as one document
@@ -69,7 +70,7 @@ public interface TextVectorizer extends Vectorizer {
      * @param label the label of the text
      * @return a dataset with a transform of weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(String text,String label);
+    DataSet vectorize(String text, String label);
 
     /**
      * Train the model
@@ -83,7 +84,7 @@ public interface TextVectorizer extends Vectorizer {
      * @return {@link DataSet} with a applyTransformToDestination of
      *          weights(relative to impl; could be word counts or tfidf scores)
      */
-    DataSet vectorize(File input,String label);
+    DataSet vectorize(File input, String label);
 
 
     /**
@@ -92,6 +93,13 @@ public interface TextVectorizer extends Vectorizer {
      * @return {@link INDArray}
      */
     INDArray transform(String text);
+
+    /**
+     * Transforms the matrix
+     * @param tokens
+     * @return
+     */
+    INDArray transform(List<String> tokens);
 
     /**
      * Returns the number of words encountered so far

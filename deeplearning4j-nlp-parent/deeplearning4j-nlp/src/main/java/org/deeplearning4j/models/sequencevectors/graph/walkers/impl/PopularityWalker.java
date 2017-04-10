@@ -33,7 +33,7 @@ import java.util.Random;
  * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
  * @author raver119@gmail.com
  */
-public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
+public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T> implements GraphWalker<T> {
     protected PopularityMode popularityMode = PopularityMode.MAXIMUM;
     protected int spread = 10;
     protected SpreadSpectrum spectrum;
@@ -48,6 +48,11 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
     @Override
     public boolean hasNext() {
         return super.hasNext();
+    }
+
+    @Override
+    public boolean isLabelEnabled() {
+        return false;
     }
 
     /**
@@ -85,113 +90,116 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                 case FORWARD_ONLY:
                 case FORWARD_UNIQUE:
                 case FORWARD_PREFERRED: {
-                        // we get  popularity of each node connected to the current node.
-                        PriorityQueue<Node<T>> queue = new PriorityQueue<>();
+                    // we get  popularity of each node connected to the current node.
+                    PriorityQueue<Node<T>> queue = new PriorityQueue<>();
 
-                        // ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
-                        int[] connections = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
-                        int start = 0;
-                        int stop = 0;
-                        int cnt = 0;
-                        if (connections.length > 0) {
+                    // ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
+                    int[] connections = ArrayUtils.removeElements(
+                                    sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
+                    int start = 0;
+                    int stop = 0;
+                    int cnt = 0;
+                    if (connections.length > 0) {
 
 
-                            for (int connected : connections) {
-                                queue.add(new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size()), sourceGraph.getConnectedVertices(connected).size());
+                        for (int connected : connections) {
+                            queue.add(new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size()),
+                                            sourceGraph.getConnectedVertices(connected).size());
+                        }
+
+
+                        cSpread = spread > connections.length ? connections.length : spread;
+
+                        switch (popularityMode) {
+                            case MAXIMUM:
+                                start = 0;
+                                stop = start + cSpread - 1;
+                                break;
+                            case MINIMUM:
+                                start = connections.length - cSpread;
+                                stop = connections.length - 1;
+                                break;
+                            case AVERAGE:
+                                int mid = connections.length / 2;
+                                start = mid - (cSpread / 2);
+                                stop = mid + (cSpread / 2);
+                                break;
+                        }
+
+                        // logger.info("Spread: ["+ cSpread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
+                        cnt = 0;
+                        //logger.info("Queue: " + queue);
+                        //logger.info("Queue size: " + queue.size());
+
+                        List<Node<T>> list = new ArrayList<>();
+                        double[] weights = new double[cSpread];
+
+                        int fcnt = 0;
+                        while (queue.hasNext()) {
+                            Node<T> node = queue.next();
+                            if (cnt >= start && cnt <= stop) {
+                                list.add(node);
+                                weights[fcnt] = node.getWeight();
+                                fcnt++;
                             }
+                            connections[cnt] = node.getVertexId();
+
+                            cnt++;
+                        }
 
 
-                            cSpread = spread > connections.length ? connections.length : spread;
+                        int con = -1;
 
-                            switch (popularityMode) {
-                                case MAXIMUM:
-                                    start = 0;
-                                    stop = start + cSpread - 1;
-                                    break;
-                                case MINIMUM:
-                                    start = connections.length - cSpread;
-                                    stop = connections.length - 1;
-                                    break;
-                                case AVERAGE:
-                                    int mid = connections.length / 2;
-                                    start = mid - (cSpread/2);
-                                    stop = mid + (cSpread / 2);
-                                    break;
+                        switch (spectrum) {
+                            case PLAIN: {
+                                con = RandomUtils.nextInt(start, stop + 1);
+
+                                //    logger.info("Picked selection: " + con);
+
+                                Vertex<T> nV = sourceGraph.getVertex(connections[con]);
+                                startPosition = nV.vertexID();
+                                lastId = vertex.vertexID();
                             }
-
-                           // logger.info("Spread: ["+ cSpread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
-                            cnt = 0;
-                            //logger.info("Queue: " + queue);
-                            //logger.info("Queue size: " + queue.size());
-
-                            List<Node<T>> list = new ArrayList<>();
-                            double[] weights = new double[cSpread];
-
-                            int fcnt = 0;
-                            while (queue.hasNext()) {
-                                Node<T> node = queue.next();
-                                if (cnt >= start && cnt <= stop) {
-                                    list.add(node);
-                                    weights[fcnt] = node.getWeight();
-                                    fcnt++;
+                                break;
+                            case PROPORTIONAL: {
+                                double norm[] = MathArrays.normalizeArray(weights, 1);
+                                double prob = rng.nextDouble();
+                                double floor = 0.0;
+                                for (int b = 0; b < weights.length; b++) {
+                                    if (prob >= floor && prob < floor + norm[b]) {
+                                        startPosition = list.get(b).getVertexId();
+                                        lastId = startPosition;
+                                        break;
+                                    } else {
+                                        floor += norm[b];
+                                    }
                                 }
-                                connections[cnt] = node.getVertexId();
-
-                                cnt++;
                             }
+                                break;
+                        }
 
-
-                            int con = -1;
-
-                            switch (spectrum) {
-                                case PLAIN: {
-                                        con = RandomUtils.nextInt(start, stop + 1);
-
-                                    //    logger.info("Picked selection: " + con);
-
-                                        Vertex<T> nV = sourceGraph.getVertex(connections[con]);
-                                        startPosition = nV.vertexID();
-                                        lastId = vertex.vertexID();
-                                    }
-                                    break;
-                                case PROPORTIONAL: {
-                                        double norm[] = MathArrays.normalizeArray(weights, 1);
-                                        double prob = rng.nextDouble();
-                                        double floor = 0.0;
-                                        for (int b = 0; b < weights.length; b++) {
-                                            if (prob >= floor && prob < floor + norm[b]) {
-                                                startPosition = list.get(b).getVertexId();
-                                                lastId = startPosition;
-                                                break;
-                                            } else {
-                                                floor += norm[b];
-                                            }
-                                        }
-                                    }
-                                    break;
-                            }
-
-                        } else {
-                            switch (noEdgeHandling) {
-                                case EXCEPTION_ON_DISCONNECTED:
-                                    throw new NoEdgesException("No more edges at vertex ["+currentPosition +"]");
-                                case CUTOFF_ON_DISCONNECTED:
-                                    i += walkLength;
-                                    break;
-                                case SELF_LOOP_ON_DISCONNECTED:
-                                    startPosition = currentPosition;
-                                    break;
-                                case RESTART_ON_DISCONNECTED:
-                                    startPosition = startPoint;
-                                    break;
-                                default:
-                                    throw new UnsupportedOperationException("Unsupported noEdgeHandling: ["+ noEdgeHandling+"]");
-                            }
+                    } else {
+                        switch (noEdgeHandling) {
+                            case EXCEPTION_ON_DISCONNECTED:
+                                throw new NoEdgesException("No more edges at vertex [" + currentPosition + "]");
+                            case CUTOFF_ON_DISCONNECTED:
+                                i += walkLength;
+                                break;
+                            case SELF_LOOP_ON_DISCONNECTED:
+                                startPosition = currentPosition;
+                                break;
+                            case RESTART_ON_DISCONNECTED:
+                                startPosition = startPoint;
+                                break;
+                            default:
+                                throw new UnsupportedOperationException(
+                                                "Unsupported noEdgeHandling: [" + noEdgeHandling + "]");
                         }
                     }
+                }
                     break;
                 default:
-                    throw new UnsupportedOperationException("Unknown WalkDirection: ["+ walkDirection +"]");
+                    throw new UnsupportedOperationException("Unknown WalkDirection: [" + walkDirection + "]");
             }
 
         }
@@ -332,7 +340,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
             walker.spectrum = this.spectrum;
 
             walker.order = new int[sourceGraph.numVertices()];
-            for (int i =0; i <walker.order.length; i++) {
+            for (int i = 0; i < walker.order.length; i++) {
                 walker.order[i] = i;
             }
 

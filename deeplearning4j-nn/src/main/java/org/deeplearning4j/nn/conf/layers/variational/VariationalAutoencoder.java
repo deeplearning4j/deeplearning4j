@@ -33,7 +33,8 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 public class VariationalAutoencoder extends BasePretrainNetwork {
 
     private int[] encoderLayerSizes;
@@ -42,7 +43,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private IActivation pzxActivationFn;
     private int numSamples;
 
-    private VariationalAutoencoder(Builder builder){
+    private VariationalAutoencoder(Builder builder) {
         super(builder);
         this.encoderLayerSizes = builder.encoderLayerSizes;
         this.decoderLayerSizes = builder.decoderLayerSizes;
@@ -52,10 +53,12 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret = new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+        org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
 
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
@@ -73,8 +76,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        if(paramName.endsWith("b")){
-            if(!Double.isNaN(biasLearningRate)){
+        if (paramName.endsWith("b")) {
+            if (!Double.isNaN(biasLearningRate)) {
                 //Bias learning rate has been explicitly set
                 return biasLearningRate;
             } else {
@@ -87,21 +90,23 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     @Override
     public double getL1ByParam(String paramName) {
-        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return 0.0;
+        if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
+            return l1Bias;
         return l1;
     }
 
     @Override
     public double getL2ByParam(String paramName) {
-        if(paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) return 0.0;
+        if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
+            return l2Bias;
         return l2;
     }
 
-    public static class Builder extends BasePretrainNetwork.Builder<Builder>{
+    public static class Builder extends BasePretrainNetwork.Builder<Builder> {
 
-        private int[] encoderLayerSizes = new int[]{100};
-        private int[] decoderLayerSizes = new int[]{100};
-        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
+        private int[] encoderLayerSizes = new int[] {100};
+        private int[] decoderLayerSizes = new int[] {100};
+        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution(Activation.TANH);
         private IActivation pzxActivationFn = new ActivationIdentity();
         private int numSamples = 1;
 
@@ -111,8 +116,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param encoderLayerSizes    Size of each encoder layer in the variational autoencoder
          */
-        public Builder encoderLayerSizes(int... encoderLayerSizes){
-            if(encoderLayerSizes == null || encoderLayerSizes.length < 1){
+        public Builder encoderLayerSizes(int... encoderLayerSizes) {
+            if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
                 throw new IllegalArgumentException("Encoder layer sizes array must have length > 0");
             }
             this.encoderLayerSizes = encoderLayerSizes;
@@ -125,8 +130,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param decoderLayerSizes    Size of each deccoder layer in the variational autoencoder
          */
-        public Builder decoderLayerSizes(int... decoderLayerSizes){
-            if(encoderLayerSizes == null || encoderLayerSizes.length < 1){
+        public Builder decoderLayerSizes(int... decoderLayerSizes) {
+            if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
                 throw new IllegalArgumentException("Decoder layer sizes array must have length > 0");
             }
             this.decoderLayerSizes = decoderLayerSizes;
@@ -141,7 +146,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param distribution    Reconstruction distribution
          */
-        public Builder reconstructionDistribution(ReconstructionDistribution distribution){
+        public Builder reconstructionDistribution(ReconstructionDistribution distribution) {
             this.outputDistribution = distribution;
             return this;
         }
@@ -156,7 +161,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
-        public Builder lossFunction(IActivation outputActivationFn, LossFunctions.LossFunction lossFunction){
+        public Builder lossFunction(IActivation outputActivationFn, LossFunctions.LossFunction lossFunction) {
             return lossFunction(outputActivationFn, lossFunction.getILossFunction());
         }
 
@@ -170,7 +175,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
-        public Builder lossFunction(Activation outputActivationFn, LossFunctions.LossFunction lossFunction){
+        public Builder lossFunction(Activation outputActivationFn, LossFunctions.LossFunction lossFunction) {
             return lossFunction(outputActivationFn.getActivationFunction(), lossFunction.getILossFunction());
         }
 
@@ -184,7 +189,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
-        public Builder lossFunction(IActivation outputActivationFn, ILossFunction lossFunction){
+        public Builder lossFunction(IActivation outputActivationFn, ILossFunction lossFunction) {
             return reconstructionDistribution(new LossFunctionWrapper(outputActivationFn, lossFunction));
         }
 
@@ -195,7 +200,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param activationFunction    Activation function for p(z|x)
          */
-        public Builder pzxActivationFn(IActivation activationFunction){
+        public Builder pzxActivationFn(IActivation activationFunction) {
             this.pzxActivationFn = activationFunction;
             return this;
         }
@@ -216,7 +221,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param activation    Activation function for p(z|x)
          */
-        public Builder pzxActivationFunction(Activation activation){
+        public Builder pzxActivationFunction(Activation activation) {
             return pzxActivationFn(activation.getActivationFunction());
         }
 
@@ -227,7 +232,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param nOut    Size of P(Z|data) and output size
          */
         @Override
-        public Builder nOut(int nOut){
+        public Builder nOut(int nOut) {
             super.nOut(nOut);
             return this;
         }
@@ -240,7 +245,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param numSamples    Number of samples per data point for pretraining
          */
-        public Builder numSamples(int numSamples){
+        public Builder numSamples(int numSamples) {
             this.numSamples = numSamples;
             return this;
         }

@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -18,19 +18,27 @@
 
 package org.deeplearning4j.earlystopping.scorecalc;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/** Given a DataSetIterator: calculate the total loss for the model on that data set.
+/**
+ *  Given a DataSetIterator: calculate
+ *  the total loss for the model on that data set.
  * Typically used to calculate the loss on a test set.
  */
-public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph>{
-
+@NoArgsConstructor
+public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph> {
+    @JsonIgnore
     private DataSetIterator dataSetIterator;
+    @JsonIgnore
     private MultiDataSetIterator multiDataSetIterator;
+    @JsonProperty
     private boolean average;
 
     /**Calculate the score (loss function value) on a given data set (usually a test set)
@@ -58,10 +66,10 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
         double lossSum = 0.0;
         int exCount = 0;
 
-        if(dataSetIterator != null){
+        if (dataSetIterator != null) {
             dataSetIterator.reset();
 
-            while(dataSetIterator.hasNext()){
+            while (dataSetIterator.hasNext()) {
                 DataSet dataSet = dataSetIterator.next();
                 int nEx = dataSet.getFeatureMatrix().size(0);
                 lossSum += network.score(dataSet) * nEx;
@@ -70,7 +78,7 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
         } else {
             multiDataSetIterator.reset();
 
-            while(multiDataSetIterator.hasNext()){
+            while (multiDataSetIterator.hasNext()) {
                 MultiDataSet dataSet = multiDataSetIterator.next();
                 int nEx = dataSet.getFeatures(0).size(0);
                 lossSum += network.score(dataSet) * nEx;
@@ -78,12 +86,14 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
             }
         }
 
-        if(average) return lossSum / exCount;
-        else return lossSum;
+        if (average)
+            return lossSum / exCount;
+        else
+            return lossSum;
     }
 
     @Override
-    public String toString(){
-        return "DataSetLossCalculatorCG(" + dataSetIterator + ",average="+average+")";
+    public String toString() {
+        return "DataSetLossCalculatorCG(" + dataSetIterator + ",average=" + average + ")";
     }
 }

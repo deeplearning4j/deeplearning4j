@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> extends BaseLayer<LayerConfT>
-        implements RecurrentLayer {
+public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer>
+                extends BaseLayer<LayerConfT> implements RecurrentLayer {
 
     /**
      * stateMap stores the INDArrays needed to do rnnTimeStep() forward pass.

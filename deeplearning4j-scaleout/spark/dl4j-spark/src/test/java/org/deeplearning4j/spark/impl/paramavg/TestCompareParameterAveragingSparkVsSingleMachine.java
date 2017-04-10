@@ -22,14 +22,14 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.junit.Before;
 import org.junit.Test;
-//import org.nd4j.jita.conf.Configuration;
-//import org.nd4j.jita.conf.CudaEnvironment;
+// import org.nd4j.jita.conf.Configuration;
+// import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-//import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+// import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-//import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
+// import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -51,77 +51,57 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
     private static MultiLayerConfiguration getConf(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.5)
-                .weightInit(WeightInit.XAVIER)
-                .updater(updater)
-                .iterations(1)
-                .seed(seed)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).build())
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
+                        .pretrain(false).backprop(true).build();
         return conf;
     }
 
     private static MultiLayerConfiguration getConfCNN(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.5)
-                .weightInit(WeightInit.XAVIER)
-                .updater(updater)
-                .iterations(1)
-                .seed(seed)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build())
-                .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build())
-                .setInputType(InputType.convolutional(10,10,3))
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
+                        .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
+                                        .build())
+                        .setInputType(InputType.convolutional(10, 10, 3)).pretrain(false).backprop(true).build();
         return conf;
     }
 
     private static ComputationGraphConfiguration getGraphConf(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.5)
-                .weightInit(WeightInit.XAVIER)
-                .updater(updater)
-                .iterations(1)
-                .seed(seed)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build(), "0")
-                .setOutputs("1")
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
+                                        new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
+                                                        .nOut(10).build(),
+                                        "0")
+                        .setOutputs("1").pretrain(false).backprop(true).build();
         return conf;
     }
 
     private static ComputationGraphConfiguration getGraphConfCNN(int seed, Updater updater) {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.5)
-                .weightInit(WeightInit.XAVIER)
-                .updater(updater)
-                .iterations(1)
-                .seed(seed)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build(), "in")
-                .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).padding(0,0).activation(Activation.TANH).build(), "0")
-                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10).build(),"1")
-                .setOutputs("2")
-                .setInputTypes(InputType.convolutional(10,10,3))
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
+                                        .padding(0, 0).activation(Activation.TANH).build(), "in")
+                        .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
+                                        .padding(0, 0).activation(Activation.TANH).build(), "0")
+                        .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
+                                        .build(), "1")
+                        .setOutputs("2").setInputTypes(InputType.convolutional(10, 10, 3)).pretrain(false)
+                        .backprop(true).build();
         return conf;
     }
 
@@ -131,11 +111,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
     private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, boolean saveUpdater) {
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
-                .averagingFrequency(avgFreq)
-                .batchSizePerWorker(miniBatchSize)
-                .saveUpdater(saveUpdater)
-                .workerPrefetchNumBatches(0)
-                .build();
+                        .averagingFrequency(avgFreq).batchSizePerWorker(miniBatchSize).saveUpdater(saveUpdater)
+                        .workerPrefetchNumBatches(0).build();
         return tm;
     }
 
@@ -164,7 +141,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         Nd4j.getRandom().setSeed(seed);
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < totalExamples; i++) {
-            INDArray f = Nd4j.rand(new int[]{1, 3, 10, 10});
+            INDArray f = Nd4j.rand(new int[] {1, 3, 10, 10});
             INDArray l = Nd4j.rand(1, 10);
             DataSet ds = new DataSet(f, l);
             list.add(ds);
@@ -187,7 +164,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int miniBatchSize = 10;
         int nWorkers = 1;
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
@@ -200,7 +177,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
@@ -236,7 +214,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int miniBatchSize = 10;
         int nWorkers = 1;
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
@@ -249,14 +227,16 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSize, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
-                     net.fit(ds);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
+                    net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSize, saveUpdater);
-                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
+                SparkComputationGraph sparkNet =
+                                new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -291,43 +271,41 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int nWorkers = 4;
 
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-//                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
+                //                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.SGD));
                 net.init();
                 INDArray initialParams = net.params().dup();
-  //              executioner.addToWatchdog(initialParams, "initialParams");
+                //              executioner.addToWatchdog(initialParams, "initialParams");
 
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
-//                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
+                //                TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
                 ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
-                        .averagingFrequency(1)
-                        .batchSizePerWorker(miniBatchSizePerWorker)
-                        .saveUpdater(saveUpdater)
-                        .workerPrefetchNumBatches(0)
-//                        .rddTrainingApproach(RDDTrainingApproach.Direct)
-                        .rddTrainingApproach(RDDTrainingApproach.Export)
-                        .build();
+                                .averagingFrequency(1).batchSizePerWorker(miniBatchSizePerWorker)
+                                .saveUpdater(saveUpdater).workerPrefetchNumBatches(0)
+                                //                        .rddTrainingApproach(RDDTrainingApproach.Direct)
+                                .rddTrainingApproach(RDDTrainingApproach.Export).build();
                 SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
-    //            executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
+                //            executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
 
                 for (int i = 0; i < seeds.length; i++) {
                     List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -341,7 +319,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
                 System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:       "
+                                + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
                 System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertEquals(initialParams, initialSparkParams);
@@ -371,7 +350,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int nWorkers = 4;
 
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
@@ -384,25 +363,24 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSetCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
-                        .averagingFrequency(1)
-                        .batchSizePerWorker(miniBatchSizePerWorker)
-                        .saveUpdater(saveUpdater)
-                        .workerPrefetchNumBatches(0)
-                        .rddTrainingApproach(RDDTrainingApproach.Export)
-                        .build();
+                                .averagingFrequency(1).batchSizePerWorker(miniBatchSizePerWorker)
+                                .saveUpdater(saveUpdater).workerPrefetchNumBatches(0)
+                                .rddTrainingApproach(RDDTrainingApproach.Export).build();
                 SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConfCNN(12345, Updater.SGD), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
                 for (int i = 0; i < seeds.length; i++) {
-                    List<DataSet> list = getOneDataSetAsIndividalExamplesCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    List<DataSet> list =
+                                    getOneDataSetAsIndividalExamplesCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
                     JavaRDD<DataSet> rdd = sc.parallelize(list);
 
                     sparkNet.fit(rdd);
@@ -413,7 +391,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
                 System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:       "
+                                + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
                 System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertArrayEquals(initialParams.data().asFloat(), initialSparkParams.data().asFloat(), 1e-8f);
@@ -442,27 +421,28 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int nWorkers = 4;
 
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-//                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
+                //                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
 
                 ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.SGD));
                 net.init();
                 INDArray initialParams = net.params().dup();
-//                executioner.addToWatchdog(initialParams, "initialParams");
+                //                executioner.addToWatchdog(initialParams, "initialParams");
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSet(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
-//                executioner.addToWatchdog(finalParams, "finalParams");
+                //                executioner.addToWatchdog(finalParams, "finalParams");
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
@@ -470,7 +450,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
-//                executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
+                //                executioner.addToWatchdog(initialSparkParams, "initialSparkParams");
 
                 for (int i = 0; i < seeds.length; i++) {
                     List<DataSet> list = getOneDataSetAsIndividalExamples(miniBatchSizePerWorker * nWorkers, seeds[i]);
@@ -482,12 +462,13 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
-//                executioner.addToWatchdog(finalSparkParams, "finalSparkParams");
+                //                executioner.addToWatchdog(finalSparkParams, "finalSparkParams");
 
                 float[] fp = finalParams.data().asFloat();
                 float[] fps = finalSparkParams.data().asFloat();
                 System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       " + Arrays.toString(initialSparkParams.data().asFloat()));
+                System.out.println("Initial (Spark) params:       "
+                                + Arrays.toString(initialSparkParams.data().asFloat()));
                 System.out.println("Final (Local) params: " + Arrays.toString(fp));
                 System.out.println("Final (Spark) params: " + Arrays.toString(fps));
 
@@ -518,7 +499,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         int nWorkers = 4;
 
 
-        for (boolean saveUpdater : new boolean[]{true, false}) {
+        for (boolean saveUpdater : new boolean[] {true, false}) {
             JavaSparkContext sc = getContext(nWorkers);
 
             try {
@@ -531,7 +512,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 for (int i = 0; i < seeds.length; i++) {
                     DataSet ds = getOneDataSetCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
-                    if (!saveUpdater) net.setUpdater(null);
+                    if (!saveUpdater)
+                        net.setUpdater(null);
                     net.fit(ds);
                 }
                 INDArray finalParams = net.params().dup();
@@ -543,7 +525,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
                 for (int i = 0; i < seeds.length; i++) {
-                    List<DataSet> list = getOneDataSetAsIndividalExamplesCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
+                    List<DataSet> list =
+                                    getOneDataSetAsIndividalExamplesCNN(miniBatchSizePerWorker * nWorkers, seeds[i]);
                     JavaRDD<DataSet> rdd = sc.parallelize(list);
 
                     sparkNet.fit(rdd);

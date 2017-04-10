@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -30,6 +30,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
@@ -47,6 +48,7 @@ import java.util.Map;
 @JsonSubTypes(value = {
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
+        @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
@@ -55,13 +57,15 @@ import java.util.Map;
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
         @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
+        @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
         @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
         @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
         @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling")
+        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
+        @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")
 })
 @Data
 @NoArgsConstructor
@@ -80,8 +84,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Map<Integer, Double> momentumSchedule;
     protected double l1;
     protected double l2;
-    protected double biasL1;
-    protected double biasL2;
+    protected double l1Bias;
+    protected double l2Bias;
     protected double dropOut;
     protected Updater updater;
     //adadelta - weight for how much to consider previous history
@@ -92,7 +96,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double adamMeanDecay;
     protected double adamVarDecay;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
-    protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
+    protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
 
     public Layer(Builder builder) {
@@ -108,6 +112,8 @@ public abstract class Layer implements Serializable, Cloneable {
         this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
+        this.l1Bias = builder.l1Bias;
+        this.l2Bias = builder.l2Bias;
         this.dropOut = builder.dropOut;
         this.updater = builder.updater;
         this.rho = builder.rho;
@@ -119,22 +125,53 @@ public abstract class Layer implements Serializable, Cloneable {
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
 
+    /**
+     * Reset the learning related configs of the layer to default. When instantiated with a global neural network configuration
+     * the parameters specified in the neural network configuration will be used.
+     * For internal use with the transfer learning API. Users should not have to call this method directly.
+     */
+    public void resetLayerDefaultConfig() {
+        //clear the learning related params for all layers in the origConf and set to defaults
+        this.setUpdater(null);
+        this.setMomentum(Double.NaN);
+        this.setWeightInit(null);
+        this.setBiasInit(Double.NaN);
+        this.setDist(null);
+        this.setLearningRate(Double.NaN);
+        this.setBiasLearningRate(Double.NaN);
+        this.setLearningRateSchedule(null);
+        this.setMomentumSchedule(null);
+        this.setL1(Double.NaN);
+        this.setL2(Double.NaN);
+        this.setDropOut(Double.NaN);
+        this.setRho(Double.NaN);
+        this.setEpsilon(Double.NaN);
+        this.setRmsDecay(Double.NaN);
+        this.setAdamMeanDecay(Double.NaN);
+        this.setAdamVarDecay(Double.NaN);
+        this.setGradientNormalization(GradientNormalization.None);
+        this.setGradientNormalizationThreshold(1.0);
+    }
+
     @Override
     public Layer clone() {
         try {
             Layer clone = (Layer) super.clone();
-            if (clone.dist != null) clone.dist = clone.dist.clone();
+            if (clone.dist != null)
+                clone.dist = clone.dist.clone();
             if (clone.learningRateSchedule != null)
                 clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
-            if (clone.momentumSchedule != null) clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
+            if (clone.momentumSchedule != null)
+                clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex,
-                                                                INDArray layerParamsView, boolean initializeParams);
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams);
 
     public abstract ParamInitializer initializer();
 
@@ -207,7 +244,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             Updater for the parameter
      */
-    public Updater getUpdaterByParam(String paramName){
+    public Updater getUpdaterByParam(String paramName) {
         return updater;
     }
 
@@ -225,6 +262,8 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Map<Integer, Double> momentumAfter = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
+        protected double l1Bias = Double.NaN;
+        protected double l2Bias = Double.NaN;
         protected double dropOut = Double.NaN;
         protected Updater updater = null;
         protected double rho = Double.NaN;
@@ -252,8 +291,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * Typical values include:<br>
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
-         * @deprecated Use {@link #activation(Activation)} or
-         * {@link @activation(IActivation)}
+         * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
          */
         @Deprecated
         public T activation(String activationFunction) {
@@ -318,7 +356,8 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * L1 regularization coefficient.
+         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
+         * coefficient for the bias.
          */
         public T l1(double l1) {
             this.l1 = l1;
@@ -326,13 +365,34 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * L2 regularization coefficient.
+         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
+         * coefficient for the bias.
          */
         public T l2(double l2) {
             this.l2 = l2;
             return (T) this;
         }
 
+        /**
+         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
+         */
+        public T l1Bias(double l1Bias) {
+            this.l1Bias = l1Bias;
+            return (T) this;
+        }
+
+        /**
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         */
+        public T l2Bias(double l2Bias) {
+            this.l2Bias = l2Bias;
+            return (T) this;
+        }
+
+        /**
+         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
+         * Note that 0.0 (the default) disables dropout.
+         */
         public T dropOut(double dropOut) {
             this.dropOut = dropOut;
             return (T) this;
@@ -388,9 +448,9 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param epsilon    Epsilon value to use for adagrad and adadelta
          */
-        public T epsilon(double epsilon){
+        public T epsilon(double epsilon) {
             this.epsilon = epsilon;
-            return (T)this;
+            return (T) this;
         }
 
         /**

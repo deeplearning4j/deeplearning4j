@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -20,6 +20,7 @@ package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
@@ -49,6 +50,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
     protected RecordReader recordReader;
     protected WritableConverter converter;
@@ -62,19 +64,21 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected DataSet last;
     protected boolean useCurrent = false;
     protected boolean regression = false;
-    @Getter protected DataSetPreProcessor preProcessor;
+    @Getter
+    protected DataSetPreProcessor preProcessor;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean collectMetaData = false;
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
-                recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
+                recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1,
-                recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
+                recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());
     }
 
     /**
@@ -86,19 +90,23 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param labelIndex           Index of the label Writable (usually an IntWritable), as obtained by recordReader.next()
      * @param numPossibleLabels    Number of classes (possible labels) for classification
      */
-    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex,
+                                       int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
     }
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels, boolean regression) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndex, int numPossibleLabels, boolean regression) {
         this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, regression);
     }
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndex, int numPossibleLabels) {
         this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
     }
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels, int maxNumBatches) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels,
+                                       int maxNumBatches) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, maxNumBatches, false);
     }
 
@@ -111,13 +119,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param batchSize         Minibatch size
      * @param regression        Require regression = true. Mainly included to avoid clashing with other constructors previously defined :/
      */
-    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo, boolean regression ){
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
+                                       boolean regression) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndexFrom, labelIndexTo, -1, -1, regression);
     }
 
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex,
-                                       int numPossibleLabels, int maxNumBatches, boolean regression) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression) {
         this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression);
     }
 
@@ -133,8 +142,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param numPossibleLabels the number of possible labels for classification. Not used if regression == true
      * @param regression        if true: regression. If false: classification (assume labelIndexFrom is a
      */
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndexFrom,
-                                       int labelIndexTo, int numPossibleLabels, int maxNumBatches, boolean regression) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
+                                       boolean regression) {
         this.recordReader = recordReader;
         this.converter = converter;
         this.batchSize = batchSize;
@@ -150,7 +160,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public DataSet next(int num) {
         if (useCurrent) {
             useCurrent = false;
-            if (preProcessor != null) preProcessor.preProcess(last);
+            if (preProcessor != null)
+                preProcessor.preProcess(last);
             return last;
         }
 
@@ -165,37 +176,59 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     sequenceIter = sequenceRecord.iterator();
                 }
 
-                List<Writable> record = sequenceIter.next();
-                dataSets.add(getDataSet(record));
+                try {
+                    List<Writable> record = sequenceIter.next();
+                    DataSet d = getDataSet(record);
+                    //account for transform process
+                    if (d != null)
+                        dataSets.add(d);
+                }catch(Exception e) {
+                    log.warn("Unable to get dataset ...skipping",e);
+                }
             } else {
-                if(collectMetaData){
+                if (collectMetaData) {
                     Record record = recordReader.nextRecord();
-                    dataSets.add(getDataSet(record.getRecord()));
-                    meta.add(record.getMetaData());
+                    DataSet d = getDataSet(record.getRecord());
+                    if(d != null) {
+                        dataSets.add(d);
+                        meta.add(record.getMetaData());
+                    }
                 } else {
-                    List<Writable> record = recordReader.next();
-                    dataSets.add(getDataSet(record));
+                   try {
+                       List<Writable> record = recordReader.next();
+                       DataSet d = getDataSet(record);
+                       if (d != null)
+                           dataSets.add(d);
+                   }catch(Exception e) {
+                       log.warn("Unable to get dataset ...skipping",e);
+                   }
                 }
             }
         }
         batchNum++;
 
-        if(dataSets.isEmpty())
-            return new DataSet();
+        if (dataSets.isEmpty()) {
+            return null;
+        }
 
         DataSet ret = DataSet.merge(dataSets);
-        if(collectMetaData){
+        if (collectMetaData) {
             ret.setExampleMetaData(meta);
         }
         last = ret;
-        if (preProcessor != null) preProcessor.preProcess(ret);
+        if (preProcessor != null)
+            preProcessor.preProcess(ret);
         //Add label name values to dataset
-        if (recordReader.getLabels() != null) ret.setLabelNames(recordReader.getLabels());
+        if (recordReader.getLabels() != null)
+            ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
 
 
     private DataSet getDataSet(List<Writable> record) {
+        if(record == null)
+            return null;
+
         List<Writable> currList;
         if (record instanceof List)
             currList = record;
@@ -213,15 +246,17 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         int labelCount = 0;
 
         //no labels
-        if(currList.size() == 2 && currList.get(1) instanceof NDArrayWritable && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
-            NDArrayWritable writable = (NDArrayWritable)currList.get(0);
-            return new DataSet(writable.get(),writable.get());
+        if (currList.size() == 2 && currList.get(1) instanceof NDArrayWritable
+                && currList.get(0) instanceof NDArrayWritable && currList.get(0) == currList.get(1)) {
+            NDArrayWritable writable = (NDArrayWritable) currList.get(0);
+            return new DataSet(writable.get(), writable.get());
         }
-        if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
-            if(!regression) {
-                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()), numPossibleLabels);
+        if (currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
+            if (!regression) {
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),
+                        numPossibleLabels);
             } else {
-                if(currList.get(1) instanceof NDArrayWritable){
+                if (currList.get(1) instanceof NDArrayWritable) {
                     label = ((NDArrayWritable) currList.get(1)).get();
                 } else {
                     label = Nd4j.scalar(currList.get(1).toDouble());
@@ -229,21 +264,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             }
             NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
             featureVector = ndArrayWritable.get();
-            return new DataSet(featureVector,label);
+            return new DataSet(featureVector, label);
         }
 
         for (int j = 0; j < currList.size(); j++) {
             Writable current = currList.get(j);
             //ndarray writable is an insane slow down herecd
-            if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
+            if (!(current instanceof NDArrayWritable) && current.toString().isEmpty())
                 continue;
 
-            if(regression && j == labelIndex && j == labelIndexTo && current instanceof NDArrayWritable ){
+            if (regression && j == labelIndex && j == labelIndexTo && current instanceof NDArrayWritable) {
                 //Case: NDArrayWritable for the labels
                 label = ((NDArrayWritable) current).get();
             } else if (regression && j >= labelIndex && j <= labelIndexTo) {
                 //This is the multi-label regression case
-                if (label == null) label = Nd4j.create(1, (labelIndexTo - labelIndex + 1));
+                if (label == null)
+                    label = Nd4j.create(1, (labelIndexTo - labelIndex + 1));
                 label.putScalar(labelCount++, current.toDouble());
             } else if (labelIndex >= 0 && j == labelIndex) {
                 //single label case (classification, etc)
@@ -260,9 +296,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 } else {
                     int curr = current.toInt();
                     if (curr < 0 || curr >= numPossibleLabels) {
-                        throw new DL4JInvalidInputException("Invalid classification data: expect label value (at label index column = " + labelIndex
-                            + ") to be in range 0 to " + (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
-                            + "); got label value of " + current);
+                        throw new DL4JInvalidInputException(
+                                "Invalid classification data: expect label value (at label index column = "
+                                        + labelIndex + ") to be in range 0 to "
+                                        + (numPossibleLabels - 1)
+                                        + " inclusive (0 to numClasses-1, with numClasses="
+                                        + numPossibleLabels + "); got label value of " + current);
                     }
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
@@ -270,7 +309,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 try {
                     double value = current.toDouble();
                     if (featureVector == null) {
-                        if(regression && labelIndex >= 0){
+                        if (regression && labelIndex >= 0) {
                             //Handle the possibly multi-label regression case here:
                             int nLabels = labelIndexTo - labelIndex + 1;
                             featureVector = Nd4j.create(1, currList.size() - nLabels);
@@ -284,7 +323,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     // This isn't a scalar, so check if we got an array already
                     if (current instanceof NDArrayWritable) {
                         assert featureVector == null;
-                        featureVector = ((NDArrayWritable)current).get();
+                        featureVector = ((NDArrayWritable) current).get();
                     } else {
                         throw e;
                     }
@@ -326,7 +365,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return true;
     }
 
@@ -406,20 +445,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         List<Record> records = recordReader.loadFromMetaData(list);
         List<DataSet> dataSets = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
-        for(Record r : records){
+        for (Record r : records) {
             dataSets.add(getDataSet(r.getRecord()));
             meta.add(r.getMetaData());
         }
 
-        if(dataSets.isEmpty()) {
-            return new DataSet();
+        if (dataSets.isEmpty()) {
+           return null;
         }
 
         DataSet ret = DataSet.merge(dataSets);
         ret.setExampleMetaData(meta);
         last = ret;
-        if (preProcessor != null) preProcessor.preProcess(ret);
-        if (recordReader.getLabels() != null) ret.setLabelNames(recordReader.getLabels());
+        if (preProcessor != null)
+            preProcessor.preProcess(ret);
+        if (recordReader.getLabels() != null)
+            ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
 }

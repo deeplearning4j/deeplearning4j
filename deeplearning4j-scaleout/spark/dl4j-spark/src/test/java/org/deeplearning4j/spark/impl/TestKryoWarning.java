@@ -18,16 +18,14 @@ import org.junit.Test;
  */
 public class TestKryoWarning {
 
-    private static void doTestMLN(SparkConf sparkConf){
+    private static void doTestMLN(SparkConf sparkConf) {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         try {
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build())
-                    .pretrain(false).backprop(true)
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                            .layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build()).pretrain(false).backprop(true)
+                            .build();
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).build();
 
@@ -37,22 +35,18 @@ public class TestKryoWarning {
         }
     }
 
-    private static void doTestCG(SparkConf sparkConf){
+    private static void doTestCG(SparkConf sparkConf) {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         try {
 
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .graphBuilder()
-                    .addInputs("in")
-                    .addLayer("0", new OutputLayer.Builder().nIn(10).nOut(10).build(), "in")
-                    .setOutputs("0")
-                    .pretrain(false).backprop(true)
-                    .build();
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                            .addLayer("0", new OutputLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("0")
+                            .pretrain(false).backprop(true).build();
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).build();
 
-            SparkComputationGraph scg = new SparkComputationGraph(sc, conf, tm);
+            SparkListenable scg = new SparkComputationGraph(sc, conf, tm);
         } finally {
             sc.stop();
         }
@@ -60,36 +54,30 @@ public class TestKryoWarning {
 
     @Test
     @Ignore
-    public void testKryoMessageMLNIncorrectConfig(){
+    public void testKryoMessageMLNIncorrectConfig() {
         //Should print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest")
-                .set("spark.serializer","org.apache.spark.serializer.KryoSerializer");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest").set("spark.serializer",
+                        "org.apache.spark.serializer.KryoSerializer");
 
         doTestMLN(sparkConf);
     }
 
     @Test
     @Ignore
-    public void testKryoMessageMLNCorrectConfigKryo(){
+    public void testKryoMessageMLNCorrectConfigKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest")
-                .set("spark.serializer","org.apache.spark.serializer.KryoSerializer")
-                .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                        .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                        .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 
         doTestMLN(sparkConf);
     }
 
     @Test
     @Ignore
-    public void testKryoMessageMLNCorrectConfigNoKryo(){
+    public void testKryoMessageMLNCorrectConfigNoKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest");
 
         doTestMLN(sparkConf);
     }
@@ -98,36 +86,30 @@ public class TestKryoWarning {
 
     @Test
     @Ignore
-    public void testKryoMessageCGIncorrectConfig(){
+    public void testKryoMessageCGIncorrectConfig() {
         //Should print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest")
-                .set("spark.serializer","org.apache.spark.serializer.KryoSerializer");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest").set("spark.serializer",
+                        "org.apache.spark.serializer.KryoSerializer");
 
         doTestCG(sparkConf);
     }
 
     @Test
     @Ignore
-    public void testKryoMessageCGCorrectConfigKryo(){
+    public void testKryoMessageCGCorrectConfigKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest")
-                .set("spark.serializer","org.apache.spark.serializer.KryoSerializer")
-                .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                        .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+                        .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 
         doTestCG(sparkConf);
     }
 
     @Test
     @Ignore
-    public void testKryoMessageCGCorrectConfigNoKryo(){
+    public void testKryoMessageCGCorrectConfigNoKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
-                .setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest");
 
         doTestCG(sparkConf);
     }

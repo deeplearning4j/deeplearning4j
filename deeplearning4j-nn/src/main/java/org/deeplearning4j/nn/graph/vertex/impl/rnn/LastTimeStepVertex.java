@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2016 Skymind,Inc.
  *  *
@@ -54,12 +54,13 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
 
     public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                              VertexIndices[] outputVertices, String inputName ) {
+                    VertexIndices[] outputVertices, String inputName) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.inputName = inputName;
         this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if(inputIdx == -1) throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+        if (inputIdx == -1)
+            throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
+                            + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
     }
 
     @Override
@@ -88,13 +89,13 @@ public class LastTimeStepVertex extends BaseGraphVertex {
         fwdPassShape = inputs[0].shape();
 
         INDArray out;
-        if(mask == null){
+        if (mask == null) {
             //No mask array -> extract same (last) column for all
-            int lastTS = inputs[0].size(2)-1;
-            out = inputs[0].get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(lastTS));
-            fwdPassTimeSteps = null;    //Null -> last time step for all examples
+            int lastTS = inputs[0].size(2) - 1;
+            out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
+            fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[]{inputs[0].size(0),inputs[0].size(1)};
+            int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array.
@@ -102,15 +103,16 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             int maxTsLength = fwdPassShape[2];
             INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength);
             INDArray temp = mask.mulRowVector(row);
-            INDArray lastElementIdx = Nd4j.argMax(temp,1);
+            INDArray lastElementIdx = Nd4j.argMax(temp, 1);
             fwdPassTimeSteps = new int[fwdPassShape[0]];
-            for( int i=0; i<fwdPassTimeSteps.length; i++ ){
-                fwdPassTimeSteps[i] = (int)lastElementIdx.getDouble(i);
+            for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                fwdPassTimeSteps[i] = (int) lastElementIdx.getDouble(i);
             }
 
             //Now, get and assign the corresponding subsets of 3d activations:
-            for( int i=0; i<fwdPassTimeSteps.length; i++){
-                out.putRow(i,inputs[0].get(NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.point(fwdPassTimeSteps[i])));
+            for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                out.putRow(i, inputs[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                                NDArrayIndex.point(fwdPassTimeSteps[i])));
             }
         }
 
@@ -123,34 +125,36 @@ public class LastTimeStepVertex extends BaseGraphVertex {
         //Allocate the appropriate sized array:
         INDArray epsilonsOut = Nd4j.create(fwdPassShape);
 
-        if(fwdPassTimeSteps == null){
+        if (fwdPassTimeSteps == null) {
             //Last time step for all examples
-            epsilonsOut.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(fwdPassShape[2]-1)},
-                    epsilon);
+            epsilonsOut.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.point(fwdPassShape[2] - 1)}, epsilon);
         } else {
             //Different time steps were extracted for each example
-            for( int i=0; i<fwdPassTimeSteps.length; i++ ){
-                epsilonsOut.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(),
-                        NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilon.getRow(i));
+            for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                epsilonsOut.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(),
+                                NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilon.getRow(i));
             }
         }
-        return new Pair<>(null,new INDArray[]{epsilonsOut});
+        return new Pair<>(null, new INDArray[] {epsilonsOut});
     }
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                    int minibatchSize) {
         //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
 
         return new Pair<>(null, currentMaskState);
     }
 
     @Override
-    public String toString(){
-        return "LastTimeStepVertex(inputName="+inputName+")";
+    public String toString() {
+        return "LastTimeStepVertex(inputName=" + inputName + ")";
     }
 }

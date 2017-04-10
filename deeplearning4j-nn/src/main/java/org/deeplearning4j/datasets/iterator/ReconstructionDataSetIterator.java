@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -35,7 +35,9 @@ import java.util.List;
 public class ReconstructionDataSetIterator implements DataSetIterator {
 
     private DataSetIterator iter;
-    @Getter private DataSetPreProcessor preProcessor;
+    @Getter
+    private DataSetPreProcessor preProcessor;
+
     public ReconstructionDataSetIterator(DataSetIterator iter) {
         this.iter = iter;
     }
@@ -85,7 +87,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public boolean resetSupported(){
+    public boolean resetSupported() {
         return iter.resetSupported();
     }
 

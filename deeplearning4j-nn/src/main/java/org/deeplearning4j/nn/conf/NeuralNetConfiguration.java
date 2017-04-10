@@ -1,4 +1,4 @@
-/*
+/*-
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
@@ -69,7 +70,7 @@ import java.util.*;
  */
 @Data
 @NoArgsConstructor
-public class NeuralNetConfiguration implements Serializable,Cloneable {
+public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     private static final Logger log = LoggerFactory.getLogger(NeuralNetConfiguration.class);
 
@@ -102,9 +103,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //minimize or maximize objective
     protected boolean minimize = true;
     // Graves LSTM & RNN
-    protected Map<String,Double> learningRateByParam = new HashMap<>();
-    protected Map<String,Double> l1ByParam = new HashMap<>();
-    protected Map<String,Double> l2ByParam = new HashMap<>();
+    protected Map<String, Double> learningRateByParam = new HashMap<>();
+    protected Map<String, Double> l1ByParam = new HashMap<>();
+    protected Map<String, Double> l2ByParam = new HashMap<>();
     protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
     protected double lrPolicyDecayRate;
     protected double lrPolicySteps;
@@ -128,15 +129,21 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * Creates and returns a deep copy of the configuration.
      */
     @Override
-    public NeuralNetConfiguration clone()  {
+    public NeuralNetConfiguration clone() {
         try {
             NeuralNetConfiguration clone = (NeuralNetConfiguration) super.clone();
-            if(clone.layer != null) clone.layer = clone.layer.clone();
-            if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
-            if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
-            if(clone.learningRateByParam != null ) clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
-            if(clone.l1ByParam != null ) clone.l1ByParam = new HashMap<>(clone.l1ByParam);
-            if(clone.l2ByParam != null ) clone.l2ByParam = new HashMap<>(clone.l2ByParam);
+            if (clone.layer != null)
+                clone.layer = clone.layer.clone();
+            if (clone.stepFunction != null)
+                clone.stepFunction = clone.stepFunction.clone();
+            if (clone.variables != null)
+                clone.variables = new ArrayList<>(clone.variables);
+            if (clone.learningRateByParam != null)
+                clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
+            if (clone.l1ByParam != null)
+                clone.l1ByParam = new HashMap<>(clone.l1ByParam);
+            if (clone.l2ByParam != null)
+                clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -147,45 +154,49 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new ArrayList<>(variables);
     }
 
-    public List<String> variables(boolean copy){
-        if(copy) return variables();
+    public List<String> variables(boolean copy) {
+        if (copy)
+            return variables();
         return variables;
     }
 
     public void addVariable(String variable) {
-        if(!variables.contains(variable)) {
+        if (!variables.contains(variable)) {
             variables.add(variable);
             setLayerParamLR(variable);
         }
     }
 
-    public void clearVariables(){
+    public void clearVariables() {
         variables.clear();
     }
 
-    public void setLayerParamLR(String variable){
+    public void setLayerParamLR(String variable) {
         double lr = layer.getLearningRateByParam(variable);
         double l1 = layer.getL1ByParam(variable);
-        if(Double.isNaN(l1)) l1 = 0.0;  //Not set
+        if (Double.isNaN(l1))
+            l1 = 0.0; //Not set
         double l2 = layer.getL2ByParam(variable);
-        if(Double.isNaN(l2)) l2 = 0.0;  //Not set
+        if (Double.isNaN(l2))
+            l2 = 0.0; //Not set
         learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
     }
 
-    public double getLearningRateByParam(String variable){
+    public double getLearningRateByParam(String variable) {
         return learningRateByParam.get(variable);
     }
 
-    public void setLearningRateByParam(String variable, double rate){
+    public void setLearningRateByParam(String variable, double rate) {
         learningRateByParam.put(variable, rate);
     }
-    public double getL1ByParam(String variable ){
+
+    public double getL1ByParam(String variable) {
         return l1ByParam.get(variable);
     }
 
-    public double getL2ByParam(String variable ){
+    public double getL2ByParam(String variable) {
         return l2ByParam.get(variable);
     }
 
@@ -202,8 +213,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.layerwise = layerMap;
         }
 
-        public ListBuilder(Builder globalConfig){
-            this(globalConfig,new HashMap<Integer, Builder>());
+        public ListBuilder(Builder globalConfig) {
+            this(globalConfig, new HashMap<Integer, Builder>());
         }
 
         public ListBuilder backprop(boolean backprop) {
@@ -218,10 +229,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ListBuilder layer(int ind, Layer layer) {
-            if(layerwise.containsKey(ind)){
+            if (layerwise.containsKey(ind)) {
                 layerwise.get(ind).layer(layer);
             } else {
-                layerwise.put(ind,globalConfig.clone().layer(layer));
+                layerwise.put(ind, globalConfig.clone().layer(layer));
             }
             return this;
         }
@@ -238,25 +249,33 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
-            if(layerwise.isEmpty()) throw new IllegalStateException("Invalid configuration: no layers defined");
-            for(int i = 0; i < layerwise.size(); i++) {
-                if(layerwise.get(i) == null){
-                    throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "
-                            + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
+            if (layerwise.isEmpty())
+                throw new IllegalStateException("Invalid configuration: no layers defined");
+            for (int i = 0; i < layerwise.size(); i++) {
+                if (layerwise.get(i) == null) {
+                    throw new IllegalStateException("Invalid configuration: layer number " + i
+                                    + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
+                                    + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
-                if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
-                        "layer with index " + i + " is not defined)");
+                if (layerwise.get(i).getLayer() == null)
+                    throw new IllegalStateException("Cannot construct network: Layer config for" + "layer with index "
+                                    + i + " is not defined)");
+
+                //Layer names: set to default, if not set
+                if (layerwise.get(i).getLayer().getLayerName() == null) {
+                    layerwise.get(i).getLayer().setLayerName("layer" + i);
+                }
+
                 list.add(layerwise.get(i).build());
             }
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
-                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                    .tBPTTBackwardLength(tbpttBackLength)
-                    .cnnInputSize(this.cnnInputSize)
-                    .setInputType(this.inputType)
-                    .confs(list).build();
+            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
+                            .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+                            .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
+                            .setInputType(this.inputType).confs(list).build();
         }
 
     }
+
     /**
      * Return this configuration as json
      * @return this configuration represented as json
@@ -265,7 +284,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ObjectMapper mapper = mapperYaml();
 
         try {
-            String ret =  mapper.writeValueAsString(this);
+            String ret = mapper.writeValueAsString(this);
             return ret;
 
         } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
@@ -281,7 +300,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static NeuralNetConfiguration fromYaml(String json) {
         ObjectMapper mapper = mapperYaml();
         try {
-            NeuralNetConfiguration ret =  mapper.readValue(json, NeuralNetConfiguration.class);
+            NeuralNetConfiguration ret = mapper.readValue(json, NeuralNetConfiguration.class);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -296,7 +315,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ObjectMapper mapper = mapper();
 
         try {
-            String ret =  mapper.writeValueAsString(this);
+            String ret = mapper.writeValueAsString(this);
             return ret;
 
         } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
@@ -312,7 +331,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static NeuralNetConfiguration fromJson(String json) {
         ObjectMapper mapper = mapper();
         try {
-            NeuralNetConfiguration ret =  mapper.readValue(json, NeuralNetConfiguration.class);
+            NeuralNetConfiguration ret = mapper.readValue(json, NeuralNetConfiguration.class);
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -345,7 +364,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
      * types defined outside of the main DL4J codebase)
      */
-    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes){
+    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes) {
         mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
         //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
         mapper = mapper.copy();
@@ -358,7 +377,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
-    private static void configureMapper(ObjectMapper ret){
+    private static void configureMapper(ObjectMapper ret) {
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
@@ -367,55 +386,49 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         registerSubtypes(ret);
     }
 
-    private static synchronized void registerSubtypes(ObjectMapper mapper){
+    private static synchronized void registerSubtypes(ObjectMapper mapper) {
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
+        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
+                        IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
         List<String> classNames = new ArrayList<>(6);
-        for(Class<?> c : classes) classNames.add(c.getName());
+        for (Class<?> c : classes)
+            classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
-        if(subtypesClassCache == null){
+        if (subtypesClassCache == null) {
 
             //Check system property:
             String prop = System.getProperty(CUSTOM_FUNCTIONALITY);
-            if(prop != null && !Boolean.parseBoolean(prop)){
+            if (prop != null && !Boolean.parseBoolean(prop)) {
 
                 subtypesClassCache = Collections.emptySet();
             } else {
 
-                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, IActivation.class, ReconstructionDistribution.class);
+                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
+                                IActivation.class, ReconstructionDistribution.class);
                 List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
                 Collection<URL> urls = ClasspathHelper.forClassLoader();
                 List<URL> scanUrls = new ArrayList<>();
                 for (URL u : urls) {
                     String path = u.getPath();
-                    if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
+                    if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
                         scanUrls.add(u);
                     }
                 }
 
-                Reflections reflections = new Reflections(new ConfigurationBuilder()
-                        .filterInputsBy(new FilterBuilder()
-                                .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(new FilterBuilder()
+                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
                                 //Exclude the following: the assumption here is that no custom functionality will ever be present
                                 // under these package name prefixes. These are all common dependencies for DL4J
-                                .exclude("^org.nd4j.*")
-                                .exclude("^org.datavec.*")
-                                .exclude("^org.bytedeco.*") //JavaCPP
+                                .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
                                 .exclude("^com.fasterxml.*")//Jackson
-                                .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
-                                .exclude("^org.projectlombok.*")
-                                .exclude("^com.twelvemonkeys.*")
-                                .exclude("^org.joda.*")
-                                .exclude("^org.slf4j.*")
-                                .exclude("^com.google.*")
-                                .exclude("^org.reflections.*")
-                                .exclude("^ch.qos.*")       //Logback
-                        )
-                        .addUrls(scanUrls)
-                        .setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
+                                .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                                .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
+                                .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
+                                .exclude("^ch.qos.*") //Logback
+                ).addUrls(scanUrls).setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
                 org.reflections.Store store = reflections.getStore();
 
                 Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
@@ -435,8 +448,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         //Second: get all currently registered subtypes for this mapper
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
-            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-            Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
+                            null);
+            Collection<NamedType> types =
+                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -446,7 +462,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         List<NamedType> toRegister = new ArrayList<>();
         for (Class<?> c : subtypesClassCache) {
             //Check if it's concrete or abstract...
-            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
+            if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
                 //log.info("Skipping abstract/interface: {}",c);
                 continue;
             }
@@ -460,10 +476,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     name = c.getSimpleName();
                 }
                 toRegister.add(new NamedType(c, name));
-                if(log.isDebugEnabled()){
-                    for(Class<?> baseClass : classes){
-                        if(baseClass.isAssignableFrom(c)){
-                            log.debug("Registering class for JSON serialization: {} as subtype of {}",c.getName(),baseClass.getName());
+                if (log.isDebugEnabled()) {
+                    for (Class<?> baseClass : classes) {
+                        if (baseClass.isAssignableFrom(c)) {
+                            log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
+                                            baseClass.getName());
                             break;
                         }
                     }
@@ -486,6 +503,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double lrScoreBasedDecay;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
+        protected double l1Bias = Double.NaN;
+        protected double l2Bias = Double.NaN;
         protected double dropOut = 0;
         protected Updater updater = Updater.SGD;
         protected double momentum = Double.NaN;
@@ -496,6 +515,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double adamMeanDecay = Double.NaN;
         protected double adamVarDecay = Double.NaN;
         protected Layer layer;
+        @Deprecated
         protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
         protected int numIterations = 1;
@@ -515,6 +535,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected boolean pretrain = false;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
+
+        public Builder() {
+            //
+        }
+
+        public Builder(NeuralNetConfiguration newConf) {
+            if (newConf != null) {
+                minimize = newConf.minimize;
+                maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
+                layer = newConf.layer;
+                numIterations = newConf.numIterations;
+                useRegularization = newConf.useRegularization;
+                optimizationAlgo = newConf.optimizationAlgo;
+                seed = newConf.seed;
+                stepFunction = newConf.stepFunction;
+                useDropConnect = newConf.useDropConnect;
+                miniBatch = newConf.miniBatch;
+                learningRatePolicy = newConf.learningRatePolicy;
+                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
+                lrPolicySteps = newConf.lrPolicySteps;
+                lrPolicyPower = newConf.lrPolicyPower;
+                pretrain = newConf.pretrain;
+            }
+        }
 
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
@@ -579,7 +623,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * }
          * </pre>
          * */
-        public ListBuilder list(){
+        public ListBuilder list() {
             return new ListBuilder(this);
         }
 
@@ -594,22 +638,23 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * </pre>
          * @param layers The layer configurations for the network
          */
-        public ListBuilder list(Layer... layers){
-            if(layers == null || layers.length == 0) throw new IllegalArgumentException("Cannot create network with no layers");
+        public ListBuilder list(Layer... layers) {
+            if (layers == null || layers.length == 0)
+                throw new IllegalArgumentException("Cannot create network with no layers");
             Map<Integer, Builder> layerMap = new HashMap<>();
-            for(int i = 0; i < layers.length; i++) {
+            for (int i = 0; i < layers.length; i++) {
                 Builder b = this.clone();
                 b.layer(layers[i]);
                 layerMap.put(i, b);
             }
-            return new ListBuilder(this,layerMap);
+            return new ListBuilder(this, layerMap);
 
         }
 
         /**
          * Create a GraphBuilder (for creating a ComputationGraphConfiguration).
          */
-        public ComputationGraphConfiguration.GraphBuilder graphBuilder(){
+        public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
             return new ComputationGraphConfiguration.GraphBuilder(this);
         }
 
@@ -653,8 +698,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder clone() {
             try {
                 Builder clone = (Builder) super.clone();
-                if(clone.layer != null) clone.layer = clone.layer.clone();
-                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
+                if (clone.layer != null)
+                    clone.layer = clone.layer.clone();
+                if (clone.stepFunction != null)
+                    clone.stepFunction = clone.stepFunction.clone();
 
                 return clone;
 
@@ -689,6 +736,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return activation(activation.getActivationFunction());
         }
 
+        /**
+         * @deprecated Use {@link #activation(IActivation)} with leaky relu, setting alpha value directly in constructor.
+         */
         @Deprecated
         public Builder leakyreluAlpha(double leakyreluAlpha) {
             this.leakyreluAlpha = leakyreluAlpha;
@@ -728,7 +778,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         /** Bias learning rate. Set this to apply a different learning rate to the bias*/
-        public Builder biasLearningRate(double biasLearningRate){
+        public Builder biasLearningRate(double biasLearningRate) {
             this.biasLearningRate = biasLearningRate;
             return this;
         }
@@ -746,7 +796,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** L1 regularization coefficient.
+        /** L1 regularization coefficient for the weights.
          *  Use with .regularization(true)
          */
         public Builder l1(double l1) {
@@ -754,11 +804,27 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** L2 regularization coefficient
+        /** L2 regularization coefficient for the weights.
          * Use with .regularization(true)
          */
         public Builder l2(double l2) {
             this.l2 = l2;
+            return this;
+        }
+
+        /** L1 regularization coefficient for the bias.
+         *  Use with .regularization(true)
+         */
+        public Builder l1Bias(double l1Bias) {
+            this.l1Bias = l1Bias;
+            return this;
+        }
+
+        /** L2 regularization coefficient for the bias.
+         * Use with .regularization(true)
+         */
+        public Builder l2Bias(double l2Bias) {
+            this.l2Bias = l2Bias;
             return this;
         }
 
@@ -816,7 +882,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          *
          * @param epsilon    Epsilon value to use for adagrad or
          */
-        public Builder epsilon(double epsilon){
+        public Builder epsilon(double epsilon) {
             this.epsilon = epsilon;
             return this;
         }
@@ -844,7 +910,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * @param gradientNormalization Type of normalization to use. Defaults to None.
          * @see GradientNormalization
          */
-        public Builder gradientNormalization(GradientNormalization gradientNormalization){
+        public Builder gradientNormalization(GradientNormalization gradientNormalization) {
             this.gradientNormalization = gradientNormalization;
             return this;
         }
@@ -854,7 +920,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * Not used otherwise.<br>
          * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
          */
-        public Builder gradientNormalizationThreshold(double threshold){
+        public Builder gradientNormalizationThreshold(double threshold) {
             this.gradientNormalizationThreshold = threshold;
             return this;
         }
@@ -862,7 +928,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Learning rate decay policy. Used to adapt learning rate based on policy.
          * @param policy Type of policy to use. Defaults to None.
          */
-        public Builder learningRateDecayPolicy(LearningRatePolicy policy){
+        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
             this.learningRatePolicy = policy;
             return this;
         }
@@ -870,7 +936,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Set the decay rate for the learning rate decay policy.
          * @param lrPolicyDecayRate rate.
          */
-        public Builder lrPolicyDecayRate(double lrPolicyDecayRate){
+        public Builder lrPolicyDecayRate(double lrPolicyDecayRate) {
             this.lrPolicyDecayRate = lrPolicyDecayRate;
             return this;
         }
@@ -878,7 +944,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Set the number of steps used for learning decay rate steps policy.
          * @param lrPolicySteps number of steps
          */
-        public Builder lrPolicySteps(double lrPolicySteps){
+        public Builder lrPolicySteps(double lrPolicySteps) {
             this.lrPolicySteps = lrPolicySteps;
             return this;
         }
@@ -886,175 +952,61 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         /** Set the power used for learning rate inverse policy.
          * @param lrPolicyPower power
          */
-        public Builder lrPolicyPower(double lrPolicyPower){
+        public Builder lrPolicyPower(double lrPolicyPower) {
             this.lrPolicyPower = lrPolicyPower;
             return this;
         }
 
-        public Builder convolutionMode(ConvolutionMode convolutionMode){
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
             return this;
         }
 
-        // VALIDATION SECTION //
-        private void updaterValidation(String layerName){
-            if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn("Layer \"" + layerName + "\" momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
-            if ((momentumSchedule != null || layer.getMomentumSchedule() != null) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn("Layer \"" + layerName + "\" momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
-            if ((!Double.isNaN(adamVarDecay) || (!Double.isNaN(layer.getAdamVarDecay()))) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer \"" + layerName + "\" adamVarDecay is set but will not be applied unless the updater is set to Adam.");
-            if ((!Double.isNaN(adamMeanDecay) || !Double.isNaN(layer.getAdamMeanDecay())) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer \"" + layerName + "\" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
-            if ((!Double.isNaN(rho) || !Double.isNaN(layer.getRho())) && layer.getUpdater() != Updater.ADADELTA)
-                log.warn("Layer \"" + layerName + "\" rho is set but will not be applied unless the updater is set to ADADELTA.");
-            if ((!Double.isNaN(rmsDecay) || (!Double.isNaN(layer.getRmsDecay()))) && layer.getUpdater() != Updater.RMSPROP)
-                log.warn("Layer \"" + layerName + "\" rmsdecay is set but will not be applied unless the updater is set to RMSPROP.");
-
-            switch (layer.getUpdater()) {
-                case NESTEROVS:
-                    if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
-                        layer.setMomentum(Nesterovs.DEFAULT_NESTEROV_MOMENTUM);
-                        log.warn("Layer \"" + layerName + "\" momentum is automatically set to " + Nesterovs.DEFAULT_NESTEROV_MOMENTUM + ". Add momentum to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getMomentum()))
-                        layer.setMomentum(momentum);
-                    if (momentumSchedule != null && layer.getMomentumSchedule() == null)
-                        layer.setMomentumSchedule(momentumSchedule);
-                    else if (momentumSchedule == null && layer.getMomentumSchedule() == null)
-                        layer.setMomentumSchedule(new HashMap<Integer, Double>());
-                    break;
-                case ADAM:
-                    if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
-                        layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
-                        log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY + ". Add adamVarDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getAdamMeanDecay()))
-                        layer.setAdamMeanDecay(adamMeanDecay);
-
-                    if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
-                        layer.setAdamVarDecay(Adam.DEFAULT_ADAM_BETA2_VAR_DECAY);
-                        log.warn("Layer \"" + layerName + "\" adamVarDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA2_VAR_DECAY + ". Add adamVarDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getAdamVarDecay()))
-                        layer.setAdamVarDecay(adamVarDecay);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(Adam.DEFAULT_ADAM_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case ADADELTA:
-                    if (Double.isNaN(layer.getRho()))
-                        layer.setRho(rho);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
-                        log.warn("Layer \"" + layerName + "\" AdaDelta epsilon is automatically set to " + AdaDelta.DEFAULT_ADADELTA_EPSILON + ". Add epsilon to configuration to change the value.");
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case ADAGRAD:
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(AdaGrad.DEFAULT_ADAGRAD_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-                    break;
-                case RMSPROP:
-                    if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
-                        layer.setRmsDecay(RmsProp.DEFAULT_RMSPROP_RMSDECAY);
-                        log.warn("Layer \"" + layerName + "\" rmsDecay is automatically set to 0.95. Add rmsDecay to configuration to change the value.");
-                    }
-                    else if (Double.isNaN(layer.getRmsDecay()))
-                        layer.setRmsDecay(rmsDecay);
-
-                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(RmsProp.DEFAULT_RMSPROP_EPSILON);
-                    } else if (Double.isNaN(layer.getEpsilon())) {
-                        layer.setEpsilon(epsilon);
-                    }
-
-                    break;
-
-
-            }
-
-        }
-
-        private void learningRateValidation(String layerName){
-            if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate) ) {
+        private void learningRateValidation(String layerName) {
+            if (learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
                 //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
-                if(!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null) &&
-                        !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
-                    throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
+                if (!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null)
+                                && !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
+                    throw new IllegalStateException("Layer \"" + layerName
+                                    + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
             switch (learningRatePolicy) {
                 case Inverse:
                 case Poly:
                     if (Double.isNaN(lrPolicyPower))
-                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy power (lrPolicyPower) must be set to use " + learningRatePolicy);
+                        throw new IllegalStateException("Layer \"" + layerName
+                                        + "\" learning rate policy power (lrPolicyPower) must be set to use "
+                                        + learningRatePolicy);
                     break;
                 case Step:
                 case Sigmoid:
                     if (Double.isNaN(lrPolicySteps))
-                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy steps (lrPolicySteps) must be set to use " + learningRatePolicy);
+                        throw new IllegalStateException("Layer \"" + layerName
+                                        + "\" learning rate policy steps (lrPolicySteps) must be set to use "
+                                        + learningRatePolicy);
                     break;
                 case Schedule:
-                    if(learningRateSchedule == null)
-                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy schedule (learningRateSchedule) must be set to use " + learningRatePolicy);
+                    if (learningRateSchedule == null)
+                        throw new IllegalStateException("Layer \"" + layerName
+                                        + "\" learning rate policy schedule (learningRateSchedule) must be set to use "
+                                        + learningRatePolicy);
                     break;
             }
 
-            if (!Double.isNaN(lrPolicyPower) && (learningRatePolicy != LearningRatePolicy.Inverse && learningRatePolicy != LearningRatePolicy.Poly))
-                throw new IllegalStateException("Layer \"" + layerName + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
-            if (!Double.isNaN(lrPolicySteps) && (learningRatePolicy != LearningRatePolicy.Step && learningRatePolicy != LearningRatePolicy.Sigmoid && learningRatePolicy != LearningRatePolicy.TorchStep))
-                throw new IllegalStateException("Layer \"" + layerName + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
+            if (!Double.isNaN(lrPolicyPower) && (learningRatePolicy != LearningRatePolicy.Inverse
+                            && learningRatePolicy != LearningRatePolicy.Poly))
+                throw new IllegalStateException("Layer \"" + layerName
+                                + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
+            if (!Double.isNaN(lrPolicySteps) && (learningRatePolicy != LearningRatePolicy.Step
+                            && learningRatePolicy != LearningRatePolicy.Sigmoid
+                            && learningRatePolicy != LearningRatePolicy.TorchStep))
+                throw new IllegalStateException("Layer \"" + layerName
+                                + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
             if ((learningRateSchedule != null) && (learningRatePolicy != LearningRatePolicy.Schedule))
-                throw new IllegalStateException("Layer \"" + layerName + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
+                throw new IllegalStateException("Layer \"" + layerName
+                                + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
 
         }
-
-        private void generalValidation(String layerName){
-            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-                log.warn("Layer \"" + layerName + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-            if(useDropConnect && dropOut == 0.0) log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
-            if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1())
-                    && Double.isNaN(l2) && Double.isNaN(layer.getL2())
-                    && (Double.isNaN(dropOut) || dropOut==0.0) && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
-                log.warn( "Layer \"" + layerName + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
-            // CompGraph may have null layers TODO confirm valid configuration
-            if (layer != null) {
-                if (useRegularization) {
-                    if (!Double.isNaN(l1) && Double.isNaN(layer.getL1()))
-                        layer.setL1(l1);
-                    if (!Double.isNaN(l2) && Double.isNaN(layer.getL2()))
-                        layer.setL2(l2);
-                } else if (!useRegularization &&
-                        ((!Double.isNaN(l1) && l1 > 0.0) ||
-                                (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
-                                (!Double.isNaN(l2) && l2 > 0.0) ||
-                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
-                    log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
-                if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
-                    layer.setL2(0.0);
-                if (Double.isNaN(l1) && Double.isNaN(layer.getL1()))
-                    layer.setL1(0.0);
-                if (layer.getWeightInit() == WeightInit.DISTRIBUTION) {
-                    if (dist != null && layer.getDist() == null)
-                        layer.setDist(dist);
-                    else if (dist == null && layer.getDist() == null) {
-                        layer.setDist(new NormalDistribution(0, 1));
-                        log.warn("Layer \"" + layerName + "\" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
-                    }
-                } else if ((dist != null || layer.getDist() != null))
-                    log.warn("Layer \"" + layerName + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
-            }
-
-        }
-
         ////////////////
 
         /**
@@ -1081,39 +1033,55 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
             String layerName;
-            if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
-            else layerName = "Layer " + layer.getLayerName() ;
+            if (layer == null || layer.getLayerName() == null)
+                layerName = "Layer not named";
+            else
+                layerName = layer.getLayerName();
             learningRateValidation(layerName);
 
-            if(layer != null ) {
-                if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-                if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(layer.getLearningRate());
-                if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
-                if (Double.isNaN(layer.getL1())) layer.setL1(l1);
-                if (Double.isNaN(layer.getL2())) layer.setL2(l2);
-                if (layer.getActivationFn() == null) layer.setActivationFn(activationFn);
-                if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
-                if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
-                if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
-                if (layer.getUpdater() == null) layer.setUpdater(updater);
-                updaterValidation(layerName);
-                if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
+            if (layer != null) {
+                if (Double.isNaN(layer.getLearningRate()))
+                    layer.setLearningRate(learningRate);
+                if (Double.isNaN(layer.getBiasLearningRate()))
+                    layer.setBiasLearningRate(layer.getLearningRate());
+                if (layer.getLearningRateSchedule() == null)
+                    layer.setLearningRateSchedule(learningRateSchedule);
+                if (Double.isNaN(layer.getL1()))
+                    layer.setL1(l1);
+                if (Double.isNaN(layer.getL2()))
+                    layer.setL2(l2);
+                if (layer.getActivationFn() == null)
+                    layer.setActivationFn(activationFn);
+                if (layer.getWeightInit() == null)
+                    layer.setWeightInit(weightInit);
+                if (Double.isNaN(layer.getBiasInit()))
+                    layer.setBiasInit(biasInit);
+                if (Double.isNaN(layer.getDropOut()))
+                    layer.setDropOut(dropOut);
+                if (layer.getUpdater() == null)
+                    layer.setUpdater(updater);
+                //                updaterValidation(layerName);
+                LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay,
+                                adamVarDecay, rho, rmsDecay, epsilon);
+                if (layer.getGradientNormalization() == null)
+                    layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))
                     layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-                if(layer instanceof ConvolutionLayer){
-                    ConvolutionLayer cl = (ConvolutionLayer)layer;
-                    if(cl.getConvolutionMode() == null){
+                if (layer instanceof ConvolutionLayer) {
+                    ConvolutionLayer cl = (ConvolutionLayer) layer;
+                    if (cl.getConvolutionMode() == null) {
                         cl.setConvolutionMode(convolutionMode);
                     }
                 }
-                if(layer instanceof SubsamplingLayer){
-                    SubsamplingLayer sl = (SubsamplingLayer)layer;
-                    if(sl.getConvolutionMode() == null){
+                if (layer instanceof SubsamplingLayer) {
+                    SubsamplingLayer sl = (SubsamplingLayer) layer;
+                    if (sl.getConvolutionMode() == null) {
                         sl.setConvolutionMode(convolutionMode);
                     }
                 }
             }
-            generalValidation(layerName);
+            LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
+                            l1, l1Bias, dist);
             return conf;
         }
 

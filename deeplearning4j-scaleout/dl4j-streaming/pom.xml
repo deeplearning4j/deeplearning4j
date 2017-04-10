@@ -7,20 +7,23 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-streaming_2.11</artifactId>
     <packaging>jar</packaging>
-    <version>0.7.3_spark_1-SNAPSHOT</version>
+    <version>0.8.1_spark_1-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.8.1-SNAPSHOT</version>
     </parent>
 
     <properties>
         <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
-        <spark.major.version>1</spark.major.version>
+        <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom or in
+        deeplearning4j-scaleout. Otherwise, the properties will be resolved to their defaults (and not the values present
+         during the build). Whereas when defined here (the version is spark 1 vs. 2 specific) we can have different version
+          properties simultaneously (in different pom files) instead of a single global property. -->
         <spark.version>1.6.2</spark.version>
-        <hadoop.version>2.2.0</hadoop.version>
-        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
+        <spark.major.version>1</spark.major.version>
+        <datavec.spark.version>0.8.1_spark_1-SNAPSHOT</datavec.spark.version>
     </properties>
 
     <name>Dl4j Streaming</name>
@@ -67,12 +70,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
             <version>${zookeeper.version}</version>
@@ -82,19 +79,32 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
-            <!-- Exclude Kafka 2.11, for 2.10. Using property here so it isn't replaced by change-scala-versions.sh -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.kafka</groupId>
-                    <artifactId>kafka_${kafka.scala.exclusion.version}</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
             <version>${camel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.11</artifactId>
+            <version>${kafka.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 
@@ -113,7 +123,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
+                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -130,5 +140,13 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
+    </profiles>
 
 </project>
