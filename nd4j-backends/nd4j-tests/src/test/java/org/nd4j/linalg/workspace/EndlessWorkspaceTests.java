@@ -12,6 +12,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -162,6 +163,29 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void endlessTest5() throws Exception {
+        while (true) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                            .initialSize(10 * 1024L * 1024L)
+                            .policyLearning(LearningPolicy.NONE)
+                            .build();
+
+                    try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "PEW-PEW")) {
+                        INDArray array = Nd4j.create(10);
+                    }
+                }
+            });
+
+            thread.start();
+            thread.join();
+
+            System.gc();
+        }
+    }
 
     @Test
     public void endlessValidation1() throws Exception {

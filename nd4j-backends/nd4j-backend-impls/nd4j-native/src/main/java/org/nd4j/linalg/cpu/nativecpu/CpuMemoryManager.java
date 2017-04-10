@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -28,6 +29,18 @@ public class CpuMemoryManager extends BasicMemoryManager {
             Pointer.memset(ptr, 0, bytes);
 
         return ptr;
+    }
+
+    /**
+     * This method releases previously allocated memory chunk
+     *
+     * @param pointer
+     * @param kind
+     * @return
+     */
+    @Override
+    public void release(@NonNull Pointer pointer, MemoryKind kind) {
+        Pointer.free(pointer);
     }
 
     /**

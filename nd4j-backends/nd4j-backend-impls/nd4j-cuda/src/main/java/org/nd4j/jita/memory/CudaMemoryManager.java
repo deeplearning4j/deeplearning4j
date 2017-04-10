@@ -178,6 +178,22 @@ public class CudaMemoryManager extends BasicMemoryManager {
         }
     }
 
+    /**
+     * This method releases previously allocated memory chunk
+     *
+     * @param pointer
+     * @param kind
+     * @return
+     */
+    @Override
+    public void release(Pointer pointer, MemoryKind kind) {
+        if (kind == MemoryKind.DEVICE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, null);
+        } else if (kind == MemoryKind.HOST) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+        }
+    }
+
     @Override
     public void setAutoGcWindow(int windowMillis) {
         super.setAutoGcWindow(windowMillis);

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.memory.abstracts;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,8 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-    protected long threadId;
+    @Getter protected Long threadId;
 
     protected static final long SAFETY_OFFSET = 1024;
 
@@ -81,6 +84,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         this.workspaceConfiguration = configuration;
         this.id = workspaceId;
+        this.threadId = Thread.currentThread().getId();
 
         this.memoryManager = Nd4j.getMemoryManager();
 
@@ -409,5 +413,21 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 "id='" + id + '\'' +
                 ", currentSize=" + currentSize.get() +
                 '}';
+    }
+
+    @Data
+    public static class GarbageWorkspaceReference extends WeakReference<MemoryWorkspace> {
+        private PagedPointer pointerDevice;
+        private PagedPointer pointerHost;
+        private String id;
+        private Long threadId;
+
+        public GarbageWorkspaceReference(MemoryWorkspace referent, ReferenceQueue<? super MemoryWorkspace> queue) {
+            super(referent, queue);
+            this.pointerDevice = ((Nd4jWorkspace) referent).workspace.getDevicePointer();
+            this.pointerHost = ((Nd4jWorkspace) referent).workspace.getHostPointer();
+            this.id = referent.getId();
+            this.threadId = referent.getThreadId();
+        }
     }
 }

@@ -101,12 +101,23 @@ public interface MemoryManager {
     int getAutoGcWindow();
 
     /**
-     * This method returns
+     * This method returns pointer to allocated memory
+     *
      * PLEASE NOTE: Cache options depend on specific implementations
      *
      * @param bytes
      */
     Pointer allocate(long bytes, MemoryKind kind, boolean initialize);
+
+
+    /**
+     * This method releases previously allocated memory chunk
+     *
+     * @param pointer
+     * @param kind
+     * @return
+     */
+    void release(Pointer pointer, MemoryKind kind);
 
     /**
      * This method detaches off-heap memory from passed INDArray instances, and optionally stores them in cache for future reuse

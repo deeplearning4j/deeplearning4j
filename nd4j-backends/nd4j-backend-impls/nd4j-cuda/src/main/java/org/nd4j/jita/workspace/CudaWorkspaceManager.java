@@ -10,6 +10,11 @@ import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
  */
 public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
+    public CudaWorkspaceManager(){
+        super();
+    }
+
+
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
         return new CudaWorkspace(configuration);
@@ -29,6 +34,7 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
         if (workspace == null) {
             workspace = new CudaWorkspace(configuration, id);
             backingMap.get().put(id, workspace);
+            pickReference(workspace);
         }
 
         return workspace;

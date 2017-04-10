@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
-public class BasicMemoryManager implements MemoryManager {
+public abstract class BasicMemoryManager implements MemoryManager {
     protected AtomicInteger frequency = new AtomicInteger(0);
     protected AtomicLong freqCounter = new AtomicLong(0);
 

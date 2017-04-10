@@ -26,6 +26,8 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     String getId();
 
+    Long getThreadId();
+
     /**
      * This method does allocation from a given Workspace
      *

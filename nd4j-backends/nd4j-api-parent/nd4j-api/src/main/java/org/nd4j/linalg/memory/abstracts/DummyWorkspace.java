@@ -34,6 +34,11 @@ public class DummyWorkspace implements MemoryWorkspace {
         return null;
     }
 
+    @Override
+    public Long getThreadId() {
+        return -1L;
+    }
+
     /**
      * This method does allocation from a given Workspace
      *

@@ -10,6 +10,11 @@ import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
  * @author raver119@gmail.com
  */
 public class CpuWorkspaceManager extends BasicWorkspaceManager {
+
+    public CpuWorkspaceManager() {
+        super();
+    }
+
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
         return new CpuWorkspace(configuration);
@@ -29,6 +34,7 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
         if (workspace == null) {
             workspace = new CpuWorkspace(configuration, id);
             backingMap.get().put(id, workspace);
+            pickReference(workspace);
         }
 
         return workspace;

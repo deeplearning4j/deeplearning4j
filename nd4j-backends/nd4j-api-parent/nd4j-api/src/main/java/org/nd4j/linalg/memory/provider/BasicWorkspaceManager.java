@@ -1,28 +1,33 @@
 package org.nd4j.linalg.memory.provider;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
+import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
     private DummyWorkspace dummyWorkspace = new DummyWorkspace();
+    private ReferenceQueue<MemoryWorkspace> queue;
+    private WorkspaceDeallocatorThread thread;
+    private Map<Long, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
 
     public BasicWorkspaceManager() {
         this(WorkspaceConfiguration.builder().initialSize(0).maxSize(0).overallocationLimit(0.3).policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build());
@@ -30,6 +35,10 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     public BasicWorkspaceManager(@NonNull WorkspaceConfiguration defaultConfiguration) {
         this.defaultConfiguration = defaultConfiguration;
+        this.queue = new ReferenceQueue<>();
+
+        thread = new WorkspaceDeallocatorThread(this.queue);
+        thread.start();
     }
 
     @Override
@@ -61,6 +70,11 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         return workspace;
     }
     */
+
+    protected void pickReference(MemoryWorkspace workspace) {
+        Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
+        referenceMap.put(reference.getThreadId(), reference);
+    }
 
     @Override
     public void setWorkspaceForCurrentThread(MemoryWorkspace workspace) {
@@ -165,6 +179,40 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         else {
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
             return workspace.tagOutOfScopeUse();
+        }
+    }
+
+
+    protected class WorkspaceDeallocatorThread extends Thread implements Runnable {
+        private final ReferenceQueue<MemoryWorkspace> queue;
+
+        protected WorkspaceDeallocatorThread(ReferenceQueue<MemoryWorkspace> queue) {
+            this.queue = queue;
+            this.setDaemon(true);
+            this.setName("Workspace deallocator thread");
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Nd4jWorkspace.GarbageWorkspaceReference reference = (Nd4jWorkspace.GarbageWorkspaceReference) queue.poll();
+                    if (reference != null) {
+                        //log.info("Releasing reference for Workspace [{}]", reference.getId());
+                        PagedPointer ptrDevice = reference.getPointerDevice();
+                        if (ptrDevice != null)
+                            Nd4j.getMemoryManager().release(ptrDevice, MemoryKind.DEVICE);
+
+                        PagedPointer ptrHost = reference.getPointerHost();
+                        if (ptrHost != null) {
+                            referenceMap.remove(ptrHost.address());
+                            Nd4j.getMemoryManager().release(ptrHost, MemoryKind.HOST);
+                        }
+                    }
+                } catch (Exception e) {
+                    //
+                }
+            }
         }
     }
 }
