@@ -306,7 +306,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected int[] cnnInputSize;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
         /**
          * Specify the processors.

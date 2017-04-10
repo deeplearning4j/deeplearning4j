@@ -532,7 +532,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 

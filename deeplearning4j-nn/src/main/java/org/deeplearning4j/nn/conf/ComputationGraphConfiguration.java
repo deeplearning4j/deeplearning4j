@@ -437,7 +437,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
