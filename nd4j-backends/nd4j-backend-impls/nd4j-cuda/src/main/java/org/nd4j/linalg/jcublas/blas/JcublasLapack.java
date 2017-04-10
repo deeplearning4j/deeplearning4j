@@ -1,5 +1,8 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -20,8 +23,6 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cusolver.*;
@@ -31,18 +32,31 @@ import static org.bytedeco.javacpp.cusolver.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class JcublasLapack extends BaseLapack {
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private Allocator allocator = AtomicAllocator.getInstance();
-    private static Logger logger = LoggerFactory.getLogger(JcublasLapack.class);
 
+    private Method cusolverDnSorgqr, cusolverDnSorgqr_bufferSize, cusolverDnDorgqr, cusolverDnDorgqr_bufferSize;
+
+    public JcublasLapack() {
+        Class c = org.bytedeco.javacpp.cusolver.class;
+        try {
+            cusolverDnSorgqr_bufferSize = c.getMethod("cusolverDnSorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
+            cusolverDnSorgqr = c.getMethod("cusolverDnSorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
+            cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, IntPointer.class);
+            cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, DoublePointer.class, int.class, IntPointer.class);
+        } catch (NoSuchMethodException | SecurityException ex) {
+            log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
+        }
+    }
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         INDArray a = A;
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -102,7 +116,7 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
 
@@ -112,7 +126,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT getrf called in FLOAT environment");
+            log.warn("FLOAT getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -178,7 +192,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray r = R;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT getrf called in DOUBLE environment");
+            log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c') 
             a = A.dup('f');
@@ -255,21 +269,25 @@ public class JcublasLapack extends BaseLapack {
                 }
             }
 
-            stat = cusolverDnSorgqr_bufferSize( solverDn, M, N, N,
+            try {
+                stat = (Integer) cusolverDnSorgqr_bufferSize.invoke(null, solverDn, M, N, N,
                         (FloatPointer) xAPointer.getDevicePointer(), M,
                         (FloatPointer) xTauPointer.getDevicePointer(),
-                        (IntPointer) worksizeBuffer.addressPointer() 
-            ) ;
-            worksize = worksizeBuffer.getInt(0);
-            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+                        (IntPointer) worksizeBuffer.addressPointer()
+                );
+                worksize = worksizeBuffer.getInt(0);
+                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
-            stat = cusolverDnSorgqr(solverDn, M, N, N,
-                            (FloatPointer) xAPointer.getDevicePointer(), M,
-                            (FloatPointer) xTauPointer.getDevicePointer(),
-                            new CudaPointer(workspace).asFloatPointer(),
-                            worksize,
-                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
-                            );
+                stat = (Integer) cusolverDnSorgqr.invoke(null, solverDn, M, N, N,
+                        (FloatPointer) xAPointer.getDevicePointer(), M,
+                        (FloatPointer) xTauPointer.getDevicePointer(),
+                        new CudaPointer(workspace).asFloatPointer(),
+                        worksize,
+                        new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                );
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
+                throw new RuntimeException("cusolverDnSorgqr() is not available", e);
+            }
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSorgqr failed", stat);
             }            
@@ -283,8 +301,8 @@ public class JcublasLapack extends BaseLapack {
         if ( r!=null && r != R )
             R.assign(r);
 
-        logger.info("A: {}", A);
-        if( R != null ) logger.info("R: {}", R);
+        log.info("A: {}", A);
+        if( R != null ) log.info("R: {}", R);
     }
 
     @Override
@@ -293,7 +311,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray r = R;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("DOUBLE getrf called in FLOAT environment");
+            log.warn("DOUBLE getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -368,22 +386,25 @@ public class JcublasLapack extends BaseLapack {
                     r.put(ix, 0) ;
                 }
             }
-
-            stat = cusolverDnDorgqr_bufferSize( solverDn, M, N, N,
-                        (DoublePointer) xAPointer.getDevicePointer(), M,
-                        (DoublePointer) xTauPointer.getDevicePointer(),
-                        (IntPointer) worksizeBuffer.addressPointer() 
-            ) ;
-            worksize = worksizeBuffer.getInt(0);
-            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
-
-            stat = cusolverDnDorgqr(solverDn, M, N, N,
+            try {
+                stat = (Integer) cusolverDnDorgqr_bufferSize.invoke(null, solverDn, M, N, N,
                             (DoublePointer) xAPointer.getDevicePointer(), M,
                             (DoublePointer) xTauPointer.getDevicePointer(),
-                            new CudaPointer(workspace).asDoublePointer(),
-                            worksize,
-                            new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
-                            );
+                            (IntPointer) worksizeBuffer.addressPointer()
+                );
+                worksize = worksizeBuffer.getInt(0);
+                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+                stat = (Integer) cusolverDnDorgqr.invoke(null, solverDn, M, N, N,
+                                (DoublePointer) xAPointer.getDevicePointer(), M,
+                                (DoublePointer) xTauPointer.getDevicePointer(),
+                                new CudaPointer(workspace).asDoublePointer(),
+                                worksize,
+                                new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+                                );
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
+                throw new RuntimeException("cusolverDnDorgqr() is not available", e);
+            }
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDorgqr failed", stat);
             }            
@@ -396,8 +417,8 @@ public class JcublasLapack extends BaseLapack {
         if ( r!=null && r != R )
             R.assign(r);
 
-        logger.info("A: {}", A);
-        if( R != null ) logger.info("R: {}", R);
+        log.info("A: {}", A);
+        if( R != null ) log.info("R: {}", R);
     }
 
 //=========================    
@@ -407,7 +428,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("DOUBLE potrf called in FLOAT environment");
+            log.warn("DOUBLE potrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -482,7 +503,7 @@ public class JcublasLapack extends BaseLapack {
             }        
         }
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
     @Override
@@ -490,7 +511,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("FLOAT potrf called in DOUBLE environment");
+            log.warn("FLOAT potrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -565,7 +586,7 @@ public class JcublasLapack extends BaseLapack {
             }        
         }
 
-        logger.info("A: {}", A);
+        log.info("A: {}", A);
     }
 
 
@@ -594,7 +615,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray vt = VT;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT gesvd called in DOUBLE environment");
+            log.warn("FLOAT gesvd called in DOUBLE environment");
 
         // cuda requires column ordering - we'll register a warning in case
         if (A.ordering() == 'c')
@@ -680,7 +701,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray vt = VT;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("DOUBLE gesvd called in FLOAT environment");
+            log.warn("DOUBLE gesvd called in FLOAT environment");
 
         // cuda requires column ordering - we'll register a warning in case
         if (A.ordering() == 'c')
