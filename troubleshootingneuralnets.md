@@ -23,8 +23,8 @@ Many of these tips have already been discussed in the academic literature. Our p
 * <a href="#normalization">Gradient Normalization</a>
 * <a href="#rnn">Recurrent Neural Networks</a>
 * <a href="#dbn">Deep Belief Network</a>
-<a href="#rbm">Restricted Boltzmann Machines</a>
-<a href="#NaN">NaN, Not a Number issues</a>
+* <a href="#rbm">Restricted Boltzmann Machines</a>
+* <a href="#NaN">NaN, Not a Number issues</a>
 
 
 
