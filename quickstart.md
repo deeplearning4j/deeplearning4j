@@ -171,6 +171,27 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 
 **A:** You may be missing some dependencies that Spark requires. See this [Stack Overflow discussion](http://stackoverflow.com/a/38735202/3892515) for a discussion of potential dependency issues. Windows users may need the winutils.exe from Hadoop.
 
+### Troubleshooting: Debugging UnsatisfiedLinkError on Windows
+
+Windows users might be seeing something like:
+
+```
+Exception in thread "main" java.lang.ExceptionInInitializerError
+at org.deeplearning4j.nn.conf.NeuralNetConfiguration$Builder.seed(NeuralNetConfiguration.java:624)
+at org.deeplearning4j.examples.feedforward.anomalydetection.MNISTAnomalyExample.main(MNISTAnomalyExample.java:46)
+Caused by: java.lang.RuntimeException: org.nd4j.linalg.factory.Nd4jBackend$NoAvailableBackendException: Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html
+at org.nd4j.linalg.factory.Nd4j.initContext(Nd4j.java:5556)
+at org.nd4j.linalg.factory.Nd4j.(Nd4j.java:189)
+... 2 more
+Caused by: org.nd4j.linalg.factory.Nd4jBackend$NoAvailableBackendException: Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html
+at org.nd4j.linalg.factory.Nd4jBackend.load(Nd4jBackend.java:259)
+at org.nd4j.linalg.factory.Nd4j.initContext(Nd4j.java:5553)
+... 3 more
+```
+
+If that is the issue see, [this page](https://github.com/bytedeco/javacpp-presets/wiki/Debugging-UnsatisfiedLinkError-on-Windows#using-dependency-walker)
+In this case replace with "Nd4jCpu".
+
 
 ### Eclipse setup without Maven
 
