@@ -105,6 +105,7 @@ public class Nd4j {
     public final static String CONVOLUTION_OPS = "convops";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
+    public final static String SPARSE_BLAS_OPS = "sparseblas.ops";
     public final static String NATIVE_OPS = "native.ops";
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
@@ -151,7 +152,8 @@ public class Nd4j {
     private static MemoryWorkspaceManager workspaceManager;
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
-    protected static Class<? extends BlasWrapper> blasWrapperClazz;
+        protected static Class<? extends BlasWrapper> blasWrapperClazz;
+    protected static Class<? extends BlasWrapper> sparseBlasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends SparseNDArrayFactory> sparseNDArrayClazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
@@ -169,6 +171,7 @@ public class Nd4j {
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
+    protected static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     protected static SparseNDArrayFactory SPARSE_INSTANCE;
     protected static FFTInstance FFT_INSTANCE;
@@ -1473,6 +1476,13 @@ public class Nd4j {
      */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
+    }
+    /**
+     *
+     * @return
+     */
+    public static BlasWrapper getSparseBlasWrapper() {
+        return SPARSE_BLAS_WRAPPER_INSTANCE;
     }
 
     /**
@@ -5967,6 +5977,8 @@ public class Nd4j {
 
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class
                     .forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
+            sparseBlasWrapperClazz =(Class<? extends BlasWrapper>) Class
+                    .forName(System.getProperty(SPARSE_BLAS_OPS, props.get(SPARSE_BLAS_OPS).toString()));
             String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
@@ -5984,10 +5996,10 @@ public class Nd4j {
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            // TODO set SPARSE_INSTANCE
             SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+            SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
 

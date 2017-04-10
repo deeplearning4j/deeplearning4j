@@ -91,6 +91,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *
      */
     private static final long serialVersionUID = 3285982317165542614L;
+    public static final boolean isSparse = false;
 
     protected transient volatile DataBuffer shapeInformation;
     protected transient volatile DataBuffer data;
@@ -2011,6 +2012,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         return Shape.offset(shapeInformation) > 0 || length() < data().length() || data().originalDataBuffer() != null;
+    }
+    @Override
+    public boolean isSparse(){
+        return isSparse;
     }
 
     @Override

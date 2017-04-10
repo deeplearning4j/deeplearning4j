@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
+import org.nd4j.linalg.api.blas.Blas;
 import org.nd4j.nativeblas.SparseNd4jBlas;
 
 
@@ -120,9 +121,6 @@ public class SparseCpuBlas extends SparseNd4jBlas {
 
     @Override
     public int getBlasVendorId() {
-
-        //TODO What is that ?
-
-        return 0;
+        return Vendor.MKL.ordinal();
     }
 }

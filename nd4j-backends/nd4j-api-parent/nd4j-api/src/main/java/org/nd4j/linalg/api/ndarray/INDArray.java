@@ -62,6 +62,12 @@ public interface INDArray extends Serializable {
     boolean isView();
 
     /**
+     * Returns true if this array is sparse
+     * @return
+     */
+    boolean isSparse();
+
+    /**
      * Returns true if this array is compressed, and false otherwise
      * @return
      */

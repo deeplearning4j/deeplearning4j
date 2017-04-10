@@ -25,16 +25,23 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     /**
      * computes a vector-vector dot product.
      *
-     * @param n
+     * @param n number of accessed element
      * @param alpha
-     * @param X
-     * @param Y
-     * @return
+     * @param X an INDArray
+     * @param Y an INDArray
+     * @return the vector-vector dot product of X and Y
      */
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, X, Y);
+
+        if (X.isSparse() && !Y.isSparse()){
+            return Nd4j.getSparseBlasWrapper().level1().dot(n, alpha, X, Y);
+        } else if (X.isSparse() && Y.isSparse()) {
+            // TODO - MKL doesn't contain such routines
+            return 0;
+        }
 
         if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
@@ -46,6 +53,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, X, Y);
             return hdot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
         }
+
     }
 
     @Override
@@ -93,7 +101,9 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     public double nrm2(INDArray arr) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, arr);
-
+        if(arr.isSparse()){
+            return Nd4j.getSparseBlasWrapper().level1().nrm2(arr);
+        }
         if (arr.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
             return dnrm2(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));

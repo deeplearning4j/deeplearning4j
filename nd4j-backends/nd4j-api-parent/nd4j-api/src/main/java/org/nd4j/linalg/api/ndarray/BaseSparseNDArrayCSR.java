@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -105,7 +106,12 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 //        return 0;
         return null;
     }
-
+    /**
+     * Return the minor pointers. (columns for CSR, rows for CSC,...)
+     * */
+    public DataBuffer getMinorPointer(){
+        return columns;
+    }
     public double[] getDoubleValues(){
         return values.getDoublesAt(0, (int) nnz);
     }

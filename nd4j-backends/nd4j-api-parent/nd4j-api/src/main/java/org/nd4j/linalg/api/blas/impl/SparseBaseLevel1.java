@@ -1,13 +1,16 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.factory.BaseSparseBlasWrapper;
 
 /**
  * @author Audrey Loeffel
@@ -26,97 +29,211 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
 
-        // TODO should we verify if the arrays are indeed sparse ? -> need to get the pointers array
-        // What is alpha ?
-
-        switch(X.data().dataType()){
-            case DOUBLE:
-                //TODO call ddoti
-                break;
-            case FLOAT:
-                // TODO call sdoti
-                break;
-            case HALF:
-                // ??
-                break;
-            default:
-        }
-        return 0;
+        if(X instanceof BaseSparseNDArray) {
+            BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
+            DataBuffer pointers = sparseX.getMinorPointer();
+            switch(X.data().dataType()){
+                case DOUBLE:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+                    return ddoti(n, X, pointers, Y);
+                case FLOAT:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
+                    return sdoti(n, X, pointers, Y);
+                case HALF:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, X, Y);
+                    return hdoti(n, X, pointers, Y);
+                default:
+            }
+         }
+        throw new UnsupportedOperationException();
     }
+
+
+
 
     @Override
     public double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Computes the Euclidean norm of a vector.
+     *
+     * @param arr a vector
+     * @return the Euclidean norm of the vector
+     */
     @Override
     public double nrm2(INDArray arr) {
-        return 0;
+
+        switch(arr.data().dataType()){
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                return dnrm2(arr.length(), arr, 1);
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                return snrm2(arr.length(), arr, 1);
+            case HALF:
+                return hnrm2(arr.length(), arr, 1);
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber nrm2(IComplexNDArray arr) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Compute the sum of magnitude of the vector elements
+     *
+     * @param arr a vector
+     * @return the sum of magnitude of the vector elements
+     * */
     @Override
     public double asum(INDArray arr) {
-        return 0;
+
+        switch(arr.data().dataType()){
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                return dasum(arr.length(), arr, 1);
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                return sasum(arr.length(), arr, 1);
+            case HALF:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                return hasum(arr.length(), arr, 1);
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
+
 
     @Override
     public double asum(int n, DataBuffer x, int offsetX, int incrX) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber asum(IComplexNDArray arr) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Find the index of the element with maximum absolute value
+     *
+     * @param arr a vector
+     * @return the index of the element with maximum absolute value
+     * */
     @Override
     public int iamax(INDArray arr) {
-        return 0;
+        switch(arr.data().dataType()){
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                return idamax(arr.length(), arr, 1);
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                return isamax(arr.length(), arr, 1);
+            case HALF:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                return ihamax(arr.length(), arr, 1);
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int iamax(int n, INDArray arr, int stride) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int iamax(int n, DataBuffer x, int offsetX, int incrX) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int iamax(IComplexNDArray arr) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Find the index of the element with minimum absolute value
+     *
+     * @param arr a vector
+     * @return the index of the element with maximum absolute value
+     * */    /**
+     * Find the index of the element with maximum absolute value
+     *
+     * @param arr a vector
+     * @return the index of the element with minimum absolute value
+     * */
     @Override
     public int iamin(INDArray arr) {
-        return 0;
+        switch(arr.data().dataType()){
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                return idamin(arr.length(), arr, 1);
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                return isamin(arr.length(), arr, 1);
+            case HALF:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                return ihamin(arr.length(), arr, 1);
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int iamin(IComplexNDArray arr) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
+
+    /**
+     * Swap a vector with another vector
+     *
+     * @param x a vector
+     * @param y a vector
+     * */
+    /*
     @Override
     public void swap(INDArray x, INDArray y) {
+        // not sure if the routines are useable with sparse ndarray
+        // -> TODO test if it works with sparse array
+        // also swap minorPointers ?
+        if(x.isSparse() && y.isSparse()){
+            BaseSparseNDArray xSparse = (BaseSparseNDArray) x;
+            BaseSparseNDArray ySparse = (BaseSparseNDArray) y;
+            switch(x.data().dataType()){
+                case DOUBLE:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);
+                    dswap(x.length(), x, 1, y, 1);
+                    // swap pointers?
+                case FLOAT:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
+                    sswap(x.length(), x, 1, y, 1);
+                case HALF:
+                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, x, y);
+                    hswap(x.length(), x, 1, y, 1);
+                default:
+            }
+            throw new UnsupportedOperationException();
 
-    }
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }*/
 
     @Override
     public void swap(IComplexNDArray x, IComplexNDArray y) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -196,12 +313,47 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     * ===========================================================================
     */
 
-    protected abstract double ddoti(int N, INDArray X, IntBuffer indx, INDArray Y);
+    protected abstract double ddoti(int N, INDArray X, DataBuffer indx, INDArray Y);
 
-    protected abstract double sdoti(int N, INDArray X, IntBuffer indx, INDArray Y);
+    protected abstract double sdoti(int N, INDArray X, DataBuffer indx, INDArray Y);
 
+    protected abstract double hdoti(int N, INDArray X, DataBuffer indx, INDArray Y);
 
+    protected abstract double snrm2(int N, INDArray X, int incx);
 
+    protected abstract double dnrm2(int N, INDArray X, int incx);
+
+    protected abstract double hnrm2(int N, INDArray X, int incx);
+
+    protected abstract double dasum(int N, INDArray X, int incx);
+
+    protected abstract double sasum(int N, INDArray X, int incx);
+
+    protected abstract double hasum(int N, INDArray X, int incx);
+
+    protected abstract int isamax(int N, INDArray X, int incx);
+
+    protected abstract int idamax(int N, INDArray X, int incx);
+
+    protected abstract int ihamax(int N, INDArray X, int incx);
+
+    protected abstract int isamin(int N, INDArray X, int incx);
+
+    protected abstract int idamin(int N, INDArray X, int incx);
+
+    protected abstract int ihamin(int N, INDArray X, int incx);
+
+    //protected abstract void dswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+
+    //protected abstract void sswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+
+    //protected abstract void hswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+
+    protected abstract int scopy(int N, INDArray X, int incrx, INDArray Y, int incry);
+
+    protected abstract int dcopy(int N, INDArray X, int incrx, INDArray Y, int incry);
+
+    protected abstract int hcopy(int N, INDArray X, int incrx, INDArray Y, int incry);
 
     /*
      * Functions having prefixes Z and C only
