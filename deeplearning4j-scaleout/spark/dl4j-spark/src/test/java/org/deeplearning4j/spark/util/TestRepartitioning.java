@@ -66,7 +66,7 @@ public class TestRepartitioning extends BaseSparkTest {
 
         assertTrue(indexedKeys.size() == pairKeys.size());
         for (int i = 0; i < pairKeys.size(); i++) {
-            assertTrue(pairKeys.get(i) == indexedKeys.get(i));
+            assertEquals(pairKeys.get(i), indexedKeys.get(i));
         }
     }
 

@@ -42,7 +42,7 @@ public class BalancedPartitionerTest {
             countPerPartition[p] += 1;
         }
         for (int i = 0; i < 10; i++) {
-            assertTrue(countPerPartition[i] == 10);
+            assertEquals(countPerPartition[i], 10);
         }
     }
 
@@ -56,9 +56,9 @@ public class BalancedPartitionerTest {
         }
         for (int i = 0; i < 10; i++) {
             if (i < 7)
-                assertTrue(countPerPartition[i] == 10 + 1);
+                assertEquals(countPerPartition[i], 10 + 1);
             else
-                assertTrue(countPerPartition[i] == 10);
+                assertEquals(countPerPartition[i], 10);
         }
     }
 
