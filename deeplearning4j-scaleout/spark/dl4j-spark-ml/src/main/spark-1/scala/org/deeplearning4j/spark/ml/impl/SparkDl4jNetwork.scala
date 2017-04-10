@@ -8,6 +8,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.{DataFrame, Row}
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
@@ -18,13 +19,12 @@ final class SparkDl4jNetwork(
                             override val multiLayerConfiguration: MultiLayerConfiguration,
                             override val numLabels: Int,
                             override val trainingMaster: ParamSerializer,
-                            override val epochs : Int,
+                            override val epochs: Int,
                             override val listeners: util.Collection[IterationListener],
                             override val collectStats: Boolean = false,
                             override val uid: String = Identifiable.randomUID("dl4j"))
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
-        uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats
-    ) {
+        uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats) {
 
     def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
              listeners: util.Collection[IterationListener]) {
@@ -38,22 +38,34 @@ final class SparkDl4jNetwork(
 
     override val mapVectorFunc: (Row) => LabeledPoint = row => new LabeledPoint(row.getAs[Double]($(labelCol)), row.getAs[Vector]($(featuresCol)))
 
+    /**
+      * Trains the dataset with the spark multi-layer network
+      * @param dataset Dataframe
+      * @return returns a SparkDl4jModel
+      */
     override def train(dataset: DataFrame): SparkDl4jModel = {
         val spn = trainer(DatasetFacade.dataRows(dataset))
-        new SparkDl4jModel(uid, spn)
+        handleTrainedData(spn)
+    }
+
+    private def handleTrainedData(spn: SparkDl4jMultiLayer) : SparkDl4jModel = {
+        val model = new SparkDl4jModel(uid, spn.getNetwork)
+        if (collectStats) model.setTrainingStats(spn.getSparkTrainingStats)
+        else model
     }
 }
 
-class SparkDl4jModel(override val uid: String, network: SparkDl4jMultiLayer)
+class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork)
     extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network) {
 
     override def copy(extra: ParamMap) : SparkDl4jModel = copyValues(new SparkDl4jModel(uid, network)).setParent(parent)
 
+    /**
+      * Argmax prediction for classification, and continuous for regression.
+      * @param features Vector to predict
+      * @return a double of the outcome
+      */
     override def predict(features: Vector) : Double = predictor(features)
-
-    override def outputFlattenedTensor(vector: Vector): Vector = super.outputFlattenedTensor(vector)
-
-    override def outputTensor(vector: Vector) : INDArray = super.outputTensor(vector)
 
 }
 

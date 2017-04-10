@@ -7,10 +7,12 @@ import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
 import org.deeplearning4j.spark.util.MLLibUtil
@@ -46,7 +48,16 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
         if (listeners != null) {
             sparkNet.setListeners(listeners)
         }
-        val lps = dataset.select(getFeaturesCol, getLabelCol).rdd
+        val lps = toLabelPoint(dataRowsFacade)
+        val epochsToUse = if (epochs < 1) 1 else epochs
+        for (i <- List.range(0, epochsToUse)) {
+            sparkNet.fit(lps)
+        }
+        sparkNet
+    }
+
+    protected def toLabelPoint(datasetFacade: DatasetFacade): RDD[DataSet] = {
+        datasetFacade.get.select(getFeaturesCol, getLabelCol).rdd
             .map(mapVectorFunc)
             .map(item => {
                 val features = item.features
@@ -57,18 +68,16 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
                     new DataSet(Nd4j.create(features.toArray), Nd4j.create(Array(label)))
                 }
             })
-        val epochsToUse = if (epochs < 1) 1 else epochs
-        for (i <- List.range(0, epochsToUse)) {
-            sparkNet.fit(lps)
-        }
-        sparkNet
     }
 }
 
-abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](override val uid: String, network: SparkDl4jMultiLayer)
+
+abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](override val uid: String, network: MultiLayerNetwork)
     extends PredictionModel[T, E] with Serializable with MLWritable {
 
-    def getMultiLayerNetwork : MultiLayerNetwork = network.getNetwork
+    private var trainingStats : SparkTrainingStats = null.asInstanceOf[SparkTrainingStats]
+
+    def getMultiLayerNetwork : MultiLayerNetwork = network
 
     protected def predictor(features: Vector) : Double = {
         val v = output(features)
@@ -79,7 +88,17 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
         } else throw new RuntimeException("Vector size must be greater than 0")
     }
 
-    protected def output(vector: Vector) : Vector = network.predict(vector)
+    protected def output(vector: Vector) : Vector = {
+        val predicted = outputTensor(vector)
+        Vectors.dense(flattenTensor(predicted))
+    }
+
+    def setTrainingStats(sparkTrainingStats: SparkTrainingStats) : this.type = {
+        this.trainingStats = sparkTrainingStats
+        this
+    }
+
+    def getTrainingStats : SparkTrainingStats = trainingStats
 
     protected def outputTensor(vector: Vector) : INDArray = getMultiLayerNetwork.output(MLLibUtil.toVector(vector))
 
@@ -87,7 +106,7 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
 
     protected[SparkDl4jModelWrapper] class SparkDl4jModelWriter(instance: SparkDl4jModelWrapper[T,E]) extends MLWriter {
         override protected def saveImpl(path: String): Unit = {
-            ModelSerializer.writeModel(network.getNetwork, path, true)
+            ModelSerializer.writeModel(network, path, true)
         }
     }
 
@@ -106,7 +125,7 @@ trait SparkDl4jModelWrap extends MLReadable[SparkDl4jModel] {
 
         override def load(path: String) : SparkDl4jModel = {
             val mln = ModelSerializer.restoreMultiLayerNetwork(path)
-            new SparkDl4jModel(Identifiable.randomUID("dl4j"), new SparkDl4jMultiLayer(sc, mln, null))
+            new SparkDl4jModel(Identifiable.randomUID("dl4j"), mln)
         }
 
     }
