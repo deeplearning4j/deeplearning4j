@@ -22,23 +22,28 @@ import org.nd4j.shade.jackson.annotation.JsonTypeName;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     @JsonProperty
-    private List<LayerConf> layerSpaces = new ArrayList<>();
+    protected List<LayerConf> layerSpaces = new ArrayList<>();
     @JsonProperty
-    private ParameterSpace<InputType> inputType;
+    protected ParameterSpace<InputType> inputType;
+    @JsonProperty
+    protected ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors;
 
     //Early stopping configuration / (fixed) number of epochs:
     @JsonProperty
-    private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
+    protected EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
     @JsonProperty
-    private int numParameters;
+    protected int numParameters;
 
-    private MultiLayerSpace(Builder builder) {
+
+    protected MultiLayerSpace(Builder builder) {
         super(builder);
         this.inputType = builder.inputType;
+        this.inputPreProcessors = builder.inputPreProcessors;
 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
 
@@ -48,10 +53,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
         for (ParameterSpace ps : list) numParameters += ps.numParameters();
 
-        //TODO inputs
+
     }
 
-    private MultiLayerSpace(){
+    protected MultiLayerSpace(){
         //Default constructor for Jackson json/yaml serialization
     }
 
@@ -75,17 +80,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         //Create MultiLayerConfiguration...
         NeuralNetConfiguration.Builder builder = randomGlobalConf(values);
 
-
-        //Set nIn based on nOut of previous layer.
-        //TODO This won't work for all cases (at minimum: cast is an issue)
-        int lastNOut = ((FeedForwardLayer) layers.get(0)).getNOut();
-        for (int i = 1; i < layers.size(); i++) {
-            if(!(layers.get(i) instanceof FeedForwardLayer)) continue;
-            FeedForwardLayer ffl = (FeedForwardLayer) layers.get(i);
-            ffl.setNIn(lastNOut);
-            lastNOut = ffl.getNOut();
-        }
-
         NeuralNetConfiguration.ListBuilder listBuilder = builder.list();
         for (int i = 0; i < layers.size(); i++) {
             listBuilder.layer(i, layers.get(i));
@@ -98,6 +92,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         if (tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
         if (cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.getValue(values));
         if (inputType != null) listBuilder.setInputType(inputType.getValue(values));
+        if (inputPreProcessors != null) listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
 
         MultiLayerConfiguration configuration = listBuilder.build();
         return new DL4JConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
@@ -117,6 +112,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
         if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (inputType != null) list.addAll(inputType.collectLeaves());
+        if (inputPreProcessors != null) list.addAll(inputPreProcessors.collectLeaves());
         return list;
     }
 
@@ -135,6 +131,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
         if (cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
         if (inputType != null) sb.append("inputType: ").append(inputType).append("\n");
+        if (inputPreProcessors != null) sb.append("inputPreProcessors: ").append(inputPreProcessors).append("\n");
 
         if (earlyStoppingConfiguration != null) {
             sb.append("Early stopping configuration:").append(earlyStoppingConfiguration.toString()).append("\n");
@@ -151,18 +148,19 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
 
     @AllArgsConstructor @NoArgsConstructor @Data    //No-arg for Jackson JSON serialization
-    private static class LayerConf {
-        private LayerSpace<?> layerSpace;
-        private ParameterSpace<Integer> numLayers;
-        private boolean duplicateConfig;
+    protected static class LayerConf {
+        protected LayerSpace<?> layerSpace;
+        protected ParameterSpace<Integer> numLayers;
+        protected boolean duplicateConfig;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
-        private List<LayerConf> layerSpaces = new ArrayList<>();
-        private ParameterSpace<InputType> inputType;
+        protected List<LayerConf> layerSpaces = new ArrayList<>();
+        protected ParameterSpace<InputType> inputType;
+        protected ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors;
 
         //Early stopping configuration
-        private EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
+        protected EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration;
 
 
 
@@ -198,6 +196,15 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          */
         public Builder earlyStoppingConfiguration(EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration) {
             this.earlyStoppingConfiguration = earlyStoppingConfiguration;
+            return this;
+        }
+
+        public Builder setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors){
+            return setInputPreProcessors(new FixedValue<>(inputPreProcessors));
+        }
+
+        public Builder setInputPreProcessors(ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors){
+            this.inputPreProcessors = inputPreProcessors;
             return this;
         }
 
