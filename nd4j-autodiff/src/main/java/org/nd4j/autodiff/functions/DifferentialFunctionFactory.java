@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
+import com.kitfox.svg.A;
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -462,30 +463,35 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> transpose(DifferentialFunction<X> iX) {
-        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+        if(iX.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) iX.getValue();
+            return new AbstractUnaryFunction<X>(mFactory.graph(),iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape())) {
 
-            @Override
-            public X doGetValue() {
-                return mFactory.transpose(arg().getValue());
-            }
+                @Override
+                public X doGetValue() {
+                    return mFactory.transpose(arg().getValue());
+                }
 
-            @Override
-            public double getReal() {
-                return Math.tan(arg().getReal());
-            }
+                @Override
+                public double getReal() {
+                    return Math.tan(arg().getReal());
+                }
 
-            @Override
-            public DifferentialFunction<X> diff(Variable<X> i_v) {
-                 return this;
-            }
+                @Override
+                public DifferentialFunction<X> diff(Variable<X> i_v) {
+                    return this;
+                }
 
 
 
-            @Override
-            public String functionName() {
-                return "transpose";
-            }
-        };
+                @Override
+                public String functionName() {
+                    return "transpose";
+                }
+            };
+        }
+
+        throw new IllegalStateException("Need the shape. This is only possible with ArrayField");
     }
 
     @Override

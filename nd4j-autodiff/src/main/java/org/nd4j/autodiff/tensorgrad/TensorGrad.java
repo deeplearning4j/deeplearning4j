@@ -422,4 +422,12 @@ public class TensorGrad {
                 .varName("reshape(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
     }
+
+    public TensorGradVariable transpose(TensorGradVariable iX) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.transpose(iX.getArrayField()))
+                .varName("transpose(" + iX.getVarName() + ")").tensorGrad(this)
+                .build();
+    }
 }

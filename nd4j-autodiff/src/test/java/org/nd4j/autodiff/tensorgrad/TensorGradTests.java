@@ -40,4 +40,32 @@ public class TensorGradTests {
 
     }
 
+
+
+    @Test
+    public void testReshape() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable result = tensorGrad.reshape(x);
+        assertEquals("reshape(x)",result.getVarName());
+        assertEquals(2,tensorGrad.graph().numVertices());
+        assertEquals(1,tensorGrad.graph().getEdges().size());
+        assertArrayEquals(new int[]{2,2},result.getShape());
+
+    }
+
+    @Test
+    public void testTranspose() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4));
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable result = tensorGrad.transpose(x);
+        assertEquals("transpose(x)",result.getVarName());
+        assertEquals(2,tensorGrad.graph().numVertices());
+        assertEquals(1,tensorGrad.graph().getEdges().size());
+        assertArrayEquals(new int[]{4,1},result.getShape());
+
+    }
+
 }

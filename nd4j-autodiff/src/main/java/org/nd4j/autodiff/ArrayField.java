@@ -297,7 +297,12 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField transpose() {
-        return addTransformOp("transpose");
+        return addArrayOp(
+                "transpose",
+                null,
+                ArrayUtil.reverseCopy(input.getShape()),
+                null,
+                OpState.OpType.TRANSFORM);
     }
 
     public ArrayField sum(int[] dimensions) {

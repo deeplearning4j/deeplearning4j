@@ -15,6 +15,18 @@ import java.util.List;
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected DifferentialFunction<X> m_x;
+    protected int[] shape;
+
+    public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v,int[] shape) {
+        super(graph);
+        if (i_v != null) {
+            m_x = i_v;
+            addEdges(graph,m_x,functionName(),shape);
+        } else {
+            throw new IllegalArgumentException("Input not null variable.");
+        }
+    }
+
 
     public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v) {
         super(graph);
@@ -37,7 +49,36 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         return functionName() + "(" + arg().toString() + ")";
     }
 
+    /**
+     * Add nodes to the graph
+     * @param graph
+     * @param i_v1
+     * @param opName
+     */
+    protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName,int...shape) {
+        if(i_v1.getValue() instanceof ArrayField) {
+            ArrayField v1 = (ArrayField) i_v1.getValue();
+            NDArrayInformation information =    NDArrayInformation.builder()
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
+                    .shape(shape).build();
+            //result
+            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
+            graph.addVertex(newVertex);
+            OpState owner =  OpState.builder()
+                    .opType(OpState.OpType.TRANSFORM)
+                    .opName(opName)
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                    .n(ArrayUtil.prod(shape))
+                    .build();
+            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
+            newVertex.setOpState(owner);
+            information.setOwner(owner);
+            owner.setResult(information);
+            this.opState = owner;
 
+        }
+    }
 
 
     /**
@@ -48,25 +89,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
      */
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
         if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue();
-            NDArrayInformation information =    NDArrayInformation.builder()
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
-                    .shape(v1.getInput().getShape()).build();
-            //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
-            graph.addVertex(newVertex);
-            OpState owner =  OpState.builder()
-                    .opType(OpState.OpType.TRANSFORM)
-                    .opName(opName)
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(v1.getInput().getShape()))
-                    .build();
-            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
-            newVertex.setOpState(owner);
-            information.setOwner(owner);
-            owner.setResult(information);
-            this.opState = owner;
+            ArrayField arrayField = (ArrayField) i_v1.getValue();
+            addEdges(graph,i_v1,opName,arrayField.getInput().getShape());
 
         }
     }
